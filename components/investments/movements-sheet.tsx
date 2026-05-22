@@ -11,6 +11,7 @@ import { MoneyMask } from "@/components/ui/privacy-provider";
 import { deleteMovement } from "@/services/movements.actions";
 import type { MovementKind, Tables } from "@/types/database";
 import { MovementDialog } from "./movement-dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Investment = Tables<"investments">;
 type Movement = Tables<"investment_movements">;
@@ -35,6 +36,7 @@ export function MovementsSheet({
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   // Refetch via API REST quando abre
   useEffect(() => {
@@ -62,8 +64,14 @@ export function MovementsSheet({
     };
   }, [open, investment.id, adding]);
 
-  const handleDelete = (id: string) => {
-    if (!confirm("Excluir esse movimento? Quantidade e preço médio são recalculados.")) return;
+  const handleDelete = async (id: string) => {
+    const ok = await confirm({
+      title: "Excluir esse movimento?",
+      description: "Quantidade e preço médio são recalculados.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteMovement(id);
       if (r.error) toast.error(r.error);

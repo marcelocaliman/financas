@@ -6,17 +6,23 @@ import { FixedIncomeTable } from "@/components/investments/fixed-income-table";
 import { VariableIncomeTable } from "@/components/investments/variable-income-table";
 import { KeyboardNav } from "@/components/ui/keyboard-nav";
 import { ScrollTarget } from "@/components/ui/scroll-target";
+import {
+  AllocationDonut,
+  type DonutSegment,
+} from "@/components/ui/allocation-donut";
 import { listAccounts } from "@/services/accounts";
-import { listInvestments } from "@/services/investments";
+import { listInvestments, getLatestIndexer } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvestimentosPage() {
-  const [investments, accounts, live] = await Promise.all([
+  const [investments, accounts, live, selic, cdi] = await Promise.all([
     listInvestments(),
     listAccounts(),
     getLivePortfolio(),
+    getLatestIndexer("selic"),
+    getLatestIndexer("cdi"),
   ]);
 
   const investmentAccounts = accounts
@@ -28,11 +34,9 @@ export default async function InvestimentosPage() {
 
   const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
 
-  // Renda fixa: Tesouro, CDB, LCI, LCA, debêntures, etc.
   const fixedIncome = investments.filter(
     (i) => i.asset_type === "fixed_income_public" || i.asset_type === "fixed_income_private",
   );
-  // Renda variável: FII, ação, ETF, cripto
   const variableIncome = investments.filter(
     (i) =>
       i.asset_type === "fii" ||
@@ -40,6 +44,39 @@ export default async function InvestimentosPage() {
       i.asset_type === "etf" ||
       i.asset_type === "crypto",
   );
+
+  // Alocação por classe (donut)
+  const allocationSegments: DonutSegment[] = [
+    {
+      key: "fixedIncome",
+      label: "Renda fixa",
+      value: live.byClass.fixedIncome.balance,
+      color: "var(--color-olive-600)",
+    },
+    {
+      key: "fiis",
+      label: "FIIs",
+      value: live.byClass.fiis.balance,
+      color: "var(--color-navy-700)",
+    },
+    {
+      key: "stocks",
+      label: "Ações / ETFs",
+      value: live.byClass.stocks.balance,
+      color: "var(--color-gold-600)",
+    },
+    {
+      key: "other",
+      label: "Cripto / outros",
+      value: live.byClass.other.balance,
+      color: "var(--color-rust-600)",
+    },
+  ];
+  const portfolioTotal =
+    live.byClass.fixedIncome.balance +
+    live.byClass.fiis.balance +
+    live.byClass.stocks.balance +
+    live.byClass.other.balance;
 
   return (
     <>
@@ -60,6 +97,40 @@ export default async function InvestimentosPage() {
         <>
           <PortfolioLiveTicker portfolio={live} variant="full" />
 
+          {/* Alocação + Benchmarks (lado a lado em telas grandes) */}
+          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
+            <Panel>
+              <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-4">
+                Alocação por classe
+              </div>
+              <AllocationDonut
+                segments={allocationSegments}
+                centerLabel="Total"
+                centerValue={formatBRLCompact(portfolioTotal)}
+              />
+            </Panel>
+            <Panel>
+              <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-4">
+                Indexadores · referência
+              </div>
+              <BenchmarkRow
+                name="Selic"
+                value={selic?.value ?? null}
+                date={selic?.date ?? null}
+              />
+              <BenchmarkRow
+                name="CDI"
+                value={cdi?.value ?? null}
+                date={cdi?.date ?? null}
+              />
+              <p className="text-[11.5px] text-muted-foreground mt-4 leading-relaxed">
+                Taxas anuais. Renda fixa indexada ao CDI/Selic rende{" "}
+                <em className="italic">de fato</em> esse % anualizado (com multiplicador
+                de cada ativo).
+              </p>
+            </Panel>
+          </div>
+
           {fixedIncome.length > 0 ? (
             <ScrollTarget targetId="fixed-income">
               <FixedIncomeTable
@@ -67,6 +138,7 @@ export default async function InvestimentosPage() {
                 liveByAssetId={liveByAssetId}
                 investmentAccounts={investmentAccounts}
                 destinationAccounts={destinationAccounts}
+                portfolioTotal={portfolioTotal}
               />
             </ScrollTarget>
           ) : null}
@@ -77,6 +149,7 @@ export default async function InvestimentosPage() {
                 investments={variableIncome}
                 liveByAssetId={liveByAssetId}
                 investmentAccounts={investmentAccounts}
+                portfolioTotal={portfolioTotal}
               />
             </ScrollTarget>
           ) : null}
@@ -95,6 +168,52 @@ export default async function InvestimentosPage() {
       )}
     </>
   );
+}
+
+function BenchmarkRow({
+  name,
+  value,
+  date,
+}: {
+  name: string;
+  value: number | null;
+  date: string | null;
+}) {
+  return (
+    <div className="flex items-baseline justify-between py-2.5 border-b border-border last:border-b-0">
+      <span className="text-[13.5px] font-medium text-foreground">{name}</span>
+      <div className="text-right">
+        <div className="font-mono text-[16px] tabular-nums text-foreground">
+          {value != null ? `${value.toFixed(2).replace(".", ",")}%` : "—"}
+          <span className="text-[11px] text-muted-foreground ml-1">a.a.</span>
+        </div>
+        {date ? (
+          <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.04em] mt-0.5">
+            atualizado · {formatDateShortBR(date)}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function formatBRLCompact(v: number): string {
+  if (v >= 1_000_000)
+    return `R$ ${(v / 1_000_000).toFixed(2).replace(".", ",")}M`;
+  if (v >= 10_000)
+    return `R$ ${(v / 1000).toFixed(0)}k`;
+  if (v >= 1000)
+    return `R$ ${(v / 1000).toFixed(1).replace(".", ",")}k`;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 0,
+  }).format(v);
+}
+
+function formatDateShortBR(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y.slice(2)}`;
 }
 
 function EmptyState({ hasInvestmentAccounts }: { hasInvestmentAccounts: boolean }) {

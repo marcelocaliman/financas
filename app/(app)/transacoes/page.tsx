@@ -1,18 +1,26 @@
+import { Fragment } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
+import { KpiCard } from "@/components/ui/kpi-card";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { TransactionsFilterBar } from "@/components/transactions/transactions-filter-bar";
+import { ActiveFiltersChips } from "@/components/transactions/active-filters-chips";
 import { Pagination } from "@/components/transactions/pagination";
 import { ExportButton } from "@/components/transactions/export-button";
 import { ImportButton } from "@/components/transactions/import-button";
 import { BulkAddButton } from "@/components/transactions/bulk-add-button";
 import { TransactionsKeyboardNav } from "@/components/transactions/transactions-keyboard-nav";
-import { listTransactions, monthRange, getMonthlySummary } from "@/services/transactions";
+import {
+  listTransactions,
+  monthRange,
+  getMonthlySummary,
+} from "@/services/transactions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
-import { Money } from "@/components/ui/money";
+import type { Transaction } from "@/services/transactions";
 import type { TransactionKind } from "@/types/database";
+import { formatDateFull } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +30,7 @@ function currentMonthISO(): string {
     year: "numeric",
     month: "2-digit",
   });
-  return fmt.format(new Date()); // "YYYY-MM"
+  return fmt.format(new Date());
 }
 
 type Params = {
@@ -30,6 +38,12 @@ type Params = {
   kind?: string;
   q?: string;
   page?: string;
+};
+
+const KIND_TAB_LABEL: Record<string, string> = {
+  income: "Receitas",
+  expense: "Despesas",
+  transfer: "Transferências",
 };
 
 export default async function TransacoesPage({
@@ -44,7 +58,13 @@ export default async function TransacoesPage({
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
 
-  const [{ rows, total }, summary, accounts, categories] = await Promise.all([
+  const { from: curFrom } = monthRange(month);
+  // Mês anterior pra Δ
+  const [yy, mm] = curFrom.slice(0, 7).split("-").map(Number);
+  const prevYear = mm - 1 === 0 ? yy - 1 : yy;
+  const prevKey = `${prevYear}-${String(mm - 1 || 12).padStart(2, "0")}`;
+
+  const [{ rows, total }, summary, prevSummary, accounts, categories] = await Promise.all([
     listTransactions({
       month,
       kind: kindFilter,
@@ -53,6 +73,7 @@ export default async function TransacoesPage({
       pageSize,
     }),
     getMonthlySummary(month),
+    getMonthlySummary(prevKey),
     listAccounts(),
     listCategories(),
   ]);
@@ -72,10 +93,33 @@ export default async function TransacoesPage({
   const { label: monthLabel, from, to } = monthRange(month);
   const monthInputValue = from.slice(0, 7);
 
+  // Δ pct vs mês anterior — só faz sentido sem filtro de kind aplicado
+  const incomeDelta =
+    prevSummary.income > 0 ? summary.income / prevSummary.income - 1 : null;
+  const expenseDelta =
+    prevSummary.expense > 0 ? summary.expense / prevSummary.expense - 1 : null;
+  const netDelta = summary.net - prevSummary.net;
+
+  // Agrupa transações por dia
+  const grouped: Array<{ date: string; rows: Transaction[]; total: number }> = [];
+  for (const tx of rows) {
+    const day = tx.date;
+    let group = grouped[grouped.length - 1];
+    if (!group || group.date !== day) {
+      group = { date: day, rows: [], total: 0 };
+      grouped.push(group);
+    }
+    group.rows.push(tx);
+    // Total do dia em moeda nativa da transação — fins informativos
+    const amt = Number(tx.amount);
+    if (tx.kind === "income") group.total += amt;
+    else if (tx.kind === "expense") group.total -= amt;
+  }
+
   return (
     <>
       <PageHeader
-        eyebrow={`Histórico · ${monthLabel}`}
+        eyebrow={`${monthLabel} · ${from} → ${to}`}
         title={
           <>
             Todas as <em className="not-italic font-display italic text-navy-700">transações</em>
@@ -93,13 +137,24 @@ export default async function TransacoesPage({
       />
 
       <div className="grid sm:grid-cols-3 gap-3 mb-6">
-        <Mini label="Entrou" value={summary.income} tone="positive" currency={summary.displayCurrency} />
-        <Mini label="Saiu" value={summary.expense} tone="negative" currency={summary.displayCurrency} />
-        <Mini
+        <KpiCard
+          label="Entrou"
+          value={summary.income}
+          tone="positive"
+          deltaPct={incomeDelta}
+        />
+        <KpiCard
+          label="Saiu"
+          value={summary.expense}
+          tone="negative"
+          deltaPct={expenseDelta}
+          invertDeltaColor
+        />
+        <KpiCard
           label="Sobra"
           value={summary.net}
           tone={summary.net >= 0 ? "positive" : "negative"}
-          currency={summary.displayCurrency}
+          deltaAbs={netDelta}
         />
       </div>
 
@@ -114,6 +169,11 @@ export default async function TransacoesPage({
           { value: "expense", label: "Despesas" },
           { value: "transfer", label: "Transferências" },
         ]}
+      />
+
+      <ActiveFiltersChips
+        kindLabel={kindFilter !== "all" ? KIND_TAB_LABEL[kindFilter] : null}
+        queryLabel={q || null}
       />
 
       <Panel className="!px-0 !py-2">
@@ -140,13 +200,28 @@ export default async function TransacoesPage({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((tx) => (
-                  <TransactionRow
-                    key={tx.id}
-                    tx={tx}
-                    accounts={accountsLite}
-                    categories={categoriesLite}
-                  />
+                {grouped.map((group) => (
+                  <Fragment key={group.date}>
+                    <tr className="bg-surface-muted/50">
+                      <td
+                        colSpan={5}
+                        className="px-1 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium"
+                      >
+                        {formatDateFull(group.date)}
+                        <span className="ml-2 text-muted-foreground normal-case tracking-normal">
+                          · {group.rows.length} lançamento{group.rows.length === 1 ? "" : "s"}
+                        </span>
+                      </td>
+                    </tr>
+                    {group.rows.map((tx) => (
+                      <TransactionRow
+                        key={tx.id}
+                        tx={tx}
+                        accounts={accountsLite}
+                        categories={categoriesLite}
+                      />
+                    ))}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -156,41 +231,8 @@ export default async function TransacoesPage({
         )}
       </Panel>
 
-      <p className="text-[10.5px] font-mono text-faint-foreground tracking-[0.06em] mt-4">
-        Período: {from} → {to}
-      </p>
-
       <TransactionsKeyboardNav currentKind={kindFilter} />
     </>
-  );
-}
-
-function Mini({
-  label,
-  value,
-  tone,
-  currency,
-}: {
-  label: string;
-  value: number;
-  tone: "positive" | "negative";
-  currency: "BRL" | "EUR" | "USD";
-}) {
-  const toneClass =
-    value === 0 ? "text-foreground" : tone === "positive" ? "text-olive-700" : "text-rust-600";
-  return (
-    <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-        {label}
-      </div>
-      <Money
-        value={value}
-        currency={currency}
-        showComparison
-        className={`mt-1.5 text-[20px] tracking-[-0.02em] items-start ${toneClass}`}
-        secondaryClassName="text-[11px]"
-      />
-    </div>
   );
 }
 

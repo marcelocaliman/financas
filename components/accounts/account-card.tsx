@@ -16,6 +16,7 @@ import {
 import type { AccountType, Tables } from "@/types/database";
 import { AccountSheet } from "./account-sheet";
 import { BalanceAdjustDialog } from "./balance-adjust-dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Account = Tables<"accounts">;
 
@@ -44,9 +45,15 @@ export function AccountCard({
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar "${account.name}"? Aparece em "Arquivadas" e some das listas.`)) return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar "${account.name}"?`,
+      description: "Aparece em \"Arquivadas\" e some das listas. Pode ser restaurada depois.",
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archiveAccount(account.id);
       if (r.error) toast.error(r.error);
@@ -60,13 +67,16 @@ export function AccountCard({
       else toast.success("Conta restaurada.");
     });
   };
-  const handleDelete = () => {
-    if (
-      !confirm(
-        `Excluir "${account.name}" DEFINITIVAMENTE? Só funciona se a conta NÃO tem transações nem investimentos. Caso contrário, use arquivar.`,
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir "${account.name}" DEFINITIVAMENTE?`,
+      description:
+        "Só funciona se a conta NÃO tem transações nem investimentos. Caso contrário, use arquivar.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteAccount(account.id);
       if (r.error) toast.error(r.error);

@@ -12,6 +12,10 @@ import {
 } from "@/services/categories.actions";
 import type { Tables } from "@/types/database";
 import { CategorySheet } from "./category-sheet";
+import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Sparkline } from "@/components/ui/sparkline";
+import { Money } from "@/components/ui/money";
+import type { CategoryStats } from "@/services/categories";
 
 type Category = Tables<"categories">;
 
@@ -27,12 +31,24 @@ const kindLabel: Record<string, string> = {
   transfer: "Transferência",
 };
 
-export function CategoryRow({ category }: { category: Category }) {
+export function CategoryRow({
+  category,
+  stats,
+}: {
+  category: Category;
+  stats?: CategoryStats;
+}) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar a categoria "${category.name}"?`)) return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar "${category.name}"?`,
+      description: "Some das listas mas pode ser restaurada depois.",
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archiveCategory(category.id);
       if (r.error) toast.error(r.error);
@@ -46,13 +62,15 @@ export function CategoryRow({ category }: { category: Category }) {
       else toast.success("Categoria restaurada.");
     });
   };
-  const handleDelete = () => {
-    if (
-      !confirm(
-        `Excluir "${category.name}" DEFINITIVAMENTE? Transações vinculadas ficam sem categoria.`,
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir "${category.name}" DEFINITIVAMENTE?`,
+      description: "Transações vinculadas ficam sem categoria.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteCategory(category.id);
       if (r.error) toast.error(r.error);
@@ -60,10 +78,36 @@ export function CategoryRow({ category }: { category: Category }) {
     });
   };
 
+  // Tendência: compara o último mês com a média dos meses anteriores
+  const trend =
+    stats && stats.byMonth.length >= 2
+      ? (() => {
+          const last = stats.byMonth[stats.byMonth.length - 1];
+          const previous =
+            stats.byMonth.slice(0, -1).reduce((s, v) => s + v, 0) /
+            (stats.byMonth.length - 1);
+          if (previous <= 0) return null;
+          return (last - previous) / previous;
+        })()
+      : null;
+
   return (
     <>
       <div className="flex items-center gap-4 px-1 py-3 border-b border-border last:border-b-0 group">
-        <div className="flex-1 min-w-0 flex items-center gap-3">
+        <div className="flex-1 min-w-0 flex items-center gap-3 min-w-0">
+          {category.icon ? (
+            <span
+              className="font-mono text-[14px] shrink-0"
+              style={category.color ? { color: category.color } : undefined}
+            >
+              {category.icon}
+            </span>
+          ) : category.color ? (
+            <span
+              className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
+              style={{ background: category.color }}
+            />
+          ) : null}
           <span className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate">
             {category.name}
           </span>
@@ -72,6 +116,55 @@ export function CategoryRow({ category }: { category: Category }) {
           </Badge>
           {category.is_archived ? <Badge tone="gold">Arquivada</Badge> : null}
         </div>
+
+        {stats && !category.is_archived ? (
+          <div className="hidden md:flex items-center gap-4 shrink-0">
+            <div className="text-right">
+              <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint-foreground">
+                Média/mês
+              </div>
+              <Money
+                value={stats.monthlyAverage}
+                className="font-mono text-[12.5px] text-foreground tabular-nums inline-flex !flex-row !items-baseline"
+              />
+            </div>
+            {trend != null && Math.abs(trend) > 0.05 ? (
+              <span
+                className={
+                  "font-mono text-[11px] tabular-nums " +
+                  (trend > 0
+                    ? category.kind === "expense"
+                      ? "text-rust-600"
+                      : "text-olive-700 dark:text-olive-500"
+                    : category.kind === "expense"
+                      ? "text-olive-700 dark:text-olive-500"
+                      : "text-rust-600")
+                }
+                title={
+                  trend > 0
+                    ? "Subindo vs meses anteriores"
+                    : "Caindo vs meses anteriores"
+                }
+              >
+                {trend > 0 ? "↑" : "↓"} {Math.abs(trend * 100).toFixed(0)}%
+              </span>
+            ) : null}
+            {stats.byMonth.length >= 2 ? (
+              <Sparkline
+                data={stats.byMonth}
+                width={80}
+                height={20}
+                stroke={
+                  category.kind === "income"
+                    ? "rgba(115,136,81,0.7)"
+                    : "rgba(96,126,168,0.7)"
+                }
+                strokeWidth={1.4}
+                showDot={false}
+              />
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex items-center gap-1">
           {category.is_archived ? (
             <>

@@ -11,6 +11,7 @@ import {
 } from "@/services/redemptions.actions";
 import type { YieldRule } from "@/services/redemptions";
 import { RuleSheet } from "./rule-sheet";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type InvestmentLite = { id: string; ticker: string; name: string };
 type AccountLite = { id: string; name: string; institution: string };
@@ -26,9 +27,14 @@ export function RuleRowActions({
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar regra de saque de "${rule.investment?.ticker ?? "ativo"}"?`)) return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar regra de saque de "${rule.investment?.ticker ?? "ativo"}"?`,
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archiveYieldRule(rule.id);
       if (r.error) toast.error(r.error);
@@ -44,13 +50,15 @@ export function RuleRowActions({
     });
   };
 
-  const handleDelete = () => {
-    if (
-      !confirm(
-        `Excluir regra DEFINITIVAMENTE? Apaga lembretes pendentes (saques já executados continuam no histórico).`,
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: "Excluir regra DEFINITIVAMENTE?",
+      description: "Apaga lembretes pendentes. Saques já executados continuam no histórico.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteYieldRule(rule.id);
       if (r.error) toast.error(r.error);

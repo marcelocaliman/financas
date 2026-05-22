@@ -17,6 +17,7 @@ import {
 } from "@/services/redemptions.actions";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function IntentActions({
   intentId,
@@ -34,6 +35,7 @@ export function IntentActions({
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState(suggestedAmount);
+  const confirm = useConfirm();
 
   const handleExecute = () => {
     startTransition(async () => {
@@ -46,8 +48,13 @@ export function IntentActions({
     });
   };
 
-  const handleSkip = () => {
-    if (!confirm(`Pular o saque de ${dueLabel}? Pode retomar no próximo.`)) return;
+  const handleSkip = async () => {
+    const ok = await confirm({
+      title: `Pular o saque de ${dueLabel}?`,
+      description: "Pode retomar no próximo.",
+      confirmLabel: "Pular esse mês",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await skipRedemption(intentId);
       if (r.error) toast.error(r.error);

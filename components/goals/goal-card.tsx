@@ -12,6 +12,7 @@ import { estimateCompletion } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { GoalSheet } from "./goal-sheet";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export function GoalCard({
   goal,
@@ -24,17 +25,29 @@ export function GoalCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar meta "${goal.name}"?`)) return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar meta "${goal.name}"?`,
+      description: "Some das listas mas pode ser restaurada depois.",
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archiveGoal(goal.id);
       if (r.error) toast.error(r.error);
       else toast.success("Meta arquivada.");
     });
   };
-  const handleDelete = () => {
-    if (!confirm(`Excluir meta "${goal.name}" DEFINITIVAMENTE?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir meta "${goal.name}" DEFINITIVAMENTE?`,
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteGoal(goal.id);
       if (r.error) toast.error(r.error);

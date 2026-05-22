@@ -13,10 +13,12 @@ export function VariableIncomeTable({
   investments,
   liveByAssetId,
   investmentAccounts,
+  portfolioTotal = 0,
 }: {
   investments: Investment[];
   liveByAssetId: Map<string, LiveAssetMetrics>;
   investmentAccounts: AccountLite[];
+  portfolioTotal?: number;
 }) {
   if (investments.length === 0) return null;
 
@@ -106,6 +108,7 @@ export function VariableIncomeTable({
               <Th right>Preço médio</Th>
               <Th right>Cotação</Th>
               <Th right>A mercado</Th>
+              <Th right>% carteira</Th>
               <Th right>Variação</Th>
               <Th right>Dividendo (12m)</Th>
               <th className="w-9" />
@@ -176,6 +179,11 @@ export function VariableIncomeTable({
                     <MoneyMask>
                       {formatMoney(live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance))}
                     </MoneyMask>
+                  </td>
+                  <td className="text-right font-mono text-[12.5px] text-muted-foreground tabular-nums">
+                    {portfolioTotal > 0
+                      ? `${(((live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance)) / portfolioTotal) * 100).toFixed(1).replace(".", ",")}%`
+                      : "—"}
                   </td>
                   <td className="text-right font-mono text-[12.5px]">
                     {live?.marketGain != null ? (

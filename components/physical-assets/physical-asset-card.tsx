@@ -17,15 +17,22 @@ import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import type { Tables } from "@/types/database";
 import { PhysicalAssetSheet } from "./physical-asset-sheet";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Asset = Tables<"physical_assets">;
 
 export function PhysicalAssetCard({ asset }: { asset: Asset }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar "${asset.name}"? Some das listas mas o histórico fica.`)) return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar "${asset.name}"?`,
+      description: "Some das listas mas o histórico fica.",
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archivePhysicalAsset(asset.id);
       if (r.error) toast.error(r.error);
@@ -41,8 +48,14 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm(`Excluir "${asset.name}" DEFINITIVAMENTE?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir "${asset.name}" DEFINITIVAMENTE?`,
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deletePhysicalAsset(asset.id);
       if (r.error) toast.error(r.error);

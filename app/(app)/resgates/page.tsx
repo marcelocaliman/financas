@@ -2,6 +2,7 @@ import { ArrowRight, Clock } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
+import { KpiCard } from "@/components/ui/kpi-card";
 import { NewRuleButton } from "@/components/redemptions/new-rule-button";
 import { IntentActions } from "@/components/redemptions/intent-actions";
 import { ProjectionPanel } from "@/components/redemptions/projection-panel";
@@ -13,6 +14,7 @@ import { getLivePortfolio } from "@/services/live-yield";
 import {
   ensurePendingIntents,
   getNextPending,
+  listPendingIntents,
   listRedemptionHistory,
   listYieldRules,
 } from "@/services/redemptions";
@@ -25,15 +27,17 @@ export default async function ResgatesPage() {
   // Garante que existam intents pendentes para os próximos 3 meses
   await ensurePendingIntents(3);
 
-  const [rules, nextIntent, history, investments, accounts, selic, live] = await Promise.all([
-    listYieldRules(),
-    getNextPending(),
-    listRedemptionHistory(12),
-    listInvestments(),
-    listAccounts(),
-    getLatestIndexer("selic"),
-    getLivePortfolio(),
-  ]);
+  const [rules, nextIntent, allPending, history, investments, accounts, selic, live] =
+    await Promise.all([
+      listYieldRules(),
+      getNextPending(),
+      listPendingIntents(),
+      listRedemptionHistory(12),
+      listInvestments(),
+      listAccounts(),
+      getLatestIndexer("selic"),
+      getLivePortfolio(),
+    ]);
 
   const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
   const fromInvestmentId = nextIntent?.rule?.investment?.id ?? null;
@@ -48,10 +52,24 @@ export default async function ResgatesPage() {
     name: i.name,
   }));
 
-  const activeSelic = investments.find((i) => i.indexer === "selic");
-  const projectionInitial = activeSelic ? Number(activeSelic.current_balance) : 0;
+  // ProjectionPanel agora usa TODO o saldo de RF (não apenas um ativo Selic),
+  // alinhado com o jeito "viver da renda" — a carteira de RF inteira é a base.
+  const projectionInitial = live.byClass.fixedIncome.balance;
   const projectionMonthly = nextIntent ? Number(nextIntent.suggested_amount) : 1500;
   const selicValue = selic?.value ?? 14.5;
+
+  // Total mensal estimado de saques + projeção anual
+  const monthlyRedemption = rules
+    .filter((r) => r.is_active && r.mode !== "reinvest")
+    .reduce((s, r) => s + Number(r.suggested_amount ?? 0), 0);
+  const yearlyRedemption = monthlyRedemption * 12;
+  const executedThisYear = history
+    .filter(
+      (h) =>
+        h.status === "executed" &&
+        h.due_date.slice(0, 4) === String(new Date().getUTCFullYear()),
+    )
+    .reduce((s, h) => s + Number(h.executed_amount ?? 0), 0);
 
   return (
     <>
@@ -74,7 +92,75 @@ export default async function ResgatesPage() {
         <EmptyNoRules />
       ) : (
         <>
+          {/* TIER 1 — KPIs macro */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <KpiCard
+              label="Saque mensal estimado"
+              value={monthlyRedemption}
+              tone="positive"
+              hint={`${rules.filter((r) => r.mode !== "reinvest" && r.is_active).length} regra${rules.filter((r) => r.mode !== "reinvest" && r.is_active).length === 1 ? "" : "s"} de saque`}
+            />
+            <KpiCard
+              label="Projeção anual"
+              value={yearlyRedemption}
+              tone="muted"
+              hint="se mantiver o ritmo atual"
+            />
+            <KpiCard
+              label="Já sacado em 2026"
+              value={executedThisYear}
+              tone="neutral"
+            />
+            <KpiCard
+              label="Saques pendentes"
+              textValue={`${allPending.length}`}
+              tone={allPending.length > 0 ? "negative" : "muted"}
+              hint={
+                allPending.length === 0
+                  ? "tudo em dia"
+                  : "aguardando confirmação"
+              }
+            />
+          </div>
+
           {nextIntent ? <NextRemainder intent={nextIntent} /> : null}
+
+          {/* Lista de todos os pending além do próximo */}
+          {allPending.length > 1 ? (
+            <Panel className="mb-6">
+              <PanelHeader
+                title="Próximos saques pendentes"
+                meta={`${allPending.length - 1} ${allPending.length - 1 === 1 ? "depois do próximo" : "depois do próximo"}`}
+              />
+              <ul className="divide-y divide-border">
+                {allPending.slice(1, 6).map((intent) => (
+                  <li
+                    key={intent.id}
+                    className="flex items-center justify-between gap-3 py-2.5"
+                  >
+                    <div className="min-w-0 flex items-center gap-2.5">
+                      <span className="font-mono text-[11.5px] text-muted-foreground tracking-[0.04em] inline-flex items-center gap-1 shrink-0">
+                        <Clock className="w-3 h-3" strokeWidth={1.8} />
+                        {formatDateShort(intent.due_date)}
+                      </span>
+                      <span className="text-[13.5px] text-foreground truncate">
+                        {intent.rule?.investment?.ticker ?? "—"} →{" "}
+                        {intent.rule?.destination?.name ?? "—"}
+                      </span>
+                    </div>
+                    <span className="font-mono text-[13px] font-medium tabular-nums shrink-0">
+                      <MoneyMask>{formatMoney(intent.suggested_amount)}</MoneyMask>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {allPending.length > 6 ? (
+                <p className="text-[11.5px] font-mono text-faint-foreground mt-3">
+                  + {allPending.length - 6} ainda mais distantes
+                </p>
+              ) : null}
+            </Panel>
+          ) : null}
 
           {nextIntent?.rule?.investment ? (
             <FlowDiagram
@@ -156,7 +242,7 @@ export default async function ResgatesPage() {
             </div>
           </Panel>
 
-          {activeSelic ? (
+          {projectionInitial > 0 ? (
             <ProjectionPanel
               initialBalance={projectionInitial}
               selicAnnualPct={selicValue}

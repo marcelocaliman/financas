@@ -443,3 +443,77 @@ export async function getCategoryBreakdown(
   for (const r of out) r.pct = grandTotal > 0 ? r.total / grandTotal : 0;
   return out;
 }
+
+/**
+ * Biggest movers — categorias que mais subiram/cairam entre dois meses.
+ * Útil pra página /analise: "onde o dinheiro mudou de comportamento".
+ *
+ * `monthStr` = mês atual (default: corrente). Compara com o mês ANTERIOR.
+ * Retorna lista ordenada por delta absoluto (descendente).
+ */
+export type CategoryMover = {
+  category_id: string | null;
+  category_name: string;
+  currentTotal: number;
+  previousTotal: number;
+  delta: number; // current - previous
+  pct: number | null; // null se previous=0
+};
+
+export async function getCategoryMovers(
+  monthStr?: string,
+  kind: TransactionKind = "expense",
+): Promise<CategoryMover[]> {
+  // Mês atual
+  const current = await getCategoryBreakdown(monthStr, kind);
+
+  // Mês anterior — calcula a partir de monthStr ou now
+  let y: number;
+  let m: number;
+  if (monthStr) {
+    const parts = monthStr.split("-").map(Number);
+    y = parts[0];
+    m = parts[1];
+  } else {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+    });
+    const [yStr, mStr] = fmt.format(new Date()).split("-");
+    y = parseInt(yStr, 10);
+    m = parseInt(mStr, 10);
+  }
+  const prev = new Date(Date.UTC(y, m - 2, 1));
+  const prevMonthStr = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
+  const previous = await getCategoryBreakdown(prevMonthStr, kind);
+
+  const prevMap = new Map(previous.map((r) => [r.category_id ?? "uncat", r.total]));
+  const curMap = new Map(current.map((r) => [r.category_id ?? "uncat", r]));
+  const allKeys = new Set([
+    ...current.map((r) => r.category_id ?? "uncat"),
+    ...previous.map((r) => r.category_id ?? "uncat"),
+  ]);
+
+  const movers: CategoryMover[] = [];
+  for (const key of allKeys) {
+    const cur = curMap.get(key);
+    const prevTotal = prevMap.get(key) ?? 0;
+    const curTotal = cur?.total ?? 0;
+    const delta = curTotal - prevTotal;
+    if (Math.abs(delta) < 10) continue; // ignora ruído pequeno
+    movers.push({
+      category_id: cur?.category_id ?? null,
+      category_name:
+        cur?.category_name ??
+        previous.find((p) => (p.category_id ?? "uncat") === key)?.category_name ??
+        "Sem categoria",
+      currentTotal: curTotal,
+      previousTotal: prevTotal,
+      delta,
+      pct: prevTotal > 0 ? delta / prevTotal : null,
+    });
+  }
+  movers.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+  return movers;
+}

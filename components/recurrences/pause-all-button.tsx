@@ -5,6 +5,7 @@ import { Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { setRecurringRulesActiveBatch } from "@/services/recurrences.actions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 /**
  * Botão global pra pausar/reativar TUDO. Mostra "Pausar todas" se há
@@ -19,6 +20,7 @@ export function PauseAllButton({
   pausedIds: string[];
 }) {
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
   const hasActive = activeIds.length > 0;
   const hasPaused = pausedIds.length > 0;
   if (!hasActive && !hasPaused) return null;
@@ -26,9 +28,13 @@ export function PauseAllButton({
   const mode = hasActive ? "pause" : "resume";
   const ids = hasActive ? activeIds : pausedIds;
 
-  const handle = () => {
+  const handle = async () => {
     const verb = mode === "pause" ? "Pausar" : "Reativar";
-    if (!confirm(`${verb} ${ids.length} recorrência${ids.length === 1 ? "" : "s"}?`)) return;
+    const ok = await confirm({
+      title: `${verb} ${ids.length} recorrência${ids.length === 1 ? "" : "s"}?`,
+      confirmLabel: verb,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await setRecurringRulesActiveBatch(ids, mode === "resume");
       if (r.error) {

@@ -25,6 +25,7 @@ import { MovementDialog } from "./movement-dialog";
 import { MovementsSheet } from "./movements-sheet";
 import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
 import { WithdrawYieldDialog } from "./withdraw-yield-dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Investment = Tables<"investments"> & {
   account?: Pick<Tables<"accounts">, "id" | "name" | "institution"> | null;
@@ -49,6 +50,7 @@ export function InvestmentRowActions({
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   const isMarketable =
     investment.asset_type === "fii" ||
@@ -59,9 +61,13 @@ export function InvestmentRowActions({
     investment.asset_type === "fixed_income_public" ||
     investment.asset_type === "fixed_income_private";
 
-  const handleArchive = () => {
-    if (!confirm(`Arquivar "${investment.ticker}"? Some das listas mas o histórico fica.`))
-      return;
+  const handleArchive = async () => {
+    const ok = await confirm({
+      title: `Arquivar "${investment.ticker}"?`,
+      description: "Some das listas mas o histórico fica.",
+      confirmLabel: "Arquivar",
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await archiveInvestment(investment.id);
       if (r.error) toast.error(r.error);
@@ -77,13 +83,15 @@ export function InvestmentRowActions({
     });
   };
 
-  const handleDelete = () => {
-    if (
-      !confirm(
-        `Excluir "${investment.ticker}" DEFINITIVAMENTE? Apaga rendimentos mensais e regras de saque associados. Esta ação é irreversível.`,
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir "${investment.ticker}" DEFINITIVAMENTE?`,
+      description: "Apaga rendimentos mensais e regras de saque associados.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteInvestment(investment.id);
       if (r.error) toast.error(r.error);

@@ -1,15 +1,19 @@
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
+import { KpiCard } from "@/components/ui/kpi-card";
 import { CategoriesBarChart } from "@/components/charts/categories-bar-chart";
 import { IncomeExpenseLine } from "@/components/charts/income-expense-line";
 import { MonthSwitcher } from "@/components/ui/month-switcher";
 import {
   getCategoryBreakdown,
+  getCategoryMovers,
   getMonthlyHistory,
   monthRange,
 } from "@/services/transactions";
-import { formatMoney } from "@/lib/utils/format";
+import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
 
@@ -28,9 +32,10 @@ export default async function AnalisePage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const { month } = await searchParams;
-  const [history, breakdown] = await Promise.all([
+  const [history, breakdown, movers] = await Promise.all([
     getMonthlyHistory(6, month, { includeForecast: true }),
     getCategoryBreakdown(month, "expense"),
+    getCategoryMovers(month, "expense"),
   ]);
   const hasForecastInChart = history.some((r) => r.isForecast);
 
@@ -40,11 +45,18 @@ export default async function AnalisePage({
   const current = history[history.length - 1];
   const prev = history[history.length - 2];
 
-  const incomeDelta =
-    prev && prev.income > 0 ? current.income / prev.income - 1 : null;
-  const expenseDelta =
-    prev && prev.expense > 0 ? current.expense / prev.expense - 1 : null;
+  const incomeDelta = prev && prev.income > 0 ? current.income / prev.income - 1 : null;
+  const expenseDelta = prev && prev.expense > 0 ? current.expense / prev.expense - 1 : null;
   const netDelta = prev ? current.net - prev.net : null;
+
+  // Sparklines (últimos 6 meses)
+  const incomeSpark = history.map((r) => r.income);
+  const expenseSpark = history.map((r) => r.expense);
+  const netSpark = history.map((r) => r.net);
+
+  // Top 3 movers que subiram e top 3 que cairam
+  const movedUp = movers.filter((m) => m.delta > 0).slice(0, 3);
+  const movedDown = movers.filter((m) => m.delta < 0).slice(0, 3);
 
   return (
     <>
@@ -66,25 +78,30 @@ export default async function AnalisePage({
       />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        <DeltaCard
+        <KpiCard
           label={`Entrou em ${monthLabel}`}
           value={current?.income ?? 0}
-          delta={incomeDelta}
           tone="positive"
+          deltaPct={incomeDelta}
+          sparkline={incomeSpark}
+          sparklineTone="olive"
         />
-        <DeltaCard
+        <KpiCard
           label={`Saiu em ${monthLabel}`}
           value={current?.expense ?? 0}
-          delta={expenseDelta}
           tone="negative"
+          deltaPct={expenseDelta}
           invertDeltaColor
+          sparkline={expenseSpark}
+          sparklineTone="rust"
         />
-        <DeltaCard
+        <KpiCard
           label={`Sobra de ${monthLabel}`}
           value={current?.net ?? 0}
-          delta={netDelta}
-          isAbsoluteDelta
           tone={(current?.net ?? 0) >= 0 ? "positive" : "negative"}
+          deltaAbs={netDelta}
+          sparkline={netSpark}
+          sparklineTone="navy"
         />
       </div>
 
@@ -108,115 +125,189 @@ export default async function AnalisePage({
         </Panel>
       </div>
 
-      <Panel>
-        <PanelHeader title="Comparativo mês a mês" meta="receita, despesa, sobra" />
-        <table className="w-full text-[13.5px]">
-          <thead>
-            <tr className="border-b border-border text-faint-foreground">
-              <th className="text-left font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
-                Mês
-              </th>
-              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
-                Entrou
-              </th>
-              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
-                Saiu
-              </th>
-              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
-                Sobra
-              </th>
-              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
-                Δ
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((r, idx) => {
-              const prev = history[idx - 1];
-              const deltaPct = prev && prev.expense > 0 ? r.expense / prev.expense - 1 : null;
-              return (
-                <tr key={r.month} className="border-b border-border last:border-b-0">
-                  <td className="py-3 capitalize font-medium tracking-[-0.005em]">
-                    {r.label}
-                    <span className="text-faint-foreground ml-1 text-[11px] font-mono">
-                      {r.month.slice(0, 4)}
-                    </span>
-                  </td>
-                  <td className="text-right font-mono"><MoneyMask>{formatMoney(r.income)}</MoneyMask></td>
-                  <td className="text-right font-mono"><MoneyMask>{formatMoney(r.expense)}</MoneyMask></td>
-                  <td className="text-right font-mono font-medium">
-                    <MoneyMask>{formatMoney(r.net)}</MoneyMask>
-                  </td>
-                  <td className="text-right font-mono">
-                    {deltaPct === null ? (
-                      <span className="text-faint-foreground">—</span>
-                    ) : (
-                      <span
-                        className={
-                          deltaPct > 0.05
-                            ? "text-rust-600"
-                            : deltaPct < -0.05
-                              ? "text-olive-700"
-                              : "text-muted-foreground"
-                        }
-                      >
-                        {deltaPct > 0 ? "+" : ""}
-                        {(deltaPct * 100).toFixed(0)}%
+      {/* Biggest movers — onde o comportamento mudou */}
+      {(movedUp.length > 0 || movedDown.length > 0) && prev ? (
+        <div className="grid sm:grid-cols-2 gap-5 mb-5">
+          <Panel>
+            <PanelHeader
+              title="Maiores altas"
+              meta={`vs ${prev.label}`}
+              action={
+                <span className="font-mono text-[10.5px] text-rust-600 uppercase tracking-[0.12em] inline-flex items-center gap-1">
+                  <ArrowUp className="w-3 h-3" strokeWidth={1.8} /> aumento
+                </span>
+              }
+            />
+            {movedUp.length === 0 ? (
+              <p className="text-[12.5px] text-faint-foreground italic">
+                Nenhuma categoria subiu mais que R$ 10 vs mês anterior.
+              </p>
+            ) : (
+              <MoverList items={movedUp} direction="up" />
+            )}
+          </Panel>
+          <Panel>
+            <PanelHeader
+              title="Maiores quedas"
+              meta={`vs ${prev.label}`}
+              action={
+                <span className="font-mono text-[10.5px] text-olive-700 dark:text-olive-500 uppercase tracking-[0.12em] inline-flex items-center gap-1">
+                  <ArrowDown className="w-3 h-3" strokeWidth={1.8} /> economia
+                </span>
+              }
+            />
+            {movedDown.length === 0 ? (
+              <p className="text-[12.5px] text-faint-foreground italic">
+                Nenhuma categoria caiu mais que R$ 10 vs mês anterior.
+              </p>
+            ) : (
+              <MoverList items={movedDown} direction="down" />
+            )}
+          </Panel>
+        </div>
+      ) : null}
+
+      <Panel className="!px-0">
+        <div className="px-7 pt-1">
+          <PanelHeader title="Comparativo mês a mês" meta="receita, despesa, sobra" />
+        </div>
+        <div className="overflow-x-auto px-7">
+          <table className="w-full text-[13.5px]">
+            <thead className="sticky top-0 bg-surface z-10 shadow-[0_1px_0_0_var(--color-border)]">
+              <tr className="text-faint-foreground">
+                <th className="text-left font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Mês
+                </th>
+                <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Entrou
+                </th>
+                <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Saiu
+                </th>
+                <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Sobra
+                </th>
+                <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Δ Saiu
+                </th>
+                <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                  Taxa de poupança
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((r, idx) => {
+                const prev = history[idx - 1];
+                const deltaPct = prev && prev.expense > 0 ? r.expense / prev.expense - 1 : null;
+                const savingsRate = r.income > 0 ? r.net / r.income : null;
+                return (
+                  <tr key={r.month} className="border-b border-border last:border-b-0">
+                    <td className="py-3 capitalize font-medium tracking-[-0.005em]">
+                      {r.label}
+                      <span className="text-faint-foreground ml-1 text-[11px] font-mono">
+                        {r.month.slice(0, 4)}
                       </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td className="text-right font-mono">
+                      <MoneyMask>{formatMoney(r.income)}</MoneyMask>
+                    </td>
+                    <td className="text-right font-mono">
+                      <MoneyMask>{formatMoney(r.expense)}</MoneyMask>
+                    </td>
+                    <td
+                      className={cn(
+                        "text-right font-mono font-medium",
+                        r.net >= 0 ? "text-foreground" : "text-rust-600",
+                      )}
+                    >
+                      <MoneyMask>{formatMoney(r.net)}</MoneyMask>
+                    </td>
+                    <td className="text-right font-mono">
+                      {deltaPct === null ? (
+                        <span className="text-faint-foreground">—</span>
+                      ) : (
+                        <span
+                          className={
+                            deltaPct > 0.05
+                              ? "text-rust-600"
+                              : deltaPct < -0.05
+                                ? "text-olive-700 dark:text-olive-500"
+                                : "text-muted-foreground"
+                          }
+                        >
+                          {deltaPct > 0 ? "+" : ""}
+                          {(deltaPct * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </td>
+                    <td className="text-right font-mono">
+                      {savingsRate == null ? (
+                        <span className="text-faint-foreground">—</span>
+                      ) : (
+                        <span
+                          className={
+                            savingsRate >= 0.3
+                              ? "text-olive-700 dark:text-olive-500"
+                              : savingsRate >= 0.1
+                                ? "text-foreground"
+                                : savingsRate >= 0
+                                  ? "text-muted-foreground"
+                                  : "text-rust-600"
+                          }
+                        >
+                          {(savingsRate * 100).toFixed(0)}%
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Panel>
     </>
   );
 }
 
-function DeltaCard({
-  label,
-  value,
-  delta,
-  tone,
-  invertDeltaColor,
-  isAbsoluteDelta,
+function MoverList({
+  items,
+  direction,
 }: {
-  label: string;
-  value: number;
-  delta: number | null;
-  tone: "positive" | "negative";
-  invertDeltaColor?: boolean;
-  isAbsoluteDelta?: boolean;
+  items: { category_id: string | null; category_name: string; delta: number; pct: number | null }[];
+  direction: "up" | "down";
 }) {
-  const goodWhenUp = !invertDeltaColor;
-  const deltaTone =
-    delta === null
-      ? "text-faint-foreground"
-      : (delta > 0) === goodWhenUp
-        ? "text-olive-700"
-        : "text-rust-600";
-
   return (
-    <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-        {label}
-      </div>
-      <div
-        className={`mt-1.5 font-mono text-[22px] tracking-[-0.02em] ${tone === "positive" ? "text-foreground" : "text-rust-600"}`}
-      >
-        <MoneyMask>{formatMoney(value)}</MoneyMask>
-      </div>
-      <div className={`mt-1 font-mono text-[11.5px] ${deltaTone}`}>
-        {delta === null ? (
-          "primeiro mês"
-        ) : isAbsoluteDelta ? (
-          <>{delta >= 0 ? "+" : ""}<MoneyMask>{formatMoney(delta)}</MoneyMask> vs mês anterior</>
-        ) : (
-          `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(0)}% vs mês anterior`
-        )}
-      </div>
-    </div>
+    <ul className="space-y-2.5">
+      {items.map((m) => (
+        <li
+          key={m.category_id ?? m.category_name}
+          className="flex items-center justify-between gap-3"
+        >
+          <span className="text-[13.5px] text-foreground truncate">{m.category_name}</span>
+          <div className="text-right shrink-0">
+            <div
+              className={cn(
+                "font-mono text-[13px] tabular-nums",
+                direction === "up" ? "text-rust-600" : "text-olive-700 dark:text-olive-500",
+              )}
+            >
+              {m.delta >= 0 ? "+" : ""}
+              <MoneyMask>{formatMoney(m.delta)}</MoneyMask>
+            </div>
+            {m.pct != null ? (
+              <div className="font-mono text-[10.5px] text-faint-foreground tabular-nums">
+                {m.delta >= 0 ? "+" : ""}
+                {formatPercent(m.pct, 0)}
+              </div>
+            ) : (
+              <div className="font-mono text-[10.5px] text-faint-foreground italic">
+                {direction === "up" ? "novo" : "—"}
+              </div>
+            )}
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

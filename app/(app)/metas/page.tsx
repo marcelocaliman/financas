@@ -1,46 +1,36 @@
+import Link from "next/link";
+import { Target, Trophy } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
-import { MonthSwitcher } from "@/components/ui/month-switcher";
+import { KpiCard } from "@/components/ui/kpi-card";
 import { NewGoalButton } from "@/components/goals/new-goal-button";
 import { GoalCard } from "@/components/goals/goal-card";
 import { listGoals } from "@/services/goals";
 import { listAccounts } from "@/services/accounts";
-import { getMonthlyHistory, monthRange } from "@/services/transactions";
+import { getMonthlyHistory } from "@/services/transactions";
 
 export const dynamic = "force-dynamic";
 
-function currentMonthISO(): string {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-  });
-  return fmt.format(new Date());
-}
+type SearchParams = { tab?: string };
 
 export default async function MetasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
-  const { month } = await searchParams;
+  const { tab = "active" } = await searchParams;
   const [goals, accounts, history] = await Promise.all([
-    listGoals(),
+    listGoals({ includeArchived: true }),
     listAccounts(),
-    // Aporte médio dos 3 meses anteriores ao mês de referência.
-    getMonthlyHistory(3, month),
+    // Aporte médio dos 3 meses anteriores ao mês corrente.
+    getMonthlyHistory(3),
   ]);
 
-  // Aporte médio = média das sobras dos últimos 3 meses (positivas).
   const positiveNets = history.map((h) => Math.max(0, h.net));
   const averageMonthlyAddition =
     positiveNets.length > 0
       ? positiveNets.reduce((s, v) => s + v, 0) / positiveNets.length
       : 0;
-
-  const { label: monthLabel, from } = monthRange(month);
-  const monthISO = from.slice(0, 7);
-  const isCurrent = monthISO === currentMonthISO();
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -48,35 +38,108 @@ export default async function MetasPage({
     institution: a.institution,
   }));
 
-  const active = goals.filter((g) => !g.is_archived);
+  // Particiona as metas
+  const isCompleted = (g: { current_amount: number; target_amount: number }) =>
+    Number(g.current_amount) >= Number(g.target_amount) && Number(g.target_amount) > 0;
+  const activeGoals = goals.filter((g) => !g.is_archived && !isCompleted(g));
+  const completedGoals = goals.filter((g) => !g.is_archived && isCompleted(g));
+  const archivedGoals = goals.filter((g) => g.is_archived);
+
+  // Resumo
+  const totalCurrent = activeGoals.reduce((s, g) => s + Number(g.current_amount), 0);
+  const totalTarget = activeGoals.reduce((s, g) => s + Number(g.target_amount), 0);
+  const aggregatePct = totalTarget > 0 ? totalCurrent / totalTarget : 0;
+  const totalRemaining = Math.max(0, totalTarget - totalCurrent);
+  const monthsToFinishAll =
+    averageMonthlyAddition > 0 ? Math.ceil(totalRemaining / averageMonthlyAddition) : null;
+
+  const showList =
+    tab === "completed" ? completedGoals : tab === "archived" ? archivedGoals : activeGoals;
 
   return (
     <>
       <PageHeader
-        eyebrow={`Objetivos · ritmo de ${monthLabel}`}
+        eyebrow={`Objetivos · ritmo de R$${Math.round(averageMonthlyAddition).toLocaleString("pt-BR")}/mês`}
         title={
           <>
             Metas e <em className="not-italic font-display italic text-navy-700">sonhos.</em>
           </>
         }
-        subtitle="Cada meta tem nome, valor e trajetória — a previsão de conclusão usa o ritmo real de aporte dos 3 meses anteriores ao mês de referência."
-        actions={
-          <>
-            <MonthSwitcher
-              currentMonth={monthISO}
-              isCurrent={isCurrent}
-              label={monthLabel.split(" ")[0]}
-            />
-            <NewGoalButton accounts={accountsLite} />
-          </>
-        }
+        subtitle="Cada meta tem nome, valor e trajetória — a previsão usa o ritmo real de aporte dos 3 meses anteriores."
+        actions={<NewGoalButton accounts={accountsLite} />}
       />
 
-      {active.length === 0 ? (
-        <Empty />
+      {/* Resumo */}
+      {activeGoals.length > 0 || completedGoals.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
+          <KpiCard
+            label="Metas ativas"
+            textValue={
+              <span className="inline-flex items-center gap-2">
+                <Target className="w-3.5 h-3.5 text-navy-700" strokeWidth={1.7} />
+                {activeGoals.length}
+              </span>
+            }
+            tone="neutral"
+            hint={
+              activeGoals.length > 0
+                ? `${(aggregatePct * 100).toFixed(0)}% no agregado`
+                : "tudo concluído"
+            }
+          />
+          <KpiCard label="Total acumulado" value={totalCurrent} tone="neutral" />
+          <KpiCard
+            label="Falta no total"
+            value={totalRemaining}
+            tone={totalRemaining > 0 ? "negative" : "positive"}
+            hint={totalRemaining === 0 ? "todas as metas alcançadas" : undefined}
+          />
+          <KpiCard
+            label="Tempo estimado"
+            textValue={
+              monthsToFinishAll == null
+                ? "—"
+                : monthsToFinishAll === 0
+                  ? "agora"
+                  : monthsToFinishAll < 12
+                    ? `≈ ${monthsToFinishAll}m`
+                    : `≈ ${(monthsToFinishAll / 12).toFixed(1).replace(".", ",")} anos`
+            }
+            tone="neutral"
+            hint={
+              averageMonthlyAddition <= 0
+                ? "sem sobra mensal"
+                : "no ritmo atual · aporte cheio em todas"
+            }
+          />
+        </div>
+      ) : null}
+
+      {/* Tabs */}
+      <div className="inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px] mb-6">
+        <TabButton href="/metas" active={tab === "active"} label="Ativas" count={activeGoals.length} />
+        <TabButton
+          href="/metas?tab=completed"
+          active={tab === "completed"}
+          label="Concluídas"
+          count={completedGoals.length}
+          icon={<Trophy className="w-3 h-3" strokeWidth={1.8} />}
+        />
+        {archivedGoals.length > 0 ? (
+          <TabButton
+            href="/metas?tab=archived"
+            active={tab === "archived"}
+            label="Arquivadas"
+            count={archivedGoals.length}
+          />
+        ) : null}
+      </div>
+
+      {showList.length === 0 ? (
+        <Empty tab={tab} />
       ) : (
         <div className="space-y-4">
-          {active.map((g) => (
+          {showList.map((g) => (
             <GoalCard
               key={g.id}
               goal={g}
@@ -90,7 +153,53 @@ export default async function MetasPage({
   );
 }
 
-function Empty() {
+function TabButton({
+  href,
+  active,
+  label,
+  count,
+  icon,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+  count: number;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
+        (active
+          ? "bg-surface text-foreground shadow-xs"
+          : "text-muted-foreground hover:text-foreground")
+      }
+    >
+      {icon}
+      {label}
+      <span className="font-mono text-[10.5px] text-faint-foreground">{count}</span>
+    </Link>
+  );
+}
+
+function Empty({ tab }: { tab: string }) {
+  if (tab === "completed") {
+    return (
+      <Panel className="!py-12 text-center">
+        <p className="text-[14px] text-muted-foreground">
+          Nenhuma meta concluída ainda. A primeira <em className="italic">vitória</em> está chegando.
+        </p>
+      </Panel>
+    );
+  }
+  if (tab === "archived") {
+    return (
+      <Panel className="!py-12 text-center">
+        <p className="text-[14px] text-muted-foreground">Nenhuma meta arquivada.</p>
+      </Panel>
+    );
+  }
   return (
     <Panel className="!py-14 grid place-items-center text-center">
       <div className="max-w-[460px]">

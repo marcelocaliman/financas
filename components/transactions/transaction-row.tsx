@@ -12,6 +12,7 @@ import { useMoneyContext } from "@/components/ui/money-provider";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -27,12 +28,18 @@ export function TransactionRow({
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
+  const confirm = useConfirm();
 
-  const handleDelete = () => {
-    const msg = tx.transfer_pair_id
-      ? "Apagar essa transferência? As duas pontas (saída e entrada) somem juntas."
-      : "Apagar esse lançamento?";
-    if (!confirm(msg)) return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      title: tx.transfer_pair_id ? "Apagar essa transferência?" : "Apagar esse lançamento?",
+      description: tx.transfer_pair_id
+        ? "As duas pontas (saída e entrada) somem juntas."
+        : undefined,
+      confirmLabel: "Apagar",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteTransaction(tx.id);
       if (r.error) toast.error(r.error);

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { Money } from "@/components/ui/money";
 import { Panel } from "@/components/ui/panel";
 import { setRecurringRulesActiveBatch } from "@/services/recurrences.actions";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export type SectionKey = "receitas" | "despesas" | "transferencias" | "pausadas";
 
@@ -47,6 +48,7 @@ export function RecurrenceSection({
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
   const count = ruleIds.length;
+  const confirm = useConfirm();
 
   // Listener pros atalhos de teclado (R/D/T/P)
   useEffect(() => {
@@ -75,17 +77,17 @@ export function RecurrenceSection({
         ? "text-rust-600"
         : "text-foreground";
 
-  const handleBulk = (e: React.MouseEvent) => {
+  const handleBulk = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const active = bulkMode === "resume";
     const verb = active ? "Reativar" : "Pausar";
     const verbLow = active ? "reativar" : "pausar";
-    if (
-      !confirm(
-        `${verb} ${count} recorrência${count === 1 ? "" : "s"}? Pode ${verbLow} individualmente depois.`,
-      )
-    )
-      return;
+    const ok = await confirm({
+      title: `${verb} ${count} recorrência${count === 1 ? "" : "s"}?`,
+      description: `Pode ${verbLow} individualmente depois.`,
+      confirmLabel: verb,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await setRecurringRulesActiveBatch(ruleIds, active);
       if (r.error) {

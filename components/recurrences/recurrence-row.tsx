@@ -15,6 +15,7 @@ import {
 } from "@/services/recurrences.actions";
 import type { Currency, RecurrenceFrequency, Tables } from "@/types/database";
 import { RecurrenceSheet } from "./recurrence-sheet";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -61,6 +62,7 @@ export function RecurrenceRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
+  const confirm = useConfirm();
 
   const kindIcon =
     rule.kind === "income" ? (
@@ -106,13 +108,15 @@ export function RecurrenceRow({
     });
   };
 
-  const handleDelete = () => {
-    if (
-      !confirm(
-        `Excluir "${rule.description}"? Lançamentos passados ficam, futuros já gerados são apagados.`,
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirm({
+      eyebrow: "Ação irreversível",
+      title: `Excluir "${rule.description}"?`,
+      description: "Lançamentos passados ficam, futuros já gerados são apagados.",
+      confirmLabel: "Excluir",
+      destructive: true,
+    });
+    if (!ok) return;
     startTransition(async () => {
       const r = await deleteRecurringRule(rule.id);
       if (r.error) toast.error(r.error);

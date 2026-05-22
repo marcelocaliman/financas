@@ -7,6 +7,7 @@ import { AddTransactionDialog } from "@/components/transactions/add-transaction-
 import { QuickAddFAB } from "@/components/transactions/quick-add-fab";
 import { MoneyProvider } from "@/components/ui/money-provider";
 import { PrivacyProvider } from "@/components/ui/privacy-provider";
+import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
@@ -43,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       rates={rates}
     >
       <PrivacyProvider>
+      <ConfirmProvider>
       <QuickAddProvider>
         <RealtimeBridge />
         <div className="min-h-screen flex">
@@ -60,6 +62,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <AddTransactionDialog accounts={accountsLite} categories={categoriesLite} />
         <QuickAddFAB />
       </QuickAddProvider>
+      </ConfirmProvider>
       </PrivacyProvider>
     </MoneyProvider>
   );

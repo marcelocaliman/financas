@@ -16,12 +16,15 @@ export function FixedIncomeTable({
   liveByAssetId,
   investmentAccounts,
   destinationAccounts = [],
+  portfolioTotal = 0,
 }: {
   investments: Investment[];
   liveByAssetId: Map<string, LiveAssetMetrics>;
   investmentAccounts: AccountLite[];
   /** Contas pra receber saques de rendimento (não-investment) */
   destinationAccounts?: AccountLite[];
+  /** Total geral da carteira, pra calcular % de cada ativo */
+  portfolioTotal?: number;
 }) {
   if (investments.length === 0) return null;
 
@@ -114,6 +117,7 @@ export function FixedIncomeTable({
               <Th>Ativo</Th>
               <Th right>Aplicado</Th>
               <Th right>Saldo atual</Th>
+              <Th right>% carteira</Th>
               <Th right>Variação</Th>
               <Th right>Indexador</Th>
               <Th right>Rendendo hoje</Th>
@@ -157,6 +161,11 @@ export function FixedIncomeTable({
                         <MoneyMask>{formatMoney(fallbackSaldo)}</MoneyMask>
                       </span>
                     )}
+                  </td>
+                  <td className="text-right font-mono text-[12.5px] text-muted-foreground tabular-nums">
+                    {portfolioTotal > 0
+                      ? `${((fallbackSaldo / portfolioTotal) * 100).toFixed(1).replace(".", ",")}%`
+                      : "—"}
                   </td>
                   <td className="text-right">
                     {live ? (

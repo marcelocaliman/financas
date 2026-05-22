@@ -42,6 +42,19 @@ export async function getNextPending(): Promise<RedemptionIntent | null> {
   return (data as RedemptionIntent) ?? null;
 }
 
+/** Lista TODOS os intents pendentes (ordenados por data). */
+export async function listPendingIntents(): Promise<RedemptionIntent[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("redemption_intents")
+    .select(
+      "*, rule:yield_rules(*, investment:investments(id,ticker,name,current_balance,account_id), destination:accounts!yield_rules_destination_account_id_fkey(id,name,institution))",
+    )
+    .eq("status", "pending")
+    .order("due_date", { ascending: true });
+  return (data ?? []) as RedemptionIntent[];
+}
+
 export async function listRedemptionHistory(limit = 12): Promise<RedemptionIntent[]> {
   const supabase = await createClient();
   const { data, error } = await supabase

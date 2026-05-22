@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
+import { KpiCard } from "@/components/ui/kpi-card";
 import { RecurrenceRow } from "@/components/recurrences/recurrence-row";
 import { RecurrenceSection } from "@/components/recurrences/recurrence-section";
 import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-button";
@@ -62,6 +63,28 @@ export default async function RecorrentesPage() {
 
   const today = todayISO();
 
+  // Resumo macro
+  const monthlyIncome = aggregateMonthly(incomes);
+  const monthlyExpense = aggregateMonthly(expenses);
+  const monthlyNet = monthlyIncome - monthlyExpense;
+
+  // Distribuição pelo dia do mês (calendar heatmap simples)
+  const calendarBuckets = new Map<number, { kind: "in" | "out" | "mix"; count: number }>();
+  for (const r of active) {
+    const day = r.day_of_month ?? null;
+    if (!day) continue;
+    const prev = calendarBuckets.get(day);
+    const incomingKind = r.kind === "income" ? "in" : r.kind === "expense" ? "out" : "mix";
+    if (!prev) {
+      calendarBuckets.set(day, { kind: incomingKind, count: 1 });
+    } else {
+      calendarBuckets.set(day, {
+        kind: prev.kind === incomingKind ? prev.kind : "mix",
+        count: prev.count + 1,
+      });
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -89,6 +112,74 @@ export default async function RecorrentesPage() {
         <Empty />
       ) : (
         <>
+          {/* TIER 1 — Resumo macro */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <KpiCard
+              label="Entrada mensal"
+              value={monthlyIncome}
+              tone="positive"
+              hint={`${incomes.length} receita${incomes.length === 1 ? "" : "s"} no piloto`}
+            />
+            <KpiCard
+              label="Saída mensal"
+              value={monthlyExpense}
+              tone="negative"
+              hint={`${expenses.length} despesa${expenses.length === 1 ? "" : "s"} no piloto`}
+            />
+            <KpiCard
+              label="Sobra automática"
+              value={monthlyNet}
+              tone={monthlyNet >= 0 ? "positive" : "negative"}
+              hint="apenas recorrências ativas"
+            />
+            <KpiCard
+              label="Transferências"
+              value={aggregateMonthly(transfers)}
+              tone="muted"
+              hint={`${transfers.length} no piloto`}
+            />
+          </div>
+
+          {/* TIER 2 — Calendário simples */}
+          {calendarBuckets.size > 0 ? (
+            <Panel className="mb-6">
+              <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+                Calendário do mês
+              </div>
+              <p className="text-[12.5px] text-muted-foreground mb-4">
+                Quando cada recorrência cai. Verde = entrada, vermelho = saída, navy = transferência.
+              </p>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(34px,1fr))] gap-1.5">
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                  const bucket = calendarBuckets.get(day);
+                  return (
+                    <div
+                      key={day}
+                      className={
+                        "aspect-square rounded-[6px] border flex flex-col items-center justify-center text-[11px] font-mono " +
+                        (bucket
+                          ? bucket.kind === "in"
+                            ? "border-olive-600/40 bg-olive-600/10 text-olive-700 dark:text-olive-500"
+                            : bucket.kind === "out"
+                              ? "border-rust-600/40 bg-rust-600/10 text-rust-600"
+                              : "border-navy-700/40 bg-navy-700/10 text-navy-700 dark:text-navy-300"
+                          : "border-border text-faint-foreground")
+                      }
+                      title={bucket ? `${bucket.count} recorrência${bucket.count === 1 ? "" : "s"} dia ${day}` : `Dia ${day}`}
+                    >
+                      <span className="text-[10px] leading-none">{day}</span>
+                      {bucket ? (
+                        <span className="text-[9px] mt-0.5 opacity-80 leading-none">
+                          ×{bucket.count}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
+            </Panel>
+          ) : null}
+
           <div className="space-y-3">
             <RecurrenceSection
               keyboardId="receitas"
