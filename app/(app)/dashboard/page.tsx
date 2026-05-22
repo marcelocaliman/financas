@@ -7,9 +7,11 @@ import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
 import { InsightCard } from "@/components/dashboard/insight-card";
+import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
+import { getLivePortfolio } from "@/services/live-yield";
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
@@ -31,7 +33,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const greeting = getGreeting(now);
 
-  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage] =
+  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live] =
     await Promise.all([
       getMonthlySummary(),
       getCategoryBreakdown(undefined, "expense"),
@@ -40,6 +42,7 @@ export default async function DashboardPage() {
       detectExpenseAnomalies(),
       getPortfolioStats(),
       getCoverage(),
+      getLivePortfolio(),
     ]);
 
   const netWorth = totals.total + portfolio.total;
@@ -82,6 +85,8 @@ export default async function DashboardPage() {
         monthRatio={ratio}
         expenseRatio={expenseVsIncome}
       />
+
+      <PortfolioLiveTicker portfolio={live} variant="compact" />
 
       <InsightCard anomalies={anomalies} />
 

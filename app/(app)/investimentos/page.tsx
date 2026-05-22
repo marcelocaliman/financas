@@ -1,35 +1,36 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
-import { SelicLive } from "@/components/investments/selic-live";
+import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
+import { AssetLiveCell } from "@/components/investments/asset-live-cell";
 import { NewInvestmentButton } from "@/components/investments/new-investment-button";
 import { InvestmentRowActions } from "@/components/investments/investment-row-actions";
 import { listAccounts } from "@/services/accounts";
 import {
   ASSET_TYPE_LABELS,
   getCoverage,
-  getLatestIndexer,
   getPortfolioStats,
   listInvestments,
 } from "@/services/investments";
+import { getLivePortfolio } from "@/services/live-yield";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvestimentosPage() {
-  const [investments, stats, coverage, selic, accounts] = await Promise.all([
+  const [investments, stats, coverage, accounts, live] = await Promise.all([
     listInvestments(),
     getPortfolioStats(),
     getCoverage(),
-    getLatestIndexer("selic"),
     listAccounts(),
+    getLivePortfolio(),
   ]);
 
   const investmentAccounts = accounts
     .filter((a) => a.type === "investment")
     .map((a) => ({ id: a.id, name: a.name, institution: a.institution }));
 
-  const selicValue = selic?.value ?? 0;
+  const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
 
   return (
     <>
@@ -48,9 +49,7 @@ export default async function InvestimentosPage() {
         <EmptyState hasInvestmentAccounts={investmentAccounts.length > 0} />
       ) : (
         <>
-          {stats.liveAsset && selic ? (
-            <SelicLive asset={stats.liveAsset} selicAnnualPct={selicValue} selicDate={selic.date} />
-          ) : null}
+          <PortfolioLiveTicker portfolio={live} variant="full" />
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-7">
             <StatCard label="Patrimônio total" value={formatMoney(stats.total)} />
@@ -93,6 +92,7 @@ export default async function InvestimentosPage() {
                     <Th right>Aplicado</Th>
                     <Th right>Valor atual</Th>
                     <Th right>Variação</Th>
+                    <Th right>Rendendo hoje</Th>
                     <Th right>Indexador</Th>
                     <th className="w-9" />
                   </tr>
@@ -104,11 +104,12 @@ export default async function InvestimentosPage() {
                       Number(inv.initial_amount) > 0
                         ? delta / Number(inv.initial_amount)
                         : 0;
+                    const liveAsset = liveByAssetId.get(inv.id);
                     return (
                       <tr key={inv.id} className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group">
                         <td className="py-3.5 pr-4 align-middle">
                           <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
-                            {inv.indexer === "selic" ? (
+                            {liveAsset && liveAsset.dailyYield > 0 ? (
                               <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
                             ) : null}
                             {inv.ticker}
@@ -121,7 +122,11 @@ export default async function InvestimentosPage() {
                           {formatMoney(inv.initial_amount)}
                         </td>
                         <td className="text-right font-mono text-[13px] font-medium">
-                          {formatMoney(inv.current_balance)}
+                          {formatMoney(
+                            liveAsset?.marketBalance && liveAsset.marketBalance > 0
+                              ? liveAsset.marketBalance
+                              : Number(inv.current_balance),
+                          )}
                         </td>
                         <td className="text-right font-mono text-[12.5px]">
                           {delta > 0 ? (
@@ -131,6 +136,9 @@ export default async function InvestimentosPage() {
                           ) : (
                             <span className="text-faint-foreground">—</span>
                           )}
+                        </td>
+                        <td className="text-right pl-2">
+                          {liveAsset ? <AssetLiveCell asset={liveAsset} /> : "—"}
                         </td>
                         <td className="text-right">
                           <Badge tone="navy">
