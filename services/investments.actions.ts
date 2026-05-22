@@ -27,6 +27,9 @@ const createSchema = z.object({
   initialAmount: z.coerce.number().nonnegative(),
   currentBalance: z.coerce.number().nonnegative().optional(),
   taxRegime: z.enum(["regressive", "exempt"]).default("regressive"),
+  // Lote inicial para ativos de mercado (FII/ação/ETF/cripto)
+  quantity: z.coerce.number().positive().optional(),
+  unitPrice: z.coerce.number().nonnegative().optional(),
 });
 
 const updateSchema = createSchema.extend({ id: z.string().uuid() });
@@ -62,28 +65,57 @@ export async function createInvestment(
     initialAmount: formData.get("initialAmount"),
     currentBalance: formData.get("currentBalance") || undefined,
     taxRegime: formData.get("taxRegime") || "regressive",
+    quantity: formData.get("quantity") || undefined,
+    unitPrice: formData.get("unitPrice") || undefined,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return { error: "Sessão expirada." };
 
+  const isMarketable = ["fii", "stock", "etf", "crypto"].includes(parsed.data.assetType);
+  if (isMarketable && (!parsed.data.quantity || parsed.data.quantity <= 0)) {
+    return {
+      fieldErrors: { quantity: "Para ações, FIIs, ETFs ou cripto informe a quantidade." },
+    };
+  }
+
   const supabase = await createClient();
-  const { error } = await supabase.from("investments").insert({
-    household_id: ctx.household.id,
-    account_id: parsed.data.accountId,
-    ticker: parsed.data.ticker.trim(),
-    name: parsed.data.name.trim(),
-    asset_type: parsed.data.assetType,
-    indexer: parsed.data.indexer ?? null,
-    indexer_multiplier: parsed.data.indexerMultiplier ?? null,
-    fixed_rate: parsed.data.fixedRate ?? null,
-    purchase_date: parsed.data.purchaseDate,
-    initial_amount: parsed.data.initialAmount,
-    current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
-    tax_regime: parsed.data.taxRegime,
-  });
+  const { data: created, error } = await supabase
+    .from("investments")
+    .insert({
+      household_id: ctx.household.id,
+      account_id: parsed.data.accountId,
+      ticker: parsed.data.ticker.trim(),
+      name: parsed.data.name.trim(),
+      asset_type: parsed.data.assetType,
+      indexer: parsed.data.indexer ?? null,
+      indexer_multiplier: parsed.data.indexerMultiplier ?? null,
+      fixed_rate: parsed.data.fixedRate ?? null,
+      purchase_date: parsed.data.purchaseDate,
+      initial_amount: parsed.data.initialAmount,
+      current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
+      tax_regime: parsed.data.taxRegime,
+    })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
+
+  // Lote inicial dispara trigger que recalcula investments.quantity + initial_amount
+  if (isMarketable && created && parsed.data.quantity && parsed.data.unitPrice != null) {
+    const { error: mvErr } = await supabase.rpc("add_investment_movement", {
+      p_investment_id: created.id,
+      p_kind: "buy",
+      p_date: parsed.data.purchaseDate,
+      p_quantity: parsed.data.quantity,
+      p_unit_price: parsed.data.unitPrice,
+      p_fees: 0,
+      p_notes: "Lote inicial (cadastro)",
+    });
+    if (mvErr) {
+      return { ok: true, error: `Ativo criado, mas falhou ao gravar lote: ${mvErr.message}` };
+    }
+  }
 
   revalidatePath("/investimentos");
   revalidatePath("/dashboard");

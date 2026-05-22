@@ -3,6 +3,7 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { AssetLiveCell } from "@/components/investments/asset-live-cell";
+import { AssetDetailPopover } from "@/components/investments/asset-detail-popover";
 import { NewInvestmentButton } from "@/components/investments/new-investment-button";
 import { InvestmentRowActions } from "@/components/investments/investment-row-actions";
 import { listAccounts } from "@/services/accounts";
@@ -90,23 +91,35 @@ export default async function InvestimentosPage() {
                   <tr className="border-b border-border">
                     <Th>Ativo</Th>
                     <Th right>Aplicado</Th>
+                    <Th right>Preço médio</Th>
                     <Th right>Valor atual</Th>
                     <Th right>Variação</Th>
                     <Th right>Rendendo hoje</Th>
                     <Th right>Indexador</Th>
                     <th className="w-9" />
+                    <th className="w-9" />
                   </tr>
                 </thead>
                 <tbody>
                   {investments.map((inv) => {
-                    const delta = Number(inv.current_balance) - Number(inv.initial_amount);
-                    const deltaPct =
-                      Number(inv.initial_amount) > 0
-                        ? delta / Number(inv.initial_amount)
-                        : 0;
                     const liveAsset = liveByAssetId.get(inv.id);
+                    const valueAtual =
+                      liveAsset?.marketBalance != null && liveAsset.marketBalance > 0
+                        ? liveAsset.marketBalance
+                        : Number(inv.current_balance);
+                    // Variação prioriza market gain (B3) sobre delta do custo
+                    const deltaPct =
+                      liveAsset?.marketGainPct != null
+                        ? liveAsset.marketGainPct
+                        : Number(inv.initial_amount) > 0
+                          ? (Number(inv.current_balance) - Number(inv.initial_amount)) /
+                            Number(inv.initial_amount)
+                          : 0;
                     return (
-                      <tr key={inv.id} className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group">
+                      <tr
+                        key={inv.id}
+                        className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group"
+                      >
                         <td className="py-3.5 pr-4 align-middle">
                           <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
                             {liveAsset && liveAsset.dailyYield > 0 ? (
@@ -121,21 +134,55 @@ export default async function InvestimentosPage() {
                         <td className="text-right font-mono text-[13px] text-muted-foreground">
                           {formatMoney(inv.initial_amount)}
                         </td>
-                        <td className="text-right font-mono text-[13px] font-medium">
-                          {formatMoney(
-                            liveAsset?.marketBalance && liveAsset.marketBalance > 0
-                              ? liveAsset.marketBalance
-                              : Number(inv.current_balance),
-                          )}
-                        </td>
                         <td className="text-right font-mono text-[12.5px]">
-                          {delta > 0 ? (
-                            <span className="text-olive-700">+{formatPercent(deltaPct, 1)}</span>
-                          ) : delta < 0 ? (
-                            <span className="text-rust-600">{formatPercent(deltaPct, 1)}</span>
+                          {liveAsset?.averagePrice != null && liveAsset.averagePrice > 0 ? (
+                            <>
+                              <div>{formatMoney(liveAsset.averagePrice)}</div>
+                              {liveAsset.quantity != null && liveAsset.quantity > 0 ? (
+                                <div className="text-faint-foreground text-[10.5px] mt-0.5">
+                                  {liveAsset.quantity.toLocaleString("pt-BR", {
+                                    maximumFractionDigits: 8,
+                                  })}{" "}
+                                  {inv.asset_type === "crypto" ? "un" : "cotas"}
+                                </div>
+                              ) : null}
+                            </>
                           ) : (
                             <span className="text-faint-foreground">—</span>
                           )}
+                        </td>
+                        <td className="text-right font-mono text-[13px] font-medium">
+                          {formatMoney(valueAtual)}
+                          {liveAsset?.marketPrice != null ? (
+                            <div className="text-faint-foreground text-[10.5px] font-mono mt-0.5">
+                              cotação {formatMoney(liveAsset.marketPrice)}
+                            </div>
+                          ) : null}
+                        </td>
+                        <td className="text-right font-mono text-[12.5px]">
+                          {deltaPct > 0 ? (
+                            <span className="text-olive-700 dark:text-olive-500">
+                              +{formatPercent(deltaPct, 2)}
+                            </span>
+                          ) : deltaPct < 0 ? (
+                            <span className="text-rust-600">{formatPercent(deltaPct, 2)}</span>
+                          ) : (
+                            <span className="text-faint-foreground">—</span>
+                          )}
+                          {liveAsset?.marketGain != null ? (
+                            <div
+                              className={`text-[10.5px] mt-0.5 font-mono ${
+                                liveAsset.marketGain > 0
+                                  ? "text-olive-700 dark:text-olive-500"
+                                  : liveAsset.marketGain < 0
+                                    ? "text-rust-600"
+                                    : "text-faint-foreground"
+                              }`}
+                            >
+                              {liveAsset.marketGain >= 0 ? "+" : ""}
+                              {formatMoney(liveAsset.marketGain)}
+                            </div>
+                          ) : null}
                         </td>
                         <td className="text-right pl-2">
                           {liveAsset ? <AssetLiveCell asset={liveAsset} /> : "—"}
@@ -151,7 +198,10 @@ export default async function InvestimentosPage() {
                                   : "—"}
                           </Badge>
                         </td>
-                        <td className="text-right pl-2">
+                        <td className="text-right pl-1">
+                          {liveAsset ? <AssetDetailPopover asset={liveAsset} /> : null}
+                        </td>
+                        <td className="text-right pl-1">
                           <InvestmentRowActions
                             investment={inv}
                             investmentAccounts={investmentAccounts}

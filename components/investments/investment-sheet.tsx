@@ -174,37 +174,46 @@ export function InvestmentSheet({
                   </Select>
                 </Field>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Data da compra" htmlFor="purchaseDate" required>
-                    <Input
-                      id="purchaseDate"
-                      name="purchaseDate"
-                      type="date"
-                      defaultValue={
-                        investment?.purchase_date ?? new Date().toISOString().slice(0, 10)
-                      }
-                    />
-                  </Field>
-                  <Field label="Valor aplicado" htmlFor="initialAmount" required>
-                    <MoneyInput
-                      name="initialAmount"
-                      id="initialAmount"
-                      defaultValue={Number(investment?.initial_amount ?? 0)}
-                    />
-                  </Field>
-                </div>
-
-                <Field
-                  label="Saldo atual (opcional)"
-                  htmlFor="currentBalance"
-                  hint="Se vazio, usa o aplicado. Atualizado automaticamente todo dia pra ativos Selic/CDI."
-                >
-                  <MoneyInput
-                    name="currentBalance"
-                    id="currentBalance"
-                    defaultValue={Number(investment?.current_balance ?? 0)}
+                <Field label="Data da compra" htmlFor="purchaseDate" required>
+                  <Input
+                    id="purchaseDate"
+                    name="purchaseDate"
+                    type="date"
+                    defaultValue={
+                      investment?.purchase_date ?? new Date().toISOString().slice(0, 10)
+                    }
                   />
                 </Field>
+
+                {["fii", "stock", "etf", "crypto"].includes(picked.asset_type) ? (
+                  <MarketableLotFields
+                    investment={investment}
+                    assetType={picked.asset_type}
+                  />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Valor aplicado" htmlFor="initialAmount" required>
+                        <MoneyInput
+                          name="initialAmount"
+                          id="initialAmount"
+                          defaultValue={Number(investment?.initial_amount ?? 0)}
+                        />
+                      </Field>
+                      <Field
+                        label="Saldo atual"
+                        htmlFor="currentBalance"
+                        hint="Se vazio, usa o aplicado"
+                      >
+                        <MoneyInput
+                          name="currentBalance"
+                          id="currentBalance"
+                          defaultValue={Number(investment?.current_balance ?? 0)}
+                        />
+                      </Field>
+                    </div>
+                  </>
+                )}
 
                 <button
                   type="button"
@@ -241,6 +250,79 @@ export function InvestmentSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ============================== LOTE INICIAL (B3 / cripto) =============== */
+function MarketableLotFields({
+  investment,
+  assetType,
+}: {
+  investment?: Investment | null;
+  assetType: AssetType;
+}) {
+  const isEdit = !!investment;
+  // Pré-popula quantidade e preço médio quando já existe
+  const initialQty = Number(investment?.quantity ?? 0);
+  const initialAvgPrice =
+    initialQty > 0 ? Number(investment?.initial_amount ?? 0) / initialQty : 0;
+
+  const [quantity, setQuantity] = useState<string>(
+    initialQty > 0 ? String(initialQty) : "",
+  );
+  const [unitPrice, setUnitPrice] = useState<number>(initialAvgPrice);
+
+  const qtyNum = Number(quantity) || 0;
+  const total = qtyNum * unitPrice;
+  const unit = assetType === "crypto" ? "unidades" : "cotas";
+
+  return (
+    <>
+      {isEdit ? (
+        <div className="rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border px-3 py-2.5 text-[12.5px] text-muted-foreground">
+          Edição do ativo não altera lotes existentes. Use{" "}
+          <b className="text-foreground">Novo aporte</b> ou{" "}
+          <b className="text-foreground">Venda</b> no menu da linha para registrar
+          movimentos.
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                step={assetType === "crypto" ? "0.00000001" : "1"}
+                min="0"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="font-mono"
+                placeholder={assetType === "crypto" ? "0,12345678" : "100"}
+              />
+            </Field>
+            <Field label="Preço unitário" htmlFor="unitPrice" required>
+              <MoneyInput
+                name="unitPrice"
+                id="unitPrice"
+                defaultValue={initialAvgPrice}
+                onValueChange={setUnitPrice}
+              />
+            </Field>
+          </div>
+          {/* O service ignora initialAmount para B3 (deriva do lote); mantemos pra compat */}
+          <input type="hidden" name="initialAmount" value={total.toFixed(2)} />
+          {qtyNum > 0 && unitPrice > 0 ? (
+            <div className="text-[12.5px] text-muted-foreground font-mono tracking-[0.02em]">
+              Total do lote inicial:{" "}
+              <b className="text-foreground">
+                R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </b>
+            </div>
+          ) : null}
+        </>
+      )}
+    </>
   );
 }
 

@@ -26,6 +26,8 @@ export type LiveInvestmentInput = {
   fixed_rate: number | null;
   current_balance: number;
   initial_amount: number;
+  /** Quantidade derivada dos lotes (investment_movements). null pra renda fixa. */
+  quantity: number | null;
 };
 
 export type LiveAssetMetrics = {
@@ -35,6 +37,16 @@ export type LiveAssetMetrics = {
   baseBalance: number;
   /** saldo a valor de mercado (brapi) — só pra FIIs/ações/ETFs */
   marketBalance: number | null;
+  /** preço médio = initial_amount / quantity */
+  averagePrice: number | null;
+  /** quantidade total */
+  quantity: number | null;
+  /** preço de mercado atual (brapi) */
+  marketPrice: number | null;
+  /** ganho/perda absoluto a valor de mercado vs custo aplicado */
+  marketGain: number | null;
+  /** ganho/perda em % vs custo aplicado */
+  marketGainPct: number | null;
   /** rendimento esperado por dia útil em R$ (acumulação composta) */
   dailyYield: number;
   /** R$ por segundo (dailyYield / 28800) */
@@ -112,6 +124,10 @@ export function computeLivePortfolio(args: {
     let isEstimate = false;
     let marketBalance: number | null = null;
     let marketChangePct: number | undefined;
+    let marketPrice: number | null = null;
+    const quantity = inv.quantity != null ? Number(inv.quantity) : null;
+    const averagePrice =
+      quantity && quantity > 0 ? Number(inv.initial_amount) / quantity : null;
 
     // ============================================================
     // Renda fixa indexada (Selic/CDI)
@@ -163,16 +179,12 @@ export function computeLivePortfolio(args: {
         isEstimate = true;
       }
 
-      // Marcação a mercado via brapi
+      // Marcação a mercado via brapi — usa quantity real do investments
       const quote = args.quotes.get(inv.ticker.toUpperCase());
       if (quote) {
-        const shares = args.shareCountByInvestmentId?.get(inv.id);
-        if (shares && shares > 0) {
-          marketBalance = shares * quote.regularMarketPrice;
-        } else {
-          // sem qtde explícita: estima cotas pelo preço atual e saldo persistido
-          const inferredShares = baseBalance / quote.regularMarketPrice;
-          marketBalance = inferredShares * quote.regularMarketPrice;
+        marketPrice = quote.regularMarketPrice;
+        if (quantity && quantity > 0) {
+          marketBalance = quantity * quote.regularMarketPrice;
         }
         marketChangePct = quote.regularMarketChangePercent ?? 0;
       }
@@ -202,11 +214,23 @@ export function computeLivePortfolio(args: {
       byClass.other.balance += baseBalance;
     }
 
+    const marketGain =
+      marketBalance != null ? marketBalance - Number(inv.initial_amount) : null;
+    const marketGainPct =
+      marketGain != null && Number(inv.initial_amount) > 0
+        ? marketGain / Number(inv.initial_amount)
+        : null;
+
     byAsset.push({
       id: inv.id,
       ticker: inv.ticker,
       baseBalance,
       marketBalance,
+      averagePrice,
+      quantity,
+      marketPrice,
+      marketGain,
+      marketGainPct,
       dailyYield: Math.round(dailyYield * 1e6) / 1e6,
       perSecond: perSecond,
       source,

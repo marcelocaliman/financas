@@ -1,0 +1,217 @@
+"use client";
+
+import { useActionState, useEffect, useState } from "react";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { PillGroup } from "@/components/ui/pill-group";
+import { Textarea } from "@/components/ui/textarea";
+import { addMovement, type MovementFormState } from "@/services/movements.actions";
+import { formatMoney } from "@/lib/utils/format";
+import type { Tables } from "@/types/database";
+
+type Investment = Tables<"investments">;
+
+function todayISO(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+export function MovementDialog({
+  open,
+  onOpenChange,
+  investment,
+  defaultKind = "buy",
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  investment: Investment;
+  defaultKind?: "buy" | "sell";
+}) {
+  const [kind, setKind] = useState<"buy" | "sell">(defaultKind);
+  const [qty, setQty] = useState<string>("");
+  const [unitPrice, setUnitPrice] = useState<number>(0);
+  const [date, setDate] = useState(todayISO);
+
+  const [state, action, pending] = useActionState<MovementFormState | undefined, FormData>(
+    addMovement,
+    undefined,
+  );
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setKind(defaultKind);
+      setQty("");
+      setUnitPrice(0);
+      setDate(todayISO());
+    }
+  }
+
+  useEffect(() => {
+    if (state?.ok) {
+      toast.success(kind === "buy" ? "Aporte registrado." : "Venda registrada.");
+      onOpenChange(false);
+    }
+  }, [state, onOpenChange, kind]);
+
+  const qtyNum = Number(qty) || 0;
+  const total = qtyNum * unitPrice;
+  const currentQty = Number(investment.quantity ?? 0);
+  const currentAvg = currentQty > 0 ? Number(investment.initial_amount) / currentQty : 0;
+
+  // Preview do novo preço médio se for compra
+  let newAvg = currentAvg;
+  let newQty = currentQty;
+  if (kind === "buy" && qtyNum > 0) {
+    const newTotalCost = Number(investment.initial_amount) + total;
+    newQty = currentQty + qtyNum;
+    newAvg = newQty > 0 ? newTotalCost / newQty : 0;
+  } else if (kind === "sell" && qtyNum > 0) {
+    newQty = Math.max(0, currentQty - qtyNum);
+  }
+
+  const isCrypto = investment.asset_type === "crypto";
+  const unit = isCrypto ? "unidades" : "cotas";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader
+          eyebrow={`${investment.ticker} · ${kind === "buy" ? "Novo aporte" : "Venda"}`}
+          title={kind === "buy" ? "Registrar novo aporte." : "Registrar venda."}
+          description={
+            kind === "buy"
+              ? "Cada aporte vira um lote no extrato e recalcula seu preço médio."
+              : "A venda remove cotas e o custo proporcional. Preço médio do que sobra fica intacto."
+          }
+        />
+        <form action={action} className="space-y-4">
+          <input type="hidden" name="investmentId" value={investment.id} />
+          <input type="hidden" name="kind" value={kind} />
+
+          <PillGroup
+            options={[
+              { value: "buy", label: "Comprar" },
+              { value: "sell", label: "Vender" },
+            ]}
+            value={kind}
+            onChange={(v) => setKind(v as "buy" | "sell")}
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
+              <Input
+                id="quantity"
+                name="quantity"
+                type="number"
+                step={isCrypto ? "0.00000001" : "1"}
+                min="0"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                className="font-mono"
+                autoFocus
+              />
+              {state?.fieldErrors?.quantity ? (
+                <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.quantity}</p>
+              ) : null}
+            </Field>
+            <Field label="Preço unitário" htmlFor="unitPrice" required>
+              <MoneyInput
+                name="unitPrice"
+                id="unitPrice"
+                defaultValue={0}
+                onValueChange={setUnitPrice}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Data" htmlFor="date" required>
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </Field>
+            <Field label="Taxas (opcional)" htmlFor="fees" hint="Corretagem, custódia, IOF…">
+              <MoneyInput name="fees" id="fees" defaultValue={0} />
+            </Field>
+          </div>
+
+          <Field label="Notas (opcional)" htmlFor="notes">
+            <Textarea id="notes" name="notes" rows={2} />
+          </Field>
+
+          {qtyNum > 0 && unitPrice > 0 ? (
+            <div className="rounded-[10px] border border-border bg-surface-muted px-4 py-3 text-[12.5px] space-y-1.5 font-mono">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total do lote</span>
+                <b className="text-foreground">{formatMoney(total)}</b>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Quantidade após</span>
+                <b className="text-foreground">
+                  {newQty.toLocaleString("pt-BR", { maximumFractionDigits: 8 })} {unit}
+                </b>
+              </div>
+              {kind === "buy" && newAvg > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Novo preço médio</span>
+                  <b className="text-foreground">{formatMoney(newAvg)} / {unit.slice(0, -1)}</b>
+                </div>
+              ) : null}
+              {kind === "sell" && currentQty > 0 ? (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Resultado da venda</span>
+                  <b
+                    className={
+                      total - currentAvg * qtyNum > 0
+                        ? "text-olive-700 dark:text-olive-500"
+                        : total - currentAvg * qtyNum < 0
+                          ? "text-rust-600"
+                          : "text-foreground"
+                    }
+                  >
+                    {total - currentAvg * qtyNum >= 0 ? "+" : ""}
+                    {formatMoney(total - currentAvg * qtyNum)}
+                  </b>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={pending || qtyNum <= 0 || unitPrice <= 0}
+            >
+              {pending ? "Salvando…" : kind === "buy" ? "Registrar aporte" : "Registrar venda"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

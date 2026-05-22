@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Archive, Pencil, RotateCcw, Sparkles, Trash2 } from "lucide-react";
+import {
+  Archive,
+  List,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import {
@@ -12,6 +20,8 @@ import {
 import type { Tables } from "@/types/database";
 import { InvestmentSheet } from "./investment-sheet";
 import { YieldDialog } from "./yield-dialog";
+import { MovementDialog } from "./movement-dialog";
+import { MovementsSheet } from "./movements-sheet";
 
 type Investment = Tables<"investments">;
 type AccountLite = { id: string; name: string; institution: string };
@@ -25,7 +35,15 @@ export function InvestmentRowActions({
 }) {
   const [editing, setEditing] = useState(false);
   const [registeringYield, setRegisteringYield] = useState(false);
+  const [movementMode, setMovementMode] = useState<"buy" | "sell" | null>(null);
+  const [showExtract, setShowExtract] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const isMarketable =
+    investment.asset_type === "fii" ||
+    investment.asset_type === "stock" ||
+    investment.asset_type === "etf" ||
+    investment.asset_type === "crypto";
 
   const handleArchive = () => {
     if (!confirm(`Arquivar "${investment.ticker}"? Some das listas mas o histórico fica.`))
@@ -65,6 +83,28 @@ export function InvestmentRowActions({
         actions={
           investment.is_active
             ? [
+                ...(isMarketable
+                  ? [
+                      {
+                        label: "Novo aporte",
+                        icon: <Plus className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setMovementMode("buy"),
+                        disabled: pending,
+                      },
+                      {
+                        label: "Vender",
+                        icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setMovementMode("sell"),
+                        disabled: pending,
+                      },
+                      {
+                        label: "Ver extrato",
+                        icon: <List className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setShowExtract(true),
+                        disabled: pending,
+                      },
+                    ]
+                  : []),
                 {
                   label: "Editar ativo",
                   icon: <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />,
@@ -120,6 +160,21 @@ export function InvestmentRowActions({
         onOpenChange={setRegisteringYield}
         investment={investment}
       />
+      {isMarketable ? (
+        <>
+          <MovementDialog
+            open={movementMode !== null}
+            onOpenChange={(o) => !o && setMovementMode(null)}
+            investment={investment}
+            defaultKind={movementMode ?? "buy"}
+          />
+          <MovementsSheet
+            open={showExtract}
+            onOpenChange={setShowExtract}
+            investment={investment}
+          />
+        </>
+      ) : null}
     </>
   );
 }

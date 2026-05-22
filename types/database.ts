@@ -38,6 +38,7 @@ export type Indexer = "selic" | "cdi" | "ipca" | "fixed" | "none";
 export type IndexerCode = "selic" | "cdi" | "ipca";
 export type TaxRegime = "regressive" | "exempt";
 export type YieldSource = "manual" | "calculated" | "imported";
+export type MovementKind = "buy" | "sell" | "dividend" | "split";
 export type YieldRuleMode = "reinvest" | "fixed_amount" | "percentage";
 export type RedemptionStatus = "pending" | "executed" | "skipped";
 
@@ -348,6 +349,7 @@ export interface Database {
           purchase_date: string;
           initial_amount: number;
           current_balance: number;
+          quantity: number | null;
           tax_regime: TaxRegime;
           is_active: boolean;
           last_yield_at: string | null;
@@ -389,6 +391,45 @@ export interface Database {
             columns: ["household_id"];
             isOneToOne: false;
             referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investment_movements: {
+        Row: {
+          id: string;
+          household_id: string;
+          investment_id: string;
+          kind: MovementKind;
+          date: string;
+          quantity: number;
+          unit_price: number;
+          total_amount: number;
+          fees: number;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          investment_id: string;
+          kind: MovementKind;
+          date: string;
+          quantity: number;
+          unit_price: number;
+          fees?: number;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["investment_movements"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "investment_movements_investment_id_fkey";
+            columns: ["investment_id"];
+            isOneToOne: false;
+            referencedRelation: "investments";
             referencedColumns: ["id"];
           },
         ];
@@ -593,6 +634,18 @@ export interface Database {
       apply_daily_yield: {
         Args: { p_investment_id: string };
         Returns: number;
+      };
+      add_investment_movement: {
+        Args: {
+          p_investment_id: string;
+          p_kind: MovementKind;
+          p_date: string;
+          p_quantity: number;
+          p_unit_price: number;
+          p_fees?: number;
+          p_notes?: string | null;
+        };
+        Returns: string;
       };
       ensure_pending_intents: {
         Args: { p_months_ahead?: number };
