@@ -25,7 +25,7 @@ export function LatestTransactionsPanel({ rows }: { rows: Transaction[] }) {
             {rows.length === 0 ? (
               <tr>
                 <td className="text-center py-8 text-[13px] text-muted-foreground italic">
-                  Nada por aqui ainda esse mês. Use Cmd+N pra lançar a primeira.
+                  Nada por aqui ainda esse mês. Use Cmd+K (ou ⌘K) pra lançar a primeira.
                 </td>
               </tr>
             ) : (

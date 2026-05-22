@@ -126,7 +126,7 @@ export function AddTransactionDialog({
                 ? "Nova despesa."
                 : "Transferir entre contas."
           }
-          description="Cmd+Enter pra salvar rápido."
+          description="Atalho: ⌘K abre, ⌘+Enter salva."
         />
 
         {noAccounts ? (

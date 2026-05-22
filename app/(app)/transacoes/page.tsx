@@ -185,7 +185,7 @@ function EmptyResult({
       <p className="text-[13.5px] text-muted-foreground mt-2 max-w-[400px] mx-auto">
         {hasQuery
           ? "Tenta limpar a busca ou mudar o mês."
-          : "Esse mês está em branco. Comece pelo botão Adicionar acima ou use Cmd+N."}
+          : "Esse mês está em branco. Comece pelo botão Adicionar acima ou use ⌘K."}
       </p>
     </div>
   );

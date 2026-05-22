@@ -29,12 +29,13 @@ export function QuickAddProvider({ children }: { children: ReactNode }) {
 
   const hide = useCallback(() => setOpen(false), []);
 
-  // Atalho global: Cmd+N (mac) / Ctrl+N (outros) abre o modal.
+  // Atalho global: Cmd+K (mac) / Ctrl+K (outros) abre o modal.
+  // Escolhemos K em vez de N porque Cmd+N abre nova janela no macOS.
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
       const meta = isMac ? e.metaKey : e.ctrlKey;
-      if (meta && (e.key === "n" || e.key === "N") && !e.shiftKey && !e.altKey) {
+      if (meta && (e.key === "k" || e.key === "K") && !e.shiftKey && !e.altKey) {
         const tag = (document.activeElement as HTMLElement | null)?.tagName?.toLowerCase();
         if (tag === "input" || tag === "textarea" || tag === "select") return;
         e.preventDefault();
