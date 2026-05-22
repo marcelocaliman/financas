@@ -209,11 +209,24 @@ body::before {
   }
 }
 
-/* ============================== FOCUS RINGS ============================== */
+/* ============================== FOCUS RINGS ==============================
+ * Outline padrão pra teclado em elementos interativos (botões, links).
+ * Inputs/textareas/selects ficam de fora — eles têm focus state próprio
+ * via wrapper (ex: MoneyInput, Input, Select renderizam o ring na borda
+ * externa). Aplicar outline no input nativo aninhado cria um retângulo
+ * extra "dentro" do wrapper.
+ */
 :focus-visible {
   outline: 2px solid var(--color-navy-500);
   outline-offset: 2px;
   border-radius: 4px;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="combobox"]:focus-visible,
+[role="textbox"]:focus-visible {
+  outline: none;
 }
 
 /* ============================== MOTION REDUCE =========================== */
