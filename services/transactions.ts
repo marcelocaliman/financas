@@ -154,23 +154,35 @@ export type MonthlyHistoryRow = {
 };
 
 /**
- * Histórico dos últimos N meses (incluindo o mês corrente).
+ * Histórico dos últimos N meses (incluindo o mês de referência).
  * Apenas income/expense (transferências não inflam).
+ *
+ * `endMonth` no formato "YYYY-MM" — se omitido, usa o mês corrente.
+ * Útil pra ver "últimos 6 meses terminando em março/2026".
  */
-export async function getMonthlyHistory(months = 6): Promise<MonthlyHistoryRow[]> {
+export async function getMonthlyHistory(
+  months = 6,
+  endMonth?: string,
+): Promise<MonthlyHistoryRow[]> {
   const supabase = await createClient();
 
-  const now = new Date();
-  // Limite inferior: primeiro dia do mês corrente - (months-1) meses
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const [yStr, mStr] = fmt.format(now).split("-");
-  const y = parseInt(yStr, 10);
-  const m = parseInt(mStr, 10);
+  // Calcula o mês de referência (default = mês corrente em SP)
+  let y: number;
+  let m: number;
+  if (endMonth) {
+    const parts = endMonth.split("-").map(Number);
+    y = parts[0];
+    m = parts[1];
+  } else {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+    });
+    const [yStr, mStr] = fmt.format(new Date()).split("-");
+    y = parseInt(yStr, 10);
+    m = parseInt(mStr, 10);
+  }
   const fromYear = m - (months - 1) <= 0 ? y - Math.ceil((months - 1 - m + 1) / 12) : y;
   // Calcula primeiro dia: aritmética com Date
   const start = new Date(Date.UTC(y, m - 1 - (months - 1), 1));

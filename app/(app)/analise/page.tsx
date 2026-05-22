@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { CategoriesBarChart } from "@/components/charts/categories-bar-chart";
 import { IncomeExpenseLine } from "@/components/charts/income-expense-line";
+import { MonthSwitcher } from "@/components/ui/month-switcher";
 import {
   getCategoryBreakdown,
   getMonthlyHistory,
@@ -12,6 +13,15 @@ import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
+function currentMonthISO(): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  });
+  return fmt.format(new Date());
+}
+
 export default async function AnalisePage({
   searchParams,
 }: {
@@ -19,11 +29,13 @@ export default async function AnalisePage({
 }) {
   const { month } = await searchParams;
   const [history, breakdown] = await Promise.all([
-    getMonthlyHistory(6),
+    getMonthlyHistory(6, month),
     getCategoryBreakdown(month, "expense"),
   ]);
 
-  const { label: monthLabel } = monthRange(month);
+  const { label: monthLabel, from } = monthRange(month);
+  const monthISO = from.slice(0, 7);
+  const isCurrent = monthISO === currentMonthISO();
   const current = history[history.length - 1];
   const prev = history[history.length - 2];
 
@@ -36,13 +48,20 @@ export default async function AnalisePage({
   return (
     <>
       <PageHeader
-        eyebrow={`Insights · últimos ${history.length} meses`}
+        eyebrow={`Insights · ${history.length} meses até ${monthLabel}`}
         title={
           <>
             Análise <em className="not-italic font-display italic text-navy-700">financeira</em>
           </>
         }
         subtitle="Para onde o dinheiro foi, de onde veio, e como vocês mudaram nos últimos meses."
+        actions={
+          <MonthSwitcher
+            currentMonth={monthISO}
+            isCurrent={isCurrent}
+            label={monthLabel.split(" ")[0]}
+          />
+        }
       />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
