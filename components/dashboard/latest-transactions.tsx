@@ -11,14 +11,17 @@ export function LatestTransactionsPanel({
   rows,
   forecastRows = [],
   isForecast = false,
+  limit = 4,
 }: {
   rows: Transaction[];
   /** Ocorrências previstas (mês futuro sem materializar). Já vem com badge "previsto". */
   forecastRows?: ForecastOccurrence[];
   isForecast?: boolean;
+  /** Quantos itens mostrar (default 4, mais enxuto na home) */
+  limit?: number;
 }) {
-  const visible = rows.length > 0 ? rows.slice(0, 6) : null;
-  const visibleForecast = forecastRows.slice(0, Math.max(0, 6 - (visible?.length ?? 0)));
+  const visible = rows.length > 0 ? rows.slice(0, limit) : null;
+  const visibleForecast = forecastRows.slice(0, Math.max(0, limit - (visible?.length ?? 0)));
 
   return (
     <section>

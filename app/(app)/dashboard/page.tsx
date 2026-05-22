@@ -6,6 +6,13 @@ import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
 import { InsightCard } from "@/components/dashboard/insight-card";
+import { FireCard } from "@/components/dashboard/fire-card";
+import { GoalsTopCard } from "@/components/dashboard/goals-top-card";
+import { UpcomingObligationsCard } from "@/components/dashboard/upcoming-obligations-card";
+import {
+  PatrimonioComposition,
+  type CompositionBucket,
+} from "@/components/dashboard/patrimonio-composition";
 import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { MaterializeUntilMonthButton } from "@/components/dashboard/materialize-until-month-button";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
@@ -15,9 +22,13 @@ import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getRecurrencesForecast } from "@/services/recurrences";
+import { listGoals } from "@/services/goals";
+import { getUpcomingObligations } from "@/services/upcoming";
+import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
+  getMonthlyHistory,
   getMonthlySummary,
   listTransactions,
   monthRange,
@@ -50,41 +61,132 @@ export default async function DashboardPage({
   const { label: monthLabel, from, to } = monthRange(monthParam);
   const currentMonth = from.slice(0, 7);
 
-  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical, forecast] =
-    await Promise.all([
-      getMonthlySummary(monthParam),
-      getCategoryBreakdown(monthParam, "expense"),
-      listTransactions({ month: monthParam, pageSize: 6 }),
-      // Mês passado/futuro: saldo retroativo das contas (revertendo deltas
-      // das transações posteriores ao fim do mês alvo). Mês corrente: now.
-      isCurrent ? getAccountsTotals() : getAccountsTotalsAt(to),
-      // Anomalias só fazem sentido no mês corrente (compara com 3 meses anteriores)
-      isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
-      getPortfolioStats(),
-      getCoverage(),
-      getLivePortfolio(),
-      getPhysicalAssetsTotals(),
-      // Previsão das recorrências ativas pra qualquer mês (passa NULL no current
-      // pra economizar query — quando o cron tá ok, current já reflete tudo).
-      position === "future" ? getRecurrencesForecast(currentMonth) : null,
-    ]);
+  const [
+    summary,
+    breakdown,
+    latest,
+    totals,
+    anomalies,
+    portfolio,
+    coverage,
+    live,
+    physical,
+    forecast,
+    goals,
+    upcoming,
+    patrimonioHistory,
+    sobraHistory,
+    history6,
+  ] = await Promise.all([
+    getMonthlySummary(monthParam),
+    getCategoryBreakdown(monthParam, "expense"),
+    listTransactions({ month: monthParam, pageSize: 6 }),
+    isCurrent ? getAccountsTotals() : getAccountsTotalsAt(to),
+    isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
+    getPortfolioStats(),
+    getCoverage(),
+    getLivePortfolio(),
+    getPhysicalAssetsTotals(),
+    position === "future" ? getRecurrencesForecast(currentMonth) : null,
+    isCurrent ? listGoals() : Promise.resolve([]),
+    isCurrent ? getUpcomingObligations(7) : Promise.resolve(null),
+    isCurrent ? getPatrimonioHistory(12) : Promise.resolve([]),
+    isCurrent ? getSobraHistory(6) : Promise.resolve([]),
+    // Histórico de 6 meses pra calcular sobra média (usada no FIRE / metas ETA)
+    isCurrent ? getMonthlyHistory(6) : Promise.resolve([]),
+  ]);
 
-  // Patrimônio total SEM dupla contagem:
-  //   contas líquidas (excluindo caixa de corretora) + investimentos + bens físicos
-  // Para mês corrente: tudo é "agora".
-  // Para mês passado/futuro: contas usam saldo retroativo; investimentos
-  // e bens físicos usam valor ATUAL (aproximação — Hero mostra hint).
+  // Patrimônio total SEM dupla contagem
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
 
-  // Para mês futuro com forecast, somamos o real (já materializado) + previsto.
-  // Display: a sobra projetada vira (income + previstoIn) - (expense + previstoOut).
+  // Forecast em mês futuro
   const effectiveIncome = summary.income + (forecast?.income ?? 0);
   const effectiveExpense = summary.expense + (forecast?.expense ?? 0);
   const projection = projectMonthEnd(effectiveIncome, effectiveExpense, daysElapsed, daysInMonth);
   const expenseVsIncome =
     effectiveIncome > 0 ? effectiveExpense / effectiveIncome : effectiveExpense > 0 ? 2 : 0;
   const isForecastMode = forecast != null && forecast.count > 0;
+
+  // Sobra média mensal (últimos 6 meses) — usada em FIRE ETA, metas ETA, etc.
+  const monthlySavings =
+    history6.length > 0
+      ? history6.reduce((s, r) => s + Math.max(0, r.net), 0) / history6.length
+      : Math.max(0, summary.income - summary.expense);
+
+  // Sparklines (somente mês corrente — meses não-correntes não fazem sentido aqui)
+  const patrimonioSpark = isCurrent ? patrimonioHistory.map((p) => p.netWorth) : [];
+  const sobraSpark = isCurrent ? sobraHistory.map((s) => s.net) : [];
+  // Patrimônio do mês anterior pra Δ% — penúltimo ponto da série
+  const patrimonioPrev =
+    isCurrent && patrimonioHistory.length >= 2
+      ? patrimonioHistory[patrimonioHistory.length - 2].netWorth
+      : null;
+
+  // Coverage: fallback quando investment_yields tá vazio mas há live yield.
+  // Mais honesto pro usuário ver "renda atual estimada × despesa média"
+  // do que ver "R$ 0,00/mês" quando claramente está rendendo.
+  const liveMonthlyYield = live.totalDailyYield * 21;
+  const monthlyYieldDisplay =
+    coverage.monthlyAverageYield > 0 ? coverage.monthlyAverageYield : liveMonthlyYield;
+  const coverageRatioDisplay =
+    coverage.monthlyAverageExpense > 0
+      ? monthlyYieldDisplay / coverage.monthlyAverageExpense
+      : 0;
+
+  // Composição do patrimônio — buckets por classe de ativo
+  const liquidAccounts = totals.byType.checking + totals.byType.savings + totals.byType.cash;
+  const cardDebt = Math.abs(totals.byType.credit_card);
+  const compositionBuckets: CompositionBucket[] = [
+    {
+      key: "liquid",
+      label: "Líquido",
+      value: liquidAccounts,
+      tone: "navy",
+      hint: "contas correntes + poupança + dinheiro",
+    },
+    {
+      key: "fixed-income",
+      label: "Renda fixa",
+      value: live.byClass.fixedIncome.balance,
+      tone: "olive",
+      hint: "Tesouro, CDB, LCI, LCA",
+    },
+    {
+      key: "variable",
+      label: "Renda variável",
+      value:
+        live.byClass.fiis.balance +
+        live.byClass.stocks.balance +
+        live.byClass.other.balance,
+      tone: "gold",
+      hint: "FIIs, ações, cripto",
+    },
+    {
+      key: "physical",
+      label: "Bens físicos",
+      value: physical.total,
+      tone: "ink",
+      hint: "imóveis, veículos, valor de uso",
+    },
+  ];
+  // Se houver dívida de cartão, adiciona como passivo (tone rust)
+  if (cardDebt > 0.5) {
+    compositionBuckets.push({
+      key: "credit-card",
+      label: "Cartão de crédito (passivo)",
+      value: cardDebt,
+      tone: "rust",
+      hint: "fatura em aberto",
+    });
+  }
+  const compositionTotal =
+    liquidAccounts +
+    live.byClass.fixedIncome.balance +
+    live.byClass.fiis.balance +
+    live.byClass.stocks.balance +
+    live.byClass.other.balance +
+    physical.total;
 
   const subtitle = isCurrent
     ? "O pulso do mês — sobra projetada, ritmo de gasto e o respiro do patrimônio."
@@ -133,13 +235,52 @@ export default async function DashboardPage({
         livePerSecond={live.totalPerSecond}
         isCurrentMonth={isCurrent}
         isForecast={isForecastMode}
+        patrimonioPrevious={patrimonioPrev}
+        patrimonioSparkline={patrimonioSpark}
+        sobraSparkline={sobraSpark}
       />
 
-      {/* Ticker live e Coverage só fazem sentido "agora" — escondidos em meses não-correntes */}
+      {/* Ticker live só faz sentido "agora" */}
       {isCurrent ? <PortfolioLiveTicker portfolio={live} variant="compact" /> : null}
 
+      {/* Insight de anomalias (somente mês corrente) */}
       {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
 
+      {/* TIER 1 — IF + Cobertura (a estrela do dashboard pra FIRE) */}
+      {isCurrent ? (
+        <div className="grid lg:grid-cols-2 gap-5 mb-8">
+          <FireCard
+            monthlyPassiveIncome={liveMonthlyYield}
+            monthlyExpense={
+              coverage.monthlyAverageExpense > 0
+                ? coverage.monthlyAverageExpense
+                : effectiveExpense
+            }
+            netWorth={netWorth}
+            monthlySavings={monthlySavings}
+          />
+          <CoveragePanel
+            monthlyYield={monthlyYieldDisplay}
+            monthlyExpense={coverage.monthlyAverageExpense}
+            ratio={coverageRatioDisplay}
+            hasInvestments={portfolio.total > 0}
+            liveDailyYield={live.totalDailyYield}
+            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
+            isBusinessDayToday={live.isBusinessDayToday}
+            usingLiveFallback={coverage.monthlyAverageYield <= 0 && liveMonthlyYield > 0}
+          />
+        </div>
+      ) : null}
+
+      {/* TIER 2 — Obrigações dos próximos 7 dias + Metas em curso */}
+      {isCurrent ? (
+        <div className="grid lg:grid-cols-2 gap-5 mb-8">
+          <UpcomingObligationsCard upcoming={upcoming!} days={7} />
+          <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
+        </div>
+      ) : null}
+
+      {/* TIER 3 — Top categorias + Composição do patrimônio */}
       <div
         className={
           isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8" : "grid grid-cols-1 mb-8"
@@ -150,24 +291,20 @@ export default async function DashboardPage({
           monthLabel={monthLabel}
           isForecast={isForecastMode && breakdown.length === 0}
         />
-        {/* Coverage usa média móvel "até hoje" — não tem como ser mês-específico */}
         {isCurrent ? (
-          <CoveragePanel
-            monthlyYield={coverage.monthlyAverageYield}
-            monthlyExpense={coverage.monthlyAverageExpense}
-            ratio={coverage.ratio}
-            hasInvestments={portfolio.total > 0}
-            liveDailyYield={live.totalDailyYield}
-            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
-            isBusinessDayToday={live.isBusinessDayToday}
+          <PatrimonioComposition
+            buckets={compositionBuckets}
+            total={compositionTotal}
           />
         ) : null}
       </div>
 
+      {/* TIER 4 — Últimos movimentos (lista enxuta) */}
       <LatestTransactionsPanel
         rows={latest.rows}
         forecastRows={isForecastMode ? forecast.occurrences : []}
         isForecast={isForecastMode && latest.rows.length === 0}
+        limit={4}
       />
     </>
   );
@@ -181,6 +318,7 @@ function CoveragePanel({
   liveDailyYield = 0,
   accumulatedYieldUntilToday = 0,
   isBusinessDayToday = true,
+  usingLiveFallback = false,
 }: {
   monthlyYield: number;
   monthlyExpense: number;
@@ -189,6 +327,8 @@ function CoveragePanel({
   liveDailyYield?: number;
   accumulatedYieldUntilToday?: number;
   isBusinessDayToday?: boolean;
+  /** True quando o número de yield veio da renda diária × 21 (sem dados em investment_yields) */
+  usingLiveFallback?: boolean;
 }) {
   const pct = Math.min(100, Math.round(ratio * 100));
   return (
@@ -207,9 +347,11 @@ function CoveragePanel({
           <span className="text-[14px] text-muted-foreground ml-1.5">/mês</span>
         </div>
         <p className="text-[12.5px] text-muted-foreground mt-1.5">
-          {hasInvestments
-            ? "média líquida · últimos 3 meses"
-            : "ainda sem ativos cadastrados"}
+          {!hasInvestments
+            ? "ainda sem ativos cadastrados"
+            : usingLiveFallback
+              ? "estimativa · renda diária × 21 dias úteis"
+              : "média líquida · últimos 3 meses"}
         </p>
 
         {hasInvestments ? (

@@ -3,6 +3,7 @@
 import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { RollingNumber } from "@/components/ui/rolling-number";
+import { Sparkline } from "@/components/ui/sparkline";
 import { useLiveYield } from "@/hooks/use-live-yield";
 import { useComparisonCurrency, useDisplayCurrency, useMoneyContext } from "@/components/ui/money-provider";
 import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/currency";
@@ -24,6 +25,9 @@ export function DashboardHero({
   livePerSecond = 0,
   isCurrentMonth = true,
   isForecast = false,
+  patrimonioPrevious = null,
+  patrimonioSparkline = [],
+  sobraSparkline = [],
 }: {
   projectedNet: number;
   monthLabel: string;
@@ -38,6 +42,12 @@ export function DashboardHero({
   isCurrentMonth?: boolean;
   /** Mês futuro com previsão de recorrências (não materializadas ainda) */
   isForecast?: boolean;
+  /** Patrimônio no fim do mês anterior — pra calcular Δ% do mês */
+  patrimonioPrevious?: number | null;
+  /** Série dos últimos N meses pra sparkline do patrimônio */
+  patrimonioSparkline?: number[];
+  /** Série dos últimos N meses (sobra = income - expense) */
+  sobraSparkline?: number[];
 }) {
   const displayCurrency = useDisplayCurrency();
   const comparisonCurrency = useComparisonCurrency();
@@ -68,6 +78,13 @@ export function DashboardHero({
   const filledSegments = Math.round(monthRatio * 10);
   const segmentTone =
     expenseRatio > 1 ? "rust" : expenseRatio > 0.9 ? "gold" : "olive";
+
+  // Δ patrimônio vs mês anterior (apenas mês corrente — meses passados/futuros
+  // usam aproximações nos investimentos, então o delta não faria sentido).
+  const patrimonioDelta =
+    isCurrentMonth && patrimonioPrevious != null && patrimonioPrevious > 0
+      ? ((patrimonio - patrimonioPrevious) / patrimonioPrevious) * 100
+      : null;
 
   return (
     <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-9 sm:p-12 mb-6 overflow-hidden shadow-lg">
@@ -166,6 +183,8 @@ export function DashboardHero({
             displayCurrency={displayCurrency}
             comparisonCurrency={comparisonCurrency}
             rates={rates}
+            sparkline={sobraSparkline}
+            sparklineColor="rgba(181,203,140,0.7)"
           />
           <Stat
             label="Saiu"
@@ -187,6 +206,9 @@ export function DashboardHero({
             comparisonCurrency={comparisonCurrency}
             rates={rates}
             approximate={!isCurrentMonth}
+            deltaPct={patrimonioDelta}
+            sparkline={patrimonioSparkline}
+            sparklineColor="rgba(176,123,50,0.65)"
           />
         </div>
       </div>
@@ -205,6 +227,9 @@ function Stat({
   comparisonCurrency,
   rates,
   approximate = false,
+  deltaPct = null,
+  sparkline = [],
+  sparklineColor,
 }: {
   label: string;
   value: number;
@@ -216,6 +241,11 @@ function Stat({
   comparisonCurrency: "BRL" | "EUR" | "USD" | null;
   rates: Record<string, number>;
   approximate?: boolean;
+  /** Δ% vs período anterior */
+  deltaPct?: number | null;
+  /** Série pra sparkline (>= 2 pontos) */
+  sparkline?: number[];
+  sparklineColor?: string;
 }) {
   const fmt = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 0,
@@ -252,6 +282,35 @@ function Stat({
       {compText ? (
         <div className="text-[11px] font-mono text-navy-400 mt-1 tabular-nums">
           {hidden ? maskMoneyString(compText) : compText}
+        </div>
+      ) : null}
+      {deltaPct != null ? (
+        <div className="mt-1.5 inline-flex items-center gap-1.5">
+          <span
+            className={cn(
+              "font-mono text-[11px] tabular-nums",
+              deltaPct >= 0 ? "text-[#b5cb8c]" : "text-[#e4a395]",
+            )}
+          >
+            {deltaPct >= 0 ? "+" : ""}
+            {deltaPct.toFixed(1).replace(".", ",")}%
+          </span>
+          <span className="font-mono text-[10px] text-navy-400 tracking-[0.04em]">
+            vs mês anterior
+          </span>
+        </div>
+      ) : null}
+      {sparkline && sparkline.length >= 2 && !hidden ? (
+        <div className="mt-2 -ml-0.5">
+          <Sparkline
+            data={sparkline}
+            width={120}
+            height={22}
+            stroke={sparklineColor ?? "rgba(96,126,168,0.7)"}
+            fill={sparklineColor ?? "rgba(96,126,168,0.7)"}
+            strokeWidth={1.5}
+            showDot
+          />
         </div>
       ) : null}
       {accent ? (
