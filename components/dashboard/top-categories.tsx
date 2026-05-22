@@ -6,20 +6,33 @@ import type { CategoryBreakdownRow } from "@/services/transactions";
 export function TopCategoriesPanel({
   rows,
   monthLabel,
+  isForecast = false,
 }: {
   rows: CategoryBreakdownRow[];
   monthLabel: string;
+  isForecast?: boolean;
 }) {
   const top = rows.slice(0, 6);
   return (
     <Panel>
       <PanelHeader
-        title="Top categorias"
+        title={
+          <span className="inline-flex items-center gap-2">
+            Top categorias
+            {isForecast ? (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-gold-600/15 text-gold-700 dark:text-gold-500 text-[9.5px] font-mono tracking-[0.12em] uppercase">
+                Previsão
+              </span>
+            ) : null}
+          </span>
+        }
         meta={monthLabel.toUpperCase().slice(0, 3) + " · " + monthLabel.split(" ").pop()}
       />
       {top.length === 0 ? (
         <p className="text-[13px] text-muted-foreground italic py-2">
-          Sem despesas registradas ainda esse mês.
+          {isForecast
+            ? "Nenhuma despesa prevista das recorrências."
+            : "Sem despesas registradas ainda esse mês."}
         </p>
       ) : (
         <div>

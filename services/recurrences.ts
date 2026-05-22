@@ -156,12 +156,42 @@ function nextFrom(
  * usuário clicar em "Materializar".
  * ====================================================================== */
 
+export type ForecastOccurrence = {
+  date: string;
+  description: string;
+  kind: "income" | "expense" | "transfer";
+  amount: number; // já convertido pra displayCurrency
+  originalAmount: number;
+  originalCurrency: Currency;
+  ruleId: string;
+  accountId: string | null;
+  accountName: string | null;
+  categoryId: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
+  categoryIcon: string | null;
+  fromAccountName: string | null;
+  toAccountName: string | null;
+  paymentMethod: string | null;
+};
+
 export type MonthForecast = {
   income: number;
   expense: number;
   transferIn: number;
   transferOut: number;
   count: number;
+  occurrences: ForecastOccurrence[];
+  /** Breakdown de despesas previstas por categoria, pronto pro TopCategoriesPanel */
+  expenseByCategory: Array<{
+    category_id: string | null;
+    category_name: string;
+    category_color: string | null;
+    category_icon: string | null;
+    total: number;
+    count: number;
+    pct: number;
+  }>;
   displayCurrency: Currency;
 };
 
@@ -208,7 +238,13 @@ export async function getRecurrencesForecast(monthStr: string): Promise<MonthFor
     supabase
       .from("recurring_rules")
       .select(
-        "amount, currency, kind, start_date, end_date, frequency, interval_count, day_of_month, day_of_week, last_materialized_date",
+        `id, amount, currency, kind, description, payment_method,
+         start_date, end_date, frequency, interval_count, day_of_month, day_of_week,
+         last_materialized_date,
+         account:accounts!recurring_rules_account_id_fkey(id, name),
+         from_account:accounts!recurring_rules_from_account_id_fkey(id, name),
+         to_account:accounts!recurring_rules_to_account_id_fkey(id, name),
+         category:categories(id, name, color, icon)`,
       )
       .eq("is_active", true),
     getDisplayCurrency(),
@@ -220,35 +256,128 @@ export async function getRecurrencesForecast(monthStr: string): Promise<MonthFor
   let transferIn = 0;
   let transferOut = 0;
   let count = 0;
+  const occurrences: ForecastOccurrence[] = [];
+  const expenseCatBuckets = new Map<
+    string,
+    {
+      id: string | null;
+      name: string;
+      color: string | null;
+      icon: string | null;
+      total: number;
+      count: number;
+    }
+  >();
 
-  for (const r of rules ?? []) {
+  type RuleRow = {
+    id: string;
+    amount: number;
+    currency: Currency;
+    kind: "income" | "expense" | "transfer";
+    description: string;
+    payment_method: string | null;
+    start_date: string;
+    end_date: string | null;
+    frequency: "daily" | "weekly" | "monthly" | "yearly";
+    interval_count: number;
+    day_of_month: number | null;
+    day_of_week: number | null;
+    last_materialized_date: string | null;
+    account: { id: string; name: string } | { id: string; name: string }[] | null;
+    from_account: { id: string; name: string } | { id: string; name: string }[] | null;
+    to_account: { id: string; name: string } | { id: string; name: string }[] | null;
+    category:
+      | { id: string; name: string; color: string | null; icon: string | null }
+      | { id: string; name: string; color: string | null; icon: string | null }[]
+      | null;
+  };
+
+  const flatten = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] : v);
+
+  for (const r of (rules ?? []) as RuleRow[]) {
     // Determina a janela "ainda não materializada" dentro do mês alvo.
-    // Cada ocorrência > last_materialized_date e <= monthEnd e >= monthStart
-    // representa uma previsão pendente.
     const matCutoff = r.last_materialized_date ?? "1900-01-01";
     const windowFrom = matCutoff >= monthStart ? addDaysISO(matCutoff, 1) : monthStart;
     if (windowFrom > monthEnd) continue;
 
-    const occurrences = listOccurrencesInRange(r, windowFrom, monthEnd);
-    if (occurrences.length === 0) continue;
+    const dates = listOccurrencesInRange(r, windowFrom, monthEnd);
+    if (dates.length === 0) continue;
 
     const amountConverted = convertOrSame(
       Number(r.amount ?? 0),
-      r.currency as Currency,
+      r.currency,
       displayCurrency,
       rates,
     );
-    const total = amountConverted * occurrences.length;
-    count += occurrences.length;
+    const total = amountConverted * dates.length;
+    count += dates.length;
 
     if (r.kind === "income") income += total;
     else if (r.kind === "expense") expense += total;
     else if (r.kind === "transfer") {
-      // Transfer não muda patrimônio mas ainda assim somamos pra estatística
       transferIn += total;
       transferOut += total;
     }
+
+    const acc = flatten(r.account);
+    const fromAcc = flatten(r.from_account);
+    const toAcc = flatten(r.to_account);
+    const cat = flatten(r.category);
+
+    // Acumula breakdown por categoria (só despesas)
+    if (r.kind === "expense") {
+      const key = cat?.id ?? "uncategorized";
+      const bucket = expenseCatBuckets.get(key) ?? {
+        id: cat?.id ?? null,
+        name: cat?.name ?? "Sem categoria",
+        color: cat?.color ?? null,
+        icon: cat?.icon ?? null,
+        total: 0,
+        count: 0,
+      };
+      bucket.total += total;
+      bucket.count += dates.length;
+      expenseCatBuckets.set(key, bucket);
+    }
+
+    // Cada ocorrência vira uma row sintética
+    for (const date of dates) {
+      occurrences.push({
+        date,
+        description: r.description,
+        kind: r.kind,
+        amount: amountConverted,
+        originalAmount: Number(r.amount ?? 0),
+        originalCurrency: r.currency,
+        ruleId: r.id,
+        accountId: acc?.id ?? null,
+        accountName: acc?.name ?? null,
+        categoryId: cat?.id ?? null,
+        categoryName: cat?.name ?? null,
+        categoryColor: cat?.color ?? null,
+        categoryIcon: cat?.icon ?? null,
+        fromAccountName: fromAcc?.name ?? null,
+        toAccountName: toAcc?.name ?? null,
+        paymentMethod: r.payment_method,
+      });
+    }
   }
+
+  // Ordena ocorrências por data (asc)
+  occurrences.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Calcula pct das categorias
+  const expenseByCategory = Array.from(expenseCatBuckets.values())
+    .map((b) => ({
+      category_id: b.id,
+      category_name: b.name,
+      category_color: b.color,
+      category_icon: b.icon,
+      total: Math.round(b.total * 100) / 100,
+      count: b.count,
+      pct: expense > 0 ? b.total / expense : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
 
   return {
     income: Math.round(income * 100) / 100,
@@ -256,6 +385,8 @@ export async function getRecurrencesForecast(monthStr: string): Promise<MonthFor
     transferIn: Math.round(transferIn * 100) / 100,
     transferOut: Math.round(transferOut * 100) / 100,
     count,
+    occurrences,
+    expenseByCategory,
     displayCurrency,
   };
 }

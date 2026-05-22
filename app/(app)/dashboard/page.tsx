@@ -145,7 +145,11 @@ export default async function DashboardPage({
           isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8" : "grid grid-cols-1 mb-8"
         }
       >
-        <TopCategoriesPanel rows={breakdown} monthLabel={monthLabel} />
+        <TopCategoriesPanel
+          rows={isForecastMode && breakdown.length === 0 ? forecast.expenseByCategory : breakdown}
+          monthLabel={monthLabel}
+          isForecast={isForecastMode && breakdown.length === 0}
+        />
         {/* Coverage usa média móvel "até hoje" — não tem como ser mês-específico */}
         {isCurrent ? (
           <CoveragePanel
@@ -159,7 +163,11 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      <LatestTransactionsPanel rows={latest.rows} />
+      <LatestTransactionsPanel
+        rows={latest.rows}
+        forecastRows={isForecastMode ? forecast.occurrences : []}
+        isForecast={isForecastMode && latest.rows.length === 0}
+      />
     </>
   );
 }
