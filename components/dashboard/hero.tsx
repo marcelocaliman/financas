@@ -3,6 +3,7 @@
 import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { RollingNumber } from "@/components/ui/rolling-number";
+import { useLiveYield } from "@/hooks/use-live-yield";
 
 const HERO_QUOTE =
   "o dinheiro que sobra silencioso no fim do mês é o que constrói liberdade no fim da década.";
@@ -16,6 +17,8 @@ export function DashboardHero({
   patrimonio,
   monthRatio,
   expenseRatio,
+  liveDailyYield = 0,
+  livePerSecond = 0,
 }: {
   projectedNet: number;
   monthLabel: string;
@@ -25,7 +28,12 @@ export function DashboardHero({
   patrimonio: number;
   monthRatio: number; // 0..1
   expenseRatio: number; // gasto vs receita 0..1+
+  liveDailyYield?: number;
+  livePerSecond?: number;
 }) {
+  const { accumulated: liveAccrued } = useLiveYield(liveDailyYield, livePerSecond);
+  // Patrimônio total respira ao vivo somando o rendimento do dia até este instante
+  const patrimonioLive = patrimonio + liveAccrued;
   const { currency, integer, cents, sign } = formatMoneyParts(projectedNet);
   const positiveTrend = projectedNet >= 0;
 
@@ -114,7 +122,7 @@ export function DashboardHero({
         <div className="grid grid-cols-3 gap-6">
           <Stat label="Entrou" value={income} />
           <Stat label="Saiu" value={expense} />
-          <Stat label="Patrimônio" value={patrimonio} accent />
+          <Stat label="Patrimônio" value={patrimonioLive} accent live={liveDailyYield > 0} />
         </div>
       </div>
     </section>
@@ -125,24 +133,39 @@ function Stat({
   label,
   value,
   accent,
+  live,
 }: {
   label: string;
   value: number;
   accent?: boolean;
+  live?: boolean;
 }) {
   const fmt = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 0,
   });
+  const fmt2 = new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
   return (
     <div>
-      <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-navy-400 mb-2 font-medium">
+      <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-navy-400 mb-2 font-medium flex items-center gap-1.5">
+        {live ? (
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+        ) : null}
         {label}
       </div>
-      <div className="font-mono text-[22px] sm:text-[26px] tracking-[-0.02em] font-light text-white">
-        R$ <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} />
+      <div className="font-mono text-[22px] sm:text-[26px] tracking-[-0.02em] font-light text-white tabular-nums">
+        {live ? (
+          <>R$ {fmt2.format(value)}</>
+        ) : (
+          <>R$ <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} /></>
+        )}
       </div>
       {accent ? (
-        <div className="text-[11.5px] font-mono text-navy-300 mt-1">contas + investimentos</div>
+        <div className="text-[11.5px] font-mono text-navy-300 mt-1">
+          {live ? "contas + investimentos + bens · respirando ao vivo" : "contas + investimentos + bens"}
+        </div>
       ) : null}
     </div>
   );

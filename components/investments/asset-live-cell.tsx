@@ -1,30 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLiveYield } from "@/hooks/use-live-yield";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
-import { dayUtilizationRatio } from "@/lib/financial/live-yield";
 
-/**
- * Célula compacta com o rendimento do ativo subindo a cada segundo.
- * Padrão React 19: derive everything from a `now` state, sem refs nem performance.now() no render.
- */
 export function AssetLiveCell({ asset }: { asset: LiveAssetMetrics }) {
-  const [now, setNow] = useState(() => Date.now());
-  const [mountedAt] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (asset.dailyYield <= 0) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [asset.dailyYield]);
+  const { accumulated } = useLiveYield(asset.dailyYield, asset.perSecond);
 
   if (asset.dailyYield <= 0) {
     return <span className="text-faint-foreground text-[11.5px]">—</span>;
   }
-
-  const elapsed = (now - mountedAt) / 1000;
-  const accumulated =
-    asset.dailyYield * dayUtilizationRatio(new Date(now)) + asset.perSecond * elapsed;
 
   return (
     <div className="flex flex-col items-end leading-tight">

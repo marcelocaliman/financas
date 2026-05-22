@@ -22,6 +22,7 @@ import { InvestmentSheet } from "./investment-sheet";
 import { YieldDialog } from "./yield-dialog";
 import { MovementDialog } from "./movement-dialog";
 import { MovementsSheet } from "./movements-sheet";
+import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
 
 type Investment = Tables<"investments">;
 type AccountLite = { id: string; name: string; institution: string };
@@ -37,6 +38,7 @@ export function InvestmentRowActions({
   const [registeringYield, setRegisteringYield] = useState(false);
   const [movementMode, setMovementMode] = useState<"buy" | "sell" | null>(null);
   const [showExtract, setShowExtract] = useState(false);
+  const [aportingFixed, setAportingFixed] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const isMarketable =
@@ -44,6 +46,9 @@ export function InvestmentRowActions({
     investment.asset_type === "stock" ||
     investment.asset_type === "etf" ||
     investment.asset_type === "crypto";
+  const isFixedIncome =
+    investment.asset_type === "fixed_income_public" ||
+    investment.asset_type === "fixed_income_private";
 
   const handleArchive = () => {
     if (!confirm(`Arquivar "${investment.ticker}"? Some das listas mas o histórico fica.`))
@@ -101,6 +106,16 @@ export function InvestmentRowActions({
                         label: "Ver extrato",
                         icon: <List className="w-3.5 h-3.5" strokeWidth={1.7} />,
                         onSelect: () => setShowExtract(true),
+                        disabled: pending,
+                      },
+                    ]
+                  : []),
+                ...(isFixedIncome
+                  ? [
+                      {
+                        label: "Aportar mais",
+                        icon: <Plus className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setAportingFixed(true),
                         disabled: pending,
                       },
                     ]
@@ -174,6 +189,13 @@ export function InvestmentRowActions({
             investment={investment}
           />
         </>
+      ) : null}
+      {isFixedIncome ? (
+        <FixedIncomeContributionDialog
+          open={aportingFixed}
+          onOpenChange={setAportingFixed}
+          investment={investment}
+        />
       ) : null}
     </>
   );

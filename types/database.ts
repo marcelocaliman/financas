@@ -695,6 +695,16 @@ export interface Database {
         };
         Returns: string;
       };
+      add_to_fixed_income: {
+        Args: {
+          p_investment_id: string;
+          p_amount: number;
+          p_date: string;
+          p_debit_account_id?: string | null;
+          p_notes?: string | null;
+        };
+        Returns: void;
+      };
       ensure_pending_intents: {
         Args: { p_months_ahead?: number };
         Returns: number;

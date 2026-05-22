@@ -6,8 +6,10 @@ import { NewRuleButton } from "@/components/redemptions/new-rule-button";
 import { IntentActions } from "@/components/redemptions/intent-actions";
 import { ProjectionPanel } from "@/components/redemptions/projection-panel";
 import { RuleRowActions } from "@/components/redemptions/rule-row-actions";
+import { LiveBalance } from "@/components/redemptions/live-balance";
 import { listAccounts } from "@/services/accounts";
 import { listInvestments, getLatestIndexer } from "@/services/investments";
+import { getLivePortfolio } from "@/services/live-yield";
 import {
   ensurePendingIntents,
   getNextPending,
@@ -22,14 +24,19 @@ export default async function ResgatesPage() {
   // Garante que existam intents pendentes para os próximos 3 meses
   await ensurePendingIntents(3);
 
-  const [rules, nextIntent, history, investments, accounts, selic] = await Promise.all([
+  const [rules, nextIntent, history, investments, accounts, selic, live] = await Promise.all([
     listYieldRules(),
     getNextPending(),
     listRedemptionHistory(12),
     listInvestments(),
     listAccounts(),
     getLatestIndexer("selic"),
+    getLivePortfolio(),
   ]);
+
+  const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
+  const fromInvestmentId = nextIntent?.rule?.investment?.id ?? null;
+  const fromLive = fromInvestmentId ? liveByAssetId.get(fromInvestmentId) : null;
 
   const destinations = accounts
     .filter((a) => a.type !== "investment" && a.type !== "credit_card")
@@ -72,6 +79,8 @@ export default async function ResgatesPage() {
             <FlowDiagram
               fromName={nextIntent.rule.investment.name ?? "Ativo"}
               fromBalance={Number(nextIntent.rule.investment.current_balance ?? 0)}
+              fromLiveDaily={fromLive?.dailyYield ?? 0}
+              fromLivePerSecond={fromLive?.perSecond ?? 0}
               toName={
                 nextIntent.rule.destination?.name ?? "Conta de destino"
               }
@@ -264,73 +273,64 @@ function NextRemainder({
 function FlowDiagram({
   fromName,
   fromBalance,
+  fromLiveDaily,
+  fromLivePerSecond,
   toName,
   toInstitution,
   monthlyAmount,
 }: {
   fromName: string;
   fromBalance: number;
+  fromLiveDaily: number;
+  fromLivePerSecond: number;
   toName: string;
   toInstitution?: string;
   monthlyAmount: number;
 }) {
   return (
     <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-7 items-center mb-7">
-      <FlowCard
-        eyebrow="Origem"
-        name={fromName}
-        balance={fromBalance}
-        accent="navy"
-        meta={`Saldo atual`}
-      />
+      <div
+        className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] !border-l-navy-800"
+      >
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1.5 font-medium flex items-center gap-1.5">
+          {fromLiveDaily > 0 ? (
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+          ) : null}
+          Origem
+        </div>
+        <div className="font-display text-[19px] tracking-[-0.015em] mb-3">{fromName}</div>
+        <div className="font-mono text-[22px] tracking-[-0.02em] text-foreground">
+          {fromLiveDaily > 0 ? (
+            <LiveBalance
+              baseBalance={fromBalance}
+              dailyYield={fromLiveDaily}
+              perSecond={fromLivePerSecond}
+            />
+          ) : (
+            formatMoney(fromBalance)
+          )}
+        </div>
+        <div className="text-[12.5px] text-muted-foreground mt-1">
+          {fromLiveDaily > 0 ? "saldo respirando ao vivo" : "Saldo atual"}
+        </div>
+      </div>
       <div className="flex flex-col items-center gap-2 text-muted-foreground py-4">
         <ArrowRight className="w-7 h-7" strokeWidth={1.4} />
-        <div className="font-mono text-[12px] text-olive-700 font-medium whitespace-nowrap">
+        <div className="font-mono text-[12px] text-olive-700 dark:text-olive-500 font-medium whitespace-nowrap">
           {formatMoney(monthlyAmount)}/mês
         </div>
       </div>
-      <FlowCard
-        eyebrow="Destino"
-        name={toName}
-        balance={null}
-        accent="olive"
-        meta={toInstitution ? `${toInstitution}` : "Conta corrente"}
-      />
-    </div>
-  );
-}
-
-function FlowCard({
-  eyebrow,
-  name,
-  balance,
-  accent,
-  meta,
-}: {
-  eyebrow: string;
-  name: string;
-  balance: number | null;
-  accent: "navy" | "olive";
-  meta?: string;
-}) {
-  return (
-    <div
-      className={`rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] ${
-        accent === "navy" ? "!border-l-navy-800" : "!border-l-olive-600"
-      }`}
-    >
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1.5 font-medium">
-        {eyebrow}
-      </div>
-      <div className="font-display text-[19px] tracking-[-0.015em] mb-3">{name}</div>
-      {balance !== null ? (
-        <div className="font-mono text-[22px] tracking-[-0.02em] text-foreground">
-          {formatMoney(balance)}
+      <div className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] !border-l-olive-600">
+        <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1.5 font-medium">
+          Destino
         </div>
-      ) : null}
-      {meta ? (
-        <div className="text-[12.5px] text-muted-foreground mt-1">{meta}</div>
-      ) : null}
+        <div className="font-display text-[19px] tracking-[-0.015em] mb-3">{toName}</div>
+        {toInstitution ? (
+          <div className="text-[12.5px] text-muted-foreground mt-1">{toInstitution}</div>
+        ) : (
+          <div className="text-[12.5px] text-muted-foreground mt-1">Conta corrente</div>
+        )}
+      </div>
     </div>
   );
 }

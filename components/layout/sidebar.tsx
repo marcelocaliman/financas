@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { SidebarLiveTicker } from "@/components/layout/sidebar-live-ticker";
 import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
@@ -114,8 +115,9 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* User + theme */}
+      {/* User + theme + live ticker */}
       <div className="border-t border-ink-800 px-4 py-3 space-y-2">
+        <SidebarLiveTicker />
         <div className="flex items-center justify-between px-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-600 font-medium">
             Modo

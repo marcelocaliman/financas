@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
+import { CoverageLiveAccrued } from "@/components/dashboard/coverage-live-accrued";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
@@ -89,6 +90,8 @@ export default async function DashboardPage() {
         patrimonio={netWorth}
         monthRatio={ratio}
         expenseRatio={expenseVsIncome}
+        liveDailyYield={live.totalDailyYield}
+        livePerSecond={live.totalPerSecond}
       />
 
       <PortfolioLiveTicker portfolio={live} variant="compact" />
@@ -102,6 +105,8 @@ export default async function DashboardPage() {
           monthlyExpense={coverage.monthlyAverageExpense}
           ratio={coverage.ratio}
           hasInvestments={portfolio.total > 0}
+          liveDailyYield={live.totalDailyYield}
+          livePerSecond={live.totalPerSecond}
         />
       </div>
 
@@ -115,11 +120,15 @@ function CoveragePanel({
   monthlyExpense,
   ratio,
   hasInvestments,
+  liveDailyYield = 0,
+  livePerSecond = 0,
 }: {
   monthlyYield: number;
   monthlyExpense: number;
   ratio: number;
   hasInvestments: boolean;
+  liveDailyYield?: number;
+  livePerSecond?: number;
 }) {
   const pct = Math.min(100, Math.round(ratio * 100));
   return (
@@ -142,6 +151,10 @@ function CoveragePanel({
             ? "média líquida · últimos 3 meses"
             : "ainda sem ativos cadastrados"}
         </p>
+
+        {liveDailyYield > 0 ? (
+          <CoverageLiveAccrued dailyYield={liveDailyYield} perSecond={livePerSecond} />
+        ) : null}
 
         <div className="mt-6 flex items-center gap-4">
           <div className="relative w-[86px] h-[86px] shrink-0">
