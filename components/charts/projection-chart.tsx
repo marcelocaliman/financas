@@ -2,7 +2,7 @@
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { formatMoneyCompact } from "@/lib/utils/format";
-import type { ProjectionPoint } from "@/services/redemptions";
+import type { ProjectionPoint } from "@/lib/financial/projection";
 
 export function ProjectionChart({ points }: { points: ProjectionPoint[] }) {
   return (

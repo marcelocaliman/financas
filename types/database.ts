@@ -453,6 +453,46 @@ export interface Database {
           },
         ];
       };
+      goals: {
+        Row: {
+          id: string;
+          household_id: string;
+          name: string;
+          description: string | null;
+          target_amount: number;
+          current_amount: number;
+          target_date: string | null;
+          linked_account_id: string | null;
+          is_archived: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          name: string;
+          description?: string | null;
+          target_amount: number;
+          current_amount?: number;
+          target_date?: string | null;
+          linked_account_id?: string | null;
+          is_archived?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["goals"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "goals_linked_account_id_fkey";
+            columns: ["linked_account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       redemption_intents: {
         Row: {
           id: string;

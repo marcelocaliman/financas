@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { ProjectionChart } from "@/components/charts/projection-chart";
-import { projectFiveYears } from "@/services/redemptions";
+import { projectFiveYears } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
 
 export function ProjectionPanel({

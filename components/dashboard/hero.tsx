@@ -1,5 +1,8 @@
+"use client";
+
 import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
+import { RollingNumber } from "@/components/ui/rolling-number";
 
 const HERO_QUOTE =
   "o dinheiro que sobra silencioso no fim do mês é o que constrói liberdade no fim da década.";
@@ -136,10 +139,10 @@ function Stat({
         {label}
       </div>
       <div className="font-mono text-[22px] sm:text-[26px] tracking-[-0.02em] font-light text-white">
-        R$ {fmt.format(Math.round(value))}
+        R$ <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} />
       </div>
       {accent ? (
-        <div className="text-[11.5px] font-mono text-navy-300 mt-1">soma das contas ativas</div>
+        <div className="text-[11.5px] font-mono text-navy-300 mt-1">contas + investimentos</div>
       ) : null}
     </div>
   );

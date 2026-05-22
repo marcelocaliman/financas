@@ -53,3 +53,72 @@ export function monthProgress(now: Date = new Date()): {
     ratio: d / daysInMonth,
   };
 }
+
+/* ============================== INVESTIMENTOS ============================
+ * Funções puras de projeção e estimativa — vivem aqui pra serem usadas tanto
+ * em Server Components (services/*) quanto em Client Components (charts).
+ */
+
+export type ProjectionPoint = { month: number; balance: number; sacado: number };
+
+/**
+ * Projeta saldo de um ativo Selic com saques mensais por N meses.
+ * Modelo: taxa diária composta · 21 dias úteis/mês.
+ */
+export function projectFiveYears(
+  initialBalance: number,
+  selicAnnualPct: number,
+  monthlyWithdrawal: number,
+  months = 60,
+): {
+  points: ProjectionPoint[];
+  totalSacado: number;
+  lastBalance: number;
+  lastMonthYield: number;
+} {
+  const dailyRate = Math.pow(1 + selicAnnualPct / 100, 1 / 252) - 1;
+  const monthlyFactor = Math.pow(1 + dailyRate, 21);
+
+  const points: ProjectionPoint[] = [{ month: 0, balance: initialBalance, sacado: 0 }];
+  let balance = initialBalance;
+  let sacado = 0;
+  let exhausted = false;
+
+  for (let m = 1; m <= months; m++) {
+    if (!exhausted) {
+      balance = balance * monthlyFactor - monthlyWithdrawal;
+      sacado += monthlyWithdrawal;
+      if (balance < 0) {
+        balance = 0;
+        exhausted = true;
+      }
+    }
+    points.push({ month: m, balance: Math.round(balance * 100) / 100, sacado });
+  }
+
+  const last = points[points.length - 1];
+  const lastMonthYield = last.balance * (monthlyFactor - 1);
+  return {
+    points,
+    totalSacado: sacado,
+    lastBalance: last.balance,
+    lastMonthYield: Math.round(lastMonthYield * 100) / 100,
+  };
+}
+
+/**
+ * Estima quando a meta será atingida pelo ritmo médio de aporte.
+ */
+export function estimateCompletion(
+  current: number,
+  target: number,
+  monthlyAddition: number,
+): { months: number | null; etaDate: string | null } {
+  const remaining = target - current;
+  if (remaining <= 0) return { months: 0, etaDate: null };
+  if (monthlyAddition <= 0) return { months: null, etaDate: null };
+  const months = Math.ceil(remaining / monthlyAddition);
+  const eta = new Date();
+  eta.setUTCMonth(eta.getUTCMonth() + months);
+  return { months, etaDate: eta.toISOString().slice(0, 10) };
+}

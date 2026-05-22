@@ -3,6 +3,7 @@ import { listAccounts } from "@/services/accounts";
 import { AccountCard } from "@/components/accounts/account-card";
 import { NewAccountButton } from "./new-account-button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { StaggeredGrid, StaggeredItem } from "@/components/layout/staggered-grid";
 import { formatMoney } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +50,13 @@ export default async function ContasPage() {
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {active.map((a) => (
-              <AccountCard key={a.id} account={a} />
+              <StaggeredItem key={a.id}>
+                <AccountCard account={a} />
+              </StaggeredItem>
             ))}
-          </div>
+          </StaggeredGrid>
         </section>
       ) : (
         <EmptyState />
