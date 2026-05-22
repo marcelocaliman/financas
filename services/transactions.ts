@@ -135,6 +135,177 @@ export type CategoryBreakdownRow = {
   pct: number;
 };
 
+export type MonthlyHistoryRow = {
+  month: string; // YYYY-MM
+  label: string; // "jan", "fev", ...
+  income: number;
+  expense: number;
+  net: number;
+};
+
+/**
+ * Histórico dos últimos N meses (incluindo o mês corrente).
+ * Apenas income/expense (transferências não inflam).
+ */
+export async function getMonthlyHistory(months = 6): Promise<MonthlyHistoryRow[]> {
+  const supabase = await createClient();
+
+  const now = new Date();
+  // Limite inferior: primeiro dia do mês corrente - (months-1) meses
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [yStr, mStr] = fmt.format(now).split("-");
+  const y = parseInt(yStr, 10);
+  const m = parseInt(mStr, 10);
+  const fromYear = m - (months - 1) <= 0 ? y - Math.ceil((months - 1 - m + 1) / 12) : y;
+  // Calcula primeiro dia: aritmética com Date
+  const start = new Date(Date.UTC(y, m - 1 - (months - 1), 1));
+  const startISO = start.toISOString().slice(0, 10);
+  const endISO = `${y}-${String(m).padStart(2, "0")}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("kind, amount, date")
+    .gte("date", startISO)
+    .lte("date", endISO)
+    .in("kind", ["income", "expense"]);
+  if (error) throw error;
+
+  const buckets = new Map<string, { income: number; expense: number }>();
+
+  // Pré-popula meses na ordem cronológica
+  const labels = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const out: MonthlyHistoryRow[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, { income: 0, expense: 0 });
+    out.push({
+      month: key,
+      label: labels[d.getUTCMonth()],
+      income: 0,
+      expense: 0,
+      net: 0,
+    });
+  }
+
+  for (const t of data ?? []) {
+    const key = (t.date as string).slice(0, 7);
+    const b = buckets.get(key);
+    if (!b) continue;
+    const amt = Number(t.amount);
+    if (t.kind === "income") b.income += amt;
+    else b.expense += amt;
+  }
+
+  for (const row of out) {
+    const b = buckets.get(row.month)!;
+    row.income = Math.round(b.income * 100) / 100;
+    row.expense = Math.round(b.expense * 100) / 100;
+    row.net = Math.round((b.income - b.expense) * 100) / 100;
+  }
+  // Silenciar warning de "fromYear unused"
+  void fromYear;
+  return out;
+}
+
+export type ExpenseAnomaly = {
+  categoryId: string | null;
+  categoryName: string;
+  currentTotal: number;
+  averagePrior: number;
+  pctAbove: number;
+  severity: "medium" | "high";
+};
+
+/**
+ * Detecta gastos atípicos no mês corrente.
+ * Critério: gasto da categoria > 1.5× média dos 3 meses anteriores
+ *           AND gasto absoluto > R$ 100.
+ */
+export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
+  const supabase = await createClient();
+
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const [yStr, mStr] = fmt.format(now).split("-");
+  const y = parseInt(yStr, 10);
+  const m = parseInt(mStr, 10);
+
+  // Mês corrente: [startCurrent .. endCurrent]
+  const startCurrent = `${y}-${String(m).padStart(2, "0")}-01`;
+  const endCurrent = `${y}-${String(m).padStart(2, "0")}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+  // 3 meses anteriores
+  const startPrior = new Date(Date.UTC(y, m - 4, 1)).toISOString().slice(0, 10);
+  const endPrior = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
+
+  const { data: current, error: e1 } = await supabase
+    .from("transactions")
+    .select("amount, category_id, category:categories(id,name)")
+    .gte("date", startCurrent)
+    .lte("date", endCurrent)
+    .eq("kind", "expense");
+  if (e1) throw e1;
+
+  const { data: prior, error: e2 } = await supabase
+    .from("transactions")
+    .select("amount, category_id, date")
+    .gte("date", startPrior)
+    .lte("date", endPrior)
+    .eq("kind", "expense");
+  if (e2) throw e2;
+
+  type Row = { amount: number; category_id: string | null; category?: { id: string; name: string } | null };
+  const cur = (current ?? []) as Row[];
+  const pri = (prior ?? []) as Row[];
+
+  const currentByCat = new Map<string, { name: string; total: number }>();
+  for (const t of cur) {
+    const key = t.category_id ?? "uncategorized";
+    const name = (t.category as { id: string; name: string } | null)?.name ?? "Sem categoria";
+    const e = currentByCat.get(key) ?? { name, total: 0 };
+    e.total += Number(t.amount);
+    e.name = name;
+    currentByCat.set(key, e);
+  }
+
+  // Para a média dos 3 meses anteriores, somar por categoria e dividir por 3.
+  const priorTotalByCat = new Map<string, number>();
+  for (const t of pri) {
+    const key = t.category_id ?? "uncategorized";
+    priorTotalByCat.set(key, (priorTotalByCat.get(key) ?? 0) + Number(t.amount));
+  }
+
+  const anomalies: ExpenseAnomaly[] = [];
+  for (const [key, cur] of currentByCat) {
+    const avg = (priorTotalByCat.get(key) ?? 0) / 3;
+    if (avg === 0 && cur.total < 200) continue; // categoria nova com gasto baixo: ignora
+    if (cur.total < 100) continue;
+    if (avg > 0 && cur.total <= avg * 1.5) continue;
+
+    const pct = avg > 0 ? cur.total / avg - 1 : 1;
+    anomalies.push({
+      categoryId: key === "uncategorized" ? null : key,
+      categoryName: cur.name,
+      currentTotal: Math.round(cur.total * 100) / 100,
+      averagePrior: Math.round(avg * 100) / 100,
+      pctAbove: pct,
+      severity: pct > 1 ? "high" : "medium",
+    });
+  }
+
+  return anomalies.sort((a, b) => b.pctAbove - a.pctAbove);
+}
+
 export async function getCategoryBreakdown(
   monthStr?: string,
   kind: TransactionKind = "expense",

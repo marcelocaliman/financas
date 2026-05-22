@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { RealtimeBridge } from "@/components/layout/realtime-bridge";
 import { QuickAddProvider } from "@/components/transactions/quick-add-context";
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
 import { getCurrentUserContext } from "@/services/auth";
@@ -29,6 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <QuickAddProvider>
+      <RealtimeBridge />
       <div className="min-h-screen flex">
         <Sidebar
           user={{ name: ctx.profile.display_name, email: ctx.email }}

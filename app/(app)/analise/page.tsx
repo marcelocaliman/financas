@@ -1,19 +1,194 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { ComingSoon } from "@/components/layout/coming-soon";
+import { Panel, PanelHeader } from "@/components/ui/panel";
+import { CategoriesBarChart } from "@/components/charts/categories-bar-chart";
+import { IncomeExpenseLine } from "@/components/charts/income-expense-line";
+import {
+  getCategoryBreakdown,
+  getMonthlyHistory,
+  monthRange,
+} from "@/services/transactions";
+import { formatMoney } from "@/lib/utils/format";
 
-export default function AnalisePage() {
+export const dynamic = "force-dynamic";
+
+export default async function AnalisePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const { month } = await searchParams;
+  const [history, breakdown] = await Promise.all([
+    getMonthlyHistory(6),
+    getCategoryBreakdown(month, "expense"),
+  ]);
+
+  const { label: monthLabel } = monthRange(month);
+  const current = history[history.length - 1];
+  const prev = history[history.length - 2];
+
+  const incomeDelta =
+    prev && prev.income > 0 ? current.income / prev.income - 1 : null;
+  const expenseDelta =
+    prev && prev.expense > 0 ? current.expense / prev.expense - 1 : null;
+  const netDelta = prev ? current.net - prev.net : null;
+
   return (
     <>
       <PageHeader
-        eyebrow="Insights"
-        title={<>Análise <em className="not-italic font-display italic text-navy-700">financeira</em></>}
+        eyebrow={`Insights · últimos ${history.length} meses`}
+        title={
+          <>
+            Análise <em className="not-italic font-display italic text-navy-700">financeira</em>
+          </>
+        }
         subtitle="Para onde o dinheiro foi, de onde veio, e como vocês mudaram nos últimos meses."
       />
-      <ComingSoon
-        phase="Fase 2"
-        title="Onde o dinheiro virou ritmo."
-        description="Barras horizontais por categoria, linha de receitas vs despesas, tabela comparativa mês a mês — tudo respondendo à pergunta única: o que mudou?"
-      />
+
+      <div className="grid sm:grid-cols-3 gap-4 mb-6">
+        <DeltaCard
+          label={`Entrou em ${monthLabel}`}
+          value={current?.income ?? 0}
+          delta={incomeDelta}
+          tone="positive"
+        />
+        <DeltaCard
+          label={`Saiu em ${monthLabel}`}
+          value={current?.expense ?? 0}
+          delta={expenseDelta}
+          tone="negative"
+          invertDeltaColor
+        />
+        <DeltaCard
+          label={`Sobra de ${monthLabel}`}
+          value={current?.net ?? 0}
+          delta={netDelta}
+          isAbsoluteDelta
+          tone={(current?.net ?? 0) >= 0 ? "positive" : "negative"}
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-5">
+        <Panel>
+          <PanelHeader
+            title="Receitas vs Despesas"
+            meta={`${history[0]?.label} → ${history[history.length - 1]?.label}`}
+          />
+          <IncomeExpenseLine rows={history} />
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Top categorias" meta={monthLabel} />
+          <CategoriesBarChart rows={breakdown} />
+        </Panel>
+      </div>
+
+      <Panel>
+        <PanelHeader title="Comparativo mês a mês" meta="receita, despesa, sobra" />
+        <table className="w-full text-[13.5px]">
+          <thead>
+            <tr className="border-b border-border text-faint-foreground">
+              <th className="text-left font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                Mês
+              </th>
+              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                Entrou
+              </th>
+              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                Saiu
+              </th>
+              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                Sobra
+              </th>
+              <th className="text-right font-mono text-[10.5px] uppercase tracking-[0.14em] py-2.5 font-medium">
+                Δ
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((r, idx) => {
+              const prev = history[idx - 1];
+              const deltaPct = prev && prev.expense > 0 ? r.expense / prev.expense - 1 : null;
+              return (
+                <tr key={r.month} className="border-b border-border last:border-b-0">
+                  <td className="py-3 capitalize font-medium tracking-[-0.005em]">
+                    {r.label}
+                    <span className="text-faint-foreground ml-1 text-[11px] font-mono">
+                      {r.month.slice(0, 4)}
+                    </span>
+                  </td>
+                  <td className="text-right font-mono">{formatMoney(r.income)}</td>
+                  <td className="text-right font-mono">{formatMoney(r.expense)}</td>
+                  <td className="text-right font-mono font-medium">
+                    {formatMoney(r.net)}
+                  </td>
+                  <td className="text-right font-mono">
+                    {deltaPct === null ? (
+                      <span className="text-faint-foreground">—</span>
+                    ) : (
+                      <span
+                        className={
+                          deltaPct > 0.05
+                            ? "text-rust-600"
+                            : deltaPct < -0.05
+                              ? "text-olive-700"
+                              : "text-muted-foreground"
+                        }
+                      >
+                        {deltaPct > 0 ? "+" : ""}
+                        {(deltaPct * 100).toFixed(0)}%
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
     </>
+  );
+}
+
+function DeltaCard({
+  label,
+  value,
+  delta,
+  tone,
+  invertDeltaColor,
+  isAbsoluteDelta,
+}: {
+  label: string;
+  value: number;
+  delta: number | null;
+  tone: "positive" | "negative";
+  invertDeltaColor?: boolean;
+  isAbsoluteDelta?: boolean;
+}) {
+  const goodWhenUp = !invertDeltaColor;
+  const deltaTone =
+    delta === null
+      ? "text-faint-foreground"
+      : (delta > 0) === goodWhenUp
+        ? "text-olive-700"
+        : "text-rust-600";
+
+  return (
+    <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+        {label}
+      </div>
+      <div
+        className={`mt-1.5 font-mono text-[22px] tracking-[-0.02em] ${tone === "positive" ? "text-foreground" : "text-rust-600"}`}
+      >
+        {formatMoney(value)}
+      </div>
+      <div className={`mt-1 font-mono text-[11.5px] ${deltaTone}`}>
+        {delta === null
+          ? "primeiro mês"
+          : isAbsoluteDelta
+            ? `${delta >= 0 ? "+" : ""}${formatMoney(delta)} vs mês anterior`
+            : `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(0)}% vs mês anterior`}
+      </div>
+    </div>
   );
 }

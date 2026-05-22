@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { suggestCategory } from "@/lib/financial/auto-categorize";
 
 const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
 
@@ -95,16 +96,38 @@ export async function createTransaction(
   if (!ctx) return { error: "Sessão expirada." };
 
   const supabase = await createClient();
+
+  // Auto-categorização: se o usuário não escolheu categoria, tentamos sugerir
+  // por matching de regras nas categorias do household.
+  let resolvedCategoryId = parsed.data.categoryId ?? null;
+  let categorySource: "manual" | "rule" = "manual";
+  let categoryConfidence: number | null = null;
+
+  if (!resolvedCategoryId) {
+    const { data: cats } = await supabase
+      .from("categories")
+      .select("id, kind, rules")
+      .eq("is_archived", false);
+    const suggestion = suggestCategory(parsed.data.description, parsed.data.kind, cats ?? []);
+    if (suggestion) {
+      resolvedCategoryId = suggestion.categoryId;
+      categorySource = "rule";
+      categoryConfidence = suggestion.confidence;
+    }
+  }
+
   const { error } = await supabase.from("transactions").insert({
     household_id: ctx.household.id,
     account_id: parsed.data.accountId,
-    category_id: parsed.data.categoryId ?? null,
+    category_id: resolvedCategoryId,
     kind: parsed.data.kind,
     amount: parsed.data.amount,
     description: parsed.data.description.trim(),
     payment_method: parsed.data.paymentMethod ?? null,
     date: parsed.data.date,
     created_by: ctx.profile.id,
+    category_source: categorySource,
+    category_confidence: categoryConfidence,
   });
   if (error) return { error: error.message };
 

@@ -13,6 +13,7 @@ import {
   Tag,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
@@ -111,8 +112,14 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* User */}
-      <div className="border-t border-ink-800 px-4 py-4">
+      {/* User + theme */}
+      <div className="border-t border-ink-800 px-4 py-3 space-y-2">
+        <div className="flex items-center justify-between px-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-600 font-medium">
+            Modo
+          </span>
+          <ThemeToggle tone="dark" />
+        </div>
         <Link
           href="/configuracoes"
           className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] hover:bg-ink-800 transition-colors"

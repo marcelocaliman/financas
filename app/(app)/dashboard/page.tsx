@@ -6,9 +6,11 @@ import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
+import { InsightCard } from "@/components/dashboard/insight-card";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts, getAccountsTotals } from "@/services/accounts";
 import {
+  detectExpenseAnomalies,
   getCategoryBreakdown,
   getMonthlySummary,
   listTransactions,
@@ -27,12 +29,13 @@ export default async function DashboardPage() {
   const now = new Date();
   const greeting = getGreeting(now);
 
-  const [summary, accounts, breakdown, latest, totals] = await Promise.all([
+  const [summary, accounts, breakdown, latest, totals, anomalies] = await Promise.all([
     getMonthlySummary(),
     listAccounts(),
     getCategoryBreakdown(undefined, "expense"),
     listTransactions({ pageSize: 6 }),
     getAccountsTotals(),
+    detectExpenseAnomalies(),
   ]);
 
   const hasAccounts = accounts.length > 0;
@@ -86,6 +89,8 @@ export default async function DashboardPage() {
             monthRatio={ratio}
             expenseRatio={expenseVsIncome}
           />
+
+          <InsightCard anomalies={anomalies} />
 
           <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8">
             <TopCategoriesPanel rows={breakdown} monthLabel={monthLabel} />

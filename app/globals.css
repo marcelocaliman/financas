@@ -7,6 +7,8 @@
  * Referência: docs/briefing.md §5 e docs/reference-prototype.html
  */
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* ============================== TYPOGRAPHY ============================== */
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -102,6 +104,24 @@
   --ease-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ============================== DARK MODE ================================
+ * Inverte papel quente em ink profundo. Acentos mantêm-se (olive/rust/gold)
+ * pq são pigmentos, não neon — funcionam em ambos.
+ */
+.dark {
+  --color-background: var(--color-ink-950);
+  --color-surface: var(--color-ink-900);
+  --color-surface-muted: var(--color-ink-800);
+  --color-surface-strong: var(--color-ink-700);
+
+  --color-border: var(--color-ink-800);
+  --color-border-strong: var(--color-ink-700);
+
+  --color-foreground: #f5f1e6;
+  --color-muted-foreground: #9aa1b1;
+  --color-faint-foreground: #6c7383;
+}
+
 /* ============================== BASE ===================================== */
 * {
   box-sizing: border-box;
@@ -125,7 +145,7 @@ body {
   min-height: 100vh;
 }
 
-/* Texturas radiais — papel quente respirando */
+/* Texturas radiais — papel quente respirando (suaviza em dark) */
 body::before {
   content: "";
   position: fixed;
@@ -135,6 +155,11 @@ body::before {
     radial-gradient(ellipse at top right, rgba(190, 170, 130, 0.05), transparent 50%),
     radial-gradient(ellipse at bottom left, rgba(60, 80, 120, 0.03), transparent 50%);
   z-index: 0;
+}
+.dark body::before {
+  background:
+    radial-gradient(ellipse at top right, rgba(176, 123, 50, 0.06), transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(60, 80, 120, 0.05), transparent 50%);
 }
 
 /* Numerais tabulares por padrão em monoespaçada */
