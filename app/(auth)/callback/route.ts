@@ -1,9 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
+import type { Database } from "@/types/database";
 
 /**
- * Callback OAuth / magic link.
- * Após a troca do code por sessão, dispara bootstrap_household se ainda não houver perfil.
+ * Callback de magic link / OAuth.
+ *
+ * Padrão "bulletproof": criamos a NextResponse de redirect ANTES e anexamos as
+ * cookies de sessão direto nela, em vez de confiar na propagação implícita do
+ * cookies() store do Next. Isso evita race-conditions onde a sessão é criada
+ * mas o cookie não chega no browser, deixando o usuário deslogado em /dashboard.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -14,24 +19,59 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  const supabase = await createClient();
-  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+  // Preparamos a response de redirect já — vamos anexar cookies nela.
+  const response = NextResponse.redirect(`${origin}${next}`);
 
+  const supabase = createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
   if (exchangeError) {
-    return NextResponse.redirect(`${origin}/login?error=exchange_failed`);
+    console.error("[callback] exchange failed:", exchangeError.message);
+    return NextResponse.redirect(
+      `${origin}/login?error=exchange_failed&msg=${encodeURIComponent(exchangeError.message)}`,
+    );
   }
 
-  // Garante household + perfil idempotente
+  // Bootstrap idempotente: garante household + perfil + categorias.
   const { data: userData } = await supabase.auth.getUser();
-  const meta = (userData.user?.user_metadata ?? {}) as {
+  if (!userData.user) {
+    console.error("[callback] no user after exchange");
+    return NextResponse.redirect(`${origin}/login?error=no_user_after_exchange`);
+  }
+
+  const meta = (userData.user.user_metadata ?? {}) as {
     display_name?: string;
     household_name?: string;
   };
 
-  await supabase.rpc("bootstrap_household", {
+  const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
     p_household_name: meta.household_name ?? "Nosso lar",
-    p_display_name: meta.display_name ?? userData.user?.email?.split("@")[0] ?? "Sem nome",
+    p_display_name:
+      meta.display_name ?? userData.user.email?.split("@")[0] ?? "Sem nome",
   });
 
-  return NextResponse.redirect(`${origin}${next}`);
+  if (bootstrapError) {
+    console.error("[callback] bootstrap failed:", bootstrapError.message);
+    // Não bloqueamos: pode já existir (idempotente do lado do RPC).
+  }
+
+  console.log(
+    `[callback] OK · user=${userData.user.email} · redirecting to ${next}`,
+  );
+  return response;
 }
