@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowLeftRight, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeftRight, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
@@ -78,6 +78,13 @@ export function TransactionRow({
               <ArrowLeftRight
                 className="w-3 h-3 text-navy-600 shrink-0"
                 strokeWidth={1.8}
+              />
+            ) : null}
+            {tx.is_recurring ? (
+              <Repeat
+                className="w-3 h-3 text-faint-foreground shrink-0"
+                strokeWidth={1.8}
+                aria-label="Lançamento recorrente"
               />
             ) : null}
             {tx.description}

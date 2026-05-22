@@ -52,6 +52,7 @@ export type PhysicalAssetCategory =
   | "other";
 export type DepreciationMethod = "none" | "linear";
 export type Currency = "BRL" | "EUR" | "USD";
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
 
 export interface Database {
   public: {
@@ -682,6 +683,96 @@ export interface Database {
           },
         ];
       };
+      recurring_rules: {
+        Row: {
+          id: string;
+          household_id: string;
+          kind: TransactionKind;
+          amount: number;
+          currency: Currency;
+          description: string;
+          account_id: string | null;
+          category_id: string | null;
+          payment_method: PaymentMethod | null;
+          from_account_id: string | null;
+          to_account_id: string | null;
+          frequency: RecurrenceFrequency;
+          interval_count: number;
+          day_of_month: number | null;
+          day_of_week: number | null;
+          start_date: string;
+          end_date: string | null;
+          is_active: boolean;
+          last_materialized_date: string | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          kind: TransactionKind;
+          amount: number;
+          currency?: Currency;
+          description: string;
+          account_id?: string | null;
+          category_id?: string | null;
+          payment_method?: PaymentMethod | null;
+          from_account_id?: string | null;
+          to_account_id?: string | null;
+          frequency: RecurrenceFrequency;
+          interval_count?: number;
+          day_of_month?: number | null;
+          day_of_week?: number | null;
+          start_date: string;
+          end_date?: string | null;
+          is_active?: boolean;
+          last_materialized_date?: string | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["recurring_rules"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "recurring_rules_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_rules_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_rules_from_account_id_fkey";
+            columns: ["from_account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_rules_to_account_id_fkey";
+            columns: ["to_account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_rules_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -760,6 +851,25 @@ export interface Database {
       reset_household_data: {
         Args: Record<string, never>;
         Returns: void;
+      };
+      materialize_recurrence: {
+        Args: { p_rule_id: string; p_until_date: string };
+        Returns: number;
+      };
+      materialize_all_recurrences: {
+        Args: { p_household_id: string; p_until_date: string };
+        Returns: number;
+      };
+      next_recurrence_date: {
+        Args: {
+          p_start_date: string;
+          p_frequency: RecurrenceFrequency;
+          p_interval: number;
+          p_day_of_month: number | null;
+          p_day_of_week: number | null;
+          p_from: string;
+        };
+        Returns: string;
       };
     };
     Enums: { [_ in never]: never };
