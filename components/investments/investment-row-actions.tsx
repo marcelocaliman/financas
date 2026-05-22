@@ -9,6 +9,7 @@ import {
   RotateCcw,
   Sparkles,
   Trash2,
+  ArrowDownToLine,
 } from "lucide-react";
 import { toast } from "sonner";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
@@ -23,19 +24,27 @@ import { YieldDialog } from "./yield-dialog";
 import { MovementDialog } from "./movement-dialog";
 import { MovementsSheet } from "./movements-sheet";
 import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
+import { WithdrawYieldDialog } from "./withdraw-yield-dialog";
 
-type Investment = Tables<"investments">;
+type Investment = Tables<"investments"> & {
+  account?: Pick<Tables<"accounts">, "id" | "name" | "institution"> | null;
+};
 type AccountLite = { id: string; name: string; institution: string };
 
 export function InvestmentRowActions({
   investment,
   investmentAccounts,
+  destinationAccounts = [],
+  accumulatedYield = 0,
 }: {
   investment: Investment;
   investmentAccounts: AccountLite[];
+  destinationAccounts?: AccountLite[];
+  accumulatedYield?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [registeringYield, setRegisteringYield] = useState(false);
+  const [withdrawingYield, setWithdrawingYield] = useState(false);
   const [movementMode, setMovementMode] = useState<"buy" | "sell" | null>(null);
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
@@ -118,6 +127,20 @@ export function InvestmentRowActions({
                         onSelect: () => setAportingFixed(true),
                         disabled: pending,
                       },
+                      {
+                        label: "Sacar rendimento",
+                        icon: <ArrowDownToLine className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => {
+                          if (destinationAccounts.length === 0) {
+                            toast.error(
+                              "Crie uma conta corrente/poupança pra receber o saque.",
+                            );
+                            return;
+                          }
+                          setWithdrawingYield(true);
+                        },
+                        disabled: pending || accumulatedYield <= 0,
+                      },
                     ]
                   : []),
                 {
@@ -191,11 +214,20 @@ export function InvestmentRowActions({
         </>
       ) : null}
       {isFixedIncome ? (
-        <FixedIncomeContributionDialog
-          open={aportingFixed}
-          onOpenChange={setAportingFixed}
-          investment={investment}
-        />
+        <>
+          <FixedIncomeContributionDialog
+            open={aportingFixed}
+            onOpenChange={setAportingFixed}
+            investment={investment}
+          />
+          <WithdrawYieldDialog
+            open={withdrawingYield}
+            onOpenChange={setWithdrawingYield}
+            investment={investment}
+            accumulatedYield={accumulatedYield}
+            destinationAccounts={destinationAccounts}
+          />
+        </>
       ) : null}
     </>
   );

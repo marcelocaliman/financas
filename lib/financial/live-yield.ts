@@ -68,6 +68,13 @@ export type LivePortfolio = {
   totalMarketBalance: number;
   totalDailyYield: number;
   totalPerSecond: number;
+  /**
+   * Rendimento acumulado da renda fixa (current_balance - initial_amount),
+   * já considerando aportes (não afetam) e saques de yield (subtraem).
+   * Cresce naturalmente conforme o cron atualiza current_balance; tic-tic
+   * cosmético do dia é somado client-side via dayUtilizationRatio.
+   */
+  totalFixedIncomeAccumulatedYield: number;
   byAsset: LiveAssetMetrics[];
   byClass: {
     fixedIncome: { dailyYield: number; perSecond: number; balance: number };
@@ -147,6 +154,7 @@ export function computeLivePortfolio(args: {
   let totalBaseBalance = 0;
   let totalMarketBalance = 0;
   let totalDailyYield = 0;
+  let totalFixedIncomeAccumulatedYield = 0;
 
   const now = args.now ?? new Date();
 
@@ -258,6 +266,11 @@ export function computeLivePortfolio(args: {
       byClass.fixedIncome.balance += derivedBalance;
       byClass.fixedIncome.dailyYield += dailyYield;
       byClass.fixedIncome.perSecond += perSecond;
+      // Rendimento acumulado deste ativo: saldo derivado − custo aplicado.
+      // Aportes elevam ambos igualmente (delta neutro). Saques de yield
+      // diminuem derivedBalance (initial_amount fica) → subtraem corretamente.
+      const accumulated = derivedBalance - Number(inv.initial_amount ?? 0);
+      totalFixedIncomeAccumulatedYield += accumulated;
     } else if (inv.asset_type === "fii") {
       byClass.fiis.balance += marketBalance ?? derivedBalance;
       byClass.fiis.dailyYield += dailyYield;
@@ -301,6 +314,8 @@ export function computeLivePortfolio(args: {
     totalMarketBalance: Math.round(totalMarketBalance * 100) / 100,
     totalDailyYield: Math.round(totalDailyYield * 100) / 100,
     totalPerSecond: totalDailyYield / SECONDS_PER_UTIL_DAY,
+    totalFixedIncomeAccumulatedYield:
+      Math.round(totalFixedIncomeAccumulatedYield * 100) / 100,
     byAsset,
     byClass,
   };

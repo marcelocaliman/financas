@@ -152,3 +152,112 @@ export async function skipRedemption(intentId: string) {
   revalidatePath("/resgates");
   return { ok: true };
 }
+
+/* ========================================================================== *
+ * Saque ad-hoc de rendimento
+ *
+ * Caso o user queira marcar que sacou um valor do yield SEM passar por uma
+ * yield_rule formal — útil pra registro simples. Diminui o current_balance
+ * do investimento e cria uma transação de income na conta destino com
+ * metadata.yield_withdrawal = true (auditoria futura).
+ * ========================================================================== */
+
+const withdrawYieldSchema = z.object({
+  investmentId: z.string().uuid(),
+  targetAccountId: z.string().uuid(),
+  amount: z.coerce.number().positive("Valor precisa ser positivo."),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+  notes: z.string().optional(),
+});
+
+export type WithdrawYieldState = {
+  ok?: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+};
+
+export async function withdrawYield(
+  _prev: WithdrawYieldState | undefined,
+  formData: FormData,
+): Promise<WithdrawYieldState> {
+  const parsed = withdrawYieldSchema.safeParse({
+    investmentId: formData.get("investmentId"),
+    targetAccountId: formData.get("targetAccountId"),
+    amount: formData.get("amount"),
+    date: formData.get("date"),
+    notes: formData.get("notes") || undefined,
+  });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const supabase = await createClient();
+
+  // 1. Carrega investimento + conta destino (pra validações + currency)
+  const [{ data: inv }, { data: acc }] = await Promise.all([
+    supabase
+      .from("investments")
+      .select("id, ticker, name, current_balance, currency, household_id")
+      .eq("id", parsed.data.investmentId)
+      .maybeSingle(),
+    supabase
+      .from("accounts")
+      .select("id, name, currency, household_id")
+      .eq("id", parsed.data.targetAccountId)
+      .maybeSingle(),
+  ]);
+
+  if (!inv) return { error: "Investimento não encontrado." };
+  if (!acc) return { error: "Conta destino não encontrada." };
+  if (inv.household_id !== ctx.household.id || acc.household_id !== ctx.household.id) {
+    return { error: "Acesso negado." };
+  }
+
+  if (Number(inv.current_balance) < parsed.data.amount) {
+    return { error: "Valor maior que o saldo do investimento." };
+  }
+
+  // 2. Diminui current_balance do investimento (na moeda dele)
+  const { error: invErr } = await supabase
+    .from("investments")
+    .update({ current_balance: Number(inv.current_balance) - parsed.data.amount })
+    .eq("id", inv.id);
+  if (invErr) return { error: invErr.message };
+
+  // 3. Cria transação de income na conta destino. Se as moedas diferirem,
+  //    o trigger de balance já lida com amount_account = amount (default).
+  //    Aqui o valor é na moeda da conta destino (o user escolheu o valor).
+  const { error: txErr } = await supabase.from("transactions").insert({
+    household_id: ctx.household.id,
+    account_id: acc.id,
+    kind: "income",
+    amount: parsed.data.amount,
+    amount_account: parsed.data.amount,
+    currency: acc.currency,
+    description: `Saque de rendimento · ${inv.ticker}`,
+    date: parsed.data.date,
+    created_by: ctx.profile.id,
+    category_source: "manual",
+    metadata: {
+      yield_withdrawal: true,
+      investment_id: inv.id,
+      investment_ticker: inv.ticker,
+      notes: parsed.data.notes?.trim() ?? null,
+    },
+  });
+  if (txErr) {
+    // Rollback do current_balance se a transação falhou
+    await supabase
+      .from("investments")
+      .update({ current_balance: Number(inv.current_balance) })
+      .eq("id", inv.id);
+    return { error: txErr.message };
+  }
+
+  revalidatePath("/investimentos");
+  revalidatePath("/dashboard");
+  revalidatePath("/transacoes");
+  revalidatePath("/contas");
+  return { ok: true };
+}

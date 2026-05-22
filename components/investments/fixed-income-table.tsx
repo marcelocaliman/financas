@@ -15,10 +15,13 @@ export function FixedIncomeTable({
   investments,
   liveByAssetId,
   investmentAccounts,
+  destinationAccounts = [],
 }: {
   investments: Investment[];
   liveByAssetId: Map<string, LiveAssetMetrics>;
   investmentAccounts: AccountLite[];
+  /** Contas pra receber saques de rendimento (não-investment) */
+  destinationAccounts?: AccountLite[];
 }) {
   if (investments.length === 0) return null;
 
@@ -209,6 +212,11 @@ export function FixedIncomeTable({
                     <InvestmentRowActions
                       investment={inv}
                       investmentAccounts={investmentAccounts}
+                      destinationAccounts={destinationAccounts}
+                      accumulatedYield={
+                        (live?.baseBalance ?? Number(inv.current_balance)) -
+                        Number(inv.initial_amount)
+                      }
                     />
                   </td>
                 </tr>

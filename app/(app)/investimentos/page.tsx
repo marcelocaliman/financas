@@ -22,6 +22,9 @@ export default async function InvestimentosPage() {
   const investmentAccounts = accounts
     .filter((a) => a.type === "investment")
     .map((a) => ({ id: a.id, name: a.name, institution: a.institution }));
+  const destinationAccounts = accounts
+    .filter((a) => ["checking", "savings", "cash"].includes(a.type))
+    .map((a) => ({ id: a.id, name: a.name, institution: a.institution }));
 
   const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
 
@@ -63,6 +66,7 @@ export default async function InvestimentosPage() {
                 investments={fixedIncome}
                 liveByAssetId={liveByAssetId}
                 investmentAccounts={investmentAccounts}
+                destinationAccounts={destinationAccounts}
               />
             </ScrollTarget>
           ) : null}

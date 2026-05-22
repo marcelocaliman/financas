@@ -158,7 +158,7 @@ export default async function DashboardPage({
             ratio={coverage.ratio}
             hasInvestments={portfolio.total > 0}
             liveDailyYield={live.totalDailyYield}
-            livePerSecond={live.totalPerSecond}
+            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
           />
         ) : null}
       </div>
@@ -178,14 +178,14 @@ function CoveragePanel({
   ratio,
   hasInvestments,
   liveDailyYield = 0,
-  livePerSecond = 0,
+  accumulatedYieldUntilToday = 0,
 }: {
   monthlyYield: number;
   monthlyExpense: number;
   ratio: number;
   hasInvestments: boolean;
   liveDailyYield?: number;
-  livePerSecond?: number;
+  accumulatedYieldUntilToday?: number;
 }) {
   const pct = Math.min(100, Math.round(ratio * 100));
   return (
@@ -209,8 +209,11 @@ function CoveragePanel({
             : "ainda sem ativos cadastrados"}
         </p>
 
-        {liveDailyYield > 0 ? (
-          <CoverageLiveAccrued dailyYield={liveDailyYield} perSecond={livePerSecond} />
+        {hasInvestments ? (
+          <CoverageLiveAccrued
+            accumulatedUntilToday={accumulatedYieldUntilToday}
+            dailyYield={liveDailyYield}
+          />
         ) : null}
 
         <div className="mt-6 flex items-center gap-4">
