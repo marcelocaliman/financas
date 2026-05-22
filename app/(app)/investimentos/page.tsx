@@ -3,6 +3,7 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { SelicLive } from "@/components/investments/selic-live";
 import { NewInvestmentButton } from "@/components/investments/new-investment-button";
+import { InvestmentRowActions } from "@/components/investments/investment-row-actions";
 import { listAccounts } from "@/services/accounts";
 import {
   ASSET_TYPE_LABELS,
@@ -93,6 +94,7 @@ export default async function InvestimentosPage() {
                     <Th right>Valor atual</Th>
                     <Th right>Variação</Th>
                     <Th right>Indexador</Th>
+                    <th className="w-9" />
                   </tr>
                 </thead>
                 <tbody>
@@ -103,7 +105,7 @@ export default async function InvestimentosPage() {
                         ? delta / Number(inv.initial_amount)
                         : 0;
                     return (
-                      <tr key={inv.id} className="border-b border-border last:border-b-0 hover:bg-bone-100/40 transition-colors">
+                      <tr key={inv.id} className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group">
                         <td className="py-3.5 pr-4 align-middle">
                           <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
                             {inv.indexer === "selic" ? (
@@ -140,6 +142,12 @@ export default async function InvestimentosPage() {
                                   ? `IPCA + ${inv.fixed_rate ?? 0}%`
                                   : "—"}
                           </Badge>
+                        </td>
+                        <td className="text-right pl-2">
+                          <InvestmentRowActions
+                            investment={inv}
+                            investmentAccounts={investmentAccounts}
+                          />
                         </td>
                       </tr>
                     );

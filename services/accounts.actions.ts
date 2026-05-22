@@ -113,3 +113,30 @@ export async function restoreAccount(id: string): Promise<{ ok?: boolean; error?
   revalidatePath("/contas");
   return { ok: true };
 }
+
+/**
+ * Deleta a conta DEFINITIVAMENTE.
+ * Falha se houver transações ou investimentos atrelados (FK restrict).
+ * Use archive para o caso geral; este só pra contas vazias criadas por engano.
+ */
+export async function deleteAccount(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Verifica dependências antes pra mensagem amigável
+  const [{ count: txCount }, { count: invCount }] = await Promise.all([
+    supabase.from("transactions").select("*", { count: "exact", head: true }).eq("account_id", id),
+    supabase.from("investments").select("*", { count: "exact", head: true }).eq("account_id", id),
+  ]);
+  if ((txCount ?? 0) > 0 || (invCount ?? 0) > 0) {
+    return {
+      error:
+        "Essa conta tem movimentações ou investimentos. Arquive em vez de excluir — o histórico fica preservado.",
+    };
+  }
+
+  const { error } = await supabase.from("accounts").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/contas");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

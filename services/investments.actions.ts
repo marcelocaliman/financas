@@ -141,6 +141,40 @@ export async function archiveInvestment(id: string) {
     .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/investimentos");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function restoreInvestment(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("investments")
+    .update({ is_active: true })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+/**
+ * Deleta o ativo + rendimentos mensais (cascade) + regras de saque (cascade).
+ * Atenção: irreversível.
+ */
+export async function deleteInvestment(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("investments").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/investimentos");
+  revalidatePath("/resgates");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+export async function deleteMonthlyYield(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("investment_yields").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/investimentos");
   return { ok: true };
 }
 

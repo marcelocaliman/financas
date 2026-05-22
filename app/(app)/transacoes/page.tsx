@@ -7,6 +7,8 @@ import { TransactionRow } from "@/components/transactions/transaction-row";
 import { TransactionsFilterBar } from "@/components/transactions/transactions-filter-bar";
 import { Pagination } from "@/components/transactions/pagination";
 import { listTransactions, monthRange, getMonthlySummary } from "@/services/transactions";
+import { listAccounts } from "@/services/accounts";
+import { listCategories } from "@/services/categories";
 import { formatMoney } from "@/lib/utils/format";
 import type { TransactionKind } from "@/types/database";
 
@@ -31,7 +33,7 @@ export default async function TransacoesPage({
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
 
-  const [{ rows, total }, summary] = await Promise.all([
+  const [{ rows, total }, summary, accounts, categories] = await Promise.all([
     listTransactions({
       month,
       kind: kindFilter,
@@ -40,7 +42,20 @@ export default async function TransacoesPage({
       pageSize,
     }),
     getMonthlySummary(month),
+    listAccounts(),
+    listCategories(),
   ]);
+
+  const accountsLite = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    institution: a.institution,
+  }));
+  const categoriesLite = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    kind: c.kind,
+  }));
 
   const { label: monthLabel, from, to } = monthRange(month);
   const monthInputValue = from.slice(0, 7);
@@ -108,7 +123,12 @@ export default async function TransacoesPage({
               </thead>
               <tbody>
                 {rows.map((tx) => (
-                  <TransactionRow key={tx.id} tx={tx} />
+                  <TransactionRow
+                    key={tx.id}
+                    tx={tx}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                  />
                 ))}
               </tbody>
             </table>

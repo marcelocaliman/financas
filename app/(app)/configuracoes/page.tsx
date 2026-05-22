@@ -3,6 +3,7 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserContext } from "@/services/auth";
 import { signOut } from "../_actions/sign-out";
+import { HouseholdNameForm, ProfileNameForm } from "./profile-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -20,33 +21,16 @@ export default async function ConfiguracoesPage() {
 
       <div className="space-y-5">
         <Panel>
-          <PanelHeader title="Sua conta" meta={`ID: ${ctx.authId.slice(0, 8)}…`} />
-          <dl className="grid sm:grid-cols-2 gap-y-4 gap-x-8 text-[14px]">
-            <div>
-              <dt className="text-faint-foreground text-[11.5px] uppercase tracking-[0.12em] font-mono font-medium">
-                Nome
-              </dt>
-              <dd className="mt-1.5 text-foreground">{ctx.profile.display_name}</dd>
-            </div>
-            <div>
-              <dt className="text-faint-foreground text-[11.5px] uppercase tracking-[0.12em] font-mono font-medium">
-                E-mail
-              </dt>
-              <dd className="mt-1.5 text-foreground">{ctx.email ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-faint-foreground text-[11.5px] uppercase tracking-[0.12em] font-mono font-medium">
-                Papel
-              </dt>
-              <dd className="mt-1.5 text-foreground capitalize">{ctx.profile.role}</dd>
-            </div>
-            <div>
-              <dt className="text-faint-foreground text-[11.5px] uppercase tracking-[0.12em] font-mono font-medium">
-                Lar
-              </dt>
-              <dd className="mt-1.5 text-foreground">{ctx.household.name}</dd>
-            </div>
-          </dl>
+          <PanelHeader title="Sua conta" meta={`E-mail: ${ctx.email ?? "—"}`} />
+          <ProfileNameForm defaultValue={ctx.profile.display_name} />
+          <div className="text-[11.5px] text-faint-foreground font-mono tracking-[0.04em] mt-5 pt-4 border-t border-border">
+            ID: {ctx.authId} · Papel: {ctx.profile.role}
+          </div>
+        </Panel>
+
+        <Panel>
+          <PanelHeader title="Seu lar" meta="Nome usado na sidebar e em compartilhamentos" />
+          <HouseholdNameForm defaultValue={ctx.household.name} />
         </Panel>
 
         <Panel>

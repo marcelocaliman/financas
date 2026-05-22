@@ -107,3 +107,22 @@ export async function archiveGoal(id: string) {
   revalidatePath("/metas");
   return { ok: true };
 }
+
+export async function restoreGoal(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("goals")
+    .update({ is_archived: false })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/metas");
+  return { ok: true };
+}
+
+export async function deleteGoal(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("goals").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/metas");
+  return { ok: true };
+}

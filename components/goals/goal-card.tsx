@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Archive } from "lucide-react";
+import { Pencil, Archive, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { archiveGoal } from "@/services/goals.actions";
+import { archiveGoal, deleteGoal } from "@/services/goals.actions";
 import type { Goal } from "@/services/goals";
 import { estimateCompletion } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
@@ -30,6 +30,14 @@ export function GoalCard({
       const r = await archiveGoal(goal.id);
       if (r.error) toast.error(r.error);
       else toast.success("Meta arquivada.");
+    });
+  };
+  const handleDelete = () => {
+    if (!confirm(`Excluir meta "${goal.name}" DEFINITIVAMENTE?`)) return;
+    startTransition(async () => {
+      const r = await deleteGoal(goal.id);
+      if (r.error) toast.error(r.error);
+      else toast.success("Meta excluída.");
     });
   };
 
@@ -129,6 +137,16 @@ export function GoalCard({
               className="text-rust-600"
             >
               <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              disabled={pending}
+              onClick={handleDelete}
+              aria-label="Excluir definitivamente"
+              className="text-rust-600"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
             </Button>
           </div>
         </div>

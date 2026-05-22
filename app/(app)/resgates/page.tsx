@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { NewRuleButton } from "@/components/redemptions/new-rule-button";
 import { IntentActions } from "@/components/redemptions/intent-actions";
 import { ProjectionPanel } from "@/components/redemptions/projection-panel";
+import { RuleRowActions } from "@/components/redemptions/rule-row-actions";
 import { listAccounts } from "@/services/accounts";
 import { listInvestments, getLatestIndexer } from "@/services/investments";
 import {
@@ -93,11 +94,15 @@ export default async function ResgatesPage() {
                     <Th right>Modo</Th>
                     <Th right>Dia</Th>
                     <Th right>Sugerido</Th>
+                    <th className="w-9" />
                   </tr>
                 </thead>
                 <tbody>
                   {rules.map((r) => (
-                    <tr key={r.id} className="border-b border-border last:border-b-0">
+                    <tr
+                      key={r.id}
+                      className="border-b border-border last:border-b-0 group hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors"
+                    >
                       <td className="py-3 pr-3">
                         <div className="font-mono text-[13.5px] font-medium">
                           {r.investment?.ticker ?? "—"}
@@ -126,6 +131,13 @@ export default async function ResgatesPage() {
                       </td>
                       <td className="text-right font-mono text-[13px] font-medium">
                         {r.mode === "reinvest" ? "—" : formatMoney(r.suggested_amount ?? 0)}
+                      </td>
+                      <td className="text-right pl-2">
+                        <RuleRowActions
+                          rule={r}
+                          investments={investmentLite}
+                          destinations={destinations}
+                        />
                       </td>
                     </tr>
                   ))}

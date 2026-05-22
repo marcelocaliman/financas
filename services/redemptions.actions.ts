@@ -110,6 +110,27 @@ export async function archiveYieldRule(id: string) {
   return { ok: true };
 }
 
+export async function restoreYieldRule(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("yield_rules").update({ is_active: true }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/resgates");
+  return { ok: true };
+}
+
+/**
+ * Deleta a regra. Intents pendentes ou finalizados associados são apagados
+ * em cascata (via FK). Saques já executados continuam existindo como
+ * transactions (transfer_pair_id) — não são afetados.
+ */
+export async function deleteYieldRule(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("yield_rules").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/resgates");
+  return { ok: true };
+}
+
 export async function executeRedemption(intentId: string, amount: number) {
   const supabase = await createClient();
   const { error } = await supabase.rpc("execute_redemption", {

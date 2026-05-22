@@ -108,3 +108,16 @@ export async function restoreCategory(id: string): Promise<{ ok?: boolean; error
   revalidatePath("/categorias");
   return { ok: true };
 }
+
+/**
+ * Deleta categoria. Transações que apontam pra ela ficam com category_id = null
+ * (FK ON DELETE SET NULL no schema). Use com confiança.
+ */
+export async function deleteCategory(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/categorias");
+  revalidatePath("/transacoes");
+  return { ok: true };
+}

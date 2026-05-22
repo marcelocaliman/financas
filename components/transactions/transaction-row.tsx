@@ -1,16 +1,29 @@
 "use client";
 
-import { useTransition } from "react";
-import { ArrowLeftRight, Trash2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ArrowLeftRight, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
 import { deleteTransaction } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
 import { cn } from "@/lib/utils/cn";
+import { EditTransactionDialog } from "./edit-transaction-dialog";
 
-export function TransactionRow({ tx }: { tx: Transaction }) {
+type AccountLite = { id: string; name: string; institution: string };
+type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+
+export function TransactionRow({
+  tx,
+  accounts,
+  categories,
+}: {
+  tx: Transaction;
+  accounts: AccountLite[];
+  categories: CategoryLite[];
+}) {
   const [pending, startTransition] = useTransition();
+  const [editing, setEditing] = useState(false);
 
   const handleDelete = () => {
     const msg = tx.transfer_pair_id
@@ -37,56 +50,86 @@ export function TransactionRow({ tx }: { tx: Transaction }) {
   const valuePrefix = isIncome ? "+ " : isTransfer ? "" : "− ";
 
   return (
-    <tr
-      className={cn(
-        "border-b border-border last:border-b-0 group transition-colors hover:bg-bone-100/40",
-        pending && "opacity-50",
-      )}
-    >
-      <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
-        <span className="font-mono text-[11.5px] tracking-[0.04em] text-muted-foreground">
-          {formatDateShort(tx.date)}
-        </span>
-      </td>
-      <td className="py-3.5 pr-4 align-middle min-w-0">
-        <div className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate flex items-center gap-2">
-          {isTransfer ? <ArrowLeftRight className="w-3 h-3 text-navy-600 shrink-0" strokeWidth={1.8} /> : null}
-          {tx.description}
-        </div>
-        <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
-          {tx.account?.name ?? "—"}
-          {tx.payment_method ? ` · ${tx.payment_method}` : ""}
-        </div>
-      </td>
-      <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
-        {tx.category ? (
-          <Badge tone={tx.category.kind === "income" ? "olive" : "neutral"} dot>
-            {tx.category.name}
-          </Badge>
-        ) : isTransfer ? (
-          <Badge tone="navy" dot>
-            Transferência
-          </Badge>
-        ) : (
-          <span className="text-faint-foreground text-[11.5px] italic">sem categoria</span>
+    <>
+      <tr
+        className={cn(
+          "border-b border-border last:border-b-0 group transition-colors hover:bg-bone-100/40 dark:hover:bg-ink-800/40",
+          pending && "opacity-50",
         )}
-      </td>
-      <td className="py-3.5 align-middle text-right whitespace-nowrap">
-        <span className={cn("font-mono text-[14px] font-medium tracking-[-0.005em]", valueClass)}>
-          {valuePrefix}R$ {integer},{cents}
-        </span>
-      </td>
-      <td className="py-3.5 pl-2 align-middle">
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={pending}
-          className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Apagar"
-        >
-          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </button>
-      </td>
-    </tr>
+      >
+        <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
+          <span className="font-mono text-[11.5px] tracking-[0.04em] text-muted-foreground">
+            {formatDateShort(tx.date)}
+          </span>
+        </td>
+        <td className="py-3.5 pr-4 align-middle min-w-0">
+          <div className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate flex items-center gap-2">
+            {isTransfer ? (
+              <ArrowLeftRight
+                className="w-3 h-3 text-navy-600 shrink-0"
+                strokeWidth={1.8}
+              />
+            ) : null}
+            {tx.description}
+          </div>
+          <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
+            {tx.account?.name ?? "—"}
+            {tx.payment_method ? ` · ${tx.payment_method}` : ""}
+          </div>
+        </td>
+        <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
+          {tx.category ? (
+            <Badge tone={tx.category.kind === "income" ? "olive" : "neutral"} dot>
+              {tx.category.name}
+            </Badge>
+          ) : isTransfer ? (
+            <Badge tone="navy" dot>
+              Transferência
+            </Badge>
+          ) : (
+            <span className="text-faint-foreground text-[11.5px] italic">sem categoria</span>
+          )}
+        </td>
+        <td className="py-3.5 align-middle text-right whitespace-nowrap">
+          <span
+            className={cn(
+              "font-mono text-[14px] font-medium tracking-[-0.005em]",
+              valueClass,
+            )}
+          >
+            {valuePrefix}R$ {integer},{cents}
+          </span>
+        </td>
+        <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              disabled={pending}
+              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted"
+              aria-label="Editar"
+            >
+              <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30"
+              aria-label="Apagar"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </button>
+          </div>
+        </td>
+      </tr>
+      <EditTransactionDialog
+        open={editing}
+        onOpenChange={setEditing}
+        transaction={tx}
+        accounts={accounts}
+        categories={categories}
+      />
+    </>
   );
 }

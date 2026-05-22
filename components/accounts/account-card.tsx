@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Archive, MoreHorizontal, RotateCcw } from "lucide-react";
+import { Pencil, Archive, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { formatMoney } from "@/lib/utils/format";
 import {
   archiveAccount,
+  deleteAccount,
   restoreAccount,
 } from "@/services/accounts.actions";
 import type { AccountType, Tables } from "@/types/database";
@@ -26,7 +28,6 @@ const TYPE_LABELS: Record<AccountType, string> = {
 
 export function AccountCard({ account }: { account: Account }) {
   const [editing, setEditing] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const handleArchive = () => {
@@ -36,13 +37,25 @@ export function AccountCard({ account }: { account: Account }) {
       if (r.error) toast.error(r.error);
       else toast.success("Conta arquivada.");
     });
-    setMenuOpen(false);
   };
   const handleRestore = () => {
     startTransition(async () => {
       const r = await restoreAccount(account.id);
       if (r.error) toast.error(r.error);
       else toast.success("Conta restaurada.");
+    });
+  };
+  const handleDelete = () => {
+    if (
+      !confirm(
+        `Excluir "${account.name}" DEFINITIVAMENTE? Só funciona se a conta NÃO tem transações nem investimentos. Caso contrário, use arquivar.`,
+      )
+    )
+      return;
+    startTransition(async () => {
+      const r = await deleteAccount(account.id);
+      if (r.error) toast.error(r.error);
+      else toast.success("Conta excluída.");
     });
   };
 
@@ -79,46 +92,47 @@ export function AccountCard({ account }: { account: Account }) {
             </div>
           </div>
           {account.is_active ? (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label="Mais ações"
-              >
-                <MoreHorizontal className="w-4 h-4" strokeWidth={1.7} />
-              </button>
-              {menuOpen ? (
-                <div
-                  className="absolute right-0 mt-1 w-44 bg-surface border border-border-strong rounded-[10px] shadow-md py-1 z-10"
-                  onMouseLeave={() => setMenuOpen(false)}
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditing(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-muted"
-                  >
-                    <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} /> Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleArchive}
-                    disabled={pending}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-surface-muted text-rust-600"
-                  >
-                    <Archive className="w-3.5 h-3.5" strokeWidth={1.7} /> Arquivar
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <RowActionsMenu
+              actions={[
+                {
+                  label: "Editar",
+                  icon: <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: () => setEditing(true),
+                  disabled: pending,
+                },
+                {
+                  label: "Arquivar",
+                  icon: <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: handleArchive,
+                  disabled: pending,
+                  danger: true,
+                },
+                {
+                  label: "Excluir definitivamente",
+                  icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: handleDelete,
+                  disabled: pending,
+                  danger: true,
+                },
+              ]}
+            />
           ) : (
-            <Button size="sm" variant="ghost" onClick={handleRestore} disabled={pending}>
-              <RotateCcw className="w-3 h-3" strokeWidth={1.7} />
-              Restaurar
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" onClick={handleRestore} disabled={pending}>
+                <RotateCcw className="w-3 h-3" strokeWidth={1.7} />
+                Restaurar
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleDelete}
+                disabled={pending}
+                aria-label="Excluir definitivamente"
+                className="text-rust-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </Button>
+            </div>
           )}
         </div>
 
