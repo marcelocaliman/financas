@@ -27,7 +27,20 @@ const TYPE_LABELS: Record<AccountType, string> = {
   cash: "Dinheiro",
 };
 
-export function AccountCard({ account }: { account: Account }) {
+export function AccountCard({
+  account,
+  displayBalance,
+  balanceMode = "current",
+  balanceLabel,
+}: {
+  account: Account;
+  /** Saldo a exibir; default = account.current_balance */
+  displayBalance?: number;
+  /** "current" = saldo atual; "historical" = saldo retroativo; "forecast" = previsto */
+  balanceMode?: "current" | "historical" | "forecast";
+  /** Sobrescreve "Saldo atual" quando viewing past/future */
+  balanceLabel?: string;
+}) {
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -61,7 +74,7 @@ export function AccountCard({ account }: { account: Account }) {
     });
   };
 
-  const balance = Number(account.current_balance ?? 0);
+  const balance = displayBalance ?? Number(account.current_balance ?? 0);
   const balanceColor =
     account.type === "credit_card"
       ? balance < 0
@@ -70,6 +83,13 @@ export function AccountCard({ account }: { account: Account }) {
       : balance >= 0
         ? "text-foreground"
         : "text-rust-600";
+  const labelText =
+    balanceLabel ??
+    (balanceMode === "historical"
+      ? "Saldo no fim do mês"
+      : balanceMode === "forecast"
+        ? "Saldo previsto"
+        : "Saldo atual");
 
   return (
     <>
@@ -145,8 +165,13 @@ export function AccountCard({ account }: { account: Account }) {
         </div>
 
         <div className="mt-5">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-            Saldo atual
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
+            {labelText}
+            {balanceMode === "forecast" ? (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-gold-600/15 text-gold-700 dark:text-gold-500 text-[9.5px] font-mono tracking-[0.12em] uppercase">
+                Previsão
+              </span>
+            ) : null}
           </div>
           <Money
             value={balance}

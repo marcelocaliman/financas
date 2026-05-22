@@ -151,6 +151,8 @@ export type MonthlyHistoryRow = {
   income: number;
   expense: number;
   net: number;
+  /** True quando os números são previstos (mês futuro com forecast aplicado) */
+  isForecast?: boolean;
 };
 
 /**
@@ -163,6 +165,7 @@ export type MonthlyHistoryRow = {
 export async function getMonthlyHistory(
   months = 6,
   endMonth?: string,
+  opts?: { includeForecast?: boolean },
 ): Promise<MonthlyHistoryRow[]> {
   const supabase = await createClient();
 
@@ -238,6 +241,39 @@ export async function getMonthlyHistory(
   }
   // Silenciar warning de "fromYear unused"
   void fromYear;
+
+  // Opcional: pra meses no FUTURO, soma a previsão das recorrências.
+  // Marca como isForecast=true quando o mês não tinha transações reais
+  // (assim o chart pode renderizar diferente).
+  if (opts?.includeForecast) {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+    });
+    const todayMonth = fmt.format(new Date()); // YYYY-MM
+    const futureRows = out.filter((r) => r.month > todayMonth);
+    if (futureRows.length > 0) {
+      // Lazy import pra evitar ciclo (transactions ↔ recurrences)
+      const { getRecurrencesForecast } = await import("@/services/recurrences");
+      const forecasts = await Promise.all(
+        futureRows.map((r) => getRecurrencesForecast(r.month)),
+      );
+      forecasts.forEach((fc, i) => {
+        const row = futureRows[i];
+        const realIncome = row.income;
+        const realExpense = row.expense;
+        row.income = Math.round((realIncome + fc.income) * 100) / 100;
+        row.expense = Math.round((realExpense + fc.expense) * 100) / 100;
+        row.net = Math.round((row.income - row.expense) * 100) / 100;
+        // Marca como previsão quando o real estava vazio E o forecast trouxe algo
+        if (realIncome === 0 && realExpense === 0 && fc.count > 0) {
+          row.isForecast = true;
+        }
+      });
+    }
+  }
+
   return out;
 }
 

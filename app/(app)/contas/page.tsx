@@ -1,25 +1,50 @@
 import { PageHeader } from "@/components/layout/page-header";
-import { listAccounts } from "@/services/accounts";
+import { listAccounts, listAccountsForMonth } from "@/services/accounts";
 import { AccountCard } from "@/components/accounts/account-card";
 import { NewAccountButton } from "./new-account-button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { StaggeredGrid, StaggeredItem } from "@/components/layout/staggered-grid";
+import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { monthRange } from "@/services/transactions";
+import { monthProgress } from "@/lib/financial/projection";
 
 export const dynamic = "force-dynamic";
 
-export default async function ContasPage() {
-  const accounts = await listAccounts({ includeArchived: true });
-  const active = accounts.filter((a) => a.is_active);
-  const archived = accounts.filter((a) => !a.is_active);
+export default async function ContasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const { month } = await searchParams;
+  const { position } = monthProgress(month);
+  const { label: monthLabel, from, to } = monthRange(month);
+  const monthISO = from.slice(0, 7);
+  const isCurrent = position === "current";
 
-  const liquid = active
+  // Active: usa o saldo do mês alvo. Archived: só atual (não faz sentido
+  // ver saldo histórico de conta arquivada — UX confusa).
+  const [activeAccounts, archivedAccounts] = await Promise.all([
+    listAccountsForMonth(to, position, { includeArchived: false }),
+    isCurrent ? listAccounts({ includeArchived: true }).then((all) => all.filter((a) => !a.is_active)) : Promise.resolve([]),
+  ]);
+
+  const liquid = activeAccounts
     .filter((a) => ["checking", "savings", "investment", "cash"].includes(a.type))
-    .reduce((s, a) => s + Number(a.current_balance ?? 0), 0);
-  const creditUsed = active
+    .reduce((s, a) => s + a.displayBalance, 0);
+  const creditUsed = activeAccounts
     .filter((a) => a.type === "credit_card")
-    .reduce((s, a) => s + Number(a.current_balance ?? 0), 0);
+    .reduce((s, a) => s + a.displayBalance, 0);
+
+  const summaryHint = isCurrent
+    ? "Saldo líquido"
+    : position === "past"
+      ? `Saldo líquido · fim de ${monthLabel}`
+      : `Saldo líquido · previsto pra ${monthLabel}`;
+  const creditHint = isCurrent
+    ? "Cartão (fatura aberta)"
+    : `Cartão · ${monthLabel}`;
 
   return (
     <>
@@ -31,31 +56,44 @@ export default async function ContasPage() {
           </>
         }
         subtitle="Cartões, contas correntes, corretoras, dinheiro vivo — todos os endereços do seu patrimônio."
-        actions={<NewAccountButton />}
+        actions={
+          <>
+            <MonthSwitcher
+              currentMonth={monthISO}
+              isCurrent={isCurrent}
+              label={monthLabel.split(" ")[0]}
+            />
+            <NewAccountButton />
+          </>
+        }
       />
 
-      {active.length > 0 ? (
+      {activeAccounts.length > 0 ? (
         <section className="mb-10">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-            <SummaryCard label="Saldo líquido" value={formatMoney(liquid)} tone="default" mask />
+            <SummaryCard label={summaryHint} value={formatMoney(liquid)} tone="default" mask />
             <SummaryCard
-              label="Cartão (fatura aberta)"
+              label={creditHint}
               value={formatMoney(Math.abs(creditUsed))}
               tone={creditUsed < 0 ? "negative" : "default"}
               mask
             />
             <SummaryCard
               label="Total de contas ativas"
-              value={String(active.length)}
+              value={String(activeAccounts.length)}
               tone="default"
               mono
             />
           </div>
 
           <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {active.map((a) => (
+            {activeAccounts.map((a) => (
               <StaggeredItem key={a.id}>
-                <AccountCard account={a} />
+                <AccountCard
+                  account={a}
+                  displayBalance={a.displayBalance}
+                  balanceMode={a.balanceMode}
+                />
               </StaggeredItem>
             ))}
           </StaggeredGrid>
@@ -64,11 +102,11 @@ export default async function ContasPage() {
         <EmptyState />
       )}
 
-      {archived.length > 0 ? (
+      {archivedAccounts.length > 0 ? (
         <section>
-          <Eyebrow className="mb-3">Arquivadas · {archived.length}</Eyebrow>
+          <Eyebrow className="mb-3">Arquivadas · {archivedAccounts.length}</Eyebrow>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {archived.map((a) => (
+            {archivedAccounts.map((a) => (
               <AccountCard key={a.id} account={a} />
             ))}
           </div>

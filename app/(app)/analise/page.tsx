@@ -29,9 +29,10 @@ export default async function AnalisePage({
 }) {
   const { month } = await searchParams;
   const [history, breakdown] = await Promise.all([
-    getMonthlyHistory(6, month),
+    getMonthlyHistory(6, month, { includeForecast: true }),
     getCategoryBreakdown(month, "expense"),
   ]);
+  const hasForecastInChart = history.some((r) => r.isForecast);
 
   const { label: monthLabel, from } = monthRange(month);
   const monthISO = from.slice(0, 7);
@@ -94,6 +95,11 @@ export default async function AnalisePage({
             meta={`${history[0]?.label} → ${history[history.length - 1]?.label}`}
           />
           <IncomeExpenseLine rows={history} />
+          {hasForecastInChart ? (
+            <p className="text-[11px] font-mono text-faint-foreground mt-2">
+              * meses futuros com previsão das recorrências (círculo vazado)
+            </p>
+          ) : null}
         </Panel>
 
         <Panel>
