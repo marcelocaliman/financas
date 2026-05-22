@@ -11,6 +11,7 @@ import {
   Target,
   CreditCard,
   Tag,
+  Package,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
+  { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
   { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
   { label: "Metas", href: "/metas", icon: Target, group: "investir" },
   { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },

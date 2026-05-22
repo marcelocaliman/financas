@@ -117,6 +117,32 @@ export async function createInvestment(
     }
   }
 
+  // Auto-débito da conta da corretora — evita dupla contagem ao calcular
+  // patrimônio. Default ligado; o user pode desligar no form.
+  const debitFromAccount = formData.get("debitFromAccount") === "1";
+  const debitAmount = isMarketable
+    ? (parsed.data.quantity ?? 0) * (parsed.data.unitPrice ?? 0)
+    : parsed.data.initialAmount;
+  if (debitFromAccount && created && debitAmount > 0) {
+    const { error: txErr } = await supabase.from("transactions").insert({
+      household_id: ctx.household.id,
+      account_id: parsed.data.accountId,
+      kind: "expense",
+      amount: debitAmount,
+      description: `Aplicação · ${parsed.data.ticker.trim()}`,
+      date: parsed.data.purchaseDate,
+      created_by: ctx.profile.id,
+      category_source: "manual",
+      metadata: { auto: true, investment_id: created.id },
+    });
+    if (txErr) {
+      return {
+        ok: true,
+        error: `Ativo criado, mas o auto-débito falhou: ${txErr.message}`,
+      };
+    }
+  }
+
   revalidatePath("/investimentos");
   revalidatePath("/dashboard");
   return { ok: true };

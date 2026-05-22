@@ -41,6 +41,16 @@ export type YieldSource = "manual" | "calculated" | "imported";
 export type MovementKind = "buy" | "sell" | "dividend" | "split";
 export type YieldRuleMode = "reinvest" | "fixed_amount" | "percentage";
 export type RedemptionStatus = "pending" | "executed" | "skipped";
+export type PhysicalAssetCategory =
+  | "real_estate"
+  | "vehicle"
+  | "electronics"
+  | "furniture"
+  | "jewelry"
+  | "art"
+  | "tools"
+  | "other";
+export type DepreciationMethod = "none" | "linear";
 
 export interface Database {
   public: {
@@ -313,6 +323,44 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["indexer_history"]["Insert"]>;
+        Relationships: [];
+      };
+      physical_assets: {
+        Row: {
+          id: string;
+          household_id: string;
+          name: string;
+          category: PhysicalAssetCategory;
+          description: string | null;
+          acquired_at: string | null;
+          acquired_value: number;
+          current_value: number;
+          depreciation_method: DepreciationMethod;
+          depreciation_years: number | null;
+          metadata: Json;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          name: string;
+          category: PhysicalAssetCategory;
+          description?: string | null;
+          acquired_at?: string | null;
+          acquired_value?: number;
+          current_value: number;
+          depreciation_method?: DepreciationMethod;
+          depreciation_years?: number | null;
+          metadata?: Json;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["physical_assets"]["Insert"]>;
         Relationships: [];
       };
       quote_snapshots: {

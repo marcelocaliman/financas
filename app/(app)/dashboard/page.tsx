@@ -12,6 +12,7 @@ import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
+import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
   const now = new Date();
   const greeting = getGreeting(now);
 
-  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live] =
+  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical] =
     await Promise.all([
       getMonthlySummary(),
       getCategoryBreakdown(undefined, "expense"),
@@ -43,9 +44,13 @@ export default async function DashboardPage() {
       getPortfolioStats(),
       getCoverage(),
       getLivePortfolio(),
+      getPhysicalAssetsTotals(),
     ]);
 
-  const netWorth = totals.total + portfolio.total;
+  // Patrimônio total SEM dupla contagem:
+  //   contas líquidas (excluindo caixa de corretora) + investimentos + bens físicos
+  const netWorth =
+    totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
 
   const { label: monthLabel } = monthRange();
   const { daysElapsed, daysInMonth, ratio } = monthProgress(now);

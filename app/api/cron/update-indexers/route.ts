@@ -11,17 +11,19 @@ import type { Database } from "@/types/database";
  * Autenticação: requer header `Authorization: Bearer <CRON_SECRET>` ou
  * o header `x-vercel-cron` (Vercel auto-injetado em cron jobs).
  *
- * Séries do BCB SGS:
- *   Selic meta anual: 432
- *   Selic over (dia útil): 11
- *   CDI: 12
- *   IPCA mensal: 433
+ * Séries do BCB SGS — formato consumível pelo live-yield:
+ *   selic e cdi: % ao ano
+ *   ipca: % ao mês (anualizado no cálculo)
+ *
+ *   432  → Meta Selic Copom (% a.a.)
+ *   4389 → CDI anualizado base 252 (% a.a.)
+ *   433  → IPCA variação mensal (%)
  */
 export const dynamic = "force-dynamic";
 
 const SERIES: Record<"selic" | "cdi" | "ipca", number> = {
   selic: 432,
-  cdi: 12,
+  cdi: 4389,
   ipca: 433,
 };
 

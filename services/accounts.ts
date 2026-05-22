@@ -40,6 +40,7 @@ export async function getAccount(id: string): Promise<Account | null> {
 export async function getAccountsTotals(): Promise<{
   byType: Record<AccountType, number>;
   total: number;
+  liquidExcludingInvestmentCash: number;
 }> {
   const accounts = await listAccounts();
   const byType = {
@@ -52,8 +53,12 @@ export async function getAccountsTotals(): Promise<{
   for (const a of accounts) {
     byType[a.type] += Number(a.current_balance ?? 0);
   }
-  // Patrimônio líquido = soma de tudo, com cartão de crédito subtraindo
   const total =
     byType.checking + byType.savings + byType.investment + byType.cash + byType.credit_card;
-  return { byType, total };
+  // Para evitar dupla contagem ao somar investments separados, o caixa da
+  // corretora (type='investment') NÃO entra no total líquido. Os ativos
+  // somam por fora via getPortfolioStats.
+  const liquidExcludingInvestmentCash =
+    byType.checking + byType.savings + byType.cash + byType.credit_card;
+  return { byType, total, liquidExcludingInvestmentCash };
 }

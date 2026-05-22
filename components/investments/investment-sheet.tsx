@@ -215,6 +215,26 @@ export function InvestmentSheet({
                   </>
                 )}
 
+                {!isEdit ? (
+                  <label className="flex items-start gap-2.5 cursor-pointer text-[12.5px] text-muted-foreground bg-bone-100 dark:bg-ink-800 border border-border rounded-[8px] px-3 py-2.5">
+                    <input
+                      type="checkbox"
+                      name="debitFromAccount"
+                      value="1"
+                      defaultChecked
+                      className="mt-0.5 accent-navy-700"
+                    />
+                    <span>
+                      <b className="text-foreground">Debitar este valor da conta da corretora.</b>
+                      <br />
+                      <span className="text-[11.5px]">
+                        Cria uma transação de saída automática para evitar dupla contagem no
+                        patrimônio total.
+                      </span>
+                    </span>
+                  </label>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
