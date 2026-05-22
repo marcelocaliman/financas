@@ -8,11 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:link": "supabase link",
-    "db:push": "supabase db push",
-    "db:diff": "supabase db diff",
-    "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --linked > types/database.generated.ts"
+    "db:push": "bash scripts/db-push.sh",
+    "db:diff": "bash scripts/db-diff.sh",
+    "db:types": "node scripts/db-types.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

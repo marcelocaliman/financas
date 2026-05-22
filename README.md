@@ -22,14 +22,17 @@ cp .env.example .env.local   # preencher credenciais do Supabase
 pnpm dev                     # http://localhost:3000
 ```
 
-## Banco de dados (Supabase)
+## Banco de dados (Supabase Cloud)
 
-Primeira configuração:
+Toda comunicação é com o Supabase Cloud — **nada roda local, sem Docker**. Os
+scripts em `scripts/` usam a conexão Postgres direta (`db-push.sh`, `db-diff.sh`)
+ou a Management API HTTP (`db-types.mjs`).
 
 ```bash
-pnpm db:link        # supabase link --project-ref <PROJECT_REF>
-pnpm db:push        # aplica migrations em supabase/migrations
-pnpm db:types       # regenera types/database.generated.ts
+pnpm db:push        # aplica migrations no remoto via conexão Postgres direta
+pnpm db:diff        # mostra o que seria aplicado (dry-run)
+pnpm db:types       # gera types/database.generated.ts via Management API
+                    # (requer SUPABASE_ACCESS_TOKEN no .env.local)
 ```
 
 A migration inicial (`supabase/migrations/20260522000000_init_core.sql`) cria:
