@@ -1,12 +1,15 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
-import { RecurrenceCard } from "@/components/recurrences/recurrence-card";
+import { RecurrenceRow } from "@/components/recurrences/recurrence-row";
+import { RecurrenceSection } from "@/components/recurrences/recurrence-section";
 import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-button";
 import { BatchRecurrenceButton } from "@/components/recurrences/batch-recurrence-button";
 import { MaterializeNowButton } from "@/components/recurrences/materialize-now-button";
 import {
   computeNextOccurrences,
   listRecurringRules,
+  toMonthlyEquivalent,
+  type RecurrenceRule,
 } from "@/services/recurrences";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
@@ -20,6 +23,13 @@ function todayISO(): string {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+function aggregateMonthly(rules: RecurrenceRule[]): number {
+  return rules.reduce(
+    (sum, r) => sum + toMonthlyEquivalent(Number(r.amount), r.frequency, r.interval_count),
+    0,
+  );
 }
 
 export default async function RecorrentesPage() {
@@ -43,6 +53,11 @@ export default async function RecorrentesPage() {
 
   const active = rules.filter((r) => r.is_active);
   const paused = rules.filter((r) => !r.is_active);
+
+  const incomes = active.filter((r) => r.kind === "income");
+  const expenses = active.filter((r) => r.kind === "expense");
+  const transfers = active.filter((r) => r.kind === "transfer");
+
   const today = todayISO();
 
   return (
@@ -64,26 +79,74 @@ export default async function RecorrentesPage() {
         }
       />
 
-      {active.length === 0 && paused.length === 0 ? (
+      {rules.length === 0 ? (
         <Empty />
       ) : (
-        <div className="space-y-4">
-          {active.map((r) => (
-            <RecurrenceCard
-              key={r.id}
-              rule={r}
-              nextOccurrences={computeNextOccurrences(r, today, 3)}
-              accounts={accountsLite}
-              categories={categoriesLite}
-            />
-          ))}
+        <div className="space-y-3">
+          <RecurrenceSection
+            label="Receitas"
+            count={incomes.length}
+            monthlyTotal={aggregateMonthly(incomes)}
+            tone="income"
+            emoji="↙"
+          >
+            {incomes.map((r) => (
+              <RecurrenceRow
+                key={r.id}
+                rule={r}
+                nextOccurrences={computeNextOccurrences(r, today, 3)}
+                accounts={accountsLite}
+                categories={categoriesLite}
+              />
+            ))}
+          </RecurrenceSection>
+
+          <RecurrenceSection
+            label="Despesas"
+            count={expenses.length}
+            monthlyTotal={aggregateMonthly(expenses)}
+            tone="expense"
+            emoji="↗"
+          >
+            {expenses.map((r) => (
+              <RecurrenceRow
+                key={r.id}
+                rule={r}
+                nextOccurrences={computeNextOccurrences(r, today, 3)}
+                accounts={accountsLite}
+                categories={categoriesLite}
+              />
+            ))}
+          </RecurrenceSection>
+
+          <RecurrenceSection
+            label="Transferências"
+            count={transfers.length}
+            monthlyTotal={aggregateMonthly(transfers)}
+            tone="transfer"
+            emoji="↔"
+          >
+            {transfers.map((r) => (
+              <RecurrenceRow
+                key={r.id}
+                rule={r}
+                nextOccurrences={computeNextOccurrences(r, today, 3)}
+                accounts={accountsLite}
+                categories={categoriesLite}
+              />
+            ))}
+          </RecurrenceSection>
+
           {paused.length > 0 ? (
-            <>
-              <h2 className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-faint-foreground mt-8 mb-3 font-medium">
-                Pausadas
-              </h2>
+            <RecurrenceSection
+              label="Pausadas"
+              count={paused.length}
+              monthlyTotal={0}
+              tone="neutral"
+              defaultOpen={false}
+            >
               {paused.map((r) => (
-                <RecurrenceCard
+                <RecurrenceRow
                   key={r.id}
                   rule={r}
                   nextOccurrences={[]}
@@ -91,7 +154,7 @@ export default async function RecorrentesPage() {
                   categories={categoriesLite}
                 />
               ))}
-            </>
+            </RecurrenceSection>
           ) : null}
         </div>
       )}

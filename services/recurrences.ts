@@ -71,6 +71,32 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
+/**
+ * Normaliza o valor da regra pra "equivalente mensal" — útil pra somar
+ * regras de freq mista. Aproximações:
+ *  - daily      → ×30 / interval
+ *  - weekly     → ×4.33 / interval
+ *  - monthly    → ÷ interval
+ *  - yearly     → ÷12 / interval
+ */
+export function toMonthlyEquivalent(
+  amount: number,
+  frequency: "daily" | "weekly" | "monthly" | "yearly",
+  intervalCount: number,
+): number {
+  const interval = Math.max(1, intervalCount);
+  switch (frequency) {
+    case "daily":
+      return (amount * 30) / interval;
+    case "weekly":
+      return (amount * 4.33) / interval;
+    case "monthly":
+      return amount / interval;
+    case "yearly":
+      return amount / 12 / interval;
+  }
+}
+
 function nextFrom(
   rule: Pick<
     Tables<"recurring_rules">,
