@@ -1,29 +1,53 @@
 "use client";
 
-import { useLiveYield } from "@/hooks/use-live-yield";
+import { useEffect, useState } from "react";
 import { Money } from "@/components/ui/money";
 
 /**
- * "Rendimento acumulado" da carteira de renda fixa.
+ * "Rendimento acumulado" da carteira de renda fixa — sempre crescendo,
+ * sem reset diário, sem janela morta. Espelha um Tesouro Selic mantido
+ * pela vida toda.
  *
- *   = soma de (saldo − custo aplicado) de cada ativo de RF
- *   + parcela do yield do dia útil corrente até este instante (tic-tic visual)
+ * Fórmula:
+ *   total(now) = accumulatedFromServer
+ *              + (dailyYield / 86400) × secondsSinceMount
  *
- * O número cresce a cada dia útil (yields creditados pelo cron),
- * é neutro em aportes (eleva saldo e custo igualmente), diminui em
- * saques de yield. Não reseta — espelha um Tesouro Selic real.
+ * - `accumulatedFromServer`: ponto sólido fornecido pelo server
+ *   (Σ derivedBalance − initial_amount de cada ativo de RF). Reflete
+ *   yields já compostos pelo cron até o momento do server render.
+ * - `dailyYield / 86400`: taxa contínua distribuída em 24h. Anima
+ *   suavemente entre cargas; reconcilia com o real a cada refresh.
+ *
+ * Trade-off: em fim de semana o número segue animando mesmo que Selic
+ * D+1 não renda matematicamente. Aceitável — é uma representação
+ * visual contínua; a fonte da verdade segue sendo o `current_balance`
+ * no banco que se atualiza pelo cron.
  */
 export function CoverageLiveAccrued({
   accumulatedUntilToday,
   dailyYield,
 }: {
-  /** Rendimento acumulado até o início de hoje (saldo − custo aplicado) */
+  /** Rendimento acumulado até o momento do server render (saldo − custo) */
   accumulatedUntilToday: number;
-  /** Yield esperado de hoje (R$/dia útil) — soma do tic-tic do dia */
+  /** Yield esperado por dia útil (R$/dia) — taxa */
   dailyYield: number;
 }) {
-  const { accumulated: todayParcel } = useLiveYield(dailyYield);
-  const total = accumulatedUntilToday + todayParcel;
+  const [elapsed, setElapsed] = useState(0);
+  const [mountedAt] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (dailyYield <= 0) return;
+    const id = setInterval(() => {
+      setElapsed((Date.now() - mountedAt) / 1000);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [dailyYield, mountedAt]);
+
+  // Taxa contínua: dailyYield distribuído ao longo de 86400s = 24h.
+  // Anima sempre, sem reset, sem parar.
+  const ratePerSecond = dailyYield / 86400;
+  const total = accumulatedUntilToday + ratePerSecond * elapsed;
+
   return (
     <div className="mt-4 flex items-baseline gap-2 text-[12.5px] font-mono tabular-nums">
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
