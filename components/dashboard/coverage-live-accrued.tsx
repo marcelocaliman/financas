@@ -20,7 +20,7 @@ export function CoverageLiveAccrued({
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
       <span className="text-muted-foreground">Hoje você já recebeu</span>
       <b className="text-olive-700 dark:text-olive-500">
-        R$ <MoneyMask>{accumulated.toFixed(4).replace(".", ",")}</MoneyMask>
+        R$ <MoneyMask>{accumulated.toFixed(2).replace(".", ",")}</MoneyMask>
       </b>
     </div>
   );
