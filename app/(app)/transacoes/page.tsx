@@ -1,11 +1,12 @@
-import { Download } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
-import { Button } from "@/components/ui/button";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { TransactionsFilterBar } from "@/components/transactions/transactions-filter-bar";
 import { Pagination } from "@/components/transactions/pagination";
+import { ExportButton } from "@/components/transactions/export-button";
+import { ImportButton } from "@/components/transactions/import-button";
+import { BulkAddButton } from "@/components/transactions/bulk-add-button";
 import { listTransactions, monthRange, getMonthlySummary } from "@/services/transactions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
@@ -73,10 +74,9 @@ export default async function TransacoesPage({
         subtitle={`${summary.transactionCount} movimento${summary.transactionCount !== 1 ? "s" : ""} esse mês — entre receitas, despesas e transferências internas.`}
         actions={
           <>
-            <Button variant="secondary" disabled>
-              <Download className="w-3.5 h-3.5" strokeWidth={1.7} />
-              Exportar
-            </Button>
+            <ExportButton />
+            <ImportButton />
+            <BulkAddButton accounts={accountsLite} categories={categoriesLite} />
             <QuickAddTrigger />
           </>
         }
