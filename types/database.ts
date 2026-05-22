@@ -314,6 +314,26 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["indexer_history"]["Insert"]>;
         Relationships: [];
       };
+      quote_snapshots: {
+        Row: {
+          ticker: string;
+          price: number;
+          change_pct: number | null;
+          long_name: string | null;
+          currency: string | null;
+          fetched_at: string;
+        };
+        Insert: {
+          ticker: string;
+          price: number;
+          change_pct?: number | null;
+          long_name?: string | null;
+          currency?: string | null;
+          fetched_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["quote_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
       investments: {
         Row: {
           id: string;
