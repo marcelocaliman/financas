@@ -1,0 +1,250 @@
+/**
+ * Tipos do banco Supabase.
+ *
+ * Este arquivo será regenerado por `pnpm db:types` após cada migration:
+ *   supabase gen types typescript --linked > types/database.generated.ts
+ *
+ * Até lá, mantemos um shape mínimo compatível com supabase-js.
+ */
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export type AccountType =
+  | "checking"
+  | "savings"
+  | "credit_card"
+  | "investment"
+  | "cash";
+
+export type CategoryKind = "income" | "expense" | "transfer";
+export type TransactionKind = "income" | "expense" | "transfer";
+export type PaymentMethod = "credit" | "debit" | "pix" | "cash" | "auto_debit" | "transfer";
+export type CategorySource = "manual" | "rule" | "ai";
+
+export interface Database {
+  public: {
+    Tables: {
+      households: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      users: {
+        Row: {
+          id: string;
+          household_id: string;
+          display_name: string;
+          role: "admin" | "member";
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          household_id: string;
+          display_name: string;
+          role?: "admin" | "member";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          display_name?: string;
+          role?: "admin" | "member";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      accounts: {
+        Row: {
+          id: string;
+          household_id: string;
+          institution: string;
+          type: AccountType;
+          name: string;
+          color: string | null;
+          current_balance: number;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          institution: string;
+          type: AccountType;
+          name: string;
+          color?: string | null;
+          current_balance?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          institution?: string;
+          type?: AccountType;
+          name?: string;
+          color?: string | null;
+          current_balance?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      categories: {
+        Row: {
+          id: string;
+          household_id: string;
+          name: string;
+          icon: string | null;
+          color: string | null;
+          parent_id: string | null;
+          rules: Json;
+          kind: CategoryKind;
+          sort_order: number;
+          is_archived: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          name: string;
+          icon?: string | null;
+          color?: string | null;
+          parent_id?: string | null;
+          rules?: Json;
+          kind: CategoryKind;
+          sort_order?: number;
+          is_archived?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          name?: string;
+          icon?: string | null;
+          color?: string | null;
+          parent_id?: string | null;
+          rules?: Json;
+          kind?: CategoryKind;
+          sort_order?: number;
+          is_archived?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      transactions: {
+        Row: {
+          id: string;
+          household_id: string;
+          account_id: string;
+          category_id: string | null;
+          kind: TransactionKind;
+          amount: number;
+          description: string;
+          payment_method: PaymentMethod | null;
+          date: string;
+          created_by: string;
+          category_source: CategorySource;
+          category_confidence: number | null;
+          transfer_pair_id: string | null;
+          is_recurring: boolean;
+          recurring_rule_id: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          account_id: string;
+          category_id?: string | null;
+          kind: TransactionKind;
+          amount: number;
+          description: string;
+          payment_method?: PaymentMethod | null;
+          date: string;
+          created_by: string;
+          category_source?: CategorySource;
+          category_confidence?: number | null;
+          transfer_pair_id?: string | null;
+          is_recurring?: boolean;
+          recurring_rule_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          household_id?: string;
+          account_id?: string;
+          category_id?: string | null;
+          kind?: TransactionKind;
+          amount?: number;
+          description?: string;
+          payment_method?: PaymentMethod | null;
+          date?: string;
+          created_by?: string;
+          category_source?: CategorySource;
+          category_confidence?: number | null;
+          transfer_pair_id?: string | null;
+          is_recurring?: boolean;
+          recurring_rule_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: { [_ in never]: never };
+    Functions: {
+      bootstrap_household: {
+        Args: { p_household_name: string; p_display_name: string };
+        Returns: string;
+      };
+      seed_default_categories: {
+        Args: { p_household_id: string };
+        Returns: void;
+      };
+      current_household_id: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+    };
+    Enums: { [_ in never]: never };
+    CompositeTypes: { [_ in never]: never };
+  };
+}
+
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+
+export type Inserts<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"];
+
+export type Updates<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"];

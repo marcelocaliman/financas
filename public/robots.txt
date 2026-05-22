@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /dashboard
+Disallow: /transacoes
+Disallow: /analise
+Disallow: /investimentos
+Disallow: /resgates
+Disallow: /metas
+Disallow: /contas
+Disallow: /configuracoes
+Allow: /
