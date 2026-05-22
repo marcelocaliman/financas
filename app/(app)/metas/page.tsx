@@ -1,18 +1,34 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
+import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { NewGoalButton } from "@/components/goals/new-goal-button";
 import { GoalCard } from "@/components/goals/goal-card";
 import { listGoals } from "@/services/goals";
 import { listAccounts } from "@/services/accounts";
-import { getMonthlyHistory } from "@/services/transactions";
+import { getMonthlyHistory, monthRange } from "@/services/transactions";
 
 export const dynamic = "force-dynamic";
 
-export default async function MetasPage() {
+function currentMonthISO(): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  });
+  return fmt.format(new Date());
+}
+
+export default async function MetasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const { month } = await searchParams;
   const [goals, accounts, history] = await Promise.all([
     listGoals(),
     listAccounts(),
-    getMonthlyHistory(3),
+    // Aporte médio dos 3 meses anteriores ao mês de referência.
+    getMonthlyHistory(3, month),
   ]);
 
   // Aporte médio = média das sobras dos últimos 3 meses (positivas).
@@ -21,6 +37,10 @@ export default async function MetasPage() {
     positiveNets.length > 0
       ? positiveNets.reduce((s, v) => s + v, 0) / positiveNets.length
       : 0;
+
+  const { label: monthLabel, from } = monthRange(month);
+  const monthISO = from.slice(0, 7);
+  const isCurrent = monthISO === currentMonthISO();
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -33,14 +53,23 @@ export default async function MetasPage() {
   return (
     <>
       <PageHeader
-        eyebrow={`Objetivos · ${active.length} meta${active.length !== 1 ? "s" : ""} ativa${active.length !== 1 ? "s" : ""}`}
+        eyebrow={`Objetivos · ritmo de ${monthLabel}`}
         title={
           <>
             Metas e <em className="not-italic font-display italic text-navy-700">sonhos.</em>
           </>
         }
-        subtitle="Cada meta tem nome, valor e trajetória — a previsão de conclusão vem do ritmo real de aporte dos últimos 3 meses."
-        actions={<NewGoalButton accounts={accountsLite} />}
+        subtitle="Cada meta tem nome, valor e trajetória — a previsão de conclusão usa o ritmo real de aporte dos 3 meses anteriores ao mês de referência."
+        actions={
+          <>
+            <MonthSwitcher
+              currentMonth={monthISO}
+              isCurrent={isCurrent}
+              label={monthLabel.split(" ")[0]}
+            />
+            <NewGoalButton accounts={accountsLite} />
+          </>
+        }
       />
 
       {active.length === 0 ? (

@@ -10,7 +10,7 @@ import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { MaterializeUntilMonthButton } from "@/components/dashboard/materialize-until-month-button";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
-import { getAccountsTotals } from "@/services/accounts";
+import { getAccountsTotals, getAccountsTotalsAt } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
@@ -46,13 +46,17 @@ export default async function DashboardPage({
 
   const { daysElapsed, daysInMonth, ratio, position } = monthProgress(monthParam, now);
   const isCurrent = position === "current";
+  const { label: monthLabel, from, to } = monthRange(monthParam);
+  const currentMonth = from.slice(0, 7);
 
   const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical] =
     await Promise.all([
       getMonthlySummary(monthParam),
       getCategoryBreakdown(monthParam, "expense"),
       listTransactions({ month: monthParam, pageSize: 6 }),
-      getAccountsTotals(),
+      // Mês passado/futuro: saldo retroativo das contas (revertendo deltas
+      // das transações posteriores ao fim do mês alvo). Mês corrente: now.
+      isCurrent ? getAccountsTotals() : getAccountsTotalsAt(to),
       // Anomalias só fazem sentido no mês corrente (compara com 3 meses anteriores)
       isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
       getPortfolioStats(),
@@ -63,12 +67,11 @@ export default async function DashboardPage({
 
   // Patrimônio total SEM dupla contagem:
   //   contas líquidas (excluindo caixa de corretora) + investimentos + bens físicos
-  // O patrimônio é "agora", não muda com o mês selecionado.
+  // Para mês corrente: tudo é "agora".
+  // Para mês passado/futuro: contas usam saldo retroativo; investimentos
+  // e bens físicos usam valor ATUAL (aproximação — Hero mostra hint).
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
-
-  const { label: monthLabel, from, to } = monthRange(monthParam);
-  const currentMonth = from.slice(0, 7);
   const projection = projectMonthEnd(summary.income, summary.expense, daysElapsed, daysInMonth);
   const expenseVsIncome =
     summary.income > 0 ? summary.expense / summary.income : summary.expense > 0 ? 2 : 0;
@@ -116,22 +119,31 @@ export default async function DashboardPage({
         expenseRatio={expenseVsIncome}
         liveDailyYield={live.totalDailyYield}
         livePerSecond={live.totalPerSecond}
+        isCurrentMonth={isCurrent}
       />
 
-      <PortfolioLiveTicker portfolio={live} variant="compact" />
+      {/* Ticker live e Coverage só fazem sentido "agora" — escondidos em meses não-correntes */}
+      {isCurrent ? <PortfolioLiveTicker portfolio={live} variant="compact" /> : null}
 
       {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
 
-      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8">
+      <div
+        className={
+          isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8" : "grid grid-cols-1 mb-8"
+        }
+      >
         <TopCategoriesPanel rows={breakdown} monthLabel={monthLabel} />
-        <CoveragePanel
-          monthlyYield={coverage.monthlyAverageYield}
-          monthlyExpense={coverage.monthlyAverageExpense}
-          ratio={coverage.ratio}
-          hasInvestments={portfolio.total > 0}
-          liveDailyYield={live.totalDailyYield}
-          livePerSecond={live.totalPerSecond}
-        />
+        {/* Coverage usa média móvel "até hoje" — não tem como ser mês-específico */}
+        {isCurrent ? (
+          <CoveragePanel
+            monthlyYield={coverage.monthlyAverageYield}
+            monthlyExpense={coverage.monthlyAverageExpense}
+            ratio={coverage.ratio}
+            hasInvestments={portfolio.total > 0}
+            liveDailyYield={live.totalDailyYield}
+            livePerSecond={live.totalPerSecond}
+          />
+        ) : null}
       </div>
 
       <LatestTransactionsPanel rows={latest.rows} />

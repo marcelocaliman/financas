@@ -4,6 +4,8 @@ import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-tic
 import { NewInvestmentButton } from "@/components/investments/new-investment-button";
 import { FixedIncomeTable } from "@/components/investments/fixed-income-table";
 import { VariableIncomeTable } from "@/components/investments/variable-income-table";
+import { KeyboardNav } from "@/components/ui/keyboard-nav";
+import { ScrollTarget } from "@/components/ui/scroll-target";
 import { listAccounts } from "@/services/accounts";
 import { listInvestments } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
@@ -55,21 +57,36 @@ export default async function InvestimentosPage() {
         <>
           <PortfolioLiveTicker portfolio={live} variant="full" />
 
-          <FixedIncomeTable
-            investments={fixedIncome}
-            liveByAssetId={liveByAssetId}
-            investmentAccounts={investmentAccounts}
-          />
+          {fixedIncome.length > 0 ? (
+            <ScrollTarget targetId="fixed-income">
+              <FixedIncomeTable
+                investments={fixedIncome}
+                liveByAssetId={liveByAssetId}
+                investmentAccounts={investmentAccounts}
+              />
+            </ScrollTarget>
+          ) : null}
 
-          <VariableIncomeTable
-            investments={variableIncome}
-            liveByAssetId={liveByAssetId}
-            investmentAccounts={investmentAccounts}
-          />
+          {variableIncome.length > 0 ? (
+            <ScrollTarget targetId="variable-income">
+              <VariableIncomeTable
+                investments={variableIncome}
+                liveByAssetId={liveByAssetId}
+                investmentAccounts={investmentAccounts}
+              />
+            </ScrollTarget>
+          ) : null}
 
           <p className="text-[10.5px] font-mono text-faint-foreground tracking-[0.06em] mt-4">
             Renda fixa atualiza com a Selic todo dia útil (cron BCB). Cotações da B3 via brapi.dev.
           </p>
+
+          <KeyboardNav
+            items={[
+              { key: "f", label: "Renda fixa", target: "fixed-income", available: fixedIncome.length > 0 },
+              { key: "v", label: "Renda variável", target: "variable-income", available: variableIncome.length > 0 },
+            ]}
+          />
         </>
       )}
     </>

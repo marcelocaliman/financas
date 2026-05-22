@@ -22,6 +22,7 @@ export function DashboardHero({
   expenseRatio,
   liveDailyYield = 0,
   livePerSecond = 0,
+  isCurrentMonth = true,
 }: {
   projectedNet: number;
   monthLabel: string;
@@ -33,14 +34,16 @@ export function DashboardHero({
   expenseRatio: number; // gasto vs receita 0..1+
   liveDailyYield?: number;
   livePerSecond?: number;
+  isCurrentMonth?: boolean;
 }) {
   const displayCurrency = useDisplayCurrency();
   const comparisonCurrency = useComparisonCurrency();
   const { rates } = useMoneyContext();
   const { hidden } = usePrivacy();
   const { accumulated: liveAccrued } = useLiveYield(liveDailyYield, livePerSecond);
-  // Patrimônio total respira ao vivo somando o rendimento do dia até este instante
-  const patrimonioLive = patrimonio + liveAccrued;
+  // Patrimônio total respira ao vivo somando o rendimento do dia até este instante.
+  // Só faz sentido no mês corrente — para meses passados/futuros mostramos estático.
+  const patrimonioLive = isCurrentMonth ? patrimonio + liveAccrued : patrimonio;
   const { currency, integer, cents, sign } = formatMoneyParts(projectedNet, displayCurrency);
   const positiveTrend = projectedNet >= 0;
   const currencySymbol = CURRENCY_SYMBOLS[displayCurrency];
@@ -166,15 +169,16 @@ export function DashboardHero({
             rates={rates}
           />
           <Stat
-            label="Patrimônio"
+            label={isCurrentMonth ? "Patrimônio" : `Patrimônio · ${monthLabel.split(" ")[0]}`}
             value={patrimonioLive}
             accent
-            live={liveDailyYield > 0}
+            live={isCurrentMonth && liveDailyYield > 0}
             symbol={currencySymbol}
             hidden={hidden}
             displayCurrency={displayCurrency}
             comparisonCurrency={comparisonCurrency}
             rates={rates}
+            approximate={!isCurrentMonth}
           />
         </div>
       </div>
@@ -192,6 +196,7 @@ function Stat({
   displayCurrency,
   comparisonCurrency,
   rates,
+  approximate = false,
 }: {
   label: string;
   value: number;
@@ -202,6 +207,7 @@ function Stat({
   displayCurrency: "BRL" | "EUR" | "USD";
   comparisonCurrency: "BRL" | "EUR" | "USD" | null;
   rates: Record<string, number>;
+  approximate?: boolean;
 }) {
   const fmt = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 0,
@@ -242,7 +248,11 @@ function Stat({
       ) : null}
       {accent ? (
         <div className="text-[11.5px] font-mono text-navy-300 mt-1">
-          {live ? "contas + investimentos + bens · respirando ao vivo" : "contas + investimentos + bens"}
+          {approximate
+            ? "contas no fim do mês · investimentos e bens a valor atual"
+            : live
+              ? "contas + investimentos + bens · respirando ao vivo"
+              : "contas + investimentos + bens"}
         </div>
       ) : null}
     </div>

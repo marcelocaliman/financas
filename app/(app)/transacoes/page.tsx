@@ -7,6 +7,7 @@ import { Pagination } from "@/components/transactions/pagination";
 import { ExportButton } from "@/components/transactions/export-button";
 import { ImportButton } from "@/components/transactions/import-button";
 import { BulkAddButton } from "@/components/transactions/bulk-add-button";
+import { TransactionsKeyboardNav } from "@/components/transactions/transactions-keyboard-nav";
 import { listTransactions, monthRange, getMonthlySummary } from "@/services/transactions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
@@ -158,6 +159,8 @@ export default async function TransacoesPage({
       <p className="text-[10.5px] font-mono text-faint-foreground tracking-[0.06em] mt-4">
         Período: {from} → {to}
       </p>
+
+      <TransactionsKeyboardNav currentKind={kindFilter} />
     </>
   );
 }
