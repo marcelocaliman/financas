@@ -8,17 +8,27 @@ import { maskMoneyString, usePrivacy } from "./privacy-provider";
 
 /**
  * Renderiza um valor monetário convertido para a moeda preferida do usuário.
- * Quando a moeda original difere da de exibição, mostra a original em texto menor abaixo.
  *
+ * Comportamento de linha secundária:
+ *  - Se a moeda do item difere da displayCurrency, mostra o ORIGINAL embaixo
+ *    (ex: conta em € com display R$ → "R$459 / €85").
+ *  - Se `showComparison=true` E a moeda de comparação estiver ligada E for
+ *    diferente da primária renderizada, mostra a COMPARAÇÃO embaixo
+ *    (ex: R$1.000 / ≈ €174).
+ *  - Se ambas se aplicam, prioriza o original (mais informativo).
+ *
+ * Props:
  * - `value`: valor numérico na moeda `currency`
  * - `currency`: moeda do valor (BRL/EUR/USD). Default BRL pra retrocompat.
- * - `secondary`: força exibir o valor original abaixo (default true se moedas diferem)
+ * - `secondary`: força exibir o valor original (override do auto-detect)
+ * - `showComparison`: ativa linha de comparação quando aplicável
  * - `compact`: formato compacto (R$ 1.234)
  */
 export function Money({
   value,
   currency = "BRL",
   secondary,
+  showComparison = false,
   compact = false,
   className,
   toneClassName,
@@ -27,12 +37,13 @@ export function Money({
   value: number | null | undefined;
   currency?: Currency;
   secondary?: boolean;
+  showComparison?: boolean;
   compact?: boolean;
   className?: string;
   toneClassName?: string;
   secondaryClassName?: string;
 }) {
-  const { displayCurrency, rates } = useMoneyContext();
+  const { displayCurrency, comparisonCurrency, rates } = useMoneyContext();
   const { hidden } = usePrivacy();
 
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -40,7 +51,6 @@ export function Money({
   }
 
   const numeric = Number(value);
-  const showSecondary = secondary ?? currency !== displayCurrency;
   const converted = convert(numeric, currency, displayCurrency, rates);
   const primaryValue = converted ?? numeric;
   const primaryCurrency: Currency = converted !== null ? displayCurrency : currency;
@@ -48,19 +58,36 @@ export function Money({
   const fmt = compact ? formatCurrencyCompact : formatCurrency;
   const maybeMask = (s: string) => (hidden ? maskMoneyString(s) : s);
 
+  // Decide qual secundário (se algum) renderizar
+  const showOriginal = secondary ?? currency !== displayCurrency;
+  const wantsComparison =
+    showComparison &&
+    comparisonCurrency != null &&
+    comparisonCurrency !== primaryCurrency;
+
+  let secondaryText: string | null = null;
+  if (showOriginal && currency !== primaryCurrency) {
+    secondaryText = fmt(numeric, currency);
+  } else if (wantsComparison) {
+    const compConverted = convert(numeric, currency, comparisonCurrency, rates);
+    if (compConverted !== null) {
+      secondaryText = `≈ ${fmt(compConverted, comparisonCurrency)}`;
+    }
+  }
+
   return (
     <span className={cn("inline-flex flex-col items-end leading-tight", className)}>
       <span className={cn("font-mono tabular-nums", toneClassName)}>
         {maybeMask(fmt(primaryValue, primaryCurrency))}
       </span>
-      {showSecondary && currency !== primaryCurrency ? (
+      {secondaryText ? (
         <span
           className={cn(
             "text-[10.5px] text-faint-foreground font-mono tabular-nums tracking-[0.02em]",
             secondaryClassName,
           )}
         >
-          {maybeMask(fmt(numeric, currency))}
+          {maybeMask(secondaryText)}
         </span>
       ) : null}
     </span>

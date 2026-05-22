@@ -5,6 +5,12 @@ import type { LivePortfolio } from "@/lib/financial/live-yield";
 import { dayUtilizationRatio } from "@/lib/financial/live-yield";
 import { formatMoney, formatMoneyParts, formatPercent } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
+import {
+  useComparisonCurrency,
+  useDisplayCurrency,
+  useMoneyContext,
+} from "@/components/ui/money-provider";
+import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/currency";
 
 /**
  * Card de rendimento ao vivo do portfólio.
@@ -24,6 +30,10 @@ export function PortfolioLiveTicker({
 }) {
   const [now, setNow] = useState(() => Date.now());
   const [mountedAt] = useState(() => Date.now());
+  const displayCurrency = useDisplayCurrency();
+  const comparisonCurrency = useComparisonCurrency();
+  const { rates } = useMoneyContext();
+  const symbol = CURRENCY_SYMBOLS[displayCurrency];
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -35,6 +45,15 @@ export function PortfolioLiveTicker({
   const accumulatedToday =
     portfolio.totalDailyYield * ratio + portfolio.totalPerSecond * elapsedSinceMount;
   const ratioMarket = portfolio.totalMarketBalance / Math.max(1, portfolio.totalBaseBalance);
+
+  // Comparação — converte accumulatedToday e patrimônio pra moeda de comparação
+  const compEnabled = comparisonCurrency != null && comparisonCurrency !== displayCurrency;
+  const accumulatedComp = compEnabled
+    ? convert(accumulatedToday, displayCurrency, comparisonCurrency, rates)
+    : null;
+  const patrimonioComp = compEnabled
+    ? convert(portfolio.totalMarketBalance, displayCurrency, comparisonCurrency, rates)
+    : null;
 
   if (portfolio.byAsset.length === 0) {
     return null;
@@ -55,7 +74,7 @@ export function PortfolioLiveTicker({
               Rendendo agora
             </div>
             <div className="flex items-baseline gap-3 font-mono">
-              <span className="text-[14px] text-navy-300 font-light">R$</span>
+              <span className="text-[14px] text-navy-300 font-light">{symbol}</span>
               <span className="text-[34px] sm:text-[40px] font-light leading-none tracking-[-0.03em] tabular-nums">
                 {accumulatedToday.toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
@@ -64,14 +83,19 @@ export function PortfolioLiveTicker({
               </span>
               <span className="text-[12px] text-navy-400 font-mono">hoje</span>
             </div>
+            {accumulatedComp != null && comparisonCurrency ? (
+              <div className="font-mono text-[11.5px] text-navy-400 mt-1 tabular-nums">
+                ≈ {formatCurrency(accumulatedComp, comparisonCurrency)}
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2 mt-3 text-[11.5px] font-mono text-navy-200">
               <Pill>
                 <b className="text-olive-500">
-                  + R$ {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}/s
+                  + {symbol} {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}/s
                 </b>
               </Pill>
               <Pill>
-                Carteira <b className="text-white">{formatMoney(portfolio.totalMarketBalance)}</b>
+                Carteira <b className="text-white">{formatMoney(portfolio.totalMarketBalance, displayCurrency)}</b>
               </Pill>
               {ratioMarket !== 1 && Math.abs(ratioMarket - 1) > 0.001 ? (
                 <Pill>
@@ -91,7 +115,7 @@ export function PortfolioLiveTicker({
   }
 
   // ============== variant === "full" ==============
-  const { integer, cents } = formatMoneyParts(accumulatedToday);
+  const { integer, cents } = formatMoneyParts(accumulatedToday, displayCurrency);
   return (
     <section className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-9 sm:p-10 mb-7 relative overflow-hidden shadow-lg">
       <div
@@ -110,27 +134,32 @@ export function PortfolioLiveTicker({
           </div>
 
           <div className="flex items-baseline gap-3 font-mono">
-            <span className="text-[18px] text-navy-300 font-light">R$</span>
+            <span className="text-[18px] text-navy-300 font-light">{symbol}</span>
             <span className="text-[44px] sm:text-[52px] font-light leading-none tracking-[-0.03em] tabular-nums">
               {integer}
             </span>
             <span className="text-[22px] text-navy-300 font-light">,{cents}</span>
           </div>
+          {accumulatedComp != null && comparisonCurrency ? (
+            <div className="font-mono text-[12.5px] text-navy-400 mt-1 tabular-nums">
+              ≈ {formatCurrency(accumulatedComp, comparisonCurrency)}
+            </div>
+          ) : null}
 
           <div className="flex gap-2 mt-5 flex-wrap">
             <Pill>
               Por segundo{" "}
               <b className="text-olive-500">
-                + R$ {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}
+                + {symbol} {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}
               </b>
             </Pill>
             <Pill>
               Estimado por dia útil{" "}
-              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield)}</b>
+              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield, displayCurrency)}</b>
             </Pill>
             <Pill>
               Mês estimado{" "}
-              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield * 21)}</b>
+              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield * 21, displayCurrency)}</b>
             </Pill>
           </div>
         </div>
@@ -138,29 +167,31 @@ export function PortfolioLiveTicker({
         <div className="sm:pl-9 sm:border-l border-ink-700 grid gap-4 content-start min-w-[220px]">
           <SideCell
             label="Patrimônio total"
-            value={formatMoney(portfolio.totalMarketBalance)}
+            value={formatMoney(portfolio.totalMarketBalance, displayCurrency)}
             hint={
-              Math.abs(portfolio.totalMarketBalance - portfolio.totalBaseBalance) > 1
-                ? `Custo: ${formatMoney(portfolio.totalBaseBalance)}`
-                : undefined
+              patrimonioComp != null && comparisonCurrency
+                ? `≈ ${formatCurrency(patrimonioComp, comparisonCurrency)}`
+                : Math.abs(portfolio.totalMarketBalance - portfolio.totalBaseBalance) > 1
+                  ? `Custo: ${formatMoney(portfolio.totalBaseBalance, displayCurrency)}`
+                  : undefined
             }
           />
           <SideCell
             label="Renda fixa"
-            value={formatMoney(portfolio.byClass.fixedIncome.dailyYield) + " / dia"}
+            value={formatMoney(portfolio.byClass.fixedIncome.dailyYield, displayCurrency) + " / dia"}
             tone="positive"
           />
           {portfolio.byClass.fiis.balance > 0 ? (
             <SideCell
               label="FIIs (estimado)"
-              value={formatMoney(portfolio.byClass.fiis.dailyYield) + " / dia"}
+              value={formatMoney(portfolio.byClass.fiis.dailyYield, displayCurrency) + " / dia"}
               tone="positive"
             />
           ) : null}
           {portfolio.byClass.stocks.balance > 0 ? (
             <SideCell
               label="Ações/ETFs (estimado)"
-              value={formatMoney(portfolio.byClass.stocks.dailyYield) + " / dia"}
+              value={formatMoney(portfolio.byClass.stocks.dailyYield, displayCurrency) + " / dia"}
               tone="positive"
             />
           ) : null}

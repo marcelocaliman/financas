@@ -8,12 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Field } from "@/components/ui/field";
 import { PillGroup, type PillOption } from "@/components/ui/pill-group";
 import {
+  updateComparisonCurrency,
   updateDisplayCurrency,
   updateHousehold,
   updateProfile,
   type ProfileFormState,
 } from "@/services/profile.actions";
 import type { Currency } from "@/types/database";
+
+type ComparisonValue = Currency | "off";
 
 export function ProfileNameForm({ defaultValue }: { defaultValue: string }) {
   const [state, action, pending] = useActionState<ProfileFormState | undefined, FormData>(
@@ -78,6 +81,45 @@ export function DisplayCurrencyForm({ defaultValue }: { defaultValue: Currency }
       {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
       <Button type="submit" variant="secondary" disabled={pending || value === defaultValue}>
         {pending ? "Salvando…" : "Salvar moeda"}
+      </Button>
+    </form>
+  );
+}
+
+const COMPARISON_OPTIONS: PillOption<ComparisonValue>[] = [
+  { value: "off", label: "Nenhuma", hint: "—" },
+  { value: "BRL", label: "R$ Real", hint: "BRL" },
+  { value: "EUR", label: "€ Euro", hint: "EUR" },
+  { value: "USD", label: "US$ Dólar", hint: "USD" },
+];
+
+export function ComparisonCurrencyForm({ defaultValue }: { defaultValue: ComparisonValue }) {
+  const [state, action, pending] = useActionState<ProfileFormState | undefined, FormData>(
+    updateComparisonCurrency,
+    undefined,
+  );
+  const [value, setValue] = React.useState<ComparisonValue>(defaultValue);
+
+  useEffect(() => {
+    if (state?.ok) toast.success("Moeda de comparação atualizada.");
+  }, [state]);
+
+  return (
+    <form action={action} className="space-y-4">
+      <Field
+        label="Moeda de comparação"
+        hint="Aparece em fonte menor abaixo dos valores principais (hero, totais, saldos). Útil pra ver o equivalente sem trocar a moeda principal."
+      >
+        <PillGroup
+          options={COMPARISON_OPTIONS}
+          value={value}
+          onChange={setValue}
+          name="currency"
+        />
+      </Field>
+      {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
+      <Button type="submit" variant="secondary" disabled={pending || value === defaultValue}>
+        {pending ? "Salvando…" : "Salvar comparação"}
       </Button>
     </form>
   );

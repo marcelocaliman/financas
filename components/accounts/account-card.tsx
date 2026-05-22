@@ -151,7 +151,9 @@ export function AccountCard({ account }: { account: Account }) {
           <Money
             value={balance}
             currency={account.currency}
+            showComparison
             className={cn("text-[24px] tracking-[-0.02em] mt-1 items-start", balanceColor)}
+            secondaryClassName="text-[11px]"
           />
         </div>
       </div>

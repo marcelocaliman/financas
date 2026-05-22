@@ -3,6 +3,7 @@ import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
 import { LiveSaldoCell, LiveVariationCell } from "./fixed-income-row-live";
 import { Badge } from "@/components/ui/badge";
+import { Money } from "@/components/ui/money";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { ASSET_TYPE_LABELS, type Investment } from "@/services/investments";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
@@ -57,9 +58,12 @@ export function FixedIncomeTable({
             <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint-foreground font-medium">
               Saldo total
             </div>
-            <div className="font-mono text-[24px] tracking-[-0.025em] text-foreground mt-0.5 tabular-nums">
-              {formatMoney(saldo)}
-            </div>
+            <Money
+              value={saldo}
+              showComparison
+              className="text-[24px] tracking-[-0.025em] text-foreground mt-0.5 items-end"
+              secondaryClassName="text-[11.5px]"
+            />
             {aplicado > 0 ? (
               <div
                 className={`font-mono text-[11.5px] mt-0.5 ${
@@ -79,20 +83,20 @@ export function FixedIncomeTable({
 
         {/* KPIs internos */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 mt-6 pt-5 border-t border-border">
-          <MiniStat label="Aplicado" value={formatMoney(aplicado)} />
+          <MiniStat label="Aplicado" value={aplicado} />
           <MiniStat
             label="Renda diária"
-            value={formatMoney(rendaDiaria)}
+            value={rendaDiaria}
             tone={rendaDiaria > 0 ? "positive" : "default"}
           />
           <MiniStat
             label="Renda mensal estimada"
-            value={formatMoney(rendaMensal)}
+            value={rendaMensal}
             tone={rendaMensal > 0 ? "positive" : "default"}
           />
           <MiniStat
             label="Renda anual estimada"
-            value={formatMoney(rendaDiaria * 252)}
+            value={rendaDiaria * 252}
             tone={rendaDiaria > 0 ? "positive" : "default"}
           />
         </div>
@@ -232,7 +236,7 @@ function MiniStat({
   tone = "default",
 }: {
   label: string;
-  value: string;
+  value: number;
   tone?: "default" | "positive";
 }) {
   return (
@@ -240,13 +244,14 @@ function MiniStat({
       <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
         {label}
       </div>
-      <div
-        className={`font-mono text-[14px] tracking-[-0.01em] mt-0.5 tabular-nums ${
+      <Money
+        value={value}
+        showComparison
+        className={`text-[14px] tracking-[-0.01em] mt-0.5 items-start ${
           tone === "positive" ? "text-olive-700 dark:text-olive-500" : "text-foreground"
         }`}
-      >
-        {value}
-      </div>
+        secondaryClassName="text-[10px]"
+      />
     </div>
   );
 }

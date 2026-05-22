@@ -2,9 +2,10 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserContext } from "@/services/auth";
-import { getDisplayCurrency } from "@/services/currency";
+import { getComparisonCurrency, getDisplayCurrency } from "@/services/currency";
 import { signOut } from "../_actions/sign-out";
 import {
+  ComparisonCurrencyForm,
   DisplayCurrencyForm,
   HouseholdNameForm,
   ProfileNameForm,
@@ -16,7 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function ConfiguracoesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
-  const displayCurrency = await getDisplayCurrency();
+  const [displayCurrency, comparisonCurrency] = await Promise.all([
+    getDisplayCurrency(),
+    getComparisonCurrency(),
+  ]);
+  const comparisonValue = comparisonCurrency ?? "off";
 
   return (
     <>
@@ -41,6 +46,9 @@ export default async function ConfiguracoesPage() {
             meta="Como totais aparecem na home, contas e investimentos"
           />
           <DisplayCurrencyForm defaultValue={displayCurrency} />
+          <div className="mt-6 pt-5 border-t border-border">
+            <ComparisonCurrencyForm defaultValue={comparisonValue} />
+          </div>
         </Panel>
 
         <Panel>

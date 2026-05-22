@@ -10,16 +10,17 @@ import { PrivacyProvider } from "@/components/ui/privacy-provider";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
-import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/services/currency";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
 
-  const [accounts, categories, displayCurrency, rates] = await Promise.all([
+  const [accounts, categories, displayCurrency, comparisonCurrency, rates] = await Promise.all([
     listAccounts(),
     listCategories(),
     getDisplayCurrency(),
+    getComparisonCurrency(),
     getRateMap(),
   ]);
 
@@ -36,7 +37,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }));
 
   return (
-    <MoneyProvider displayCurrency={displayCurrency} rates={rates}>
+    <MoneyProvider
+      displayCurrency={displayCurrency}
+      comparisonCurrency={comparisonCurrency}
+      rates={rates}
+    >
       <PrivacyProvider>
       <QuickAddProvider>
         <RealtimeBridge />

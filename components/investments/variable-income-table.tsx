@@ -1,3 +1,4 @@
+import { Money } from "@/components/ui/money";
 import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
@@ -52,9 +53,12 @@ export function VariableIncomeTable({
             <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint-foreground font-medium">
               A mercado
             </div>
-            <div className="font-mono text-[24px] tracking-[-0.025em] text-foreground mt-0.5 tabular-nums">
-              {formatMoney(valorMercado)}
-            </div>
+            <Money
+              value={valorMercado}
+              showComparison
+              className="text-[24px] tracking-[-0.025em] text-foreground mt-0.5 items-end"
+              secondaryClassName="text-[11.5px]"
+            />
             {aplicado > 0 ? (
               <div
                 className={`font-mono text-[11.5px] mt-0.5 ${
@@ -73,11 +77,12 @@ export function VariableIncomeTable({
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 mt-6 pt-5 border-t border-border">
-          <MiniStat label="Aplicado (custo)" value={formatMoney(aplicado)} />
-          <MiniStat
+          <MiniMoney label="Aplicado (custo)" value={aplicado} />
+          <MiniMoney
             label="Dividendo médio/mês"
-            value={dividendoMensal > 0 ? formatMoney(dividendoMensal) : "—"}
+            value={dividendoMensal}
             tone={dividendoMensal > 0 ? "positive" : "default"}
+            emptyDash={dividendoMensal <= 0}
           />
           <MiniStat
             label="DY anualizado"
@@ -250,6 +255,38 @@ function MiniStat({
       >
         {value}
       </div>
+    </div>
+  );
+}
+
+function MiniMoney({
+  label,
+  value,
+  tone = "default",
+  emptyDash = false,
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "positive";
+  emptyDash?: boolean;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+        {label}
+      </div>
+      {emptyDash ? (
+        <div className="font-mono text-[14px] tracking-[-0.01em] mt-0.5 text-foreground">—</div>
+      ) : (
+        <Money
+          value={value}
+          showComparison
+          className={`text-[14px] tracking-[-0.01em] mt-0.5 items-start ${
+            tone === "positive" ? "text-olive-700 dark:text-olive-500" : "text-foreground"
+          }`}
+          secondaryClassName="text-[10px]"
+        />
+      )}
     </div>
   );
 }

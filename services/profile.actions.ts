@@ -18,6 +18,11 @@ const displayCurrencySchema = z.object({
   currency: z.enum(["BRL", "EUR", "USD"]),
 });
 
+const comparisonCurrencySchema = z.object({
+  // "off" desliga; senão precisa ser uma moeda suportada
+  currency: z.enum(["BRL", "EUR", "USD", "off"]),
+});
+
 export type ProfileFormState = {
   ok?: boolean;
   error?: string;
@@ -88,6 +93,31 @@ export async function updateDisplayCurrency(
   const supabase = await createClient();
   const current = (ctx.profile.preferences ?? {}) as Record<string, unknown>;
   const next = { ...current, displayCurrency: parsed.data.currency as Currency };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ preferences: next })
+    .eq("id", ctx.profile.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function updateComparisonCurrency(
+  _prev: ProfileFormState | undefined,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const parsed = comparisonCurrencySchema.safeParse({ currency: formData.get("currency") });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const supabase = await createClient();
+  const current = (ctx.profile.preferences ?? {}) as Record<string, unknown>;
+  // "off" persistimos como string "off" pra distinguir de "default" (ausente)
+  const next = { ...current, comparisonCurrency: parsed.data.currency };
 
   const { error } = await supabase
     .from("users")

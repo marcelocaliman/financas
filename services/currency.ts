@@ -60,6 +60,44 @@ export const getDisplayCurrency = cache(async (): Promise<Currency> => {
 });
 
 /**
+ * Lê a moeda de comparação do usuário (mostrada abaixo da principal nos
+ * cards "main info"). Default = a "oposta" da principal: BRL ↔ EUR; pra
+ * USD default é EUR.
+ */
+export const getComparisonCurrency = cache(async (): Promise<Currency | null> => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("users")
+    .select("preferences")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const prefs = (data?.preferences ?? {}) as {
+    displayCurrency?: string;
+    comparisonCurrency?: string | null;
+  };
+
+  // "off" explícito → não mostra comparação
+  if (prefs.comparisonCurrency === null || prefs.comparisonCurrency === "off") return null;
+
+  const cc = prefs.comparisonCurrency;
+  if (cc && SUPPORTED_CURRENCIES.includes(cc as Currency)) {
+    return cc as Currency;
+  }
+
+  // Default: oposto natural da principal
+  const dc = (prefs.displayCurrency as Currency) ?? DISPLAY_CURRENCY_FALLBACK;
+  if (dc === "BRL") return "EUR";
+  if (dc === "EUR") return "BRL";
+  return "EUR"; // pra USD
+});
+
+/**
  * Atualiza a moeda de exibição do usuário logado.
  */
 export async function setDisplayCurrency(currency: Currency): Promise<void> {

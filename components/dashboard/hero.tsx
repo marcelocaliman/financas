@@ -4,8 +4,8 @@ import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { RollingNumber } from "@/components/ui/rolling-number";
 import { useLiveYield } from "@/hooks/use-live-yield";
-import { useDisplayCurrency } from "@/components/ui/money-provider";
-import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import { useComparisonCurrency, useDisplayCurrency, useMoneyContext } from "@/components/ui/money-provider";
+import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/currency";
 import { maskMoneyString, usePrivacy } from "@/components/ui/privacy-provider";
 
 const HERO_QUOTE =
@@ -35,6 +35,8 @@ export function DashboardHero({
   livePerSecond?: number;
 }) {
   const displayCurrency = useDisplayCurrency();
+  const comparisonCurrency = useComparisonCurrency();
+  const { rates } = useMoneyContext();
   const { hidden } = usePrivacy();
   const { accumulated: liveAccrued } = useLiveYield(liveDailyYield, livePerSecond);
   // Patrimônio total respira ao vivo somando o rendimento do dia até este instante
@@ -44,6 +46,16 @@ export function DashboardHero({
   const currencySymbol = CURRENCY_SYMBOLS[displayCurrency];
   const maskedInteger = hidden ? maskMoneyString(integer) : integer;
   const maskedCents = hidden ? maskMoneyString(cents) : cents;
+
+  // Linha de comparação abaixo da sobra projetada (se ligada)
+  const projectedComparison =
+    comparisonCurrency && comparisonCurrency !== displayCurrency
+      ? convert(projectedNet, displayCurrency, comparisonCurrency, rates)
+      : null;
+  const projectedComparisonText =
+    projectedComparison != null
+      ? `≈ ${formatCurrency(projectedComparison, comparisonCurrency!)}`
+      : null;
 
   // Mood strip: 10 segmentos por dias do mês transcorridos.
   // Cor olive enquanto expenseRatio < 0.9; gold se passar; rust se acima de 1.
@@ -70,7 +82,7 @@ export function DashboardHero({
             <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-3 font-medium">
               Sobra projetada · {monthLabel}
             </div>
-            <div className="flex items-baseline gap-3 mb-4 font-mono">
+            <div className="flex items-baseline gap-3 mb-1 font-mono">
               <span className="text-[20px] text-navy-300 font-light">{currency}</span>
               <span className="text-[52px] sm:text-[60px] font-light leading-none tracking-[-0.04em]">
                 {sign}
@@ -78,6 +90,13 @@ export function DashboardHero({
               </span>
               <span className="text-[24px] text-navy-300 font-light">,{maskedCents}</span>
             </div>
+            {projectedComparisonText ? (
+              <div className="font-mono text-[12.5px] text-navy-400 tracking-[0.02em] mb-3">
+                {hidden ? maskMoneyString(projectedComparisonText) : projectedComparisonText}
+              </div>
+            ) : (
+              <div className="mb-3" />
+            )}
             <div className="flex flex-wrap items-center gap-2.5">
               <span
                 className={cn(
@@ -128,8 +147,24 @@ export function DashboardHero({
         <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-7" />
 
         <div className="grid grid-cols-3 gap-6">
-          <Stat label="Entrou" value={income} symbol={currencySymbol} hidden={hidden} />
-          <Stat label="Saiu" value={expense} symbol={currencySymbol} hidden={hidden} />
+          <Stat
+            label="Entrou"
+            value={income}
+            symbol={currencySymbol}
+            hidden={hidden}
+            displayCurrency={displayCurrency}
+            comparisonCurrency={comparisonCurrency}
+            rates={rates}
+          />
+          <Stat
+            label="Saiu"
+            value={expense}
+            symbol={currencySymbol}
+            hidden={hidden}
+            displayCurrency={displayCurrency}
+            comparisonCurrency={comparisonCurrency}
+            rates={rates}
+          />
           <Stat
             label="Patrimônio"
             value={patrimonioLive}
@@ -137,6 +172,9 @@ export function DashboardHero({
             live={liveDailyYield > 0}
             symbol={currencySymbol}
             hidden={hidden}
+            displayCurrency={displayCurrency}
+            comparisonCurrency={comparisonCurrency}
+            rates={rates}
           />
         </div>
       </div>
@@ -151,6 +189,9 @@ function Stat({
   live,
   symbol,
   hidden,
+  displayCurrency,
+  comparisonCurrency,
+  rates,
 }: {
   label: string;
   value: number;
@@ -158,6 +199,9 @@ function Stat({
   live?: boolean;
   symbol: string;
   hidden?: boolean;
+  displayCurrency: "BRL" | "EUR" | "USD";
+  comparisonCurrency: "BRL" | "EUR" | "USD" | null;
+  rates: Record<string, number>;
 }) {
   const fmt = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 0,
@@ -166,6 +210,14 @@ function Stat({
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+  const compValue =
+    comparisonCurrency && comparisonCurrency !== displayCurrency
+      ? convert(value, displayCurrency, comparisonCurrency, rates)
+      : null;
+  const compText =
+    compValue != null && comparisonCurrency
+      ? `≈ ${formatCurrency(compValue, comparisonCurrency)}`
+      : null;
   return (
     <div>
       <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-navy-400 mb-2 font-medium flex items-center gap-1.5">
@@ -183,6 +235,11 @@ function Stat({
           <>{symbol} <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} /></>
         )}
       </div>
+      {compText ? (
+        <div className="text-[11px] font-mono text-navy-400 mt-1 tabular-nums">
+          {hidden ? maskMoneyString(compText) : compText}
+        </div>
+      ) : null}
       {accent ? (
         <div className="text-[11.5px] font-mono text-navy-300 mt-1">
           {live ? "contas + investimentos + bens · respirando ao vivo" : "contas + investimentos + bens"}

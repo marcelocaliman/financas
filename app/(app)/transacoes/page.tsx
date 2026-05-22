@@ -9,7 +9,7 @@ import { Pagination } from "@/components/transactions/pagination";
 import { listTransactions, monthRange, getMonthlySummary } from "@/services/transactions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
-import { formatMoney } from "@/lib/utils/format";
+import { Money } from "@/components/ui/money";
 import type { TransactionKind } from "@/types/database";
 
 export const dynamic = "force-dynamic";
@@ -162,18 +162,20 @@ function Mini({
   tone: "positive" | "negative";
   currency: "BRL" | "EUR" | "USD";
 }) {
+  const toneClass =
+    value === 0 ? "text-foreground" : tone === "positive" ? "text-olive-700" : "text-rust-600";
   return (
     <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
       <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
         {label}
       </div>
-      <div
-        className={`mt-1.5 font-mono text-[20px] tracking-[-0.02em] ${
-          value === 0 ? "text-foreground" : tone === "positive" ? "text-olive-700" : "text-rust-600"
-        }`}
-      >
-        {formatMoney(value, currency)}
-      </div>
+      <Money
+        value={value}
+        currency={currency}
+        showComparison
+        className={`mt-1.5 text-[20px] tracking-[-0.02em] items-start ${toneClass}`}
+        secondaryClassName="text-[11px]"
+      />
     </div>
   );
 }
