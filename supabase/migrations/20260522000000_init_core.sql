@@ -11,10 +11,8 @@ create extension if not exists "pgcrypto";
 
 
 -- ============================================================================
--- HELPERS
+-- HELPER: updated_at automático
 -- ============================================================================
-
--- Atualiza updated_at automaticamente
 create or replace function public.tg_set_updated_at()
 returns trigger
 language plpgsql
@@ -25,8 +23,36 @@ begin
 end;
 $$;
 
--- household_id do usuário atual.
+
+-- ============================================================================
+-- HOUSEHOLDS
+-- ============================================================================
+create table public.households (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+
+-- ============================================================================
+-- USERS (perfil, atrelado a auth.users)
+-- ============================================================================
+create table public.users (
+  id uuid primary key references auth.users(id) on delete cascade,
+  household_id uuid not null references public.households(id) on delete cascade,
+  display_name text not null,
+  role text not null default 'member' check (role in ('admin', 'member')),
+  created_at timestamptz not null default now()
+);
+
+create index users_household_id_idx on public.users(household_id);
+
+
+-- ============================================================================
+-- HELPER: household_id do usuário atual.
 -- SECURITY DEFINER para não recorrer ao RLS de users (evita recursão).
+-- Definido após `users` para validar o corpo da função.
+-- ============================================================================
 create or replace function public.current_household_id()
 returns uuid
 language sql
@@ -42,14 +68,8 @@ grant execute on function public.current_household_id() to authenticated;
 
 
 -- ============================================================================
--- HOUSEHOLDS
+-- RLS: households + users (depende de current_household_id)
 -- ============================================================================
-create table public.households (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  created_at timestamptz not null default now()
-);
-
 alter table public.households enable row level security;
 
 create policy "household: members can read"
@@ -60,20 +80,6 @@ create policy "household: admin can update"
   on public.households for update to authenticated
   using (id = public.current_household_id())
   with check (id = public.current_household_id());
-
-
--- ============================================================================
--- USERS (perfil, atrelado a auth.users)
--- ============================================================================
-create table public.users (
-  id uuid primary key references auth.users(id) on delete cascade,
-  household_id uuid not null references public.households(id) on delete cascade,
-  display_name text not null,
-  role text not null default 'member' check (role in ('admin', 'member')),
-  created_at timestamptz not null default now()
-);
-
-create index users_household_id_idx on public.users(household_id);
 
 alter table public.users enable row level security;
 
