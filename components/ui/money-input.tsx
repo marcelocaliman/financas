@@ -80,10 +80,10 @@ export function MoneyInput({
   return (
     <div
       className={cn(
-        "flex items-center rounded-[8px] border border-border-strong bg-surface overflow-hidden",
+        "flex items-center rounded-[8px] border border-border-strong bg-surface",
         s.wrap,
         "transition-[border-color,box-shadow] duration-150",
-        "focus-within:border-navy-500 focus-within:ring-2 focus-within:ring-navy-100",
+        "focus-within:border-navy-500 focus-within:shadow-[0_0_0_3px_var(--color-navy-100)]",
         disabled && "opacity-50 cursor-not-allowed",
         className,
       )}
