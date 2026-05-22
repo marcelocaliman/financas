@@ -16,6 +16,7 @@ import {
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { SidebarLiveTicker } from "@/components/layout/sidebar-live-ticker";
+import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { cn } from "@/lib/utils/cn";
 
 type NavItem = {
@@ -122,7 +123,10 @@ export function Sidebar({
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-600 font-medium">
             Modo
           </span>
-          <ThemeToggle tone="dark" />
+          <div className="flex items-center gap-1">
+            <PrivacyToggle tone="dark" />
+            <ThemeToggle tone="dark" />
+          </div>
         </div>
         <Link
           href="/configuracoes"

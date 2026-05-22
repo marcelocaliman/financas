@@ -388,7 +388,7 @@ function LinkedLotInputs({ assetType }: { assetType: AssetType }) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Preço médio</span>
             <b className="text-foreground">
-              R$ {unitPrice.toFixed(4).replace(".", ",")} / {unit.slice(0, -1)}
+              R$ {unitPrice.toFixed(assetType === "crypto" ? 6 : 2).replace(".", ",")} / {unit.slice(0, -1)}
             </b>
           </div>
           <div className="flex justify-between">

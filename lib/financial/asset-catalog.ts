@@ -70,6 +70,21 @@ const ETFS: AssetTemplate[] = [
 }));
 
 /* ============================== AÇÕES principais ========================= */
+/**
+ * Tickers terminados em 11 que são UNITS (ações compostas) ou BDRs, não FIIs.
+ * Sem essa whitelist, a heurística erra e classifica como FII.
+ */
+const STOCK_UNITS: { ticker: string; name: string }[] = [
+  { ticker: "KLBN11", name: "Klabin Units" },
+  { ticker: "SAPR11", name: "Sanepar Units" },
+  { ticker: "TAEE11", name: "Taesa Units" },
+  { ticker: "ALUP11", name: "Alupar Units" },
+  { ticker: "ENGI11", name: "Energisa Units" },
+  { ticker: "BIDI11", name: "Banco Inter Units" },
+  { ticker: "SANB11", name: "Santander Units" },
+  { ticker: "PINE11", name: "Banco Pine Units" },
+];
+
 const STOCKS: AssetTemplate[] = [
   { ticker: "PETR4", name: "Petrobras PN" },
   { ticker: "PETR3", name: "Petrobras ON" },
@@ -91,6 +106,7 @@ const STOCKS: AssetTemplate[] = [
   { ticker: "EQTL3", name: "Equatorial ON" },
   { ticker: "PRIO3", name: "PetroRio ON" },
   { ticker: "ELET3", name: "Eletrobras ON" },
+  ...STOCK_UNITS,
 ].map((s) => ({
   ...s,
   asset_type: "stock" as AssetType,
@@ -98,6 +114,8 @@ const STOCKS: AssetTemplate[] = [
   tax_regime: "exempt" as TaxRegime, // ações têm isenção até R$ 20k/mês
   source: "catalog" as const,
 }));
+
+const KNOWN_STOCK_UNITS = new Set(STOCK_UNITS.map((s) => s.ticker));
 
 /* ============================== TESOUROS (fallback offline) ============== */
 /**
@@ -150,16 +168,23 @@ export function heuristicByTicker(ticker: string): AssetTemplate | null {
   const t = ticker.trim().toUpperCase();
   if (!/^[A-Z]{3,5}\d{1,2}$/.test(t)) return null;
 
-  // FII: 4 letras + "11" → quase sempre FII (alguns ETFs também terminam em 11 mas estão no catálogo)
-  if (/^[A-Z]{4}11$/.test(t)) {
+  // Units conhecidas (XXXX11 mas ação): tratamos como stock.
+  if (KNOWN_STOCK_UNITS.has(t)) {
     return {
       ticker: t,
       name: t,
-      asset_type: "fii",
+      asset_type: "stock",
       indexer: "none",
       tax_regime: "exempt",
       source: "heuristic",
     };
+  }
+
+  // Ticker XXXX11: pode ser FII, ETF ou Unit. Sem catálogo, evitamos chute —
+  // marcamos como FII (caso mais comum) mas o user vê e pode trocar via avançado.
+  // Em vez de assumir FII, agora retornamos null e o picker pede classificação manual.
+  if (/^[A-Z]{4}11$/.test(t)) {
+    return null;
   }
 
   // Ação: 4 letras + 3/4/5/6 (ON, PN, PNA, PNB)

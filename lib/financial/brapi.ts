@@ -204,6 +204,16 @@ export async function fetchQuotes(tickers: string[]): Promise<Map<string, Quote>
   if (staleTickers.length > 0) {
     const fresh = await fetchQuotesRaw(staleTickers);
 
+    // 2a. Tickers que faltaram no batch: brapi às vezes parcializa quando um
+    //     ticker do meio quebra. Retry individual pra cada ausente.
+    const missingAfterBatch = staleTickers.filter((t) => !fresh.has(t));
+    if (missingAfterBatch.length > 0 && missingAfterBatch.length < staleTickers.length) {
+      for (const t of missingAfterBatch) {
+        const single = await fetchQuotesRaw([t]);
+        for (const [k, v] of single) fresh.set(k, v);
+      }
+    }
+
     if (fresh.size > 0) {
       // Upsert dos novos valores no snapshot pra próximas leituras
       const upserts = Array.from(fresh.values()).map((q) => ({
@@ -224,7 +234,12 @@ export async function fetchQuotes(tickers: string[]): Promise<Map<string, Quote>
     for (const ticker of staleTickers) {
       if (!result.has(ticker)) {
         const stale = snapByTicker.get(ticker);
-        if (stale) result.set(ticker, snapshotToQuote(stale));
+        if (stale) {
+          result.set(ticker, snapshotToQuote(stale));
+        } else if (process.env.NODE_ENV !== "production") {
+          // Log apenas em dev: ajuda a diagnosticar WEGE3-like silenciosos.
+          console.warn(`[brapi] sem cotação nem snapshot para ${ticker}`);
+        }
       }
     }
   }

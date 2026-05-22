@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
+import { Geist, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { Providers } from "./providers";
 import "./globals.css";
@@ -10,12 +10,12 @@ const geist = Geist({
   display: "swap",
 });
 
-const fraunces = Fraunces({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  variable: "--font-fraunces",
+  variable: "--font-inter-tight",
   display: "swap",
-  axes: ["opsz"],
   style: ["normal", "italic"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -63,7 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="pt-BR"
-      className={`${geist.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
+      className={`${geist.variable} ${interTight.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen antialiased">
