@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { RecurrenceCard } from "@/components/recurrences/recurrence-card";
 import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-button";
+import { BatchRecurrenceButton } from "@/components/recurrences/batch-recurrence-button";
 import { MaterializeNowButton } from "@/components/recurrences/materialize-now-button";
 import {
   computeNextOccurrences,
@@ -57,6 +58,7 @@ export default async function RecorrentesPage() {
         actions={
           <div className="flex gap-2">
             <MaterializeNowButton />
+            <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
             <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
           </div>
         }

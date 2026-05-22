@@ -231,6 +231,79 @@ export async function deleteRecurringRule(
 }
 
 /**
+ * Cria várias regras de uma vez. Cada item segue o mesmo schema que `create`.
+ * Roda inserts em batch; se UMA linha quebrar, aborta tudo (transação implícita
+ * do PostgREST). Retorna quantas criadas + erros por linha.
+ */
+const batchItemSchema = baseSchema.extend({
+  // dão pra usar os mesmos campos do baseSchema
+});
+
+export async function createRecurringRulesBatch(
+  items: Array<Record<string, unknown>>,
+): Promise<{ ok?: boolean; created?: number; errors?: Array<{ index: number; error: string }> }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { errors: [{ index: -1, error: "Sessão expirada." }] };
+
+  const errors: Array<{ index: number; error: string }> = [];
+  const valid: Array<{ index: number; data: z.infer<typeof batchItemSchema> }> = [];
+
+  items.forEach((raw, i) => {
+    const parsed = batchItemSchema.safeParse(raw);
+    if (!parsed.success) {
+      errors.push({ index: i, error: parsed.error.issues.map((x) => x.message).join("; ") });
+      return;
+    }
+    const err = validateKindTargets({
+      kind: parsed.data.kind,
+      accountId: parsed.data.accountId ?? null,
+      fromAccountId: parsed.data.fromAccountId ?? null,
+      toAccountId: parsed.data.toAccountId ?? null,
+    });
+    if (err) {
+      errors.push({ index: i, error: err });
+      return;
+    }
+    valid.push({ index: i, data: parsed.data });
+  });
+
+  if (errors.length > 0) {
+    return { errors, created: 0 };
+  }
+
+  const supabase = await createClient();
+  const rows = valid.map(({ data: d }) => {
+    const isTransfer = d.kind === "transfer";
+    return {
+      household_id: ctx.household.id,
+      kind: d.kind,
+      amount: d.amount,
+      currency: d.currency,
+      description: d.description.trim(),
+      account_id: isTransfer ? null : (d.accountId ?? null),
+      category_id: isTransfer ? null : (d.categoryId ?? null),
+      payment_method: isTransfer ? null : (d.paymentMethod ?? null),
+      from_account_id: isTransfer ? d.fromAccountId : null,
+      to_account_id: isTransfer ? d.toAccountId : null,
+      frequency: d.frequency as RecurrenceFrequency,
+      interval_count: d.intervalCount,
+      day_of_month: d.dayOfMonth ?? null,
+      day_of_week: d.dayOfWeek ?? null,
+      start_date: d.startDate,
+      end_date: d.endDate ?? null,
+      notes: d.notes?.trim() ?? null,
+      created_by: ctx.profile.id,
+    };
+  });
+
+  const { data, error } = await supabase.from("recurring_rules").insert(rows).select("id");
+  if (error) return { errors: [{ index: -1, error: error.message }] };
+
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true, created: data?.length ?? 0 };
+}
+
+/**
  * Força materializar uma regra (ou todas, se id omitido) até `untilDate`.
  * Default: hoje. Use pra antecipar gerações sem esperar o cron diário.
  */
