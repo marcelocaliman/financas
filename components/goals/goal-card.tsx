@@ -13,6 +13,8 @@ import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { GoalSheet } from "./goal-sheet";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { useMoneyContext } from "@/components/ui/money-provider";
+import { convertOrSame, CURRENCY_SYMBOLS } from "@/lib/financial/currency";
 
 export function GoalCard({
   goal,
@@ -21,11 +23,23 @@ export function GoalCard({
 }: {
   goal: Goal;
   accounts: { id: string; name: string; institution: string }[];
+  /** Sobra média mensal em moeda de exibição (geralmente BRL) */
   averageMonthlyAddition: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
+  const { displayCurrency, rates } = useMoneyContext();
+
+  // Sobra mensal está na moeda de display. Se a meta é em outra moeda,
+  // converte pra moeda da meta antes de estimar o ETA — senão a matemática
+  // mistura unidades (ex: 5000 BRL/mês ≠ 5000 EUR/mês).
+  const savingsInGoalCurrency = convertOrSame(
+    averageMonthlyAddition,
+    displayCurrency,
+    goal.currency,
+    rates,
+  );
 
   const handleArchive = async () => {
     const ok = await confirm({
@@ -58,7 +72,8 @@ export function GoalCard({
   const current = Number(goal.current_amount);
   const target = Number(goal.target_amount);
   const pct = target > 0 ? Math.min(1, current / target) : 0;
-  const eta = estimateCompletion(current, target, averageMonthlyAddition);
+  const eta = estimateCompletion(current, target, savingsInGoalCurrency);
+  const showsForeignCurrency = goal.currency !== displayCurrency;
   const targetMonthLabel = goal.target_date
     ? new Date(goal.target_date).toLocaleDateString("pt-BR", {
         month: "short",
@@ -83,6 +98,11 @@ export function GoalCard({
         <div>
           <div className="flex items-center gap-2 mb-2">
             {pct >= 1 ? <Badge tone="olive" dot>Concluída</Badge> : null}
+            {showsForeignCurrency ? (
+              <Badge tone="gold">
+                {CURRENCY_SYMBOLS[goal.currency]} {goal.currency}
+              </Badge>
+            ) : null}
           </div>
           <h3 className="font-display text-[24px] tracking-[-0.02em] font-medium text-foreground">
             {goal.name}
@@ -129,7 +149,7 @@ export function GoalCard({
                 ? "sem aportes recentes"
                 : eta.months === 0
                   ? "meta atingida"
-                  : <>aporte médio <MoneyMask>{formatMoney(averageMonthlyAddition, goal.currency)}</MoneyMask>/mês</>}
+                  : <>aporte médio <MoneyMask>{formatMoney(savingsInGoalCurrency, goal.currency)}</MoneyMask>/mês</>}
             </div>
             {targetMonthLabel ? (
               <div className="font-mono text-[10.5px] text-faint-foreground mt-1.5">

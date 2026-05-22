@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { Target } from "lucide-react";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Money } from "@/components/ui/money";
 import { estimateCompletion } from "@/lib/financial/projection";
+import { convertOrSame, CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import { useMoneyContext } from "@/components/ui/money-provider";
 import type { Goal } from "@/services/goals";
 import { cn } from "@/lib/utils/cn";
 
@@ -80,22 +84,36 @@ function GoalRow({
   goal: Goal;
   monthlySavings: number;
 }) {
+  const { displayCurrency, rates } = useMoneyContext();
   const current = Number(goal.current_amount ?? 0);
   const target = Number(goal.target_amount ?? 0);
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const remaining = Math.max(0, target - current);
   const isAchieved = current >= target && target > 0;
+  const showsForeignCurrency = goal.currency !== displayCurrency;
 
-  // ETA — divide a sobra mensal pela quantidade de metas pendentes seria mais
-  // honesto, mas como mostramos só 3 e a sobra média é "uma única bolsa",
-  // damos o ETA otimista (assume aporte total). Usuário lê com sal.
-  const { months } = estimateCompletion(current, target, monthlySavings);
+  // Sobra está em displayCurrency. Converte pra moeda da meta antes
+  // de estimar — senão divide unidades diferentes.
+  const savingsInGoalCurrency = convertOrSame(
+    monthlySavings,
+    displayCurrency,
+    goal.currency,
+    rates,
+  );
+  const { months } = estimateCompletion(current, target, savingsInGoalCurrency);
 
   return (
     <li className="px-7 py-4">
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <div className="min-w-0">
-          <div className="text-[13.5px] font-medium text-foreground truncate">{goal.name}</div>
+          <div className="text-[13.5px] font-medium text-foreground truncate inline-flex items-center gap-1.5">
+            {goal.name}
+            {showsForeignCurrency ? (
+              <span className="font-mono text-[9px] tracking-[0.1em] uppercase text-gold-700 dark:text-gold-500 bg-gold-100 dark:bg-gold-700/15 px-1.5 py-0.5 rounded-[4px]">
+                {CURRENCY_SYMBOLS[goal.currency]} {goal.currency}
+              </span>
+            ) : null}
+          </div>
           {goal.target_date ? (
             <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.05em] mt-0.5">
               alvo · {formatTargetDate(goal.target_date)}
@@ -111,11 +129,13 @@ function GoalRow({
           >
             <Money
               value={current}
+              currency={goal.currency}
               className="inline-flex !flex-row !items-baseline text-[13px]"
             />
             <span className="text-faint-foreground"> / </span>
             <Money
               value={target}
+              currency={goal.currency}
               className="inline-flex !flex-row !items-baseline text-[12.5px] text-muted-foreground"
             />
           </div>
@@ -147,6 +167,7 @@ function GoalRow({
             faltam{" "}
             <Money
               value={remaining}
+              currency={goal.currency}
               className="inline-flex !flex-row !items-baseline text-[10.5px] text-muted-foreground"
             />
           </span>

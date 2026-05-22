@@ -8,6 +8,8 @@ import { GoalCard } from "@/components/goals/goal-card";
 import { listGoals } from "@/services/goals";
 import { listAccounts } from "@/services/accounts";
 import { getMonthlyHistory } from "@/services/transactions";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { convertOrSame } from "@/lib/financial/currency";
 
 export const dynamic = "force-dynamic";
 
@@ -19,11 +21,13 @@ export default async function MetasPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { tab = "active" } = await searchParams;
-  const [goals, accounts, history] = await Promise.all([
+  const [goals, accounts, history, displayCurrency, rates] = await Promise.all([
     listGoals({ includeArchived: true }),
     listAccounts(),
     // Aporte médio dos 3 meses anteriores ao mês corrente.
     getMonthlyHistory(3),
+    getDisplayCurrency(),
+    getRateMap(),
   ]);
 
   const positiveNets = history.map((h) => Math.max(0, h.net));
@@ -45,13 +49,24 @@ export default async function MetasPage({
   const completedGoals = goals.filter((g) => !g.is_archived && isCompleted(g));
   const archivedGoals = goals.filter((g) => g.is_archived);
 
-  // Resumo
-  const totalCurrent = activeGoals.reduce((s, g) => s + Number(g.current_amount), 0);
-  const totalTarget = activeGoals.reduce((s, g) => s + Number(g.target_amount), 0);
+  // Resumo — converte cada meta pra moeda de exibição antes de somar,
+  // senão metas em moedas diferentes (BRL + EUR) misturam unidades.
+  const totalCurrent = activeGoals.reduce(
+    (s, g) =>
+      s + convertOrSame(Number(g.current_amount), g.currency, displayCurrency, rates),
+    0,
+  );
+  const totalTarget = activeGoals.reduce(
+    (s, g) =>
+      s + convertOrSame(Number(g.target_amount), g.currency, displayCurrency, rates),
+    0,
+  );
   const aggregatePct = totalTarget > 0 ? totalCurrent / totalTarget : 0;
   const totalRemaining = Math.max(0, totalTarget - totalCurrent);
   const monthsToFinishAll =
     averageMonthlyAddition > 0 ? Math.ceil(totalRemaining / averageMonthlyAddition) : null;
+  // Detecta se há metas em moeda estrangeira pra mostrar hint
+  const hasForeignCurrency = activeGoals.some((g) => g.currency !== displayCurrency);
 
   const showList =
     tab === "completed" ? completedGoals : tab === "archived" ? archivedGoals : activeGoals;
@@ -68,6 +83,19 @@ export default async function MetasPage({
         subtitle="Cada meta tem nome, valor e trajetória — a previsão usa o ritmo real de aporte dos 3 meses anteriores."
         actions={<NewGoalButton accounts={accountsLite} />}
       />
+
+      {hasForeignCurrency ? (
+        <div className="rounded-[var(--radius)] bg-gold-50 border border-gold-200 dark:bg-gold-700/10 dark:border-gold-700/30 px-5 py-3 mb-5 text-[12.5px]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-gold-700 dark:text-gold-500 font-medium mr-2">
+            Multi-moeda
+          </span>
+          <span className="text-foreground">
+            Você tem metas em moedas diferentes. Os totais abaixo são convertidos
+            pra <strong>{displayCurrency}</strong> usando a cotação mais recente.
+            Cada meta individualmente mostra seu valor original.
+          </span>
+        </div>
+      ) : null}
 
       {/* Resumo */}
       {activeGoals.length > 0 || completedGoals.length > 0 ? (

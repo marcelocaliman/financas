@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
+import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import type { Currency } from "@/types/database";
 
 /**
  * MoneyInput — input controlado em centavos.
@@ -23,6 +25,7 @@ export function MoneyInput({
   placeholder = "0,00",
   id,
   size = "md",
+  currency = "BRL",
 }: {
   name: string;
   defaultValue?: number;
@@ -33,6 +36,8 @@ export function MoneyInput({
   placeholder?: string;
   id?: string;
   size?: Size;
+  /** Símbolo a exibir como prefixo. Default R$. */
+  currency?: Currency;
 }) {
   const [cents, setCents] = React.useState<number>(() => {
     if (defaultValue === undefined || defaultValue === null) return 0;
@@ -88,7 +93,9 @@ export function MoneyInput({
         className,
       )}
     >
-      <span className={cn("font-mono text-faint-foreground shrink-0", s.prefix)}>R$</span>
+      <span className={cn("font-mono text-faint-foreground shrink-0", s.prefix)}>
+        {CURRENCY_SYMBOLS[currency]}
+      </span>
       <input
         id={id}
         type="text"

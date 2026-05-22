@@ -25,10 +25,10 @@ import type { Currency } from "@/types/database";
 
 type AccountLite = { id: string; name: string; institution: string };
 
-const CURRENCIES: { value: Currency; label: string }[] = [
-  { value: "BRL", label: "R$ BRL" },
-  { value: "EUR", label: "€ EUR" },
-  { value: "USD", label: "US$ USD" },
+const CURRENCIES: { value: Currency; label: string; hint: string }[] = [
+  { value: "BRL", label: "R$ · Real", hint: "Brasil" },
+  { value: "EUR", label: "€ · Euro", hint: "Itália, Espanha, França…" },
+  { value: "USD", label: "US$ · Dólar", hint: "Estados Unidos" },
 ];
 
 export function GoalSheet({
@@ -101,11 +101,42 @@ export function GoalSheet({
             />
           </Field>
 
-          <div className="grid grid-cols-[1fr_1fr_120px] gap-3">
+          <Field
+            label="Moeda"
+            htmlFor="currency"
+            hint={
+              currency !== "BRL"
+                ? `Meta em ${currency} — útil pra viagens, imóveis fora, etc. Valores ficam guardados nessa moeda; conversão pra R$ usa a cotação atual.`
+                : "Padrão. Mude se a meta for em outra moeda (ex: comprar imóvel na Itália → EUR)."
+            }
+          >
+            <Select
+              value={currency}
+              onValueChange={(v) => setCurrency(v as Currency)}
+              name="currency"
+            >
+              <SelectTrigger id="currency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                    <span className="text-faint-foreground ml-1.5 text-[11.5px]">
+                      · {c.hint}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Valor da meta" htmlFor="targetAmount" required>
               <MoneyInput
                 name="targetAmount"
                 id="targetAmount"
+                currency={currency}
                 defaultValue={Number(goal?.target_amount ?? 0)}
               />
             </Field>
@@ -113,26 +144,9 @@ export function GoalSheet({
               <MoneyInput
                 name="currentAmount"
                 id="currentAmount"
+                currency={currency}
                 defaultValue={Number(goal?.current_amount ?? 0)}
               />
-            </Field>
-            <Field label="Moeda" htmlFor="currency">
-              <Select
-                value={currency}
-                onValueChange={(v) => setCurrency(v as Currency)}
-                name="currency"
-              >
-                <SelectTrigger id="currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </Field>
           </div>
 
