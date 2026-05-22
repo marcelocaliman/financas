@@ -2,6 +2,7 @@
 
 import { useLiveYield } from "@/hooks/use-live-yield";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
  * Saldo de um ativo que respira ao vivo no FlowDiagram da página /resgates.
@@ -20,7 +21,7 @@ export function LiveBalance({
   const value = baseBalance + accumulated;
   return (
     <span className="font-mono tabular-nums">
-      {formatMoney(value)}
+      <MoneyMask>{formatMoney(value)}</MoneyMask>
     </span>
   );
 }

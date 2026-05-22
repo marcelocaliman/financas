@@ -10,6 +10,7 @@ import { archiveGoal, deleteGoal } from "@/services/goals.actions";
 import type { Goal } from "@/services/goals";
 import { estimateCompletion } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { GoalSheet } from "./goal-sheet";
 
 export function GoalCard({
@@ -88,12 +89,12 @@ export function GoalCard({
             </div>
             <div className="flex justify-between mt-2 font-mono text-[12.5px]">
               <span className="font-medium text-foreground">
-                {formatMoney(current, goal.currency)}{" "}
+                <MoneyMask>{formatMoney(current, goal.currency)}</MoneyMask>{" "}
                 <span className="text-faint-foreground">
                   · {Math.round(pct * 100)}%
                 </span>
               </span>
-              <span className="text-muted-foreground">{formatMoney(target, goal.currency)}</span>
+              <span className="text-muted-foreground"><MoneyMask>{formatMoney(target, goal.currency)}</MoneyMask></span>
             </div>
           </div>
         </div>
@@ -115,7 +116,7 @@ export function GoalCard({
                 ? "sem aportes recentes"
                 : eta.months === 0
                   ? "meta atingida"
-                  : `aporte médio ${formatMoney(averageMonthlyAddition, goal.currency)}/mês`}
+                  : <>aporte médio <MoneyMask>{formatMoney(averageMonthlyAddition, goal.currency)}</MoneyMask>/mês</>}
             </div>
             {targetMonthLabel ? (
               <div className="font-mono text-[10.5px] text-faint-foreground mt-1.5">

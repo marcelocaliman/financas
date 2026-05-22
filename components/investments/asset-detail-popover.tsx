@@ -4,6 +4,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { Info } from "lucide-react";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -48,17 +49,18 @@ export function AssetDetailPopover({ asset }: { asset: LiveAssetMetrics }) {
                 value={asset.quantity.toLocaleString("pt-BR", {
                   maximumFractionDigits: 8,
                 })}
+                mask
               />
             ) : null}
             {asset.averagePrice != null && asset.averagePrice > 0 ? (
-              <Row label="Preço médio" value={formatMoney(asset.averagePrice)} />
+              <Row label="Preço médio" value={formatMoney(asset.averagePrice)} mask />
             ) : null}
             {asset.marketPrice != null ? (
-              <Row label="Cotação atual" value={formatMoney(asset.marketPrice)} />
+              <Row label="Cotação atual" value={formatMoney(asset.marketPrice)} mask />
             ) : null}
-            <Row label="Aplicado (custo)" value={formatMoney(asset.baseBalance)} muted />
+            <Row label="Aplicado (custo)" value={formatMoney(asset.baseBalance)} muted mask />
             {asset.marketBalance != null ? (
-              <Row label="A mercado" value={formatMoney(asset.marketBalance)} bold />
+              <Row label="A mercado" value={formatMoney(asset.marketBalance)} bold mask />
             ) : null}
           </div>
 
@@ -78,7 +80,7 @@ export function AssetDetailPopover({ asset }: { asset: LiveAssetMetrics }) {
               </span>
               <span className="font-medium">
                 {asset.marketGain >= 0 ? "+" : ""}
-                {formatMoney(asset.marketGain)}{" "}
+                <MoneyMask>{formatMoney(asset.marketGain)}</MoneyMask>{" "}
                 <span className="text-[11px] opacity-80">
                   ({asset.marketGain >= 0 ? "+" : ""}
                   {formatPercent(asset.marketGainPct, 2)})
@@ -115,11 +117,13 @@ function Row({
   value,
   muted,
   bold,
+  mask = false,
 }: {
   label: string;
   value: string;
   muted?: boolean;
   bold?: boolean;
+  mask?: boolean;
 }) {
   return (
     <div className="flex justify-between items-baseline">
@@ -131,7 +135,7 @@ function Row({
           bold && "font-medium text-foreground",
         )}
       >
-        {value}
+        {mask ? <MoneyMask>{value}</MoneyMask> : value}
       </span>
     </div>
   );

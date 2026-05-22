@@ -5,6 +5,7 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { ProjectionChart } from "@/components/charts/projection-chart";
 import { projectFiveYears } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export function ProjectionPanel({
   initialBalance,
@@ -31,30 +32,34 @@ export function ProjectionPanel({
           label="Total sacado"
           value={formatMoney(projection.totalSacado)}
           sub="60 meses"
+          mask
         />
         <ProjCell
           label="Patrimônio"
           value={formatMoney(lastPoint.balance)}
           sub={lastPoint.balance > initialBalance ? "cresceu apesar dos saques" : "depois dos saques"}
           tone={lastPoint.balance > initialBalance ? "positive" : "default"}
+          mask
         />
         <ProjCell
           label="Renda no último mês"
           value={formatMoney(projection.lastMonthYield)}
           sub="estimada"
+          mask
         />
         <ProjCell
           label="Saque sugerido"
           value={formatMoney(monthly)}
           sub="/mês"
           tone="navy"
+          mask
         />
       </div>
 
       <div className="mb-4">
         <div className="flex justify-between text-[12px] mb-2">
           <span className="text-muted-foreground">Valor sugerido mensal</span>
-          <span className="font-mono font-medium text-foreground">{formatMoney(monthly)}</span>
+          <span className="font-mono font-medium text-foreground"><MoneyMask>{formatMoney(monthly)}</MoneyMask></span>
         </div>
         <input
           type="range"
@@ -86,11 +91,13 @@ function ProjCell({
   value,
   sub,
   tone = "default",
+  mask = false,
 }: {
   label: string;
   value: string;
   sub?: string;
   tone?: "default" | "positive" | "navy";
+  mask?: boolean;
 }) {
   const valueClass =
     tone === "positive" ? "text-olive-700" : tone === "navy" ? "text-navy-700" : "text-foreground";
@@ -99,7 +106,9 @@ function ProjCell({
       <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1 font-medium">
         {label}
       </div>
-      <div className={`font-mono text-[18px] tracking-[-0.02em] ${valueClass}`}>{value}</div>
+      <div className={`font-mono text-[18px] tracking-[-0.02em] ${valueClass}`}>
+        {mask ? <MoneyMask>{value}</MoneyMask> : value}
+      </div>
       {sub ? <div className="font-mono text-[11px] text-muted-foreground mt-0.5">{sub}</div> : null}
     </div>
   );

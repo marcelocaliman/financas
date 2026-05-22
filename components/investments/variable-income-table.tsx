@@ -1,4 +1,5 @@
 import { Money } from "@/components/ui/money";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
@@ -70,7 +71,7 @@ export function VariableIncomeTable({
                 }`}
               >
                 {ganho >= 0 ? "+" : ""}
-                {formatMoney(ganho)} ({formatPercent(ganhoPct, 2)})
+                <MoneyMask>{formatMoney(ganho)}</MoneyMask> ({formatPercent(ganhoPct, 2)})
               </div>
             ) : null}
           </div>
@@ -131,7 +132,9 @@ export function VariableIncomeTable({
                   <td className="text-right font-mono text-[12.5px]">
                     {live?.quantity != null && live.quantity > 0 ? (
                       <>
-                        {live.quantity.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}
+                        <MoneyMask>
+                          {live.quantity.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}
+                        </MoneyMask>
                         <div className="text-faint-foreground text-[10px] mt-0.5">
                           {isCrypto ? "un" : "cotas"}
                         </div>
@@ -141,14 +144,16 @@ export function VariableIncomeTable({
                     )}
                   </td>
                   <td className="text-right font-mono text-[12.5px] text-muted-foreground">
-                    {live?.averagePrice && live.averagePrice > 0
-                      ? formatMoney(live.averagePrice)
-                      : "—"}
+                    {live?.averagePrice && live.averagePrice > 0 ? (
+                      <MoneyMask>{formatMoney(live.averagePrice)}</MoneyMask>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td className="text-right font-mono text-[12.5px]">
                     {live?.marketPrice != null ? (
                       <>
-                        {formatMoney(live.marketPrice)}
+                        <MoneyMask>{formatMoney(live.marketPrice)}</MoneyMask>
                         {live.marketChangePct != null &&
                         Math.abs(live.marketChangePct) > 0.001 ? (
                           <div
@@ -168,7 +173,9 @@ export function VariableIncomeTable({
                     )}
                   </td>
                   <td className="text-right font-mono text-[13px] font-medium tabular-nums">
-                    {formatMoney(live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance))}
+                    <MoneyMask>
+                      {formatMoney(live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance))}
+                    </MoneyMask>
                   </td>
                   <td className="text-right font-mono text-[12.5px]">
                     {live?.marketGain != null ? (
@@ -195,7 +202,7 @@ export function VariableIncomeTable({
                           }`}
                         >
                           {live.marketGain >= 0 ? "+" : ""}
-                          {formatMoney(live.marketGain)}
+                          <MoneyMask>{formatMoney(live.marketGain)}</MoneyMask>
                         </div>
                       </>
                     ) : (

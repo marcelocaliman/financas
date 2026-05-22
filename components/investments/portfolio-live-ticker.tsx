@@ -11,6 +11,7 @@ import {
   useMoneyContext,
 } from "@/components/ui/money-provider";
 import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/currency";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
  * Card de rendimento ao vivo do portfólio.
@@ -76,26 +77,28 @@ export function PortfolioLiveTicker({
             <div className="flex items-baseline gap-3 font-mono">
               <span className="text-[14px] text-navy-300 font-light">{symbol}</span>
               <span className="text-[34px] sm:text-[40px] font-light leading-none tracking-[-0.03em] tabular-nums">
-                {accumulatedToday.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                <MoneyMask>
+                  {accumulatedToday.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </MoneyMask>
               </span>
               <span className="text-[12px] text-navy-400 font-mono">hoje</span>
             </div>
             {accumulatedComp != null && comparisonCurrency ? (
               <div className="font-mono text-[11.5px] text-navy-400 mt-1 tabular-nums">
-                ≈ {formatCurrency(accumulatedComp, comparisonCurrency)}
+                ≈ <MoneyMask>{formatCurrency(accumulatedComp, comparisonCurrency)}</MoneyMask>
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2 mt-3 text-[11.5px] font-mono text-navy-200">
               <Pill>
                 <b className="text-olive-500">
-                  + {symbol} {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}/s
+                  + {symbol} <MoneyMask>{portfolio.totalPerSecond.toFixed(4).replace(".", ",")}</MoneyMask>/s
                 </b>
               </Pill>
               <Pill>
-                Carteira <b className="text-white">{formatMoney(portfolio.totalMarketBalance, displayCurrency)}</b>
+                Carteira <b className="text-white"><MoneyMask>{formatMoney(portfolio.totalMarketBalance, displayCurrency)}</MoneyMask></b>
               </Pill>
               {ratioMarket !== 1 && Math.abs(ratioMarket - 1) > 0.001 ? (
                 <Pill>
@@ -136,13 +139,13 @@ export function PortfolioLiveTicker({
           <div className="flex items-baseline gap-3 font-mono">
             <span className="text-[18px] text-navy-300 font-light">{symbol}</span>
             <span className="text-[44px] sm:text-[52px] font-light leading-none tracking-[-0.03em] tabular-nums">
-              {integer}
+              <MoneyMask>{integer}</MoneyMask>
             </span>
-            <span className="text-[22px] text-navy-300 font-light">,{cents}</span>
+            <span className="text-[22px] text-navy-300 font-light">,<MoneyMask>{cents}</MoneyMask></span>
           </div>
           {accumulatedComp != null && comparisonCurrency ? (
             <div className="font-mono text-[12.5px] text-navy-400 mt-1 tabular-nums">
-              ≈ {formatCurrency(accumulatedComp, comparisonCurrency)}
+              ≈ <MoneyMask>{formatCurrency(accumulatedComp, comparisonCurrency)}</MoneyMask>
             </div>
           ) : null}
 
@@ -150,16 +153,16 @@ export function PortfolioLiveTicker({
             <Pill>
               Por segundo{" "}
               <b className="text-olive-500">
-                + {symbol} {portfolio.totalPerSecond.toFixed(4).replace(".", ",")}
+                + {symbol} <MoneyMask>{portfolio.totalPerSecond.toFixed(4).replace(".", ",")}</MoneyMask>
               </b>
             </Pill>
             <Pill>
               Estimado por dia útil{" "}
-              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield, displayCurrency)}</b>
+              <b className="text-olive-500"><MoneyMask>{formatMoney(portfolio.totalDailyYield, displayCurrency)}</MoneyMask></b>
             </Pill>
             <Pill>
               Mês estimado{" "}
-              <b className="text-olive-500">{formatMoney(portfolio.totalDailyYield * 21, displayCurrency)}</b>
+              <b className="text-olive-500"><MoneyMask>{formatMoney(portfolio.totalDailyYield * 21, displayCurrency)}</MoneyMask></b>
             </Pill>
           </div>
         </div>
@@ -175,17 +178,20 @@ export function PortfolioLiveTicker({
                   ? `Custo: ${formatMoney(portfolio.totalBaseBalance, displayCurrency)}`
                   : undefined
             }
+            mask
           />
           <SideCell
             label="Renda fixa"
             value={formatMoney(portfolio.byClass.fixedIncome.dailyYield, displayCurrency) + " / dia"}
             tone="positive"
+            mask
           />
           {portfolio.byClass.fiis.balance > 0 ? (
             <SideCell
               label="FIIs (estimado)"
               value={formatMoney(portfolio.byClass.fiis.dailyYield, displayCurrency) + " / dia"}
               tone="positive"
+              mask
             />
           ) : null}
           {portfolio.byClass.stocks.balance > 0 ? (
@@ -193,6 +199,7 @@ export function PortfolioLiveTicker({
               label="Ações/ETFs (estimado)"
               value={formatMoney(portfolio.byClass.stocks.dailyYield, displayCurrency) + " / dia"}
               tone="positive"
+              mask
             />
           ) : null}
         </div>
@@ -214,11 +221,13 @@ function SideCell({
   value,
   hint,
   tone,
+  mask = false,
 }: {
   label: string;
   value: string;
   hint?: string;
   tone?: "positive";
+  mask?: boolean;
 }) {
   return (
     <div>
@@ -231,9 +240,13 @@ function SideCell({
           tone === "positive" ? "text-olive-500" : "text-white",
         )}
       >
-        {value}
+        {mask ? <MoneyMask>{value}</MoneyMask> : value}
       </div>
-      {hint ? <div className="font-mono text-[10.5px] text-ink-500 mt-0.5">{hint}</div> : null}
+      {hint ? (
+        <div className="font-mono text-[10.5px] text-ink-500 mt-0.5">
+          {mask ? <MoneyMask>{hint}</MoneyMask> : hint}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -253,7 +266,7 @@ function ClassBreakdown({ portfolio }: { portfolio: LivePortfolio }) {
         <div key={i.label} className="flex justify-between gap-3 text-navy-300">
           <span>{i.label}</span>
           <span className="text-olive-500">
-            + {i.value.toFixed(2).replace(".", ",")}/dia
+            + <MoneyMask>{i.value.toFixed(2).replace(".", ",")}</MoneyMask>/dia
           </span>
         </div>
       ))}

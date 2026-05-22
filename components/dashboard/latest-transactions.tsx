@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Transaction } from "@/services/transactions";
 
 export function LatestTransactionsPanel({ rows }: { rows: Transaction[] }) {
@@ -77,7 +78,7 @@ function Row({ tx }: { tx: Transaction }) {
       </td>
       <td className="py-3.5 pr-7 align-middle text-right whitespace-nowrap">
         <span className={`font-mono text-[14px] font-medium tracking-[-0.005em] ${cls}`}>
-          {prefix}{symbol} {integer},{cents}
+          {prefix}{symbol} <MoneyMask>{integer},{cents}</MoneyMask>
         </span>
       </td>
     </tr>

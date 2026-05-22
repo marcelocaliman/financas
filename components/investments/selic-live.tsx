@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatMoneyParts, formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Investment } from "@/services/investments";
 
 /**
@@ -71,22 +72,22 @@ export function SelicLive({
           <div className="flex items-baseline gap-3 font-mono">
             <span className="text-[18px] text-navy-300 font-light">R$</span>
             <span className="text-[44px] sm:text-[52px] font-light leading-none tracking-[-0.03em]">
-              {integer}
+              <MoneyMask>{integer}</MoneyMask>
             </span>
-            <span className="text-[22px] text-navy-300 font-light">,{cents}</span>
+            <span className="text-[22px] text-navy-300 font-light">,<MoneyMask>{cents}</MoneyMask></span>
           </div>
 
           <div className="flex gap-2 mt-5 flex-wrap">
             <div className="bg-white/[0.04] px-3.5 py-2 rounded-[8px] text-[11.5px] text-navy-200 font-mono tracking-[0.04em]">
               Rendendo agora{" "}
               <b className="text-olive-500">
-                + R$ {perSecondInReals.toFixed(4).replace(".", ",")}/s
+                + R$ <MoneyMask>{perSecondInReals.toFixed(4).replace(".", ",")}</MoneyMask>/s
               </b>
             </div>
             <div className="bg-white/[0.04] px-3.5 py-2 rounded-[8px] text-[11.5px] text-navy-200 font-mono tracking-[0.04em]">
               Hoje (até agora){" "}
               <b className="text-olive-500">
-                + {formatMoney(todayYield)}
+                + <MoneyMask>{formatMoney(todayYield)}</MoneyMask>
               </b>
             </div>
           </div>
@@ -102,6 +103,7 @@ export function SelicLive({
             label="Rend. mês est."
             value={formatMoney(initialBalance * dailyRate * 21)}
             tone="positive"
+            mask
           />
           {selicDate ? (
             <div className="font-mono text-[10px] text-ink-500 tracking-[0.06em]">
@@ -118,10 +120,12 @@ function SideCell({
   label,
   value,
   tone,
+  mask = false,
 }: {
   label: string;
   value: string;
   tone?: "positive";
+  mask?: boolean;
 }) {
   return (
     <div>
@@ -131,7 +135,7 @@ function SideCell({
       <div
         className={`font-mono text-[16px] font-medium ${tone === "positive" ? "text-olive-500" : "text-white"}`}
       >
-        {value}
+        {mask ? <MoneyMask>{value}</MoneyMask> : value}
       </div>
     </div>
   );

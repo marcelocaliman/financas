@@ -5,6 +5,7 @@ import { NewAccountButton } from "./new-account-button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { StaggeredGrid, StaggeredItem } from "@/components/layout/staggered-grid";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,12 @@ export default async function ContasPage() {
       {active.length > 0 ? (
         <section className="mb-10">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-            <SummaryCard label="Saldo líquido" value={formatMoney(liquid)} tone="default" />
+            <SummaryCard label="Saldo líquido" value={formatMoney(liquid)} tone="default" mask />
             <SummaryCard
               label="Cartão (fatura aberta)"
               value={formatMoney(Math.abs(creditUsed))}
               tone={creditUsed < 0 ? "negative" : "default"}
+              mask
             />
             <SummaryCard
               label="Total de contas ativas"
@@ -81,11 +83,13 @@ function SummaryCard({
   value,
   tone,
   mono,
+  mask = false,
 }: {
   label: string;
   value: string;
   tone: "default" | "negative";
   mono?: boolean;
+  mask?: boolean;
 }) {
   return (
     <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
@@ -95,7 +99,7 @@ function SummaryCard({
       <div
         className={`mt-1 text-[20px] tracking-[-0.02em] ${tone === "negative" ? "text-rust-600" : "text-foreground"} ${mono ? "font-mono" : "font-mono"}`}
       >
-        {value}
+        {mask ? <MoneyMask>{value}</MoneyMask> : value}
       </div>
     </div>
   );

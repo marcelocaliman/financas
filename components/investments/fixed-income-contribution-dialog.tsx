@@ -17,6 +17,7 @@ import {
   type ContributionFormState,
 } from "@/services/fixed-income-contribution.actions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
 
 type Investment = Tables<"investments">;
@@ -129,15 +130,15 @@ export function FixedIncomeContributionDialog({
             <div className="rounded-[10px] border border-border bg-surface px-4 py-3 text-[12.5px] font-mono space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Saldo atual</span>
-                <b className="text-foreground">{formatMoney(current)}</b>
+                <b className="text-foreground"><MoneyMask>{formatMoney(current)}</MoneyMask></b>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">+ aporte</span>
-                <b className="text-olive-700 dark:text-olive-500">+ {formatMoney(amount)}</b>
+                <b className="text-olive-700 dark:text-olive-500">+ <MoneyMask>{formatMoney(amount)}</MoneyMask></b>
               </div>
               <div className="flex justify-between border-t border-border pt-1.5">
                 <span className="text-muted-foreground">Saldo após</span>
-                <b className="text-foreground">{formatMoney(newBalance)}</b>
+                <b className="text-foreground"><MoneyMask>{formatMoney(newBalance)}</MoneyMask></b>
               </div>
             </div>
           ) : null}

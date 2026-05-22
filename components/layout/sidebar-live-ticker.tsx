@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
  * Badge perene no rodapé da sidebar — "+R$ X,XXXX/s" pulsante.
@@ -36,7 +37,7 @@ export function SidebarLiveTicker() {
       </span>
       <span className="flex items-center gap-1.5 font-mono text-[10.5px] text-olive-500 tabular-nums font-medium">
         <span className="inline-block w-1 h-1 rounded-full bg-olive-600 animate-pulse" />
-        +R$ {perSecond.toFixed(4).replace(".", ",")}/s
+        +R$ <MoneyMask>{perSecond.toFixed(4).replace(".", ",")}</MoneyMask>/s
       </span>
     </div>
   );

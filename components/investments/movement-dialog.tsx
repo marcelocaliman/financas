@@ -16,6 +16,7 @@ import { PillGroup } from "@/components/ui/pill-group";
 import { Textarea } from "@/components/ui/textarea";
 import { addMovement, type MovementFormState } from "@/services/movements.actions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
 
 type Investment = Tables<"investments">;
@@ -205,18 +206,18 @@ export function MovementDialog({
             <div className="rounded-[10px] border border-border bg-surface-muted px-4 py-3 text-[12.5px] space-y-1.5 font-mono">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total do lote</span>
-                <b className="text-foreground">{formatMoney(total)}</b>
+                <b className="text-foreground"><MoneyMask>{formatMoney(total)}</MoneyMask></b>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Quantidade após</span>
                 <b className="text-foreground">
-                  {newQty.toLocaleString("pt-BR", { maximumFractionDigits: 8 })} {unit}
+                  <MoneyMask>{newQty.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}</MoneyMask> {unit}
                 </b>
               </div>
               {kind === "buy" && newAvg > 0 ? (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Novo preço médio</span>
-                  <b className="text-foreground">{formatMoney(newAvg)} / {unit.slice(0, -1)}</b>
+                  <b className="text-foreground"><MoneyMask>{formatMoney(newAvg)}</MoneyMask> / {unit.slice(0, -1)}</b>
                 </div>
               ) : null}
               {kind === "sell" && currentQty > 0 ? (
@@ -232,7 +233,7 @@ export function MovementDialog({
                     }
                   >
                     {total - currentAvg * qtyNum >= 0 ? "+" : ""}
-                    {formatMoney(total - currentAvg * qtyNum)}
+                    <MoneyMask>{formatMoney(total - currentAvg * qtyNum)}</MoneyMask>
                   </b>
                 </div>
               ) : null}

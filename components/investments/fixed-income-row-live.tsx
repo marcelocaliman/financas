@@ -2,6 +2,7 @@
 
 import { useLiveYield } from "@/hooks/use-live-yield";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
 
 /**
@@ -17,7 +18,7 @@ export function LiveSaldoCell({ asset, fallback }: { asset: LiveAssetMetrics; fa
   const saldo = asset.baseBalance + accumulated;
   return (
     <span className="font-mono text-[13px] font-medium tabular-nums">
-      {formatMoney(saldo > 0 ? saldo : fallback)}
+      <MoneyMask>{formatMoney(saldo > 0 ? saldo : fallback)}</MoneyMask>
     </span>
   );
 }
@@ -52,7 +53,7 @@ export function LiveVariationCell({
       </span>
       <span className={`font-mono text-[10.5px] ${tone} mt-0.5 tabular-nums`}>
         {sign}
-        {formatMoney(delta)}
+        <MoneyMask>{formatMoney(delta)}</MoneyMask>
       </span>
     </div>
   );

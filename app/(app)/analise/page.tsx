@@ -8,6 +8,7 @@ import {
   monthRange,
 } from "@/services/transactions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -116,10 +117,10 @@ export default async function AnalisePage({
                       {r.month.slice(0, 4)}
                     </span>
                   </td>
-                  <td className="text-right font-mono">{formatMoney(r.income)}</td>
-                  <td className="text-right font-mono">{formatMoney(r.expense)}</td>
+                  <td className="text-right font-mono"><MoneyMask>{formatMoney(r.income)}</MoneyMask></td>
+                  <td className="text-right font-mono"><MoneyMask>{formatMoney(r.expense)}</MoneyMask></td>
                   <td className="text-right font-mono font-medium">
-                    {formatMoney(r.net)}
+                    <MoneyMask>{formatMoney(r.net)}</MoneyMask>
                   </td>
                   <td className="text-right font-mono">
                     {deltaPct === null ? (
@@ -180,14 +181,16 @@ function DeltaCard({
       <div
         className={`mt-1.5 font-mono text-[22px] tracking-[-0.02em] ${tone === "positive" ? "text-foreground" : "text-rust-600"}`}
       >
-        {formatMoney(value)}
+        <MoneyMask>{formatMoney(value)}</MoneyMask>
       </div>
       <div className={`mt-1 font-mono text-[11.5px] ${deltaTone}`}>
-        {delta === null
-          ? "primeiro mês"
-          : isAbsoluteDelta
-            ? `${delta >= 0 ? "+" : ""}${formatMoney(delta)} vs mês anterior`
-            : `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(0)}% vs mês anterior`}
+        {delta === null ? (
+          "primeiro mês"
+        ) : isAbsoluteDelta ? (
+          <>{delta >= 0 ? "+" : ""}<MoneyMask>{formatMoney(delta)}</MoneyMask> vs mês anterior</>
+        ) : (
+          `${delta >= 0 ? "+" : ""}${(delta * 100).toFixed(0)}% vs mês anterior`
+        )}
       </div>
     </div>
   );

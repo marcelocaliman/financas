@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { deleteMovement } from "@/services/movements.actions";
 import type { MovementKind, Tables } from "@/types/database";
 import { MovementDialog } from "./movement-dialog";
@@ -136,15 +137,17 @@ export function MovementsSheet({
                       </Badge>
                     </td>
                     <td className="text-right font-mono text-[12.5px] whitespace-nowrap">
-                      {Number(m.quantity).toLocaleString("pt-BR", {
-                        maximumFractionDigits: 8,
-                      })}
+                      <MoneyMask>
+                        {Number(m.quantity).toLocaleString("pt-BR", {
+                          maximumFractionDigits: 8,
+                        })}
+                      </MoneyMask>
                     </td>
                     <td className="text-right font-mono text-[12.5px] text-muted-foreground whitespace-nowrap">
-                      {formatMoney(m.unit_price)}
+                      <MoneyMask>{formatMoney(m.unit_price)}</MoneyMask>
                     </td>
                     <td className="text-right font-mono text-[12.5px] font-medium whitespace-nowrap">
-                      {formatMoney(m.total_amount)}
+                      <MoneyMask>{formatMoney(m.total_amount)}</MoneyMask>
                     </td>
                     <td className="text-right pl-2">
                       <button

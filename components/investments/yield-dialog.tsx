@@ -14,6 +14,7 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { Button } from "@/components/ui/button";
 import { recordMonthlyYield } from "@/services/investments.actions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
 
 type Investment = Tables<"investments">;
@@ -109,7 +110,7 @@ export function YieldDialog({
           </Field>
 
           <p className="text-[12.5px] font-mono text-muted-foreground">
-            Líquido: <b className="text-olive-700">{formatMoney(gross - tax)}</b>
+            Líquido: <b className="text-olive-700"><MoneyMask>{formatMoney(gross - tax)}</MoneyMask></b>
           </p>
 
           <DialogFooter>

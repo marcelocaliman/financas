@@ -22,6 +22,7 @@ import {
 } from "@/services/investments.actions";
 import type { AssetType, Indexer, TaxRegime, Tables } from "@/types/database";
 import type { AssetTemplate } from "@/lib/financial/asset-catalog";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { AssetPicker } from "./asset-picker";
 
 type Investment = Tables<"investments">;
@@ -388,17 +389,19 @@ function LinkedLotInputs({ assetType }: { assetType: AssetType }) {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Preço médio</span>
             <b className="text-foreground">
-              R$ {unitPrice.toFixed(assetType === "crypto" ? 6 : 2).replace(".", ",")} / {unit.slice(0, -1)}
+              R$ <MoneyMask>{unitPrice.toFixed(assetType === "crypto" ? 6 : 2).replace(".", ",")}</MoneyMask> / {unit.slice(0, -1)}
             </b>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Total do lote</span>
             <b className="text-foreground">
               R${" "}
-              {total.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              <MoneyMask>
+                {total.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </MoneyMask>
             </b>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertCircle, Sparkles } from "lucide-react";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { ExpenseAnomaly } from "@/services/transactions";
 
 export function InsightCard({ anomalies }: { anomalies: ExpenseAnomaly[] }) {
@@ -47,8 +48,8 @@ export function InsightCard({ anomalies }: { anomalies: ExpenseAnomaly[] }) {
           <em className="italic">{top.categoryName.toLowerCase()}</em>
         </h3>
         <p className="text-[13.5px] text-muted-foreground leading-relaxed mt-1">
-          Vocês gastaram {formatMoney(top.currentTotal)} esse mês — {pct}% acima da média
-          dos últimos 3 meses ({formatMoney(top.averagePrior)}). Talvez seja só uma fase
+          Vocês gastaram <MoneyMask>{formatMoney(top.currentTotal)}</MoneyMask> esse mês — {pct}% acima da média
+          dos últimos 3 meses (<MoneyMask>{formatMoney(top.averagePrior)}</MoneyMask>). Talvez seja só uma fase
           corrida; ainda assim, vale uma olhada.
         </p>
         <Link

@@ -17,6 +17,7 @@ import {
   listYieldRules,
 } from "@/services/redemptions";
 import { formatDateShort, formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -139,7 +140,7 @@ export default async function ResgatesPage() {
                         dia {r.day_of_month}
                       </td>
                       <td className="text-right font-mono text-[13px] font-medium">
-                        {r.mode === "reinvest" ? "—" : formatMoney(r.suggested_amount ?? 0)}
+                        {r.mode === "reinvest" ? "—" : <MoneyMask>{formatMoney(r.suggested_amount ?? 0)}</MoneyMask>}
                       </td>
                       <td className="text-right pl-2">
                         <RuleRowActions
@@ -193,7 +194,7 @@ export default async function ResgatesPage() {
                         </td>
                         <td className="py-3 pr-7 text-right font-mono text-[13.5px] font-medium">
                           {h.status === "executed" ? (
-                            formatMoney(h.executed_amount ?? 0)
+                            <MoneyMask>{formatMoney(h.executed_amount ?? 0)}</MoneyMask>
                           ) : (
                             <span className="text-faint-foreground">R$ 0,00</span>
                           )}
@@ -253,7 +254,7 @@ function NextRemainder({
         <p className="text-[13.5px] text-muted-foreground leading-relaxed mt-1">
           {formatDateShort(intent.due_date)} · {intent.rule?.investment?.ticker} →{" "}
           {intent.rule?.destination?.name} · valor sugerido{" "}
-          <b className="text-foreground">{formatMoney(intent.suggested_amount)}</b>{" "}
+          <b className="text-foreground"><MoneyMask>{formatMoney(intent.suggested_amount)}</MoneyMask></b>{" "}
           (ajustável no momento)
         </p>
         <div className="mt-3">
@@ -307,7 +308,7 @@ function FlowDiagram({
               perSecond={fromLivePerSecond}
             />
           ) : (
-            formatMoney(fromBalance)
+            <MoneyMask>{formatMoney(fromBalance)}</MoneyMask>
           )}
         </div>
         <div className="text-[12.5px] text-muted-foreground mt-1">
@@ -317,7 +318,7 @@ function FlowDiagram({
       <div className="flex flex-col items-center gap-2 text-muted-foreground py-4">
         <ArrowRight className="w-7 h-7" strokeWidth={1.4} />
         <div className="font-mono text-[12px] text-olive-700 dark:text-olive-500 font-medium whitespace-nowrap">
-          {formatMoney(monthlyAmount)}/mês
+          <MoneyMask>{formatMoney(monthlyAmount)}</MoneyMask>/mês
         </div>
       </div>
       <div className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] !border-l-olive-600">

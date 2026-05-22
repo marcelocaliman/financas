@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { adjustAccountBalance } from "@/services/accounts.actions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
 
 type Account = Tables<"accounts">;
@@ -68,7 +69,7 @@ export function BalanceAdjustDialog({
           <div className="rounded-[10px] bg-bone-100 dark:bg-ink-800 px-4 py-3 space-y-1 text-[12.5px] font-mono">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Saldo atual</span>
-              <b className="text-foreground">{formatMoney(currentBalance)}</b>
+              <b className="text-foreground"><MoneyMask>{formatMoney(currentBalance)}</MoneyMask></b>
             </div>
           </div>
 
@@ -94,12 +95,12 @@ export function BalanceAdjustDialog({
                       : "text-rust-600 font-medium"
                   }
                 >
-                  {delta > 0 ? "Receita" : "Despesa"} · {formatMoney(Math.abs(delta))}
+                  {delta > 0 ? "Receita" : "Despesa"} · <MoneyMask>{formatMoney(Math.abs(delta))}</MoneyMask>
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Novo saldo</span>
-                <b className="text-foreground">{formatMoney(target)}</b>
+                <b className="text-foreground"><MoneyMask>{formatMoney(target)}</MoneyMask></b>
               </div>
             </div>
           ) : null}

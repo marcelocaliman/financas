@@ -13,6 +13,7 @@ import {
 import { CATEGORY_LABELS } from "@/lib/financial/asset-categories";
 import { formatMoney } from "@/lib/utils/format";
 import { Money } from "@/components/ui/money";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import type { Tables } from "@/types/database";
 import { PhysicalAssetSheet } from "./physical-asset-sheet";
@@ -128,7 +129,7 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
         {acquired > 0 ? (
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] font-mono">
             <span className="text-muted-foreground">
-              Pago: {formatMoney(acquired, asset.currency)}
+              Pago: <MoneyMask>{formatMoney(acquired, asset.currency)}</MoneyMask>
             </span>
             {deltaPct != null && Math.abs(deltaPct) > 0.001 ? (
               <span

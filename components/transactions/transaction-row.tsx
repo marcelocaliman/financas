@@ -9,6 +9,7 @@ import { deleteTransaction } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
 import { convert, formatCurrency } from "@/lib/financial/currency";
 import { useMoneyContext } from "@/components/ui/money-provider";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
 
@@ -107,11 +108,11 @@ export function TransactionRow({
                 valueClass,
               )}
             >
-              {valuePrefix}{symbol} {integer},{cents}
+              {valuePrefix}{symbol} <MoneyMask>{integer},{cents}</MoneyMask>
             </span>
             {showSecondary ? (
               <span className="font-mono text-[10.5px] text-faint-foreground tracking-[0.02em]">
-                {formatCurrency(Number(tx.amount), txCurrency)}
+                <MoneyMask>{formatCurrency(Number(tx.amount), txCurrency)}</MoneyMask>
               </span>
             ) : null}
           </div>

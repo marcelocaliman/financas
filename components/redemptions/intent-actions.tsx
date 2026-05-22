@@ -16,6 +16,7 @@ import {
   skipRedemption,
 } from "@/services/redemptions.actions";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export function IntentActions({
   intentId,
@@ -58,7 +59,7 @@ export function IntentActions({
     <>
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" size="sm" disabled={pending} onClick={() => setOpen(true)}>
-          Confirmar {formatMoney(suggestedAmount)}
+          Confirmar <MoneyMask>{formatMoney(suggestedAmount)}</MoneyMask>
         </Button>
         <Button variant="ghost" size="sm" disabled={pending} onClick={handleSkip}>
           Pular esse mês

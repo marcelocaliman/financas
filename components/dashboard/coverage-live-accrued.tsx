@@ -1,6 +1,7 @@
 "use client";
 
 import { useLiveYield } from "@/hooks/use-live-yield";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
  * Pequena linha "Hoje você já recebeu R$ X,XXXX" que sobe a cada segundo.
@@ -19,7 +20,7 @@ export function CoverageLiveAccrued({
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
       <span className="text-muted-foreground">Hoje você já recebeu</span>
       <b className="text-olive-700 dark:text-olive-500">
-        R$ {accumulated.toFixed(4).replace(".", ",")}
+        R$ <MoneyMask>{accumulated.toFixed(4).replace(".", ",")}</MoneyMask>
       </b>
     </div>
   );

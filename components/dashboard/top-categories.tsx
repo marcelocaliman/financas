@@ -1,5 +1,6 @@
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { CategoryBreakdownRow } from "@/services/transactions";
 
 export function TopCategoriesPanel({
@@ -55,7 +56,7 @@ function CategoryRow({
         </div>
       </div>
       <div className="font-mono text-[13px] font-medium text-right">
-        {formatMoney(row.total)}
+        <MoneyMask>{formatMoney(row.total)}</MoneyMask>
       </div>
       <div className="font-mono text-[11px] text-faint-foreground text-right">
         {(row.pct * 100).toFixed(0)}%

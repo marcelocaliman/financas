@@ -4,6 +4,7 @@ import { InvestmentRowActions } from "./investment-row-actions";
 import { LiveSaldoCell, LiveVariationCell } from "./fixed-income-row-live";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { ASSET_TYPE_LABELS, type Investment } from "@/services/investments";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
@@ -75,7 +76,7 @@ export function FixedIncomeTable({
                 }`}
               >
                 {ganho >= 0 ? "+" : ""}
-                {formatMoney(ganho)} ({formatPercent(ganhoPct, 2)})
+                <MoneyMask>{formatMoney(ganho)}</MoneyMask> ({formatPercent(ganhoPct, 2)})
               </div>
             ) : null}
           </div>
@@ -143,14 +144,14 @@ export function FixedIncomeTable({
                     </div>
                   </td>
                   <td className="text-right font-mono text-[13px] text-muted-foreground">
-                    {formatMoney(inv.initial_amount)}
+                    <MoneyMask>{formatMoney(inv.initial_amount)}</MoneyMask>
                   </td>
                   <td className="text-right">
                     {live ? (
                       <LiveSaldoCell asset={live} fallback={fallbackSaldo} />
                     ) : (
                       <span className="font-mono text-[13px] font-medium tabular-nums">
-                        {formatMoney(fallbackSaldo)}
+                        <MoneyMask>{formatMoney(fallbackSaldo)}</MoneyMask>
                       </span>
                     )}
                   </td>
@@ -180,7 +181,7 @@ export function FixedIncomeTable({
                           }`}
                         >
                           {fallbackDelta > 0 ? "+" : ""}
-                          {formatMoney(fallbackDelta)}
+                          <MoneyMask>{formatMoney(fallbackDelta)}</MoneyMask>
                         </span>
                       </div>
                     ) : (

@@ -65,3 +65,27 @@ export function usePrivacy(): PrivacyContextValue {
 export function maskMoneyString(s: string): string {
   return s.replace(/\d/g, "•");
 }
+
+/**
+ * Wrapper minúsculo: mascara dígitos do conteúdo quando o privacy está ligado.
+ * Use ao redor de strings já formatadas via `formatMoney`, `toFixed`, etc.
+ *
+ * Funciona em server tree (componente client pode ser filho de server) e em
+ * client tree. Aceita string, number, ou um array deles (JSX gera array
+ * quando você intercala texto literal, ex: `{integer},{cents}`).
+ */
+type MoneyMaskInput = string | number | null | undefined;
+export function MoneyMask({
+  children,
+}: {
+  children: MoneyMaskInput | MoneyMaskInput[];
+}) {
+  const { hidden } = usePrivacy();
+  const arr = Array.isArray(children) ? children : [children];
+  const s = arr
+    .filter((x) => x != null)
+    .map((x) => String(x))
+    .join("");
+  if (s.length === 0) return null;
+  return <>{hidden ? maskMoneyString(s) : s}</>;
+}

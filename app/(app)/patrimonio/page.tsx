@@ -10,6 +10,7 @@ import {
 } from "@/services/physical-assets";
 import type { PhysicalAssetCategory } from "@/types/database";
 import { formatMoney } from "@/lib/utils/format";
+import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -52,13 +53,13 @@ export default async function PatrimonioPage() {
               Patrimônio imobilizado total
             </div>
             <div className="font-mono text-[34px] tracking-[-0.025em] text-foreground leading-none mt-1">
-              {formatMoney(totals.total)}
+              <MoneyMask>{formatMoney(totals.total)}</MoneyMask>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 mt-4 text-[12px] font-mono">
               {categoriesOrdered.map((cat) => (
                 <span key={cat} className="text-muted-foreground">
                   {CATEGORY_LABELS[cat]}{" "}
-                  <b className="text-foreground">{formatMoney(totals.byCategory[cat])}</b>
+                  <b className="text-foreground"><MoneyMask>{formatMoney(totals.byCategory[cat])}</MoneyMask></b>
                 </span>
               ))}
             </div>
