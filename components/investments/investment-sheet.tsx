@@ -282,67 +282,130 @@ function MarketableLotFields({
   assetType: AssetType;
 }) {
   const isEdit = !!investment;
-  // Pré-popula quantidade e preço médio quando já existe
-  const initialQty = Number(investment?.quantity ?? 0);
-  const initialAvgPrice =
-    initialQty > 0 ? Number(investment?.initial_amount ?? 0) / initialQty : 0;
-
-  const [quantity, setQuantity] = useState<string>(
-    initialQty > 0 ? String(initialQty) : "",
+  return isEdit ? (
+    <div className="rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border px-3 py-2.5 text-[12.5px] text-muted-foreground">
+      Edição do ativo não altera lotes existentes. Use{" "}
+      <b className="text-foreground">Novo aporte</b> ou{" "}
+      <b className="text-foreground">Venda</b> no menu da linha para registrar
+      movimentos.
+    </div>
+  ) : (
+    <LinkedLotInputs assetType={assetType} />
   );
-  const [unitPrice, setUnitPrice] = useState<number>(initialAvgPrice);
+}
+
+/**
+ * Três campos vinculados: quantidade, valor total aplicado, preço unitário.
+ * Editar qualquer um recalcula os outros. O usuário escolhe a "fonte" de
+ * entrada conforme o cenário (registro retroativo usa total; operação
+ * recente usa unitário).
+ */
+function LinkedLotInputs({ assetType }: { assetType: AssetType }) {
+  const [quantity, setQuantity] = useState<string>("");
+  const [total, setTotal] = useState<number>(0);
+  const [unitPrice, setUnitPrice] = useState<number>(0);
+  // Marca qual foi o último campo editado pra fonte-da-verdade do recálculo
+  const [lastTouched, setLastTouched] = useState<"unit" | "total">("unit");
 
   const qtyNum = Number(quantity) || 0;
-  const total = qtyNum * unitPrice;
   const unit = assetType === "crypto" ? "unidades" : "cotas";
 
+  // Cuidado: pra evitar loop no MoneyInput uncontrolled, usamos KEY pra remontar
+  // o campo "passivo" quando o outro recalcula.
+
+  function handleQtyChange(next: string) {
+    setQuantity(next);
+    const q = Number(next) || 0;
+    if (lastTouched === "unit" && unitPrice > 0) {
+      setTotal(Math.round(q * unitPrice * 100) / 100);
+    } else if (lastTouched === "total" && total > 0 && q > 0) {
+      setUnitPrice(Math.round((total / q) * 10000) / 10000);
+    }
+  }
+  function handleUnitChange(next: number) {
+    setUnitPrice(next);
+    setLastTouched("unit");
+    if (qtyNum > 0) {
+      setTotal(Math.round(qtyNum * next * 100) / 100);
+    }
+  }
+  function handleTotalChange(next: number) {
+    setTotal(next);
+    setLastTouched("total");
+    if (qtyNum > 0) {
+      setUnitPrice(Math.round((next / qtyNum) * 10000) / 10000);
+    }
+  }
+
   return (
-    <>
-      {isEdit ? (
-        <div className="rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border px-3 py-2.5 text-[12.5px] text-muted-foreground">
-          Edição do ativo não altera lotes existentes. Use{" "}
-          <b className="text-foreground">Novo aporte</b> ou{" "}
-          <b className="text-foreground">Venda</b> no menu da linha para registrar
-          movimentos.
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                step={assetType === "crypto" ? "0.00000001" : "1"}
-                min="0"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="font-mono"
-                placeholder={assetType === "crypto" ? "0,12345678" : "100"}
-              />
-            </Field>
-            <Field label="Preço unitário" htmlFor="unitPrice" required>
-              <MoneyInput
-                name="unitPrice"
-                id="unitPrice"
-                defaultValue={initialAvgPrice}
-                onValueChange={setUnitPrice}
-              />
-            </Field>
+    <div className="space-y-3">
+      <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
+        <Input
+          id="quantity"
+          name="quantity"
+          type="number"
+          step={assetType === "crypto" ? "0.00000001" : "1"}
+          min="0"
+          value={quantity}
+          onChange={(e) => handleQtyChange(e.target.value)}
+          className="font-mono"
+          placeholder={assetType === "crypto" ? "0,12345678" : "100"}
+        />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          label="Valor aplicado (total)"
+          htmlFor="totalAmount"
+          hint="Quanto você gastou no agregado"
+        >
+          {/* key força remontagem quando total muda externamente */}
+          <MoneyInput
+            key={`total-${lastTouched === "unit" ? total : "input"}`}
+            name="totalAmount"
+            id="totalAmount"
+            defaultValue={total}
+            onValueChange={handleTotalChange}
+          />
+        </Field>
+        <Field
+          label="Preço unitário"
+          htmlFor="unitPrice"
+          hint="Por cota/unidade"
+        >
+          <MoneyInput
+            key={`unit-${lastTouched === "total" ? unitPrice : "input"}`}
+            name="unitPrice"
+            id="unitPrice"
+            defaultValue={unitPrice}
+            onValueChange={handleUnitChange}
+          />
+        </Field>
+      </div>
+
+      {qtyNum > 0 && unitPrice > 0 ? (
+        <div className="rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border px-3 py-2 text-[12px] font-mono space-y-1">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Preço médio</span>
+            <b className="text-foreground">
+              R$ {unitPrice.toFixed(4).replace(".", ",")} / {unit.slice(0, -1)}
+            </b>
           </div>
-          {/* O service ignora initialAmount para B3 (deriva do lote); mantemos pra compat */}
-          <input type="hidden" name="initialAmount" value={total.toFixed(2)} />
-          {qtyNum > 0 && unitPrice > 0 ? (
-            <div className="text-[12.5px] text-muted-foreground font-mono tracking-[0.02em]">
-              Total do lote inicial:{" "}
-              <b className="text-foreground">
-                R$ {total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </b>
-            </div>
-          ) : null}
-        </>
-      )}
-    </>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Total do lote</span>
+            <b className="text-foreground">
+              R${" "}
+              {total.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </b>
+          </div>
+        </div>
+      ) : null}
+
+      <input type="hidden" name="initialAmount" value={total.toFixed(2)} />
+    </div>
   );
 }
 

@@ -43,6 +43,8 @@ export function MovementDialog({
   const [kind, setKind] = useState<"buy" | "sell">(defaultKind);
   const [qty, setQty] = useState<string>("");
   const [unitPrice, setUnitPrice] = useState<number>(0);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [lastTouched, setLastTouched] = useState<"unit" | "total">("unit");
   const [date, setDate] = useState(todayISO);
 
   const [state, action, pending] = useActionState<MovementFormState | undefined, FormData>(
@@ -57,8 +59,32 @@ export function MovementDialog({
       setKind(defaultKind);
       setQty("");
       setUnitPrice(0);
+      setTotalAmount(0);
+      setLastTouched("unit");
       setDate(todayISO());
     }
+  }
+
+  function handleQtyChange(next: string) {
+    setQty(next);
+    const q = Number(next) || 0;
+    if (lastTouched === "unit" && unitPrice > 0) {
+      setTotalAmount(Math.round(q * unitPrice * 100) / 100);
+    } else if (lastTouched === "total" && totalAmount > 0 && q > 0) {
+      setUnitPrice(Math.round((totalAmount / q) * 10000) / 10000);
+    }
+  }
+  function handleUnitChange(next: number) {
+    setUnitPrice(next);
+    setLastTouched("unit");
+    const q = Number(qty) || 0;
+    if (q > 0) setTotalAmount(Math.round(q * next * 100) / 100);
+  }
+  function handleTotalChange(next: number) {
+    setTotalAmount(next);
+    setLastTouched("total");
+    const q = Number(qty) || 0;
+    if (q > 0) setUnitPrice(Math.round((next / q) * 10000) / 10000);
   }
 
   useEffect(() => {
@@ -69,7 +95,7 @@ export function MovementDialog({
   }, [state, onOpenChange, kind]);
 
   const qtyNum = Number(qty) || 0;
-  const total = qtyNum * unitPrice;
+  const total = totalAmount > 0 ? totalAmount : qtyNum * unitPrice;
   const currentQty = Number(investment.quantity ?? 0);
   const currentAvg = currentQty > 0 ? Number(investment.initial_amount) / currentQty : 0;
 
@@ -112,29 +138,46 @@ export function MovementDialog({
             onChange={(v) => setKind(v as "buy" | "sell")}
           />
 
+          <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
+            <Input
+              id="quantity"
+              name="quantity"
+              type="number"
+              step={isCrypto ? "0.00000001" : "1"}
+              min="0"
+              value={qty}
+              onChange={(e) => handleQtyChange(e.target.value)}
+              className="font-mono"
+              autoFocus
+            />
+            {state?.fieldErrors?.quantity ? (
+              <p className="text-[11.5px] text-rust-600 mt-1">
+                {state.fieldErrors.quantity}
+              </p>
+            ) : null}
+          </Field>
+
           <div className="grid grid-cols-2 gap-3">
-            <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                step={isCrypto ? "0.00000001" : "1"}
-                min="0"
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                className="font-mono"
-                autoFocus
+            <Field
+              label="Valor aplicado (total)"
+              htmlFor="totalAmount"
+              hint="Quanto você gastou no agregado"
+            >
+              <MoneyInput
+                key={`total-${lastTouched === "unit" ? totalAmount : "input"}`}
+                name="totalAmount"
+                id="totalAmount"
+                defaultValue={totalAmount}
+                onValueChange={handleTotalChange}
               />
-              {state?.fieldErrors?.quantity ? (
-                <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.quantity}</p>
-              ) : null}
             </Field>
             <Field label="Preço unitário" htmlFor="unitPrice" required>
               <MoneyInput
+                key={`unit-${lastTouched === "total" ? unitPrice : "input"}`}
                 name="unitPrice"
                 id="unitPrice"
-                defaultValue={0}
-                onValueChange={setUnitPrice}
+                defaultValue={unitPrice}
+                onValueChange={handleUnitChange}
               />
             </Field>
           </div>
