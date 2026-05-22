@@ -14,6 +14,7 @@ import { getAccountsTotals, getAccountsTotalsAt } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
+import { getRecurrencesForecast } from "@/services/recurrences";
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
@@ -49,7 +50,7 @@ export default async function DashboardPage({
   const { label: monthLabel, from, to } = monthRange(monthParam);
   const currentMonth = from.slice(0, 7);
 
-  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical] =
+  const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical, forecast] =
     await Promise.all([
       getMonthlySummary(monthParam),
       getCategoryBreakdown(monthParam, "expense"),
@@ -63,6 +64,9 @@ export default async function DashboardPage({
       getCoverage(),
       getLivePortfolio(),
       getPhysicalAssetsTotals(),
+      // Previsão das recorrências ativas pra qualquer mês (passa NULL no current
+      // pra economizar query — quando o cron tá ok, current já reflete tudo).
+      position === "future" ? getRecurrencesForecast(currentMonth) : null,
     ]);
 
   // Patrimônio total SEM dupla contagem:
@@ -72,15 +76,23 @@ export default async function DashboardPage({
   // e bens físicos usam valor ATUAL (aproximação — Hero mostra hint).
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
-  const projection = projectMonthEnd(summary.income, summary.expense, daysElapsed, daysInMonth);
+
+  // Para mês futuro com forecast, somamos o real (já materializado) + previsto.
+  // Display: a sobra projetada vira (income + previstoIn) - (expense + previstoOut).
+  const effectiveIncome = summary.income + (forecast?.income ?? 0);
+  const effectiveExpense = summary.expense + (forecast?.expense ?? 0);
+  const projection = projectMonthEnd(effectiveIncome, effectiveExpense, daysElapsed, daysInMonth);
   const expenseVsIncome =
-    summary.income > 0 ? summary.expense / summary.income : summary.expense > 0 ? 2 : 0;
+    effectiveIncome > 0 ? effectiveExpense / effectiveIncome : effectiveExpense > 0 ? 2 : 0;
+  const isForecastMode = forecast != null && forecast.count > 0;
 
   const subtitle = isCurrent
     ? "O pulso do mês — sobra projetada, ritmo de gasto e o respiro do patrimônio."
     : position === "past"
       ? "Retrospectiva — receitas, despesas e o que sobrou."
-      : "Mês futuro — só aparece o que já foi materializado pelas recorrências.";
+      : isForecastMode
+        ? `Previsão — ${forecast.count} lançamento${forecast.count === 1 ? "" : "s"} estimado${forecast.count === 1 ? "" : "s"} a partir das recorrências ativas.`
+        : "Mês futuro — sem regras recorrentes ativas. Cadastre em /recorrentes pra ver previsões.";
 
   return (
     <>
@@ -112,14 +124,15 @@ export default async function DashboardPage({
         projectedNet={projection.projectedNet}
         monthLabel={monthLabel}
         netConfidence={projection.confidence}
-        income={summary.income}
-        expense={summary.expense}
+        income={effectiveIncome}
+        expense={effectiveExpense}
         patrimonio={netWorth}
         monthRatio={ratio}
         expenseRatio={expenseVsIncome}
         liveDailyYield={live.totalDailyYield}
         livePerSecond={live.totalPerSecond}
         isCurrentMonth={isCurrent}
+        isForecast={isForecastMode}
       />
 
       {/* Ticker live e Coverage só fazem sentido "agora" — escondidos em meses não-correntes */}

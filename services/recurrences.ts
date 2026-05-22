@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
+import { convertOrSame } from "@/lib/financial/currency";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import type { Currency, Tables } from "@/types/database";
 
 export type RecurrenceRule = Tables<"recurring_rules"> & {
   account?: Pick<Tables<"accounts">, "id" | "name" | "institution"> | null;
@@ -142,4 +144,124 @@ function nextFrom(
       return cursor;
     }
   }
+}
+
+/* ============================== FORECAST =================================
+ * Previsão automática de um mês futuro/atual a partir das regras ativas.
+ * Conta cada ocorrência que cai dentro do mês alvo E AINDA NÃO foi
+ * materializada (last_materialized_date < occurrence_date), convertendo
+ * pra moeda de exibição.
+ *
+ * O hero do dashboard usa isso pra preencher "Sobra prevista" antes do
+ * usuário clicar em "Materializar".
+ * ====================================================================== */
+
+export type MonthForecast = {
+  income: number;
+  expense: number;
+  transferIn: number;
+  transferOut: number;
+  count: number;
+  displayCurrency: Currency;
+};
+
+function lastDayOfMonth(monthStr: string): string {
+  const [y, m] = monthStr.split("-").map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return `${monthStr}-${String(last).padStart(2, "0")}`;
+}
+
+function listOccurrencesInRange(
+  rule: Pick<
+    Tables<"recurring_rules">,
+    | "start_date"
+    | "frequency"
+    | "interval_count"
+    | "day_of_month"
+    | "day_of_week"
+    | "end_date"
+  >,
+  fromISO: string,
+  untilISO: string,
+): string[] {
+  const out: string[] = [];
+  const start = new Date(rule.start_date + "T00:00:00Z");
+  const from = new Date(fromISO + "T00:00:00Z");
+  const until = new Date(untilISO + "T00:00:00Z");
+  const end = rule.end_date ? new Date(rule.end_date + "T00:00:00Z") : null;
+
+  let cursor = nextFrom(rule, from, start);
+  while (cursor && cursor <= until) {
+    if (end && cursor > end) break;
+    out.push(cursor.toISOString().slice(0, 10));
+    cursor = nextFrom(rule, addDays(cursor, 1), start);
+  }
+  return out;
+}
+
+export async function getRecurrencesForecast(monthStr: string): Promise<MonthForecast> {
+  const monthStart = `${monthStr}-01`;
+  const monthEnd = lastDayOfMonth(monthStr);
+
+  const supabase = await createClient();
+  const [{ data: rules }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("recurring_rules")
+      .select(
+        "amount, currency, kind, start_date, end_date, frequency, interval_count, day_of_month, day_of_week, last_materialized_date",
+      )
+      .eq("is_active", true),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
+
+  let income = 0;
+  let expense = 0;
+  let transferIn = 0;
+  let transferOut = 0;
+  let count = 0;
+
+  for (const r of rules ?? []) {
+    // Determina a janela "ainda não materializada" dentro do mês alvo.
+    // Cada ocorrência > last_materialized_date e <= monthEnd e >= monthStart
+    // representa uma previsão pendente.
+    const matCutoff = r.last_materialized_date ?? "1900-01-01";
+    const windowFrom = matCutoff >= monthStart ? addDaysISO(matCutoff, 1) : monthStart;
+    if (windowFrom > monthEnd) continue;
+
+    const occurrences = listOccurrencesInRange(r, windowFrom, monthEnd);
+    if (occurrences.length === 0) continue;
+
+    const amountConverted = convertOrSame(
+      Number(r.amount ?? 0),
+      r.currency as Currency,
+      displayCurrency,
+      rates,
+    );
+    const total = amountConverted * occurrences.length;
+    count += occurrences.length;
+
+    if (r.kind === "income") income += total;
+    else if (r.kind === "expense") expense += total;
+    else if (r.kind === "transfer") {
+      // Transfer não muda patrimônio mas ainda assim somamos pra estatística
+      transferIn += total;
+      transferOut += total;
+    }
+  }
+
+  return {
+    income: Math.round(income * 100) / 100,
+    expense: Math.round(expense * 100) / 100,
+    transferIn: Math.round(transferIn * 100) / 100,
+    transferOut: Math.round(transferOut * 100) / 100,
+    count,
+    displayCurrency,
+  };
+}
+
+function addDaysISO(iso: string, n: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }

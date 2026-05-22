@@ -23,6 +23,7 @@ export function DashboardHero({
   liveDailyYield = 0,
   livePerSecond = 0,
   isCurrentMonth = true,
+  isForecast = false,
 }: {
   projectedNet: number;
   monthLabel: string;
@@ -35,6 +36,8 @@ export function DashboardHero({
   liveDailyYield?: number;
   livePerSecond?: number;
   isCurrentMonth?: boolean;
+  /** Mês futuro com previsão de recorrências (não materializadas ainda) */
+  isForecast?: boolean;
 }) {
   const displayCurrency = useDisplayCurrency();
   const comparisonCurrency = useComparisonCurrency();
@@ -82,8 +85,13 @@ export function DashboardHero({
       <div className="relative z-10">
         <div className="flex items-start justify-between gap-8 mb-9">
           <div className="min-w-0">
-            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-3 font-medium">
-              Sobra projetada · {monthLabel}
+            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-3 font-medium flex items-center gap-2">
+              {isForecast ? "Sobra prevista" : "Sobra projetada"} · {monthLabel}
+              {isForecast ? (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-gold-600/20 text-gold-600 text-[9.5px] font-mono tracking-[0.12em]">
+                  Previsão
+                </span>
+              ) : null}
             </div>
             <div className="flex items-baseline gap-3 mb-1 font-mono">
               <span className="text-[20px] text-navy-300 font-light">{currency}</span>
