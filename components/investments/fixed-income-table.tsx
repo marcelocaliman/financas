@@ -1,6 +1,7 @@
 import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
+import { LiveSaldoCell, LiveVariationCell } from "./fixed-income-row-live";
 import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { ASSET_TYPE_LABELS, type Investment } from "@/services/investments";
@@ -115,10 +116,12 @@ export function FixedIncomeTable({
           <tbody>
             {investments.map((inv) => {
               const live = liveByAssetId.get(inv.id);
-              const saldo = live?.baseBalance ?? Number(inv.current_balance);
-              const delta = saldo - Number(inv.initial_amount);
-              const deltaPct =
-                Number(inv.initial_amount) > 0 ? delta / Number(inv.initial_amount) : 0;
+              const fallbackSaldo = live?.baseBalance ?? Number(inv.current_balance);
+              const fallbackDelta = fallbackSaldo - Number(inv.initial_amount);
+              const fallbackDeltaPct =
+                Number(inv.initial_amount) > 0
+                  ? fallbackDelta / Number(inv.initial_amount)
+                  : 0;
               return (
                 <tr
                   key={inv.id}
@@ -138,18 +141,46 @@ export function FixedIncomeTable({
                   <td className="text-right font-mono text-[13px] text-muted-foreground">
                     {formatMoney(inv.initial_amount)}
                   </td>
-                  <td className="text-right font-mono text-[13px] font-medium tabular-nums">
-                    {formatMoney(saldo)}
-                  </td>
-                  <td className="text-right font-mono text-[12.5px]">
-                    {delta > 0.005 ? (
-                      <span className="text-olive-700 dark:text-olive-500">
-                        +{formatPercent(deltaPct, 2)}
-                      </span>
-                    ) : delta < -0.005 ? (
-                      <span className="text-rust-600">{formatPercent(deltaPct, 2)}</span>
+                  <td className="text-right">
+                    {live ? (
+                      <LiveSaldoCell asset={live} fallback={fallbackSaldo} />
                     ) : (
-                      <span className="text-faint-foreground">—</span>
+                      <span className="font-mono text-[13px] font-medium tabular-nums">
+                        {formatMoney(fallbackSaldo)}
+                      </span>
+                    )}
+                  </td>
+                  <td className="text-right">
+                    {live ? (
+                      <LiveVariationCell
+                        asset={live}
+                        initialAmount={Number(inv.initial_amount)}
+                      />
+                    ) : Math.abs(fallbackDelta) > 0.005 ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span
+                          className={`font-mono text-[12.5px] font-medium ${
+                            fallbackDelta > 0
+                              ? "text-olive-700 dark:text-olive-500"
+                              : "text-rust-600"
+                          }`}
+                        >
+                          {fallbackDelta > 0 ? "+" : ""}
+                          {formatPercent(fallbackDeltaPct, 2)}
+                        </span>
+                        <span
+                          className={`font-mono text-[10.5px] mt-0.5 tabular-nums ${
+                            fallbackDelta > 0
+                              ? "text-olive-700 dark:text-olive-500"
+                              : "text-rust-600"
+                          }`}
+                        >
+                          {fallbackDelta > 0 ? "+" : ""}
+                          {formatMoney(fallbackDelta)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-faint-foreground font-mono text-[12.5px]">—</span>
                     )}
                   </td>
                   <td className="text-right">
