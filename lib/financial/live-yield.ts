@@ -13,6 +13,7 @@
  */
 
 import type { Quote } from "./brapi";
+import { businessDaysSinceContinuous, isBusinessDay } from "./business-days";
 
 type IndexerCode = "selic" | "cdi" | "ipca";
 
@@ -69,12 +70,16 @@ export type LivePortfolio = {
   totalDailyYield: number;
   totalPerSecond: number;
   /**
-   * Rendimento acumulado da renda fixa (current_balance - initial_amount),
-   * já considerando aportes (não afetam) e saques de yield (subtraem).
-   * Cresce naturalmente conforme o cron atualiza current_balance; tic-tic
-   * cosmético do dia é somado client-side via dayUtilizationRatio.
+   * Rendimento acumulado da renda fixa (derivedBalance - initial_amount),
+   * com composição contínua em dias úteis (excluindo fim de semana e
+   * feriados nacionais BR). Já inclui fração do dia útil atual em SP.
    */
   totalFixedIncomeAccumulatedYield: number;
+  /**
+   * True se hoje (em São Paulo) é dia útil. Usado pelo client pra decidir
+   * se anima o contador (somente em dias úteis) ou pausa (fds/feriados).
+   */
+  isBusinessDayToday: boolean;
   byAsset: LiveAssetMetrics[];
   byClass: {
     fixedIncome: { dailyYield: number; perSecond: number; balance: number };
@@ -85,7 +90,6 @@ export type LivePortfolio = {
 };
 
 const SECONDS_PER_UTIL_DAY = 28800; // 8h * 3600
-const DAY_MS = 86400000;
 
 /**
  * Rendimento diário composto (base 252 dias úteis) a partir de uma taxa anual.
@@ -103,18 +107,13 @@ function ipcaMonthlyToAnnual(monthlyPct: number): number {
 }
 
 /**
- * Dias úteis aproximados entre `fromISO` e agora (5/7 dos dias corridos).
- */
-function businessDaysSince(fromISO: string, now: Date): number {
-  const from = new Date(fromISO + "T00:00:00Z");
-  const totalDays = Math.floor((now.getTime() - from.getTime()) / DAY_MS);
-  if (totalDays <= 0) return 0;
-  return Math.floor(totalDays * (5 / 7));
-}
-
-/**
  * Saldo coerente "agora" para renda fixa indexada/prefixada:
- *   checkpoint × (1 + daily)^dias_úteis_desde_checkpoint
+ *   checkpoint × (1 + daily)^dias_úteis_fracionais_desde_checkpoint
+ *
+ * Usa contagem REAL de dias úteis (excluindo finais de semana e feriados
+ * nacionais brasileiros), com fração do dia atual quando hoje é dia útil.
+ * Resultado: composição contínua matematicamente correta.
+ *
  * `current_balance` é só a foto da última vez que o cron rodou (ou da compra).
  */
 function deriveCheckpointBalance(
@@ -126,7 +125,7 @@ function deriveCheckpointBalance(
 ): number {
   if (dailyRate <= 0) return currentBalance;
   const ref = lastYieldAt ?? purchaseDate;
-  const days = businessDaysSince(ref, now);
+  const days = businessDaysSinceContinuous(ref, now);
   if (days <= 0) return currentBalance;
   return currentBalance * Math.pow(1 + dailyRate, days);
 }
@@ -316,6 +315,7 @@ export function computeLivePortfolio(args: {
     totalPerSecond: totalDailyYield / SECONDS_PER_UTIL_DAY,
     totalFixedIncomeAccumulatedYield:
       Math.round(totalFixedIncomeAccumulatedYield * 100) / 100,
+    isBusinessDayToday: isBusinessDay(now),
     byAsset,
     byClass,
   };

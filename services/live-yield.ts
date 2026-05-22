@@ -57,6 +57,7 @@ export async function getLivePortfolio(): Promise<LivePortfolio & { displayCurre
       totalDailyYield: 0,
       totalPerSecond: 0,
       totalFixedIncomeAccumulatedYield: 0,
+      isBusinessDayToday: true,
       byAsset: [],
       byClass: {
         fixedIncome: { dailyYield: 0, perSecond: 0, balance: 0 },

@@ -159,6 +159,7 @@ export default async function DashboardPage({
             hasInvestments={portfolio.total > 0}
             liveDailyYield={live.totalDailyYield}
             accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
+            isBusinessDayToday={live.isBusinessDayToday}
           />
         ) : null}
       </div>
@@ -179,6 +180,7 @@ function CoveragePanel({
   hasInvestments,
   liveDailyYield = 0,
   accumulatedYieldUntilToday = 0,
+  isBusinessDayToday = true,
 }: {
   monthlyYield: number;
   monthlyExpense: number;
@@ -186,6 +188,7 @@ function CoveragePanel({
   hasInvestments: boolean;
   liveDailyYield?: number;
   accumulatedYieldUntilToday?: number;
+  isBusinessDayToday?: boolean;
 }) {
   const pct = Math.min(100, Math.round(ratio * 100));
   return (
@@ -213,6 +216,7 @@ function CoveragePanel({
           <CoverageLiveAccrued
             accumulatedUntilToday={accumulatedYieldUntilToday}
             dailyYield={liveDailyYield}
+            isBusinessDayToday={isBusinessDayToday}
           />
         ) : null}
 

@@ -2,55 +2,63 @@
 
 import { useEffect, useState } from "react";
 import { Money } from "@/components/ui/money";
+import { isBusinessDay } from "@/lib/financial/business-days";
 
 /**
- * "Rendimento acumulado" da carteira de renda fixa — sempre crescendo,
- * sem reset diário, sem janela morta. Espelha um Tesouro Selic mantido
- * pela vida toda.
+ * "Rendimento acumulado" da carteira de renda fixa — matematicamente
+ * coerente com a realidade da Selic/CDI/IPCA+ (base 252 dias úteis).
  *
  * Fórmula:
  *   total(now) = accumulatedFromServer
- *              + (dailyYield / 86400) × secondsSinceMount
+ *              + (dailyYield / 86400) × businessSecondsElapsed
  *
- * - `accumulatedFromServer`: ponto sólido fornecido pelo server
- *   (Σ derivedBalance − initial_amount de cada ativo de RF). Reflete
- *   yields já compostos pelo cron até o momento do server render.
- * - `dailyYield / 86400`: taxa contínua distribuída em 24h. Anima
- *   suavemente entre cargas; reconcilia com o real a cada refresh.
+ * - `accumulatedFromServer`: ponto sólido do server render. Já reflete
+ *   composição contínua até o momento do fetch (via deriveCheckpointBalance
+ *   que usa businessDaysSinceContinuous excluindo fim de semana/feriados).
+ * - `businessSecondsElapsed`: conta APENAS segundos transcorridos em
+ *   dias úteis desde o mount. Em fins de semana/feriados, o tic-tic
+ *   pausa naturalmente.
  *
- * Trade-off: em fim de semana o número segue animando mesmo que Selic
- * D+1 não renda matematicamente. Aceitável — é uma representação
- * visual contínua; a fonte da verdade segue sendo o `current_balance`
- * no banco que se atualiza pelo cron.
+ * Quando passa da meia-noite ou começa fim de semana: a função
+ * `isBusinessDay` reavalia em cada tick, então o ritmo se ajusta.
  */
 export function CoverageLiveAccrued({
   accumulatedUntilToday,
   dailyYield,
+  isBusinessDayToday,
 }: {
-  /** Rendimento acumulado até o momento do server render (saldo − custo) */
   accumulatedUntilToday: number;
-  /** Yield esperado por dia útil (R$/dia) — taxa */
   dailyYield: number;
+  isBusinessDayToday: boolean;
 }) {
-  const [elapsed, setElapsed] = useState(0);
-  const [mountedAt] = useState(() => Date.now());
+  const [businessSecondsElapsed, setBusinessSecondsElapsed] = useState(0);
 
   useEffect(() => {
     if (dailyYield <= 0) return;
+    let lastTick = Date.now();
     const id = setInterval(() => {
-      setElapsed((Date.now() - mountedAt) / 1000);
+      const now = Date.now();
+      const delta = (now - lastTick) / 1000;
+      lastTick = now;
+      // Só conta o segundo se "agora" (em SP) é dia útil
+      if (isBusinessDay(new Date(now))) {
+        setBusinessSecondsElapsed((s) => s + delta);
+      }
     }, 1000);
     return () => clearInterval(id);
-  }, [dailyYield, mountedAt]);
+  }, [dailyYield]);
 
-  // Taxa contínua: dailyYield distribuído ao longo de 86400s = 24h.
-  // Anima sempre, sem reset, sem parar.
   const ratePerSecond = dailyYield / 86400;
-  const total = accumulatedUntilToday + ratePerSecond * elapsed;
+  const total = accumulatedUntilToday + ratePerSecond * businessSecondsElapsed;
 
   return (
     <div className="mt-4 flex items-baseline gap-2 text-[12.5px] font-mono tabular-nums">
-      <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+      <span
+        className={`inline-block w-1.5 h-1.5 rounded-full ${
+          isBusinessDayToday ? "bg-olive-600 animate-pulse" : "bg-faint-foreground"
+        }`}
+        title={isBusinessDayToday ? "Rendendo" : "Pausado (fim de semana / feriado)"}
+      />
       <span className="text-muted-foreground">Rendimento acumulado</span>
       <Money
         value={total}
@@ -58,6 +66,9 @@ export function CoverageLiveAccrued({
         className="text-[14px] font-medium text-olive-700 dark:text-olive-500 inline-flex !flex-row !items-baseline"
         secondaryClassName="text-[10px] ml-1.5"
       />
+      {!isBusinessDayToday ? (
+        <span className="text-[10.5px] text-faint-foreground italic ml-1">pausado</span>
+      ) : null}
     </div>
   );
 }
