@@ -5,6 +5,7 @@ import { useTransition } from "react";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Input } from "@/components/ui/input";
+import { MonthSwitcher } from "@/components/ui/month-switcher";
 
 type Tab = { value: string; label: string; count?: number };
 
@@ -12,10 +13,14 @@ export function TransactionsFilterBar({
   current,
   tabs,
   monthStr,
+  monthLabel,
+  isCurrentMonth,
 }: {
   current: string;
   tabs: Tab[];
   monthStr: string;
+  monthLabel: string;
+  isCurrentMonth: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -76,12 +81,10 @@ export function TransactionsFilterBar({
         />
       </div>
 
-      <input
-        type="month"
-        value={monthStr}
-        onChange={(e) => setParam("month", e.target.value)}
-        className="h-10 rounded-[8px] border border-border-strong bg-surface px-3 text-[13px] font-mono text-foreground focus:outline-none focus:border-navy-500 focus:ring-2 focus:ring-navy-100"
-        aria-label="Filtrar mês"
+      <MonthSwitcher
+        currentMonth={monthStr}
+        isCurrent={isCurrentMonth}
+        label={monthLabel.split(" ")[0]}
       />
     </div>
   );

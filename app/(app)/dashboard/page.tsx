@@ -6,7 +6,8 @@ import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
 import { InsightCard } from "@/components/dashboard/insight-card";
-import { MonthSwitcher } from "@/components/dashboard/month-switcher";
+import { MonthSwitcher } from "@/components/ui/month-switcher";
+import { MaterializeUntilMonthButton } from "@/components/dashboard/materialize-until-month-button";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals } from "@/services/accounts";
@@ -66,7 +67,7 @@ export default async function DashboardPage({
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
 
-  const { label: monthLabel, from } = monthRange(monthParam);
+  const { label: monthLabel, from, to } = monthRange(monthParam);
   const currentMonth = from.slice(0, 7);
   const projection = projectMonthEnd(summary.income, summary.expense, daysElapsed, daysInMonth);
   const expenseVsIncome =
@@ -96,6 +97,9 @@ export default async function DashboardPage({
               isCurrent={isCurrent}
               label={monthLabel.split(" ")[0]}
             />
+            {position === "future" ? (
+              <MaterializeUntilMonthButton monthLabel={monthLabel} untilDate={to} />
+            ) : null}
             <QuickAddTrigger />
           </>
         }
@@ -116,7 +120,7 @@ export default async function DashboardPage({
 
       <PortfolioLiveTicker portfolio={live} variant="compact" />
 
-      <InsightCard anomalies={anomalies} />
+      {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
 
       <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8">
         <TopCategoriesPanel rows={breakdown} monthLabel={monthLabel} />

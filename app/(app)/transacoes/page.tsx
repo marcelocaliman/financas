@@ -15,6 +15,15 @@ import type { TransactionKind } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
+function currentMonthISO(): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  });
+  return fmt.format(new Date()); // "YYYY-MM"
+}
+
 type Params = {
   month?: string;
   kind?: string;
@@ -96,6 +105,8 @@ export default async function TransacoesPage({
       <TransactionsFilterBar
         current={kindFilter}
         monthStr={monthInputValue}
+        monthLabel={monthLabel}
+        isCurrentMonth={monthInputValue === currentMonthISO()}
         tabs={[
           { value: "all", label: "Todas", count: summary.transactionCount },
           { value: "income", label: "Receitas" },
