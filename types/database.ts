@@ -27,6 +27,17 @@ export type TransactionKind = "income" | "expense" | "transfer";
 export type PaymentMethod = "credit" | "debit" | "pix" | "cash" | "auto_debit" | "transfer";
 export type CategorySource = "manual" | "rule" | "ai";
 export type TransferDirection = "in" | "out";
+export type AssetType =
+  | "fii"
+  | "fixed_income_public"
+  | "fixed_income_private"
+  | "stock"
+  | "etf"
+  | "crypto";
+export type Indexer = "selic" | "cdi" | "ipca" | "fixed" | "none";
+export type IndexerCode = "selic" | "cdi" | "ipca";
+export type TaxRegime = "regressive" | "exempt";
+export type YieldSource = "manual" | "calculated" | "imported";
 
 export interface Database {
   public: {
@@ -283,6 +294,116 @@ export interface Database {
           },
         ];
       };
+      indexer_history: {
+        Row: {
+          indexer: IndexerCode;
+          date: string;
+          value: number;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          indexer: IndexerCode;
+          date: string;
+          value: number;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["indexer_history"]["Insert"]>;
+        Relationships: [];
+      };
+      investments: {
+        Row: {
+          id: string;
+          household_id: string;
+          account_id: string;
+          ticker: string;
+          name: string;
+          asset_type: AssetType;
+          indexer: Indexer | null;
+          indexer_multiplier: number | null;
+          fixed_rate: number | null;
+          purchase_date: string;
+          initial_amount: number;
+          current_balance: number;
+          tax_regime: TaxRegime;
+          is_active: boolean;
+          last_yield_at: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          account_id: string;
+          ticker: string;
+          name: string;
+          asset_type: AssetType;
+          indexer?: Indexer | null;
+          indexer_multiplier?: number | null;
+          fixed_rate?: number | null;
+          purchase_date: string;
+          initial_amount: number;
+          current_balance?: number;
+          tax_regime?: TaxRegime;
+          is_active?: boolean;
+          last_yield_at?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["investments"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "investments_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "investments_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      investment_yields: {
+        Row: {
+          id: string;
+          investment_id: string;
+          household_id: string;
+          month: string;
+          gross_yield: number;
+          tax: number;
+          net_yield: number;
+          source: YieldSource;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          investment_id: string;
+          household_id: string;
+          month: string;
+          gross_yield: number;
+          tax?: number;
+          source?: YieldSource;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["investment_yields"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "investment_yields_investment_id_fkey";
+            columns: ["investment_id"];
+            isOneToOne: false;
+            referencedRelation: "investments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -314,6 +435,14 @@ export interface Database {
       };
       transaction_balance_delta: {
         Args: { p_kind: string; p_direction: string | null; p_amount: number };
+        Returns: number;
+      };
+      selic_daily_rate: {
+        Args: { p_annual_pct: number };
+        Returns: number;
+      };
+      apply_daily_yield: {
+        Args: { p_investment_id: string };
         Returns: number;
       };
     };

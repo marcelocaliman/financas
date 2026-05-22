@@ -9,6 +9,7 @@ import { LatestTransactionsPanel } from "@/components/dashboard/latest-transacti
 import { InsightCard } from "@/components/dashboard/insight-card";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts, getAccountsTotals } from "@/services/accounts";
+import { getCoverage, getPortfolioStats } from "@/services/investments";
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
@@ -16,6 +17,7 @@ import {
   listTransactions,
   monthRange,
 } from "@/services/transactions";
+import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { formatDateFull, formatTime, getGreeting } from "@/lib/utils/format";
 import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
 
@@ -29,14 +31,18 @@ export default async function DashboardPage() {
   const now = new Date();
   const greeting = getGreeting(now);
 
-  const [summary, accounts, breakdown, latest, totals, anomalies] = await Promise.all([
+  const [summary, accounts, breakdown, latest, totals, anomalies, portfolio, coverage] = await Promise.all([
     getMonthlySummary(),
     listAccounts(),
     getCategoryBreakdown(undefined, "expense"),
     listTransactions({ pageSize: 6 }),
     getAccountsTotals(),
     detectExpenseAnomalies(),
+    getPortfolioStats(),
+    getCoverage(),
   ]);
+
+  const netWorth = totals.total + portfolio.total;
 
   const hasAccounts = accounts.length > 0;
   const hasAnyData = hasAccounts && (latest.total > 0 || summary.income > 0 || summary.expense > 0);
@@ -85,7 +91,7 @@ export default async function DashboardPage() {
             netConfidence={projection.confidence}
             income={summary.income}
             expense={summary.expense}
-            patrimonio={totals.total}
+            patrimonio={netWorth}
             monthRatio={ratio}
             expenseRatio={expenseVsIncome}
           />
@@ -94,7 +100,12 @@ export default async function DashboardPage() {
 
           <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8">
             <TopCategoriesPanel rows={breakdown} monthLabel={monthLabel} />
-            <CoveragePlaceholder />
+            <CoveragePanel
+              monthlyYield={coverage.monthlyAverageYield}
+              monthlyExpense={coverage.monthlyAverageExpense}
+              ratio={coverage.ratio}
+              hasInvestments={portfolio.total > 0}
+            />
           </div>
 
           <LatestTransactionsPanel rows={latest.rows} />
@@ -104,7 +115,18 @@ export default async function DashboardPage() {
   );
 }
 
-function CoveragePlaceholder() {
+function CoveragePanel({
+  monthlyYield,
+  monthlyExpense,
+  ratio,
+  hasInvestments,
+}: {
+  monthlyYield: number;
+  monthlyExpense: number;
+  ratio: number;
+  hasInvestments: boolean;
+}) {
+  const pct = Math.min(100, Math.round(ratio * 100));
   return (
     <Panel className="!p-7 relative overflow-hidden">
       <div
@@ -116,16 +138,57 @@ function CoveragePlaceholder() {
         <div className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-navy-700 mb-2.5 font-medium">
           Renda do patrimônio
         </div>
-        <div className="font-mono text-[32px] tracking-[-0.025em] text-navy-950 leading-none">
-          —
+        <div className="font-mono text-[28px] tracking-[-0.025em] text-foreground leading-none">
+          {formatMoney(monthlyYield)}
+          <span className="text-[14px] text-muted-foreground ml-1.5">/mês</span>
         </div>
-        <p className="text-[13px] text-muted-foreground mt-2">
-          Ativos chegam na Fase 3.
+        <p className="text-[12.5px] text-muted-foreground mt-1.5">
+          {hasInvestments
+            ? "média líquida · últimos 3 meses"
+            : "ainda sem ativos cadastrados"}
         </p>
-        <p className="text-[12.5px] text-faint-foreground mt-4 leading-relaxed">
-          Aqui vai ficar a renda média líquida dos últimos 12 meses, com a
-          cobertura das despesas fixas e quanto falta pra 100%.
-        </p>
+
+        <div className="mt-6 flex items-center gap-4">
+          <div className="relative w-[86px] h-[86px] shrink-0">
+            <svg width="86" height="86" viewBox="0 0 86 86" className="-rotate-90">
+              <circle cx="43" cy="43" r="37" fill="none" stroke="var(--color-navy-100)" strokeWidth="5" />
+              <circle
+                cx="43"
+                cy="43"
+                r="37"
+                fill="none"
+                stroke="var(--color-navy-800)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 37}
+                strokeDashoffset={2 * Math.PI * 37 * (1 - pct / 100)}
+                className="transition-[stroke-dashoffset] duration-1000 ease-out"
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
+              <span className="text-[19px] font-medium text-foreground">{pct}%</span>
+              <span className="text-[9px] uppercase tracking-[0.12em] text-faint-foreground font-medium">
+                cobertura
+              </span>
+            </div>
+          </div>
+          <div className="text-[12.5px] text-muted-foreground leading-[1.55]">
+            <p className="font-medium text-foreground text-[13.5px] mb-1">
+              {pct}% das despesas fixas cobertas
+            </p>
+            <p>
+              Despesa média {formatMoney(monthlyExpense)}/mês. Cobertura{" "}
+              {ratio > 0
+                ? formatPercent(ratio, 0)
+                : "—"}
+              {ratio > 0 && ratio < 1
+                ? `. Falta ${formatMoney(monthlyExpense - monthlyYield)}.`
+                : ratio >= 1
+                  ? ". Já dá pra viver da renda."
+                  : ""}
+            </p>
+          </div>
+        </div>
       </div>
     </Panel>
   );
