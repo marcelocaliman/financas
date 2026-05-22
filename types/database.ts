@@ -26,6 +26,7 @@ export type CategoryKind = "income" | "expense" | "transfer";
 export type TransactionKind = "income" | "expense" | "transfer";
 export type PaymentMethod = "credit" | "debit" | "pix" | "cash" | "auto_debit" | "transfer";
 export type CategorySource = "manual" | "rule" | "ai";
+export type TransferDirection = "in" | "out";
 
 export interface Database {
   public: {
@@ -70,7 +71,15 @@ export interface Database {
           role?: "admin" | "member";
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "users_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       accounts: {
         Row: {
@@ -112,7 +121,15 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "accounts_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       categories: {
         Row: {
@@ -154,7 +171,22 @@ export interface Database {
           is_archived?: boolean;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "categories_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       transactions: {
         Row: {
@@ -171,6 +203,7 @@ export interface Database {
           category_source: CategorySource;
           category_confidence: number | null;
           transfer_pair_id: string | null;
+          transfer_direction: TransferDirection | null;
           is_recurring: boolean;
           recurring_rule_id: string | null;
           metadata: Json;
@@ -191,6 +224,7 @@ export interface Database {
           category_source?: CategorySource;
           category_confidence?: number | null;
           transfer_pair_id?: string | null;
+          transfer_direction?: TransferDirection | null;
           is_recurring?: boolean;
           recurring_rule_id?: string | null;
           metadata?: Json;
@@ -211,13 +245,43 @@ export interface Database {
           category_source?: CategorySource;
           category_confidence?: number | null;
           transfer_pair_id?: string | null;
+          transfer_direction?: TransferDirection | null;
           is_recurring?: boolean;
           recurring_rule_id?: string | null;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "transactions_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
       };
     };
     Views: { [_ in never]: never };
@@ -233,6 +297,24 @@ export interface Database {
       current_household_id: {
         Args: Record<string, never>;
         Returns: string;
+      };
+      create_transfer: {
+        Args: {
+          p_from_account_id: string;
+          p_to_account_id: string;
+          p_amount: number;
+          p_date: string;
+          p_description?: string | null;
+        };
+        Returns: string;
+      };
+      delete_transfer: {
+        Args: { p_pair_id: string };
+        Returns: void;
+      };
+      transaction_balance_delta: {
+        Args: { p_kind: string; p_direction: string | null; p_amount: number };
+        Returns: number;
       };
     };
     Enums: { [_ in never]: never };

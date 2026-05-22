@@ -1,0 +1,92 @@
+"use client";
+
+import { useTransition } from "react";
+import { ArrowLeftRight, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
+import { deleteTransaction } from "@/services/transactions.actions";
+import type { Transaction } from "@/services/transactions";
+import { cn } from "@/lib/utils/cn";
+
+export function TransactionRow({ tx }: { tx: Transaction }) {
+  const [pending, startTransition] = useTransition();
+
+  const handleDelete = () => {
+    const msg = tx.transfer_pair_id
+      ? "Apagar essa transferência? As duas pontas (saída e entrada) somem juntas."
+      : "Apagar esse lançamento?";
+    if (!confirm(msg)) return;
+    startTransition(async () => {
+      const r = await deleteTransaction(tx.id);
+      if (r.error) toast.error(r.error);
+      else toast.success("Lançamento apagado.");
+    });
+  };
+
+  const { integer, cents } = formatMoneyParts(tx.amount);
+  const isIncome = tx.kind === "income";
+  const isTransfer = tx.kind === "transfer";
+
+  const valueClass = isIncome
+    ? "text-olive-700"
+    : isTransfer
+      ? "text-foreground"
+      : "text-foreground";
+
+  const valuePrefix = isIncome ? "+ " : isTransfer ? "" : "− ";
+
+  return (
+    <tr
+      className={cn(
+        "border-b border-border last:border-b-0 group transition-colors hover:bg-bone-100/40",
+        pending && "opacity-50",
+      )}
+    >
+      <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
+        <span className="font-mono text-[11.5px] tracking-[0.04em] text-muted-foreground">
+          {formatDateShort(tx.date)}
+        </span>
+      </td>
+      <td className="py-3.5 pr-4 align-middle min-w-0">
+        <div className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate flex items-center gap-2">
+          {isTransfer ? <ArrowLeftRight className="w-3 h-3 text-navy-600 shrink-0" strokeWidth={1.8} /> : null}
+          {tx.description}
+        </div>
+        <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
+          {tx.account?.name ?? "—"}
+          {tx.payment_method ? ` · ${tx.payment_method}` : ""}
+        </div>
+      </td>
+      <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
+        {tx.category ? (
+          <Badge tone={tx.category.kind === "income" ? "olive" : "neutral"} dot>
+            {tx.category.name}
+          </Badge>
+        ) : isTransfer ? (
+          <Badge tone="navy" dot>
+            Transferência
+          </Badge>
+        ) : (
+          <span className="text-faint-foreground text-[11.5px] italic">sem categoria</span>
+        )}
+      </td>
+      <td className="py-3.5 align-middle text-right whitespace-nowrap">
+        <span className={cn("font-mono text-[14px] font-medium tracking-[-0.005em]", valueClass)}>
+          {valuePrefix}R$ {integer},{cents}
+        </span>
+      </td>
+      <td className="py-3.5 pl-2 align-middle">
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={pending}
+          className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Apagar"
+        >
+          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+        </button>
+      </td>
+    </tr>
+  );
+}

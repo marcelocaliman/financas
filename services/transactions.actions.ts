@@ -1,0 +1,172 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserContext } from "@/services/auth";
+
+const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
+
+const baseSchema = z.object({
+  amount: z.coerce.number().positive("Valor precisa ser positivo."),
+  description: z.string().min(1, "Descreva em poucas palavras."),
+  accountId: z.string().uuid("Selecione uma conta."),
+  categoryId: z.string().uuid().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
+  paymentMethod: z.enum(PAYMENT_METHODS).optional(),
+});
+
+const expenseOrIncomeSchema = baseSchema.extend({
+  kind: z.enum(["income", "expense"]),
+});
+
+const transferSchema = z.object({
+  amount: z.coerce.number().positive("Valor precisa ser positivo."),
+  fromAccountId: z.string().uuid(),
+  toAccountId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  description: z.string().optional(),
+});
+
+export type TxFormState = {
+  ok?: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string>;
+};
+
+function parseErrors(error: z.ZodError): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const p = issue.path.join(".");
+    if (p && !out[p]) out[p] = issue.message;
+  }
+  return out;
+}
+
+function pathsToInvalidate() {
+  return ["/dashboard", "/transacoes", "/contas", "/analise"];
+}
+
+export async function createTransaction(
+  _prev: TxFormState | undefined,
+  formData: FormData,
+): Promise<TxFormState> {
+  const kind = String(formData.get("kind") ?? "expense");
+
+  if (kind === "transfer") {
+    const parsed = transferSchema.safeParse({
+      amount: formData.get("amount"),
+      fromAccountId: formData.get("fromAccountId"),
+      toAccountId: formData.get("toAccountId"),
+      date: formData.get("date"),
+      description: formData.get("description") || undefined,
+    });
+    if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+    if (parsed.data.fromAccountId === parsed.data.toAccountId) {
+      return { fieldErrors: { toAccountId: "Origem e destino devem ser contas diferentes." } };
+    }
+
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("create_transfer", {
+      p_from_account_id: parsed.data.fromAccountId,
+      p_to_account_id: parsed.data.toAccountId,
+      p_amount: parsed.data.amount,
+      p_date: parsed.data.date,
+      p_description: parsed.data.description ?? null,
+    });
+    if (error) return { error: error.message };
+    for (const p of pathsToInvalidate()) revalidatePath(p);
+    return { ok: true };
+  }
+
+  const parsed = expenseOrIncomeSchema.safeParse({
+    kind,
+    amount: formData.get("amount"),
+    description: formData.get("description"),
+    accountId: formData.get("accountId"),
+    categoryId: formData.get("categoryId") || undefined,
+    date: formData.get("date"),
+    paymentMethod: formData.get("paymentMethod") || undefined,
+  });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("transactions").insert({
+    household_id: ctx.household.id,
+    account_id: parsed.data.accountId,
+    category_id: parsed.data.categoryId ?? null,
+    kind: parsed.data.kind,
+    amount: parsed.data.amount,
+    description: parsed.data.description.trim(),
+    payment_method: parsed.data.paymentMethod ?? null,
+    date: parsed.data.date,
+    created_by: ctx.profile.id,
+  });
+  if (error) return { error: error.message };
+
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true };
+}
+
+const updateSchema = expenseOrIncomeSchema.extend({ id: z.string().uuid() });
+
+export async function updateTransaction(
+  _prev: TxFormState | undefined,
+  formData: FormData,
+): Promise<TxFormState> {
+  const parsed = updateSchema.safeParse({
+    id: formData.get("id"),
+    kind: formData.get("kind"),
+    amount: formData.get("amount"),
+    description: formData.get("description"),
+    accountId: formData.get("accountId"),
+    categoryId: formData.get("categoryId") || undefined,
+    date: formData.get("date"),
+    paymentMethod: formData.get("paymentMethod") || undefined,
+  });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      account_id: parsed.data.accountId,
+      category_id: parsed.data.categoryId ?? null,
+      kind: parsed.data.kind,
+      amount: parsed.data.amount,
+      description: parsed.data.description.trim(),
+      payment_method: parsed.data.paymentMethod ?? null,
+      date: parsed.data.date,
+    })
+    .eq("id", parsed.data.id);
+  if (error) return { error: error.message };
+
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true };
+}
+
+export async function deleteTransaction(id: string): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+
+  // Se for parte de uma transferência, apagar o par inteiro via RPC.
+  const { data: row } = await supabase
+    .from("transactions")
+    .select("transfer_pair_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (row?.transfer_pair_id) {
+    const { error } = await supabase.rpc("delete_transfer", { p_pair_id: row.transfer_pair_id });
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (error) return { error: error.message };
+  }
+
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true };
+}

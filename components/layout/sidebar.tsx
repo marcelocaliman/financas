@@ -10,6 +10,7 @@ import {
   Layers,
   Target,
   CreditCard,
+  Tag,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { cn } from "@/lib/utils/cn";
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
   { label: "Metas", href: "/metas", icon: Target, group: "investir" },
   { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },
+  { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
 ];
 
 const groupLabels: Record<NavItem["group"], string> = {
