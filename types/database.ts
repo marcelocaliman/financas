@@ -717,6 +717,10 @@ export interface Database {
         Args: { p_intent_id: string };
         Returns: void;
       };
+      reset_household_data: {
+        Args: Record<string, never>;
+        Returns: void;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

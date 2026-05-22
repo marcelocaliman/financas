@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getCurrentUserContext } from "@/services/auth";
 import { signOut } from "../_actions/sign-out";
 import { HouseholdNameForm, ProfileNameForm } from "./profile-forms";
+import { ResetDataSection } from "./reset-data-section";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,14 @@ export default async function ConfiguracoesPage() {
               Encerrar sessão
             </Button>
           </form>
+        </Panel>
+
+        <Panel className="border-rust-600/30">
+          <PanelHeader
+            title={<span className="text-rust-600">Zona perigosa</span>}
+            meta="Apaga todos os dados desse lar (irreversível)"
+          />
+          <ResetDataSection />
         </Panel>
       </div>
     </>

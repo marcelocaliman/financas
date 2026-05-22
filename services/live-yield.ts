@@ -19,7 +19,7 @@ export async function getLivePortfolio(): Promise<LivePortfolio> {
   const { data: investmentsData } = await supabase
     .from("investments")
     .select(
-      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, quantity",
+      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, quantity, purchase_date, last_yield_at",
     )
     .eq("is_active", true);
   const investments = (investmentsData ?? []) as LiveInvestmentInput[];

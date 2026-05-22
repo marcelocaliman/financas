@@ -1,4 +1,3 @@
-import { Panel, PanelHeader } from "@/components/ui/panel";
 import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
@@ -19,13 +18,15 @@ export function VariableIncomeTable({
 }) {
   if (investments.length === 0) return null;
 
-  // KPIs de variável: mark-to-market
-  const aplicado = investments.reduce((s, i) => s + Number(i.initial_amount ?? 0), 0);
+  const aplicado = investments.reduce(
+    (s, i) => s + Number(i.initial_amount ?? 0),
+    0,
+  );
   let valorMercado = 0;
   let dividendoMensal = 0;
   for (const inv of investments) {
     const live = liveByAssetId.get(inv.id);
-    valorMercado += live?.marketBalance ?? Number(inv.current_balance ?? 0);
+    valorMercado += live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance);
     dividendoMensal += (live?.dailyYield ?? 0) * 21;
   }
   const ganho = valorMercado - aplicado;
@@ -33,167 +34,187 @@ export function VariableIncomeTable({
   const dyAnnualPct = valorMercado > 0 ? (dividendoMensal * 12) / valorMercado : 0;
 
   return (
-    <section className="mb-7">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <Stat label="Aplicado (custo)" value={formatMoney(aplicado)} />
-        <Stat
-          label="A mercado"
-          value={formatMoney(valorMercado)}
-          hint={
-            aplicado > 0
-              ? `${ganho >= 0 ? "+" : ""}${formatMoney(ganho)} (${formatPercent(ganhoPct, 2)})`
-              : undefined
-          }
-          tone={ganho > 0 ? "positive" : ganho < 0 ? "negative" : "default"}
-        />
-        <Stat
-          label="Dividendo médio/mês"
-          value={formatMoney(dividendoMensal)}
-          hint="estimado pela média 12m"
-          tone={dividendoMensal > 0 ? "positive" : "default"}
-        />
-        <Stat
-          label="DY anualizado"
-          value={dyAnnualPct > 0 ? formatPercent(dyAnnualPct, 1) : "—"}
-          hint="dividendos / valor a mercado"
-        />
-      </div>
+    <section className="rounded-[var(--radius-xl)] border border-border bg-surface mb-8 overflow-hidden">
+      <header className="px-7 pt-7 pb-6 border-b border-border bg-gradient-to-b from-gold-100/30 to-transparent dark:from-gold-700/10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-gold-700 dark:text-gold-500 font-medium mb-1.5">
+              Classe · {investments.length} ativo{investments.length !== 1 ? "s" : ""}
+            </div>
+            <h2 className="font-display text-[26px] tracking-[-0.025em] text-foreground">
+              Renda <em className="italic">variável</em>
+            </h2>
+            <p className="text-[12.5px] text-muted-foreground mt-1">
+              Ações, FIIs, ETFs e cripto — cotação ao vivo via brapi.dev, dividendos pela média 12m.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint-foreground font-medium">
+              A mercado
+            </div>
+            <div className="font-mono text-[24px] tracking-[-0.025em] text-foreground mt-0.5 tabular-nums">
+              {formatMoney(valorMercado)}
+            </div>
+            {aplicado > 0 ? (
+              <div
+                className={`font-mono text-[11.5px] mt-0.5 ${
+                  ganho > 0
+                    ? "text-olive-700 dark:text-olive-500"
+                    : ganho < 0
+                      ? "text-rust-600"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {ganho >= 0 ? "+" : ""}
+                {formatMoney(ganho)} ({formatPercent(ganhoPct, 2)})
+              </div>
+            ) : null}
+          </div>
+        </div>
 
-      <Panel className="!px-0">
-        <div className="px-7">
-          <PanelHeader
-            title="Renda variável"
-            meta={`${investments.length} ativo${investments.length !== 1 ? "s" : ""} · FII, ações, ETF, cripto`}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 mt-6 pt-5 border-t border-border">
+          <MiniStat label="Aplicado (custo)" value={formatMoney(aplicado)} />
+          <MiniStat
+            label="Dividendo médio/mês"
+            value={dividendoMensal > 0 ? formatMoney(dividendoMensal) : "—"}
+            tone={dividendoMensal > 0 ? "positive" : "default"}
+          />
+          <MiniStat
+            label="DY anualizado"
+            value={dyAnnualPct > 0 ? formatPercent(dyAnnualPct, 2) : "—"}
+          />
+          <MiniStat
+            label="Variação no agregado"
+            value={ganho >= 0 ? `+${formatPercent(ganhoPct, 2)}` : formatPercent(ganhoPct, 2)}
+            tone={ganho > 0 ? "positive" : "default"}
           />
         </div>
+      </header>
 
-        <div className="overflow-x-auto px-7">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <Th>Ativo</Th>
-                <Th right>Qtd</Th>
-                <Th right>Preço médio</Th>
-                <Th right>Cotação</Th>
-                <Th right>A mercado</Th>
-                <Th right>Variação</Th>
-                <Th right>Dividendo (12m)</Th>
-                <th className="w-9" />
-                <th className="w-9" />
-              </tr>
-            </thead>
-            <tbody>
-              {investments.map((inv) => {
-                const live = liveByAssetId.get(inv.id);
-                const isCrypto = inv.asset_type === "crypto";
-                return (
-                  <tr
-                    key={inv.id}
-                    className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group"
-                  >
-                    <td className="py-3.5 pr-4 align-middle">
-                      <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em]">
-                        {inv.ticker}
-                      </div>
-                      <div className="font-mono text-[10.5px] text-faint-foreground uppercase tracking-[0.1em] mt-0.5">
-                        {ASSET_TYPE_LABELS[inv.asset_type]}
-                      </div>
-                    </td>
-                    <td className="text-right font-mono text-[12.5px]">
-                      {live?.quantity != null && live.quantity > 0 ? (
-                        <>
-                          {live.quantity.toLocaleString("pt-BR", {
-                            maximumFractionDigits: 8,
-                          })}
-                          <div className="text-faint-foreground text-[10px] mt-0.5">
-                            {isCrypto ? "un" : "cotas"}
-                          </div>
-                        </>
-                      ) : (
-                        <span className="text-faint-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="text-right font-mono text-[12.5px] text-muted-foreground">
-                      {live?.averagePrice && live.averagePrice > 0
-                        ? formatMoney(live.averagePrice)
-                        : "—"}
-                    </td>
-                    <td className="text-right font-mono text-[12.5px]">
-                      {live?.marketPrice != null ? (
-                        <>
-                          {formatMoney(live.marketPrice)}
-                          {live.marketChangePct != null &&
-                          Math.abs(live.marketChangePct) > 0.001 ? (
-                            <div
-                              className={`text-[10px] mt-0.5 ${
-                                live.marketChangePct > 0
-                                  ? "text-olive-700 dark:text-olive-500"
-                                  : "text-rust-600"
-                              }`}
-                            >
-                              {live.marketChangePct > 0 ? "+" : ""}
-                              {live.marketChangePct.toFixed(2).replace(".", ",")}% dia
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <span className="text-faint-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="text-right font-mono text-[13px] font-medium">
-                      {formatMoney(live?.marketBalance ?? Number(inv.current_balance))}
-                    </td>
-                    <td className="text-right font-mono text-[12.5px]">
-                      {live?.marketGain != null ? (
-                        <>
-                          <span
-                            className={
-                              live.marketGain > 0
-                                ? "text-olive-700 dark:text-olive-500"
-                                : live.marketGain < 0
-                                  ? "text-rust-600"
-                                  : "text-faint-foreground"
-                            }
-                          >
-                            {live.marketGain >= 0 ? "+" : ""}
-                            {formatPercent(live.marketGainPct ?? 0, 2)}
-                          </span>
+      <div className="overflow-x-auto px-7 py-2">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <Th>Ativo</Th>
+              <Th right>Qtd</Th>
+              <Th right>Preço médio</Th>
+              <Th right>Cotação</Th>
+              <Th right>A mercado</Th>
+              <Th right>Variação</Th>
+              <Th right>Dividendo (12m)</Th>
+              <th className="w-9" />
+              <th className="w-9" />
+            </tr>
+          </thead>
+          <tbody>
+            {investments.map((inv) => {
+              const live = liveByAssetId.get(inv.id);
+              const isCrypto = inv.asset_type === "crypto";
+              return (
+                <tr
+                  key={inv.id}
+                  className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group"
+                >
+                  <td className="py-3.5 pr-4 align-middle">
+                    <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em]">
+                      {inv.ticker}
+                    </div>
+                    <div className="font-mono text-[10.5px] text-faint-foreground uppercase tracking-[0.1em] mt-0.5">
+                      {ASSET_TYPE_LABELS[inv.asset_type]}
+                    </div>
+                  </td>
+                  <td className="text-right font-mono text-[12.5px]">
+                    {live?.quantity != null && live.quantity > 0 ? (
+                      <>
+                        {live.quantity.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}
+                        <div className="text-faint-foreground text-[10px] mt-0.5">
+                          {isCrypto ? "un" : "cotas"}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-faint-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="text-right font-mono text-[12.5px] text-muted-foreground">
+                    {live?.averagePrice && live.averagePrice > 0
+                      ? formatMoney(live.averagePrice)
+                      : "—"}
+                  </td>
+                  <td className="text-right font-mono text-[12.5px]">
+                    {live?.marketPrice != null ? (
+                      <>
+                        {formatMoney(live.marketPrice)}
+                        {live.marketChangePct != null &&
+                        Math.abs(live.marketChangePct) > 0.001 ? (
                           <div
-                            className={`text-[10px] mt-0.5 font-mono ${
-                              live.marketGain > 0
+                            className={`text-[10px] mt-0.5 ${
+                              live.marketChangePct > 0
                                 ? "text-olive-700 dark:text-olive-500"
-                                : live.marketGain < 0
-                                  ? "text-rust-600"
-                                  : "text-faint-foreground"
+                                : "text-rust-600"
                             }`}
                           >
-                            {live.marketGain >= 0 ? "+" : ""}
-                            {formatMoney(live.marketGain)}
+                            {live.marketChangePct > 0 ? "+" : ""}
+                            {live.marketChangePct.toFixed(2).replace(".", ",")}% dia
                           </div>
-                        </>
-                      ) : (
-                        <span className="text-faint-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="text-right pl-2">
-                      {live ? <AssetLiveCell asset={live} /> : "—"}
-                    </td>
-                    <td className="text-right pl-1">
-                      {live ? <AssetDetailPopover asset={live} /> : null}
-                    </td>
-                    <td className="text-right pl-1">
-                      <InvestmentRowActions
-                        investment={inv}
-                        investmentAccounts={investmentAccounts}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span className="text-faint-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="text-right font-mono text-[13px] font-medium tabular-nums">
+                    {formatMoney(live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance))}
+                  </td>
+                  <td className="text-right font-mono text-[12.5px]">
+                    {live?.marketGain != null ? (
+                      <>
+                        <span
+                          className={
+                            live.marketGain > 0
+                              ? "text-olive-700 dark:text-olive-500"
+                              : live.marketGain < 0
+                                ? "text-rust-600"
+                                : "text-faint-foreground"
+                          }
+                        >
+                          {live.marketGain >= 0 ? "+" : ""}
+                          {formatPercent(live.marketGainPct ?? 0, 2)}
+                        </span>
+                        <div
+                          className={`text-[10px] mt-0.5 font-mono ${
+                            live.marketGain > 0
+                              ? "text-olive-700 dark:text-olive-500"
+                              : live.marketGain < 0
+                                ? "text-rust-600"
+                                : "text-faint-foreground"
+                          }`}
+                        >
+                          {live.marketGain >= 0 ? "+" : ""}
+                          {formatMoney(live.marketGain)}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-faint-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="text-right pl-2">
+                    {live ? <AssetLiveCell asset={live} /> : "—"}
+                  </td>
+                  <td className="text-right pl-1">
+                    {live ? <AssetDetailPopover asset={live} /> : null}
+                  </td>
+                  <td className="text-right pl-1">
+                    <InvestmentRowActions
+                      investment={inv}
+                      investmentAccounts={investmentAccounts}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -208,38 +229,27 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
   );
 }
 
-function Stat({
+function MiniStat({
   label,
   value,
-  hint,
   tone = "default",
 }: {
   label: string;
   value: string;
-  hint?: string;
-  tone?: "default" | "positive" | "negative";
+  tone?: "default" | "positive";
 }) {
   return (
-    <div className="rounded-[var(--radius)] bg-surface border border-border px-4 py-3">
-      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+    <div>
+      <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
         {label}
       </div>
-      <div className="mt-1 font-mono text-[17px] tracking-[-0.02em] text-foreground">
+      <div
+        className={`font-mono text-[14px] tracking-[-0.01em] mt-0.5 tabular-nums ${
+          tone === "positive" ? "text-olive-700 dark:text-olive-500" : "text-foreground"
+        }`}
+      >
         {value}
       </div>
-      {hint ? (
-        <div
-          className={`mt-0.5 font-mono text-[11px] ${
-            tone === "positive"
-              ? "text-olive-700 dark:text-olive-500"
-              : tone === "negative"
-                ? "text-rust-600"
-                : "text-muted-foreground"
-          }`}
-        >
-          {hint}
-        </div>
-      ) : null}
     </div>
   );
 }

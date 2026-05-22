@@ -28,13 +28,17 @@ export type LiveInvestmentInput = {
   initial_amount: number;
   /** Quantidade derivada dos lotes (investment_movements). null pra renda fixa. */
   quantity: number | null;
+  purchase_date: string;
+  last_yield_at: string | null;
 };
 
 export type LiveAssetMetrics = {
   id: string;
   ticker: string;
-  /** saldo persistido (atualizado pelo cron diário) */
+  /** saldo derivado (composto desde o checkpoint) — é o que a UI mostra */
   baseBalance: number;
+  /** saldo persistido bruto (current_balance do banco) — só pra debug */
+  checkpointBalance: number;
   /** saldo a valor de mercado (brapi) — só pra FIIs/ações/ETFs */
   marketBalance: number | null;
   /** preço médio = initial_amount / quantity */
@@ -74,6 +78,7 @@ export type LivePortfolio = {
 };
 
 const SECONDS_PER_UTIL_DAY = 28800; // 8h * 3600
+const DAY_MS = 86400000;
 
 /**
  * Rendimento diário composto (base 252 dias úteis) a partir de uma taxa anual.
@@ -90,15 +95,43 @@ function ipcaMonthlyToAnnual(monthlyPct: number): number {
   return (Math.pow(1 + monthlyPct / 100, 12) - 1) * 100;
 }
 
+/**
+ * Dias úteis aproximados entre `fromISO` e agora (5/7 dos dias corridos).
+ */
+function businessDaysSince(fromISO: string, now: Date): number {
+  const from = new Date(fromISO + "T00:00:00Z");
+  const totalDays = Math.floor((now.getTime() - from.getTime()) / DAY_MS);
+  if (totalDays <= 0) return 0;
+  return Math.floor(totalDays * (5 / 7));
+}
+
+/**
+ * Saldo coerente "agora" para renda fixa indexada/prefixada:
+ *   checkpoint × (1 + daily)^dias_úteis_desde_checkpoint
+ * `current_balance` é só a foto da última vez que o cron rodou (ou da compra).
+ */
+function deriveCheckpointBalance(
+  currentBalance: number,
+  lastYieldAt: string | null,
+  purchaseDate: string,
+  dailyRate: number,
+  now: Date,
+): number {
+  if (dailyRate <= 0) return currentBalance;
+  const ref = lastYieldAt ?? purchaseDate;
+  const days = businessDaysSince(ref, now);
+  if (days <= 0) return currentBalance;
+  return currentBalance * Math.pow(1 + dailyRate, days);
+}
+
 export function computeLivePortfolio(args: {
   investments: LiveInvestmentInput[];
-  indexers: Record<IndexerCode, number | null>; // último valor disponível em %
-  /** Soma dos rendimentos líquidos dos últimos 12 meses por investment_id */
+  indexers: Record<IndexerCode, number | null>;
   yields12mByInvestmentId: Map<string, { totalNet: number; months: number }>;
-  /** Cotações ao vivo da B3 por ticker (uppercase) */
   quotes: Map<string, Quote>;
-  /** Quantidade (cotas) por investment_id, opcional. Se não houver, derivamos do current_balance dividindo pelo último preço; pra v1, usa simplesmente o ratio aplicado/atual. */
   shareCountByInvestmentId?: Map<string, number>;
+  /** Momento de referência para derivação do saldo (default: agora). */
+  now?: Date;
 }): LivePortfolio {
   const indexers = args.indexers;
   const ipcaAnnual = indexers.ipca != null ? ipcaMonthlyToAnnual(indexers.ipca) : null;
@@ -115,9 +148,11 @@ export function computeLivePortfolio(args: {
   let totalMarketBalance = 0;
   let totalDailyYield = 0;
 
+  const now = args.now ?? new Date();
+
   for (const inv of args.investments) {
-    const baseBalance = Number(inv.current_balance ?? 0);
-    totalBaseBalance += baseBalance;
+    const checkpointBalance = Number(inv.current_balance ?? 0);
+    let derivedBalance = checkpointBalance;
 
     let dailyYield = 0;
     let source = "—";
@@ -137,9 +172,16 @@ export function computeLivePortfolio(args: {
       indexers[inv.indexer] != null
     ) {
       const multiplier = Number(inv.indexer_multiplier ?? 1);
-      const effectiveAnnual = (indexers[inv.indexer]! * multiplier);
+      const effectiveAnnual = indexers[inv.indexer]! * multiplier;
       const dailyRate = dailyFromAnnualPct(effectiveAnnual);
-      dailyYield = baseBalance * dailyRate;
+      derivedBalance = deriveCheckpointBalance(
+        checkpointBalance,
+        inv.last_yield_at,
+        inv.purchase_date,
+        dailyRate,
+        now,
+      );
+      dailyYield = derivedBalance * dailyRate;
       source = `${Math.round(multiplier * 100)}% ${inv.indexer.toUpperCase()} (${effectiveAnnual.toFixed(2)}% a.a.)`;
     }
     // ============================================================
@@ -147,7 +189,14 @@ export function computeLivePortfolio(args: {
     // ============================================================
     else if (inv.indexer === "fixed" && inv.fixed_rate != null) {
       const dailyRate = dailyFromAnnualPct(Number(inv.fixed_rate));
-      dailyYield = baseBalance * dailyRate;
+      derivedBalance = deriveCheckpointBalance(
+        checkpointBalance,
+        inv.last_yield_at,
+        inv.purchase_date,
+        dailyRate,
+        now,
+      );
+      dailyYield = derivedBalance * dailyRate;
       source = `Prefixado ${inv.fixed_rate}% a.a.`;
     }
     // ============================================================
@@ -155,11 +204,17 @@ export function computeLivePortfolio(args: {
     // ============================================================
     else if (inv.indexer === "ipca" && ipcaAnnual != null) {
       const spread = Number(inv.fixed_rate ?? 0);
-      // Efetiva ≈ (1 + ipca_anual/100) × (1 + spread/100) − 1
       const effectiveAnnual =
         ((1 + ipcaAnnual / 100) * (1 + spread / 100) - 1) * 100;
       const dailyRate = dailyFromAnnualPct(effectiveAnnual);
-      dailyYield = baseBalance * dailyRate;
+      derivedBalance = deriveCheckpointBalance(
+        checkpointBalance,
+        inv.last_yield_at,
+        inv.purchase_date,
+        dailyRate,
+        now,
+      );
+      dailyYield = derivedBalance * dailyRate;
       source = `IPCA + ${spread.toFixed(2)}% (≈${effectiveAnnual.toFixed(2)}% a.a.)`;
     }
     // ============================================================
@@ -192,26 +247,27 @@ export function computeLivePortfolio(args: {
 
     const perSecond = dailyYield / SECONDS_PER_UTIL_DAY;
     totalDailyYield += dailyYield;
-    totalMarketBalance += marketBalance ?? baseBalance;
+    totalBaseBalance += derivedBalance;
+    totalMarketBalance += marketBalance ?? derivedBalance;
 
-    // Bucket por classe
+    // Bucket por classe — saldo da renda fixa usa derivedBalance
     if (
       inv.asset_type === "fixed_income_public" ||
       inv.asset_type === "fixed_income_private"
     ) {
-      byClass.fixedIncome.balance += baseBalance;
+      byClass.fixedIncome.balance += derivedBalance;
       byClass.fixedIncome.dailyYield += dailyYield;
       byClass.fixedIncome.perSecond += perSecond;
     } else if (inv.asset_type === "fii") {
-      byClass.fiis.balance += marketBalance ?? baseBalance;
+      byClass.fiis.balance += marketBalance ?? derivedBalance;
       byClass.fiis.dailyYield += dailyYield;
       byClass.fiis.perSecond += perSecond;
     } else if (inv.asset_type === "stock" || inv.asset_type === "etf") {
-      byClass.stocks.balance += marketBalance ?? baseBalance;
+      byClass.stocks.balance += marketBalance ?? derivedBalance;
       byClass.stocks.dailyYield += dailyYield;
       byClass.stocks.perSecond += perSecond;
     } else {
-      byClass.other.balance += baseBalance;
+      byClass.other.balance += derivedBalance;
     }
 
     const marketGain =
@@ -224,7 +280,8 @@ export function computeLivePortfolio(args: {
     byAsset.push({
       id: inv.id,
       ticker: inv.ticker,
-      baseBalance,
+      baseBalance: derivedBalance,
+      checkpointBalance,
       marketBalance,
       averagePrice,
       quantity,

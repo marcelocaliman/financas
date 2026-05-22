@@ -1,8 +1,7 @@
-import { Panel, PanelHeader } from "@/components/ui/panel";
-import { Badge } from "@/components/ui/badge";
 import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
+import { Badge } from "@/components/ui/badge";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { ASSET_TYPE_LABELS, type Investment } from "@/services/investments";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
@@ -20,9 +19,15 @@ export function FixedIncomeTable({
 }) {
   if (investments.length === 0) return null;
 
-  // KPIs de renda fixa
-  const aplicado = investments.reduce((s, i) => s + Number(i.initial_amount ?? 0), 0);
-  const saldo = investments.reduce((s, i) => s + Number(i.current_balance ?? 0), 0);
+  // KPIs usam saldo DERIVADO (composto desde a compra), não o checkpoint
+  const aplicado = investments.reduce(
+    (s, i) => s + Number(i.initial_amount ?? 0),
+    0,
+  );
+  const saldo = investments.reduce(
+    (s, i) => s + (liveByAssetId.get(i.id)?.baseBalance ?? Number(i.current_balance)),
+    0,
+  );
   const ganho = saldo - aplicado;
   const ganhoPct = aplicado > 0 ? ganho / aplicado : 0;
   const rendaDiaria = investments.reduce(
@@ -32,122 +37,150 @@ export function FixedIncomeTable({
   const rendaMensal = rendaDiaria * 21;
 
   return (
-    <section className="mb-7">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-        <Stat label="Aplicado" value={formatMoney(aplicado)} />
-        <Stat
-          label="Saldo atual"
-          value={formatMoney(saldo)}
-          hint={
-            ganho >= 0
-              ? `+${formatMoney(ganho)} (${formatPercent(ganhoPct, 1)})`
-              : `${formatMoney(ganho)} (${formatPercent(ganhoPct, 1)})`
-          }
-          tone={ganho > 0 ? "positive" : ganho < 0 ? "negative" : "default"}
-        />
-        <Stat
-          label="Renda diária est."
-          value={formatMoney(rendaDiaria)}
-          tone={rendaDiaria > 0 ? "positive" : "default"}
-        />
-        <Stat
-          label="Renda mensal est."
-          value={formatMoney(rendaMensal)}
-          tone={rendaMensal > 0 ? "positive" : "default"}
-        />
-      </div>
+    <section className="rounded-[var(--radius-xl)] border border-border bg-surface mb-8 overflow-hidden">
+      {/* Header da ilha */}
+      <header className="px-7 pt-7 pb-6 border-b border-border bg-gradient-to-b from-navy-50/40 to-transparent dark:from-navy-900/20">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-700 dark:text-navy-300 font-medium mb-1.5">
+              Classe · {investments.length} ativo{investments.length !== 1 ? "s" : ""}
+            </div>
+            <h2 className="font-display text-[26px] tracking-[-0.025em] text-foreground">
+              Renda <em className="italic">fixa</em>
+            </h2>
+            <p className="text-[12.5px] text-muted-foreground mt-1">
+              Tesouro, CDB, LCI, LCA — rendimento composto pela Selic/CDI/IPCA do BCB.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint-foreground font-medium">
+              Saldo total
+            </div>
+            <div className="font-mono text-[24px] tracking-[-0.025em] text-foreground mt-0.5 tabular-nums">
+              {formatMoney(saldo)}
+            </div>
+            {aplicado > 0 ? (
+              <div
+                className={`font-mono text-[11.5px] mt-0.5 ${
+                  ganho > 0
+                    ? "text-olive-700 dark:text-olive-500"
+                    : ganho < 0
+                      ? "text-rust-600"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {ganho >= 0 ? "+" : ""}
+                {formatMoney(ganho)} ({formatPercent(ganhoPct, 2)})
+              </div>
+            ) : null}
+          </div>
+        </div>
 
-      <Panel className="!px-0">
-        <div className="px-7">
-          <PanelHeader
-            title="Renda fixa"
-            meta={`${investments.length} ativo${investments.length !== 1 ? "s" : ""} · Tesouro, CDB, LCI, LCA…`}
+        {/* KPIs internos */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 mt-6 pt-5 border-t border-border">
+          <MiniStat label="Aplicado" value={formatMoney(aplicado)} />
+          <MiniStat
+            label="Renda diária"
+            value={formatMoney(rendaDiaria)}
+            tone={rendaDiaria > 0 ? "positive" : "default"}
+          />
+          <MiniStat
+            label="Renda mensal estimada"
+            value={formatMoney(rendaMensal)}
+            tone={rendaMensal > 0 ? "positive" : "default"}
+          />
+          <MiniStat
+            label="Renda anual estimada"
+            value={formatMoney(rendaDiaria * 252)}
+            tone={rendaDiaria > 0 ? "positive" : "default"}
           />
         </div>
+      </header>
 
-        <div className="overflow-x-auto px-7">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <Th>Ativo</Th>
-                <Th right>Aplicado</Th>
-                <Th right>Saldo atual</Th>
-                <Th right>Variação</Th>
-                <Th right>Indexador</Th>
-                <Th right>Rendendo hoje</Th>
-                <th className="w-9" />
-                <th className="w-9" />
-              </tr>
-            </thead>
-            <tbody>
-              {investments.map((inv) => {
-                const live = liveByAssetId.get(inv.id);
-                const delta = Number(inv.current_balance) - Number(inv.initial_amount);
-                const deltaPct =
-                  Number(inv.initial_amount) > 0 ? delta / Number(inv.initial_amount) : 0;
-                return (
-                  <tr
-                    key={inv.id}
-                    className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group"
-                  >
-                    <td className="py-3.5 pr-4 align-middle">
-                      <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
-                        {live && live.dailyYield > 0 ? (
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
-                        ) : null}
-                        {inv.ticker}
-                      </div>
-                      <div className="font-mono text-[10.5px] text-faint-foreground uppercase tracking-[0.1em] mt-0.5">
-                        {ASSET_TYPE_LABELS[inv.asset_type]}
-                      </div>
-                    </td>
-                    <td className="text-right font-mono text-[13px] text-muted-foreground">
-                      {formatMoney(inv.initial_amount)}
-                    </td>
-                    <td className="text-right font-mono text-[13px] font-medium">
-                      {formatMoney(inv.current_balance)}
-                    </td>
-                    <td className="text-right font-mono text-[12.5px]">
-                      {delta > 0 ? (
-                        <span className="text-olive-700 dark:text-olive-500">
-                          +{formatPercent(deltaPct, 2)}
-                        </span>
-                      ) : delta < 0 ? (
-                        <span className="text-rust-600">{formatPercent(deltaPct, 2)}</span>
-                      ) : (
-                        <span className="text-faint-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="text-right">
-                      <Badge tone="navy">
-                        {inv.indexer === "selic" || inv.indexer === "cdi"
-                          ? `${Math.round((Number(inv.indexer_multiplier ?? 1)) * 100)}% ${inv.indexer.toUpperCase()}`
-                          : inv.indexer === "fixed"
-                            ? `${inv.fixed_rate ?? 0}% a.a.`
-                            : inv.indexer === "ipca"
-                              ? `IPCA + ${inv.fixed_rate ?? 0}%`
-                              : "—"}
-                      </Badge>
-                    </td>
-                    <td className="text-right pl-2">
-                      {live ? <AssetLiveCell asset={live} /> : "—"}
-                    </td>
-                    <td className="text-right pl-1">
-                      {live ? <AssetDetailPopover asset={live} /> : null}
-                    </td>
-                    <td className="text-right pl-1">
-                      <InvestmentRowActions
-                        investment={inv}
-                        investmentAccounts={investmentAccounts}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+      {/* Tabela */}
+      <div className="overflow-x-auto px-7 py-2">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <Th>Ativo</Th>
+              <Th right>Aplicado</Th>
+              <Th right>Saldo atual</Th>
+              <Th right>Variação</Th>
+              <Th right>Indexador</Th>
+              <Th right>Rendendo hoje</Th>
+              <th className="w-9" />
+              <th className="w-9" />
+            </tr>
+          </thead>
+          <tbody>
+            {investments.map((inv) => {
+              const live = liveByAssetId.get(inv.id);
+              const saldo = live?.baseBalance ?? Number(inv.current_balance);
+              const delta = saldo - Number(inv.initial_amount);
+              const deltaPct =
+                Number(inv.initial_amount) > 0 ? delta / Number(inv.initial_amount) : 0;
+              return (
+                <tr
+                  key={inv.id}
+                  className="border-b border-border last:border-b-0 hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors group"
+                >
+                  <td className="py-3.5 pr-4 align-middle">
+                    <div className="font-mono text-[13.5px] font-medium tracking-[-0.01em] flex items-center gap-2">
+                      {live && live.dailyYield > 0 ? (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+                      ) : null}
+                      {inv.ticker}
+                    </div>
+                    <div className="font-mono text-[10.5px] text-faint-foreground uppercase tracking-[0.1em] mt-0.5">
+                      {ASSET_TYPE_LABELS[inv.asset_type]}
+                    </div>
+                  </td>
+                  <td className="text-right font-mono text-[13px] text-muted-foreground">
+                    {formatMoney(inv.initial_amount)}
+                  </td>
+                  <td className="text-right font-mono text-[13px] font-medium tabular-nums">
+                    {formatMoney(saldo)}
+                  </td>
+                  <td className="text-right font-mono text-[12.5px]">
+                    {delta > 0.005 ? (
+                      <span className="text-olive-700 dark:text-olive-500">
+                        +{formatPercent(deltaPct, 2)}
+                      </span>
+                    ) : delta < -0.005 ? (
+                      <span className="text-rust-600">{formatPercent(deltaPct, 2)}</span>
+                    ) : (
+                      <span className="text-faint-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="text-right">
+                    <Badge tone="navy">
+                      {inv.indexer === "selic" || inv.indexer === "cdi"
+                        ? `${Math.round((Number(inv.indexer_multiplier ?? 1)) * 100)}% ${inv.indexer.toUpperCase()}`
+                        : inv.indexer === "fixed"
+                          ? `${inv.fixed_rate ?? 0}% a.a.`
+                          : inv.indexer === "ipca"
+                            ? `IPCA + ${inv.fixed_rate ?? 0}%`
+                            : "—"}
+                    </Badge>
+                  </td>
+                  <td className="text-right pl-2">
+                    {live ? <AssetLiveCell asset={live} /> : "—"}
+                  </td>
+                  <td className="text-right pl-1">
+                    {live ? <AssetDetailPopover asset={live} /> : null}
+                  </td>
+                  <td className="text-right pl-1">
+                    <InvestmentRowActions
+                      investment={inv}
+                      investmentAccounts={investmentAccounts}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -162,38 +195,27 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
   );
 }
 
-function Stat({
+function MiniStat({
   label,
   value,
-  hint,
   tone = "default",
 }: {
   label: string;
   value: string;
-  hint?: string;
-  tone?: "default" | "positive" | "negative";
+  tone?: "default" | "positive";
 }) {
   return (
-    <div className="rounded-[var(--radius)] bg-surface border border-border px-4 py-3">
-      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+    <div>
+      <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
         {label}
       </div>
-      <div className="mt-1 font-mono text-[17px] tracking-[-0.02em] text-foreground">
+      <div
+        className={`font-mono text-[14px] tracking-[-0.01em] mt-0.5 tabular-nums ${
+          tone === "positive" ? "text-olive-700 dark:text-olive-500" : "text-foreground"
+        }`}
+      >
         {value}
       </div>
-      {hint ? (
-        <div
-          className={`mt-0.5 font-mono text-[11px] ${
-            tone === "positive"
-              ? "text-olive-700 dark:text-olive-500"
-              : tone === "negative"
-                ? "text-rust-600"
-                : "text-muted-foreground"
-          }`}
-        >
-          {hint}
-        </div>
-      ) : null}
     </div>
   );
 }
