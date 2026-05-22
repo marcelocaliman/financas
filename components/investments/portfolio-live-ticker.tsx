@@ -30,7 +30,6 @@ export function PortfolioLiveTicker({
   variant?: "compact" | "full";
 }) {
   const [now, setNow] = useState(() => Date.now());
-  const [mountedAt] = useState(() => Date.now());
   const displayCurrency = useDisplayCurrency();
   const comparisonCurrency = useComparisonCurrency();
   const { rates } = useMoneyContext();
@@ -41,10 +40,11 @@ export function PortfolioLiveTicker({
     return () => clearInterval(id);
   }, []);
 
-  const elapsedSinceMount = (now - mountedAt) / 1000;
   const ratio = dayUtilizationRatio(new Date(now));
-  const accumulatedToday =
-    portfolio.totalDailyYield * ratio + portfolio.totalPerSecond * elapsedSinceMount;
+  // accumulated = dailyYield × ratio. Cresce naturalmente até dailyYield às
+  // 18h BRT. Antes somávamos `+ perSecond * elapsed`, mas perSecond e
+  // ratio crescem à mesma taxa — dobrava o resultado e sem cap.
+  const accumulatedToday = portfolio.totalDailyYield * ratio;
   const ratioMarket = portfolio.totalMarketBalance / Math.max(1, portfolio.totalBaseBalance);
 
   // Comparação — converte accumulatedToday e patrimônio pra moeda de comparação
