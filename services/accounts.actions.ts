@@ -115,6 +115,67 @@ export async function restoreAccount(id: string): Promise<{ ok?: boolean; error?
 }
 
 /**
+ * Ajusta o saldo criando uma transação de reconciliação (income/expense).
+ * Mantém auditoria — não sobrescreve current_balance direto.
+ */
+export async function adjustAccountBalance(
+  formData: FormData,
+): Promise<{ ok?: boolean; error?: string }> {
+  const accountId = String(formData.get("accountId") ?? "");
+  const targetBalance = Number(formData.get("targetBalance") ?? "NaN");
+  const notes = String(formData.get("notes") ?? "").trim();
+
+  if (!accountId || !z.string().uuid().safeParse(accountId).success) {
+    return { error: "Conta inválida." };
+  }
+  if (!Number.isFinite(targetBalance)) {
+    return { error: "Saldo informado inválido." };
+  }
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const supabase = await createClient();
+  const { data: acc, error: accErr } = await supabase
+    .from("accounts")
+    .select("id, name, current_balance")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (accErr || !acc) return { error: "Conta não encontrada." };
+
+  const current = Number(acc.current_balance);
+  const delta = Math.round((targetBalance - current) * 100) / 100;
+  if (delta === 0) return { ok: true };
+
+  const kind = delta > 0 ? "income" : "expense";
+  const amount = Math.abs(delta);
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const { error: txErr } = await supabase.from("transactions").insert({
+    household_id: ctx.household.id,
+    account_id: accountId,
+    kind,
+    amount,
+    description: notes || `Ajuste de saldo · ${acc.name}`,
+    date: today,
+    created_by: ctx.profile.id,
+    category_source: "manual",
+    metadata: { adjust: true, previous_balance: current, target_balance: targetBalance },
+  });
+  if (txErr) return { error: txErr.message };
+
+  revalidatePath("/contas");
+  revalidatePath("/dashboard");
+  revalidatePath("/transacoes");
+  return { ok: true };
+}
+
+/**
  * Deleta a conta DEFINITIVAMENTE.
  * Falha se houver transações ou investimentos atrelados (FK restrict).
  * Use archive para o caso geral; este só pra contas vazias criadas por engano.

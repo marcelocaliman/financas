@@ -145,7 +145,7 @@ export function AddTransactionDialog({
             />
 
             <Field htmlFor="amount" label="Valor">
-              <MoneyInput name="amount" id="amount" autoFocus />
+              <MoneyInput name="amount" id="amount" autoFocus size="lg" />
               {state?.fieldErrors?.amount ? (
                 <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.amount}</p>
               ) : null}

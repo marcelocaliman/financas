@@ -79,6 +79,7 @@ export function IntentActions({
               defaultValue={suggestedAmount}
               onValueChange={setAmount}
               autoFocus
+              size="lg"
             />
           </Field>
           <DialogFooter>

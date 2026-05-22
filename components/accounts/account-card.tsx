@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Archive, RotateCcw, Trash2 } from "lucide-react";
+import { Pencil, Archive, RotateCcw, Scale, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/services/accounts.actions";
 import type { AccountType, Tables } from "@/types/database";
 import { AccountSheet } from "./account-sheet";
+import { BalanceAdjustDialog } from "./balance-adjust-dialog";
 
 type Account = Tables<"accounts">;
 
@@ -28,6 +29,7 @@ const TYPE_LABELS: Record<AccountType, string> = {
 
 export function AccountCard({ account }: { account: Account }) {
   const [editing, setEditing] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const handleArchive = () => {
@@ -95,9 +97,15 @@ export function AccountCard({ account }: { account: Account }) {
             <RowActionsMenu
               actions={[
                 {
-                  label: "Editar",
+                  label: "Editar nome/tipo",
                   icon: <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />,
                   onSelect: () => setEditing(true),
+                  disabled: pending,
+                },
+                {
+                  label: "Ajustar saldo",
+                  icon: <Scale className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: () => setAdjusting(true),
                   disabled: pending,
                 },
                 {
@@ -147,7 +155,10 @@ export function AccountCard({ account }: { account: Account }) {
       </div>
 
       {account.is_active ? (
-        <AccountSheet open={editing} onOpenChange={setEditing} account={account} />
+        <>
+          <AccountSheet open={editing} onOpenChange={setEditing} account={account} />
+          <BalanceAdjustDialog open={adjusting} onOpenChange={setAdjusting} account={account} />
+        </>
       ) : null}
     </>
   );
