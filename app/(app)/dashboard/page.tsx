@@ -1,13 +1,12 @@
-import { Calendar } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
-import { Button } from "@/components/ui/button";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { CoverageLiveAccrued } from "@/components/dashboard/coverage-live-accrued";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
 import { InsightCard } from "@/components/dashboard/insight-card";
+import { MonthSwitcher } from "@/components/dashboard/month-switcher";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals } from "@/services/accounts";
@@ -27,21 +26,34 @@ import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+type SearchParams = { month?: string };
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+
+  const params = await searchParams;
+  const monthParam = params.month; // YYYY-MM ou undefined
 
   const firstName = ctx.profile.display_name.split(" ")[0];
   const now = new Date();
   const greeting = getGreeting(now);
 
+  const { daysElapsed, daysInMonth, ratio, position } = monthProgress(monthParam, now);
+  const isCurrent = position === "current";
+
   const [summary, breakdown, latest, totals, anomalies, portfolio, coverage, live, physical] =
     await Promise.all([
-      getMonthlySummary(),
-      getCategoryBreakdown(undefined, "expense"),
-      listTransactions({ pageSize: 6 }),
+      getMonthlySummary(monthParam),
+      getCategoryBreakdown(monthParam, "expense"),
+      listTransactions({ month: monthParam, pageSize: 6 }),
       getAccountsTotals(),
-      detectExpenseAnomalies(),
+      // Anomalias só fazem sentido no mês corrente (compara com 3 meses anteriores)
+      isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
       getPortfolioStats(),
       getCoverage(),
       getLivePortfolio(),
@@ -50,32 +62,40 @@ export default async function DashboardPage() {
 
   // Patrimônio total SEM dupla contagem:
   //   contas líquidas (excluindo caixa de corretora) + investimentos + bens físicos
+  // O patrimônio é "agora", não muda com o mês selecionado.
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
 
-  const { label: monthLabel } = monthRange();
-  const { daysElapsed, daysInMonth, ratio } = monthProgress(now);
+  const { label: monthLabel, from } = monthRange(monthParam);
+  const currentMonth = from.slice(0, 7);
   const projection = projectMonthEnd(summary.income, summary.expense, daysElapsed, daysInMonth);
   const expenseVsIncome =
     summary.income > 0 ? summary.expense / summary.income : summary.expense > 0 ? 2 : 0;
 
+  const subtitle = isCurrent
+    ? "O pulso do mês — sobra projetada, ritmo de gasto e o respiro do patrimônio."
+    : position === "past"
+      ? "Retrospectiva — receitas, despesas e o que sobrou."
+      : "Mês futuro — só aparece o que já foi materializado pelas recorrências.";
+
   return (
     <>
       <PageHeader
-        eyebrow={`${formatDateFull(now)} · ${formatTime(now)}`}
+        eyebrow={isCurrent ? `${formatDateFull(now)} · ${formatTime(now)}` : "Visão de mês"}
         title={
           <>
             {greeting},{" "}
             <em className="not-italic font-display italic text-navy-700">{firstName}.</em>
           </>
         }
-        subtitle="O pulso do mês — sobra projetada, ritmo de gasto e o respiro do patrimônio."
+        subtitle={subtitle}
         actions={
           <>
-            <Button variant="secondary" disabled>
-              <Calendar className="w-3.5 h-3.5" strokeWidth={1.7} />
-              {monthLabel.split(" ")[0]}
-            </Button>
+            <MonthSwitcher
+              currentMonth={currentMonth}
+              isCurrent={isCurrent}
+              label={monthLabel.split(" ")[0]}
+            />
             <QuickAddTrigger />
           </>
         }

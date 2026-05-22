@@ -29,14 +29,22 @@ export function projectMonthEnd(
 }
 
 /**
- * Calcula a parcela do mês corrente já transcorrida (0 a 1).
- * Usado pra renderizar a régua editorial "47% do mês transcorrido".
+ * Calcula quanto de um mês já transcorreu (0 a 1).
+ *  - Mês corrente: usa o dia de hoje.
+ *  - Mês passado: ratio = 1 (mês completo).
+ *  - Mês futuro: ratio = 0.
+ *
+ * `targetMonth` no formato "YYYY-MM". Se omitido, usa o mês corrente.
  */
-export function monthProgress(now: Date = new Date()): {
+export function monthProgress(
+  targetMonth?: string,
+  now: Date = new Date(),
+): {
   elapsed: number;
   daysElapsed: number;
   daysInMonth: number;
   ratio: number;
+  position: "past" | "current" | "future";
 } {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -44,13 +52,33 @@ export function monthProgress(now: Date = new Date()): {
     month: "2-digit",
     day: "2-digit",
   });
-  const [y, m, d] = fmt.format(now).split("-").map(Number);
+  const [ty, tm, td] = fmt.format(now).split("-").map(Number);
+
+  let y = ty;
+  let m = tm;
+  if (targetMonth) {
+    const [py, pm] = targetMonth.split("-").map(Number);
+    y = py;
+    m = pm;
+  }
+
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const sameYearMonth = y === ty && m === tm;
+  const isPast = y < ty || (y === ty && m < tm);
+  const position: "past" | "current" | "future" = sameYearMonth
+    ? "current"
+    : isPast
+      ? "past"
+      : "future";
+
+  const daysElapsed = sameYearMonth ? td : isPast ? daysInMonth : 0;
+
   return {
-    elapsed: d,
-    daysElapsed: d,
+    elapsed: daysElapsed,
+    daysElapsed,
     daysInMonth,
-    ratio: d / daysInMonth,
+    ratio: daysElapsed / daysInMonth,
+    position,
   };
 }
 
