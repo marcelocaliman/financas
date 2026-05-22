@@ -38,6 +38,8 @@ export type Indexer = "selic" | "cdi" | "ipca" | "fixed" | "none";
 export type IndexerCode = "selic" | "cdi" | "ipca";
 export type TaxRegime = "regressive" | "exempt";
 export type YieldSource = "manual" | "calculated" | "imported";
+export type YieldRuleMode = "reinvest" | "fixed_amount" | "percentage";
+export type RedemptionStatus = "pending" | "executed" | "skipped";
 
 export interface Database {
   public: {
@@ -404,6 +406,93 @@ export interface Database {
           },
         ];
       };
+      yield_rules: {
+        Row: {
+          id: string;
+          household_id: string;
+          investment_id: string;
+          destination_account_id: string;
+          mode: YieldRuleMode;
+          suggested_amount: number | null;
+          percentage: number | null;
+          day_of_month: number;
+          is_active: boolean;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          investment_id: string;
+          destination_account_id: string;
+          mode: YieldRuleMode;
+          suggested_amount?: number | null;
+          percentage?: number | null;
+          day_of_month: number;
+          is_active?: boolean;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["yield_rules"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "yield_rules_investment_id_fkey";
+            columns: ["investment_id"];
+            isOneToOne: false;
+            referencedRelation: "investments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "yield_rules_destination_account_id_fkey";
+            columns: ["destination_account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      redemption_intents: {
+        Row: {
+          id: string;
+          household_id: string;
+          yield_rule_id: string;
+          due_date: string;
+          status: RedemptionStatus;
+          suggested_amount: number;
+          executed_amount: number | null;
+          transfer_pair_id: string | null;
+          notes: string | null;
+          decided_at: string | null;
+          decided_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          yield_rule_id: string;
+          due_date: string;
+          status?: RedemptionStatus;
+          suggested_amount: number;
+          executed_amount?: number | null;
+          transfer_pair_id?: string | null;
+          notes?: string | null;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["redemption_intents"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "redemption_intents_yield_rule_id_fkey";
+            columns: ["yield_rule_id"];
+            isOneToOne: false;
+            referencedRelation: "yield_rules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -444,6 +533,18 @@ export interface Database {
       apply_daily_yield: {
         Args: { p_investment_id: string };
         Returns: number;
+      };
+      ensure_pending_intents: {
+        Args: { p_months_ahead?: number };
+        Returns: number;
+      };
+      execute_redemption: {
+        Args: { p_intent_id: string; p_amount: number };
+        Returns: string;
+      };
+      skip_redemption: {
+        Args: { p_intent_id: string };
+        Returns: void;
       };
     };
     Enums: { [_ in never]: never };
