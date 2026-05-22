@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
 import { deleteTransaction } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
+import { convert, formatCurrency } from "@/lib/financial/currency";
+import { useMoneyContext } from "@/components/ui/money-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
 
@@ -37,7 +39,14 @@ export function TransactionRow({
     });
   };
 
-  const { integer, cents } = formatMoneyParts(tx.amount);
+  const { displayCurrency, rates } = useMoneyContext();
+  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+  const convertedAmount = convert(Number(tx.amount), txCurrency, displayCurrency, rates) ?? Number(tx.amount);
+  const finalCurrency = txCurrency !== displayCurrency && convertedAmount !== Number(tx.amount)
+    ? displayCurrency
+    : txCurrency;
+  const { integer, cents, currency: symbol } = formatMoneyParts(convertedAmount, finalCurrency);
+  const showSecondary = txCurrency !== finalCurrency;
   const isIncome = tx.kind === "income";
   const isTransfer = tx.kind === "transfer";
 
@@ -91,14 +100,21 @@ export function TransactionRow({
           )}
         </td>
         <td className="py-3.5 align-middle text-right whitespace-nowrap">
-          <span
-            className={cn(
-              "font-mono text-[14px] font-medium tracking-[-0.005em]",
-              valueClass,
-            )}
-          >
-            {valuePrefix}R$ {integer},{cents}
-          </span>
+          <div className="flex flex-col items-end leading-tight">
+            <span
+              className={cn(
+                "font-mono text-[14px] font-medium tracking-[-0.005em]",
+                valueClass,
+              )}
+            >
+              {valuePrefix}{symbol} {integer},{cents}
+            </span>
+            {showSecondary ? (
+              <span className="font-mono text-[10.5px] text-faint-foreground tracking-[0.02em]">
+                {formatCurrency(Number(tx.amount), txCurrency)}
+              </span>
+            ) : null}
+          </div>
         </td>
         <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">

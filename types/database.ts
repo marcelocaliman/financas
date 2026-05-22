@@ -51,6 +51,7 @@ export type PhysicalAssetCategory =
   | "tools"
   | "other";
 export type DepreciationMethod = "none" | "linear";
+export type Currency = "BRL" | "EUR" | "USD";
 
 export interface Database {
   public: {
@@ -79,6 +80,7 @@ export interface Database {
           household_id: string;
           display_name: string;
           role: "admin" | "member";
+          preferences: Json;
           created_at: string;
         };
         Insert: {
@@ -86,6 +88,7 @@ export interface Database {
           household_id: string;
           display_name: string;
           role?: "admin" | "member";
+          preferences?: Json;
           created_at?: string;
         };
         Update: {
@@ -93,6 +96,7 @@ export interface Database {
           household_id?: string;
           display_name?: string;
           role?: "admin" | "member";
+          preferences?: Json;
           created_at?: string;
         };
         Relationships: [
@@ -105,6 +109,26 @@ export interface Database {
           },
         ];
       };
+      currency_rates: {
+        Row: {
+          base: Currency;
+          quote: Currency;
+          date: string;
+          rate: number;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          base: Currency;
+          quote: Currency;
+          date: string;
+          rate: number;
+          source?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["currency_rates"]["Insert"]>;
+        Relationships: [];
+      };
       accounts: {
         Row: {
           id: string;
@@ -114,6 +138,7 @@ export interface Database {
           name: string;
           color: string | null;
           current_balance: number;
+          currency: Currency;
           is_active: boolean;
           sort_order: number;
           created_at: string;
@@ -127,6 +152,7 @@ export interface Database {
           name: string;
           color?: string | null;
           current_balance?: number;
+          currency?: Currency;
           is_active?: boolean;
           sort_order?: number;
           created_at?: string;
@@ -140,6 +166,7 @@ export interface Database {
           name?: string;
           color?: string | null;
           current_balance?: number;
+          currency?: Currency;
           is_active?: boolean;
           sort_order?: number;
           created_at?: string;
@@ -220,6 +247,8 @@ export interface Database {
           category_id: string | null;
           kind: TransactionKind;
           amount: number;
+          amount_account: number;
+          currency: Currency;
           description: string;
           payment_method: PaymentMethod | null;
           date: string;
@@ -241,6 +270,8 @@ export interface Database {
           category_id?: string | null;
           kind: TransactionKind;
           amount: number;
+          amount_account?: number;
+          currency?: Currency;
           description: string;
           payment_method?: PaymentMethod | null;
           date: string;
@@ -262,6 +293,8 @@ export interface Database {
           category_id?: string | null;
           kind?: TransactionKind;
           amount?: number;
+          amount_account?: number;
+          currency?: Currency;
           description?: string;
           payment_method?: PaymentMethod | null;
           date?: string;
@@ -335,6 +368,7 @@ export interface Database {
           acquired_at: string | null;
           acquired_value: number;
           current_value: number;
+          currency: Currency;
           depreciation_method: DepreciationMethod;
           depreciation_years: number | null;
           metadata: Json;
@@ -352,6 +386,7 @@ export interface Database {
           acquired_at?: string | null;
           acquired_value?: number;
           current_value: number;
+          currency?: Currency;
           depreciation_method?: DepreciationMethod;
           depreciation_years?: number | null;
           metadata?: Json;
@@ -397,6 +432,7 @@ export interface Database {
           purchase_date: string;
           initial_amount: number;
           current_balance: number;
+          currency: Currency;
           quantity: number | null;
           tax_regime: TaxRegime;
           is_active: boolean;
@@ -418,6 +454,8 @@ export interface Database {
           purchase_date: string;
           initial_amount: number;
           current_balance?: number;
+          currency?: Currency;
+          quantity?: number | null;
           tax_regime?: TaxRegime;
           is_active?: boolean;
           last_yield_at?: string | null;
@@ -570,6 +608,7 @@ export interface Database {
           description: string | null;
           target_amount: number;
           current_amount: number;
+          currency: Currency;
           target_date: string | null;
           linked_account_id: string | null;
           is_archived: boolean;
@@ -584,6 +623,7 @@ export interface Database {
           description?: string | null;
           target_amount: number;
           current_amount?: number;
+          currency?: Currency;
           target_date?: string | null;
           linked_account_id?: string | null;
           is_archived?: boolean;

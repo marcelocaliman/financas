@@ -12,6 +12,7 @@ import {
 } from "@/services/physical-assets.actions";
 import { CATEGORY_LABELS } from "@/lib/financial/asset-categories";
 import { formatMoney } from "@/lib/utils/format";
+import { Money } from "@/components/ui/money";
 import { cn } from "@/lib/utils/cn";
 import type { Tables } from "@/types/database";
 import { PhysicalAssetSheet } from "./physical-asset-sheet";
@@ -118,14 +119,16 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
         <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
           Valor atual
         </div>
-        <div className="font-mono text-[24px] tracking-[-0.02em] mt-1 text-foreground">
-          {formatMoney(current)}
-        </div>
+        <Money
+          value={current}
+          currency={asset.currency}
+          className="text-[24px] tracking-[-0.02em] mt-1 text-foreground items-start"
+        />
 
         {acquired > 0 ? (
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] font-mono">
             <span className="text-muted-foreground">
-              Pago: {formatMoney(acquired)}
+              Pago: {formatMoney(acquired, asset.currency)}
             </span>
             {deltaPct != null && Math.abs(deltaPct) > 0.001 ? (
               <span

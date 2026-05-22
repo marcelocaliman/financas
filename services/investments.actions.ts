@@ -81,6 +81,16 @@ export async function createInvestment(
   }
 
   const supabase = await createClient();
+
+  // Investimento herda a moeda da conta. Mantém consistência sem expor
+  // um campo extra no form (decisão UX: a corretora é "onde mora o dinheiro").
+  const { data: acc } = await supabase
+    .from("accounts")
+    .select("currency")
+    .eq("id", parsed.data.accountId)
+    .maybeSingle();
+  const investmentCurrency = (acc?.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+
   const { data: created, error } = await supabase
     .from("investments")
     .insert({
@@ -95,6 +105,7 @@ export async function createInvestment(
       purchase_date: parsed.data.purchaseDate,
       initial_amount: parsed.data.initialAmount,
       current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
+      currency: investmentCurrency,
       tax_regime: parsed.data.taxRegime,
     })
     .select("id")
@@ -129,6 +140,8 @@ export async function createInvestment(
       account_id: parsed.data.accountId,
       kind: "expense",
       amount: debitAmount,
+      amount_account: debitAmount,
+      currency: investmentCurrency,
       description: `Aplicação · ${parsed.data.ticker.trim()}`,
       date: parsed.data.purchaseDate,
       created_by: ctx.profile.id,

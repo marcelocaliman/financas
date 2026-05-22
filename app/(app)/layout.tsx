@@ -5,23 +5,29 @@ import { RealtimeBridge } from "@/components/layout/realtime-bridge";
 import { QuickAddProvider } from "@/components/transactions/quick-add-context";
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
 import { QuickAddFAB } from "@/components/transactions/quick-add-fab";
+import { MoneyProvider } from "@/components/ui/money-provider";
+import { PrivacyProvider } from "@/components/ui/privacy-provider";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
 
-  const [accounts, categories] = await Promise.all([
+  const [accounts, categories, displayCurrency, rates] = await Promise.all([
     listAccounts(),
     listCategories(),
+    getDisplayCurrency(),
+    getRateMap(),
   ]);
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
     name: a.name,
     institution: a.institution,
+    currency: a.currency,
   }));
   const categoriesLite = categories.map((c) => ({
     id: c.id,
@@ -30,22 +36,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }));
 
   return (
-    <QuickAddProvider>
-      <RealtimeBridge />
-      <div className="min-h-screen flex">
-        <Sidebar
-          user={{ name: ctx.profile.display_name, email: ctx.email }}
-          householdName={ctx.household.name}
-        />
-        <div className="flex-1 min-w-0 relative">
-          <main className="max-w-[1320px] mx-auto px-5 sm:px-10 lg:px-14 pt-8 pb-28 lg:pb-20">
-            {children}
-          </main>
-          <MobileNav />
+    <MoneyProvider displayCurrency={displayCurrency} rates={rates}>
+      <PrivacyProvider>
+      <QuickAddProvider>
+        <RealtimeBridge />
+        <div className="min-h-screen flex">
+          <Sidebar
+            user={{ name: ctx.profile.display_name, email: ctx.email }}
+            householdName={ctx.household.name}
+          />
+          <div className="flex-1 min-w-0 relative">
+            <main className="max-w-[1320px] mx-auto px-5 sm:px-10 lg:px-14 pt-8 pb-28 lg:pb-20">
+              {children}
+            </main>
+            <MobileNav />
+          </div>
         </div>
-      </div>
-      <AddTransactionDialog accounts={accountsLite} categories={categoriesLite} />
-      <QuickAddFAB />
-    </QuickAddProvider>
+        <AddTransactionDialog accounts={accountsLite} categories={categoriesLite} />
+        <QuickAddFAB />
+      </QuickAddProvider>
+      </PrivacyProvider>
+    </MoneyProvider>
   );
 }

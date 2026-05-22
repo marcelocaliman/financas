@@ -23,7 +23,7 @@ import {
   updateAccount,
   type AccountFormState,
 } from "@/services/accounts.actions";
-import type { AccountType, Tables } from "@/types/database";
+import type { AccountType, Currency, Tables } from "@/types/database";
 
 type Account = Tables<"accounts">;
 
@@ -33,6 +33,12 @@ const TYPES: { value: AccountType; label: string; hint: string }[] = [
   { value: "credit_card", label: "Cartão de crédito", hint: "fatura no futuro" },
   { value: "investment", label: "Investimento", hint: "corretora, fundos" },
   { value: "cash", label: "Dinheiro", hint: "espécie" },
+];
+
+const CURRENCIES: { value: Currency; label: string }[] = [
+  { value: "BRL", label: "R$ Real (BRL)" },
+  { value: "EUR", label: "€ Euro (EUR)" },
+  { value: "USD", label: "US$ Dólar (USD)" },
 ];
 
 export function AccountSheet({
@@ -46,6 +52,7 @@ export function AccountSheet({
 }) {
   const isEdit = !!account;
   const [type, setType] = useState<AccountType>(account?.type ?? "checking");
+  const [currency, setCurrency] = useState<Currency>(account?.currency ?? "BRL");
 
   const [state, action, pending] = useActionState<AccountFormState | undefined, FormData>(
     isEdit ? updateAccount : createAccount,
@@ -56,7 +63,10 @@ export function AccountSheet({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setType(account?.type ?? "checking");
+    if (open) {
+      setType(account?.type ?? "checking");
+      setCurrency(account?.currency ?? "BRL");
+    }
   }
 
   useEffect(() => {
@@ -108,21 +118,41 @@ export function AccountSheet({
             </Field>
           </div>
 
-          <Field label="Tipo" htmlFor="type" required>
-            <Select value={type} onValueChange={(v) => setType(v as AccountType)} name="type">
-              <SelectTrigger id="type">
-                <SelectValue placeholder="Tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                    <span className="ml-2 text-faint-foreground text-[11.5px]">{t.hint}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tipo" htmlFor="type" required>
+              <Select value={type} onValueChange={(v) => setType(v as AccountType)} name="type">
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                      <span className="ml-2 text-faint-foreground text-[11.5px]">{t.hint}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Moeda" htmlFor="currency" required>
+              <Select
+                value={currency}
+                onValueChange={(v) => setCurrency(v as Currency)}
+                name="currency"
+              >
+                <SelectTrigger id="currency">
+                  <SelectValue placeholder="Moeda" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
 
           {!isEdit ? (
             <Field

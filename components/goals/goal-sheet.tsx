@@ -21,8 +21,15 @@ import {
   type GoalFormState,
 } from "@/services/goals.actions";
 import type { Goal } from "@/services/goals";
+import type { Currency } from "@/types/database";
 
 type AccountLite = { id: string; name: string; institution: string };
+
+const CURRENCIES: { value: Currency; label: string }[] = [
+  { value: "BRL", label: "R$ BRL" },
+  { value: "EUR", label: "€ EUR" },
+  { value: "USD", label: "US$ USD" },
+];
 
 export function GoalSheet({
   open,
@@ -37,6 +44,7 @@ export function GoalSheet({
 }) {
   const isEdit = !!goal;
   const [linkedAccount, setLinkedAccount] = useState(goal?.linked_account_id ?? "");
+  const [currency, setCurrency] = useState<Currency>(goal?.currency ?? "BRL");
 
   const [state, action, pending] = useActionState<GoalFormState | undefined, FormData>(
     isEdit ? updateGoal : createGoal,
@@ -46,7 +54,10 @@ export function GoalSheet({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setLinkedAccount(goal?.linked_account_id ?? "");
+    if (open) {
+      setLinkedAccount(goal?.linked_account_id ?? "");
+      setCurrency(goal?.currency ?? "BRL");
+    }
   }
 
   useEffect(() => {
@@ -90,7 +101,7 @@ export function GoalSheet({
             />
           </Field>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-[1fr_1fr_120px] gap-3">
             <Field label="Valor da meta" htmlFor="targetAmount" required>
               <MoneyInput
                 name="targetAmount"
@@ -104,6 +115,24 @@ export function GoalSheet({
                 id="currentAmount"
                 defaultValue={Number(goal?.current_amount ?? 0)}
               />
+            </Field>
+            <Field label="Moeda" htmlFor="currency">
+              <Select
+                value={currency}
+                onValueChange={(v) => setCurrency(v as Currency)}
+                name="currency"
+              >
+                <SelectTrigger id="currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
           </div>
 

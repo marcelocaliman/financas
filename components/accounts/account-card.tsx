@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
-import { formatMoney } from "@/lib/utils/format";
+import { Money } from "@/components/ui/money";
 import {
   archiveAccount,
   deleteAccount,
@@ -148,9 +148,11 @@ export function AccountCard({ account }: { account: Account }) {
           <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
             Saldo atual
           </div>
-          <div className={cn("font-mono text-[24px] tracking-[-0.02em] mt-1", balanceColor)}>
-            {formatMoney(balance)}
-          </div>
+          <Money
+            value={balance}
+            currency={account.currency}
+            className={cn("text-[24px] tracking-[-0.02em] mt-1 items-start", balanceColor)}
+          />
         </div>
       </div>
 

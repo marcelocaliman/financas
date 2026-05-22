@@ -3,54 +3,57 @@
  * Fuso e locale fixos em pt-BR / America/Sao_Paulo.
  */
 
-const BRL = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const BRL_COMPACT = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
+import { formatCurrency, formatCurrencyCompact } from "@/lib/financial/currency";
+import type { Currency } from "@/types/database";
 
 const NUM = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
 
-export function formatMoney(value: number | string | null | undefined): string {
+export function formatMoney(
+  value: number | string | null | undefined,
+  currency: Currency = "BRL",
+): string {
   if (value === null || value === undefined || value === "") return "—";
   const n = typeof value === "string" ? Number(value) : value;
   if (Number.isNaN(n)) return "—";
-  return BRL.format(n);
+  return formatCurrency(n, currency);
 }
 
+const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  BRL: "R$",
+  EUR: "€",
+  USD: "US$",
+};
+
 /**
- * Money sem o R$. Útil quando o "R$" é renderizado separado em tipografia menor.
+ * Money sem o símbolo. Útil quando o símbolo é renderizado separado em tipografia menor.
  */
-export function formatMoneyParts(value: number | string | null | undefined): {
+export function formatMoneyParts(
+  value: number | string | null | undefined,
+  currency: Currency = "BRL",
+): {
   currency: string;
   integer: string;
   cents: string;
   sign: "+" | "-" | "";
 } {
+  const symbol = CURRENCY_SYMBOLS[currency];
   if (value === null || value === undefined || value === "") {
-    return { currency: "R$", integer: "—", cents: "", sign: "" };
+    return { currency: symbol, integer: "—", cents: "", sign: "" };
   }
   const n = typeof value === "string" ? Number(value) : value;
-  if (Number.isNaN(n)) return { currency: "R$", integer: "—", cents: "", sign: "" };
+  if (Number.isNaN(n)) return { currency: symbol, integer: "—", cents: "", sign: "" };
 
   const sign = n < 0 ? "-" : "";
   const abs = Math.abs(n);
   const [int, dec = "00"] = NUM.format(abs).split(",");
-  return { currency: "R$", integer: int, cents: dec, sign };
+  return { currency: symbol, integer: int, cents: dec, sign };
 }
 
-export function formatMoneyCompact(value: number): string {
-  return BRL_COMPACT.format(value);
+export function formatMoneyCompact(value: number, currency: Currency = "BRL"): string {
+  return formatCurrencyCompact(value, currency);
 }
 
 export function formatPercent(value: number, decimals = 1): string {

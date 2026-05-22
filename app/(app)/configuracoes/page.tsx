@@ -2,8 +2,13 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserContext } from "@/services/auth";
+import { getDisplayCurrency } from "@/services/currency";
 import { signOut } from "../_actions/sign-out";
-import { HouseholdNameForm, ProfileNameForm } from "./profile-forms";
+import {
+  DisplayCurrencyForm,
+  HouseholdNameForm,
+  ProfileNameForm,
+} from "./profile-forms";
 import { ResetDataSection } from "./reset-data-section";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function ConfiguracoesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+  const displayCurrency = await getDisplayCurrency();
 
   return (
     <>
@@ -27,6 +33,14 @@ export default async function ConfiguracoesPage() {
           <div className="text-[11.5px] text-faint-foreground font-mono tracking-[0.04em] mt-5 pt-4 border-t border-border">
             ID: {ctx.authId} · Papel: {ctx.profile.role}
           </div>
+        </Panel>
+
+        <Panel>
+          <PanelHeader
+            title="Moeda de exibição"
+            meta="Como totais aparecem na home, contas e investimentos"
+          />
+          <DisplayCurrencyForm defaultValue={displayCurrency} />
         </Panel>
 
         <Panel>

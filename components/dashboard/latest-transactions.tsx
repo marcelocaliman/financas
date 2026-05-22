@@ -39,7 +39,8 @@ export function LatestTransactionsPanel({ rows }: { rows: Transaction[] }) {
 }
 
 function Row({ tx }: { tx: Transaction }) {
-  const { integer, cents } = formatMoneyParts(tx.amount);
+  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+  const { integer, cents, currency: symbol } = formatMoneyParts(tx.amount, txCurrency);
   const isIncome = tx.kind === "income";
   const isTransfer = tx.kind === "transfer";
   const prefix = isIncome ? "+ " : isTransfer ? "" : "− ";
@@ -76,7 +77,7 @@ function Row({ tx }: { tx: Transaction }) {
       </td>
       <td className="py-3.5 pr-7 align-middle text-right whitespace-nowrap">
         <span className={`font-mono text-[14px] font-medium tracking-[-0.005em] ${cls}`}>
-          {prefix}R$ {integer},{cents}
+          {prefix}{symbol} {integer},{cents}
         </span>
       </td>
     </tr>

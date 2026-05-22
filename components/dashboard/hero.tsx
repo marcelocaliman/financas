@@ -4,6 +4,9 @@ import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { RollingNumber } from "@/components/ui/rolling-number";
 import { useLiveYield } from "@/hooks/use-live-yield";
+import { useDisplayCurrency } from "@/components/ui/money-provider";
+import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import { maskMoneyString, usePrivacy } from "@/components/ui/privacy-provider";
 
 const HERO_QUOTE =
   "o dinheiro que sobra silencioso no fim do mês é o que constrói liberdade no fim da década.";
@@ -31,11 +34,16 @@ export function DashboardHero({
   liveDailyYield?: number;
   livePerSecond?: number;
 }) {
+  const displayCurrency = useDisplayCurrency();
+  const { hidden } = usePrivacy();
   const { accumulated: liveAccrued } = useLiveYield(liveDailyYield, livePerSecond);
   // Patrimônio total respira ao vivo somando o rendimento do dia até este instante
   const patrimonioLive = patrimonio + liveAccrued;
-  const { currency, integer, cents, sign } = formatMoneyParts(projectedNet);
+  const { currency, integer, cents, sign } = formatMoneyParts(projectedNet, displayCurrency);
   const positiveTrend = projectedNet >= 0;
+  const currencySymbol = CURRENCY_SYMBOLS[displayCurrency];
+  const maskedInteger = hidden ? maskMoneyString(integer) : integer;
+  const maskedCents = hidden ? maskMoneyString(cents) : cents;
 
   // Mood strip: 10 segmentos por dias do mês transcorridos.
   // Cor olive enquanto expenseRatio < 0.9; gold se passar; rust se acima de 1.
@@ -66,9 +74,9 @@ export function DashboardHero({
               <span className="text-[20px] text-navy-300 font-light">{currency}</span>
               <span className="text-[52px] sm:text-[60px] font-light leading-none tracking-[-0.04em]">
                 {sign}
-                {integer}
+                {maskedInteger}
               </span>
-              <span className="text-[24px] text-navy-300 font-light">,{cents}</span>
+              <span className="text-[24px] text-navy-300 font-light">,{maskedCents}</span>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
               <span
@@ -120,9 +128,16 @@ export function DashboardHero({
         <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-7" />
 
         <div className="grid grid-cols-3 gap-6">
-          <Stat label="Entrou" value={income} />
-          <Stat label="Saiu" value={expense} />
-          <Stat label="Patrimônio" value={patrimonioLive} accent live={liveDailyYield > 0} />
+          <Stat label="Entrou" value={income} symbol={currencySymbol} hidden={hidden} />
+          <Stat label="Saiu" value={expense} symbol={currencySymbol} hidden={hidden} />
+          <Stat
+            label="Patrimônio"
+            value={patrimonioLive}
+            accent
+            live={liveDailyYield > 0}
+            symbol={currencySymbol}
+            hidden={hidden}
+          />
         </div>
       </div>
     </section>
@@ -134,11 +149,15 @@ function Stat({
   value,
   accent,
   live,
+  symbol,
+  hidden,
 }: {
   label: string;
   value: number;
   accent?: boolean;
   live?: boolean;
+  symbol: string;
+  hidden?: boolean;
 }) {
   const fmt = new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 0,
@@ -156,10 +175,12 @@ function Stat({
         {label}
       </div>
       <div className="font-mono text-[22px] sm:text-[26px] tracking-[-0.02em] font-light text-white tabular-nums">
-        {live ? (
-          <>R$ {fmt2.format(value)}</>
+        {hidden ? (
+          <>{symbol} •••</>
+        ) : live ? (
+          <>{symbol} {fmt2.format(value)}</>
         ) : (
-          <>R$ <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} /></>
+          <>{symbol} <RollingNumber value={value} format={(n) => fmt.format(Math.round(n))} /></>
         )}
       </div>
       {accent ? (

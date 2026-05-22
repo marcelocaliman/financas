@@ -88,12 +88,12 @@ export function GoalCard({
             </div>
             <div className="flex justify-between mt-2 font-mono text-[12.5px]">
               <span className="font-medium text-foreground">
-                {formatMoney(current)}{" "}
+                {formatMoney(current, goal.currency)}{" "}
                 <span className="text-faint-foreground">
                   · {Math.round(pct * 100)}%
                 </span>
               </span>
-              <span className="text-muted-foreground">{formatMoney(target)}</span>
+              <span className="text-muted-foreground">{formatMoney(target, goal.currency)}</span>
             </div>
           </div>
         </div>
@@ -115,7 +115,7 @@ export function GoalCard({
                 ? "sem aportes recentes"
                 : eta.months === 0
                   ? "meta atingida"
-                  : `aporte médio ${formatMoney(averageMonthlyAddition)}/mês`}
+                  : `aporte médio ${formatMoney(averageMonthlyAddition, goal.currency)}/mês`}
             </div>
             {targetMonthLabel ? (
               <div className="font-mono text-[10.5px] text-faint-foreground mt-1.5">

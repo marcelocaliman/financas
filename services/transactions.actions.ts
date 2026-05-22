@@ -5,11 +5,17 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { suggestCategory } from "@/lib/financial/auto-categorize";
+import { getRateMap } from "@/services/currency";
+import { convertOrSame } from "@/lib/financial/currency";
+import type { Currency } from "@/types/database";
 
 const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD"] as const;
 
 const baseSchema = z.object({
   amount: z.coerce.number().positive("Valor precisa ser positivo."),
+  currency: z.enum(CURRENCIES).optional(),
+  amountAccount: z.coerce.number().nonnegative().optional(),
   description: z.string().min(1, "Descreva em poucas palavras."),
   accountId: z.string().uuid("Selecione uma conta."),
   categoryId: z.string().uuid().optional(),
@@ -84,6 +90,8 @@ export async function createTransaction(
   const parsed = expenseOrIncomeSchema.safeParse({
     kind,
     amount: formData.get("amount"),
+    currency: formData.get("currency") || undefined,
+    amountAccount: formData.get("amountAccount") || undefined,
     description: formData.get("description"),
     accountId: formData.get("accountId"),
     categoryId: formData.get("categoryId") || undefined,
@@ -96,6 +104,27 @@ export async function createTransaction(
   if (!ctx) return { error: "Sessão expirada." };
 
   const supabase = await createClient();
+
+  // Resolve a moeda da transação: default = moeda da conta.
+  const { data: acc } = await supabase
+    .from("accounts")
+    .select("currency")
+    .eq("id", parsed.data.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+  const txCurrency: Currency = parsed.data.currency ?? accountCurrency;
+
+  // amount_account = valor que efetivamente debita/credita a conta (sempre na moeda da conta).
+  // Se igual à moeda da transação, copia. Senão, ou o usuário forneceu, ou convertemos via taxa.
+  let amountAccount = parsed.data.amountAccount;
+  if (amountAccount === undefined || amountAccount === null) {
+    if (txCurrency === accountCurrency) {
+      amountAccount = parsed.data.amount;
+    } else {
+      const rates = await getRateMap();
+      amountAccount = convertOrSame(parsed.data.amount, txCurrency, accountCurrency, rates);
+    }
+  }
 
   // Auto-categorização: se o usuário não escolheu categoria, tentamos sugerir
   // por matching de regras nas categorias do household.
@@ -122,6 +151,8 @@ export async function createTransaction(
     category_id: resolvedCategoryId,
     kind: parsed.data.kind,
     amount: parsed.data.amount,
+    amount_account: amountAccount,
+    currency: txCurrency,
     description: parsed.data.description.trim(),
     payment_method: parsed.data.paymentMethod ?? null,
     date: parsed.data.date,
@@ -145,6 +176,8 @@ export async function updateTransaction(
     id: formData.get("id"),
     kind: formData.get("kind"),
     amount: formData.get("amount"),
+    currency: formData.get("currency") || undefined,
+    amountAccount: formData.get("amountAccount") || undefined,
     description: formData.get("description"),
     accountId: formData.get("accountId"),
     categoryId: formData.get("categoryId") || undefined,
@@ -154,6 +187,25 @@ export async function updateTransaction(
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const supabase = await createClient();
+
+  // Recalcula amount_account igual ao create.
+  const { data: acc } = await supabase
+    .from("accounts")
+    .select("currency")
+    .eq("id", parsed.data.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+  const txCurrency: Currency = parsed.data.currency ?? accountCurrency;
+  let amountAccount = parsed.data.amountAccount;
+  if (amountAccount === undefined || amountAccount === null) {
+    if (txCurrency === accountCurrency) {
+      amountAccount = parsed.data.amount;
+    } else {
+      const rates = await getRateMap();
+      amountAccount = convertOrSame(parsed.data.amount, txCurrency, accountCurrency, rates);
+    }
+  }
+
   const { error } = await supabase
     .from("transactions")
     .update({
@@ -161,6 +213,8 @@ export async function updateTransaction(
       category_id: parsed.data.categoryId ?? null,
       kind: parsed.data.kind,
       amount: parsed.data.amount,
+      amount_account: amountAccount,
+      currency: txCurrency,
       description: parsed.data.description.trim(),
       payment_method: parsed.data.paymentMethod ?? null,
       date: parsed.data.date,

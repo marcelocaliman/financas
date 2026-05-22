@@ -10,6 +10,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   targetAmount: z.coerce.number().positive(),
   currentAmount: z.coerce.number().nonnegative().default(0),
+  currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   linkedAccountId: z.string().uuid().optional(),
 });
@@ -40,6 +41,7 @@ export async function createGoal(
     description: formData.get("description") || undefined,
     targetAmount: formData.get("targetAmount"),
     currentAmount: formData.get("currentAmount") ?? 0,
+    currency: formData.get("currency") || "BRL",
     targetDate: formData.get("targetDate") || undefined,
     linkedAccountId: formData.get("linkedAccountId") || undefined,
   });
@@ -55,6 +57,7 @@ export async function createGoal(
     description: parsed.data.description?.trim() ?? null,
     target_amount: parsed.data.targetAmount,
     current_amount: parsed.data.currentAmount,
+    currency: parsed.data.currency,
     target_date: parsed.data.targetDate ?? null,
     linked_account_id: parsed.data.linkedAccountId ?? null,
   });
@@ -75,6 +78,7 @@ export async function updateGoal(
     description: formData.get("description") || undefined,
     targetAmount: formData.get("targetAmount"),
     currentAmount: formData.get("currentAmount") ?? 0,
+    currency: formData.get("currency") || "BRL",
     targetDate: formData.get("targetDate") || undefined,
     linkedAccountId: formData.get("linkedAccountId") || undefined,
   });
@@ -88,6 +92,7 @@ export async function updateGoal(
       description: parsed.data.description?.trim() ?? null,
       target_amount: parsed.data.targetAmount,
       current_amount: parsed.data.currentAmount,
+      currency: parsed.data.currency,
       target_date: parsed.data.targetDate ?? null,
       linked_account_id: parsed.data.linkedAccountId ?? null,
     })

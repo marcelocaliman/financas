@@ -50,6 +50,7 @@ export default async function TransacoesPage({
     id: a.id,
     name: a.name,
     institution: a.institution,
+    currency: a.currency,
   }));
   const categoriesLite = categories.map((c) => ({
     id: c.id,
@@ -82,9 +83,14 @@ export default async function TransacoesPage({
       />
 
       <div className="grid sm:grid-cols-3 gap-3 mb-6">
-        <Mini label="Entrou" value={summary.income} tone="positive" />
-        <Mini label="Saiu" value={summary.expense} tone="negative" />
-        <Mini label="Sobra" value={summary.net} tone={summary.net >= 0 ? "positive" : "negative"} />
+        <Mini label="Entrou" value={summary.income} tone="positive" currency={summary.displayCurrency} />
+        <Mini label="Saiu" value={summary.expense} tone="negative" currency={summary.displayCurrency} />
+        <Mini
+          label="Sobra"
+          value={summary.net}
+          tone={summary.net >= 0 ? "positive" : "negative"}
+          currency={summary.displayCurrency}
+        />
       </div>
 
       <TransactionsFilterBar
@@ -149,10 +155,12 @@ function Mini({
   label,
   value,
   tone,
+  currency,
 }: {
   label: string;
   value: number;
   tone: "positive" | "negative";
+  currency: "BRL" | "EUR" | "USD";
 }) {
   return (
     <div className="rounded-[var(--radius)] bg-surface border border-border px-5 py-4">
@@ -164,7 +172,7 @@ function Mini({
           value === 0 ? "text-foreground" : tone === "positive" ? "text-olive-700" : "text-rust-600"
         }`}
       >
-        {formatMoney(value)}
+        {formatMoney(value, currency)}
       </div>
     </div>
   );

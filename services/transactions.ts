@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Tables, TransactionKind } from "@/types/database";
+import { convertOrSame } from "@/lib/financial/currency";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import type { Currency, Tables, TransactionKind } from "@/types/database";
 
 export type Transaction = Tables<"transactions"> & {
   account?: Pick<Tables<"accounts">, "id" | "name" | "institution" | "type"> | null;
@@ -84,6 +86,7 @@ export type MonthlySummary = {
   toDate: string;
   label: string;
   transactionCount: number;
+  displayCurrency: Currency;
 };
 
 export async function getMonthlySummary(monthStr?: string): Promise<MonthlySummary> {
@@ -91,18 +94,24 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
   const { from, to, label } = monthRange(monthStr);
 
   // Receitas e despesas excluem transferências (que apenas movem dinheiro entre contas)
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("kind, amount")
-    .gte("date", from)
-    .lte("date", to)
-    .in("kind", ["income", "expense"]);
+  const [{ data, error }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("kind, amount_account, currency, account:accounts(currency)")
+      .gte("date", from)
+      .lte("date", to)
+      .in("kind", ["income", "expense"]),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
   if (error) throw error;
 
   let income = 0;
   let expense = 0;
   for (const t of data ?? []) {
-    const amt = Number(t.amount);
+    const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
     if (t.kind === "income") income += amt;
     else if (t.kind === "expense") expense += amt;
   }
@@ -122,6 +131,7 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
     toDate: to,
     label,
     transactionCount: count ?? 0,
+    displayCurrency,
   };
 }
 
@@ -167,12 +177,16 @@ export async function getMonthlyHistory(months = 6): Promise<MonthlyHistoryRow[]
   const startISO = start.toISOString().slice(0, 10);
   const endISO = `${y}-${String(m).padStart(2, "0")}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("kind, amount, date")
-    .gte("date", startISO)
-    .lte("date", endISO)
-    .in("kind", ["income", "expense"]);
+  const [{ data, error }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("kind, amount_account, currency, date, account:accounts(currency)")
+      .gte("date", startISO)
+      .lte("date", endISO)
+      .in("kind", ["income", "expense"]),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
   if (error) throw error;
 
   const buckets = new Map<string, { income: number; expense: number }>();
@@ -197,7 +211,9 @@ export async function getMonthlyHistory(months = 6): Promise<MonthlyHistoryRow[]
     const key = (t.date as string).slice(0, 7);
     const b = buckets.get(key);
     if (!b) continue;
-    const amt = Number(t.amount);
+    const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
     if (t.kind === "income") b.income += amt;
     else b.expense += amt;
   }
@@ -248,32 +264,49 @@ export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
   const startPrior = new Date(Date.UTC(y, m - 4, 1)).toISOString().slice(0, 10);
   const endPrior = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 
-  const { data: current, error: e1 } = await supabase
-    .from("transactions")
-    .select("amount, category_id, category:categories(id,name)")
-    .gte("date", startCurrent)
-    .lte("date", endCurrent)
-    .eq("kind", "expense");
+  const [{ data: current, error: e1 }, { data: prior, error: e2 }, displayCurrency, rates] =
+    await Promise.all([
+      supabase
+        .from("transactions")
+        .select("amount_account, currency, category_id, category:categories(id,name), account:accounts(currency)")
+        .gte("date", startCurrent)
+        .lte("date", endCurrent)
+        .eq("kind", "expense"),
+      supabase
+        .from("transactions")
+        .select("amount_account, currency, category_id, date, account:accounts(currency)")
+        .gte("date", startPrior)
+        .lte("date", endPrior)
+        .eq("kind", "expense"),
+      getDisplayCurrency(),
+      getRateMap(),
+    ]);
   if (e1) throw e1;
-
-  const { data: prior, error: e2 } = await supabase
-    .from("transactions")
-    .select("amount, category_id, date")
-    .gte("date", startPrior)
-    .lte("date", endPrior)
-    .eq("kind", "expense");
   if (e2) throw e2;
 
-  type Row = { amount: number; category_id: string | null; category?: { id: string; name: string } | null };
+  type Row = {
+    amount_account: number;
+    currency?: Currency | null;
+    category_id: string | null;
+    category?: { id: string; name: string } | { id: string; name: string }[] | null;
+    account?: { currency: Currency } | { currency: Currency }[] | null;
+  };
   const cur = (current ?? []) as Row[];
   const pri = (prior ?? []) as Row[];
+
+  const convertRow = (t: Row): number => {
+    const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    return convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+  };
 
   const currentByCat = new Map<string, { name: string; total: number }>();
   for (const t of cur) {
     const key = t.category_id ?? "uncategorized";
-    const name = (t.category as { id: string; name: string } | null)?.name ?? "Sem categoria";
+    const catObj = Array.isArray(t.category) ? t.category[0] : t.category;
+    const name = catObj?.name ?? "Sem categoria";
     const e = currentByCat.get(key) ?? { name, total: 0 };
-    e.total += Number(t.amount);
+    e.total += convertRow(t);
     e.name = name;
     currentByCat.set(key, e);
   }
@@ -282,7 +315,7 @@ export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
   const priorTotalByCat = new Map<string, number>();
   for (const t of pri) {
     const key = t.category_id ?? "uncategorized";
-    priorTotalByCat.set(key, (priorTotalByCat.get(key) ?? 0) + Number(t.amount));
+    priorTotalByCat.set(key, (priorTotalByCat.get(key) ?? 0) + convertRow(t));
   }
 
   const anomalies: ExpenseAnomaly[] = [];
@@ -313,21 +346,34 @@ export async function getCategoryBreakdown(
   const supabase = await createClient();
   const { from, to } = monthRange(monthStr);
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("amount, category:categories(id,name,color,icon)")
-    .gte("date", from)
-    .lte("date", to)
-    .eq("kind", kind);
+  const [{ data, error }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select(
+        "amount_account, currency, category:categories(id,name,color,icon), account:accounts(currency)",
+      )
+      .gte("date", from)
+      .lte("date", to)
+      .eq("kind", kind),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
   if (error) throw error;
 
   const byCat = new Map<string, CategoryBreakdownRow>();
   let grandTotal = 0;
   for (const t of data ?? []) {
-    const cat = t.category as { id: string; name: string; color: string | null; icon: string | null } | null;
+    const catRaw = t.category as
+      | { id: string; name: string; color: string | null; icon: string | null }
+      | { id: string; name: string; color: string | null; icon: string | null }[]
+      | null;
+    const cat = Array.isArray(catRaw) ? catRaw[0] : catRaw;
+    const accRaw = t.account as { currency: Currency } | { currency: Currency }[] | null;
+    const acc = Array.isArray(accRaw) ? accRaw[0] : accRaw;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
     const key = cat?.id ?? "uncategorized";
     const name = cat?.name ?? "Sem categoria";
-    const amt = Number(t.amount);
+    const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
     grandTotal += amt;
     if (!byCat.has(key)) {
       byCat.set(key, {

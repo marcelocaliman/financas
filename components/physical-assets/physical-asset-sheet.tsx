@@ -20,7 +20,7 @@ import {
   updatePhysicalAsset,
   type PhysicalAssetFormState,
 } from "@/services/physical-assets.actions";
-import type { PhysicalAssetCategory, Tables } from "@/types/database";
+import type { Currency, PhysicalAssetCategory, Tables } from "@/types/database";
 import { CATEGORY_LABELS } from "@/lib/financial/asset-categories";
 
 type Asset = Tables<"physical_assets">;
@@ -34,6 +34,12 @@ const CATEGORIES: PhysicalAssetCategory[] = [
   "art",
   "tools",
   "other",
+];
+
+const CURRENCIES: { value: Currency; label: string }[] = [
+  { value: "BRL", label: "R$ BRL" },
+  { value: "EUR", label: "€ EUR" },
+  { value: "USD", label: "US$ USD" },
 ];
 
 export function PhysicalAssetSheet({
@@ -51,6 +57,7 @@ export function PhysicalAssetSheet({
   const [category, setCategory] = useState<PhysicalAssetCategory>(
     asset?.category ?? defaultCategory ?? "other",
   );
+  const [currency, setCurrency] = useState<Currency>(asset?.currency ?? "BRL");
 
   const [state, action, pending] = useActionState<
     PhysicalAssetFormState | undefined,
@@ -60,7 +67,10 @@ export function PhysicalAssetSheet({
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setCategory(asset?.category ?? defaultCategory ?? "other");
+    if (open) {
+      setCategory(asset?.category ?? defaultCategory ?? "other");
+      setCurrency(asset?.currency ?? "BRL");
+    }
   }
 
   useEffect(() => {
@@ -142,23 +152,43 @@ export function PhysicalAssetSheet({
             </Field>
           </div>
 
-          <Field
-            label="Valor atual"
-            htmlFor="currentValue"
-            required
-            hint="Quanto vale hoje a mercado. Atualize manualmente quando achar relevante."
-          >
-            <MoneyInput
-              id="currentValue"
-              name="currentValue"
-              defaultValue={Number(asset?.current_value ?? 0)}
-            />
-            {state?.fieldErrors?.currentValue ? (
-              <p className="text-[11.5px] text-rust-600 mt-1">
-                {state.fieldErrors.currentValue}
-              </p>
-            ) : null}
-          </Field>
+          <div className="grid grid-cols-[1fr_120px] gap-3">
+            <Field
+              label="Valor atual"
+              htmlFor="currentValue"
+              required
+              hint="Quanto vale hoje a mercado. Atualize manualmente quando achar relevante."
+            >
+              <MoneyInput
+                id="currentValue"
+                name="currentValue"
+                defaultValue={Number(asset?.current_value ?? 0)}
+              />
+              {state?.fieldErrors?.currentValue ? (
+                <p className="text-[11.5px] text-rust-600 mt-1">
+                  {state.fieldErrors.currentValue}
+                </p>
+              ) : null}
+            </Field>
+            <Field label="Moeda" htmlFor="currency">
+              <Select
+                value={currency}
+                onValueChange={(v) => setCurrency(v as Currency)}
+                name="currency"
+              >
+                <SelectTrigger id="currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
 
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>

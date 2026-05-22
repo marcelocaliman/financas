@@ -6,12 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 
 const ACCOUNT_TYPES = ["checking", "savings", "credit_card", "investment", "cash"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD"] as const;
 
 const createSchema = z.object({
   institution: z.string().min(1, "Qual instituição? (Itaú, Nubank, XP…)"),
   type: z.enum(ACCOUNT_TYPES),
   name: z.string().min(1, "Dê um apelido pra essa conta."),
   color: z.string().optional(),
+  currency: z.enum(CURRENCIES).default("BRL"),
   initialBalance: z.coerce.number().default(0),
 });
 
@@ -43,6 +45,7 @@ export async function createAccount(
     type: formData.get("type"),
     name: formData.get("name"),
     color: formData.get("color") || undefined,
+    currency: formData.get("currency") || "BRL",
     initialBalance: formData.get("initialBalance") ?? 0,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
@@ -57,6 +60,7 @@ export async function createAccount(
     type: parsed.data.type,
     name: parsed.data.name.trim(),
     color: parsed.data.color ?? null,
+    currency: parsed.data.currency,
     current_balance: parsed.data.initialBalance,
   });
   if (error) return { error: error.message };
@@ -76,6 +80,7 @@ export async function updateAccount(
     type: formData.get("type"),
     name: formData.get("name"),
     color: formData.get("color") || undefined,
+    currency: formData.get("currency") || "BRL",
     initialBalance: formData.get("initialBalance") ?? 0,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
@@ -88,6 +93,7 @@ export async function updateAccount(
       type: parsed.data.type,
       name: parsed.data.name.trim(),
       color: parsed.data.color ?? null,
+      currency: parsed.data.currency,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

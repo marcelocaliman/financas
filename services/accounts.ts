@@ -5,7 +5,9 @@
 
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { AccountType, Tables } from "@/types/database";
+import { convertOrSame } from "@/lib/financial/currency";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import type { AccountType, Currency, Tables } from "@/types/database";
 
 export type Account = Tables<"accounts">;
 
@@ -41,8 +43,13 @@ export async function getAccountsTotals(): Promise<{
   byType: Record<AccountType, number>;
   total: number;
   liquidExcludingInvestmentCash: number;
+  displayCurrency: Currency;
 }> {
-  const accounts = await listAccounts();
+  const [accounts, displayCurrency, rates] = await Promise.all([
+    listAccounts(),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
   const byType = {
     checking: 0,
     savings: 0,
@@ -51,7 +58,9 @@ export async function getAccountsTotals(): Promise<{
     cash: 0,
   } as Record<AccountType, number>;
   for (const a of accounts) {
-    byType[a.type] += Number(a.current_balance ?? 0);
+    const native = Number(a.current_balance ?? 0);
+    const converted = convertOrSame(native, a.currency, displayCurrency, rates);
+    byType[a.type] += converted;
   }
   const total =
     byType.checking + byType.savings + byType.investment + byType.cash + byType.credit_card;
@@ -60,5 +69,5 @@ export async function getAccountsTotals(): Promise<{
   // somam por fora via getPortfolioStats.
   const liquidExcludingInvestmentCash =
     byType.checking + byType.savings + byType.cash + byType.credit_card;
-  return { byType, total, liquidExcludingInvestmentCash };
+  return { byType, total, liquidExcludingInvestmentCash, displayCurrency };
 }

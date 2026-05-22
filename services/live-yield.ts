@@ -6,23 +6,49 @@ import {
   type LiveInvestmentInput,
   type LivePortfolio,
 } from "@/lib/financial/live-yield";
-import type { IndexerCode } from "@/types/database";
+import { convertOrSame } from "@/lib/financial/currency";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import type { Currency, IndexerCode } from "@/types/database";
+
+type InvestmentRow = LiveInvestmentInput & { currency: Currency };
 
 /**
  * Agrega tudo o que o cálculo ao vivo precisa: ativos ativos, últimos
  * indexadores, soma de yields dos últimos 12 meses por ativo, cotações brapi.
+ *
+ * Todos os valores monetários são convertidos para a moeda de exibição do
+ * usuário antes do cálculo. Cotações brapi (B3 = BRL) são convertidas
+ * conforme a moeda nativa de cada ativo.
  */
-export async function getLivePortfolio(): Promise<LivePortfolio> {
+export async function getLivePortfolio(): Promise<LivePortfolio & { displayCurrency: Currency }> {
   const supabase = await createClient();
+  const [displayCurrency, rates] = await Promise.all([getDisplayCurrency(), getRateMap()]);
 
   // ---------- Ativos ativos
   const { data: investmentsData } = await supabase
     .from("investments")
     .select(
-      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, quantity, purchase_date, last_yield_at",
+      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, quantity, purchase_date, last_yield_at, currency",
     )
     .eq("is_active", true);
-  const investments = (investmentsData ?? []) as LiveInvestmentInput[];
+  const raw = (investmentsData ?? []) as InvestmentRow[];
+
+  // Converte balanços para a moeda de exibição
+  const investments: LiveInvestmentInput[] = raw.map((i) => ({
+    ...i,
+    current_balance: convertOrSame(
+      Number(i.current_balance ?? 0),
+      i.currency ?? "BRL",
+      displayCurrency,
+      rates,
+    ),
+    initial_amount: convertOrSame(
+      Number(i.initial_amount ?? 0),
+      i.currency ?? "BRL",
+      displayCurrency,
+      rates,
+    ),
+  }));
 
   if (investments.length === 0) {
     return {
@@ -37,6 +63,7 @@ export async function getLivePortfolio(): Promise<LivePortfolio> {
         stocks: { dailyYield: 0, perSecond: 0, balance: 0 },
         other: { dailyYield: 0, perSecond: 0, balance: 0 },
       },
+      displayCurrency,
     };
   }
 
@@ -76,12 +103,25 @@ export async function getLivePortfolio(): Promise<LivePortfolio> {
   const tickers = investments
     .filter((i) => isB3Ticker(i.ticker))
     .map((i) => i.ticker);
-  const quotes: Map<string, Quote> = tickers.length > 0 ? await fetchQuotes(tickers) : new Map();
+  const rawQuotes: Map<string, Quote> =
+    tickers.length > 0 ? await fetchQuotes(tickers) : new Map();
+  // Brapi sempre retorna em BRL (B3). Converte pra moeda de exibição.
+  const factor = convertOrSame(1, "BRL", displayCurrency, rates);
+  const quotes: Map<string, Quote> = new Map();
+  for (const [ticker, q] of rawQuotes) {
+    quotes.set(ticker, {
+      ...q,
+      regularMarketPrice: q.regularMarketPrice * factor,
+    });
+  }
 
-  return computeLivePortfolio({
-    investments,
-    indexers,
-    yields12mByInvestmentId: yields12m,
-    quotes,
-  });
+  return {
+    ...computeLivePortfolio({
+      investments,
+      indexers,
+      yields12mByInvestmentId: yields12m,
+      quotes,
+    }),
+    displayCurrency,
+  };
 }

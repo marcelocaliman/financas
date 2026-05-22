@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import type { Currency } from "@/types/database";
 
 const profileSchema = z.object({
   displayName: z.string().min(1, "Como podemos te chamar?"),
@@ -11,6 +12,10 @@ const profileSchema = z.object({
 
 const householdSchema = z.object({
   name: z.string().min(1, "O lar precisa de um nome."),
+});
+
+const displayCurrencySchema = z.object({
+  currency: z.enum(["BRL", "EUR", "USD"]),
 });
 
 export type ProfileFormState = {
@@ -64,6 +69,30 @@ export async function updateHousehold(
     .from("households")
     .update({ name: parsed.data.name.trim() })
     .eq("id", ctx.household.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function updateDisplayCurrency(
+  _prev: ProfileFormState | undefined,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const parsed = displayCurrencySchema.safeParse({ currency: formData.get("currency") });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const supabase = await createClient();
+  const current = (ctx.profile.preferences ?? {}) as Record<string, unknown>;
+  const next = { ...current, displayCurrency: parsed.data.currency as Currency };
+
+  const { error } = await supabase
+    .from("users")
+    .update({ preferences: next })
+    .eq("id", ctx.profile.id);
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");

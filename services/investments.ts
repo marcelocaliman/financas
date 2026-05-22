@@ -1,7 +1,10 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { convertOrSame } from "@/lib/financial/currency";
+import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import type {
   AssetType,
+  Currency,
   IndexerCode,
   Tables,
 } from "@/types/database";
@@ -62,24 +65,44 @@ export type PortfolioStats = {
   monthlyAverage: number;
   dyAnnualized: number;
   liveAsset: Investment | null;
+  displayCurrency: Currency;
 };
 
 export async function getPortfolioStats(): Promise<PortfolioStats> {
   const supabase = await createClient();
-  const [{ data: invs }, { data: yields }] = await Promise.all([
+  const [{ data: invs }, { data: yields }, displayCurrency, rates] = await Promise.all([
     supabase.from("investments").select("*").eq("is_active", true),
     supabase
       .from("investment_yields")
-      .select("net_yield, month")
+      .select("net_yield, month, investment:investments(currency)")
       .gte("month", new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)),
+    getDisplayCurrency(),
+    getRateMap(),
   ]);
 
   const investments = (invs ?? []) as Tables<"investments">[];
-  const total = investments.reduce((s, i) => s + Number(i.current_balance ?? 0), 0);
-  const invested = investments.reduce((s, i) => s + Number(i.initial_amount ?? 0), 0);
-  const yieldRows = yields ?? [];
-  const totalYield = yieldRows.reduce((s, y) => s + Number(y.net_yield ?? 0), 0);
-  const months = new Set(yieldRows.map((y) => (y.month as string).slice(0, 7))).size;
+  const total = investments.reduce(
+    (s, i) =>
+      s +
+      convertOrSame(Number(i.current_balance ?? 0), i.currency ?? "BRL", displayCurrency, rates),
+    0,
+  );
+  const invested = investments.reduce(
+    (s, i) =>
+      s + convertOrSame(Number(i.initial_amount ?? 0), i.currency ?? "BRL", displayCurrency, rates),
+    0,
+  );
+  const yieldRows = (yields ?? []) as Array<{
+    net_yield: number;
+    month: string;
+    investment: { currency: Currency } | { currency: Currency }[] | null;
+  }>;
+  const totalYield = yieldRows.reduce((s, y) => {
+    const inv = Array.isArray(y.investment) ? y.investment[0] : y.investment;
+    const c = (inv?.currency ?? "BRL") as Currency;
+    return s + convertOrSame(Number(y.net_yield ?? 0), c, displayCurrency, rates);
+  }, 0);
+  const months = new Set(yieldRows.map((y) => y.month.slice(0, 7))).size;
   const monthlyAverage = months > 0 ? totalYield / months : 0;
   const dyAnnualized = total > 0 ? (monthlyAverage * 12) / total : 0;
 
@@ -94,6 +117,7 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
     monthlyAverage: Math.round(monthlyAverage * 100) / 100,
     dyAnnualized,
     liveAsset: (live as Investment | null) ?? null,
+    displayCurrency,
   };
 }
 
@@ -105,6 +129,7 @@ export async function getCoverage(): Promise<{
   monthlyAverageExpense: number;
   monthlyAverageYield: number;
   ratio: number;
+  displayCurrency: Currency;
 }> {
   const supabase = await createClient();
   const now = new Date();
@@ -115,28 +140,32 @@ export async function getCoverage(): Promise<{
     .toISOString()
     .slice(0, 10);
 
-  const [{ data: expenses }, { data: yields }] = await Promise.all([
+  const [{ data: expenses }, { data: yields }, displayCurrency, rates] = await Promise.all([
     supabase
       .from("transactions")
-      .select("amount, date")
+      .select("amount_account, currency, date, account:accounts(currency)")
       .eq("kind", "expense")
       .gte("date", start)
       .lte("date", end),
     supabase
       .from("investment_yields")
-      .select("net_yield, month")
+      .select("net_yield, month, investment:investments(currency)")
       .gte("month", start)
       .lte("month", end),
+    getDisplayCurrency(),
+    getRateMap(),
   ]);
 
-  const monthlyExpenseTotal = (expenses ?? []).reduce(
-    (s, t) => s + Number(t.amount),
-    0,
-  );
-  const monthlyYieldTotal = (yields ?? []).reduce(
-    (s, y) => s + Number(y.net_yield),
-    0,
-  );
+  const monthlyExpenseTotal = (expenses ?? []).reduce((s, t) => {
+    const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    return s + convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+  }, 0);
+  const monthlyYieldTotal = (yields ?? []).reduce((s, y) => {
+    const inv = Array.isArray(y.investment) ? y.investment[0] : y.investment;
+    const c = (inv?.currency ?? "BRL") as Currency;
+    return s + convertOrSame(Number(y.net_yield ?? 0), c, displayCurrency, rates);
+  }, 0);
   const months = 3;
   const monthlyAverageExpense = monthlyExpenseTotal / months;
   const monthlyAverageYield = monthlyYieldTotal / months;
@@ -147,5 +176,6 @@ export async function getCoverage(): Promise<{
     monthlyAverageExpense: Math.round(monthlyAverageExpense * 100) / 100,
     monthlyAverageYield: Math.round(monthlyAverageYield * 100) / 100,
     ratio,
+    displayCurrency,
   };
 }

@@ -23,6 +23,7 @@ const baseSchema = z.object({
   acquiredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
   acquiredValue: z.coerce.number().nonnegative().default(0),
   currentValue: z.coerce.number().nonnegative(),
+  currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
   depreciationMethod: z.enum(["none", "linear"]).default("none"),
   depreciationYears: z.coerce.number().int().positive().optional(),
 });
@@ -59,6 +60,7 @@ export async function createPhysicalAsset(
     acquiredAt: formData.get("acquiredAt") || undefined,
     acquiredValue: formData.get("acquiredValue") ?? 0,
     currentValue: formData.get("currentValue"),
+    currency: formData.get("currency") || "BRL",
     depreciationMethod: formData.get("depreciationMethod") || "none",
     depreciationYears: formData.get("depreciationYears") || undefined,
   });
@@ -76,6 +78,7 @@ export async function createPhysicalAsset(
     acquired_at: parsed.data.acquiredAt || null,
     acquired_value: parsed.data.acquiredValue,
     current_value: parsed.data.currentValue,
+    currency: parsed.data.currency,
     depreciation_method: parsed.data.depreciationMethod,
     depreciation_years: parsed.data.depreciationYears ?? null,
   });
@@ -97,6 +100,7 @@ export async function updatePhysicalAsset(
     acquiredAt: formData.get("acquiredAt") || undefined,
     acquiredValue: formData.get("acquiredValue") ?? 0,
     currentValue: formData.get("currentValue"),
+    currency: formData.get("currency") || "BRL",
     depreciationMethod: formData.get("depreciationMethod") || "none",
     depreciationYears: formData.get("depreciationYears") || undefined,
   });
@@ -112,6 +116,7 @@ export async function updatePhysicalAsset(
       acquired_at: parsed.data.acquiredAt || null,
       acquired_value: parsed.data.acquiredValue,
       current_value: parsed.data.currentValue,
+      currency: parsed.data.currency,
       depreciation_method: parsed.data.depreciationMethod,
       depreciation_years: parsed.data.depreciationYears ?? null,
     })

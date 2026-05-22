@@ -24,9 +24,16 @@ import { createTransaction, type TxFormState } from "@/services/transactions.act
 import { useQuickAdd } from "./quick-add-context";
 
 type TxKind = "expense" | "income" | "transfer";
+type Currency = "BRL" | "EUR" | "USD";
 
-type AccountLite = { id: string; name: string; institution: string };
+type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+
+const CURRENCY_LABELS: Record<Currency, string> = {
+  BRL: "R$",
+  EUR: "€",
+  USD: "US$",
+};
 
 const KIND_OPTIONS: PillOption<TxKind>[] = [
   { value: "expense", label: "Despesa" },
@@ -60,7 +67,16 @@ export function AddTransactionDialog({
   const [categoryId, setCategoryId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [date, setDate] = useState<string>(todayISO());
+  const [currency, setCurrency] = useState<Currency>("BRL");
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Quando muda a conta, ajusta a moeda default da transação pra moeda dela.
+  const accountCurrency = (accounts.find((a) => a.id === accountId)?.currency ?? "BRL") as Currency;
+  const [prevAccountId, setPrevAccountId] = useState(accountId);
+  if (accountId !== prevAccountId) {
+    setPrevAccountId(accountId);
+    setCurrency(accountCurrency);
+  }
 
   const [state, action, pending] = useActionState<TxFormState | undefined, FormData>(
     createTransaction,
@@ -144,12 +160,35 @@ export function AddTransactionDialog({
               name="kind"
             />
 
-            <Field htmlFor="amount" label="Valor">
-              <MoneyInput name="amount" id="amount" autoFocus size="lg" />
-              {state?.fieldErrors?.amount ? (
-                <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.amount}</p>
-              ) : null}
-            </Field>
+            <div className="grid grid-cols-[1fr_92px] gap-2 items-end">
+              <Field htmlFor="amount" label="Valor">
+                <MoneyInput name="amount" id="amount" autoFocus size="lg" />
+                {state?.fieldErrors?.amount ? (
+                  <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.amount}</p>
+                ) : null}
+              </Field>
+              <Field htmlFor="currency" label="Moeda">
+                <Select
+                  value={currency}
+                  onValueChange={(v) => setCurrency(v as Currency)}
+                  name="currency"
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BRL">{CURRENCY_LABELS.BRL} BRL</SelectItem>
+                    <SelectItem value="EUR">{CURRENCY_LABELS.EUR} EUR</SelectItem>
+                    <SelectItem value="USD">{CURRENCY_LABELS.USD} USD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+            {kind !== "transfer" && currency !== accountCurrency ? (
+              <p className="text-[11.5px] text-muted-foreground -mt-3 font-mono">
+                Conta em {accountCurrency} · vamos converter pra essa moeda automaticamente.
+              </p>
+            ) : null}
 
             {kind === "transfer" ? (
               <>
