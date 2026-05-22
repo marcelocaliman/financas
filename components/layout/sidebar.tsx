@@ -19,6 +19,7 @@ import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { SidebarLiveTicker } from "@/components/layout/sidebar-live-ticker";
 import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { cn } from "@/lib/utils/cn";
+import type { SidebarBadges } from "@/services/sidebar-badges";
 
 type NavItem = {
   label: string;
@@ -49,11 +50,17 @@ const groupLabels: Record<NavItem["group"], string> = {
 export function Sidebar({
   user,
   householdName,
+  badges,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
+  badges?: SidebarBadges;
 }) {
   const pathname = usePathname();
+  const badgeByHref: Record<string, number> = {
+    "/resgates": badges?.resgatesPendingSoon ?? 0,
+    "/metas": badges?.metasJustAchieved ?? 0,
+  };
   const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     acc[item.group] = acc[item.group] ?? [];
     acc[item.group].push(item);
@@ -89,6 +96,7 @@ export function Sidebar({
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              const badgeCount = badgeByHref[item.href] ?? 0;
               return (
                 <Link
                   key={item.href}
@@ -110,7 +118,20 @@ export function Sidebar({
                     )}
                     strokeWidth={1.5}
                   />
-                  <span>{item.label}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {badgeCount > 0 ? (
+                    <span
+                      className={cn(
+                        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-mono font-medium tabular-nums",
+                        item.href === "/metas"
+                          ? "bg-olive-600 text-white"
+                          : "bg-gold-600 text-ink-950",
+                      )}
+                      aria-label={`${badgeCount} item${badgeCount === 1 ? "" : "s"} aguardando ação`}
+                    >
+                      {badgeCount}
+                    </span>
+                  ) : null}
                 </Link>
               );
             })}

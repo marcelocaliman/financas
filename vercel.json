@@ -3,6 +3,7 @@
     { "path": "/api/cron/materialize-recurrences", "schedule": "45 9 * * *" },
     { "path": "/api/cron/update-indexers", "schedule": "0 10 * * *" },
     { "path": "/api/cron/update-balances", "schedule": "15 10 * * *" },
-    { "path": "/api/cron/update-rates", "schedule": "30 10 * * *" }
+    { "path": "/api/cron/update-rates", "schedule": "30 10 * * *" },
+    { "path": "/api/cron/snapshot-patrimonio", "schedule": "0 9 1 * *" }
   ]
 }

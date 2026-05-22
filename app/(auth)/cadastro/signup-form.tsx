@@ -1,12 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUp, type SignupState } from "./actions";
 
+/**
+ * Form de cadastro com dois modos:
+ *  - "create": cria um novo lar (default). Pede nome do lar.
+ *  - "join": ingressa em um lar existente via código de convite.
+ *    Substitui "nome do lar" por "código do convite".
+ */
 export function SignupForm() {
+  const [mode, setMode] = useState<"create" | "join">("create");
   const [state, action, pending] = useActionState<SignupState | undefined, FormData>(
     signUp,
     undefined,
@@ -20,8 +27,8 @@ export function SignupForm() {
             Confirme seu e-mail.
           </p>
           <p className="text-[13px] text-olive-700 mt-1.5 leading-relaxed">
-            Mandamos um link de verificação. Abra-o e seu lar será montado automaticamente — com
-            categorias padrão prontas.
+            Mandamos um link de verificação. Abra-o e seu lar será montado automaticamente
+            {mode === "join" ? " usando o código de convite informado" : " com categorias padrão prontas"}.
           </p>
         </div>
       </div>
@@ -30,20 +37,70 @@ export function SignupForm() {
 
   return (
     <form action={action} className="space-y-4">
+      <input type="hidden" name="mode" value={mode} />
+
+      <div className="inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px]">
+        <button
+          type="button"
+          onClick={() => setMode("create")}
+          className={
+            "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
+            (mode === "create"
+              ? "bg-surface text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground")
+          }
+        >
+          Criar lar
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("join")}
+          className={
+            "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
+            (mode === "join"
+              ? "bg-surface text-foreground shadow-xs"
+              : "text-muted-foreground hover:text-foreground")
+          }
+        >
+          Tenho um convite
+        </button>
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label htmlFor="displayName">Seu nome</Label>
-          <Input id="displayName" name="displayName" autoComplete="given-name" required placeholder="Marcelo" />
-        </div>
-        <div>
-          <Label htmlFor="householdName">Nome do lar</Label>
           <Input
-            id="householdName"
-            name="householdName"
-            placeholder="Caliman"
-            defaultValue=""
+            id="displayName"
+            name="displayName"
+            autoComplete="given-name"
+            required
+            placeholder="Marcelo"
           />
         </div>
+        {mode === "create" ? (
+          <div>
+            <Label htmlFor="householdName">Nome do lar</Label>
+            <Input
+              id="householdName"
+              name="householdName"
+              placeholder="Caliman"
+              defaultValue=""
+            />
+          </div>
+        ) : (
+          <div>
+            <Label htmlFor="inviteCode">Código de convite</Label>
+            <Input
+              id="inviteCode"
+              name="inviteCode"
+              placeholder="ABCD1234"
+              autoCapitalize="characters"
+              maxLength={8}
+              required
+              className="font-mono tracking-[0.08em] uppercase"
+            />
+          </div>
+        )}
       </div>
       <div>
         <Label htmlFor="email">E-mail</Label>
@@ -72,7 +129,7 @@ export function SignupForm() {
         <p className="text-[12.5px] text-rust-600">{state.error}</p>
       ) : null}
       <Button type="submit" variant="primary" size="lg" disabled={pending} className="w-full">
-        {pending ? "Criando…" : "Criar conta"}
+        {pending ? "Criando…" : mode === "join" ? "Ingressar no lar" : "Criar conta"}
       </Button>
     </form>
   );

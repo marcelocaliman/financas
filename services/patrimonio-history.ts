@@ -1,24 +1,27 @@
 import "server-only";
+import { createClient } from "@/lib/supabase/server";
 import { getAccountsTotalsAt } from "@/services/accounts";
 import { getPortfolioStats } from "@/services/investments";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getMonthlyHistory } from "@/services/transactions";
 
 /**
- * Histórico mensal aproximado do patrimônio líquido (últimos N meses).
+ * Histórico mensal do patrimônio líquido (últimos N meses).
  *
- * Estratégia:
- *  - Contas: usa `getAccountsTotalsAt(monthEnd)` que reverte transações
- *    futuras → saldo histórico real por mês.
- *  - Investimentos + bens físicos: usa valor ATUAL pra todos os pontos
- *    históricos (não temos snapshots diários ainda). Aproximação aceitável.
+ * Estratégia em duas camadas:
+ *  1. Snapshots reais: pra meses que têm `patrimonio_snapshots`, usamos
+ *     o total gravado. Esses são pontos histórica corretos.
+ *  2. Aproximação: meses sem snapshot fallback pro cálculo antigo
+ *     (saldo retroativo das contas + valor atual de invest/bens).
  *
- * Retorna pontos prontos pra sparkline: { month, label, netWorth }.
+ * Idealmente o cron `/api/cron/snapshot-patrimonio` grava todo mês — depois de
+ * 12 meses rodando, todo ponto vem do snapshot.
  */
 export type PatrimonioPoint = {
   month: string; // YYYY-MM
   label: string;
   netWorth: number;
+  fromSnapshot: boolean;
 };
 
 const LABELS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
@@ -29,6 +32,7 @@ function lastDayISO(y: number, m: number): string {
 }
 
 export async function getPatrimonioHistory(months = 12): Promise<PatrimonioPoint[]> {
+  const supabase = await createClient();
   const now = new Date();
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
@@ -39,7 +43,7 @@ export async function getPatrimonioHistory(months = 12): Promise<PatrimonioPoint
   const y = parseInt(yStr, 10);
   const m = parseInt(mStr, 10);
 
-  // Calcular últimos N meses
+  // Lista de meses cronologicamente (mais antigo → mais recente)
   const monthEnds: { y: number; m: number; iso: string }[] = [];
   for (let i = months - 1; i >= 0; i--) {
     const d = new Date(Date.UTC(y, m - 1 - i, 1));
@@ -48,25 +52,60 @@ export async function getPatrimonioHistory(months = 12): Promise<PatrimonioPoint
     monthEnds.push({ y: yy, m: mm, iso: lastDayISO(yy, mm) });
   }
 
-  // Carrega investimentos + bens físicos UMA VEZ (valor atual)
-  const [portfolio, physical] = await Promise.all([
-    getPortfolioStats(),
-    getPhysicalAssetsTotals(),
-  ]);
+  // Busca todos os snapshots no range — uma query só
+  const rangeStart = monthEnds[0].iso;
+  const rangeEnd = monthEnds[monthEnds.length - 1].iso;
+  const { data: snapshots } = await supabase
+    .from("patrimonio_snapshots")
+    .select("month_end, total")
+    .gte("month_end", rangeStart)
+    .lte("month_end", rangeEnd);
 
-  // Pra cada mês, pega saldo retroativo das contas
-  const accountsByMonth = await Promise.all(
-    monthEnds.map((me) => getAccountsTotalsAt(me.iso)),
-  );
+  const snapshotByDate = new Map<string, number>();
+  for (const s of snapshots ?? []) {
+    snapshotByDate.set(s.month_end as string, Number(s.total));
+  }
 
-  return monthEnds.map((me, i) => {
-    const accs = accountsByMonth[i];
-    const netWorth =
-      accs.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+  // Os meses que precisam de fallback (sem snapshot)
+  const monthsNeedingFallback = monthEnds.filter((me) => !snapshotByDate.has(me.iso));
+
+  // Carrega portfolio + physical UMA VEZ (fallback usa valor atual)
+  const needFallback = monthsNeedingFallback.length > 0;
+  const [portfolio, physical] = needFallback
+    ? await Promise.all([getPortfolioStats(), getPhysicalAssetsTotals()])
+    : [null, null];
+
+  // Para cada mês sem snapshot, pega saldo retroativo das contas
+  const accountsByMonth = needFallback
+    ? new Map<string, Awaited<ReturnType<typeof getAccountsTotalsAt>>>(
+        await Promise.all(
+          monthsNeedingFallback.map(
+            async (me) =>
+              [me.iso, await getAccountsTotalsAt(me.iso)] as const,
+          ),
+        ),
+      )
+    : new Map();
+
+  return monthEnds.map((me) => {
+    const snap = snapshotByDate.get(me.iso);
+    if (snap != null) {
+      return {
+        month: `${me.y}-${String(me.m).padStart(2, "0")}`,
+        label: LABELS[me.m - 1],
+        netWorth: Math.round(snap * 100) / 100,
+        fromSnapshot: true,
+      };
+    }
+    const accs = accountsByMonth.get(me.iso);
+    const netWorth = accs
+      ? accs.liquidExcludingInvestmentCash + (portfolio?.total ?? 0) + (physical?.total ?? 0)
+      : 0;
     return {
       month: `${me.y}-${String(me.m).padStart(2, "0")}`,
       label: LABELS[me.m - 1],
       netWorth: Math.round(netWorth * 100) / 100,
+      fromSnapshot: false,
     };
   });
 }

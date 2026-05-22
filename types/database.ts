@@ -773,6 +773,62 @@ export interface Database {
           },
         ];
       };
+      patrimonio_snapshots: {
+        Row: {
+          id: string;
+          household_id: string;
+          month_end: string;
+          liquid: number;
+          fixed_income: number;
+          variable_income: number;
+          physical: number;
+          credit_card_debt: number;
+          total: number;
+          currency: Currency;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          month_end: string;
+          liquid?: number;
+          fixed_income?: number;
+          variable_income?: number;
+          physical?: number;
+          credit_card_debt?: number;
+          total?: number;
+          currency?: Currency;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["patrimonio_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
+      household_invites: {
+        Row: {
+          id: string;
+          household_id: string;
+          code: string;
+          created_by: string;
+          created_at: string;
+          expires_at: string;
+          used_at: string | null;
+          used_by: string | null;
+          revoked_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          code: string;
+          created_by: string;
+          created_at?: string;
+          expires_at?: string;
+          used_at?: string | null;
+          used_by?: string | null;
+          revoked_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["household_invites"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -870,6 +926,26 @@ export interface Database {
           p_from: string;
         };
         Returns: string;
+      };
+      generate_household_invite: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      revoke_household_invite: {
+        Args: { p_code: string };
+        Returns: void;
+      };
+      redeem_household_invite: {
+        Args: { p_code: string; p_display_name: string };
+        Returns: string;
+      };
+      merge_categories: {
+        Args: { p_source_id: string; p_target_id: string };
+        Returns: void;
+      };
+      reorder_categories: {
+        Args: { p_ids: string[] };
+        Returns: void;
       };
     };
     Enums: { [_ in never]: never };

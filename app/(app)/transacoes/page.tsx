@@ -6,6 +6,7 @@ import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { TransactionRow } from "@/components/transactions/transaction-row";
 import { TransactionsFilterBar } from "@/components/transactions/transactions-filter-bar";
 import { ActiveFiltersChips } from "@/components/transactions/active-filters-chips";
+import { SavedViews } from "@/components/transactions/saved-views";
 import { Pagination } from "@/components/transactions/pagination";
 import { ExportButton } from "@/components/transactions/export-button";
 import { ImportButton } from "@/components/transactions/import-button";
@@ -175,6 +176,8 @@ export default async function TransacoesPage({
         kindLabel={kindFilter !== "all" ? KIND_TAB_LABEL[kindFilter] : null}
         queryLabel={q || null}
       />
+
+      <SavedViews />
 
       <Panel className="!px-0 !py-2">
         {rows.length === 0 ? (

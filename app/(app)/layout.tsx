@@ -12,18 +12,21 @@ import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
 import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getSidebarBadges } from "@/services/sidebar-badges";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
 
-  const [accounts, categories, displayCurrency, comparisonCurrency, rates] = await Promise.all([
-    listAccounts(),
-    listCategories(),
-    getDisplayCurrency(),
-    getComparisonCurrency(),
-    getRateMap(),
-  ]);
+  const [accounts, categories, displayCurrency, comparisonCurrency, rates, badges] =
+    await Promise.all([
+      listAccounts(),
+      listCategories(),
+      getDisplayCurrency(),
+      getComparisonCurrency(),
+      getRateMap(),
+      getSidebarBadges(),
+    ]);
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -51,6 +54,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Sidebar
             user={{ name: ctx.profile.display_name, email: ctx.email }}
             householdName={ctx.household.name}
+            badges={badges}
           />
           <div className="flex-1 min-w-0 relative">
             <main className="max-w-[1320px] mx-auto px-5 sm:px-10 lg:px-14 pt-8 pb-28 lg:pb-20">

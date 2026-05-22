@@ -5,15 +5,30 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-const schema = z.object({
+const baseSchema = z.object({
   displayName: z.string().min(1, "Como podemos te chamar?"),
+  email: z.string().email("E-mail inválido."),
+  password: z.string().min(8, "Senha precisa ter ao menos 8 caracteres."),
+});
+
+const createSchema = baseSchema.extend({
+  mode: z.literal("create"),
   householdName: z
     .string()
     .min(1, "Dê um nome ao lar — pode ser só o sobrenome.")
     .default("Nosso lar"),
-  email: z.string().email("E-mail inválido."),
-  password: z.string().min(8, "Senha precisa ter ao menos 8 caracteres."),
 });
+
+const joinSchema = baseSchema.extend({
+  mode: z.literal("join"),
+  inviteCode: z
+    .string()
+    .min(4, "Código inválido.")
+    .max(16, "Código inválido.")
+    .transform((v) => v.trim().toUpperCase()),
+});
+
+const schema = z.discriminatedUnion("mode", [createSchema, joinSchema]);
 
 export type SignupState = {
   error?: string;
@@ -24,9 +39,14 @@ export async function signUp(
   _prev: SignupState | undefined,
   formData: FormData,
 ): Promise<SignupState> {
+  const rawMode = formData.get("mode");
+  const mode = rawMode === "join" ? "join" : "create";
+
   const parsed = schema.safeParse({
+    mode,
     displayName: formData.get("displayName"),
     householdName: formData.get("householdName") || "Nosso lar",
+    inviteCode: formData.get("inviteCode") ?? "",
     email: formData.get("email"),
     password: formData.get("password"),
   });
@@ -37,14 +57,21 @@ export async function signUp(
   const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+  const userMetadata: Record<string, string> = {
+    display_name: parsed.data.displayName,
+    signup_mode: parsed.data.mode,
+  };
+  if (parsed.data.mode === "create") {
+    userMetadata.household_name = parsed.data.householdName;
+  } else {
+    userMetadata.invite_code = parsed.data.inviteCode;
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
     options: {
-      data: {
-        display_name: parsed.data.displayName,
-        household_name: parsed.data.householdName,
-      },
+      data: userMetadata,
       emailRedirectTo: `${appUrl}/callback`,
     },
   });
@@ -61,14 +88,28 @@ export async function signUp(
     return { needsConfirmation: true };
   }
 
-  // Já com sessão — bootstrap household + perfil + categorias padrão
-  const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
-    p_household_name: parsed.data.householdName,
-    p_display_name: parsed.data.displayName,
-  });
-
-  if (bootstrapError) {
-    return { error: "Conta criada, mas falhou ao montar seu lar. Tente entrar." };
+  // Já com sessão — bootstrap ou redeem invite
+  if (parsed.data.mode === "join") {
+    const { error: redeemError } = await supabase.rpc("redeem_household_invite", {
+      p_code: parsed.data.inviteCode,
+      p_display_name: parsed.data.displayName,
+    });
+    if (redeemError) {
+      const msg = redeemError.message.toLowerCase();
+      if (msg.includes("not found")) return { error: "Código de convite não encontrado." };
+      if (msg.includes("expired")) return { error: "Código expirado. Peça um novo ao admin do lar." };
+      if (msg.includes("revoked")) return { error: "Esse código foi revogado." };
+      if (msg.includes("already used")) return { error: "Esse código já foi usado." };
+      return { error: redeemError.message };
+    }
+  } else {
+    const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
+      p_household_name: parsed.data.householdName,
+      p_display_name: parsed.data.displayName,
+    });
+    if (bootstrapError) {
+      return { error: "Conta criada, mas falhou ao montar seu lar. Tente entrar." };
+    }
   }
 
   revalidatePath("/", "layout");

@@ -57,17 +57,38 @@ export async function GET(request: NextRequest) {
   const meta = (userData.user.user_metadata ?? {}) as {
     display_name?: string;
     household_name?: string;
+    signup_mode?: "create" | "join";
+    invite_code?: string;
   };
+  const fallbackName =
+    meta.display_name ?? userData.user.email?.split("@")[0] ?? "Sem nome";
 
-  const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
-    p_household_name: meta.household_name ?? "Nosso lar",
-    p_display_name:
-      meta.display_name ?? userData.user.email?.split("@")[0] ?? "Sem nome",
-  });
-
-  if (bootstrapError) {
-    console.error("[callback] bootstrap failed:", bootstrapError.message);
-    // Não bloqueamos: pode já existir (idempotente do lado do RPC).
+  // Se o usuário veio com convite, redime ao invés de criar lar novo.
+  if (meta.signup_mode === "join" && meta.invite_code) {
+    const { error: redeemError } = await supabase.rpc("redeem_household_invite", {
+      p_code: meta.invite_code,
+      p_display_name: fallbackName,
+    });
+    if (redeemError) {
+      const msg = redeemError.message.toLowerCase();
+      // "already has household" significa que o callback foi disparado duas
+      // vezes (refresh, etc) — não é erro real.
+      if (!msg.includes("already has household")) {
+        console.error("[callback] redeem failed:", redeemError.message);
+        return NextResponse.redirect(
+          `${origin}/login?error=invite_redeem_failed&msg=${encodeURIComponent(redeemError.message)}`,
+        );
+      }
+    }
+  } else {
+    const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
+      p_household_name: meta.household_name ?? "Nosso lar",
+      p_display_name: fallbackName,
+    });
+    if (bootstrapError) {
+      console.error("[callback] bootstrap failed:", bootstrapError.message);
+      // Não bloqueamos: pode já existir (idempotente do lado do RPC).
+    }
   }
 
   console.log(

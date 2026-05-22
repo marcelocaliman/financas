@@ -33,26 +33,33 @@ export type CronStatus = CronCheck & {
 export async function getCronStatuses(): Promise<CronStatus[]> {
   const supabase = await createClient();
 
-  const [{ data: idx }, { data: rate }, { data: quote }] = await Promise.all([
-    supabase
-      .from("indexer_history")
-      .select("date")
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("currency_rates")
-      .select("date")
-      .order("date", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("quote_snapshots")
-      .select("fetched_at")
-      .order("fetched_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const [{ data: idx }, { data: rate }, { data: quote }, { data: snap }] =
+    await Promise.all([
+      supabase
+        .from("indexer_history")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("currency_rates")
+        .select("date")
+        .order("date", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("quote_snapshots")
+        .select("fetched_at")
+        .order("fetched_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("patrimonio_snapshots")
+        .select("created_at")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const checks: CronCheck[] = [
     {
@@ -72,6 +79,12 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
       description: "FIIs, ações, ETFs · /api/quotes",
       latestAt: quote?.fetched_at ?? null,
       staleAfterHours: 24,
+    },
+    {
+      name: "Snapshot mensal do patrimônio",
+      description: "Histórico real pra sparkline · /api/cron/snapshot-patrimonio",
+      latestAt: snap?.created_at ?? null,
+      staleAfterHours: 24 * 35, // mensal: 35 dias é generoso
     },
   ];
 

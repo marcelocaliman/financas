@@ -2,9 +2,11 @@ import { CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getCurrentUserContext } from "@/services/auth";
 import { getComparisonCurrency, getDisplayCurrency } from "@/services/currency";
 import { getCronStatuses, formatAge, type CronStatus } from "@/services/cron-status";
+import { listHouseholdMembers, listActiveInvites } from "@/services/household";
 import { signOut } from "../_actions/sign-out";
 import {
   ComparisonCurrencyForm,
@@ -13,19 +15,24 @@ import {
   ProfileNameForm,
 } from "./profile-forms";
 import { ResetDataSection } from "./reset-data-section";
+import { HouseholdInvitesSection } from "./household-invites-section";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
-  const [displayCurrency, comparisonCurrency, cronStatuses] = await Promise.all([
-    getDisplayCurrency(),
-    getComparisonCurrency(),
-    getCronStatuses(),
-  ]);
+  const [displayCurrency, comparisonCurrency, cronStatuses, members, invites] =
+    await Promise.all([
+      getDisplayCurrency(),
+      getComparisonCurrency(),
+      getCronStatuses(),
+      listHouseholdMembers(),
+      listActiveInvites(),
+    ]);
   const comparisonValue = comparisonCurrency ?? "off";
   const staleCount = cronStatuses.filter((c) => c.status !== "ok").length;
+  const isAdmin = ctx.profile.role === "admin";
 
   return (
     <>
@@ -56,8 +63,47 @@ export default async function ConfiguracoesPage() {
         </Panel>
 
         <Panel>
-          <PanelHeader title="Seu lar" meta="Nome usado na sidebar e em compartilhamentos" />
+          <PanelHeader title="Tema" meta="Claro, escuro, ou seguir o sistema" />
+          <ThemeToggle />
+        </Panel>
+
+        <Panel>
+          <PanelHeader
+            title="Seu lar"
+            meta={`${members.length} ${members.length === 1 ? "membro" : "membros"} · papel: ${ctx.profile.role}`}
+          />
           <HouseholdNameForm defaultValue={ctx.household.name} />
+
+          {members.length > 1 ? (
+            <div className="mt-5 pt-5 border-t border-border">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2.5">
+                Membros
+              </div>
+              <ul className="space-y-2">
+                {members.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between text-[13px]"
+                  >
+                    <span className="text-foreground">{m.display_name}</span>
+                    <span className="font-mono text-[11px] text-faint-foreground uppercase tracking-[0.1em]">
+                      {m.role}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          <div className="mt-5 pt-5 border-t border-border">
+            <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2.5">
+              Convidar parceira(o)
+            </div>
+            <HouseholdInvitesSection
+              invites={invites}
+              isAdmin={isAdmin}
+            />
+          </div>
         </Panel>
 
         <Panel>

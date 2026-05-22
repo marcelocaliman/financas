@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Pencil, Archive, RotateCcw, Trash2 } from "lucide-react";
+import { Pencil, Archive, RotateCcw, Trash2, ArrowUp, ArrowDown, Merge } from "lucide-react";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,9 +34,19 @@ const kindLabel: Record<string, string> = {
 export function CategoryRow({
   category,
   stats,
+  canMoveUp,
+  canMoveDown,
+  onMoveUp,
+  onMoveDown,
+  onMerge,
 }: {
   category: Category;
   stats?: CategoryStats;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onMerge?: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -185,6 +195,42 @@ export function CategoryRow({
             </>
           ) : (
             <>
+              {onMoveUp ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onMoveUp}
+                  disabled={!canMoveUp || pending}
+                  aria-label="Mover pra cima"
+                  className="opacity-0 group-hover:opacity-100 disabled:!opacity-20"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </Button>
+              ) : null}
+              {onMoveDown ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onMoveDown}
+                  disabled={!canMoveDown || pending}
+                  aria-label="Mover pra baixo"
+                  className="opacity-0 group-hover:opacity-100 disabled:!opacity-20"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </Button>
+              ) : null}
+              {onMerge ? (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={onMerge}
+                  disabled={pending}
+                  aria-label="Consolidar com outra categoria"
+                  className="opacity-0 group-hover:opacity-100"
+                >
+                  <Merge className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </Button>
+              ) : null}
               <Button
                 size="icon"
                 variant="ghost"

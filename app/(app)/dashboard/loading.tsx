@@ -3,6 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function DashboardLoading() {
   return (
     <>
+      {/* Page header */}
+      <div className="mb-8">
+        <Skeleton className="h-3 w-40 mb-3" />
+        <Skeleton className="h-9 w-72 mb-3" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+
       {/* Hero */}
       <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 sm:p-12 mb-6 overflow-hidden">
         <Skeleton className="h-3 w-40 mb-4 !bg-ink-800" />
@@ -18,14 +25,26 @@ export default function DashboardLoading() {
         </div>
       </section>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-6">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-24" />
-        ))}
+      {/* TIER 1 — FIRE + Cobertura */}
+      <div className="grid lg:grid-cols-2 gap-5 mb-8">
+        <Skeleton className="h-56" />
+        <Skeleton className="h-56" />
       </div>
 
-      <Skeleton className="h-72 mb-6" />
-      <Skeleton className="h-80" />
+      {/* TIER 2 — Obrigações + Metas */}
+      <div className="grid lg:grid-cols-2 gap-5 mb-8">
+        <Skeleton className="h-72" />
+        <Skeleton className="h-72" />
+      </div>
+
+      {/* TIER 3 — Top categorias + Composição */}
+      <div className="grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8">
+        <Skeleton className="h-64" />
+        <Skeleton className="h-64" />
+      </div>
+
+      {/* TIER 4 — Últimos movimentos */}
+      <Skeleton className="h-72" />
     </>
   );
 }

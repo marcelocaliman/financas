@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { listCategories, getCategoryStats } from "@/services/categories";
 import { CategoryRow } from "@/components/categories/category-row";
+import { ReorderableCategoryList } from "@/components/categories/reorderable-category-list";
 import { NewCategoryButton } from "./new-category-button";
 
 export const dynamic = "force-dynamic";
@@ -15,14 +16,9 @@ export default async function CategoriasPage() {
   const expense = all.filter((c) => c.kind === "expense" && !c.is_archived);
   const archived = all.filter((c) => c.is_archived);
 
-  // Ordena por gasto dos últimos 3m (decrescente). Categorias sem uso vão pro fim.
-  const byUsage = (a: { id: string }, b: { id: string }) => {
-    const sa = stats.get(a.id)?.total ?? 0;
-    const sb = stats.get(b.id)?.total ?? 0;
-    return sb - sa;
-  };
-  income.sort(byUsage);
-  expense.sort(byUsage);
+  // listCategories já vem ordenado por sort_order asc. Mantemos essa ordem
+  // (que é a configurada manualmente pelo usuário) — reordenação manual
+  // tem precedência sobre ordenação por uso.
 
   const unusedExpense = expense.filter((c) => !stats.get(c.id));
   const unusedIncome = income.filter((c) => !stats.get(c.id));
@@ -57,28 +53,24 @@ export default async function CategoriasPage() {
         <Panel>
           <PanelHeader
             title="Receitas"
-            meta={`${income.length} categoria${income.length !== 1 ? "s" : ""} · média dos últimos 3 meses`}
+            meta={`${income.length} categoria${income.length !== 1 ? "s" : ""} · arraste ↑↓ pra reordenar`}
           />
           {income.length === 0 ? (
             <Empty />
           ) : (
-            income.map((c) => (
-              <CategoryRow key={c.id} category={c} stats={stats.get(c.id)} />
-            ))
+            <ReorderableCategoryList initial={income} statsMap={stats} />
           )}
         </Panel>
 
         <Panel>
           <PanelHeader
             title="Despesas"
-            meta={`${expense.length} categoria${expense.length !== 1 ? "s" : ""} · média dos últimos 3 meses`}
+            meta={`${expense.length} categoria${expense.length !== 1 ? "s" : ""} · arraste ↑↓ pra reordenar`}
           />
           {expense.length === 0 ? (
             <Empty />
           ) : (
-            expense.map((c) => (
-              <CategoryRow key={c.id} category={c} stats={stats.get(c.id)} />
-            ))
+            <ReorderableCategoryList initial={expense} statsMap={stats} />
           )}
         </Panel>
       </div>

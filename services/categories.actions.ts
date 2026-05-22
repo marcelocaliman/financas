@@ -121,3 +121,40 @@ export async function deleteCategory(id: string): Promise<{ ok?: boolean; error?
   revalidatePath("/transacoes");
   return { ok: true };
 }
+
+/**
+ * Reordena categorias em lote. Recebe IDs ordenados — escreve sort_order
+ * com `position` (1-based) via RPC. Ordem é por kind separadamente — quem
+ * chama deve passar apenas IDs do mesmo kind pra não embaralhar.
+ */
+export async function reorderCategories(
+  ids: string[],
+): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reorder_categories", { p_ids: ids });
+  if (error) return { error: error.message };
+  revalidatePath("/categorias");
+  return { ok: true };
+}
+
+/**
+ * Consolida duas categorias do mesmo kind. Move todas as transações +
+ * regras recorrentes da `sourceId` pra `targetId`, depois arquiva a source.
+ * Não deleta — preserva histórico.
+ */
+export async function mergeCategories(
+  sourceId: string,
+  targetId: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  if (sourceId === targetId) return { error: "Origem e destino são iguais." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("merge_categories", {
+    p_source_id: sourceId,
+    p_target_id: targetId,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/categorias");
+  revalidatePath("/transacoes");
+  revalidatePath("/recorrentes");
+  return { ok: true };
+}
