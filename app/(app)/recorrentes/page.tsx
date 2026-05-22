@@ -5,6 +5,8 @@ import { RecurrenceSection } from "@/components/recurrences/recurrence-section";
 import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-button";
 import { BatchRecurrenceButton } from "@/components/recurrences/batch-recurrence-button";
 import { MaterializeNowButton } from "@/components/recurrences/materialize-now-button";
+import { PauseAllButton } from "@/components/recurrences/pause-all-button";
+import { RecurrenceKeyboardNav } from "@/components/recurrences/keyboard-nav";
 import {
   computeNextOccurrences,
   listRecurringRules,
@@ -72,6 +74,10 @@ export default async function RecorrentesPage() {
         subtitle="Aluguel, salário, assinaturas, aporte mensal — defina uma vez e o app cria as transações nas datas certas."
         actions={
           <div className="flex gap-2">
+            <PauseAllButton
+              activeIds={active.map((r) => r.id)}
+              pausedIds={paused.map((r) => r.id)}
+            />
             <MaterializeNowButton />
             <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
             <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
@@ -82,81 +88,97 @@ export default async function RecorrentesPage() {
       {rules.length === 0 ? (
         <Empty />
       ) : (
-        <div className="space-y-3">
-          <RecurrenceSection
-            label="Receitas"
-            count={incomes.length}
-            monthlyTotal={aggregateMonthly(incomes)}
-            tone="income"
-            emoji="↙"
-          >
-            {incomes.map((r) => (
-              <RecurrenceRow
-                key={r.id}
-                rule={r}
-                nextOccurrences={computeNextOccurrences(r, today, 3)}
-                accounts={accountsLite}
-                categories={categoriesLite}
-              />
-            ))}
-          </RecurrenceSection>
-
-          <RecurrenceSection
-            label="Despesas"
-            count={expenses.length}
-            monthlyTotal={aggregateMonthly(expenses)}
-            tone="expense"
-            emoji="↗"
-          >
-            {expenses.map((r) => (
-              <RecurrenceRow
-                key={r.id}
-                rule={r}
-                nextOccurrences={computeNextOccurrences(r, today, 3)}
-                accounts={accountsLite}
-                categories={categoriesLite}
-              />
-            ))}
-          </RecurrenceSection>
-
-          <RecurrenceSection
-            label="Transferências"
-            count={transfers.length}
-            monthlyTotal={aggregateMonthly(transfers)}
-            tone="transfer"
-            emoji="↔"
-          >
-            {transfers.map((r) => (
-              <RecurrenceRow
-                key={r.id}
-                rule={r}
-                nextOccurrences={computeNextOccurrences(r, today, 3)}
-                accounts={accountsLite}
-                categories={categoriesLite}
-              />
-            ))}
-          </RecurrenceSection>
-
-          {paused.length > 0 ? (
+        <>
+          <div className="space-y-3">
             <RecurrenceSection
-              label="Pausadas"
-              count={paused.length}
-              monthlyTotal={0}
-              tone="neutral"
-              defaultOpen={false}
+              keyboardId="receitas"
+              label="Receitas"
+              ruleIds={incomes.map((r) => r.id)}
+              monthlyTotal={aggregateMonthly(incomes)}
+              tone="income"
+              emoji="↙"
             >
-              {paused.map((r) => (
+              {incomes.map((r) => (
                 <RecurrenceRow
                   key={r.id}
                   rule={r}
-                  nextOccurrences={[]}
+                  nextOccurrences={computeNextOccurrences(r, today, 3)}
                   accounts={accountsLite}
                   categories={categoriesLite}
                 />
               ))}
             </RecurrenceSection>
-          ) : null}
-        </div>
+
+            <RecurrenceSection
+              keyboardId="despesas"
+              label="Despesas"
+              ruleIds={expenses.map((r) => r.id)}
+              monthlyTotal={aggregateMonthly(expenses)}
+              tone="expense"
+              emoji="↗"
+            >
+              {expenses.map((r) => (
+                <RecurrenceRow
+                  key={r.id}
+                  rule={r}
+                  nextOccurrences={computeNextOccurrences(r, today, 3)}
+                  accounts={accountsLite}
+                  categories={categoriesLite}
+                />
+              ))}
+            </RecurrenceSection>
+
+            <RecurrenceSection
+              keyboardId="transferencias"
+              label="Transferências"
+              ruleIds={transfers.map((r) => r.id)}
+              monthlyTotal={aggregateMonthly(transfers)}
+              tone="transfer"
+              emoji="↔"
+            >
+              {transfers.map((r) => (
+                <RecurrenceRow
+                  key={r.id}
+                  rule={r}
+                  nextOccurrences={computeNextOccurrences(r, today, 3)}
+                  accounts={accountsLite}
+                  categories={categoriesLite}
+                />
+              ))}
+            </RecurrenceSection>
+
+            {paused.length > 0 ? (
+              <RecurrenceSection
+                keyboardId="pausadas"
+                label="Pausadas"
+                ruleIds={paused.map((r) => r.id)}
+                monthlyTotal={0}
+                tone="neutral"
+                defaultOpen={false}
+                bulkMode="resume"
+              >
+                {paused.map((r) => (
+                  <RecurrenceRow
+                    key={r.id}
+                    rule={r}
+                    nextOccurrences={[]}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                  />
+                ))}
+              </RecurrenceSection>
+            ) : null}
+          </div>
+
+          <RecurrenceKeyboardNav
+            available={{
+              receitas: incomes.length > 0,
+              despesas: expenses.length > 0,
+              transferencias: transfers.length > 0,
+              pausadas: paused.length > 0,
+            }}
+          />
+        </>
       )}
     </>
   );

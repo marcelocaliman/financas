@@ -200,6 +200,26 @@ export async function setRecurringRuleActive(
 }
 
 /**
+ * Pausa/reativa várias regras de uma vez. Usado em ações em lote no header
+ * de cada seção (ex: "Pausar todas as despesas" durante uma viagem).
+ */
+export async function setRecurringRulesActiveBatch(
+  ids: string[],
+  active: boolean,
+): Promise<{ ok?: boolean; updated?: number; error?: string }> {
+  if (ids.length === 0) return { ok: true, updated: 0 };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("recurring_rules")
+    .update({ is_active: active })
+    .in("id", ids)
+    .select("id");
+  if (error) return { error: error.message };
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true, updated: data?.length ?? 0 };
+}
+
+/**
  * Deleta a regra. Por padrão deleta também as instâncias FUTURAS já materializadas
  * (transactions com recurring_rule_id = id e date > hoje). Histórico passado fica.
  */
