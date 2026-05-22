@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,9 @@ import {
   updateInvestment,
   type InvestmentFormState,
 } from "@/services/investments.actions";
-import type { AssetType, Indexer, Tables } from "@/types/database";
+import type { AssetType, Indexer, TaxRegime, Tables } from "@/types/database";
+import type { AssetTemplate } from "@/lib/financial/asset-catalog";
+import { AssetPicker } from "./asset-picker";
 
 type Investment = Tables<"investments">;
 type AccountLite = { id: string; name: string; institution: string };
@@ -41,6 +44,19 @@ const INDEXERS: { value: Indexer; label: string }[] = [
   { value: "none", label: "Sem indexador" },
 ];
 
+function investmentToTemplate(inv: Investment): AssetTemplate {
+  return {
+    ticker: inv.ticker,
+    name: inv.name,
+    asset_type: inv.asset_type,
+    indexer: inv.indexer ?? null,
+    indexer_multiplier: inv.indexer_multiplier ?? null,
+    fixed_rate: inv.fixed_rate ?? null,
+    tax_regime: inv.tax_regime,
+    source: "catalog",
+  };
+}
+
 export function InvestmentSheet({
   open,
   onOpenChange,
@@ -53,27 +69,27 @@ export function InvestmentSheet({
   investmentAccounts: AccountLite[];
 }) {
   const isEdit = !!investment;
-  const [accountId, setAccountId] = useState(investment?.account_id ?? investmentAccounts[0]?.id ?? "");
-  const [assetType, setAssetType] = useState<AssetType>(investment?.asset_type ?? "fixed_income_public");
-  const [indexer, setIndexer] = useState<Indexer>(investment?.indexer ?? "selic");
-  const [taxRegime, setTaxRegime] = useState<"regressive" | "exempt">(
-    investment?.tax_regime ?? "regressive",
+
+  const [picked, setPicked] = useState<AssetTemplate | null>(
+    investment ? investmentToTemplate(investment) : null,
   );
+  const [accountId, setAccountId] = useState(
+    investment?.account_id ?? investmentAccounts[0]?.id ?? "",
+  );
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [state, action, pending] = useActionState<InvestmentFormState | undefined, FormData>(
     isEdit ? updateInvestment : createInvestment,
     undefined,
   );
 
-  // Reset state em open (padrão React 19)
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
+      setPicked(investment ? investmentToTemplate(investment) : null);
       setAccountId(investment?.account_id ?? investmentAccounts[0]?.id ?? "");
-      setAssetType(investment?.asset_type ?? "fixed_income_public");
-      setIndexer(investment?.indexer ?? "selic");
-      setTaxRegime(investment?.tax_regime ?? "regressive");
+      setShowAdvanced(false);
     }
   }
 
@@ -90,7 +106,11 @@ export function InvestmentSheet({
         <SheetHeader
           eyebrow={isEdit ? "Editar" : "Novo ativo"}
           title={isEdit ? "Atualizar ativo." : "Adicionar um ativo."}
-          description="Ações, FIIs, Tesouro, CDB — o que estiver em alguma corretora ou onde o dinheiro rende."
+          description={
+            picked
+              ? "Confirme os dados de compra e o app cuida do resto."
+              : "Digite o ticker ou nome — Tesouros, FIIs, ações e ETFs principais a gente reconhece."
+          }
         />
 
         {investmentAccounts.length === 0 ? (
@@ -103,138 +123,107 @@ export function InvestmentSheet({
           <form action={action} className="space-y-5">
             {isEdit ? <input type="hidden" name="id" value={investment.id} /> : null}
 
-            <Field label="Corretora / custódia" htmlFor="accountId" required>
-              <Select value={accountId} onValueChange={setAccountId} name="accountId">
-                <SelectTrigger id="accountId">
-                  <SelectValue placeholder="Conta de investimento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {investmentAccounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} · {a.institution}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Field label="O que você comprou?" required>
+              <AssetPicker
+                value={picked}
+                onSelect={setPicked}
+                onClear={() => setPicked(null)}
+                autoFocus={!isEdit}
+              />
             </Field>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Ticker" htmlFor="ticker" required>
-                <Input
-                  id="ticker"
-                  name="ticker"
-                  defaultValue={investment?.ticker ?? ""}
-                  placeholder="MXRF11, Tesouro Selic 2031…"
+            {picked ? (
+              <>
+                {/* Campos hidden carregam os metadados do ativo */}
+                <input type="hidden" name="ticker" value={picked.ticker} />
+                <input type="hidden" name="name" value={picked.name} />
+                <input
+                  type="hidden"
+                  name="assetType"
+                  value={picked.asset_type}
                 />
-              </Field>
-              <Field label="Nome" htmlFor="name" required>
-                <Input
-                  id="name"
-                  name="name"
-                  defaultValue={investment?.name ?? ""}
-                  placeholder="Apelido descritivo"
-                />
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Classe" htmlFor="assetType" required>
-                <Select value={assetType} onValueChange={(v) => setAssetType(v as AssetType)} name="assetType">
-                  <SelectTrigger id="assetType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ASSET_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Indexador" htmlFor="indexer">
-                <Select value={indexer} onValueChange={(v) => setIndexer(v as Indexer)} name="indexer">
-                  <SelectTrigger id="indexer">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDEXERS.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field
-                label="% do indexador"
-                htmlFor="indexerMultiplier"
-                hint="1.00 = 100%; 1.10 = 110% do CDI"
-              >
-                <Input
-                  id="indexerMultiplier"
+                <input type="hidden" name="indexer" value={picked.indexer ?? ""} />
+                <input
+                  type="hidden"
                   name="indexerMultiplier"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={investment?.indexer_multiplier ?? 1}
-                  className="font-mono"
+                  value={picked.indexer_multiplier ?? ""}
                 />
-              </Field>
-              <Field label="Taxa fixa (% a.a.)" htmlFor="fixedRate" hint="Pra prefixados">
-                <Input
-                  id="fixedRate"
+                <input
+                  type="hidden"
                   name="fixedRate"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={investment?.fixed_rate ?? ""}
-                  className="font-mono"
+                  value={picked.fixed_rate ?? ""}
                 />
-              </Field>
-            </div>
+                <input
+                  type="hidden"
+                  name="taxRegime"
+                  value={picked.tax_regime}
+                />
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Data da compra" htmlFor="purchaseDate" required>
-                <Input
-                  id="purchaseDate"
-                  name="purchaseDate"
-                  type="date"
-                  defaultValue={investment?.purchase_date ?? new Date().toISOString().slice(0, 10)}
-                />
-              </Field>
-              <Field label="Regime fiscal" htmlFor="taxRegime">
-                <Select value={taxRegime} onValueChange={(v) => setTaxRegime(v as "regressive" | "exempt")} name="taxRegime">
-                  <SelectTrigger id="taxRegime">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="regressive">IR regressivo</SelectItem>
-                    <SelectItem value="exempt">Isento (LCI, LCA, FII, etc.)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-            </div>
+                <Field label="Corretora / custódia" htmlFor="accountId" required>
+                  <Select value={accountId} onValueChange={setAccountId} name="accountId">
+                    <SelectTrigger id="accountId">
+                      <SelectValue placeholder="Conta de investimento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {investmentAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name} · {a.institution}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Valor aplicado" htmlFor="initialAmount" required>
-                <MoneyInput
-                  name="initialAmount"
-                  id="initialAmount"
-                  defaultValue={Number(investment?.initial_amount ?? 0)}
-                />
-              </Field>
-              <Field label="Saldo atual" htmlFor="currentBalance" hint="Se vazio, usa o aplicado">
-                <MoneyInput
-                  name="currentBalance"
-                  id="currentBalance"
-                  defaultValue={Number(investment?.current_balance ?? investment?.initial_amount ?? 0)}
-                />
-              </Field>
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Data da compra" htmlFor="purchaseDate" required>
+                    <Input
+                      id="purchaseDate"
+                      name="purchaseDate"
+                      type="date"
+                      defaultValue={
+                        investment?.purchase_date ?? new Date().toISOString().slice(0, 10)
+                      }
+                    />
+                  </Field>
+                  <Field label="Valor aplicado" htmlFor="initialAmount" required>
+                    <MoneyInput
+                      name="initialAmount"
+                      id="initialAmount"
+                      defaultValue={Number(investment?.initial_amount ?? 0)}
+                    />
+                  </Field>
+                </div>
+
+                <Field
+                  label="Saldo atual (opcional)"
+                  htmlFor="currentBalance"
+                  hint="Se vazio, usa o aplicado. Atualizado automaticamente todo dia pra ativos Selic/CDI."
+                >
+                  <MoneyInput
+                    name="currentBalance"
+                    id="currentBalance"
+                    defaultValue={Number(investment?.current_balance ?? 0)}
+                  />
+                </Field>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced((v) => !v)}
+                  className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground hover:text-foreground font-medium"
+                >
+                  {showAdvanced ? (
+                    <ChevronUp className="w-3 h-3" strokeWidth={1.7} />
+                  ) : (
+                    <ChevronDown className="w-3 h-3" strokeWidth={1.7} />
+                  )}
+                  Personalizar dados do ativo
+                </button>
+
+                {showAdvanced ? (
+                  <AdvancedFields template={picked} onChange={setPicked} />
+                ) : null}
+              </>
+            ) : null}
 
             {state?.error ? (
               <p className="text-[12.5px] text-rust-600">{state.error}</p>
@@ -244,7 +233,7 @@ export function InvestmentSheet({
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" variant="primary" disabled={pending}>
+              <Button type="submit" variant="primary" disabled={pending || !picked}>
                 {pending ? "Salvando…" : isEdit ? "Salvar" : "Adicionar ativo"}
               </Button>
             </div>
@@ -252,5 +241,110 @@ export function InvestmentSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ============================== ADVANCED OVERRIDE ======================== */
+function AdvancedFields({
+  template,
+  onChange,
+}: {
+  template: AssetTemplate;
+  onChange: (t: AssetTemplate) => void;
+}) {
+  return (
+    <div className="space-y-4 border-t border-border pt-4 -mt-1">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Nome" htmlFor="adv-name">
+          <Input
+            id="adv-name"
+            value={template.name}
+            onChange={(e) => onChange({ ...template, name: e.target.value })}
+          />
+        </Field>
+        <Field label="Classe">
+          <Select
+            value={template.asset_type}
+            onValueChange={(v) => onChange({ ...template, asset_type: v as AssetType })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ASSET_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Indexador">
+          <Select
+            value={template.indexer ?? "none"}
+            onValueChange={(v) => onChange({ ...template, indexer: v as Indexer })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INDEXERS.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Regime fiscal">
+          <Select
+            value={template.tax_regime}
+            onValueChange={(v) => onChange({ ...template, tax_regime: v as TaxRegime })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="regressive">IR regressivo</SelectItem>
+              <SelectItem value="exempt">Isento</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="% do indexador" hint="1.00 = 100%, 1.10 = 110%">
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={template.indexer_multiplier ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...template,
+                indexer_multiplier: e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
+            className="font-mono"
+          />
+        </Field>
+        <Field label="Taxa fixa (% a.a.)" hint="Pra prefixados / IPCA+">
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            value={template.fixed_rate ?? ""}
+            onChange={(e) =>
+              onChange({
+                ...template,
+                fixed_rate: e.target.value === "" ? null : Number(e.target.value),
+              })
+            }
+            className="font-mono"
+          />
+        </Field>
+      </div>
+    </div>
   );
 }
