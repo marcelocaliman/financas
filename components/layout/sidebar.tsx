@@ -13,6 +13,7 @@ import {
   Tag,
   Package,
   Repeat,
+  RefreshCw,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: Home, group: "principal" },
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
+  { label: "Assinaturas", href: "/assinaturas", icon: RefreshCw, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
   { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },

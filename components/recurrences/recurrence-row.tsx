@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, RefreshCw, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 import { Money } from "@/components/ui/money";
@@ -16,6 +16,7 @@ import {
 import type { Currency, RecurrenceFrequency, Tables } from "@/types/database";
 import { RecurrenceSheet } from "./recurrence-sheet";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { toggleSubscriptionTag } from "@/services/subscriptions.actions";
 
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -105,6 +106,18 @@ export function RecurrenceRow({
           ? "Nada novo."
           : `${r.created} lançamento${r.created === 1 ? "" : "s"} criado${r.created === 1 ? "" : "s"}.`,
       );
+    });
+  };
+
+  const isSubscription = (rule.tags ?? []).includes("subscription");
+  const handleToggleSubscription = () => {
+    startTransition(async () => {
+      const r = await toggleSubscriptionTag(rule.id, !isSubscription);
+      if (r.error) toast.error(r.error);
+      else
+        toast.success(
+          isSubscription ? "Removida das assinaturas." : "Marcada como assinatura.",
+        );
     });
   };
 
@@ -236,6 +249,18 @@ export function RecurrenceRow({
                   onSelect: handleToggle,
                   disabled: pending,
                 },
+                ...(rule.kind === "expense"
+                  ? [
+                      {
+                        label: isSubscription
+                          ? "Remover de assinaturas"
+                          : "Marcar como assinatura",
+                        icon: <TagIcon className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: handleToggleSubscription,
+                        disabled: pending,
+                      },
+                    ]
+                  : []),
                 {
                   label: "Excluir",
                   icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />,

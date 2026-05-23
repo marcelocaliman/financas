@@ -815,6 +815,7 @@ export interface Database {
           is_active: boolean;
           last_materialized_date: string | null;
           notes: string | null;
+          tags: string[];
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -840,6 +841,7 @@ export interface Database {
           is_active?: boolean;
           last_materialized_date?: string | null;
           notes?: string | null;
+          tags?: string[];
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
