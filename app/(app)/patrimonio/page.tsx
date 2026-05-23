@@ -97,7 +97,7 @@ export default async function PatrimonioPage() {
                     className={
                       totals.delta >= 0
                         ? "text-[#3be772]"
-                        : "text-[#e4a395]"
+                        : "text-[#f3927c]"
                     }
                   >
                     {totals.delta >= 0 ? "+" : ""}

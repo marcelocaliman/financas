@@ -65,7 +65,7 @@ export function KpiCard({
       : sparklineTone === "gold"
         ? "rgba(176,123,50,0.7)"
         : sparklineTone === "rust"
-          ? "rgba(178,90,73,0.7)"
+          ? "rgba(236,88,56,0.7)"
           : sparklineTone === "ink"
             ? "rgba(34,34,38,0.55)"
             : "rgba(96,126,168,0.7)";

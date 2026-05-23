@@ -131,7 +131,7 @@ export function DashboardHero({
                   "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-medium",
                   positiveTrend
                     ? "bg-olive-600/20 text-[#3be772]"
-                    : "bg-rust-600/20 text-[#e4a395]",
+                    : "bg-rust-600/20 text-[#f3927c]",
                 )}
               >
                 <span className="font-mono text-[10px]">{positiveTrend ? "↑" : "↓"}</span>
@@ -289,7 +289,7 @@ function Stat({
           <span
             className={cn(
               "font-mono text-[11px] tabular-nums",
-              deltaPct >= 0 ? "text-[#3be772]" : "text-[#e4a395]",
+              deltaPct >= 0 ? "text-[#3be772]" : "text-[#f3927c]",
             )}
           >
             {deltaPct >= 0 ? "+" : ""}

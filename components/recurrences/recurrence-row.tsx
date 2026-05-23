@@ -151,7 +151,7 @@ export function RecurrenceRow({
           onClick={() => setEditing(true)}
           className="text-left min-w-0 group/btn"
         >
-          <div className="font-medium text-[13.5px] text-foreground tracking-[-0.005em] truncate group-hover/btn:text-navy-700">
+          <div className="font-medium text-[13.5px] text-foreground tracking-[-0.005em] truncate">
             {rule.description}
           </div>
           <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.04em] truncate mt-0.5">

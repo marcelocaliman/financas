@@ -57,12 +57,17 @@
   --color-olive-500: #3be772;
   --color-olive-100: #d6f7e0;
 
-  /* ============================== RUST (negativo) ======================== */
-  --color-rust-800: #6a2f23;
-  --color-rust-700: #8a4030;
-  --color-rust-600: #ac5340;
-  --color-rust-500: #c46e5b;
-  --color-rust-100: #f1e0db;
+  /* ============================== RUST (negativo) ========================
+   * Família vermelho-coral vibrante (H≈11°, S≈83%) derivada do tom-base
+   * --color-rust-600 #ec5838. Cada degrau é uma queda de ~10 pontos de
+   * luminosidade (HSL L). --rust-700 mantém contraste ≥4.5:1 em fundo claro;
+   * --rust-600 fica em ~3.5:1 (uso preferencial em ícones/acentos, não body).
+   */
+  --color-rust-800: #ad2d10;
+  --color-rust-700: #db3914;
+  --color-rust-600: #ec5838;
+  --color-rust-500: #f17f65;
+  --color-rust-100: #fce0da;
 
   /* ============================== GOLD (atenção) ========================= */
   --color-gold-800: #6f4a18;
