@@ -230,6 +230,7 @@ export default async function MetasPage({
               key={g.id}
               goal={g}
               accounts={accountsLite}
+              investments={investmentsLite}
               averageMonthlyAddition={averageMonthlyAddition}
             />
           ))}

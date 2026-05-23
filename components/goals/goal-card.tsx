@@ -41,10 +41,12 @@ import { cn } from "@/lib/utils/cn";
 export function GoalCard({
   goal,
   accounts,
+  investments = [],
   averageMonthlyAddition,
 }: {
   goal: EnrichedGoal;
   accounts: { id: string; name: string; institution: string }[];
+  investments?: { id: string; ticker: string; name: string }[];
   /** Sobra média mensal em moeda de exibição */
   averageMonthlyAddition: number;
 }) {
@@ -302,7 +304,13 @@ export function GoalCard({
         </div>
       </motion.div>
 
-      <GoalSheet open={editing} onOpenChange={setEditing} goal={goal} accounts={accounts} />
+      <GoalSheet
+        open={editing}
+        onOpenChange={setEditing}
+        goal={goal}
+        accounts={accounts}
+        investments={investments}
+      />
       <ContributeDialog
         open={contributing}
         onOpenChange={setContributing}
