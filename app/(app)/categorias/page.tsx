@@ -1,17 +1,24 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { listCategories, getCategoryStats } from "@/services/categories";
+import { getActiveBudgetsForMonth } from "@/services/budgets";
 import { CategoryRow } from "@/components/categories/category-row";
 import { ReorderableCategoryList } from "@/components/categories/reorderable-category-list";
 import { NewCategoryButton } from "./new-category-button";
+import type { Currency } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriasPage() {
-  const [all, stats] = await Promise.all([
+  const [all, stats, budgets] = await Promise.all([
     listCategories({ includeArchived: true }),
     getCategoryStats(3),
+    getActiveBudgetsForMonth(),
   ]);
+  const budgetMap = new Map<string, { amount: number; currency: Currency }>();
+  for (const [catId, b] of budgets) {
+    budgetMap.set(catId, { amount: Number(b.amount), currency: b.currency });
+  }
   const income = all.filter((c) => c.kind === "income" && !c.is_archived);
   const expense = all.filter((c) => c.kind === "expense" && !c.is_archived);
   const archived = all.filter((c) => c.is_archived);
@@ -58,7 +65,7 @@ export default async function CategoriasPage() {
           {income.length === 0 ? (
             <Empty />
           ) : (
-            <ReorderableCategoryList initial={income} statsMap={stats} />
+            <ReorderableCategoryList initial={income} statsMap={stats} budgetMap={budgetMap} />
           )}
         </Panel>
 
@@ -70,7 +77,7 @@ export default async function CategoriasPage() {
           {expense.length === 0 ? (
             <Empty />
           ) : (
-            <ReorderableCategoryList initial={expense} statsMap={stats} />
+            <ReorderableCategoryList initial={expense} statsMap={stats} budgetMap={budgetMap} />
           )}
         </Panel>
       </div>

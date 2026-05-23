@@ -21,9 +21,12 @@ type Category = Tables<"categories">;
 export function ReorderableCategoryList({
   initial,
   statsMap,
+  budgetMap,
 }: {
   initial: Category[];
   statsMap: Map<string, CategoryStats>;
+  /** Map<categoryId, {amount, currency}> com budget vigente */
+  budgetMap?: Map<string, { amount: number; currency: "BRL" | "EUR" | "USD" }>;
 }) {
   const [, isPending] = useTransition();
   void isPending;
@@ -67,6 +70,8 @@ export function ReorderableCategoryList({
             <CategoryRow
               category={c}
               stats={statsMap.get(c.id)}
+              budgetAmount={budgetMap?.get(c.id)?.amount}
+              budgetCurrency={budgetMap?.get(c.id)?.currency}
               canMoveUp={idx > 0}
               canMoveDown={idx < optimisticItems.length - 1}
               onMoveUp={() => move(idx, "up")}

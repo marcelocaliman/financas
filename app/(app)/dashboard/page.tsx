@@ -27,6 +27,8 @@ import { listGoalsEnriched } from "@/services/goals";
 import { getAportSuggestions } from "@/services/goal-suggestions";
 import { getGoalReminders } from "@/services/goal-reminders";
 import { GoalRemindersCard } from "@/components/goals/goal-reminders-card";
+import { getBudgetVsActual } from "@/services/budgets";
+import { BudgetStatusCard } from "@/components/budgets/budget-status-card";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -83,6 +85,7 @@ export default async function DashboardPage({
     history6,
     apportSuggestions,
     goalReminders,
+    budgetRows,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -102,6 +105,7 @@ export default async function DashboardPage({
     isCurrent ? getMonthlyHistory(6) : Promise.resolve([]),
     isCurrent ? getAportSuggestions() : Promise.resolve([]),
     isCurrent ? getGoalReminders(30) : Promise.resolve([]),
+    isCurrent ? getBudgetVsActual() : Promise.resolve([]),
   ]);
 
   // Patrimônio total SEM dupla contagem
@@ -261,6 +265,12 @@ export default async function DashboardPage({
       {isCurrent && goalReminders.length > 0 ? (
         <div className="mb-6">
           <GoalRemindersCard reminders={goalReminders} />
+        </div>
+      ) : null}
+
+      {isCurrent && budgetRows.some((r) => r.status !== "no_budget") ? (
+        <div className="mb-6">
+          <BudgetStatusCard rows={budgetRows} />
         </div>
       ) : null}
 

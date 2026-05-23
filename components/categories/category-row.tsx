@@ -16,6 +16,7 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Money } from "@/components/ui/money";
 import type { CategoryStats } from "@/services/categories";
+import { BudgetInlineEditor } from "@/components/budgets/budget-inline-editor";
 
 type Category = Tables<"categories">;
 
@@ -34,6 +35,8 @@ const kindLabel: Record<string, string> = {
 export function CategoryRow({
   category,
   stats,
+  budgetAmount,
+  budgetCurrency,
   canMoveUp,
   canMoveDown,
   onMoveUp,
@@ -42,6 +45,9 @@ export function CategoryRow({
 }: {
   category: Category;
   stats?: CategoryStats;
+  /** Orçamento mensal atual desta categoria, 0 se não há */
+  budgetAmount?: number;
+  budgetCurrency?: "BRL" | "EUR" | "USD";
   canMoveUp?: boolean;
   canMoveDown?: boolean;
   onMoveUp?: () => void;
@@ -129,6 +135,18 @@ export function CategoryRow({
 
         {stats && !category.is_archived ? (
           <div className="hidden md:flex items-center gap-4 shrink-0">
+            {category.kind === "expense" ? (
+              <div className="text-right">
+                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint-foreground">
+                  Orçamento
+                </div>
+                <BudgetInlineEditor
+                  categoryId={category.id}
+                  currentAmount={budgetAmount ?? 0}
+                  currency={budgetCurrency ?? "BRL"}
+                />
+              </div>
+            ) : null}
             <div className="text-right">
               <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint-foreground">
                 Média/mês

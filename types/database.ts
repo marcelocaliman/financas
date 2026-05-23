@@ -725,6 +725,34 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["goal_contributions"]["Insert"]>;
         Relationships: [];
       };
+      category_budgets: {
+        Row: {
+          id: string;
+          household_id: string;
+          category_id: string;
+          start_month: string;
+          amount: number;
+          currency: Currency;
+          alert_threshold: number;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          category_id: string;
+          start_month: string;
+          amount: number;
+          currency?: Currency;
+          alert_threshold?: number;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["category_budgets"]["Insert"]>;
+        Relationships: [];
+      };
       redemption_intents: {
         Row: {
           id: string;
