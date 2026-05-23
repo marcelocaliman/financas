@@ -9,6 +9,7 @@ import { InsightCard } from "@/components/dashboard/insight-card";
 import { FireCard } from "@/components/dashboard/fire-card";
 import { GoalsTopCard } from "@/components/dashboard/goals-top-card";
 import { UpcomingObligationsCard } from "@/components/dashboard/upcoming-obligations-card";
+import { ApportSuggestionCard } from "@/components/dashboard/apport-suggestion-card";
 import {
   PatrimonioComposition,
   type CompositionBucket,
@@ -23,6 +24,7 @@ import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getRecurrencesForecast } from "@/services/recurrences";
 import { listGoalsEnriched } from "@/services/goals";
+import { getAportSuggestions } from "@/services/goal-suggestions";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -77,6 +79,7 @@ export default async function DashboardPage({
     patrimonioHistory,
     sobraHistory,
     history6,
+    apportSuggestions,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -94,6 +97,7 @@ export default async function DashboardPage({
     isCurrent ? getSobraHistory(6) : Promise.resolve([]),
     // Histórico de 6 meses pra calcular sobra média (usada no FIRE / metas ETA)
     isCurrent ? getMonthlyHistory(6) : Promise.resolve([]),
+    isCurrent ? getAportSuggestions() : Promise.resolve([]),
   ]);
 
   // Patrimônio total SEM dupla contagem
@@ -245,6 +249,10 @@ export default async function DashboardPage({
 
       {/* Insight de anomalias (somente mês corrente) */}
       {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
+
+      {isCurrent && apportSuggestions.length > 0 ? (
+        <ApportSuggestionCard suggestions={apportSuggestions} />
+      ) : null}
 
       {/* TIER 1 — IF + Cobertura (a estrela do dashboard pra FIRE) */}
       {isCurrent ? (
