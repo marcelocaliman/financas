@@ -9,10 +9,10 @@ export default function TransacoesLoading() {
         <Skeleton className="h-4 w-96" />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-6">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-24" />
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24 col-span-2 sm:col-span-1" />
       </div>
 
       <div className="flex gap-2 mb-4">

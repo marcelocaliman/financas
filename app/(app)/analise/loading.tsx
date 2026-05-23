@@ -9,10 +9,10 @@ export default function AnaliseLoading() {
         <Skeleton className="h-4 w-96" />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-28" />
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28 col-span-2 sm:col-span-1" />
       </div>
 
       <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-5">

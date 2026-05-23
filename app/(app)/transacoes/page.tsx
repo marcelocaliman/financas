@@ -141,7 +141,7 @@ export default async function TransacoesPage({
         }
       />
 
-      <div className="grid sm:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
         <KpiCard
           label="Entrou"
           value={summary.income}
@@ -160,6 +160,7 @@ export default async function TransacoesPage({
           value={summary.net}
           tone={summary.net >= 0 ? "positive" : "negative"}
           deltaAbs={netDelta}
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 

@@ -77,7 +77,7 @@ export default async function AnalisePage({
         }
       />
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         <KpiCard
           label={`Entrou em ${monthLabel}`}
           value={current?.income ?? 0}
@@ -102,6 +102,7 @@ export default async function AnalisePage({
           deltaAbs={netDelta}
           sparkline={netSpark}
           sparklineTone="navy"
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
