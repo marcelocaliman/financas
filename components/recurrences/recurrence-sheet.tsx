@@ -70,16 +70,21 @@ export function RecurrenceSheet({
   rule,
   accounts,
   categories,
+  defaultIsSubscription = false,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   rule?: RecurrenceRule | null;
   accounts: AccountLite[];
   categories: CategoryLite[];
+  /** Quando true, pré-marca o toggle "É assinatura" + força kind=expense */
+  defaultIsSubscription?: boolean;
 }) {
   const isEdit = !!rule;
 
-  const [kind, setKind] = useState<TransactionKind>(rule?.kind ?? "expense");
+  const [kind, setKind] = useState<TransactionKind>(
+    rule?.kind ?? (defaultIsSubscription ? "expense" : "expense"),
+  );
   const [currency, setCurrency] = useState<Currency>(rule?.currency ?? "BRL");
   const [accountId, setAccountId] = useState<string>(rule?.account_id ?? accounts[0]?.id ?? "");
   const [fromAccountId, setFromAccountId] = useState<string>(
@@ -405,6 +410,28 @@ export function RecurrenceSheet({
               placeholder="Vencimento todo dia 5, débito automático…"
             />
           </Field>
+
+          {/* Toggle "é uma assinatura" — só aparece pra despesa mensal/anual */}
+          {kind === "expense" && (frequency === "monthly" || frequency === "yearly") ? (
+            <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-surface-muted/50 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isSubscription"
+                value="1"
+                defaultChecked={
+                  (rule?.tags ?? []).includes("subscription") || defaultIsSubscription
+                }
+                className="mt-0.5 accent-navy-700"
+              />
+              <div>
+                <div className="text-[13px] text-foreground font-medium">É uma assinatura</div>
+                <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
+                  Aparece em <code className="text-faint-foreground">/assinaturas</code> com totalizador anual.
+                  Marca automaticamente se o nome contém Netflix, Spotify, Claude, etc.
+                </div>
+              </div>
+            </label>
+          ) : null}
 
           {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
 

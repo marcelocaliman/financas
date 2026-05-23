@@ -28,6 +28,7 @@ const baseSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   notes: z.string().optional().nullable(),
+  isSubscription: z.coerce.boolean().optional(),
 });
 
 const updateSchema = baseSchema.extend({ id: z.string().uuid() });
@@ -73,6 +74,7 @@ function readForm(formData: FormData) {
     startDate: get("startDate"),
     endDate: get("endDate") || undefined,
     notes: get("notes") || undefined,
+    isSubscription: get("isSubscription") === "1" || get("isSubscription") === "true",
   };
 }
 
@@ -130,6 +132,7 @@ export async function createRecurringRule(
     start_date: parsed.data.startDate,
     end_date: parsed.data.endDate ?? null,
     notes: parsed.data.notes?.trim() ?? null,
+    tags: parsed.data.isSubscription ? ["subscription"] : [],
     created_by: ctx.profile.id,
   });
   if (error) return { error: error.message };
@@ -158,6 +161,18 @@ export async function updateRecurringRule(
 
   const supabase = await createClient();
   const isTransfer = parsed.data.kind === "transfer";
+
+  // Preserva outras tags (não-subscription) e adiciona/remove apenas 'subscription'
+  // conforme o checkbox. Pra rule nova (sem fetch prévio), o default vem do trigger.
+  const { data: current } = await supabase
+    .from("recurring_rules")
+    .select("tags")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  const existingTags = (current?.tags ?? []) as string[];
+  const otherTags = existingTags.filter((t) => t !== "subscription");
+  const newTags = parsed.data.isSubscription ? [...otherTags, "subscription"] : otherTags;
+
   const { error } = await supabase
     .from("recurring_rules")
     .update({
@@ -177,6 +192,7 @@ export async function updateRecurringRule(
       start_date: parsed.data.startDate,
       end_date: parsed.data.endDate ?? null,
       notes: parsed.data.notes?.trim() ?? null,
+      tags: newTags,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

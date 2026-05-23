@@ -5,14 +5,32 @@ import { KpiCard } from "@/components/ui/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { listSubscriptions } from "@/services/subscriptions";
+import { listAccounts } from "@/services/accounts";
+import { listCategories } from "@/services/categories";
 import { formatDateShort, formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { SubscriptionRowActions } from "@/components/subscriptions/subscription-row-actions";
+import { NewSubscriptionButton } from "@/components/subscriptions/new-subscription-button";
 
 export const dynamic = "force-dynamic";
 
 export default async function AssinaturasPage() {
-  const subs = await listSubscriptions();
+  const [subs, accounts, categories] = await Promise.all([
+    listSubscriptions(),
+    listAccounts(),
+    listCategories(),
+  ]);
+  const accountsLite = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    institution: a.institution,
+    currency: a.currency,
+  }));
+  const categoriesLite = categories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    kind: c.kind,
+  }));
   const monthlyTotal = subs.reduce((s, x) => s + x.monthlyInDisplay, 0);
   const yearlyTotal = monthlyTotal * 12;
   const dailyAverage = yearlyTotal / 365;
@@ -32,6 +50,7 @@ export default async function AssinaturasPage() {
           </>
         }
         subtitle="Streamings, academia, plano de software — o gotejamento silencioso. Cada uma parece pouco; o total anual nem tanto."
+        actions={<NewSubscriptionButton accounts={accountsLite} categories={categoriesLite} />}
       />
 
       {subs.length === 0 ? (
@@ -241,10 +260,10 @@ function EmptyState() {
           Vc não tem assinaturas mapeadas.
         </h2>
         <p className="text-[13.5px] text-muted-foreground mt-2.5 leading-relaxed">
-          A app classifica automaticamente regras recorrentes com keywords
-          conhecidas (Netflix, Spotify, gym, Adobe…). Pra uma regra existente
-          virar assinatura, vá em <a className="text-navy-700" href="/recorrentes">/recorrentes</a>{" "}
-          e use o botão de marcar como assinatura.
+          Use o botão <b>&ldquo;Nova assinatura&rdquo;</b> acima pra cadastrar a primeira.
+          Ou cadastre normalmente em <a className="text-navy-700" href="/recorrentes">/recorrentes</a>{" "}
+          — recorrências com nomes conhecidos (Netflix, Spotify, Claude, gym…) são
+          classificadas automaticamente.
         </p>
       </div>
     </Panel>
