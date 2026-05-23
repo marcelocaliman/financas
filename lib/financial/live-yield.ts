@@ -13,7 +13,11 @@
  */
 
 import type { Quote } from "./brapi";
-import { businessDaysSinceContinuous, isBusinessDay } from "./business-days";
+import {
+  businessDaysSinceContinuous,
+  isBusinessDay,
+  todayBusinessProgress,
+} from "./business-days";
 
 type IndexerCode = "selic" | "cdi" | "ipca";
 
@@ -342,32 +346,21 @@ export function computeLivePortfolio(args: {
 }
 
 /**
- * Fração do dia útil já transcorrida agora (em America/Sao_Paulo).
- * Útil pra mostrar "Hoje (até agora)" sem precisar de banco.
- * Considera 10h-18h BRT como janela útil.
+ * Fração do dia útil corrente já transcorrida (em America/Sao_Paulo).
+ *
+ * IMPORTANTE: delega pra `todayBusinessProgress` (fração de 24h em SP, 0
+ * em fim de semana/feriado) pra ficar EM SINCRONIA com o cálculo do
+ * `derivedBalance` server-side, que também usa `todayBusinessProgress`
+ * dentro de `businessDaysSinceContinuous`.
+ *
+ * Antes, esta função usava janela de pregão (10h-18h) e retornava 1 em fim
+ * de semana — o que duplicava o yield no client (servidor já incluía sexta
+ * no base, e o ticker somava mais um `dailyYield × 1` em cima).
+ *
+ * Agora cliente e servidor concordam:
+ *  - Dia útil em SP: ratio = fração do dia (00h→24h)
+ *  - Fim de semana ou feriado: ratio = 0 (sem yield novo; tudo já no base)
  */
 export function dayUtilizationRatio(now: Date = new Date()): number {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/Sao_Paulo",
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    weekday: "short",
-  });
-  const parts = fmt.formatToParts(now);
-  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
-  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
-  const second = Number(parts.find((p) => p.type === "second")?.value ?? 0);
-  const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
-
-  const isWeekend = weekday === "Sat" || weekday === "Sun";
-  if (isWeekend) return 1; // weekend: já contou tudo de sexta
-
-  const secondsToday = hour * 3600 + minute * 60 + second;
-  const start = 10 * 3600;
-  const end = 18 * 3600;
-  if (secondsToday < start) return 0;
-  if (secondsToday > end) return 1;
-  return (secondsToday - start) / (end - start);
+  return todayBusinessProgress(now);
 }
