@@ -165,7 +165,50 @@ export type AccountWithBalance = Account & {
   /** "current" = saldo atual; "historical" = saldo retroativo (passado);
    *  "forecast" = saldo previsto (futuro com forecast aplicado). */
   balanceMode: "current" | "historical" | "forecast";
+  /**
+   * Para contas type='investment' (corretora): soma do current_balance de
+   * todos os ativos linkados a essa conta (em moeda nativa da conta, via
+   * convertOrSame). Permite mostrar Caixa + Ativos + Total no card.
+   * Para outros tipos é 0.
+   */
+  assetsBalance: number;
 };
+
+/** Calcula soma de ativos por account_id em moeda nativa de cada conta */
+async function getAssetsBalanceByAccount(
+  accounts: Account[],
+): Promise<Map<string, number>> {
+  const investmentAccountIds = accounts
+    .filter((a) => a.type === "investment")
+    .map((a) => a.id);
+  if (investmentAccountIds.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data: invs } = await supabase
+    .from("investments")
+    .select("account_id, current_balance, currency")
+    .eq("is_active", true)
+    .in("account_id", investmentAccountIds);
+
+  const rates = await getRateMap();
+  const accountById = new Map(accounts.map((a) => [a.id, a]));
+  const out = new Map<string, number>();
+  for (const i of invs ?? []) {
+    const acc = accountById.get(i.account_id);
+    if (!acc) continue;
+    const native = Number(i.current_balance ?? 0);
+    // Ativos podem estar em moeda diferente da conta (CDB em BRL, REIT em USD,
+    // etc). Convertemos para a moeda nativa da conta da corretora.
+    const inAccCurrency = convertOrSame(
+      native,
+      i.currency,
+      acc.currency,
+      rates,
+    );
+    out.set(i.account_id, (out.get(i.account_id) ?? 0) + inAccCurrency);
+  }
+  return out;
+}
 
 function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -182,11 +225,14 @@ export async function listAccountsForMonth(
   opts?: { includeArchived?: boolean },
 ): Promise<AccountWithBalance[]> {
   const accounts = await listAccounts(opts);
+  const assetsByAccount = await getAssetsBalanceByAccount(accounts);
+
   if (position === "current") {
     return accounts.map((a) => ({
       ...a,
       displayBalance: Number(a.current_balance ?? 0),
       balanceMode: "current" as const,
+      assetsBalance: assetsByAccount.get(a.id) ?? 0,
     }));
   }
 
@@ -286,6 +332,9 @@ export async function listAccountsForMonth(
       ...a,
       displayBalance: balance,
       balanceMode: position === "past" ? ("historical" as const) : ("forecast" as const),
+      // Ativos só fazem sentido no presente (não temos snapshot histórico
+      // por ativo). Pra mês passado/futuro mostramos valor atual mesmo.
+      assetsBalance: assetsByAccount.get(a.id) ?? 0,
     };
   });
 }

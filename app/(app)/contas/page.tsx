@@ -221,6 +221,7 @@ function AccountsByType({
                     account={a}
                     displayBalance={a.displayBalance}
                     balanceMode={a.balanceMode}
+                    assetsBalance={a.assetsBalance}
                   />
                 </StaggeredItem>
               ))}

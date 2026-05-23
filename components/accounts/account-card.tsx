@@ -33,6 +33,7 @@ export function AccountCard({
   displayBalance,
   balanceMode = "current",
   balanceLabel,
+  assetsBalance = 0,
 }: {
   account: Account;
   /** Saldo a exibir; default = account.current_balance */
@@ -41,6 +42,11 @@ export function AccountCard({
   balanceMode?: "current" | "historical" | "forecast";
   /** Sobrescreve "Saldo atual" quando viewing past/future */
   balanceLabel?: string;
+  /**
+   * Soma do current_balance dos investimentos linkados (apenas type='investment').
+   * Quando > 0, o card mostra três linhas: Caixa, Ativos, Total.
+   */
+  assetsBalance?: number;
 }) {
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
@@ -175,21 +181,32 @@ export function AccountCard({
         </div>
 
         <div className="mt-5">
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
-            {labelText}
-            {balanceMode === "forecast" ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-gold-600/15 text-gold-700 dark:text-gold-500 text-[9.5px] font-mono tracking-[0.12em] uppercase">
-                Previsão
-              </span>
-            ) : null}
-          </div>
-          <Money
-            value={balance}
-            currency={account.currency}
-            showComparison
-            className={cn("text-[24px] tracking-[-0.02em] mt-1 items-start", balanceColor)}
-            secondaryClassName="text-[11px]"
-          />
+          {account.type === "investment" && assetsBalance > 0 ? (
+            <InvestmentBreakdown
+              cash={balance}
+              assets={assetsBalance}
+              currency={account.currency}
+              balanceMode={balanceMode}
+            />
+          ) : (
+            <>
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
+                {labelText}
+                {balanceMode === "forecast" ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-gold-600/15 text-gold-700 dark:text-gold-500 text-[9.5px] font-mono tracking-[0.12em] uppercase">
+                    Previsão
+                  </span>
+                ) : null}
+              </div>
+              <Money
+                value={balance}
+                currency={account.currency}
+                showComparison
+                className={cn("text-[24px] tracking-[-0.02em] mt-1 items-start", balanceColor)}
+                secondaryClassName="text-[11px]"
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -200,5 +217,73 @@ export function AccountCard({
         </>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Breakdown pra conta tipo investment (corretora): mostra
+ * Caixa (parado, ainda não aplicado) + Ativos (soma dos investimentos
+ * linkados) + Total. Total é o que o usuário mentalmente vê como "o
+ * saldo da corretora".
+ *
+ * O total não entra duas vezes no patrimônio líquido global: o cálculo
+ * de getAccountsTotals exclui o caixa de corretora (anti-double-count) e
+ * getPortfolioStats traz os ativos por fora.
+ */
+function InvestmentBreakdown({
+  cash,
+  assets,
+  currency,
+  balanceMode,
+}: {
+  cash: number;
+  assets: number;
+  currency: "BRL" | "EUR" | "USD";
+  balanceMode: "current" | "historical" | "forecast";
+}) {
+  const total = cash + assets;
+  return (
+    <div>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
+        Total na corretora
+        {balanceMode === "forecast" ? (
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded-[4px] bg-gold-600/15 text-gold-700 dark:text-gold-500 text-[9.5px] font-mono tracking-[0.12em] uppercase">
+            Previsão
+          </span>
+        ) : null}
+      </div>
+      <Money
+        value={total}
+        currency={currency}
+        showComparison
+        className="text-[24px] tracking-[-0.02em] mt-1 items-start text-foreground"
+        secondaryClassName="text-[11px]"
+      />
+      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground">
+            Caixa parado
+          </span>
+          <Money
+            value={cash}
+            currency={currency}
+            className={cn(
+              "font-mono text-[12.5px] tabular-nums inline-flex !flex-row !items-baseline",
+              cash > 0 ? "text-foreground" : "text-faint-foreground",
+            )}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground">
+            Em ativos
+          </span>
+          <Money
+            value={assets}
+            currency={currency}
+            className="font-mono text-[12.5px] tabular-nums text-foreground inline-flex !flex-row !items-baseline"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
