@@ -199,6 +199,9 @@ export default async function ResgatesPage() {
             <WithdrawSimulator
               sacavelAgora={yieldOverview.totals.accumulatedYield}
               principal={yieldOverview.totals.principal}
+              derivedBalance={
+                yieldOverview.totals.principal + yieldOverview.totals.accumulatedYield
+              }
               monthlyYield={yieldOverview.totals.monthlyYield}
               monthlyExpense={monthlyExpense}
             />
