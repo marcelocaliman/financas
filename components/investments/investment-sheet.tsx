@@ -117,7 +117,7 @@ export function InvestmentSheet({
         {investmentAccounts.length === 0 ? (
           <p className="text-[13.5px] text-muted-foreground">
             Você precisa de pelo menos uma conta do tipo <b>investimento</b> antes de
-            cadastrar ativos. Vai em <a className="text-navy-700" href="/contas">/contas</a>
+            cadastrar ativos. Vai em <a className="text-navy-700 dark:text-navy-300" href="/contas">/contas</a>
             {" "}e cria uma corretora (XP, Rico, Inter…).
           </p>
         ) : (

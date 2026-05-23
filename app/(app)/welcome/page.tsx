@@ -40,7 +40,7 @@ export default async function WelcomePage({
         eyebrow={`Bem-vindo${ctx.profile.display_name ? `, ${ctx.profile.display_name.split(" ")[0]}` : ""}`}
         title={
           <>
-            Vamos montar sua <em className="not-italic font-display italic text-navy-700">casa.</em>
+            Vamos montar sua <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">casa.</em>
           </>
         }
         subtitle="4 passos rápidos pra você sair com o essencial: contas, renda, despesas fixas e (opcional) sua primeira meta."

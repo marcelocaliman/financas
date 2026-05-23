@@ -60,7 +60,7 @@ export function FireConnection({
                     <MoneyMask>{formatMoney(monthlySavings)}</MoneyMask>/mês
                   </b>
                   , chega a 100% em{" "}
-                  <b className="text-navy-700">
+                  <b className="text-navy-700 dark:text-navy-300">
                     {monthsToFI < 12
                       ? `${monthsToFI} ${monthsToFI === 1 ? "mês" : "meses"}`
                       : `${(monthsToFI / 12).toFixed(1).replace(".", ",")} anos`}
@@ -82,7 +82,7 @@ export function FireConnection({
             </div>
           </div>
         </div>
-        <ArrowRight className="w-4 h-4 text-faint-foreground group-hover:text-navy-700 transition-colors shrink-0" strokeWidth={1.7} />
+        <ArrowRight className="w-4 h-4 text-faint-foreground group-hover:text-navy-700 dark:text-navy-300 transition-colors shrink-0" strokeWidth={1.7} />
       </div>
     </Link>
   );

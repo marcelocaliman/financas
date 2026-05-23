@@ -54,7 +54,7 @@ export function InsightCard({ anomalies }: { anomalies: ExpenseAnomaly[] }) {
         </p>
         <Link
           href={`/transacoes?kind=expense${top.categoryId ? "" : ""}`}
-          className="inline-block mt-2 text-[12.5px] font-medium text-navy-700 hover:text-navy-900"
+          className="inline-block mt-2 text-[12.5px] font-medium text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
         >
           Ver lançamentos →
         </Link>

@@ -151,7 +151,7 @@ export function TransactionTagsEditor({
               <button
                 type="button"
                 onClick={() => addTag(draft)}
-                className="w-full text-left px-2 py-1 rounded-[4px] hover:bg-surface-muted text-[12px] font-mono text-navy-700"
+                className="w-full text-left px-2 py-1 rounded-[4px] hover:bg-surface-muted text-[12px] font-mono text-navy-700 dark:text-navy-300"
               >
                 + criar &ldquo;{draft.toLowerCase()}&rdquo;
               </button>

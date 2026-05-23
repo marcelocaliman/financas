@@ -38,7 +38,7 @@ export function AssetYieldTable({
   if (rows.length === 0) {
     return (
       <p className="text-[13px] text-muted-foreground italic">
-        Sem ativos de renda fixa cadastrados. Vá em <a href="/investimentos" className="text-navy-700">/investimentos</a> e
+        Sem ativos de renda fixa cadastrados. Vá em <a href="/investimentos" className="text-navy-700 dark:text-navy-300">/investimentos</a> e
         adicione seu primeiro Tesouro, CDB, LCI ou LCA.
       </p>
     );
@@ -132,7 +132,7 @@ export function AssetYieldTable({
                     type="button"
                     onClick={() => setWithdrawing(r)}
                     disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
-                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100"
+                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100"
                     aria-label="Sacar rendimento"
                     title={
                       r.accumulatedYield <= 0

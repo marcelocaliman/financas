@@ -26,7 +26,7 @@ export function SmartInsightsCard({ insights }: { insights: Insight[] }) {
       <PanelHeader
         title={
           <span className="inline-flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+            <Sparkles className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
             Achados desta semana
           </span>
         }
@@ -65,7 +65,7 @@ function InsightRow({ insight }: { insight: Insight }) {
           {insight.href ? (
             <Link
               href={insight.href}
-              className="inline-flex items-center gap-1 mt-2 text-[12px] text-navy-700 hover:text-navy-900 dark:text-navy-300 transition-colors"
+              className="inline-flex items-center gap-1 mt-2 text-[12px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 dark:text-navy-300 transition-colors"
             >
               {insight.hrefLabel ?? "Abrir"}
               <ArrowRight className="w-3 h-3" strokeWidth={1.8} />

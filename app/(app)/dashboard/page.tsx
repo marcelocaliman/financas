@@ -219,7 +219,7 @@ export default async function DashboardPage({
         title={
           <>
             {greeting},{" "}
-            <em className="not-italic font-display italic text-navy-700">{firstName}.</em>
+            <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">{firstName}.</em>
           </>
         }
         subtitle={subtitle}
@@ -373,7 +373,7 @@ function CoveragePanel({
         style={{ background: "radial-gradient(circle, rgba(176,123,50,0.07), transparent 70%)" }}
       />
       <div className="relative z-10">
-        <div className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-navy-700 mb-2.5 font-medium">
+        <div className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-navy-700 dark:text-navy-300 mb-2.5 font-medium">
           Renda do patrimônio
         </div>
         <div className="font-mono text-[28px] tracking-[-0.025em] text-foreground leading-none">

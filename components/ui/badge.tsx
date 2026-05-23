@@ -6,7 +6,7 @@ const tones = {
   olive: "bg-olive-100 text-olive-700",
   rust: "bg-rust-100 text-rust-700",
   gold: "bg-gold-100 text-gold-700",
-  navy: "bg-navy-100 text-navy-700",
+  navy: "bg-navy-100 text-navy-700 dark:text-navy-300",
 } as const;
 
 export type BadgeTone = keyof typeof tones;

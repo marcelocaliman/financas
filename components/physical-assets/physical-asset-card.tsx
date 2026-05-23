@@ -122,7 +122,7 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
               type="button"
               onClick={handleRestore}
               disabled={pending}
-              className="inline-flex items-center gap-1 text-[12.5px] font-medium text-foreground hover:text-navy-700"
+              className="inline-flex items-center gap-1 text-[12.5px] font-medium text-foreground hover:text-navy-700 dark:text-navy-300"
             >
               <RotateCcw className="w-3 h-3" strokeWidth={1.7} />
               Restaurar

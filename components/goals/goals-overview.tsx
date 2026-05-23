@@ -40,7 +40,7 @@ export function GoalsOverview({
     <Panel className="!p-7">
       <div className="grid sm:grid-cols-[1fr_1fr_1fr] gap-6">
         <Stat
-          icon={<Target className="w-3.5 h-3.5 text-navy-700" strokeWidth={1.7} />}
+          icon={<Target className="w-3.5 h-3.5 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />}
           label="Earmarked nas metas"
           value={totalAlocadoDisplay}
           hint={

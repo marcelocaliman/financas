@@ -36,7 +36,7 @@ export function LatestTransactionsPanel({
         </h2>
         <Link
           href="/transacoes"
-          className="text-navy-700 text-[13px] hover:text-navy-900 transition-colors"
+          className="text-navy-700 dark:text-navy-300 text-[13px] hover:text-navy-900 dark:hover:text-navy-100 transition-colors"
         >
           Ver todas →
         </Link>

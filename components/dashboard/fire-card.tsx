@@ -72,7 +72,7 @@ export function FireCard({
                 <>Você já está <em className="italic text-olive-700">livre</em>.</>
               ) : (
                 <>
-                  <span className="text-navy-700">{pct}%</span> das despesas cobertas
+                  <span className="text-navy-700 dark:text-navy-300">{pct}%</span> das despesas cobertas
                 </>
               )}
             </div>

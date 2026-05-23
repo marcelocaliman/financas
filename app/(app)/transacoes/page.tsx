@@ -126,7 +126,7 @@ export default async function TransacoesPage({
         eyebrow={`${monthLabel} · ${from} → ${to}`}
         title={
           <>
-            Todas as <em className="not-italic font-display italic text-navy-700">transações</em>
+            Todas as <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">transações</em>
           </>
         }
         subtitle={`${summary.transactionCount} movimento${summary.transactionCount !== 1 ? "s" : ""} esse mês — entre receitas, despesas e transferências internas.`}

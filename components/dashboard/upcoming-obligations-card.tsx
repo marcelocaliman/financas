@@ -63,7 +63,7 @@ export function UpcomingObligationsCard({
           </p>
           <Link
             href="/recorrentes"
-            className="inline-block mt-2 text-[12.5px] text-navy-700 hover:text-navy-900 font-medium"
+            className="inline-block mt-2 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 font-medium"
           >
             Cadastrar recorrência →
           </Link>
@@ -79,7 +79,7 @@ export function UpcomingObligationsCard({
             <div className="px-5 py-3 border-t border-border text-right">
               <Link
                 href="/recorrentes"
-                className="text-[12px] text-navy-700 hover:text-navy-900"
+                className="text-[12px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
               >
                 + {upcoming.items.length - top.length} outras →
               </Link>
@@ -137,7 +137,7 @@ function UpcomingItemRow({ item }: { item: ReturnType<() => UpcomingSummary["ite
     ) : item.kind === "expense" ? (
       <ArrowUpRight className="w-3 h-3 text-rust-600" strokeWidth={1.8} />
     ) : (
-      <ArrowLeftRight className="w-3 h-3 text-navy-700" strokeWidth={1.8} />
+      <ArrowLeftRight className="w-3 h-3 text-navy-700 dark:text-navy-300" strokeWidth={1.8} />
     );
   const accountLabel =
     item.kind === "transfer"

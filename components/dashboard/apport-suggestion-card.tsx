@@ -61,7 +61,7 @@ export function ApportSuggestionCard({
   return (
     <Panel className="!p-5 mb-6 border-navy-700/30 bg-navy-50/50 dark:bg-navy-700/5">
       <div className="flex items-baseline gap-2 mb-3">
-        <Sparkles className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+        <Sparkles className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
         <h3 className="font-display text-[15px] font-medium tracking-[-0.01em] text-foreground">
           Possíveis aportes detectados
         </h3>

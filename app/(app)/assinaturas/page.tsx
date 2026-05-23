@@ -46,7 +46,7 @@ export default async function AssinaturasPage() {
         eyebrow={`${subs.length} ${subs.length === 1 ? "assinatura" : "assinaturas"} ativas`}
         title={
           <>
-            Suas <em className="not-italic font-display italic text-navy-700">assinaturas.</em>
+            Suas <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">assinaturas.</em>
           </>
         }
         subtitle="Streamings, academia, plano de software — o gotejamento silencioso. Cada uma parece pouco; o total anual nem tanto."
@@ -97,7 +97,7 @@ export default async function AssinaturasPage() {
               <PanelHeader
                 title={
                   <span className="inline-flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+                    <Calendar className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
                     Próximas cobranças
                   </span>
                 }
@@ -261,7 +261,7 @@ function EmptyState() {
         </h2>
         <p className="text-[13.5px] text-muted-foreground mt-2.5 leading-relaxed">
           Use o botão <b>&ldquo;Nova assinatura&rdquo;</b> acima pra cadastrar a primeira.
-          Ou cadastre normalmente em <a className="text-navy-700" href="/recorrentes">/recorrentes</a>{" "}
+          Ou cadastre normalmente em <a className="text-navy-700 dark:text-navy-300" href="/recorrentes">/recorrentes</a>{" "}
           — recorrências com nomes conhecidos (Netflix, Spotify, Claude, gym…) são
           classificadas automaticamente.
         </p>

@@ -37,7 +37,7 @@ export default async function CategoriasPage() {
         eyebrow="Vocabulário do dinheiro"
         title={
           <>
-            Suas <em className="not-italic font-display italic text-navy-700">categorias.</em>
+            Suas <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">categorias.</em>
           </>
         }
         subtitle="Cada lançamento ganha um nome — mercado, salário, delivery. Aqui você modela o vocabulário do casal."

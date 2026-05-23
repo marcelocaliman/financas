@@ -45,7 +45,7 @@ export function BudgetStatusCard({ rows }: { rows: BudgetVsActual[] }) {
         action={
           <Link
             href="/analise"
-            className="text-navy-700 text-[12.5px] hover:text-navy-900"
+            className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
           >
             Análise completa →
           </Link>
@@ -59,7 +59,7 @@ export function BudgetStatusCard({ rows }: { rows: BudgetVsActual[] }) {
       {withBudget.length > top.length ? (
         <Link
           href="/analise"
-          className="block mt-4 text-[12px] text-faint-foreground hover:text-navy-700"
+          className="block mt-4 text-[12px] text-faint-foreground hover:text-navy-700 dark:text-navy-300"
         >
           + {withBudget.length - top.length} outras categorias →
         </Link>

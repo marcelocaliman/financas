@@ -75,7 +75,7 @@ export function TransactionsKeyboardNav({
               active === i.key
                 ? "bg-navy-700 text-white border-navy-700 scale-110"
                 : currentKind === i.value
-                  ? "border-navy-700 text-navy-700"
+                  ? "border-navy-700 text-navy-700 dark:text-navy-300"
                   : ""
             }`}
           >

@@ -67,7 +67,7 @@ export function GoalRemindersCard({
         <PanelHeader
           title={
             <span className="inline-flex items-center gap-2">
-              <Bell className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+              <Bell className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
               Aportes do mês
             </span>
           }
@@ -75,7 +75,7 @@ export function GoalRemindersCard({
           action={
             <Link
               href="/metas"
-              className="text-navy-700 text-[12.5px] hover:text-navy-900"
+              className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
             >
               Ver metas →
             </Link>
@@ -146,7 +146,7 @@ function StatusIcon({ status }: { status: GoalReminder["status"] }) {
   if (status === "due_today") {
     return <Calendar className="w-4 h-4 text-gold-700 dark:text-gold-500 shrink-0" strokeWidth={1.8} />;
   }
-  return <Calendar className="w-4 h-4 text-navy-700 shrink-0" strokeWidth={1.8} />;
+  return <Calendar className="w-4 h-4 text-navy-700 dark:text-navy-300 shrink-0" strokeWidth={1.8} />;
 }
 
 function labelFor(r: GoalReminder): string {

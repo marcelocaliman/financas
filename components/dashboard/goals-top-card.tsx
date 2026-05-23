@@ -35,7 +35,7 @@ export function GoalsTopCard({
         <PanelHeader
           title={
             <span className="inline-flex items-center gap-2">
-              <Target className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+              <Target className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
               Metas em curso
             </span>
           }
@@ -47,7 +47,7 @@ export function GoalsTopCard({
           action={
             <Link
               href="/metas"
-              className="text-navy-700 text-[12.5px] hover:text-navy-900"
+              className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
             >
               Ver todas →
             </Link>
@@ -63,7 +63,7 @@ export function GoalsTopCard({
           </p>
           <Link
             href="/metas"
-            className="inline-block mt-2 text-[12.5px] text-navy-700 hover:text-navy-900 font-medium"
+            className="inline-block mt-2 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 dark:hover:text-navy-100 font-medium"
           >
             Criar primeira meta →
           </Link>

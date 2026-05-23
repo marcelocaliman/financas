@@ -59,7 +59,7 @@ export default async function PatrimonioPage() {
         eyebrow={`Imobilizado · ${totals.count} ${totals.count === 1 ? "bem" : "bens"}`}
         title={
           <>
-            O que você <em className="not-italic font-display italic text-navy-700">possui.</em>
+            O que você <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">possui.</em>
           </>
         }
         subtitle="Apartamento, carro, moto, computador, obras, joias. Bens que têm valor mas não rendem automaticamente — entram só no patrimônio total."

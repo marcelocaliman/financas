@@ -117,7 +117,7 @@ export default async function ResgatesPage() {
         eyebrow="Renda passiva · viver dos juros"
         title={
           <>
-            Tirar renda para <em className="not-italic font-display italic text-navy-700">viver.</em>
+            Tirar renda para <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">viver.</em>
           </>
         }
         subtitle="Tudo em uma página: capacidade de saque agora, rendimento por ativo, simulador, trajetória do ano e regras."
@@ -381,7 +381,7 @@ function NextRemainder({
   return (
     <div className="rounded-[var(--radius-lg)] bg-navy-50 border border-navy-100 px-7 py-5 mb-6 flex items-start gap-4 relative overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-navy-700" />
-      <div className="w-9 h-9 rounded-[10px] bg-navy-100 text-navy-700 grid place-items-center shrink-0">
+      <div className="w-9 h-9 rounded-[10px] bg-navy-100 text-navy-700 dark:text-navy-300 grid place-items-center shrink-0">
         <Clock className="w-4 h-4" strokeWidth={1.7} />
       </div>
       <div className="flex-1 min-w-0">
@@ -486,7 +486,7 @@ function EmptyNoInvestments() {
           Cadastre ativos primeiro.
         </h2>
         <p className="text-[14px] text-muted-foreground mt-2.5 leading-relaxed">
-          Sem investimentos não há de onde sacar. Vai em <a className="text-navy-700" href="/investimentos">/investimentos</a> e
+          Sem investimentos não há de onde sacar. Vai em <a className="text-navy-700 dark:text-navy-300" href="/investimentos">/investimentos</a> e
           adicione seu primeiro Tesouro, FII ou CDB.
         </p>
       </div>

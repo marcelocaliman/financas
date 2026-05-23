@@ -100,7 +100,7 @@ function ProjCell({
   mask?: boolean;
 }) {
   const valueClass =
-    tone === "positive" ? "text-olive-700" : tone === "navy" ? "text-navy-700" : "text-foreground";
+    tone === "positive" ? "text-olive-700" : tone === "navy" ? "text-navy-700 dark:text-navy-300" : "text-foreground";
   return (
     <div>
       <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1 font-medium">

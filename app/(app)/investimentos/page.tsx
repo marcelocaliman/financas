@@ -84,7 +84,7 @@ export default async function InvestimentosPage() {
         eyebrow={`Patrimônio · ${investments.length} ativo${investments.length !== 1 ? "s" : ""}`}
         title={
           <>
-            A carteira <em className="not-italic font-display italic text-navy-700">respirando.</em>
+            A carteira <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">respirando.</em>
           </>
         }
         subtitle="Tesouro/CDB rendem com a Selic do BCB; ações/FIIs marcam a valor de mercado pela brapi."

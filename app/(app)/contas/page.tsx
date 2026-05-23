@@ -92,7 +92,7 @@ export default async function ContasPage({
         eyebrow="Onde o dinheiro mora"
         title={
           <>
-            Suas <em className="not-italic font-display italic text-navy-700">contas.</em>
+            Suas <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">contas.</em>
           </>
         }
         subtitle="Cartões, contas correntes, corretoras, dinheiro vivo — todos os endereços do seu patrimônio."

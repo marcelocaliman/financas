@@ -27,7 +27,7 @@ export default async function RelatoriosPage({
         eyebrow="Relatório anual"
         title={
           <>
-            Fechamento de <em className="not-italic font-display italic text-navy-700">{report.year}</em>
+            Fechamento de <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">{report.year}</em>
           </>
         }
         subtitle="Resumo do ano fiscal: fluxo de caixa, top categorias, bens declaráveis e proventos. Use como referência pra IRPF — não substitui orientação contábil."
@@ -167,7 +167,7 @@ export default async function RelatoriosPage({
         <PanelHeader
           title={
             <span className="inline-flex items-center gap-2">
-              <FileText className="w-4 h-4 text-navy-700" strokeWidth={1.7} />
+              <FileText className="w-4 h-4 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
               Declaração de bens · 31/dez
             </span>
           }
@@ -381,7 +381,7 @@ export default async function RelatoriosPage({
         <a
           href="/api/transactions/export"
           download={`financas-${report.year}.csv`}
-          className="inline-flex items-center gap-1.5 mt-4 text-[12.5px] text-navy-700 hover:text-navy-900 transition-colors"
+          className="inline-flex items-center gap-1.5 mt-4 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 transition-colors"
         >
           <Download className="w-3.5 h-3.5" strokeWidth={1.8} />
           Exportar transações em CSV

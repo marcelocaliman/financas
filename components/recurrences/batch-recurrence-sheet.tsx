@@ -255,7 +255,7 @@ export function BatchRecurrenceSheet({
                 <button
                   type="button"
                   onClick={addEmpty}
-                  className="text-navy-700 hover:text-navy-900 font-medium"
+                  className="text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 font-medium"
                 >
                   comece do zero
                 </button>

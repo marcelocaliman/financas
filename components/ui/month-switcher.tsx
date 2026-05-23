@@ -80,7 +80,7 @@ export function MonthSwitcher({
           <button
             type="button"
             onClick={() => navigate(null)}
-            className="px-2 py-1.5 text-[11.5px] font-medium text-navy-700 hover:text-navy-900 hover:bg-navy-50 dark:hover:bg-navy-900/30 rounded-[7px] transition-colors"
+            className="px-2 py-1.5 text-[11.5px] font-medium text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 hover:bg-navy-50 dark:hover:bg-navy-900/30 rounded-[7px] transition-colors"
           >
             Hoje
           </button>

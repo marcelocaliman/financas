@@ -91,7 +91,7 @@ export default async function RecorrentesPage() {
         eyebrow={`Cotidiano · ${active.length} ativa${active.length !== 1 ? "s" : ""}`}
         title={
           <>
-            Lançamentos <em className="not-italic font-display italic text-navy-700">recorrentes</em>
+            Lançamentos <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">recorrentes</em>
           </>
         }
         subtitle="Aluguel, salário, assinaturas, aporte mensal — defina uma vez e o app cria as transações nas datas certas."

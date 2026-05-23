@@ -13,7 +13,7 @@ export default function CadastroPage() {
         Começar
       </div>
       <h1 className="font-display text-[36px] leading-[1.05] tracking-[-0.035em] font-normal text-foreground">
-        Vamos abrir o seu <em className="not-italic font-display italic text-navy-700">lar.</em>
+        Vamos abrir o seu <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">lar.</em>
       </h1>
       <p className="text-muted-foreground text-[14.5px] mt-2 max-w-[360px]">
         Em três campos a casa fica de pé. Categorias padrão e contas vêm em seguida.
@@ -27,7 +27,7 @@ export default function CadastroPage() {
         Já tem conta?{" "}
         <Link
           href="/login"
-          className="text-foreground font-medium hover:text-navy-700 transition-colors"
+          className="text-foreground font-medium hover:text-navy-700 dark:text-navy-300 transition-colors"
         >
           Entrar →
         </Link>

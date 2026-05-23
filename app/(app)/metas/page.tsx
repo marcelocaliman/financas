@@ -112,7 +112,7 @@ export default async function MetasPage({
         eyebrow={`Objetivos · ritmo de R$${Math.round(averageMonthlyAddition).toLocaleString("pt-BR")}/mês`}
         title={
           <>
-            Metas e <em className="not-italic font-display italic text-navy-700">sonhos.</em>
+            Metas e <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">sonhos.</em>
           </>
         }
         subtitle="Vincule fontes reais (contas, investimentos), configure modo de aporte e veja a trajetória de cada uma — sem precisar atualizar nada à mão."
@@ -169,7 +169,7 @@ export default async function MetasPage({
             label="Metas ativas"
             textValue={
               <span className="inline-flex items-center gap-2">
-                <Target className="w-3.5 h-3.5 text-navy-700" strokeWidth={1.7} />
+                <Target className="w-3.5 h-3.5 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
                 {activeGoals.length}
               </span>
             }
