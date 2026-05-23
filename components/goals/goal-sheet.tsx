@@ -25,6 +25,8 @@ import {
 import type { Goal, EnrichedGoal } from "@/services/goals";
 import type { Currency, GoalAllocationMode, GoalSourceType, GoalType } from "@/types/database";
 import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import { computeFinancing } from "@/lib/financial/mortgage";
+import { formatMoney } from "@/lib/utils/format";
 import { GOAL_TYPE_ICONS, GOAL_TYPE_LABELS, GOAL_TYPE_DESCRIPTIONS } from "./goal-icons";
 
 type AccountLite = { id: string; name: string; institution: string };
@@ -97,6 +99,29 @@ export function GoalSheet({
   const [priority, setPriority] = useState<string>(
     goal?.priority ? String(goal.priority) : "100",
   );
+  // Financiamento (opcional) — quando ON, target_amount é recalculado
+  // automaticamente como propertyPrice × (downPct + closingPct).
+  const [isFinanced, setIsFinanced] = useState<boolean>(
+    goal?.property_price != null,
+  );
+  const [propertyPrice, setPropertyPrice] = useState<number>(
+    Number(goal?.property_price ?? 0),
+  );
+  const [downPct, setDownPct] = useState<number>(
+    Number(goal?.property_down_pct ?? 0.2),
+  );
+  const [closingPct, setClosingPct] = useState<number>(
+    Number(goal?.property_closing_pct ?? 0.05),
+  );
+  const [loanTermMonths, setLoanTermMonths] = useState<string>(
+    goal?.loan_term_months ? String(goal.loan_term_months) : "360",
+  );
+  const [loanAnnualRatePct, setLoanAnnualRatePct] = useState<string>(
+    goal?.loan_annual_rate_pct ? String(goal.loan_annual_rate_pct) : "11.5",
+  );
+  const [loanSystem, setLoanSystem] = useState<"sac" | "price">(
+    (goal?.loan_system as "sac" | "price") ?? "sac",
+  );
   const [sources, setSources] = useState<SourceDraft[]>(() =>
     enriched
       ? enriched.sources.map((s) => ({
@@ -127,6 +152,15 @@ export function GoalSheet({
       setContributionDay(goal?.contribution_day ? String(goal.contribution_day) : "");
       setTrackingStartsAt(goal?.tracking_starts_at ?? "");
       setPriority(goal?.priority ? String(goal.priority) : "100");
+      setIsFinanced(goal?.property_price != null);
+      setPropertyPrice(Number(goal?.property_price ?? 0));
+      setDownPct(Number(goal?.property_down_pct ?? 0.2));
+      setClosingPct(Number(goal?.property_closing_pct ?? 0.05));
+      setLoanTermMonths(goal?.loan_term_months ? String(goal.loan_term_months) : "360");
+      setLoanAnnualRatePct(
+        goal?.loan_annual_rate_pct ? String(goal.loan_annual_rate_pct) : "11.5",
+      );
+      setLoanSystem((goal?.loan_system as "sac" | "price") ?? "sac");
       setSources(
         enriched
           ? enriched.sources.map((s) => ({
@@ -173,6 +207,23 @@ export function GoalSheet({
   const updateSource = (id: string, patch: Partial<SourceDraft>) => {
     setSources((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   };
+
+  // Breakdown do financiamento (calculado em real-time quando isFinanced=true)
+  const financing = isFinanced
+    ? computeFinancing({
+        propertyPrice,
+        downPct,
+        closingPct,
+        loanTermMonths: Number(loanTermMonths) || 360,
+        loanAnnualRatePct: Number(loanAnnualRatePct) || 0,
+        loanSystem,
+      })
+    : null;
+
+  // Quando financiamento ON, o target_amount é o que precisa poupar (entrada + custos).
+  // O input de "Valor da meta" fica disabled e exibe esse valor calculado.
+  const effectiveTargetAmount =
+    isFinanced && financing ? financing.totalToSave : Number(goal?.target_amount ?? 0);
 
   const sourcesJson = JSON.stringify(
     sources.map((s) => ({
@@ -262,12 +313,24 @@ export function GoalSheet({
 
           {/* VALOR DA META + DATA */}
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Valor da meta" htmlFor="targetAmount" required>
+            <Field
+              label="Valor da meta"
+              htmlFor="targetAmount"
+              required
+              hint={
+                isFinanced
+                  ? "Calculado automaticamente (entrada + custos) na seção Financiamento"
+                  : undefined
+              }
+            >
               <MoneyInput
+                // Remount quando muda entre normal/financiado pra refletir o effectiveTargetAmount
+                key={`tgt-${isFinanced ? "fin" : "nor"}-${effectiveTargetAmount}`}
                 name="targetAmount"
                 id="targetAmount"
                 currency={currency}
-                defaultValue={Number(goal?.target_amount ?? 0)}
+                defaultValue={effectiveTargetAmount}
+                disabled={isFinanced}
               />
             </Field>
             <Field label="Data desejada" htmlFor="targetDate" hint="Opcional">
@@ -307,6 +370,159 @@ export function GoalSheet({
               name="currentAmount"
               value={Number(goal?.current_amount ?? 0)}
             />
+          ) : null}
+
+          {/* ============ FINANCIAMENTO (opcional, só pra type=casa) ============ */}
+          {goalType === "casa" ? (
+            <div className="rounded-[10px] border border-border bg-surface-muted/40 p-4">
+              <label className="flex items-center justify-between cursor-pointer mb-1">
+                <div>
+                  <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground font-medium">
+                    Vai financiar?
+                  </div>
+                  <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
+                    Recalcula o target pra entrada + custos e mostra parcela estimada.
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isFinanced}
+                  onChange={(e) => setIsFinanced(e.target.checked)}
+                  className="w-4 h-4 accent-navy-700"
+                />
+              </label>
+
+              {isFinanced && financing ? (
+                <div className="mt-4 space-y-3">
+                  <Field label={`Preço do imóvel (${CURRENCY_SYMBOLS[currency]})`} htmlFor="propertyPrice" required>
+                    <MoneyInput
+                      name="propertyPrice"
+                      id="propertyPrice"
+                      currency={currency}
+                      defaultValue={propertyPrice}
+                      onValueChange={setPropertyPrice}
+                    />
+                  </Field>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Entrada (%)" htmlFor="propertyDownPctInput" hint={`${formatMoney(financing.downPayment, currency)}`}>
+                      <Input
+                        id="propertyDownPctInput"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={Math.round(downPct * 100)}
+                        onChange={(e) => setDownPct(Math.max(0, Math.min(100, Number(e.target.value))) / 100)}
+                      />
+                      <input type="hidden" name="propertyDownPct" value={downPct} />
+                    </Field>
+                    <Field label="Custos cartório/ITBI (%)" htmlFor="propertyClosingPctInput" hint={`${formatMoney(financing.closingCosts, currency)}`}>
+                      <Input
+                        id="propertyClosingPctInput"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.5}
+                        value={Number((closingPct * 100).toFixed(2))}
+                        onChange={(e) => setClosingPct(Math.max(0, Math.min(100, Number(e.target.value))) / 100)}
+                      />
+                      <input type="hidden" name="propertyClosingPct" value={closingPct} />
+                    </Field>
+                  </div>
+
+                  {/* Destaque do total a poupar */}
+                  <div className="rounded-[8px] border border-olive-600/30 bg-olive-50 dark:bg-olive-700/10 px-4 py-2.5">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-olive-700 dark:text-olive-500 font-medium">
+                      A poupar (entrada + custos)
+                    </div>
+                    <div className="font-mono text-[18px] tabular-nums text-foreground mt-0.5">
+                      {formatMoney(financing.totalToSave, currency)}
+                      <span className="text-faint-foreground text-[11px] ml-2">vira o target da meta</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Prazo (meses)" htmlFor="loanTermMonths" hint={`${Math.round(Number(loanTermMonths) / 12)} anos`}>
+                      <Input
+                        id="loanTermMonths"
+                        name="loanTermMonths"
+                        type="number"
+                        min={1}
+                        max={600}
+                        step={12}
+                        value={loanTermMonths}
+                        onChange={(e) => setLoanTermMonths(e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Juros (% a.a.)" htmlFor="loanAnnualRatePct" hint="Nominal anual">
+                      <Input
+                        id="loanAnnualRatePct"
+                        name="loanAnnualRatePct"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={loanAnnualRatePct}
+                        onChange={(e) => setLoanAnnualRatePct(e.target.value)}
+                      />
+                    </Field>
+                  </div>
+
+                  <Field label="Sistema de amortização" htmlFor="loanSystem">
+                    <Select
+                      value={loanSystem}
+                      onValueChange={(v) => setLoanSystem(v as "sac" | "price")}
+                      name="loanSystem"
+                    >
+                      <SelectTrigger id="loanSystem">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sac">
+                          SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente (padrão Caixa)</span>
+                        </SelectItem>
+                        <SelectItem value="price">
+                          Price <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+
+                  {/* Resumo do financiamento */}
+                  <div className="rounded-[8px] border border-border bg-surface px-4 py-3 text-[12.5px] font-mono space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Valor financiado</span>
+                      <span className="text-foreground tabular-nums">{formatMoney(financing.loanAmount, currency)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {loanSystem === "sac" ? "Primeira parcela (maior)" : "Parcela mensal"}
+                      </span>
+                      <span className="text-rust-600 font-medium tabular-nums">
+                        {formatMoney(financing.firstPayment, currency)}
+                      </span>
+                    </div>
+                    {loanSystem === "sac" ? (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Última parcela (menor)</span>
+                        <span className="text-foreground tabular-nums">{formatMoney(financing.lastPayment, currency)}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between pt-1 border-t border-border">
+                      <span className="text-muted-foreground">Juros totais</span>
+                      <span className="text-rust-600 tabular-nums">
+                        {formatMoney(financing.totalInterest, currency)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Custo total (preço + juros)</span>
+                      <span className="text-foreground font-medium tabular-nums">{formatMoney(financing.totalCost, currency)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           {/* ============ SEÇÃO 1: QUANTO JÁ TENHO ============ */}

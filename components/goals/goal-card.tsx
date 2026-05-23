@@ -20,6 +20,7 @@ import { archiveGoal, deleteGoal } from "@/services/goals.actions";
 import type { EnrichedGoal } from "@/services/goals";
 import type { GoalReminder } from "@/services/goal-reminders";
 import { estimateCompletion } from "@/lib/financial/projection";
+import { computeFinancing } from "@/lib/financial/mortgage";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { GoalSheet } from "./goal-sheet";
@@ -78,6 +79,24 @@ export function GoalCard({
       accountId: r.source.source_id as string,
       label: `${r.label} (fonte vinculada)`,
     }));
+
+  // Quando há dados de financiamento, computa breakdown pra exibir no card
+  const financing =
+    goal.property_price != null &&
+    goal.property_down_pct != null &&
+    goal.property_closing_pct != null &&
+    goal.loan_term_months != null &&
+    goal.loan_annual_rate_pct != null &&
+    goal.loan_system != null
+      ? computeFinancing({
+          propertyPrice: Number(goal.property_price),
+          downPct: Number(goal.property_down_pct),
+          closingPct: Number(goal.property_closing_pct),
+          loanTermMonths: goal.loan_term_months,
+          loanAnnualRatePct: Number(goal.loan_annual_rate_pct),
+          loanSystem: goal.loan_system as "sac" | "price",
+        })
+      : null;
 
   // Aporte efetivo planejado para esta meta (em moeda da meta)
   const plannedMonthlyInGoal = computePlannedMonthly(goal, averageMonthlyAddition, displayCurrency, rates);
@@ -153,6 +172,7 @@ export function GoalCard({
                   {CURRENCY_SYMBOLS[goal.currency]} {goal.currency}
                 </Badge>
               ) : null}
+              {financing ? <Badge tone="navy">🏦 Financiado</Badge> : null}
               {reminder ? <ReminderDatePill reminder={reminder} /> : null}
             </div>
             <h3 className="font-display text-[20px] sm:text-[24px] tracking-[-0.02em] font-medium text-foreground leading-tight">
@@ -312,6 +332,52 @@ export function GoalCard({
             </div>
           </div>
         </div>
+
+        {/* Plano de financiamento (quando aplicável) */}
+        {financing ? (
+          <div className="mt-5 pt-5 border-t border-border">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-3 inline-flex items-center gap-1.5">
+              🏦 Plano de financiamento
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px] font-mono">
+              <FinancingStat
+                label="Preço imóvel"
+                value={formatMoney(Number(goal.property_price ?? 0), goal.currency)}
+              />
+              <FinancingStat
+                label="A poupar (entrada + custos)"
+                value={formatMoney(financing.totalToSave, goal.currency)}
+                tone="olive"
+              />
+              <FinancingStat
+                label="Valor financiado"
+                value={formatMoney(financing.loanAmount, goal.currency)}
+              />
+              <FinancingStat
+                label={goal.loan_system === "sac" ? "1ª parcela" : "Parcela mensal"}
+                value={`${formatMoney(financing.firstPayment, goal.currency)}/mês`}
+                tone="rust"
+              />
+              <FinancingStat
+                label="Prazo"
+                value={`${goal.loan_term_months} meses (${Math.round((goal.loan_term_months ?? 0) / 12)}a)`}
+              />
+              <FinancingStat
+                label="Juros (a.a.)"
+                value={`${Number(goal.loan_annual_rate_pct ?? 0).toFixed(2).replace(".", ",")}%`}
+              />
+              <FinancingStat
+                label="Juros totais"
+                value={formatMoney(financing.totalInterest, goal.currency)}
+                tone="rust"
+              />
+              <FinancingStat
+                label="Custo total"
+                value={formatMoney(financing.totalCost, goal.currency)}
+              />
+            </div>
+          </div>
+        ) : null}
       </motion.div>
 
       <GoalSheet
@@ -347,6 +413,31 @@ export function GoalCard({
         maxWithdrawable={current}
       />
     </>
+  );
+}
+
+function FinancingStat({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "olive" | "rust";
+}) {
+  const toneClass =
+    tone === "olive"
+      ? "text-olive-700 dark:text-olive-500 font-medium"
+      : tone === "rust"
+        ? "text-rust-600 font-medium"
+        : "text-foreground";
+  return (
+    <div>
+      <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+        {label}
+      </div>
+      <div className={cn("mt-0.5 tabular-nums", toneClass)}>{value}</div>
+    </div>
   );
 }
 

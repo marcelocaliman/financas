@@ -645,6 +645,12 @@ export interface Database {
           allocation_value: number | null;
           contribution_day: number | null;
           tracking_starts_at: string | null;
+          property_price: number | null;
+          property_down_pct: number | null;
+          property_closing_pct: number | null;
+          loan_term_months: number | null;
+          loan_annual_rate_pct: number | null;
+          loan_system: "sac" | "price" | null;
           created_at: string;
           updated_at: string;
         };
@@ -666,6 +672,12 @@ export interface Database {
           allocation_value?: number | null;
           contribution_day?: number | null;
           tracking_starts_at?: string | null;
+          property_price?: number | null;
+          property_down_pct?: number | null;
+          property_closing_pct?: number | null;
+          loan_term_months?: number | null;
+          loan_annual_rate_pct?: number | null;
+          loan_system?: "sac" | "price" | null;
           created_at?: string;
           updated_at?: string;
         };

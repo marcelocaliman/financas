@@ -41,6 +41,13 @@ const createSchema = z.object({
   allocationValue: z.coerce.number().nonnegative().optional(),
   contributionDay: z.coerce.number().int().min(1).max(31).optional(),
   trackingStartsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  // Financiamento (todas opcionais — preenchidas só quando is goal de imóvel financiado)
+  propertyPrice: z.coerce.number().positive().optional(),
+  propertyDownPct: z.coerce.number().min(0).max(1).optional(),
+  propertyClosingPct: z.coerce.number().min(0).max(1).optional(),
+  loanTermMonths: z.coerce.number().int().min(1).max(600).optional(),
+  loanAnnualRatePct: z.coerce.number().min(0).max(100).optional(),
+  loanSystem: z.enum(["sac", "price"]).optional(),
   // Sources passados como JSON serializado
   sourcesJson: z.string().optional(),
 });
@@ -128,6 +135,12 @@ export async function createGoal(
     allocationValue: formData.get("allocationValue") || undefined,
     contributionDay: formData.get("contributionDay") || undefined,
     trackingStartsAt: formData.get("trackingStartsAt") || undefined,
+    propertyPrice: formData.get("propertyPrice") || undefined,
+    propertyDownPct: formData.get("propertyDownPct") || undefined,
+    propertyClosingPct: formData.get("propertyClosingPct") || undefined,
+    loanTermMonths: formData.get("loanTermMonths") || undefined,
+    loanAnnualRatePct: formData.get("loanAnnualRatePct") || undefined,
+    loanSystem: formData.get("loanSystem") || undefined,
     sourcesJson: formData.get("sourcesJson")?.toString() || undefined,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -153,6 +166,12 @@ export async function createGoal(
       allocation_value: parsed.data.allocationValue ?? null,
       contribution_day: parsed.data.contributionDay ?? null,
       tracking_starts_at: parsed.data.trackingStartsAt ?? null,
+      property_price: parsed.data.propertyPrice ?? null,
+      property_down_pct: parsed.data.propertyDownPct ?? null,
+      property_closing_pct: parsed.data.propertyClosingPct ?? null,
+      loan_term_months: parsed.data.loanTermMonths ?? null,
+      loan_annual_rate_pct: parsed.data.loanAnnualRatePct ?? null,
+      loan_system: parsed.data.loanSystem ?? null,
     })
     .select("id")
     .single();
@@ -188,6 +207,12 @@ export async function updateGoal(
     allocationValue: formData.get("allocationValue") || undefined,
     contributionDay: formData.get("contributionDay") || undefined,
     trackingStartsAt: formData.get("trackingStartsAt") || undefined,
+    propertyPrice: formData.get("propertyPrice") || undefined,
+    propertyDownPct: formData.get("propertyDownPct") || undefined,
+    propertyClosingPct: formData.get("propertyClosingPct") || undefined,
+    loanTermMonths: formData.get("loanTermMonths") || undefined,
+    loanAnnualRatePct: formData.get("loanAnnualRatePct") || undefined,
+    loanSystem: formData.get("loanSystem") || undefined,
     sourcesJson: formData.get("sourcesJson")?.toString() || undefined,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -209,6 +234,12 @@ export async function updateGoal(
       allocation_value: parsed.data.allocationValue ?? null,
       contribution_day: parsed.data.contributionDay ?? null,
       tracking_starts_at: parsed.data.trackingStartsAt ?? null,
+      property_price: parsed.data.propertyPrice ?? null,
+      property_down_pct: parsed.data.propertyDownPct ?? null,
+      property_closing_pct: parsed.data.propertyClosingPct ?? null,
+      loan_term_months: parsed.data.loanTermMonths ?? null,
+      loan_annual_rate_pct: parsed.data.loanAnnualRatePct ?? null,
+      loan_system: parsed.data.loanSystem ?? null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
