@@ -174,7 +174,9 @@ export function DashboardHero({
 
         <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-5 sm:mb-7" />
 
-        <div className="grid grid-cols-3 gap-3 sm:gap-6">
+        {/* Mobile: Entrou + Saiu lado a lado, Patrimônio full-width abaixo.
+            Desktop: 3 colunas iguais. */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6">
           <Stat
             label="Entrou"
             value={income}
@@ -195,21 +197,23 @@ export function DashboardHero({
             comparisonCurrency={comparisonCurrency}
             rates={rates}
           />
-          <Stat
-            label={isCurrentMonth ? "Patrimônio" : `Patrimônio · ${monthLabel.split(" ")[0]}`}
-            value={patrimonioLive}
-            accent
-            live={isCurrentMonth && liveDailyYield > 0}
-            symbol={currencySymbol}
-            hidden={hidden}
-            displayCurrency={displayCurrency}
-            comparisonCurrency={comparisonCurrency}
-            rates={rates}
-            approximate={!isCurrentMonth}
-            deltaPct={patrimonioDelta}
-            sparkline={patrimonioSparkline}
-            sparklineColor="rgba(176,123,50,0.65)"
-          />
+          <div className="col-span-2 sm:col-span-1 pt-4 sm:pt-0 border-t sm:border-t-0 border-ink-700">
+            <Stat
+              label={isCurrentMonth ? "Patrimônio" : `Patrimônio · ${monthLabel.split(" ")[0]}`}
+              value={patrimonioLive}
+              accent
+              live={isCurrentMonth && liveDailyYield > 0}
+              symbol={currencySymbol}
+              hidden={hidden}
+              displayCurrency={displayCurrency}
+              comparisonCurrency={comparisonCurrency}
+              rates={rates}
+              approximate={!isCurrentMonth}
+              deltaPct={patrimonioDelta}
+              sparkline={patrimonioSparkline}
+              sparklineColor="rgba(176,123,50,0.65)"
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -270,7 +274,13 @@ function Stat({
         ) : null}
         <span className="truncate">{label}</span>
       </div>
-      <div className="font-mono text-[16px] sm:text-[26px] tracking-[-0.02em] font-light text-white tabular-nums">
+      <div
+        className={cn(
+          "font-mono tracking-[-0.02em] font-light text-white tabular-nums",
+          // Patrimônio (accent) tem mais espaço no mobile (full-width) → maior fonte
+          accent ? "text-[26px] sm:text-[26px]" : "text-[16px] sm:text-[26px]",
+        )}
+      >
         {hidden ? (
           <>{symbol} •••</>
         ) : live ? (
