@@ -245,92 +245,110 @@ export function GoalCard({
           </div>
         </div>
 
-        {/* Grid de detalhes: fontes (esquerda) + plano de aporte/ETA (direita) */}
-        <div className="grid sm:grid-cols-[1.4fr_1fr] gap-6 mt-6 pt-5 border-t border-border">
-          {/* Fontes vinculadas */}
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2.5">
-              {goal.sourcesResolved.length === 0 ? "Sem fontes vinculadas" : "Fontes vinculadas"}
-            </div>
-            {goal.sourcesResolved.length === 0 ? (
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
-                Use o botão{" "}
-                <span className="inline-flex items-center gap-0.5 font-mono">
-                  <Pencil className="w-3 h-3 inline" strokeWidth={1.7} /> Editar
-                </span>{" "}
-                pra vincular contas ou investimentos que servem como &ldquo;já tenho&rdquo;.
-                O valor sobe live conforme essas fontes crescem.
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {goal.sourcesResolved.map((r) => (
-                  <li
-                    key={r.source.id}
-                    className="flex items-baseline justify-between gap-2 text-[12.5px] font-mono"
-                  >
-                    <span className="text-muted-foreground truncate">{r.label}</span>
-                    <span className="text-foreground tabular-nums shrink-0">
-                      <MoneyMask>{formatMoney(r.earmarked, goal.currency)}</MoneyMask>
-                      {r.source.allocated_pct != null ? (
-                        <span className="text-faint-foreground ml-1 text-[10.5px]">
-                          ({Math.round(Number(r.source.allocated_pct) * 100)}% de{" "}
-                          <MoneyMask>{formatMoney(r.sourceBalance, goal.currency)}</MoneyMask>)
-                        </span>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Plano de aporte + ETA */}
-          <div className="space-y-3">
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-1">
-                Aporte planejado
-              </div>
-              <div className="font-mono text-[15px] text-foreground tabular-nums">
-                {plannedMonthlyInGoal > 0 ? (
-                  <>
-                    <MoneyMask>{formatMoney(plannedMonthlyInGoal, goal.currency)}</MoneyMask>
-                    <span className="text-faint-foreground text-[11px] ml-1">/ mês</span>
-                  </>
-                ) : (
-                  <span className="text-faint-foreground text-[12.5px] italic">manual</span>
-                )}
-              </div>
-              <div className="font-mono text-[10.5px] text-faint-foreground mt-0.5">
-                {modeLabel(goal.allocation_mode)}
-              </div>
-            </div>
-
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-1">
+        {/* 3 stats horizontais (Aporte, Previsão, Falta) */}
+        <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-border">
+          <StatBlock
+            label="Aporte planejado"
+            value={
+              plannedMonthlyInGoal > 0 ? (
+                <>
+                  <MoneyMask>{formatMoney(plannedMonthlyInGoal, goal.currency)}</MoneyMask>
+                  <span className="text-faint-foreground text-[11px] ml-1">/mês</span>
+                </>
+              ) : (
+                <span className="text-faint-foreground text-[12.5px] italic">manual</span>
+              )
+            }
+            hint={modeLabel(goal.allocation_mode)}
+          />
+          <StatBlock
+            label={
+              <>
                 <Clock className="w-3 h-3 inline mr-1" strokeWidth={1.7} />
                 Previsão
-              </div>
-              <div className="font-mono text-[15px] text-navy-900 dark:text-navy-100">
+              </>
+            }
+            value={
+              <span className="text-navy-900 dark:text-navy-100">
                 {eta.months === 0 || pct >= 1
                   ? "Pronto"
                   : eta.months === null
                     ? "—"
                     : etaMonthLabel ?? `${eta.months} meses`}
-              </div>
-              <div className="font-mono text-[10.5px] text-muted-foreground mt-0.5">
-                {eta.months === null
-                  ? "sem aportes recentes"
-                  : pct >= 1
-                    ? "meta atingida"
-                    : `faltam ${formatMoneyCompact(remaining, goal.currency)}`}
-              </div>
-              {targetMonthLabel ? (
-                <div className="font-mono text-[10px] text-faint-foreground mt-1.5">
-                  meta original: {targetMonthLabel}
-                </div>
+              </span>
+            }
+            hint={
+              eta.months === null
+                ? "sem aportes recentes"
+                : pct >= 1
+                  ? "meta atingida"
+                  : targetMonthLabel
+                    ? `meta original: ${targetMonthLabel}`
+                    : undefined
+            }
+          />
+          <StatBlock
+            label="Falta"
+            value={
+              pct >= 1 ? (
+                <span className="text-olive-700 dark:text-olive-500">— concluída</span>
+              ) : (
+                <>
+                  <MoneyMask>{formatMoneyCompact(remaining, goal.currency)}</MoneyMask>
+                </>
+              )
+            }
+            hint={pct < 1 ? `${Math.round((1 - pct) * 100)}% do target` : undefined}
+          />
+        </div>
+
+        {/* Fontes vinculadas — seção própria abaixo */}
+        <div className="mt-5 pt-5 border-t border-border">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+              Fontes vinculadas
+              {goal.sourcesResolved.length > 0 ? (
+                <span className="text-foreground ml-1.5 normal-case tracking-normal">
+                  · {goal.sourcesResolved.length}
+                </span>
               ) : null}
             </div>
+            {goal.sourcesResolved.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors font-medium"
+              >
+                <Plus className="w-3 h-3" strokeWidth={2} />
+                Vincular conta ou investimento
+              </button>
+            ) : null}
           </div>
+          {goal.sourcesResolved.length === 0 ? (
+            <p className="text-[11.5px] text-faint-foreground italic">
+              Sem fonte vinculada · vc está atualizando o saldo manualmente.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {goal.sourcesResolved.map((r) => (
+                <li
+                  key={r.source.id}
+                  className="flex items-baseline justify-between gap-2 text-[12.5px] font-mono"
+                >
+                  <span className="text-muted-foreground truncate">{r.label}</span>
+                  <span className="text-foreground tabular-nums shrink-0">
+                    <MoneyMask>{formatMoney(r.earmarked, goal.currency)}</MoneyMask>
+                    {r.source.allocated_pct != null ? (
+                      <span className="text-faint-foreground ml-1 text-[10.5px]">
+                        ({Math.round(Number(r.source.allocated_pct) * 100)}% de{" "}
+                        <MoneyMask>{formatMoney(r.sourceBalance, goal.currency)}</MoneyMask>)
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Plano de financiamento (quando aplicável) */}
@@ -413,6 +431,36 @@ export function GoalCard({
         maxWithdrawable={current}
       />
     </>
+  );
+}
+
+/**
+ * Stat com label uppercase, valor destaque e hint opcional — usado nos
+ * 3 blocos horizontais (Aporte, Previsão, Falta) na metade do card.
+ */
+function StatBlock({
+  label,
+  value,
+  hint,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  hint?: React.ReactNode;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-1">
+        {label}
+      </div>
+      <div className="font-mono text-[15px] text-foreground tabular-nums leading-tight">
+        {value}
+      </div>
+      {hint ? (
+        <div className="font-mono text-[10.5px] text-muted-foreground mt-1 truncate">
+          {hint}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
