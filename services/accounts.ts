@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getRecurrencesForecast } from "@/services/recurrences";
+import { getLiveBalanceMap } from "@/services/live-yield";
 import type { AccountType, Currency, Tables } from "@/types/database";
 
 export type Account = Tables<"accounts">;
@@ -174,7 +175,15 @@ export type AccountWithBalance = Account & {
   assetsBalance: number;
 };
 
-/** Calcula soma de ativos por account_id em moeda nativa de cada conta */
+/**
+ * Calcula soma de ativos por account_id em moeda nativa de cada conta.
+ *
+ * Usa `getLiveBalanceMap()` como fonte — o MESMO mapa que /investimentos
+ * usa pra mostrar saldo de cada ativo. Garante que o "Em ativos" no card
+ * de uma conta XP bata centavo com o "Saldo total" mostrado em
+ * /investimentos. Sem cache duplicado: getLivePortfolio é cacheado por
+ * request via React `cache()`, então chamar de qualquer lugar é grátis.
+ */
 async function getAssetsBalanceByAccount(
   accounts: Account[],
 ): Promise<Map<string, number>> {
@@ -184,24 +193,29 @@ async function getAssetsBalanceByAccount(
   if (investmentAccountIds.length === 0) return new Map();
 
   const supabase = await createClient();
-  const { data: invs } = await supabase
-    .from("investments")
-    .select("account_id, current_balance, currency")
-    .eq("is_active", true)
-    .in("account_id", investmentAccountIds);
+  // Precisamos apenas do account_id e currency de cada investment pra
+  // saber a moeda nativa do ativo. O saldo virá do liveBalanceMap.
+  const [{ data: invs }, { map: liveBalance, displayCurrency }, rates] =
+    await Promise.all([
+      supabase
+        .from("investments")
+        .select("id, account_id, currency")
+        .eq("is_active", true)
+        .in("account_id", investmentAccountIds),
+      getLiveBalanceMap(),
+      getRateMap(),
+    ]);
 
-  const rates = await getRateMap();
   const accountById = new Map(accounts.map((a) => [a.id, a]));
   const out = new Map<string, number>();
   for (const i of invs ?? []) {
     const acc = accountById.get(i.account_id);
     if (!acc) continue;
-    const native = Number(i.current_balance ?? 0);
-    // Ativos podem estar em moeda diferente da conta (CDB em BRL, REIT em USD,
-    // etc). Convertemos para a moeda nativa da conta da corretora.
+    // liveBalance retorna em displayCurrency. Convertemos pra moeda da conta.
+    const inDisplay = liveBalance.get(i.id) ?? 0;
     const inAccCurrency = convertOrSame(
-      native,
-      i.currency,
+      inDisplay,
+      displayCurrency,
       acc.currency,
       rates,
     );

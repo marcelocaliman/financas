@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getLivePortfolio } from "@/services/live-yield";
 import type {
   AssetType,
   Currency,
@@ -70,23 +71,24 @@ export type PortfolioStats = {
 
 export async function getPortfolioStats(): Promise<PortfolioStats> {
   const supabase = await createClient();
-  const [{ data: invs }, { data: yields }, displayCurrency, rates] = await Promise.all([
-    supabase.from("investments").select("*").eq("is_active", true),
-    supabase
-      .from("investment_yields")
-      .select("net_yield, month, investment:investments(currency)")
-      .gte("month", new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)),
-    getDisplayCurrency(),
-    getRateMap(),
-  ]);
+  const [{ data: invs }, { data: yields }, displayCurrency, rates, live] =
+    await Promise.all([
+      supabase.from("investments").select("*").eq("is_active", true),
+      supabase
+        .from("investment_yields")
+        .select("net_yield, month, investment:investments(currency)")
+        .gte("month", new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)),
+      getDisplayCurrency(),
+      getRateMap(),
+      getLivePortfolio(),
+    ]);
 
   const investments = (invs ?? []) as Tables<"investments">[];
-  const total = investments.reduce(
-    (s, i) =>
-      s +
-      convertOrSame(Number(i.current_balance ?? 0), i.currency ?? "BRL", displayCurrency, rates),
-    0,
-  );
+  // `total` agora vem direto do live (compounding RF + market price brapi
+  // pra variável). É o MESMO número exibido em /investimentos, garantindo
+  // consistência total entre as páginas. Antes era sum(current_balance) raw
+  // que ficava 24h+ stale entre runs do cron.
+  const total = live.totalMarketBalance;
   const invested = investments.reduce(
     (s, i) =>
       s + convertOrSame(Number(i.initial_amount ?? 0), i.currency ?? "BRL", displayCurrency, rates),
@@ -106,8 +108,8 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
   const monthlyAverage = months > 0 ? totalYield / months : 0;
   const dyAnnualized = total > 0 ? (monthlyAverage * 12) / total : 0;
 
-  // "Live" = primeiro ativo indexado à Selic com saldo > 0
-  const live = investments
+  // "Live" asset destacado = primeiro indexado à Selic com saldo > 0
+  const liveAsset = investments
     .filter((i) => i.indexer === "selic" && Number(i.current_balance) > 0)
     .sort((a, b) => Number(b.current_balance) - Number(a.current_balance))[0] ?? null;
 
@@ -116,7 +118,7 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
     invested: Math.round(invested * 100) / 100,
     monthlyAverage: Math.round(monthlyAverage * 100) / 100,
     dyAnnualized,
-    liveAsset: (live as Investment | null) ?? null,
+    liveAsset: (liveAsset as Investment | null) ?? null,
     displayCurrency,
   };
 }

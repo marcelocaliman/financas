@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { fetchQuotes, isB3Ticker, type Quote } from "@/lib/financial/brapi";
 import {
@@ -19,8 +20,14 @@ type InvestmentRow = LiveInvestmentInput & { currency: Currency };
  * Todos os valores monetários são convertidos para a moeda de exibição do
  * usuário antes do cálculo. Cotações brapi (B3 = BRL) são convertidas
  * conforme a moeda nativa de cada ativo.
+ *
+ * Cacheado por request via React `cache()` — múltiplos callers numa mesma
+ * página recebem o mesmo objeto, sem repetir queries nem chamadas brapi.
+ * É a ÚNICA fonte de verdade pra "valor atual" de qualquer investimento
+ * no app — todos os outros services (getPortfolioStats.total,
+ * getAssetsBalanceByAccount, etc.) derivam disso pra eliminar divergências.
  */
-export async function getLivePortfolio(): Promise<LivePortfolio & { displayCurrency: Currency }> {
+export const getLivePortfolio = cache(async (): Promise<LivePortfolio & { displayCurrency: Currency }> => {
   const supabase = await createClient();
   const [displayCurrency, rates] = await Promise.all([getDisplayCurrency(), getRateMap()]);
 
@@ -126,4 +133,27 @@ export async function getLivePortfolio(): Promise<LivePortfolio & { displayCurre
     }),
     displayCurrency,
   };
-}
+});
+
+/**
+ * Mapa indexado por investment.id → saldo "ao vivo" em displayCurrency,
+ * usando marketBalance (cotação brapi × qty) quando disponível, caindo
+ * pra baseBalance (compounding RF do checkpoint até agora) caso contrário.
+ *
+ * Esse é o valor que o usuário vê em /investimentos. Outros services
+ * (getPortfolioStats.total, getAssetsBalanceByAccount) usam isso pra
+ * garantir que TODAS as páginas mostrem o mesmo número pro mesmo ativo.
+ *
+ * Cacheado por request (via getLivePortfolio).
+ */
+export const getLiveBalanceMap = cache(async (): Promise<{
+  map: Map<string, number>;
+  displayCurrency: Currency;
+}> => {
+  const live = await getLivePortfolio();
+  const map = new Map<string, number>();
+  for (const a of live.byAsset) {
+    map.set(a.id, a.marketBalance ?? a.baseBalance);
+  }
+  return { map, displayCurrency: live.displayCurrency };
+});
