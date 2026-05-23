@@ -38,21 +38,31 @@ export const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
-        "w-[min(560px,calc(100vw-32px))] max-h-[calc(100vh-32px)] overflow-auto",
-        "rounded-[var(--radius-lg)] bg-surface border border-border shadow-xl",
-        "p-7 sm:p-8 outline-none",
-        "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-        "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+        // Mobile: bottom-sheet (slide-up, fixo no fundo, full width, max-height 92vh).
+        // Desktop (sm+): dialog centralizado clássico.
+        "fixed z-50 bg-surface border border-border shadow-xl outline-none overflow-auto",
+        // Mobile defaults
+        "inset-x-0 bottom-0 max-h-[92vh] rounded-t-[var(--radius-xl)] border-x-0 border-b-0",
+        "p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
+        "data-[state=open]:animate-in data-[state=open]:slide-in-from-bottom data-[state=open]:duration-200",
+        "data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=closed]:duration-150",
+        // Desktop overrides
+        "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
+        "sm:w-[min(560px,calc(100vw-32px))] sm:max-h-[calc(100vh-32px)]",
+        "sm:rounded-[var(--radius-lg)] sm:border sm:p-8 sm:pb-8",
+        "sm:data-[state=open]:zoom-in-95 sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=open]:fade-in-0",
+        "sm:data-[state=closed]:zoom-out-95 sm:data-[state=closed]:slide-out-to-bottom-0 sm:data-[state=closed]:fade-out-0",
         className,
       )}
       {...props}
     >
+      {/* Drag handle (só mobile) */}
+      <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-border" aria-hidden />
       {children}
       {showClose ? (
         <DialogPrimitive.Close
           className={cn(
-            "absolute top-4 right-4 rounded-[6px] p-1.5 text-faint-foreground",
+            "absolute top-3 right-3 sm:top-4 sm:right-4 rounded-[6px] p-2 sm:p-1.5 text-faint-foreground",
             "hover:text-foreground hover:bg-surface-muted transition-colors",
           )}
           aria-label="Fechar"

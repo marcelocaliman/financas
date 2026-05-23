@@ -87,7 +87,7 @@ export function DashboardHero({
       : null;
 
   return (
-    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-9 sm:p-12 mb-6 overflow-hidden shadow-lg">
+    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-5 sm:p-12 mb-6 overflow-hidden shadow-lg">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px]"
@@ -100,9 +100,9 @@ export function DashboardHero({
       />
 
       <div className="relative z-10">
-        <div className="flex items-start justify-between gap-8 mb-9">
+        <div className="flex items-start justify-between gap-4 sm:gap-8 mb-6 sm:mb-9">
           <div className="min-w-0">
-            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-3 font-medium flex items-center gap-2">
+            <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-2 sm:mb-3 font-medium flex items-center gap-2">
               {isForecast ? "Sobra prevista" : "Sobra projetada"} · {monthLabel}
               {isForecast ? (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-gold-600/20 text-gold-600 text-[9.5px] font-mono tracking-[0.12em]">
@@ -110,13 +110,13 @@ export function DashboardHero({
                 </span>
               ) : null}
             </div>
-            <div className="flex items-baseline gap-3 mb-1 font-mono">
-              <span className="text-[20px] text-navy-300 font-light">{currency}</span>
-              <span className="text-[52px] sm:text-[60px] font-light leading-none tracking-[-0.04em]">
+            <div className="flex items-baseline gap-2 sm:gap-3 mb-1 font-mono">
+              <span className="text-[16px] sm:text-[20px] text-navy-300 font-light">{currency}</span>
+              <span className="text-[40px] sm:text-[60px] font-light leading-none tracking-[-0.04em]">
                 {sign}
                 {maskedInteger}
               </span>
-              <span className="text-[24px] text-navy-300 font-light">,{maskedCents}</span>
+              <span className="text-[18px] sm:text-[24px] text-navy-300 font-light">,{maskedCents}</span>
             </div>
             {projectedComparisonText ? (
               <div className="font-mono text-[12.5px] text-navy-400 tracking-[0.02em] mb-3">
@@ -172,9 +172,9 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-7" />
+        <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-5 sm:mb-7" />
 
-        <div className="grid grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 sm:gap-6">
           <Stat
             label="Entrou"
             value={income}
@@ -264,13 +264,13 @@ function Stat({
       : null;
   return (
     <div>
-      <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-navy-400 mb-2 font-medium flex items-center gap-1.5">
+      <div className="font-mono text-[9.5px] sm:text-[10.5px] tracking-[0.14em] uppercase text-navy-400 mb-1.5 sm:mb-2 font-medium flex items-center gap-1.5 truncate">
         {live ? (
-          <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse shrink-0" />
         ) : null}
-        {label}
+        <span className="truncate">{label}</span>
       </div>
-      <div className="font-mono text-[22px] sm:text-[26px] tracking-[-0.02em] font-light text-white tabular-nums">
+      <div className="font-mono text-[16px] sm:text-[26px] tracking-[-0.02em] font-light text-white tabular-nums">
         {hidden ? (
           <>{symbol} •••</>
         ) : live ? (

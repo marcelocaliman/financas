@@ -18,7 +18,13 @@ import { TransactionTagsEditor } from "./transaction-tags-editor";
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 
-export function TransactionRow({
+/**
+ * Versão card de TransactionRow — usada apenas no mobile.
+ * Cada linha empilha verticalmente com valor proeminente à direita,
+ * descrição em destaque acima, e metadados (conta, categoria, tags) abaixo.
+ * Ações de editar/apagar sempre visíveis numa linha dedicada no rodapé.
+ */
+export function TransactionCard({
   tx,
   accounts,
   categories,
@@ -59,77 +65,57 @@ export function TransactionRow({
   const isIncome = tx.kind === "income";
   const isTransfer = tx.kind === "transfer";
 
-  const valueClass = isIncome
-    ? "text-olive-700"
-    : isTransfer
-      ? "text-foreground"
-      : "text-foreground";
-
+  const valueClass = isIncome ? "text-olive-700" : "text-foreground";
   const valuePrefix = isIncome ? "+ " : isTransfer ? "" : "− ";
 
   return (
     <>
-      <tr
+      <div
         className={cn(
-          "border-b border-border last:border-b-0 group transition-colors hover:bg-bone-100/40 dark:hover:bg-ink-800/40",
+          "px-4 py-3 border-b border-border last:border-b-0 transition-colors active:bg-bone-100/40 dark:active:bg-ink-800/40",
           pending && "opacity-50",
         )}
       >
-        <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
-          <span className="font-mono text-[11.5px] tracking-[0.04em] text-muted-foreground">
-            {formatDateShort(tx.date)}
-          </span>
-        </td>
-        <td className="py-3.5 pr-4 align-middle min-w-0">
-          <div className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate flex items-center gap-2">
-            {isTransfer ? (
-              <ArrowLeftRight
-                className="w-3 h-3 text-navy-600 shrink-0"
-                strokeWidth={1.8}
-              />
-            ) : null}
-            {tx.is_recurring ? (
-              <Repeat
-                className="w-3 h-3 text-faint-foreground shrink-0"
-                strokeWidth={1.8}
-                aria-label="Lançamento recorrente"
-              />
-            ) : null}
-            {tx.description}
+        {/* Linha 1: descrição + valor */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-[14.5px] text-foreground tracking-[-0.005em] flex items-center gap-1.5 leading-tight">
+              {isTransfer ? (
+                <ArrowLeftRight
+                  className="w-3 h-3 text-navy-600 shrink-0"
+                  strokeWidth={1.8}
+                />
+              ) : null}
+              {tx.is_recurring ? (
+                <Repeat
+                  className="w-3 h-3 text-faint-foreground shrink-0"
+                  strokeWidth={1.8}
+                  aria-label="Lançamento recorrente"
+                />
+              ) : null}
+              <span className="truncate">{tx.description}</span>
+            </div>
+            <div className="font-mono text-[11px] text-faint-foreground tracking-[0.02em] mt-1 truncate">
+              <span>{formatDateShort(tx.date)}</span>
+              <span className="mx-1">·</span>
+              <span>{tx.account?.name ?? "—"}</span>
+              {tx.payment_method ? (
+                <>
+                  <span className="mx-1">·</span>
+                  <span>{tx.payment_method}</span>
+                </>
+              ) : null}
+            </div>
           </div>
-          <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
-            {tx.account?.name ?? "—"}
-            {tx.payment_method ? ` · ${tx.payment_method}` : ""}
-          </div>
-          <div className="mt-1">
-            <TransactionTagsEditor
-              transactionId={tx.id}
-              tags={tx.tags ?? []}
-            />
-          </div>
-        </td>
-        <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
-          {tx.category ? (
-            <Badge tone={tx.category.kind === "income" ? "olive" : "neutral"} dot>
-              {tx.category.name}
-            </Badge>
-          ) : isTransfer ? (
-            <Badge tone="navy" dot>
-              Transferência
-            </Badge>
-          ) : (
-            <span className="text-faint-foreground text-[11.5px] italic">sem categoria</span>
-          )}
-        </td>
-        <td className="py-3.5 align-middle text-right whitespace-nowrap">
-          <div className="flex flex-col items-end leading-tight">
+          <div className="flex flex-col items-end leading-tight shrink-0">
             <span
               className={cn(
-                "font-mono text-[14px] font-medium tracking-[-0.005em]",
+                "font-mono text-[15px] font-medium tracking-[-0.005em] whitespace-nowrap",
                 valueClass,
               )}
             >
-              {valuePrefix}{symbol} <MoneyMask>{integer},{cents}</MoneyMask>
+              {valuePrefix}
+              {symbol} <MoneyMask>{integer},{cents}</MoneyMask>
             </span>
             {showSecondary ? (
               <span className="font-mono text-[10.5px] text-faint-foreground tracking-[0.02em]">
@@ -137,30 +123,46 @@ export function TransactionRow({
               </span>
             ) : null}
           </div>
-        </td>
-        <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
-          <div className="flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+        </div>
+
+        {/* Linha 2: categoria + tags + ações */}
+        <div className="flex items-center justify-between gap-2 mt-2.5">
+          <div className="min-w-0 flex items-center gap-2 flex-wrap">
+            {tx.category ? (
+              <Badge tone={tx.category.kind === "income" ? "olive" : "neutral"} dot>
+                {tx.category.name}
+              </Badge>
+            ) : isTransfer ? (
+              <Badge tone="navy" dot>
+                Transferência
+              </Badge>
+            ) : (
+              <span className="text-faint-foreground text-[11.5px] italic">sem categoria</span>
+            )}
+            <TransactionTagsEditor transactionId={tx.id} tags={tx.tags ?? []} />
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => setEditing(true)}
               disabled={pending}
-              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted"
+              className="p-2 rounded-[6px] text-faint-foreground active:text-foreground active:bg-surface-muted"
               aria-label="Editar"
             >
-              <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+              <Pencil className="w-4 h-4" strokeWidth={1.7} />
             </button>
             <button
               type="button"
               onClick={handleDelete}
               disabled={pending}
-              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30"
+              className="p-2 rounded-[6px] text-faint-foreground active:text-rust-600 active:bg-rust-100/50 dark:active:bg-rust-700/30"
               aria-label="Apagar"
             >
-              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+              <Trash2 className="w-4 h-4" strokeWidth={1.7} />
             </button>
           </div>
-        </td>
-      </tr>
+        </div>
+      </div>
       <EditTransactionDialog
         open={editing}
         onOpenChange={setEditing}

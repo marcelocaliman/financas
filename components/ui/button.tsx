@@ -25,10 +25,11 @@ const buttonVariants = cva(
           "bg-transparent text-foreground border border-border-strong hover:bg-surface-muted",
       },
       size: {
-        sm: "h-8 px-3 text-[12px]",
-        md: "h-9 px-3.5",
+        // Mobile bumps a tier pra touch (≥40px). Desktop mantém compacto.
+        sm: "h-9 sm:h-8 px-3 text-[12.5px] sm:text-[12px]",
+        md: "h-10 sm:h-9 px-4 sm:px-3.5",
         lg: "h-11 px-5 text-[14px]",
-        icon: "h-9 w-9 p-0",
+        icon: "h-10 w-10 sm:h-9 sm:w-9 p-0",
       },
     },
     defaultVariants: {

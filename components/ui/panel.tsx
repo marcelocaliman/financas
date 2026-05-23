@@ -13,7 +13,7 @@ export const Panel = React.forwardRef<
     ref={ref}
     className={cn(
       "rounded-[var(--radius-lg)] bg-surface border border-border",
-      "px-7 py-7",
+      "px-4 py-5 sm:px-7 sm:py-7",
       className,
     )}
     {...props}

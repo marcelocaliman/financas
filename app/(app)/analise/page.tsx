@@ -168,10 +168,97 @@ export default async function AnalisePage({
       ) : null}
 
       <Panel className="!px-0">
-        <div className="px-7 pt-1">
+        <div className="px-4 sm:px-7 pt-1">
           <PanelHeader title="Comparativo mês a mês" meta="receita, despesa, sobra" />
         </div>
-        <div className="overflow-x-auto px-7">
+
+        {/* Mobile: cards verticais */}
+        <div className="lg:hidden">
+          {history.map((r, idx) => {
+            const prevRow = history[idx - 1];
+            const deltaPct = prevRow && prevRow.expense > 0 ? r.expense / prevRow.expense - 1 : null;
+            const savingsRate = r.income > 0 ? r.net / r.income : null;
+            return (
+              <div key={r.month} className="px-4 py-3.5 border-b border-border last:border-b-0">
+                <div className="flex items-baseline justify-between mb-2">
+                  <div className="capitalize font-medium tracking-[-0.005em] text-[14px]">
+                    {r.label}
+                    <span className="text-faint-foreground ml-1 text-[11px] font-mono">
+                      {r.month.slice(0, 4)}
+                    </span>
+                  </div>
+                  <div
+                    className={cn(
+                      "font-mono text-[15px] font-medium",
+                      r.net >= 0 ? "text-foreground" : "text-rust-600",
+                    )}
+                  >
+                    <MoneyMask>{formatMoney(r.net)}</MoneyMask>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 font-mono text-[11.5px]">
+                  <div>
+                    <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                      Entrou
+                    </div>
+                    <div className="mt-0.5 text-olive-700 dark:text-olive-500">
+                      <MoneyMask>{formatMoney(r.income)}</MoneyMask>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                      Saiu
+                    </div>
+                    <div className="mt-0.5 text-rust-600">
+                      <MoneyMask>{formatMoney(r.expense)}</MoneyMask>
+                    </div>
+                    {deltaPct != null ? (
+                      <div
+                        className={cn(
+                          "text-[10px] mt-0.5",
+                          deltaPct > 0.05
+                            ? "text-rust-600"
+                            : deltaPct < -0.05
+                              ? "text-olive-700 dark:text-olive-500"
+                              : "text-muted-foreground",
+                        )}
+                      >
+                        {deltaPct > 0 ? "+" : ""}
+                        {(deltaPct * 100).toFixed(0)}%
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                      Poupança
+                    </div>
+                    {savingsRate == null ? (
+                      <div className="text-faint-foreground mt-0.5">—</div>
+                    ) : (
+                      <div
+                        className={cn(
+                          "mt-0.5",
+                          savingsRate >= 0.3
+                            ? "text-olive-700 dark:text-olive-500"
+                            : savingsRate >= 0.1
+                              ? "text-foreground"
+                              : savingsRate >= 0
+                                ? "text-muted-foreground"
+                                : "text-rust-600",
+                        )}
+                      >
+                        {(savingsRate * 100).toFixed(0)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: tabela */}
+        <div className="hidden lg:block overflow-x-auto px-7">
           <table className="w-full text-[13.5px]">
             <thead className="sticky top-0 bg-surface z-10 shadow-[0_1px_0_0_var(--color-border)]">
               <tr className="text-faint-foreground">

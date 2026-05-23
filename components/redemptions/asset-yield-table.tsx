@@ -46,7 +46,94 @@ export function AssetYieldTable({
 
   return (
     <>
-      <div className="overflow-x-auto">
+      {/* Mobile: cards */}
+      <div className="lg:hidden -mx-4 sm:mx-0">
+        {rows.map((r) => (
+          <div
+            key={r.investmentId}
+            className="px-4 py-3.5 border-b border-border last:border-b-0"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="font-mono text-[14px] font-medium tracking-[-0.01em] flex items-center gap-2">
+                  {r.dailyYield > 0 ? (
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse shrink-0" />
+                  ) : null}
+                  <span className="truncate">{r.ticker}</span>
+                </div>
+                <div className="text-[11.5px] text-faint-foreground truncate mt-0.5">
+                  {r.name}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint-foreground">
+                  Sacável
+                </div>
+                <div className="font-mono text-[15px] font-medium tabular-nums text-olive-700 dark:text-olive-500 mt-0.5">
+                  <MoneyMask>{formatMoney(r.accumulatedYield)}</MoneyMask>
+                </div>
+                {r.initialAmount > 0 ? (
+                  <div className="font-mono text-[10.5px] text-faint-foreground tabular-nums">
+                    +{((r.accumulatedYield / r.initialAmount) * 100).toFixed(1).replace(".", ",")}%
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-border/60 font-mono text-[11.5px]">
+              <div>
+                <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                  Aplicado
+                </div>
+                <div className="text-muted-foreground mt-0.5">
+                  <MoneyMask>{formatMoney(r.initialAmount)}</MoneyMask>
+                </div>
+              </div>
+              <div>
+                <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                  /dia
+                </div>
+                <div className="text-foreground mt-0.5">
+                  <MoneyMask>{formatMoney(r.dailyYield)}</MoneyMask>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-[9.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                  /mês
+                </div>
+                <div className="text-foreground mt-0.5">
+                  <MoneyMask>{formatMoney(r.monthlyYield)}</MoneyMask>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border/60">
+              <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                {r.tax == null ? (
+                  <Badge tone="olive">Isento IR</Badge>
+                ) : r.accumulatedYield > 0 ? (
+                  <Badge tone="rust">
+                    IR {r.tax.rateLabel}
+                  </Badge>
+                ) : null}
+                {r.ruleSummary ? <Badge tone="navy">{r.ruleSummary}</Badge> : null}
+              </div>
+              <button
+                type="button"
+                onClick={() => setWithdrawing(r)}
+                disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-[6px] text-[12px] font-medium text-navy-700 dark:text-navy-300 border border-navy-700/30 active:bg-navy-50 dark:active:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+              >
+                <ArrowDownToLine className="w-3 h-3" strokeWidth={1.8} />
+                Sacar
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: tabela */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
@@ -132,7 +219,7 @@ export function AssetYieldTable({
                     type="button"
                     onClick={() => setWithdrawing(r)}
                     disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
-                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100"
+                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed lg:opacity-0 lg:group-hover:opacity-100"
                     aria-label="Sacar rendimento"
                     title={
                       r.accumulatedYield <= 0

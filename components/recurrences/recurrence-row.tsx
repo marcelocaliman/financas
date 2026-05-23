@@ -224,7 +224,7 @@ export function RecurrenceRow({
             className="text-[13.5px] font-medium tracking-[-0.005em] items-end text-foreground"
             secondaryClassName="text-[9.5px]"
           />
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity -mr-1.5">
+          <div className="lg:opacity-0 lg:group-hover:opacity-100 transition-opacity -mr-1.5">
             <RowActionsMenu
               actions={[
                 {

@@ -139,13 +139,15 @@ export default async function AssinaturasPage() {
 
           {/* Lista completa */}
           <Panel className="!px-0">
-            <div className="px-7 pt-1">
+            <div className="px-4 sm:px-7 pt-1">
               <PanelHeader
                 title="Todas as assinaturas"
                 meta="ordenadas pelo custo mensal"
               />
             </div>
-            <div className="overflow-x-auto px-7">
+
+            {/* Desktop: tabela */}
+            <div className="hidden lg:block overflow-x-auto px-7">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border">
@@ -196,6 +198,50 @@ export default async function AssinaturasPage() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile: cards */}
+            <div className="lg:hidden">
+              {subs.map((s) => {
+                const sharePct = monthlyTotal > 0 ? (s.monthlyInDisplay / monthlyTotal) * 100 : 0;
+                return (
+                  <div
+                    key={s.id}
+                    className="px-4 py-3.5 border-b border-border last:border-b-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-[14px] text-foreground truncate">
+                          {s.description}
+                        </div>
+                        <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.04em] mt-0.5 truncate">
+                          {s.account?.name ?? "—"}
+                          {s.category ? ` · ${s.category.name}` : ""}
+                        </div>
+                        <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.04em] mt-0.5">
+                          {freqLabel(s.frequency, s.interval_count, s.day_of_month)}
+                          {s.nextChargeDate ? ` · próx ${formatDateShort(s.nextChargeDate)}` : ""}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-[14.5px] font-medium tabular-nums">
+                          <MoneyMask>{formatMoney(s.monthlyInDisplay)}</MoneyMask>
+                          <span className="text-[10.5px] text-faint-foreground ml-0.5">/mês</span>
+                        </div>
+                        <div className="font-mono text-[10.5px] text-muted-foreground tabular-nums mt-0.5">
+                          <MoneyMask>{formatMoney(s.yearlyInDisplay)}</MoneyMask>/ano
+                        </div>
+                        <div className="font-mono text-[10.5px] text-faint-foreground tabular-nums mt-0.5">
+                          {sharePct.toFixed(1).replace(".", ",")}% do total
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end mt-2">
+                      <SubscriptionRowActions ruleId={s.id} description={s.description} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Panel>
 

@@ -124,10 +124,10 @@ export function GoalCard({
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="rounded-[var(--radius-lg)] border border-border bg-surface px-8 py-7 hover:shadow-sm transition-shadow group"
+        className="rounded-[var(--radius-lg)] border border-border bg-surface px-4 py-5 sm:px-8 sm:py-7 hover:shadow-sm transition-shadow group"
       >
         {/* Cabeçalho */}
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[20px]" aria-hidden>
@@ -143,15 +143,15 @@ export function GoalCard({
                 </Badge>
               ) : null}
             </div>
-            <h3 className="font-display text-[24px] tracking-[-0.02em] font-medium text-foreground">
+            <h3 className="font-display text-[20px] sm:text-[24px] tracking-[-0.02em] font-medium text-foreground leading-tight">
               {goal.name}
             </h3>
             {goal.description ? (
-              <p className="text-[13.5px] text-muted-foreground mt-1.5">{goal.description}</p>
+              <p className="text-[13px] sm:text-[13.5px] text-muted-foreground mt-1.5">{goal.description}</p>
             ) : null}
           </div>
 
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-wrap">
             <Button
               size="sm"
               variant="primary"

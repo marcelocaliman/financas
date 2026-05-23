@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { MobileDrawer } from "@/components/layout/mobile-drawer";
 import { RealtimeBridge } from "@/components/layout/realtime-bridge";
 import { QuickAddProvider } from "@/components/transactions/quick-add-context";
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
@@ -56,8 +57,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             householdName={ctx.household.name}
             badges={badges}
           />
+          <MobileDrawer
+            user={{ name: ctx.profile.display_name, email: ctx.email }}
+            householdName={ctx.household.name}
+            badges={badges}
+          />
           <div className="flex-1 min-w-0 relative">
-            <main className="max-w-[1320px] mx-auto px-5 sm:px-10 lg:px-14 pt-8 pb-28 lg:pb-20">
+            <main className="max-w-[1320px] mx-auto px-4 sm:px-10 lg:px-14 pt-16 lg:pt-8 pb-28 lg:pb-20">
               {children}
             </main>
             <MobileNav />

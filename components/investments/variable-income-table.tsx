@@ -39,7 +39,7 @@ export function VariableIncomeTable({
 
   return (
     <section className="rounded-[var(--radius-xl)] border border-border bg-surface mb-8 overflow-hidden">
-      <header className="px-7 pt-7 pb-6 border-b border-border bg-gradient-to-b from-gold-100/30 to-transparent dark:from-gold-700/10">
+      <header className="px-4 pt-5 pb-5 sm:px-7 sm:pt-7 sm:pb-6 border-b border-border bg-gradient-to-b from-gold-100/30 to-transparent dark:from-gold-700/10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-gold-700 dark:text-gold-500 font-medium mb-1.5">
@@ -99,7 +99,136 @@ export function VariableIncomeTable({
         </div>
       </header>
 
-      <div className="overflow-x-auto px-7 py-2">
+      {/* Mobile: cards */}
+      <div className="lg:hidden">
+        {investments.map((inv) => {
+          const live = liveByAssetId.get(inv.id);
+          const isCrypto = inv.asset_type === "crypto";
+          const marketBalance = live?.marketBalance ?? live?.baseBalance ?? Number(inv.current_balance);
+          return (
+            <div
+              key={inv.id}
+              className="px-4 py-4 border-b border-border last:border-b-0"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-[14px] font-medium tracking-[-0.01em] truncate">
+                    {inv.ticker}
+                  </div>
+                  <div className="font-mono text-[10.5px] text-faint-foreground uppercase tracking-[0.1em] mt-0.5">
+                    {ASSET_TYPE_LABELS[inv.asset_type]}
+                    {live?.quantity != null && live.quantity > 0 ? (
+                      <>
+                        <span className="mx-1">·</span>
+                        <MoneyMask>
+                          {live.quantity.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}
+                        </MoneyMask>{" "}
+                        {isCrypto ? "un" : "cotas"}
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="font-mono text-[14.5px] font-medium tabular-nums">
+                    <MoneyMask>{formatMoney(marketBalance)}</MoneyMask>
+                  </div>
+                  {portfolioTotal > 0 ? (
+                    <div className="font-mono text-[10.5px] text-faint-foreground tabular-nums mt-0.5">
+                      {((marketBalance / portfolioTotal) * 100).toFixed(1).replace(".", ",")}% da carteira
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-border/60">
+                <div>
+                  <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+                    Cotação
+                  </div>
+                  <div className="font-mono text-[12.5px] mt-0.5">
+                    {live?.marketPrice != null ? (
+                      <MoneyMask>{formatMoney(live.marketPrice)}</MoneyMask>
+                    ) : (
+                      <span className="text-faint-foreground">—</span>
+                    )}
+                  </div>
+                  {live?.marketChangePct != null && Math.abs(live.marketChangePct) > 0.001 ? (
+                    <div
+                      className={`font-mono text-[10px] mt-0.5 ${
+                        live.marketChangePct > 0
+                          ? "text-olive-700 dark:text-olive-500"
+                          : "text-rust-600"
+                      }`}
+                    >
+                      {live.marketChangePct > 0 ? "+" : ""}
+                      {live.marketChangePct.toFixed(2).replace(".", ",")}% dia
+                    </div>
+                  ) : null}
+                </div>
+                <div>
+                  <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+                    P. médio
+                  </div>
+                  <div className="font-mono text-[12.5px] text-muted-foreground mt-0.5">
+                    {live?.averagePrice && live.averagePrice > 0 ? (
+                      <MoneyMask>{formatMoney(live.averagePrice)}</MoneyMask>
+                    ) : (
+                      "—"
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+                    Variação
+                  </div>
+                  {live?.marketGain != null ? (
+                    <>
+                      <div
+                        className={`font-mono text-[12.5px] mt-0.5 ${
+                          live.marketGain > 0
+                            ? "text-olive-700 dark:text-olive-500"
+                            : live.marketGain < 0
+                              ? "text-rust-600"
+                              : "text-faint-foreground"
+                        }`}
+                      >
+                        {live.marketGain >= 0 ? "+" : ""}
+                        {formatPercent(live.marketGainPct ?? 0, 2)}
+                      </div>
+                      <div
+                        className={`font-mono text-[10px] mt-0.5 ${
+                          live.marketGain > 0
+                            ? "text-olive-700 dark:text-olive-500"
+                            : live.marketGain < 0
+                              ? "text-rust-600"
+                              : "text-faint-foreground"
+                        }`}
+                      >
+                        {live.marketGain >= 0 ? "+" : ""}
+                        <MoneyMask>{formatMoney(live.marketGain)}</MoneyMask>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-faint-foreground font-mono text-[12.5px]">—</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t border-border/60">
+                {live ? <AssetLiveCell asset={live} /> : null}
+                {live ? <AssetDetailPopover asset={live} /> : null}
+                <InvestmentRowActions
+                  investment={inv}
+                  investmentAccounts={investmentAccounts}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: Tabela */}
+      <div className="hidden lg:block overflow-x-auto px-7 py-2">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">

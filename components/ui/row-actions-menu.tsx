@@ -33,7 +33,7 @@ export function RowActionsMenu({
           className={cn(
             "p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted",
             "data-[state=open]:opacity-100 data-[state=open]:text-foreground data-[state=open]:bg-surface-muted",
-            "opacity-0 group-hover:opacity-100 transition-opacity",
+            "lg:opacity-0 lg:group-hover:opacity-100 transition-opacity",
             "focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-500",
           )}
           aria-label={label}

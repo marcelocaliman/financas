@@ -43,7 +43,7 @@ export function SubscriptionRowActions({
       onClick={handleUnflag}
       disabled={pending}
       aria-label="Desmarcar como assinatura"
-      className="opacity-0 group-hover:opacity-100 text-faint-foreground hover:text-rust-600"
+      className="lg:opacity-0 lg:group-hover:opacity-100 text-faint-foreground hover:text-rust-600"
     >
       <X className="w-3.5 h-3.5" strokeWidth={1.7} />
     </Button>

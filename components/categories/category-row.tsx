@@ -220,7 +220,7 @@ export function CategoryRow({
                   onClick={onMoveUp}
                   disabled={!canMoveUp || pending}
                   aria-label="Mover pra cima"
-                  className="opacity-0 group-hover:opacity-100 disabled:!opacity-20"
+                  className="lg:opacity-0 lg:group-hover:opacity-100 disabled:!opacity-20"
                 >
                   <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.7} />
                 </Button>
@@ -232,7 +232,7 @@ export function CategoryRow({
                   onClick={onMoveDown}
                   disabled={!canMoveDown || pending}
                   aria-label="Mover pra baixo"
-                  className="opacity-0 group-hover:opacity-100 disabled:!opacity-20"
+                  className="lg:opacity-0 lg:group-hover:opacity-100 disabled:!opacity-20"
                 >
                   <ArrowDown className="w-3.5 h-3.5" strokeWidth={1.7} />
                 </Button>
@@ -244,7 +244,7 @@ export function CategoryRow({
                   onClick={onMerge}
                   disabled={pending}
                   aria-label="Consolidar com outra categoria"
-                  className="opacity-0 group-hover:opacity-100"
+                  className="lg:opacity-0 lg:group-hover:opacity-100"
                 >
                   <Merge className="w-3.5 h-3.5" strokeWidth={1.7} />
                 </Button>
@@ -254,7 +254,7 @@ export function CategoryRow({
                 variant="ghost"
                 onClick={() => setEditing(true)}
                 aria-label="Editar"
-                className="opacity-0 group-hover:opacity-100"
+                className="lg:opacity-0 lg:group-hover:opacity-100"
               >
                 <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
               </Button>
@@ -264,7 +264,7 @@ export function CategoryRow({
                 disabled={pending}
                 onClick={handleArchive}
                 aria-label="Arquivar"
-                className="opacity-0 group-hover:opacity-100 text-rust-600"
+                className="lg:opacity-0 lg:group-hover:opacity-100 text-rust-600"
               >
                 <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
               </Button>
@@ -274,7 +274,7 @@ export function CategoryRow({
                 disabled={pending}
                 onClick={handleDelete}
                 aria-label="Excluir definitivamente"
-                className="opacity-0 group-hover:opacity-100 text-rust-600"
+                className="lg:opacity-0 lg:group-hover:opacity-100 text-rust-600"
               >
                 <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
               </Button>

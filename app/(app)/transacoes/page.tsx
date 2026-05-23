@@ -4,6 +4,7 @@ import { Panel } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { TransactionRow } from "@/components/transactions/transaction-row";
+import { TransactionCard } from "@/components/transactions/transaction-card";
 import { TransactionsFilterBar } from "@/components/transactions/transactions-filter-bar";
 import { ActiveFiltersChips } from "@/components/transactions/active-filters-chips";
 import { SavedViews } from "@/components/transactions/saved-views";
@@ -187,54 +188,81 @@ export default async function TransacoesPage({
         {rows.length === 0 ? (
           <EmptyResult monthLabel={monthLabel} hasQuery={!!q} />
         ) : (
-          <div className="overflow-x-auto px-7">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
-                    Data
-                  </th>
-                  <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
-                    Descrição
-                  </th>
-                  <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
-                    Categoria
-                  </th>
-                  <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-right pb-3 font-medium">
-                    Valor
-                  </th>
-                  <th className="w-9" />
-                </tr>
-              </thead>
-              <tbody>
-                {grouped.map((group) => (
-                  <Fragment key={group.date}>
-                    <tr className="bg-surface-muted/50">
-                      <td
-                        colSpan={5}
-                        className="px-1 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium"
-                      >
-                        {formatDateFull(group.date)}
-                        <span className="ml-2 text-muted-foreground normal-case tracking-normal">
-                          · {group.rows.length} lançamento{group.rows.length === 1 ? "" : "s"}
-                        </span>
-                      </td>
-                    </tr>
-                    {group.rows.map((tx) => (
-                      <TransactionRow
-                        key={tx.id}
-                        tx={tx}
-                        accounts={accountsLite}
-                        categories={categoriesLite}
-                      />
-                    ))}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+          <>
+            {/* Desktop: tabela */}
+            <div className="hidden lg:block overflow-x-auto px-7">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
+                      Data
+                    </th>
+                    <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
+                      Descrição
+                    </th>
+                    <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
+                      Categoria
+                    </th>
+                    <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-right pb-3 font-medium">
+                      Valor
+                    </th>
+                    <th className="w-9" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouped.map((group) => (
+                    <Fragment key={group.date}>
+                      <tr className="bg-surface-muted/50">
+                        <td
+                          colSpan={5}
+                          className="px-1 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium"
+                        >
+                          {formatDateFull(group.date)}
+                          <span className="ml-2 text-muted-foreground normal-case tracking-normal">
+                            · {group.rows.length} lançamento{group.rows.length === 1 ? "" : "s"}
+                          </span>
+                        </td>
+                      </tr>
+                      {group.rows.map((tx) => (
+                        <TransactionRow
+                          key={tx.id}
+                          tx={tx}
+                          accounts={accountsLite}
+                          categories={categoriesLite}
+                        />
+                      ))}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination page={page} pageSize={pageSize} total={total} />
+            </div>
 
-            <Pagination page={page} pageSize={pageSize} total={total} />
-          </div>
+            {/* Mobile: cards agrupados por dia */}
+            <div className="lg:hidden">
+              {grouped.map((group) => (
+                <div key={group.date}>
+                  <div className="px-4 py-2 bg-surface-muted/50 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium sticky top-0 z-10">
+                    {formatDateFull(group.date)}
+                    <span className="ml-2 text-muted-foreground normal-case tracking-normal">
+                      · {group.rows.length}
+                    </span>
+                  </div>
+                  {group.rows.map((tx) => (
+                    <TransactionCard
+                      key={tx.id}
+                      tx={tx}
+                      accounts={accountsLite}
+                      categories={categoriesLite}
+                    />
+                  ))}
+                </div>
+              ))}
+              <div className="px-4">
+                <Pagination page={page} pageSize={pageSize} total={total} />
+              </div>
+            </div>
+          </>
         )}
       </Panel>
 
