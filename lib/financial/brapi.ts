@@ -84,15 +84,14 @@ export function marketCacheTTL(now: Date = new Date()): number {
  * camada de snapshot. Cache HTTP do Next em 60s pra deduplicar chamadas em
  * renders concorrentes.
  */
-async function fetchQuotesRaw(tickers: string[]): Promise<Map<string, Quote>> {
-  if (tickers.length === 0) return new Map();
+async function fetchOneQuote(ticker: string): Promise<Quote | null> {
   const token = process.env.BRAPI_TOKEN ?? "";
-  const url = new URL(`${ENDPOINT}/${tickers.join(",")}`);
+  const url = new URL(`${ENDPOINT}/${ticker}`);
   if (token) url.searchParams.set("token", token);
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(url.toString(), {
       signal: controller.signal,
       next: { revalidate: 60 },
@@ -100,26 +99,54 @@ async function fetchQuotesRaw(tickers: string[]): Promise<Map<string, Quote>> {
     });
     clearTimeout(timer);
 
-    if (!res.ok) return new Map();
-    const json = (await res.json()) as RawResponse;
-    if (!json.results) return new Map();
-
-    const map = new Map<string, Quote>();
-    for (const r of json.results) {
-      if (typeof r.regularMarketPrice !== "number") continue;
-      map.set(r.symbol.toUpperCase(), {
-        symbol: r.symbol.toUpperCase(),
-        regularMarketPrice: r.regularMarketPrice,
-        regularMarketChangePercent: r.regularMarketChangePercent ?? 0,
-        regularMarketTime: r.regularMarketTime,
-        longName: r.longName,
-        currency: r.currency,
-      });
+    if (!res.ok) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[brapi] HTTP ${res.status} pra ${ticker}`);
+      }
+      return null;
     }
-    return map;
+    const json = (await res.json()) as RawResponse;
+    if (!json.results || json.results.length === 0) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          `[brapi] sem results pra ${ticker}: ${(json as { message?: string }).message ?? json.error ?? "?"}`,
+        );
+      }
+      return null;
+    }
+    const r = json.results[0];
+    if (typeof r.regularMarketPrice !== "number") return null;
+    return {
+      symbol: r.symbol.toUpperCase(),
+      regularMarketPrice: r.regularMarketPrice,
+      regularMarketChangePercent: r.regularMarketChangePercent ?? 0,
+      regularMarketTime: r.regularMarketTime,
+      longName: r.longName,
+      currency: r.currency,
+    };
   } catch {
-    return new Map();
+    return null;
   }
+}
+
+/**
+ * Chamada bruta ao brapi.dev. brapi free permite só 1 ticker por requisição —
+ * então fazemos N chamadas paralelas (uma por ticker). O cache HTTP do Next
+ * (60s) + cache L2 em snapshot mantêm o volume baixo.
+ *
+ * Budget de requisições (free 15k/mês):
+ *   - Cron 2x/dia × N tickers × 22 dias úteis = 44N/mês
+ *   - Usuários abrindo (~10x/dia × N × 22) = 220N/mês
+ *   - Pra N=10 tickers: ~2.640/mês = 18% do limite. Confortável.
+ */
+async function fetchQuotesRaw(tickers: string[]): Promise<Map<string, Quote>> {
+  if (tickers.length === 0) return new Map();
+  const results = await Promise.all(tickers.map((t) => fetchOneQuote(t)));
+  const map = new Map<string, Quote>();
+  for (const q of results) {
+    if (q) map.set(q.symbol, q);
+  }
+  return map;
 }
 
 /* ============================== SMART (com cache L2) ===================== */
@@ -200,19 +227,9 @@ export async function fetchQuotes(tickers: string[]): Promise<Map<string, Quote>
     }
   }
 
-  // 2. Se há stales, chama brapi em UMA call agrupada
+  // 2. Se há stales, chama brapi (já é 1 ticker por request, paralelizado)
   if (staleTickers.length > 0) {
     const fresh = await fetchQuotesRaw(staleTickers);
-
-    // 2a. Tickers que faltaram no batch: brapi às vezes parcializa quando um
-    //     ticker do meio quebra. Retry individual pra cada ausente.
-    const missingAfterBatch = staleTickers.filter((t) => !fresh.has(t));
-    if (missingAfterBatch.length > 0 && missingAfterBatch.length < staleTickers.length) {
-      for (const t of missingAfterBatch) {
-        const single = await fetchQuotesRaw([t]);
-        for (const [k, v] of single) fresh.set(k, v);
-      }
-    }
 
     if (fresh.size > 0) {
       // Upsert dos novos valores no snapshot pra próximas leituras

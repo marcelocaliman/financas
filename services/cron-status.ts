@@ -76,9 +76,13 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     },
     {
       name: "Cotações de ativos (brapi)",
-      description: "FIIs, ações, ETFs · /api/quotes",
+      description:
+        "FIIs, ações, ETFs · /api/cron/snapshot-quotes (10:30 + 18:30 BRT, dias úteis)",
       latestAt: quote?.fetched_at ?? null,
-      staleAfterHours: 24,
+      // Snapshot mais recente deve ter no máx ~16h de idade (cron 18:30
+      // sexta + 48h fim de semana = 64h ainda OK na segunda manhã). Marca
+      // stale só acima de 72h pra não alarmar em segundas/feriados.
+      staleAfterHours: 72,
     },
     {
       name: "Snapshot mensal do patrimônio",
