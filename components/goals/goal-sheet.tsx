@@ -510,14 +510,20 @@ export function GoalSheet({
                   </div>
 
                   <Field
-                    label="Sistema de amortização"
+                    label={
+                      currency === "EUR"
+                        ? "Tipo de tasso"
+                        : currency === "USD"
+                          ? "Mortgage type"
+                          : "Sistema de amortização"
+                    }
                     htmlFor="loanSystem"
                     hint={
                       currency === "EUR"
-                        ? "Itália: tasso fisso = Price/Francês (padrão absoluto)"
+                        ? "Itália: tasso fisso = parcela igual todo mês (padrão mutuo casa)"
                         : currency === "USD"
-                          ? "Fixed-rate mortgage = Price (padrão americano)"
-                          : "Brasil habitacional: SAC é padrão da Caixa"
+                          ? "USA: fixed-rate mortgage = parcela igual todo mês (padrão)"
+                          : "Brasil habitacional: SAC é o padrão da Caixa"
                     }
                   >
                     <Select
@@ -529,23 +535,32 @@ export function GoalSheet({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* Ordem dos itens depende da moeda — o padrão regional vem primeiro */}
+                        {/* Labels e ordem dependem da moeda — termo regional vem primeiro */}
                         {currency === "BRL" ? (
                           <>
                             <SelectItem value="sac">
                               SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente</span>
                             </SelectItem>
                             <SelectItem value="price">
-                              Price (Francês) <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                              Tabela Price <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                            </SelectItem>
+                          </>
+                        ) : currency === "EUR" ? (
+                          <>
+                            <SelectItem value="price">
+                              Tasso fisso <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante (rata costante)</span>
+                            </SelectItem>
+                            <SelectItem value="sac">
+                              Quota capitale costante <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente (raro na Itália)</span>
                             </SelectItem>
                           </>
                         ) : (
                           <>
                             <SelectItem value="price">
-                              Price (Francês) <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                              Fixed-rate <span className="text-faint-foreground ml-1.5 text-[11.5px]">· equal monthly payments</span>
                             </SelectItem>
                             <SelectItem value="sac">
-                              SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente (raro fora do Brasil)</span>
+                              Constant amortization <span className="text-faint-foreground ml-1.5 text-[11.5px]">· decreasing payments (rare in US)</span>
                             </SelectItem>
                           </>
                         )}
