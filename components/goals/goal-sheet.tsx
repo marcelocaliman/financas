@@ -501,7 +501,11 @@ export function GoalSheet({
 
             {allocationMode === "fixed_amount" ? (
               <div className="mt-3">
-                <Field label={`R$ por mês (${currency})`} htmlFor="allocationValue">
+                <Field
+                  label={`R$ por mês (${currency})`}
+                  htmlFor="allocationValue"
+                  hint="Drives o waterfall + pré-preenche o lembrete mensal"
+                >
                   <MoneyInput
                     name="allocationValue"
                     id="allocationValue"
@@ -513,7 +517,11 @@ export function GoalSheet({
               </div>
             ) : allocationMode === "percentage" ? (
               <div className="mt-3">
-                <Field label="% da sobra mensal" htmlFor="allocationValue">
+                <Field
+                  label="% da sobra mensal"
+                  htmlFor="allocationValue"
+                  hint="Drives o waterfall (valor variável por mês)"
+                >
                   <Input
                     id="allocationValue"
                     name="allocationValue"
@@ -527,7 +535,22 @@ export function GoalSheet({
                 </Field>
               </div>
             ) : (
-              <input type="hidden" name="allocationValue" value="" />
+              // Modos manual e waterfall: campo opcional só pra prefill dos lembretes
+              <div className="mt-3">
+                <Field
+                  label={`Valor sugerido por mês (${currency})`}
+                  htmlFor="allocationValue"
+                  hint="Opcional · só pré-preenche o lembrete mensal. Não afeta o waterfall."
+                >
+                  <MoneyInput
+                    name="allocationValue"
+                    id="allocationValue"
+                    currency={currency}
+                    defaultValue={allocationValue}
+                    onValueChange={setAllocationValue}
+                  />
+                </Field>
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-3 mt-3">

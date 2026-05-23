@@ -67,6 +67,8 @@ export function ContributeDialog({
   accounts = [],
   linkedAccounts = [],
   maxWithdrawable,
+  defaultAmount,
+  defaultDate,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -84,12 +86,27 @@ export function ContributeDialog({
   linkedAccounts?: ContributeDestinationOption[];
   /** Só usado em withdraw. Bloqueia amount > este valor. */
   maxWithdrawable?: number;
+  /** Pré-preenche o campo "Valor". Default = 0. */
+  defaultAmount?: number;
+  /** Pré-preenche o campo "Data" (ISO YYYY-MM-DD). Default = hoje. */
+  defaultDate?: string;
 }) {
   const isWithdraw = mode === "withdraw";
-  const [amount, setAmount] = useState<number>(0);
-  const [date, setDate] = useState<string>(todayISO());
+  const [amount, setAmount] = useState<number>(defaultAmount ?? 0);
+  const [date, setDate] = useState<string>(defaultDate ?? todayISO());
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
+
+  // Reset de campos quando o dialog reabre (com defaults novos)
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setAmount(defaultAmount ?? 0);
+      setDate(defaultDate ?? todayISO());
+      setNotes("");
+    }
+  }
 
   const hasLinked = linkedAccounts.length > 0;
   const defaultLinked = hasLinked ? linkedAccounts[0].accountId : SYMBOLIC_VALUE;
@@ -216,6 +233,10 @@ export function ContributeDialog({
         <div className="space-y-4">
           <Field label={`Valor (${goalCurrency})`} htmlFor="contrib-amount" required>
             <MoneyInput
+              // key força remount quando o defaultAmount muda (ex: dialog reabre
+              // pra outra meta com valor sugerido diferente) — MoneyInput é
+              // uncontrolled, só lê defaultValue no mount.
+              key={`amt-${defaultAmount ?? 0}-${open ? "o" : "c"}`}
               id="contrib-amount"
               name="amount"
               currency={goalCurrency}

@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Bell, Check, Calendar, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
-import { recordGoalContribution } from "@/services/goals.actions";
 import {
   ContributeDialog,
   type ContributeAccountOption,
@@ -37,37 +35,24 @@ export function GoalRemindersCard({
   /** Mapa goalId → contas vinculadas como fonte (candidatas a destino) */
   linkedAccountsByGoalId?: Record<string, ContributeDestinationOption[]>;
 }) {
-  const [reminders, setReminders] = useState(initial);
-  const [openingId, setOpeningId] = useState<{
+  const [reminders] = useState(initial);
+  const [opening, setOpening] = useState<{
     goalId: string;
     goalName: string;
     goalCurrency: GoalReminder["goalCurrency"];
+    defaultAmount?: number;
+    defaultDate?: string;
   } | null>(null);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
 
   if (reminders.length === 0) return null;
 
-  const acceptDefault = (r: GoalReminder) => {
-    if (!r.expectedAmount || r.expectedAmount <= 0) {
-      // Sem valor sugerido — abre dialog
-      setOpeningId({ goalId: r.goalId, goalName: r.goalName, goalCurrency: r.goalCurrency });
-      return;
-    }
-    setPendingId(r.goalId);
-    startTransition(async () => {
-      const res = await recordGoalContribution(r.goalId, r.expectedAmount!, {
-        source: "manual",
-        notes: `Aporte do calendário · ${r.dueDate}`,
-        bumpCurrent: true,
-      });
-      setPendingId(null);
-      if (res.error) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success(`Aporte de ${formatMoney(r.expectedAmount!, r.goalCurrency)} registrado.`);
-      setReminders((prev) => prev.filter((x) => x.goalId !== r.goalId));
+  const openAportar = (r: GoalReminder) => {
+    setOpening({
+      goalId: r.goalId,
+      goalName: r.goalName,
+      goalCurrency: r.goalCurrency,
+      defaultAmount: r.expectedAmount ?? undefined,
+      defaultDate: r.dueDate,
     });
   };
 
@@ -116,15 +101,10 @@ export function GoalRemindersCard({
                 <Button
                   size="sm"
                   variant={r.status === "overdue" ? "primary" : "outline"}
-                  disabled={pendingId === r.goalId}
-                  onClick={() => acceptDefault(r)}
+                  onClick={() => openAportar(r)}
                 >
                   <Check className="w-3 h-3" strokeWidth={2} />
-                  {pendingId === r.goalId
-                    ? "Registrando…"
-                    : r.expectedAmount != null
-                      ? "Já aportei"
-                      : "Aportar…"}
+                  Aportar
                 </Button>
               </div>
             </li>
@@ -132,17 +112,19 @@ export function GoalRemindersCard({
         </ul>
       </Panel>
 
-      {openingId ? (
+      {opening ? (
         <ContributeDialog
           open={true}
           onOpenChange={(o) => {
-            if (!o) setOpeningId(null);
+            if (!o) setOpening(null);
           }}
-          goalId={openingId.goalId}
-          goalName={openingId.goalName}
-          goalCurrency={openingId.goalCurrency}
+          goalId={opening.goalId}
+          goalName={opening.goalName}
+          goalCurrency={opening.goalCurrency}
           accounts={accounts}
-          linkedAccounts={linkedAccountsByGoalId[openingId.goalId] ?? []}
+          linkedAccounts={linkedAccountsByGoalId[opening.goalId] ?? []}
+          defaultAmount={opening.defaultAmount}
+          defaultDate={opening.defaultDate}
         />
       ) : null}
     </>

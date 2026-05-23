@@ -178,8 +178,16 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
         ? "due_today"
         : "upcoming";
 
+    // Expected amount usa allocation_value pra QUALQUER modo onde faz sentido:
+    //   - fixed_amount: valor direto (drives waterfall + reminder)
+    //   - manual: valor sugerido só pra prefill do lembrete (não drives waterfall)
+    //   - waterfall: idem (allocation_value usado só pra sugerir lembrete)
+    //   - percentage: variável (depende da sobra), expected fica null por ora
     const expected =
-      g.allocation_mode === "fixed_amount" && g.allocation_value
+      (g.allocation_mode === "fixed_amount" ||
+        g.allocation_mode === "manual" ||
+        g.allocation_mode === "waterfall") &&
+      g.allocation_value
         ? Number(g.allocation_value)
         : null;
 
