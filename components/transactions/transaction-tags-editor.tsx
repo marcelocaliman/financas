@@ -98,7 +98,7 @@ export function TransactionTagsEditor({
             className={cn(
               "inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[5px]",
               "text-faint-foreground hover:text-foreground hover:bg-surface-muted transition-colors",
-              "text-[10.5px] font-mono lg:opacity-0 lg:group-hover:opacity-100",
+              "text-[10.5px] font-mono",
               tags.length === 0 && "opacity-50",
             )}
             aria-label="Adicionar tag"

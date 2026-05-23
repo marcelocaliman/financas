@@ -139,7 +139,7 @@ export function TransactionRow({
           </div>
         </td>
         <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
-          <div className="flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
               onClick={() => setEditing(true)}

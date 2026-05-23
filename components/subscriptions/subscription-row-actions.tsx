@@ -12,40 +12,40 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
  * recorrente intacta (continua materializando, só não aparece aqui).
  */
 export function SubscriptionRowActions({
-  ruleId,
-  description,
+ ruleId,
+ description,
 }: {
-  ruleId: string;
-  description: string;
+ ruleId: string;
+ description: string;
 }) {
-  const [pending, startTransition] = useTransition();
-  const confirm = useConfirm();
+ const [pending, startTransition] = useTransition();
+ const confirm = useConfirm();
 
-  const handleUnflag = async () => {
-    const ok = await confirm({
-      title: `Desmarcar "${description}" como assinatura?`,
-      description:
-        "A regra recorrente continua ativa (Netflix continua sendo cobrada). Só some dessa página.",
-      confirmLabel: "Desmarcar",
-    });
-    if (!ok) return;
-    startTransition(async () => {
-      const r = await toggleSubscriptionTag(ruleId, false);
-      if (r.error) toast.error(r.error);
-      else toast.success("Desmarcada.");
-    });
-  };
+ const handleUnflag = async () => {
+ const ok = await confirm({
+ title: `Desmarcar "${description}" como assinatura?`,
+ description:
+ "A regra recorrente continua ativa (Netflix continua sendo cobrada). Só some dessa página.",
+ confirmLabel: "Desmarcar",
+ });
+ if (!ok) return;
+ startTransition(async () => {
+ const r = await toggleSubscriptionTag(ruleId, false);
+ if (r.error) toast.error(r.error);
+ else toast.success("Desmarcada.");
+ });
+ };
 
-  return (
-    <Button
-      size="icon"
-      variant="ghost"
-      onClick={handleUnflag}
-      disabled={pending}
-      aria-label="Desmarcar como assinatura"
-      className="lg:opacity-0 lg:group-hover:opacity-100 text-faint-foreground hover:text-rust-600"
-    >
-      <X className="w-3.5 h-3.5" strokeWidth={1.7} />
-    </Button>
-  );
+ return (
+ <Button
+ size="icon"
+ variant="ghost"
+ onClick={handleUnflag}
+ disabled={pending}
+ aria-label="Desmarcar como assinatura"
+ className="text-faint-foreground hover:text-rust-600"
+ >
+ <X className="w-3.5 h-3.5" strokeWidth={1.7} />
+ </Button>
+ );
 }

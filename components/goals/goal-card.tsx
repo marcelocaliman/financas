@@ -153,7 +153,7 @@ export function GoalCard({
             ) : null}
           </div>
 
-          <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap">
             <Button
               size="sm"
               variant="primary"

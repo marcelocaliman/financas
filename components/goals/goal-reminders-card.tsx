@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Bell, Check, Calendar, AlertCircle } from "lucide-react";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
@@ -67,14 +66,6 @@ export function GoalRemindersCard({
             </span>
           }
           meta={`${reminders.length} ${reminders.length === 1 ? "lembrete" : "lembretes"}`}
-          action={
-            <Link
-              href="/metas"
-              className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
-            >
-              Ver metas →
-            </Link>
-          }
         />
 
         <ul className="divide-y divide-border -mt-2">

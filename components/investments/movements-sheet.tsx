@@ -160,7 +160,7 @@ export function MovementsSheet({
                       <MoneyMask>{formatMoney(m.total_amount)}</MoneyMask>
                     </td>
                     <td className="text-right pl-2 whitespace-nowrap">
-                      <div className="inline-flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <div className="inline-flex items-center gap-0.5">
                         {m.kind === "buy" || m.kind === "sell" ? (
                           <button
                             type="button"

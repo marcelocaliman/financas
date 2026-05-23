@@ -219,7 +219,7 @@ export function AssetYieldTable({
                     type="button"
                     onClick={() => setWithdrawing(r)}
                     disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
-                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed lg:opacity-0 lg:group-hover:opacity-100"
+                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     aria-label="Sacar rendimento"
                     title={
                       r.accumulatedYield <= 0
