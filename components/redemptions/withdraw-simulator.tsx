@@ -124,49 +124,51 @@ function PontualMode({
   const maxScale = Math.max(derivedBalance, sacavelAgora * 2, 1000);
 
   return (
-    <>
-      {/* Input */}
-      <div className="mb-4">
-        <div className="flex items-baseline justify-between mb-1.5">
-          <label
-            htmlFor="sim-amount"
-            className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium"
-          >
-            Quanto sacar agora
-          </label>
-          <span className="font-mono text-[10.5px] text-faint-foreground">
-            sem invadir principal:{" "}
-            <b className="text-olive-700 dark:text-olive-500">
-              {formatMoney(sacavelAgora)}
-            </b>
-          </span>
+    <div className="grid xl:grid-cols-[1fr_1.1fr] gap-6">
+      {/* Coluna A: input + composição */}
+      <div>
+        {/* Input */}
+        <div className="mb-4">
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label
+              htmlFor="sim-amount"
+              className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium"
+            >
+              Quanto sacar agora
+            </label>
+            <span className="font-mono text-[10.5px] text-faint-foreground">
+              sem invadir principal:{" "}
+              <b className="text-olive-700 dark:text-olive-500">
+                {formatMoney(sacavelAgora)}
+              </b>
+            </span>
+          </div>
+          <MoneyInput
+            id="sim-amount"
+            name="sim-amount"
+            defaultValue={amount}
+            onValueChange={setAmount}
+            size="lg"
+          />
+          <input
+            type="range"
+            min={0}
+            max={maxScale}
+            step={100}
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="w-full mt-3 accent-navy-700"
+            aria-label="Valor a sacar"
+          />
+          <div className="flex justify-between font-mono text-[10px] text-faint-foreground tracking-[0.05em] mt-1">
+            <span>0</span>
+            <span>limite sem invadir</span>
+            <span>saldo total</span>
+          </div>
         </div>
-        <MoneyInput
-          id="sim-amount"
-          name="sim-amount"
-          defaultValue={amount}
-          onValueChange={setAmount}
-          size="lg"
-        />
-        <input
-          type="range"
-          min={0}
-          max={maxScale}
-          step={100}
-          value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
-          className="w-full mt-3 accent-navy-700"
-          aria-label="Valor a sacar"
-        />
-        <div className="flex justify-between font-mono text-[10px] text-faint-foreground tracking-[0.05em] mt-1">
-          <span>0</span>
-          <span>limite sem invadir</span>
-          <span>saldo total</span>
-        </div>
-      </div>
 
-      {/* Composição do saque (mantém a distinção visual yield vs principal) */}
-      <div className="rounded-[10px] border border-border bg-surface-muted px-5 py-4 mb-4">
+        {/* Composição do saque (mantém a distinção visual yield vs principal) */}
+        <div className="rounded-[10px] border border-border bg-surface-muted px-5 py-4">
         <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-3">
           De onde sai o dinheiro
         </div>
@@ -199,9 +201,10 @@ function PontualMode({
             </div>
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Impacto real — corrigido: SEMPRE mostra a perda da renda */}
+      {/* Coluna B: Impacto real — corrigido: SEMPRE mostra a perda da renda */}
       <div className="rounded-[10px] border border-border bg-surface px-5 py-4">
         <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-3 inline-flex items-center gap-1.5">
           <TrendingDown className="w-3 h-3" strokeWidth={1.8} />
@@ -281,7 +284,7 @@ function PontualMode({
           </div>
         ) : null}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -321,60 +324,64 @@ function RecorrenteMode({
   const drawCoverage = monthlyExpense > 0 ? monthlyDraw / monthlyExpense : 0;
 
   return (
-    <>
-      <div className="rounded-[10px] bg-olive-50 dark:bg-olive-700/10 border border-olive-600/30 px-4 py-3 mb-4 text-[12.5px]">
-        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-olive-700 dark:text-olive-500 font-medium mb-1">
-          Sustentável pra sempre
+    <div className="grid xl:grid-cols-[1fr_1.1fr] gap-6">
+      {/* Coluna A: highlight + input */}
+      <div>
+        <div className="rounded-[10px] bg-olive-50 dark:bg-olive-700/10 border border-olive-600/30 px-4 py-3 mb-4 text-[12.5px]">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-olive-700 dark:text-olive-500 font-medium mb-1">
+            Sustentável pra sempre
+          </div>
+          <div className="font-mono text-[18px] tabular-nums text-foreground">
+            <MoneyMask>{formatMoney(monthlyYield)}</MoneyMask>
+            <span className="text-faint-foreground text-[12px] ml-1.5">/ mês</span>
+          </div>
+          <div className="text-muted-foreground text-[11.5px] mt-0.5 leading-relaxed">
+            Até esse valor, o saque iguala o que o saldo rende — o principal não
+            encolhe nunca.
+          </div>
         </div>
-        <div className="font-mono text-[18px] tabular-nums text-foreground">
-          <MoneyMask>{formatMoney(monthlyYield)}</MoneyMask>
-          <span className="text-faint-foreground text-[12px] ml-1.5">/ mês</span>
-        </div>
-        <div className="text-muted-foreground text-[11.5px] mt-0.5 leading-relaxed">
-          Até esse valor, o saque iguala o que o saldo rende — o principal não
-          encolhe nunca.
+
+        <div>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label
+              htmlFor="sim-monthly"
+              className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium"
+            >
+              Quanto sacar por mês
+            </label>
+            <span className="font-mono text-[10.5px] text-faint-foreground">
+              limite perpétuo:{" "}
+              <b className="text-olive-700 dark:text-olive-500">
+                {formatMoney(monthlyYield)}
+              </b>
+            </span>
+          </div>
+          <MoneyInput
+            id="sim-monthly"
+            name="sim-monthly"
+            defaultValue={monthlyDraw}
+            onValueChange={setMonthlyDraw}
+            size="lg"
+          />
+          <input
+            type="range"
+            min={0}
+            max={Math.max(monthlyYield * 3, 100)}
+            step={50}
+            value={monthlyDraw}
+            onChange={(e) => setMonthlyDraw(Number(e.target.value))}
+            className="w-full mt-3 accent-navy-700"
+            aria-label="Saque mensal hipotético"
+          />
+          <div className="flex justify-between font-mono text-[10px] text-faint-foreground tracking-[0.05em] mt-1">
+            <span>0</span>
+            <span>perpétuo</span>
+            <span>3× perpétuo</span>
+          </div>
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="flex items-baseline justify-between mb-1.5">
-          <label
-            htmlFor="sim-monthly"
-            className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium"
-          >
-            Quanto sacar por mês
-          </label>
-          <span className="font-mono text-[10.5px] text-faint-foreground">
-            limite perpétuo:{" "}
-            <b className="text-olive-700 dark:text-olive-500">
-              {formatMoney(monthlyYield)}
-            </b>
-          </span>
-        </div>
-        <MoneyInput
-          id="sim-monthly"
-          name="sim-monthly"
-          defaultValue={monthlyDraw}
-          onValueChange={setMonthlyDraw}
-          size="lg"
-        />
-        <input
-          type="range"
-          min={0}
-          max={Math.max(monthlyYield * 3, 100)}
-          step={50}
-          value={monthlyDraw}
-          onChange={(e) => setMonthlyDraw(Number(e.target.value))}
-          className="w-full mt-3 accent-navy-700"
-          aria-label="Saque mensal hipotético"
-        />
-        <div className="flex justify-between font-mono text-[10px] text-faint-foreground tracking-[0.05em] mt-1">
-          <span>0</span>
-          <span>perpétuo</span>
-          <span>3× perpétuo</span>
-        </div>
-      </div>
-
+      {/* Coluna B: projeção */}
       <div className="rounded-[10px] border border-border bg-surface px-5 py-4">
         <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-3 inline-flex items-center gap-1.5">
           <Calendar className="w-3 h-3" strokeWidth={1.8} />
@@ -450,7 +457,7 @@ function RecorrenteMode({
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

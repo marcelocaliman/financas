@@ -10,11 +10,9 @@ import { ResgatesHero } from "@/components/redemptions/resgates-hero";
 import { AssetYieldTable } from "@/components/redemptions/asset-yield-table";
 import { WithdrawSimulator } from "@/components/redemptions/withdraw-simulator";
 import { YearlyTrajectory } from "@/components/redemptions/yearly-trajectory";
-import { FireConnection } from "@/components/redemptions/fire-connection";
-import { listAccounts, getAccountsTotals } from "@/services/accounts";
-import { listInvestments, getPortfolioStats, getCoverage } from "@/services/investments";
+import { listAccounts } from "@/services/accounts";
+import { listInvestments, getCoverage } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
-import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import {
   ensurePendingIntents,
   getNextPending,
@@ -23,7 +21,6 @@ import {
   listYieldRules,
 } from "@/services/redemptions";
 import { getYieldOverview } from "@/services/yield-overview";
-import { getMonthlyHistory } from "@/services/transactions";
 import { formatDateShort, formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 
@@ -41,10 +38,6 @@ export default async function ResgatesPage() {
     accounts,
     live,
     coverage,
-    portfolio,
-    physical,
-    accountsTotals,
-    history6,
   ] = await Promise.all([
     listYieldRules(),
     getNextPending(),
@@ -54,10 +47,6 @@ export default async function ResgatesPage() {
     listAccounts(),
     getLivePortfolio(),
     getCoverage(),
-    getPortfolioStats(),
-    getPhysicalAssetsTotals(),
-    getAccountsTotals(),
-    getMonthlyHistory(6),
   ]);
 
   const liveByAssetId = new Map(
@@ -97,19 +86,12 @@ export default async function ResgatesPage() {
 
   const yieldOverview = await getYieldOverview(liveByAssetId, rulesByInvestmentId);
 
-  // Renda passiva = renda mensal estimada do portfolio TOTAL (RF + variável)
+  // Renda passiva = renda mensal estimada do portfolio TOTAL (RF + variável).
   // No /resgates focamos só na RF (que tem rendimento previsível), mas a
   // cobertura usa o total que de fato gera caixa.
   const liveMonthlyYield = live.totalDailyYield * 21;
   const monthlyExpense = coverage.monthlyAverageExpense;
   const coverageRatio = monthlyExpense > 0 ? liveMonthlyYield / monthlyExpense : 0;
-
-  const netWorth =
-    accountsTotals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
-  const monthlySavings =
-    history6.length > 0
-      ? history6.reduce((s, r) => s + Math.max(0, r.net), 0) / history6.length
-      : 0;
 
   return (
     <>
@@ -143,6 +125,21 @@ export default async function ResgatesPage() {
 
           {/* Próximo saque destacado (mantido — usuário precisa agir) */}
           {nextIntent ? <NextRemainder intent={nextIntent} /> : null}
+
+          {/* Diagrama do fluxo do próximo saque (quando existe regra) */}
+          {nextIntent?.rule?.investment ? (
+            <div className="mb-6">
+              <FlowDiagram
+                fromName={nextIntent.rule.investment.name ?? "Ativo"}
+                fromBalance={Number(nextIntent.rule.investment.current_balance ?? 0)}
+                fromLiveDaily={fromLive?.dailyYield ?? 0}
+                fromLivePerSecond={fromLive?.perSecond ?? 0}
+                toName={nextIntent.rule.destination?.name ?? "Conta de destino"}
+                toInstitution={nextIntent.rule.destination?.institution}
+                monthlyAmount={Number(nextIntent.suggested_amount)}
+              />
+            </div>
+          ) : null}
 
           {/* Lista de outros pending */}
           {allPending.length > 1 ? (
@@ -193,38 +190,6 @@ export default async function ResgatesPage() {
               destinationAccounts={destinations}
             />
           </Panel>
-
-          {/* TIER 2 + 5 — Simulador + Conexão FIRE lado-a-lado */}
-          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
-            <WithdrawSimulator
-              sacavelAgora={yieldOverview.totals.accumulatedYield}
-              principal={yieldOverview.totals.principal}
-              derivedBalance={
-                yieldOverview.totals.principal + yieldOverview.totals.accumulatedYield
-              }
-              monthlyYield={yieldOverview.totals.monthlyYield}
-              monthlyExpense={monthlyExpense}
-            />
-            <div className="space-y-4">
-              <FireConnection
-                monthlyPassiveIncome={liveMonthlyYield}
-                monthlyExpense={monthlyExpense}
-                netWorth={netWorth}
-                monthlySavings={monthlySavings}
-              />
-              {nextIntent?.rule?.investment ? (
-                <FlowDiagram
-                  fromName={nextIntent.rule.investment.name ?? "Ativo"}
-                  fromBalance={Number(nextIntent.rule.investment.current_balance ?? 0)}
-                  fromLiveDaily={fromLive?.dailyYield ?? 0}
-                  fromLivePerSecond={fromLive?.perSecond ?? 0}
-                  toName={nextIntent.rule.destination?.name ?? "Conta de destino"}
-                  toInstitution={nextIntent.rule.destination?.institution}
-                  monthlyAmount={Number(nextIntent.suggested_amount)}
-                />
-              ) : null}
-            </div>
-          </div>
 
           {/* TIER 4 — Trajetória do ano */}
           <div className="mb-8">
@@ -310,7 +275,7 @@ export default async function ResgatesPage() {
           )}
 
           {/* Histórico */}
-          <div className="mt-7">
+          <div className="mt-7 mb-8">
             <h2 className="font-display italic text-[18px] tracking-[-0.02em] mb-3 font-normal">
               Histórico de saques
             </h2>
@@ -352,6 +317,17 @@ export default async function ResgatesPage() {
               )}
             </Panel>
           </div>
+
+          {/* Simulador — exploratório/educacional, fica no fim. Full-width. */}
+          <WithdrawSimulator
+            sacavelAgora={yieldOverview.totals.accumulatedYield}
+            principal={yieldOverview.totals.principal}
+            derivedBalance={
+              yieldOverview.totals.principal + yieldOverview.totals.accumulatedYield
+            }
+            monthlyYield={yieldOverview.totals.monthlyYield}
+            monthlyExpense={monthlyExpense}
+          />
         </>
       )}
     </>
