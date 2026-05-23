@@ -156,6 +156,35 @@ body {
   min-height: 100vh;
 }
 
+/* ----------------------------------------------------------------------------
+ * Restaura cursor: pointer em elementos interativos.
+ * Tailwind v4 removeu essa regra do preflight pra seguir o default do browser,
+ * mas a expectativa de UX é a inversa — qualquer coisa clicável vira mãozinha.
+ * Cobre: <button>, <a>, <label[for]>, <summary>, controles de form, e
+ * qualquer elemento com role="button" ou data-state (Radix triggers).
+ * Excluí estados desabilitados pra evitar falsa affordance.
+ * -------------------------------------------------------------------------- */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]):not([data-disabled]),
+[role="menuitem"]:not([data-disabled]),
+[role="option"]:not([data-disabled]),
+[role="tab"]:not([data-disabled]),
+[role="switch"]:not([data-disabled]),
+[role="checkbox"]:not([data-disabled]),
+[role="radio"]:not([data-disabled]),
+a[href],
+summary,
+label[for],
+select:not(:disabled),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="file"]:not(:disabled)::file-selector-button {
+  cursor: pointer;
+}
+
 /* Texturas radiais — papel quente respirando (suaviza em dark) */
 body::before {
   content: "";
