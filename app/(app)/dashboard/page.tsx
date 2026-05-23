@@ -25,6 +25,8 @@ import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getRecurrencesForecast } from "@/services/recurrences";
 import { listGoalsEnriched } from "@/services/goals";
 import { getAportSuggestions } from "@/services/goal-suggestions";
+import { getGoalReminders } from "@/services/goal-reminders";
+import { GoalRemindersCard } from "@/components/goals/goal-reminders-card";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -80,6 +82,7 @@ export default async function DashboardPage({
     sobraHistory,
     history6,
     apportSuggestions,
+    goalReminders,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -98,6 +101,7 @@ export default async function DashboardPage({
     // Histórico de 6 meses pra calcular sobra média (usada no FIRE / metas ETA)
     isCurrent ? getMonthlyHistory(6) : Promise.resolve([]),
     isCurrent ? getAportSuggestions() : Promise.resolve([]),
+    isCurrent ? getGoalReminders(30) : Promise.resolve([]),
   ]);
 
   // Patrimônio total SEM dupla contagem
@@ -252,6 +256,12 @@ export default async function DashboardPage({
 
       {isCurrent && apportSuggestions.length > 0 ? (
         <ApportSuggestionCard suggestions={apportSuggestions} />
+      ) : null}
+
+      {isCurrent && goalReminders.length > 0 ? (
+        <div className="mb-6">
+          <GoalRemindersCard reminders={goalReminders} />
+        </div>
       ) : null}
 
       {/* TIER 1 — IF + Cobertura (a estrela do dashboard pra FIRE) */}

@@ -7,6 +7,8 @@ import { NewGoalButton } from "@/components/goals/new-goal-button";
 import { GoalCard } from "@/components/goals/goal-card";
 import { GoalsOverview } from "@/components/goals/goals-overview";
 import { MonthlyAllocationPlan } from "@/components/goals/monthly-allocation-plan";
+import { GoalRemindersCard } from "@/components/goals/goal-reminders-card";
+import { getGoalReminders } from "@/services/goal-reminders";
 import {
   computeAllocationPlan,
   listGoalsEnriched,
@@ -40,6 +42,7 @@ export default async function MetasPage({
     accountsTotals,
     portfolio,
     physical,
+    reminders,
   ] = await Promise.all([
     listGoalsEnriched({ includeArchived: true }),
     listAccounts(),
@@ -50,6 +53,7 @@ export default async function MetasPage({
     getAccountsTotals(),
     getPortfolioStats(),
     getPhysicalAssetsTotals(),
+    getGoalReminders(30),
   ]);
 
   const positiveNets = history.map((h) => Math.max(0, h.net));
@@ -136,6 +140,13 @@ export default async function MetasPage({
             totalFaltaDisplay={totalFaltaDisplay}
             netWorthDisplay={netWorthDisplay}
           />
+        </div>
+      ) : null}
+
+      {/* Lembretes vencidos / próximos */}
+      {reminders.length > 0 ? (
+        <div className="mb-7">
+          <GoalRemindersCard reminders={reminders} />
         </div>
       ) : null}
 

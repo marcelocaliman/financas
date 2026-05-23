@@ -18,6 +18,8 @@ import { createClient } from "@/lib/supabase/server";
 export type SidebarBadges = {
   resgatesPendingSoon: number;
   metasJustAchieved: number;
+  /** Metas com contribution_day atrasado ou nos próximos 7 dias */
+  metasRemindersDue: number;
 };
 
 function todayPlusISO(days: number): string {
@@ -27,10 +29,11 @@ function todayPlusISO(days: number): string {
 }
 
 export async function getSidebarBadges(): Promise<SidebarBadges> {
+  const { getGoalReminders } = await import("@/services/goal-reminders");
   const supabase = await createClient();
   const soonCutoff = todayPlusISO(7);
 
-  const [{ count: pendingCount }, { data: goals }] = await Promise.all([
+  const [{ count: pendingCount }, { data: goals }, reminders] = await Promise.all([
     supabase
       .from("redemption_intents")
       .select("*", { count: "exact", head: true })
@@ -40,14 +43,21 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
       .from("goals")
       .select("current_amount, target_amount")
       .eq("is_archived", false),
+    getGoalReminders(7),
   ]);
 
   const metasJustAchieved = (goals ?? []).filter(
     (g) => Number(g.target_amount) > 0 && Number(g.current_amount) >= Number(g.target_amount),
   ).length;
 
+  // Metas que pedem ação: vencidas ou na próxima semana
+  const metasRemindersDue = reminders.filter(
+    (r) => r.status === "overdue" || (r.status === "upcoming" && r.daysUntil <= 7),
+  ).length;
+
   return {
     resgatesPendingSoon: pendingCount ?? 0,
     metasJustAchieved,
+    metasRemindersDue,
   };
 }

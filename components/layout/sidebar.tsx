@@ -57,9 +57,16 @@ export function Sidebar({
   badges?: SidebarBadges;
 }) {
   const pathname = usePathname();
+  // /metas: combina conquistas (trophy) com lembretes vencidos (urgência).
+  // Lembretes têm prioridade visual: aparecem em vermelho.
+  const metasReminders = badges?.metasRemindersDue ?? 0;
+  const metasAchieved = badges?.metasJustAchieved ?? 0;
   const badgeByHref: Record<string, number> = {
     "/resgates": badges?.resgatesPendingSoon ?? 0,
-    "/metas": badges?.metasJustAchieved ?? 0,
+    "/metas": metasReminders > 0 ? metasReminders : metasAchieved,
+  };
+  const badgeIsReminderByHref: Record<string, boolean> = {
+    "/metas": metasReminders > 0,
   };
   const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     acc[item.group] = acc[item.group] ?? [];
@@ -123,9 +130,11 @@ export function Sidebar({
                     <span
                       className={cn(
                         "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-mono font-medium tabular-nums",
-                        item.href === "/metas"
-                          ? "bg-olive-600 text-white"
-                          : "bg-gold-600 text-ink-950",
+                        badgeIsReminderByHref[item.href]
+                          ? "bg-rust-600 text-white"
+                          : item.href === "/metas"
+                            ? "bg-olive-600 text-white"
+                            : "bg-gold-600 text-ink-950",
                       )}
                       aria-label={`${badgeCount} item${badgeCount === 1 ? "" : "s"} aguardando ação`}
                     >
