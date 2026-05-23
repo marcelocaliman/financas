@@ -94,9 +94,7 @@ export function GoalRemindersCard({
                   <div className="text-[13.5px] font-medium text-foreground truncate">
                     {r.goalName}
                   </div>
-                  <div className="font-mono text-[10.5px] text-faint-foreground tracking-[0.04em] mt-0.5">
-                    {labelFor(r)}
-                  </div>
+                  <DatePill reminder={r} />
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -149,14 +147,44 @@ function StatusIcon({ status }: { status: GoalReminder["status"] }) {
   return <Calendar className="w-4 h-4 text-navy-700 dark:text-navy-300 shrink-0" strokeWidth={1.8} />;
 }
 
-function labelFor(r: GoalReminder): string {
-  if (r.status === "overdue") {
+/**
+ * Pill destacado com a data do lembrete — info primária pro user.
+ * Cor varia pelo status: overdue=rust, due_today=gold, upcoming=navy.
+ */
+function DatePill({ reminder: r }: { reminder: GoalReminder }) {
+  const isOverdue = r.status === "overdue";
+  const isDueToday = r.status === "due_today";
+
+  const toneClass = isOverdue
+    ? "bg-rust-600/15 text-rust-600 border-rust-600/30"
+    : isDueToday
+      ? "bg-gold-600/15 text-gold-700 dark:text-gold-500 border-gold-600/30"
+      : "bg-navy-700/10 text-navy-700 dark:text-navy-300 border-navy-700/20";
+
+  let label: string;
+  if (isOverdue) {
     const ago = Math.abs(r.daysUntil);
-    return `Atrasado há ${ago} ${ago === 1 ? "dia" : "dias"} (era ${formatDate(r.dueDate)})`;
+    label = `Atrasado há ${ago} ${ago === 1 ? "dia" : "dias"} · era ${formatDate(r.dueDate)}`;
+  } else if (isDueToday) {
+    label = `Vence hoje · ${formatDate(r.dueDate)}`;
+  } else if (r.daysUntil === 1) {
+    label = `Vence amanhã · ${formatDate(r.dueDate)}`;
+  } else {
+    label = `Em ${r.daysUntil} dias · ${formatDate(r.dueDate)}`;
   }
-  if (r.status === "due_today") return "Vence hoje";
-  if (r.daysUntil === 1) return "Vence amanhã";
-  return `Em ${r.daysUntil} dias (${formatDate(r.dueDate)})`;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full border",
+        "font-mono text-[11.5px] font-medium tabular-nums tracking-[0.02em]",
+        toneClass,
+      )}
+    >
+      <Calendar className="w-3 h-3" strokeWidth={1.8} />
+      {label}
+    </span>
+  );
 }
 
 function formatDate(iso: string): string {
