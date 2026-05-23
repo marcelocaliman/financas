@@ -29,6 +29,8 @@ import { getGoalReminders } from "@/services/goal-reminders";
 import { GoalRemindersCard } from "@/components/goals/goal-reminders-card";
 import { getBudgetVsActual } from "@/services/budgets";
 import { BudgetStatusCard } from "@/components/budgets/budget-status-card";
+import { getInsights } from "@/services/insights";
+import { SmartInsightsCard } from "@/components/dashboard/smart-insights-card";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -86,6 +88,7 @@ export default async function DashboardPage({
     apportSuggestions,
     goalReminders,
     budgetRows,
+    insights,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -106,6 +109,7 @@ export default async function DashboardPage({
     isCurrent ? getAportSuggestions() : Promise.resolve([]),
     isCurrent ? getGoalReminders(30) : Promise.resolve([]),
     isCurrent ? getBudgetVsActual() : Promise.resolve([]),
+    isCurrent ? getInsights() : Promise.resolve([]),
   ]);
 
   // Patrimônio total SEM dupla contagem
@@ -256,6 +260,8 @@ export default async function DashboardPage({
       {isCurrent ? <PortfolioLiveTicker portfolio={live} variant="compact" /> : null}
 
       {/* Insight de anomalias (somente mês corrente) */}
+      {isCurrent && insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
+
       {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
 
       {isCurrent && apportSuggestions.length > 0 ? (
