@@ -261,6 +261,10 @@ export interface Database {
           is_recurring: boolean;
           recurring_rule_id: string | null;
           metadata: Json;
+          /** Timestamp de quando o delta foi aplicado em accounts.current_balance.
+           * Null = pendente (date ainda no futuro). Set pelo trigger BEFORE
+           * INSERT/UPDATE quando date ≤ today (SP). */
+          balance_applied_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -284,6 +288,7 @@ export interface Database {
           is_recurring?: boolean;
           recurring_rule_id?: string | null;
           metadata?: Json;
+          balance_applied_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -307,6 +312,7 @@ export interface Database {
           is_recurring?: boolean;
           recurring_rule_id?: string | null;
           metadata?: Json;
+          balance_applied_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -946,6 +952,10 @@ export interface Database {
       reorder_categories: {
         Args: { p_ids: string[] };
         Returns: void;
+      };
+      advance_pending_balances: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
     Enums: { [_ in never]: never };

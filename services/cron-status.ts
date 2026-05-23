@@ -33,33 +33,45 @@ export type CronStatus = CronCheck & {
 export async function getCronStatuses(): Promise<CronStatus[]> {
   const supabase = await createClient();
 
-  const [{ data: idx }, { data: rate }, { data: quote }, { data: snap }] =
-    await Promise.all([
-      supabase
-        .from("indexer_history")
-        .select("date")
-        .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("currency_rates")
-        .select("date")
-        .order("date", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("quote_snapshots")
-        .select("fetched_at")
-        .order("fetched_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("patrimonio_snapshots")
-        .select("created_at")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ]);
+  const [
+    { data: idx },
+    { data: rate },
+    { data: quote },
+    { data: snap },
+    { data: lastApplied },
+  ] = await Promise.all([
+    supabase
+      .from("indexer_history")
+      .select("date")
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("currency_rates")
+      .select("date")
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("quote_snapshots")
+      .select("fetched_at")
+      .order("fetched_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("patrimonio_snapshots")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("transactions")
+      .select("balance_applied_at")
+      .not("balance_applied_at", "is", null)
+      .order("balance_applied_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const checks: CronCheck[] = [
     {
@@ -89,6 +101,14 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
       description: "Histórico real pra sparkline · /api/cron/snapshot-patrimonio",
       latestAt: snap?.created_at ?? null,
       staleAfterHours: 24 * 35, // mensal: 35 dias é generoso
+    },
+    {
+      name: "Avanço de saldos pendentes",
+      description:
+        "Aplica deltas de tx pré-agendadas conforme a data chega · /api/cron/advance-balances",
+      latestAt: lastApplied?.balance_applied_at ?? null,
+      // Roda diário às 00:05 BRT. Se passar de 48h é sinal de cron quebrado.
+      staleAfterHours: 48,
     },
   ];
 
