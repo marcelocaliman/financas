@@ -37,7 +37,9 @@ export function TransactionsFilterBar({
 
   return (
     <div className={cn("flex flex-wrap items-center gap-2 mb-6", pending && "opacity-60")}>
-      <div className="inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px]">
+      {/* Mobile: tabs ocupam linha inteira (cada uma flex-1).
+          Desktop: inline-flex normal. */}
+      <div className="flex w-full sm:w-auto sm:inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px]">
         {tabs.map((t) => {
           const active = current === t.value;
           return (
@@ -46,7 +48,7 @@ export function TransactionsFilterBar({
               type="button"
               onClick={() => setParam("kind", t.value === "all" ? null : t.value)}
               className={cn(
-                "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors",
+                "flex-1 sm:flex-none px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors text-center whitespace-nowrap",
                 active ? "bg-surface text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
               )}
             >
