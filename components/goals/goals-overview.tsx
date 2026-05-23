@@ -56,7 +56,7 @@ export function GoalsOverview({
           hint={`${activeGoals.length} meta${activeGoals.length === 1 ? "" : "s"} ativa${activeGoals.length === 1 ? "" : "s"}`}
         />
         <div>
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2 inline-flex items-center gap-1.5">
+          <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-olive-600" strokeWidth={1.7} />
             Próximas conquistas
           </div>
@@ -105,18 +105,18 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2 inline-flex items-center gap-1.5">
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2 flex items-center gap-1.5">
         {icon}
         {label}
       </div>
       <Money
         value={value}
-        className="text-[22px] tracking-[-0.02em] items-start text-foreground"
-        secondaryClassName="text-[11px]"
+        className="text-[22px] tracking-[-0.02em] !items-start text-foreground"
+        secondaryClassName="text-[11px] mt-0.5"
         showComparison
       />
       {hint ? (
-        <div className="font-mono text-[10.5px] text-muted-foreground mt-1">{hint}</div>
+        <div className="font-mono text-[10.5px] text-muted-foreground mt-2">{hint}</div>
       ) : null}
     </div>
   );
