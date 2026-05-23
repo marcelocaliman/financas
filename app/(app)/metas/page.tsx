@@ -67,6 +67,22 @@ export default async function MetasPage({
     name: a.name,
     institution: a.institution,
   }));
+
+  // Pra o GoalRemindersCard abrir o ContributeDialog completo:
+  // mapa goalId → contas vinculadas como fonte (candidatas a destino).
+  const linkedAccountsByGoalId: Record<
+    string,
+    Array<{ accountId: string; label: string }>
+  > = {};
+  for (const g of enrichedGoals) {
+    const linked = g.sourcesResolved
+      .filter((r) => r.source.source_type === "account" && r.source.source_id)
+      .map((r) => ({
+        accountId: r.source.source_id as string,
+        label: `${r.label} (fonte vinculada)`,
+      }));
+    if (linked.length > 0) linkedAccountsByGoalId[g.id] = linked;
+  }
   const investmentsLite = investments.map((i) => ({
     id: i.id,
     ticker: i.ticker,
@@ -146,7 +162,11 @@ export default async function MetasPage({
       {/* Lembretes vencidos / próximos */}
       {reminders.length > 0 ? (
         <div className="mb-7">
-          <GoalRemindersCard reminders={reminders} />
+          <GoalRemindersCard
+            reminders={reminders}
+            accounts={accountsLite}
+            linkedAccountsByGoalId={linkedAccountsByGoalId}
+          />
         </div>
       ) : null}
 

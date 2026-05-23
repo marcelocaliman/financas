@@ -18,7 +18,7 @@ import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { MaterializeUntilMonthButton } from "@/components/dashboard/materialize-until-month-button";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
-import { getAccountsTotals, getAccountsTotalsAt } from "@/services/accounts";
+import { getAccountsTotals, getAccountsTotalsAt, listAccounts } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
@@ -89,6 +89,7 @@ export default async function DashboardPage({
     goalReminders,
     budgetRows,
     insights,
+    accounts,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -110,11 +111,33 @@ export default async function DashboardPage({
     isCurrent ? getGoalReminders(30) : Promise.resolve([]),
     isCurrent ? getBudgetVsActual() : Promise.resolve([]),
     isCurrent ? getInsights() : Promise.resolve([]),
+    listAccounts(),
   ]);
 
   // Patrimônio total SEM dupla contagem
   const netWorth =
     totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+
+  // Pra o GoalRemindersCard abrir o ContributeDialog completo (com origem
+  // + destino), passamos a lista de contas + mapa goalId → contas vinculadas.
+  const accountsLite = accounts.map((a) => ({
+    id: a.id,
+    name: a.name,
+    institution: a.institution,
+  }));
+  const linkedAccountsByGoalId: Record<
+    string,
+    Array<{ accountId: string; label: string }>
+  > = {};
+  for (const g of goals) {
+    const linked = g.sourcesResolved
+      .filter((r) => r.source.source_type === "account" && r.source.source_id)
+      .map((r) => ({
+        accountId: r.source.source_id as string,
+        label: `${r.label} (fonte vinculada)`,
+      }));
+    if (linked.length > 0) linkedAccountsByGoalId[g.id] = linked;
+  }
 
   // Forecast em mês futuro
   const effectiveIncome = summary.income + (forecast?.income ?? 0);
@@ -270,7 +293,11 @@ export default async function DashboardPage({
 
       {isCurrent && goalReminders.length > 0 ? (
         <div className="mb-6">
-          <GoalRemindersCard reminders={goalReminders} />
+          <GoalRemindersCard
+            reminders={goalReminders}
+            accounts={accountsLite}
+            linkedAccountsByGoalId={linkedAccountsByGoalId}
+          />
         </div>
       ) : null}
 

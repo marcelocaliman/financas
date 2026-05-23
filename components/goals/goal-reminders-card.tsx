@@ -7,7 +7,11 @@ import { toast } from "sonner";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { recordGoalContribution } from "@/services/goals.actions";
-import { ContributeDialog } from "./contribute-dialog";
+import {
+  ContributeDialog,
+  type ContributeAccountOption,
+  type ContributeDestinationOption,
+} from "./contribute-dialog";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { GoalReminder } from "@/services/goal-reminders";
@@ -24,8 +28,14 @@ import { cn } from "@/lib/utils/cn";
  */
 export function GoalRemindersCard({
   reminders: initial,
+  accounts = [],
+  linkedAccountsByGoalId = {},
 }: {
   reminders: GoalReminder[];
+  /** Todas as contas do household — candidatas a origem do aporte */
+  accounts?: ContributeAccountOption[];
+  /** Mapa goalId → contas vinculadas como fonte (candidatas a destino) */
+  linkedAccountsByGoalId?: Record<string, ContributeDestinationOption[]>;
 }) {
   const [reminders, setReminders] = useState(initial);
   const [openingId, setOpeningId] = useState<{
@@ -131,6 +141,8 @@ export function GoalRemindersCard({
           goalId={openingId.goalId}
           goalName={openingId.goalName}
           goalCurrency={openingId.goalCurrency}
+          accounts={accounts}
+          linkedAccounts={linkedAccountsByGoalId[openingId.goalId] ?? []}
         />
       ) : null}
     </>
