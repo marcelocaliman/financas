@@ -24,6 +24,7 @@ import {
 } from "@/services/goals.actions";
 import type { Goal, EnrichedGoal } from "@/services/goals";
 import type { Currency, GoalAllocationMode, GoalSourceType, GoalType } from "@/types/database";
+import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
 import { GOAL_TYPE_ICONS, GOAL_TYPE_LABELS, GOAL_TYPE_DESCRIPTIONS } from "./goal-icons";
 
 type AccountLite = { id: string; name: string; institution: string };
@@ -48,7 +49,7 @@ const GOAL_TYPES_ORDER: GoalType[] = [
 
 const ALLOCATION_MODES: { value: GoalAllocationMode; label: string; hint: string }[] = [
   { value: "manual", label: "Manual", hint: "Você decide quando aportar" },
-  { value: "fixed_amount", label: "R$ fixo/mês", hint: "Valor mensal definido" },
+  { value: "fixed_amount", label: "Valor fixo/mês", hint: "Valor mensal definido" },
   { value: "percentage", label: "% da sobra", hint: "Fração da sobra média" },
   { value: "waterfall", label: "Cascata", hint: "O que sobrar das prioritárias" },
 ];
@@ -259,7 +260,7 @@ export function GoalSheet({
             </Select>
           </Field>
 
-          {/* VALORES */}
+          {/* VALOR DA META + DATA */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Valor da meta" htmlFor="targetAmount" required>
               <MoneyInput
@@ -269,22 +270,6 @@ export function GoalSheet({
                 defaultValue={Number(goal?.target_amount ?? 0)}
               />
             </Field>
-            <Field
-              label="Snapshot manual"
-              htmlFor="currentAmount"
-              hint={sources.length > 0 ? "Soma com as fontes" : "Quanto já tem agora"}
-            >
-              <MoneyInput
-                name="currentAmount"
-                id="currentAmount"
-                currency={currency}
-                defaultValue={Number(goal?.current_amount ?? 0)}
-              />
-            </Field>
-          </div>
-
-          {/* DATA + CONTA LINKADA (legado) */}
-          <div className="grid grid-cols-2 gap-3">
             <Field label="Data desejada" htmlFor="targetDate" hint="Opcional">
               <Input
                 id="targetDate"
@@ -293,44 +278,66 @@ export function GoalSheet({
                 defaultValue={goal?.target_date ?? ""}
               />
             </Field>
-            <Field label="Conta principal" htmlFor="linkedAccountId" hint="Referência rápida">
-              <Select
-                value={linkedAccount}
-                onValueChange={setLinkedAccount}
-                name="linkedAccountId"
-              >
-                <SelectTrigger id="linkedAccountId">
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name} · {a.institution}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
           </div>
 
-          {/* ============ FONTES VINCULADAS ============ */}
+          {/* Conta principal (referência rápida, opcional) + currentAmount hidden
+              quando há fontes vinculadas (preserva o valor antigo no banco
+              sem mostrar no UI — fontes já cobrem o conceito). */}
+          <Field label="Conta principal" htmlFor="linkedAccountId" hint="Referência rápida · opcional">
+            <Select
+              value={linkedAccount}
+              onValueChange={setLinkedAccount}
+              name="linkedAccountId"
+            >
+              <SelectTrigger id="linkedAccountId">
+                <SelectValue placeholder="—" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name} · {a.institution}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          {sources.length > 0 ? (
+            <input
+              type="hidden"
+              name="currentAmount"
+              value={Number(goal?.current_amount ?? 0)}
+            />
+          ) : null}
+
+          {/* ============ SEÇÃO 1: QUANTO JÁ TENHO ============ */}
           <div className="rounded-[10px] border border-border bg-surface-muted/40 p-4">
             <div className="flex items-baseline justify-between mb-2">
               <div>
                 <h4 className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground font-medium">
-                  Fontes vinculadas
+                  Quanto já tenho
                 </h4>
                 <p className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
-                  De onde vem o &quot;já tenho&quot;. Conta/investimento real ou snapshot manual.
-                  O valor atualiza sozinho conforme essas fontes crescem.
+                  Vincule contas/investimentos reais (o valor cresce sozinho) ou
+                  registre um saldo guardado sem vinculação.
                 </p>
               </div>
             </div>
 
             {sources.length === 0 ? (
-              <p className="text-[12px] text-faint-foreground italic my-3">
-                Nenhuma fonte ainda. Use os botões abaixo pra vincular.
-              </p>
+              <div className="my-3">
+                <Field
+                  label="Saldo já guardado"
+                  htmlFor="currentAmount"
+                  hint="Sem fonte vinculada · vc atualiza manualmente conforme aporta"
+                >
+                  <MoneyInput
+                    name="currentAmount"
+                    id="currentAmount"
+                    currency={currency}
+                    defaultValue={Number(goal?.current_amount ?? 0)}
+                  />
+                </Field>
+              </div>
             ) : (
               <ul className="space-y-3 my-3">
                 {sources.map((s, idx) => (
@@ -396,7 +403,7 @@ export function GoalSheet({
                       <div className="mt-2">
                         <PillGroup
                           options={[
-                            { value: "amount", label: "R$ fixo" },
+                            { value: "amount", label: "Valor fixo" },
                             { value: "pct", label: "% do saldo" },
                           ]}
                           value={s.allocatedPct != null ? "pct" : "amount"}
@@ -474,11 +481,15 @@ export function GoalSheet({
             </div>
           </div>
 
-          {/* ============ PLANO DE APORTE ============ */}
+          {/* ============ SEÇÃO 2: QUANTO VOU APORTAR ============ */}
           <div className="rounded-[10px] border border-border bg-surface-muted/40 p-4">
             <h4 className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground font-medium mb-2">
-              Aporte mensal
+              Quanto vou aportar
             </h4>
+            <p className="text-[11.5px] text-muted-foreground mb-3 leading-relaxed">
+              Define a contribuição mensal. Drives o waterfall (quando aplicável) e
+              pré-preenche os lembretes de aporte.
+            </p>
             <Field label="Modo" htmlFor="allocationMode" hint="Como essa meta recebe da sua sobra">
               <Select
                 value={allocationMode}
@@ -502,7 +513,7 @@ export function GoalSheet({
             {allocationMode === "fixed_amount" ? (
               <div className="mt-3">
                 <Field
-                  label={`R$ por mês (${currency})`}
+                  label={`${CURRENCY_SYMBOLS[currency]} por mês`}
                   htmlFor="allocationValue"
                   hint="Drives o waterfall + pré-preenche o lembrete mensal"
                 >
@@ -538,7 +549,7 @@ export function GoalSheet({
               // Modos manual e waterfall: campo opcional só pra prefill dos lembretes
               <div className="mt-3">
                 <Field
-                  label={`Valor sugerido por mês (${currency})`}
+                  label={`Valor sugerido por mês (${CURRENCY_SYMBOLS[currency]})`}
                   htmlFor="allocationValue"
                   hint="Opcional · só pré-preenche o lembrete mensal. Não afeta o waterfall."
                 >
