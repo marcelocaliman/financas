@@ -235,7 +235,7 @@ function AccountsByType({
 
 function EmptyState() {
   return (
-    <div className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-10 sm:p-14 relative overflow-hidden">
+    <div className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-10 sm:p-14 relative overflow-hidden border border-ink-700">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px]"

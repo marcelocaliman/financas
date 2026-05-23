@@ -87,7 +87,7 @@ export function DashboardHero({
       : null;
 
   return (
-    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-5 sm:p-12 mb-6 overflow-hidden shadow-lg">
+    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-5 sm:p-12 mb-6 overflow-hidden shadow-lg border border-ink-700">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px]"

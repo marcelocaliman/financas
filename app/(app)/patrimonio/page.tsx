@@ -71,7 +71,7 @@ export default async function PatrimonioPage() {
       ) : (
         <>
           {/* TIER 1 — Totalizador hero */}
-          <div className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-8 sm:p-10 mb-6 relative overflow-hidden">
+          <div className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-8 sm:p-10 mb-6 relative overflow-hidden border border-ink-700">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-20 -right-16 w-[320px] h-[320px]"

@@ -11,7 +11,7 @@ export default function InvestimentosLoading() {
       </div>
 
       {/* Ticker live */}
-      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 sm:p-10 mb-7 overflow-hidden">
+      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 sm:p-10 mb-7 overflow-hidden border border-ink-700">
         <Skeleton className="h-3 w-44 mb-4 !bg-ink-800" />
         <Skeleton className="h-12 w-72 mb-4 !bg-ink-800" />
         <div className="flex gap-2">

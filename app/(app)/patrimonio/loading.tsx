@@ -9,7 +9,7 @@ export default function PatrimonioLoading() {
         <Skeleton className="h-4 w-96" />
       </div>
 
-      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 mb-7 overflow-hidden">
+      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 mb-7 overflow-hidden border border-ink-700">
         <Skeleton className="h-3 w-44 mb-4 !bg-ink-800" />
         <Skeleton className="h-14 w-80 !bg-ink-800" />
       </section>

@@ -11,7 +11,7 @@ export default function DashboardLoading() {
       </div>
 
       {/* Hero */}
-      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 sm:p-12 mb-6 overflow-hidden">
+      <section className="rounded-[var(--radius-xl)] bg-ink-950 p-9 sm:p-12 mb-6 overflow-hidden border border-ink-700">
         <Skeleton className="h-3 w-40 mb-4 !bg-ink-800" />
         <Skeleton className="h-16 w-72 mb-5 !bg-ink-800" />
         <Skeleton className="h-5 w-44 !bg-ink-800" />

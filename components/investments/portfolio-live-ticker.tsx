@@ -66,7 +66,7 @@ export function PortfolioLiveTicker({
 
   if (variant === "compact") {
     return (
-      <section className="rounded-[var(--radius-lg)] bg-ink-950 text-white p-6 sm:p-7 mb-6 relative overflow-hidden">
+      <section className="rounded-[var(--radius-lg)] bg-ink-950 text-white p-6 sm:p-7 mb-6 relative overflow-hidden border border-ink-700">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-12 -right-12 w-48 h-48"
@@ -124,7 +124,7 @@ export function PortfolioLiveTicker({
   // ============== variant === "full" ==============
   const { integer, cents } = formatMoneyParts(accumulatedToday, displayCurrency);
   return (
-    <section className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-9 sm:p-10 mb-7 relative overflow-hidden shadow-lg">
+    <section className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-9 sm:p-10 mb-7 relative overflow-hidden shadow-lg border border-ink-700">
       <div
         aria-hidden
         className="pointer-events-none absolute top-1/2 left-1/2 w-[600px] h-[600px] -translate-x-1/2 -translate-y-1/2"
