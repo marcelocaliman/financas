@@ -81,14 +81,29 @@ async function replaceSources(
   // (só goal_contributions referencia goals, não sources), seguro.
   await supabase.from("goal_sources").delete().eq("goal_id", goalId);
   if (sources.length === 0) return {};
-  const rows = sources.map((s) => ({
-    goal_id: goalId,
-    source_type: s.sourceType,
-    source_id: s.sourceType === "manual" ? null : s.sourceId ?? null,
-    allocated_amount: s.allocatedAmount ?? null,
-    allocated_pct: s.allocatedPct ?? null,
-    notes: s.notes ?? null,
-  }));
+  const rows = sources.map((s) => {
+    // CHECK constraint exige allocated_amount OR allocated_pct preenchido.
+    // Se o cliente esqueceu ambos, aplica fallback sensato:
+    //   account/investment → 100% do saldo da fonte
+    //   manual → R$ 0
+    let allocatedAmount = s.allocatedAmount ?? null;
+    let allocatedPct = s.allocatedPct ?? null;
+    if (allocatedAmount == null && allocatedPct == null) {
+      if (s.sourceType === "manual") {
+        allocatedAmount = 0;
+      } else {
+        allocatedPct = 1;
+      }
+    }
+    return {
+      goal_id: goalId,
+      source_type: s.sourceType,
+      source_id: s.sourceType === "manual" ? null : s.sourceId ?? null,
+      allocated_amount: allocatedAmount,
+      allocated_pct: allocatedPct,
+      notes: s.notes ?? null,
+    };
+  });
   const { error } = await supabase.from("goal_sources").insert(rows);
   if (error) return { error: error.message };
   return {};

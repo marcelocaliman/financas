@@ -150,6 +150,13 @@ export function GoalSheet({
       {
         id: `draft-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         sourceType: type,
+        // Defaults sensatos pra satisfazer a CHECK constraint
+        // (allocated_amount OR allocated_pct deve estar preenchido):
+        //   account/investment → 100% do saldo da fonte (mais comum)
+        //   manual → R$ 0 (user vai editar)
+        ...(type === "manual"
+          ? { allocatedAmount: 0 }
+          : { allocatedPct: 1 }),
       },
     ]);
   };
