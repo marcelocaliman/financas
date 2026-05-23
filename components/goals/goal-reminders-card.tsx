@@ -88,12 +88,12 @@ export function GoalRemindersCard({
               key={r.goalId}
               className="flex items-center justify-between gap-3 py-3"
             >
-              <div className="min-w-0 flex items-center gap-2.5">
+              <div className="min-w-0 flex items-center gap-2.5 flex-1">
                 <StatusIcon status={r.status} />
-                <div className="min-w-0">
-                  <div className="text-[13.5px] font-medium text-foreground truncate">
+                <div className="min-w-0 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="text-[13.5px] font-medium text-foreground truncate">
                     {r.goalName}
-                  </div>
+                  </span>
                   <DatePill reminder={r} />
                 </div>
               </div>
@@ -176,7 +176,7 @@ function DatePill({ reminder: r }: { reminder: GoalReminder }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-full border",
+        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border shrink-0",
         "font-mono text-[11.5px] font-medium tabular-nums tracking-[0.02em]",
         toneClass,
       )}
