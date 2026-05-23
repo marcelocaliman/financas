@@ -130,7 +130,7 @@ export function DashboardHero({
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-medium",
                   positiveTrend
-                    ? "bg-olive-600/20 text-[#b5cb8c]"
+                    ? "bg-olive-600/20 text-[#3be772]"
                     : "bg-rust-600/20 text-[#e4a395]",
                 )}
               >
@@ -184,7 +184,7 @@ export function DashboardHero({
             comparisonCurrency={comparisonCurrency}
             rates={rates}
             sparkline={sobraSparkline}
-            sparklineColor="rgba(181,203,140,0.7)"
+            sparklineColor="rgba(59,231,114,0.7)"
           />
           <Stat
             label="Saiu"
@@ -289,7 +289,7 @@ function Stat({
           <span
             className={cn(
               "font-mono text-[11px] tabular-nums",
-              deltaPct >= 0 ? "text-[#b5cb8c]" : "text-[#e4a395]",
+              deltaPct >= 0 ? "text-[#3be772]" : "text-[#e4a395]",
             )}
           >
             {deltaPct >= 0 ? "+" : ""}

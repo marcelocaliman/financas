@@ -166,7 +166,7 @@ export function CategoryRow({
                 height={20}
                 stroke={
                   category.kind === "income"
-                    ? "rgba(115,136,81,0.7)"
+                    ? "rgba(59,231,114,0.7)"
                     : "rgba(96,126,168,0.7)"
                 }
                 strokeWidth={1.4}

@@ -44,12 +44,18 @@
   --color-navy-100: #dee5ef;
   --color-navy-50: #f3f6fa;
 
-  /* ============================== OLIVE (positivo) ======================= */
-  --color-olive-800: #45531e;
-  --color-olive-700: #5a6b3e;
-  --color-olive-600: #738851;
-  --color-olive-500: #8aa168;
-  --color-olive-100: #ebeee0;
+  /* ============================== OLIVE (positivo) =======================
+   * Família verde vibrante (H≈139°, S≈76%) derivada do tom-base
+   * --color-olive-500. Nome "olive" mantido por compatibilidade com classes
+   * existentes (text-olive-*, bg-olive-*) — o tom hoje é verde-esmeralda.
+   * Cada degrau é uma queda de luminosidade (HSL L) de ~10%.
+   * --olive-700 tem contraste ≥4.5:1 sobre fundo claro (AA).
+   */
+  --color-olive-800: #0a6f29;
+  --color-olive-700: #11a13d;
+  --color-olive-600: #1ed25b;
+  --color-olive-500: #3be772;
+  --color-olive-100: #d6f7e0;
 
   /* ============================== RUST (negativo) ======================== */
   --color-rust-800: #6a2f23;

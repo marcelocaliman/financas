@@ -52,7 +52,7 @@ export function FireCard({
         className="pointer-events-none absolute -top-16 -right-16 w-48 h-48"
         style={{
           background: isAchieved
-            ? "radial-gradient(circle, rgba(115,136,81,0.18), transparent 70%)"
+            ? "radial-gradient(circle, rgba(59,231,114,0.18), transparent 70%)"
             : "radial-gradient(circle, rgba(176,123,50,0.10), transparent 70%)",
         }}
       />

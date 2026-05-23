@@ -66,7 +66,7 @@ export function PortfolioLiveTicker({
         <div
           aria-hidden
           className="pointer-events-none absolute -top-12 -right-12 w-48 h-48"
-          style={{ background: "radial-gradient(circle, rgba(115,136,81,0.10), transparent 70%)" }}
+          style={{ background: "radial-gradient(circle, rgba(59,231,114,0.10), transparent 70%)" }}
         />
         <div className="relative z-10 flex flex-wrap items-end justify-between gap-6">
           <div>

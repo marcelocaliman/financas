@@ -96,7 +96,7 @@ export default async function PatrimonioPage() {
                   <span
                     className={
                       totals.delta >= 0
-                        ? "text-[#b5cb8c]"
+                        ? "text-[#3be772]"
                         : "text-[#e4a395]"
                     }
                   >

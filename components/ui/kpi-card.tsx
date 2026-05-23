@@ -61,7 +61,7 @@ export function KpiCard({
 
   const sparkColor =
     sparklineTone === "olive"
-      ? "rgba(115,136,81,0.65)"
+      ? "rgba(59,231,114,0.65)"
       : sparklineTone === "gold"
         ? "rgba(176,123,50,0.7)"
         : sparklineTone === "rust"
