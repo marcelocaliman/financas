@@ -5,11 +5,20 @@ import { Panel } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { NewGoalButton } from "@/components/goals/new-goal-button";
 import { GoalCard } from "@/components/goals/goal-card";
-import { listGoals } from "@/services/goals";
-import { listAccounts } from "@/services/accounts";
+import { GoalsOverview } from "@/components/goals/goals-overview";
+import { MonthlyAllocationPlan } from "@/components/goals/monthly-allocation-plan";
+import {
+  computeAllocationPlan,
+  listGoalsEnriched,
+  type EnrichedGoal,
+} from "@/services/goals";
+import { listAccounts, getAccountsTotals } from "@/services/accounts";
+import { listInvestments, getPortfolioStats } from "@/services/investments";
+import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getMonthlyHistory } from "@/services/transactions";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { convertOrSame } from "@/lib/financial/currency";
+import type { GoalType } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -21,13 +30,26 @@ export default async function MetasPage({
   searchParams: Promise<SearchParams>;
 }) {
   const { tab = "active" } = await searchParams;
-  const [goals, accounts, history, displayCurrency, rates] = await Promise.all([
-    listGoals({ includeArchived: true }),
+  const [
+    enrichedGoals,
+    accounts,
+    investments,
+    history,
+    displayCurrency,
+    rates,
+    accountsTotals,
+    portfolio,
+    physical,
+  ] = await Promise.all([
+    listGoalsEnriched({ includeArchived: true }),
     listAccounts(),
-    // Aporte médio dos 3 meses anteriores ao mês corrente.
+    listInvestments(),
     getMonthlyHistory(3),
     getDisplayCurrency(),
     getRateMap(),
+    getAccountsTotals(),
+    getPortfolioStats(),
+    getPhysicalAssetsTotals(),
   ]);
 
   const positiveNets = history.map((h) => Math.max(0, h.net));
@@ -41,34 +63,43 @@ export default async function MetasPage({
     name: a.name,
     institution: a.institution,
   }));
+  const investmentsLite = investments.map((i) => ({
+    id: i.id,
+    ticker: i.ticker,
+    name: i.name,
+  }));
 
-  // Particiona as metas
-  const isCompleted = (g: { current_amount: number; target_amount: number }) =>
-    Number(g.current_amount) >= Number(g.target_amount) && Number(g.target_amount) > 0;
-  const activeGoals = goals.filter((g) => !g.is_archived && !isCompleted(g));
-  const completedGoals = goals.filter((g) => !g.is_archived && isCompleted(g));
-  const archivedGoals = goals.filter((g) => g.is_archived);
+  const isCompleted = (g: EnrichedGoal) =>
+    g.derivedCurrent >= Number(g.target_amount) && Number(g.target_amount) > 0;
+  const activeGoals = enrichedGoals.filter((g) => !g.is_archived && !isCompleted(g));
+  const completedGoals = enrichedGoals.filter((g) => !g.is_archived && isCompleted(g));
+  const archivedGoals = enrichedGoals.filter((g) => g.is_archived);
 
-  // Resumo — converte cada meta pra moeda de exibição antes de somar,
-  // senão metas em moedas diferentes (BRL + EUR) misturam unidades.
-  const totalCurrent = activeGoals.reduce(
-    (s, g) =>
-      s + convertOrSame(Number(g.current_amount), g.currency, displayCurrency, rates),
+  // Totais em displayCurrency (multi-currency aware)
+  const totalAlocadoDisplay = activeGoals.reduce(
+    (s, g) => s + convertOrSame(g.derivedCurrent, g.currency, displayCurrency, rates),
     0,
   );
-  const totalTarget = activeGoals.reduce(
-    (s, g) =>
-      s + convertOrSame(Number(g.target_amount), g.currency, displayCurrency, rates),
+  const totalTargetDisplay = activeGoals.reduce(
+    (s, g) => s + convertOrSame(Number(g.target_amount), g.currency, displayCurrency, rates),
     0,
   );
-  const aggregatePct = totalTarget > 0 ? totalCurrent / totalTarget : 0;
-  const totalRemaining = Math.max(0, totalTarget - totalCurrent);
-  const monthsToFinishAll =
-    averageMonthlyAddition > 0 ? Math.ceil(totalRemaining / averageMonthlyAddition) : null;
-  // Detecta se há metas em moeda estrangeira pra mostrar hint
+  const totalFaltaDisplay = Math.max(0, totalTargetDisplay - totalAlocadoDisplay);
+  const netWorthDisplay =
+    accountsTotals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+
+  // Plano de aporte mensal (waterfall)
+  const allocationPlan = computeAllocationPlan(
+    activeGoals,
+    averageMonthlyAddition,
+    displayCurrency,
+    rates,
+  );
+  const goalIcons = new Map<string, GoalType>(activeGoals.map((g) => [g.id, g.goal_type]));
+
   const hasForeignCurrency = activeGoals.some((g) => g.currency !== displayCurrency);
 
-  const showList =
+  const showList: EnrichedGoal[] =
     tab === "completed" ? completedGoals : tab === "archived" ? archivedGoals : activeGoals;
 
   return (
@@ -80,8 +111,8 @@ export default async function MetasPage({
             Metas e <em className="not-italic font-display italic text-navy-700">sonhos.</em>
           </>
         }
-        subtitle="Cada meta tem nome, valor e trajetória — a previsão usa o ritmo real de aporte dos 3 meses anteriores."
-        actions={<NewGoalButton accounts={accountsLite} />}
+        subtitle="Vincule fontes reais (contas, investimentos), configure modo de aporte e veja a trajetória de cada uma — sem precisar atualizar nada à mão."
+        actions={<NewGoalButton accounts={accountsLite} investments={investmentsLite} />}
       />
 
       {hasForeignCurrency ? (
@@ -90,14 +121,37 @@ export default async function MetasPage({
             Multi-moeda
           </span>
           <span className="text-foreground">
-            Você tem metas em moedas diferentes. Os totais abaixo são convertidos
-            pra <strong>{displayCurrency}</strong> usando a cotação mais recente.
-            Cada meta individualmente mostra seu valor original.
+            Os totais abaixo são convertidos pra <strong>{displayCurrency}</strong> usando a
+            cotação mais recente. Cada meta individual mostra seu valor original.
           </span>
         </div>
       ) : null}
 
-      {/* Resumo */}
+      {/* TIER 0 — Overview macro */}
+      {activeGoals.length > 0 ? (
+        <div className="mb-6">
+          <GoalsOverview
+            activeGoals={activeGoals}
+            totalAlocadoDisplay={totalAlocadoDisplay}
+            totalFaltaDisplay={totalFaltaDisplay}
+            netWorthDisplay={netWorthDisplay}
+          />
+        </div>
+      ) : null}
+
+      {/* TIER 1 — Plano de aportes (waterfall) */}
+      {activeGoals.length > 0 ? (
+        <div className="mb-7">
+          <MonthlyAllocationPlan
+            monthlySavings={averageMonthlyAddition}
+            lines={allocationPlan.lines}
+            leftover={allocationPlan.leftover}
+            goalIcons={goalIcons}
+          />
+        </div>
+      ) : null}
+
+      {/* KPIs simples */}
       {activeGoals.length > 0 || completedGoals.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
           <KpiCard
@@ -111,34 +165,27 @@ export default async function MetasPage({
             tone="neutral"
             hint={
               activeGoals.length > 0
-                ? `${(aggregatePct * 100).toFixed(0)}% no agregado`
+                ? `${((totalAlocadoDisplay / Math.max(1, totalTargetDisplay)) * 100).toFixed(0)}% no agregado`
                 : "tudo concluído"
             }
           />
-          <KpiCard label="Total acumulado" value={totalCurrent} tone="neutral" />
+          <KpiCard label="Total acumulado" value={totalAlocadoDisplay} tone="neutral" />
           <KpiCard
             label="Falta no total"
-            value={totalRemaining}
-            tone={totalRemaining > 0 ? "negative" : "positive"}
-            hint={totalRemaining === 0 ? "todas as metas alcançadas" : undefined}
+            value={totalFaltaDisplay}
+            tone={totalFaltaDisplay > 0 ? "negative" : "positive"}
+            hint={totalFaltaDisplay === 0 ? "todas alcançadas" : undefined}
           />
           <KpiCard
-            label="Tempo estimado"
+            label="Concluídas"
             textValue={
-              monthsToFinishAll == null
-                ? "—"
-                : monthsToFinishAll === 0
-                  ? "agora"
-                  : monthsToFinishAll < 12
-                    ? `≈ ${monthsToFinishAll}m`
-                    : `≈ ${(monthsToFinishAll / 12).toFixed(1).replace(".", ",")} anos`
+              <span className="inline-flex items-center gap-2">
+                <Trophy className="w-3.5 h-3.5 text-olive-600" strokeWidth={1.7} />
+                {completedGoals.length}
+              </span>
             }
-            tone="neutral"
-            hint={
-              averageMonthlyAddition <= 0
-                ? "sem sobra mensal"
-                : "no ritmo atual · aporte cheio em todas"
-            }
+            tone={completedGoals.length > 0 ? "positive" : "muted"}
+            hint={completedGoals.length === 0 ? "nenhuma ainda" : undefined}
           />
         </div>
       ) : null}
@@ -238,8 +285,8 @@ function Empty({ tab }: { tab: string }) {
           Toda jornada precisa de um <em className="italic">destino</em>.
         </h2>
         <p className="text-[14px] text-muted-foreground mt-2.5 leading-relaxed">
-          Casa, viagem, reserva de emergência, independência financeira completa — escolha o que faz
-          sentido para vocês. O app calcula a trajetória pelo ritmo de aporte real.
+          Defina uma meta, vincule contas ou investimentos como fontes, e configure como recebe
+          aporte mensal. O progresso atualiza sozinho — sem precisar editar à mão.
         </p>
       </div>
     </Panel>

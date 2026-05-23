@@ -7,8 +7,10 @@ import { Money } from "@/components/ui/money";
 import { estimateCompletion } from "@/lib/financial/projection";
 import { convertOrSame, CURRENCY_SYMBOLS } from "@/lib/financial/currency";
 import { useMoneyContext } from "@/components/ui/money-provider";
-import type { Goal } from "@/services/goals";
+import type { EnrichedGoal } from "@/services/goals";
 import { cn } from "@/lib/utils/cn";
+
+type Goal = EnrichedGoal;
 
 /**
  * Top 3 metas ativas — barra de progresso, valor restante, ETA estimada.
@@ -85,7 +87,7 @@ function GoalRow({
   monthlySavings: number;
 }) {
   const { displayCurrency, rates } = useMoneyContext();
-  const current = Number(goal.current_amount ?? 0);
+  const current = goal.derivedCurrent;
   const target = Number(goal.target_amount ?? 0);
   const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   const remaining = Math.max(0, target - current);

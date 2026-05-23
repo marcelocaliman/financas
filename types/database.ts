@@ -52,6 +52,22 @@ export type PhysicalAssetCategory =
   | "other";
 export type DepreciationMethod = "none" | "linear";
 export type Currency = "BRL" | "EUR" | "USD";
+
+export type GoalType =
+  | "emergencia"
+  | "casa"
+  | "veiculo"
+  | "viagem"
+  | "aposentadoria"
+  | "educacao"
+  | "projeto"
+  | "outro";
+export type GoalAllocationMode =
+  | "manual"
+  | "fixed_amount"
+  | "percentage"
+  | "waterfall";
+export type GoalSourceType = "account" | "investment" | "manual";
 export type RecurrenceFrequency = "daily" | "weekly" | "monthly" | "yearly";
 
 export interface Database {
@@ -620,6 +636,11 @@ export interface Database {
           linked_account_id: string | null;
           is_archived: boolean;
           sort_order: number;
+          goal_type: GoalType;
+          priority: number;
+          allocation_mode: GoalAllocationMode;
+          allocation_value: number | null;
+          contribution_day: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -635,6 +656,11 @@ export interface Database {
           linked_account_id?: string | null;
           is_archived?: boolean;
           sort_order?: number;
+          goal_type?: GoalType;
+          priority?: number;
+          allocation_mode?: GoalAllocationMode;
+          allocation_value?: number | null;
+          contribution_day?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -648,6 +674,56 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      goal_sources: {
+        Row: {
+          id: string;
+          goal_id: string;
+          source_type: GoalSourceType;
+          source_id: string | null;
+          allocated_amount: number | null;
+          allocated_pct: number | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          goal_id: string;
+          source_type: GoalSourceType;
+          source_id?: string | null;
+          allocated_amount?: number | null;
+          allocated_pct?: number | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["goal_sources"]["Insert"]>;
+        Relationships: [];
+      };
+      goal_contributions: {
+        Row: {
+          id: string;
+          goal_id: string;
+          date: string;
+          amount: number;
+          source: string;
+          transaction_id: string | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          goal_id: string;
+          date: string;
+          amount: number;
+          source?: string;
+          transaction_id?: string | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["goal_contributions"]["Insert"]>;
+        Relationships: [];
       };
       redemption_intents: {
         Row: {
@@ -956,6 +1032,22 @@ export interface Database {
       advance_pending_balances: {
         Args: Record<string, never>;
         Returns: number;
+      };
+      reorder_goals: {
+        Args: { p_ids: string[] };
+        Returns: void;
+      };
+      record_goal_contribution: {
+        Args: {
+          p_goal_id: string;
+          p_amount: number;
+          p_date?: string;
+          p_source?: string;
+          p_notes?: string | null;
+          p_transaction_id?: string | null;
+          p_bump_current?: boolean;
+        };
+        Returns: string;
       };
     };
     Enums: { [_ in never]: never };

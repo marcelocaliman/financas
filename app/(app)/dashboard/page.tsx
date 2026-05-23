@@ -22,7 +22,7 @@ import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getRecurrencesForecast } from "@/services/recurrences";
-import { listGoals } from "@/services/goals";
+import { listGoalsEnriched } from "@/services/goals";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -88,7 +88,7 @@ export default async function DashboardPage({
     getLivePortfolio(),
     getPhysicalAssetsTotals(),
     position === "future" ? getRecurrencesForecast(currentMonth) : null,
-    isCurrent ? listGoals() : Promise.resolve([]),
+    isCurrent ? listGoalsEnriched() : Promise.resolve([]),
     isCurrent ? getUpcomingObligations(7) : Promise.resolve(null),
     isCurrent ? getPatrimonioHistory(12) : Promise.resolve([]),
     isCurrent ? getSobraHistory(6) : Promise.resolve([]),

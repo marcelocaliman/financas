@@ -7,8 +7,10 @@ import { GoalSheet } from "./goal-sheet";
 
 export function NewGoalButton({
   accounts,
+  investments = [],
 }: {
   accounts: { id: string; name: string; institution: string }[];
+  investments?: { id: string; ticker: string; name: string }[];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -17,7 +19,12 @@ export function NewGoalButton({
         <Plus className="w-3.5 h-3.5" strokeWidth={2} />
         Nova meta
       </Button>
-      <GoalSheet open={open} onOpenChange={setOpen} accounts={accounts} />
+      <GoalSheet
+        open={open}
+        onOpenChange={setOpen}
+        accounts={accounts}
+        investments={investments}
+      />
     </>
   );
 }
