@@ -209,10 +209,22 @@ function PontualMode({
         </div>
         <ul className="space-y-2.5 text-[13px] font-mono">
           <ImpactRow
-            label="Saldo aplicado"
+            label="Saldo total investido"
             before={derivedBalance}
             after={newDerivedBalance}
             tone={amount > 0.01 ? "negative" : "neutral"}
+          />
+          <ImpactRow
+            label="Rendimento acumulado"
+            before={sacavelAgora}
+            after={Math.max(0, sacavelAgora - fromYield)}
+            tone={fromYield > 0.01 ? "negative" : "neutral"}
+          />
+          <ImpactRow
+            label="Capital aplicado"
+            before={principal}
+            after={newPrincipal}
+            tone={tocaPrincipal ? "negative" : "neutral"}
           />
           <ImpactRow
             label="Renda mensal estimada"
@@ -226,12 +238,6 @@ function PontualMode({
             after={newCoverage}
             tone={Math.abs(newCoverage - oldCoverage) < 0.005 ? "neutral" : "negative"}
             asPercent
-          />
-          <ImpactRow
-            label="Principal aplicado"
-            before={principal}
-            after={newPrincipal}
-            tone={tocaPrincipal ? "negative" : "neutral"}
           />
         </ul>
 
