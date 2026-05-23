@@ -56,6 +56,16 @@ export type LiveAssetMetrics = {
   dailyYield: number;
   /** R$ por segundo (dailyYield / 28800) */
   perSecond: number;
+  /**
+   * Rendimento acumulado LIFETIME em R$ — saldo derivado − valor aplicado.
+   * Pra renda fixa: composição contínua desde a compra (sempre ≥0 quando
+   * lifetime; pode ser negativo se houve saque que invadiu principal, mas
+   * a regra cascading do withdrawYield evita esse caso).
+   * Pra renda variável: também é derivedBalance − initial_amount (provento
+   * acumulado), mas o "lifetime growing" só faz sentido pra renda fixa.
+   * null pra ativos sem dailyYield (crypto, ações sem dividendos).
+   */
+  accumulatedYield: number | null;
   /** descrição do método ("Selic 14,5%", "Dividendos médios 12m", etc.) */
   source: string;
   /** se a fonte é estimativa vs cálculo direto */
@@ -289,6 +299,14 @@ export function computeLivePortfolio(args: {
         ? marketGain / Number(inv.initial_amount)
         : null;
 
+    // Lifetime accumulated yield (em R$, na moeda do ativo):
+    //   renda fixa → derivedBalance − initial_amount (composição contínua)
+    //   FII/ETF/ação → também derived − initial (proventos recebidos no caixa
+    //     entram via transactions, então aqui mede só a apreciação do saldo)
+    //   sem dailyYield → null
+    const accumulatedYield =
+      dailyYield > 0 ? derivedBalance - Number(inv.initial_amount ?? 0) : null;
+
     byAsset.push({
       id: inv.id,
       ticker: inv.ticker,
@@ -302,6 +320,8 @@ export function computeLivePortfolio(args: {
       marketGainPct,
       dailyYield: Math.round(dailyYield * 1e6) / 1e6,
       perSecond: perSecond,
+      accumulatedYield:
+        accumulatedYield != null ? Math.round(accumulatedYield * 100) / 100 : null,
       source,
       isEstimate,
       marketChangePct,

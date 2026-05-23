@@ -41,10 +41,14 @@ export function PortfolioLiveTicker({
   }, []);
 
   const ratio = dayUtilizationRatio(new Date(now));
-  // accumulated = dailyYield × ratio. Cresce naturalmente até dailyYield às
-  // 18h BRT. Antes somávamos `+ perSecond * elapsed`, mas perSecond e
-  // ratio crescem à mesma taxa — dobrava o resultado e sem cap.
-  const accumulatedToday = portfolio.totalDailyYield * ratio;
+  // LIFETIME accumulated yield + tick do dia em curso. O número não reseta
+  // a cada dia útil — cresce continuamente desde a compra dos ativos.
+  // base = totalFixedIncomeAccumulatedYield (calculado server-side, lifetime)
+  // tick = totalDailyYield × ratio (fração do dia útil corrente)
+  const accumulatedLifetime =
+    portfolio.totalFixedIncomeAccumulatedYield + portfolio.totalDailyYield * ratio;
+  // Mantém o nome antigo da variável pra reaproveitar nos sites de uso abaixo.
+  const accumulatedToday = accumulatedLifetime;
   const ratioMarket = portfolio.totalMarketBalance / Math.max(1, portfolio.totalBaseBalance);
 
   // Comparação — converte accumulatedToday e patrimônio pra moeda de comparação
@@ -72,7 +76,7 @@ export function PortfolioLiveTicker({
           <div>
             <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 font-medium flex items-center gap-2 mb-2">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
-              Rendendo agora
+              Rendimento acumulado
             </div>
             <div className="flex items-baseline gap-3 font-mono">
               <span className="text-[14px] text-navy-300 font-light">{symbol}</span>
@@ -84,7 +88,7 @@ export function PortfolioLiveTicker({
                   })}
                 </MoneyMask>
               </span>
-              <span className="text-[12px] text-navy-400 font-mono">hoje</span>
+              <span className="text-[12px] text-navy-400 font-mono">lifetime</span>
             </div>
             {accumulatedComp != null && comparisonCurrency ? (
               <div className="font-mono text-[11.5px] text-navy-400 mt-1 tabular-nums">
@@ -133,7 +137,7 @@ export function PortfolioLiveTicker({
             Carteira respirando ao vivo
           </div>
           <div className="font-display italic text-[20px] tracking-[-0.01em] mb-6 text-navy-200">
-            <em>Rendendo hoje, até este instante.</em>
+            <em>Rendimento acumulado desde a compra, vivo no presente.</em>
           </div>
 
           <div className="flex items-baseline gap-3 font-mono">

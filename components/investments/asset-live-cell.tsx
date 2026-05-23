@@ -1,13 +1,22 @@
 "use client";
 
-import { useLiveYield } from "@/hooks/use-live-yield";
+import { useLiveAccumulatedYield } from "@/hooks/use-live-accumulated-yield";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
 
+/**
+ * Mostra o rendimento ACUMULADO LIFETIME do ativo (saldo derivado − aplicado),
+ * tickando ao vivo durante o pregão. Substituiu a versão "só hoje" — agora
+ * representa quanto o ativo já gerou de yield desde a compra, com o tick do
+ * dia em curso.
+ *
+ * Quando o ativo não tem dailyYield (crypto, ação sem dividendos), mostra "—".
+ */
 export function AssetLiveCell({ asset }: { asset: LiveAssetMetrics }) {
-  const { accumulated } = useLiveYield(asset.dailyYield, asset.perSecond);
+  const base = asset.accumulatedYield ?? 0;
+  const accumulated = useLiveAccumulatedYield(base, asset.dailyYield);
 
-  if (asset.dailyYield <= 0) {
+  if (asset.dailyYield <= 0 || asset.accumulatedYield == null) {
     return <span className="text-faint-foreground text-[11.5px]">—</span>;
   }
 

@@ -225,7 +225,7 @@ export function FixedIncomeTable({
               <Th right>% carteira</Th>
               <Th right>Variação</Th>
               <Th right>Indexador</Th>
-              <Th right>Rendendo hoje</Th>
+              <Th right>Acumulado · vivo</Th>
               <th className="w-9" />
               <th className="w-9" />
             </tr>

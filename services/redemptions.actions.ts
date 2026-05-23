@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { getLivePortfolio } from "@/services/live-yield";
 
 const ruleSchema = z.object({
   investmentId: z.string().uuid(),
@@ -174,8 +175,32 @@ export type WithdrawYieldState = {
   ok?: boolean;
   error?: string;
   fieldErrors?: Record<string, string>;
+  /**
+   * Quanto saiu do rendimento acumulado e quanto invadiu o principal.
+   * Quando invadedPrincipal > 0, a UI mostra aviso pra confirmar a "comida"
+   * do principal — vide WithdrawYieldDialog.
+   */
+  fromYield?: number;
+  invadedPrincipal?: number;
 };
 
+/**
+ * Saca dinheiro de um ativo de renda fixa com REGRA YIELD-FIRST → PRINCIPAL.
+ *
+ * Lógica:
+ *  1. Calcula o saldo DERIVADO ao vivo (composição contínua até now)
+ *  2. yield_disponivel = derived − initial_amount
+ *  3. Se amount ≤ yield_disponivel: só "come" do yield
+ *     - new_current_balance = derived − amount
+ *     - initial_amount intacto
+ *  4. Se amount > yield_disponivel: come tudo o yield + invade principal
+ *     - invade = amount − yield_disponivel
+ *     - new_current_balance = derived − amount
+ *     - new_initial_amount = initial_amount − invade
+ *  5. last_yield_at = today (zera o "histórico de composição" pra evitar
+ *     re-compor a partir de referência antiga após o update)
+ *  6. Cria transaction de income na conta destino com metadata pra auditoria
+ */
 export async function withdrawYield(
   _prev: WithdrawYieldState | undefined,
   formData: FormData,
@@ -198,7 +223,9 @@ export async function withdrawYield(
   const [{ data: inv }, { data: acc }] = await Promise.all([
     supabase
       .from("investments")
-      .select("id, ticker, name, current_balance, currency, household_id")
+      .select(
+        "id, ticker, name, current_balance, initial_amount, currency, household_id",
+      )
       .eq("id", parsed.data.investmentId)
       .maybeSingle(),
     supabase
@@ -214,28 +241,54 @@ export async function withdrawYield(
     return { error: "Acesso negado." };
   }
 
-  if (Number(inv.current_balance) < parsed.data.amount) {
-    return { error: "Valor maior que o saldo do investimento." };
+  // 2. Pega o saldo DERIVADO ao vivo (composição contínua até agora) e o
+  //    accumulatedYield (lifetime) do live portfolio. Cache por request.
+  const live = await getLivePortfolio();
+  const liveAsset = live.byAsset.find((a) => a.id === inv.id);
+
+  const derivedBalance = liveAsset?.baseBalance ?? Number(inv.current_balance);
+  const accumulatedYield = Math.max(0, liveAsset?.accumulatedYield ?? 0);
+  const initialAmount = Number(inv.initial_amount);
+  const amount = parsed.data.amount;
+
+  // 3. Validação: não permite sacar mais do que o saldo derivado total
+  if (amount > derivedBalance + 0.005) {
+    return {
+      error: `Valor maior que o saldo do ativo (R$ ${derivedBalance.toFixed(2)}).`,
+    };
   }
 
-  // 2. Diminui current_balance do investimento (na moeda dele)
+  // 4. Cascading yield-first → principal
+  const fromYield = Math.min(amount, accumulatedYield);
+  const invadedPrincipal = Math.max(0, amount - accumulatedYield);
+  const newCurrentBalance = derivedBalance - amount;
+  const newInitialAmount = initialAmount - invadedPrincipal;
+
+  // 5. Update investimento com snapshot novo e last_yield_at = hoje
+  //    (last_yield_at resetado pra evitar re-composição a partir de ref antiga)
+  const today = new Date().toISOString().slice(0, 10);
   const { error: invErr } = await supabase
     .from("investments")
-    .update({ current_balance: Number(inv.current_balance) - parsed.data.amount })
+    .update({
+      current_balance: Math.round(newCurrentBalance * 100) / 100,
+      initial_amount: Math.round(newInitialAmount * 100) / 100,
+      last_yield_at: today,
+    })
     .eq("id", inv.id);
   if (invErr) return { error: invErr.message };
 
-  // 3. Cria transação de income na conta destino. Se as moedas diferirem,
-  //    o trigger de balance já lida com amount_account = amount (default).
-  //    Aqui o valor é na moeda da conta destino (o user escolheu o valor).
+  // 6. Cria transação de income na conta destino
   const { error: txErr } = await supabase.from("transactions").insert({
     household_id: ctx.household.id,
     account_id: acc.id,
     kind: "income",
-    amount: parsed.data.amount,
-    amount_account: parsed.data.amount,
+    amount,
+    amount_account: amount,
     currency: acc.currency,
-    description: `Saque de rendimento · ${inv.ticker}`,
+    description:
+      invadedPrincipal > 0
+        ? `Saque · ${inv.ticker}`
+        : `Saque de rendimento · ${inv.ticker}`,
     date: parsed.data.date,
     created_by: ctx.profile.id,
     category_source: "manual",
@@ -243,14 +296,19 @@ export async function withdrawYield(
       yield_withdrawal: true,
       investment_id: inv.id,
       investment_ticker: inv.ticker,
+      from_yield: Math.round(fromYield * 100) / 100,
+      invaded_principal: Math.round(invadedPrincipal * 100) / 100,
       notes: parsed.data.notes?.trim() ?? null,
     },
   });
   if (txErr) {
-    // Rollback do current_balance se a transação falhou
+    // Rollback completo se a transação falhou
     await supabase
       .from("investments")
-      .update({ current_balance: Number(inv.current_balance) })
+      .update({
+        current_balance: Number(inv.current_balance),
+        initial_amount: initialAmount,
+      })
       .eq("id", inv.id);
     return { error: txErr.message };
   }
@@ -259,5 +317,10 @@ export async function withdrawYield(
   revalidatePath("/dashboard");
   revalidatePath("/transacoes");
   revalidatePath("/contas");
-  return { ok: true };
+  revalidatePath("/resgates");
+  return {
+    ok: true,
+    fromYield: Math.round(fromYield * 100) / 100,
+    invadedPrincipal: Math.round(invadedPrincipal * 100) / 100,
+  };
 }
