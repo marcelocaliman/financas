@@ -18,11 +18,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { archiveGoal, deleteGoal } from "@/services/goals.actions";
 import type { EnrichedGoal } from "@/services/goals";
+import type { GoalReminder } from "@/services/goal-reminders";
 import { estimateCompletion } from "@/lib/financial/projection";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { GoalSheet } from "./goal-sheet";
 import { ContributeDialog } from "./contribute-dialog";
+import { ReminderDatePill } from "./reminder-date-pill";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { useMoneyContext } from "@/components/ui/money-provider";
 import { convertOrSame, CURRENCY_SYMBOLS } from "@/lib/financial/currency";
@@ -43,12 +45,19 @@ export function GoalCard({
   accounts,
   investments = [],
   averageMonthlyAddition,
+  reminder,
 }: {
   goal: EnrichedGoal;
   accounts: { id: string; name: string; institution: string }[];
   investments?: { id: string; ticker: string; name: string }[];
   /** Sobra média mensal em moeda de exibição */
   averageMonthlyAddition: number;
+  /**
+   * Lembrete de aporte ativo pra essa meta (vencido / hoje / próximo).
+   * Quando presente: mostra pill inline + pré-preenche o ContributeDialog
+   * com expectedAmount e dueDate.
+   */
+  reminder?: GoalReminder;
 }) {
   const [editing, setEditing] = useState(false);
   const [contributing, setContributing] = useState(false);
@@ -144,6 +153,7 @@ export function GoalCard({
                   {CURRENCY_SYMBOLS[goal.currency]} {goal.currency}
                 </Badge>
               ) : null}
+              {reminder ? <ReminderDatePill reminder={reminder} /> : null}
             </div>
             <h3 className="font-display text-[20px] sm:text-[24px] tracking-[-0.02em] font-medium text-foreground leading-tight">
               {goal.name}
@@ -320,6 +330,10 @@ export function GoalCard({
         mode="deposit"
         accounts={accounts}
         linkedAccounts={linkedAccountOptions}
+        // Quando há lembrete ativo, pré-preenche valor + data sugeridos.
+        // Usuário pode aceitar 1-click ou ajustar antes de confirmar.
+        defaultAmount={reminder?.expectedAmount ?? undefined}
+        defaultDate={reminder?.dueDate}
       />
       <ContributeDialog
         open={withdrawing}

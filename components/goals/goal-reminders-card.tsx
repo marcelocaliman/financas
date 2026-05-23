@@ -9,10 +9,10 @@ import {
   type ContributeAccountOption,
   type ContributeDestinationOption,
 } from "./contribute-dialog";
+import { ReminderDatePill } from "./reminder-date-pill";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { GoalReminder } from "@/services/goal-reminders";
-import { cn } from "@/lib/utils/cn";
 
 /**
  * Card de lembretes de aporte — aparece no /dashboard e em /metas.
@@ -80,7 +80,7 @@ export function GoalRemindersCard({
                   <span className="text-[13.5px] font-medium text-foreground truncate">
                     {r.goalName}
                   </span>
-                  <DatePill reminder={r} />
+                  <ReminderDatePill reminder={r} />
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -131,51 +131,3 @@ function StatusIcon({ status }: { status: GoalReminder["status"] }) {
   }
   return <Calendar className="w-4 h-4 text-navy-700 dark:text-navy-300 shrink-0" strokeWidth={1.8} />;
 }
-
-/**
- * Pill destacado com a data do lembrete — info primária pro user.
- * Cor varia pelo status: overdue=rust, due_today=gold, upcoming=navy.
- */
-function DatePill({ reminder: r }: { reminder: GoalReminder }) {
-  const isOverdue = r.status === "overdue";
-  const isDueToday = r.status === "due_today";
-
-  const toneClass = isOverdue
-    ? "bg-rust-600/15 text-rust-600 border-rust-600/30"
-    : isDueToday
-      ? "bg-gold-600/15 text-gold-700 dark:text-gold-500 border-gold-600/30"
-      : "bg-navy-700/10 text-navy-700 dark:text-navy-300 border-navy-700/20";
-
-  let label: string;
-  if (isOverdue) {
-    const ago = Math.abs(r.daysUntil);
-    label = `Atrasado há ${ago} ${ago === 1 ? "dia" : "dias"} · era ${formatDate(r.dueDate)}`;
-  } else if (isDueToday) {
-    label = `Vence hoje · ${formatDate(r.dueDate)}`;
-  } else if (r.daysUntil === 1) {
-    label = `Vence amanhã · ${formatDate(r.dueDate)}`;
-  } else {
-    label = `Em ${r.daysUntil} dias · ${formatDate(r.dueDate)}`;
-  }
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border shrink-0",
-        "font-mono text-[11.5px] font-medium tabular-nums tracking-[0.02em]",
-        toneClass,
-      )}
-    >
-      <Calendar className="w-3 h-3" strokeWidth={1.8} />
-      {label}
-    </span>
-  );
-}
-
-function formatDate(iso: string): string {
-  const [, m, d] = iso.split("-");
-  return `${d}/${m}`;
-}
-
-// Silenciar import implícito do tooling
-export { cn };
