@@ -128,6 +128,19 @@ export default async function ConfiguracoesPage() {
         </Panel>
 
         <Panel>
+          <PanelHeader
+            title="Refazer onboarding"
+            meta="Adicionar contas, rendas e despesas em lote pelo wizard"
+          />
+          <a
+            href="/welcome?force=1"
+            className="inline-flex items-center justify-center h-9 px-3.5 rounded-[8px] border border-border-strong bg-transparent text-foreground hover:bg-surface-muted text-[13px] font-medium transition-colors"
+          >
+            Abrir wizard
+          </a>
+        </Panel>
+
+        <Panel>
           <PanelHeader title="Sair" meta="Encerra a sessão neste dispositivo" />
           <form action={signOut}>
             <Button variant="outline" type="submit">

@@ -1,0 +1,54 @@
+import { redirect } from "next/navigation";
+import { PageHeader } from "@/components/layout/page-header";
+import { Panel } from "@/components/ui/panel";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { getCurrentUserContext } from "@/services/auth";
+import { listAccounts } from "@/services/accounts";
+import { listCategories } from "@/services/categories";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Wizard de onboarding. Acessível por novos usuários (após cadastro) ou
+ * por usuários existentes que querem refazer (via link em /configuracoes).
+ *
+ * Pula automaticamente pra /dashboard se o user já tem accounts + recorrências
+ * configuradas e não veio com ?force=1.
+ */
+export default async function WelcomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ force?: string }>;
+}) {
+  const { force } = await searchParams;
+  const ctx = await getCurrentUserContext();
+  if (!ctx) redirect("/login");
+
+  const [accounts, categories] = await Promise.all([
+    listAccounts(),
+    listCategories({ includeArchived: false }),
+  ]);
+
+  // Auto-skip: se já tem 2+ contas e !force, presume que onboarding já foi feito
+  if (accounts.length >= 2 && force !== "1") {
+    redirect("/dashboard");
+  }
+
+  return (
+    <>
+      <PageHeader
+        eyebrow={`Bem-vindo${ctx.profile.display_name ? `, ${ctx.profile.display_name.split(" ")[0]}` : ""}`}
+        title={
+          <>
+            Vamos montar sua <em className="not-italic font-display italic text-navy-700">casa.</em>
+          </>
+        }
+        subtitle="4 passos rápidos pra você sair com o essencial: contas, renda, despesas fixas e (opcional) sua primeira meta."
+      />
+
+      <Panel className="!p-8">
+        <OnboardingWizard existingAccounts={accounts} existingCategories={categories} />
+      </Panel>
+    </>
+  );
+}
