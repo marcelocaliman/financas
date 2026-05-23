@@ -644,6 +644,7 @@ export interface Database {
           allocation_mode: GoalAllocationMode;
           allocation_value: number | null;
           contribution_day: number | null;
+          tracking_starts_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -664,6 +665,7 @@ export interface Database {
           allocation_mode?: GoalAllocationMode;
           allocation_value?: number | null;
           contribution_day?: number | null;
+          tracking_starts_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

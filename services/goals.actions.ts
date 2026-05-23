@@ -40,6 +40,7 @@ const createSchema = z.object({
   allocationMode: z.enum(ALLOCATION_MODES).default("manual"),
   allocationValue: z.coerce.number().nonnegative().optional(),
   contributionDay: z.coerce.number().int().min(1).max(31).optional(),
+  trackingStartsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   // Sources passados como JSON serializado
   sourcesJson: z.string().optional(),
 });
@@ -126,6 +127,7 @@ export async function createGoal(
     allocationMode: formData.get("allocationMode") || "manual",
     allocationValue: formData.get("allocationValue") || undefined,
     contributionDay: formData.get("contributionDay") || undefined,
+    trackingStartsAt: formData.get("trackingStartsAt") || undefined,
     sourcesJson: formData.get("sourcesJson")?.toString() || undefined,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -150,6 +152,7 @@ export async function createGoal(
       allocation_mode: parsed.data.allocationMode,
       allocation_value: parsed.data.allocationValue ?? null,
       contribution_day: parsed.data.contributionDay ?? null,
+      tracking_starts_at: parsed.data.trackingStartsAt ?? null,
     })
     .select("id")
     .single();
@@ -184,6 +187,7 @@ export async function updateGoal(
     allocationMode: formData.get("allocationMode") || "manual",
     allocationValue: formData.get("allocationValue") || undefined,
     contributionDay: formData.get("contributionDay") || undefined,
+    trackingStartsAt: formData.get("trackingStartsAt") || undefined,
     sourcesJson: formData.get("sourcesJson")?.toString() || undefined,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -204,6 +208,7 @@ export async function updateGoal(
       allocation_mode: parsed.data.allocationMode,
       allocation_value: parsed.data.allocationValue ?? null,
       contribution_day: parsed.data.contributionDay ?? null,
+      tracking_starts_at: parsed.data.trackingStartsAt ?? null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

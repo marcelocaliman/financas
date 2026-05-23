@@ -90,6 +90,9 @@ export function GoalSheet({
   const [contributionDay, setContributionDay] = useState<string>(
     goal?.contribution_day ? String(goal.contribution_day) : "",
   );
+  const [trackingStartsAt, setTrackingStartsAt] = useState<string>(
+    goal?.tracking_starts_at ?? "",
+  );
   const [priority, setPriority] = useState<string>(
     goal?.priority ? String(goal.priority) : "100",
   );
@@ -121,6 +124,7 @@ export function GoalSheet({
       setAllocationMode(goal?.allocation_mode ?? "manual");
       setAllocationValue(Number(goal?.allocation_value ?? 0));
       setContributionDay(goal?.contribution_day ? String(goal.contribution_day) : "");
+      setTrackingStartsAt(goal?.tracking_starts_at ?? "");
       setPriority(goal?.priority ? String(goal.priority) : "100");
       setSources(
         enriched
@@ -551,6 +555,25 @@ export function GoalSheet({
                 />
               </Field>
             </div>
+
+            {/* Tracking start — só faz sentido quando há dia de aporte definido */}
+            {contributionDay ? (
+              <div className="mt-3">
+                <Field
+                  label="Lembretes a partir de"
+                  htmlFor="trackingStartsAt"
+                  hint="Opcional · default = data de criação da meta. Use pra pausar/retomar ou cadastrar metas backdatadas."
+                >
+                  <Input
+                    id="trackingStartsAt"
+                    name="trackingStartsAt"
+                    type="date"
+                    value={trackingStartsAt}
+                    onChange={(e) => setTrackingStartsAt(e.target.value)}
+                  />
+                </Field>
+              </div>
+            ) : null}
           </div>
 
           {state?.error ? (

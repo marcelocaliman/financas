@@ -36,31 +36,53 @@ function todayISO(): string {
 }
 
 /**
- * Para uma meta com contribution_day = D, calcula a próxima data esperada:
- *  - Se D ainda não passou esse mês: dia D deste mês
- *  - Se D já passou e não há contribuição esse mês: ATRASADA (date = dia D deste mês)
- *  - Se D já passou e já há contribuição: dia D do próximo mês
+ * Para uma meta com contribution_day = D, calcula a próxima data esperada
+ * RESPEITANDO a data em que o tracking começou (trackingStart):
+ *
+ *  - Se trackingStart é DEPOIS do dia D do mês corrente → primeiro lembrete
+ *    é dia D do próximo mês (a meta não existia / tracking pausado naquela data)
+ *  - Senão (regra original):
+ *      - Se D ainda não passou esse mês: dia D deste mês
+ *      - Se D já passou e não há contribuição esse mês: ATRASADA
+ *      - Se D já passou e já há contribuição: dia D do próximo mês
+ *
+ * trackingStart pode vir de:
+ *   1. goals.tracking_starts_at (explícito, setado pelo user)
+ *   2. goals.created_at (default — meta não pode estar atrasada antes de existir)
  */
 function expectedNextDate(
   contributionDay: number,
   hasContributionThisMonth: boolean,
   today: string,
+  trackingStart: string,
 ): { date: string; isOverdue: boolean } {
   const [yStr, mStr, dStr] = today.split("-");
   const todayDay = parseInt(dStr, 10);
   const y = parseInt(yStr, 10);
   const m = parseInt(mStr, 10);
 
+  // Date do dia D no mês atual (clamped pra fim de mês curto)
+  const thisMonthDDay = `${yStr}-${mStr}-${String(Math.min(contributionDay, daysInMonth(y, m))).padStart(2, "0")}`;
+
+  // Tracking começou DEPOIS do dia D deste mês? → pula pra próximo mês
+  if (trackingStart > thisMonthDDay) {
+    const nextM = m === 12 ? 1 : m + 1;
+    const nextY = m === 12 ? y + 1 : y;
+    const day = Math.min(contributionDay, daysInMonth(nextY, nextM));
+    return {
+      date: `${nextY}-${String(nextM).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      isOverdue: false,
+    };
+  }
+
   if (todayDay <= contributionDay) {
     // Ainda vai chegar esse mês
-    const day = Math.min(contributionDay, daysInMonth(y, m));
-    return { date: `${yStr}-${mStr}-${String(day).padStart(2, "0")}`, isOverdue: false };
+    return { date: thisMonthDDay, isOverdue: false };
   }
 
   if (!hasContributionThisMonth) {
     // Já passou o dia e não foi aportada → atrasada
-    const day = Math.min(contributionDay, daysInMonth(y, m));
-    return { date: `${yStr}-${mStr}-${String(day).padStart(2, "0")}`, isOverdue: true };
+    return { date: thisMonthDDay, isOverdue: true };
   }
 
   // Já contribuiu esse mês — próxima é no mês que vem
@@ -101,7 +123,7 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
     supabase
       .from("goals")
       .select(
-        "id, name, currency, contribution_day, allocation_mode, allocation_value, target_amount, current_amount",
+        "id, name, currency, contribution_day, allocation_mode, allocation_value, target_amount, current_amount, created_at, tracking_starts_at",
       )
       .eq("is_archived", false)
       .not("contribution_day", "is", null),
@@ -121,6 +143,8 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
     | "allocation_value"
     | "target_amount"
     | "current_amount"
+    | "created_at"
+    | "tracking_starts_at"
   >;
 
   const goalsHavingThisMonth = new Set(
@@ -135,10 +159,15 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
     if (Number(g.current_amount) >= Number(g.target_amount) && Number(g.target_amount) > 0) {
       continue;
     }
+    // Tracking start: explícito (tracking_starts_at) ou criação (created_at).
+    // Garante que a meta não pode estar "atrasada" antes de existir.
+    const trackingStart =
+      g.tracking_starts_at ?? (g.created_at ? g.created_at.slice(0, 10) : today);
     const { date, isOverdue } = expectedNextDate(
       g.contribution_day,
       goalsHavingThisMonth.has(g.id),
       today,
+      trackingStart,
     );
     const days = diffDays(today, date);
     if (!isOverdue && days > windowDays) continue;
