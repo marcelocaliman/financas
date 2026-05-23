@@ -38,6 +38,7 @@ type Params = {
   month?: string;
   kind?: string;
   q?: string;
+  tag?: string;
   page?: string;
 };
 
@@ -56,6 +57,7 @@ export default async function TransacoesPage({
   const month = params.month;
   const kindFilter = (params.kind ?? "all") as TransactionKind | "all";
   const q = params.q ?? "";
+  const tag = params.tag ?? "";
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
 
@@ -70,6 +72,7 @@ export default async function TransacoesPage({
       month,
       kind: kindFilter,
       search: q || undefined,
+      tag: tag || undefined,
       page,
       pageSize,
     }),
@@ -175,6 +178,7 @@ export default async function TransacoesPage({
       <ActiveFiltersChips
         kindLabel={kindFilter !== "all" ? KIND_TAB_LABEL[kindFilter] : null}
         queryLabel={q || null}
+        tagLabel={tag || null}
       />
 
       <SavedViews />

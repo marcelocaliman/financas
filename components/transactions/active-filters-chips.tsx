@@ -15,11 +15,14 @@ import { cn } from "@/lib/utils/cn";
 export function ActiveFiltersChips({
   kindLabel,
   queryLabel,
+  tagLabel,
 }: {
   /** Rótulo da aba ativa (ex: "Receitas"). Null se "Todas". */
   kindLabel?: string | null;
   /** Texto da busca. Null se vazia. */
   queryLabel?: string | null;
+  /** Tag ativa. Null se sem filtro. */
+  tagLabel?: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -37,6 +40,7 @@ export function ActiveFiltersChips({
     const sp = new URLSearchParams(searchParams.toString());
     sp.delete("kind");
     sp.delete("q");
+    sp.delete("tag");
     sp.delete("page");
     startTransition(() => router.push(`${pathname}?${sp.toString()}`));
   };
@@ -44,6 +48,7 @@ export function ActiveFiltersChips({
   const chips: Array<{ key: string; label: string }> = [];
   if (kindLabel) chips.push({ key: "kind", label: kindLabel });
   if (queryLabel) chips.push({ key: "q", label: `“${queryLabel}”` });
+  if (tagLabel) chips.push({ key: "tag", label: `#${tagLabel}` });
 
   if (chips.length === 0) return null;
 

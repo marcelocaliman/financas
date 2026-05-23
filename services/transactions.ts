@@ -10,6 +10,7 @@ export type Transaction = Tables<"transactions"> & {
 };
 
 export type TransactionFilters = {
+  tag?: string;
   month?: string; // YYYY-MM
   accountId?: string;
   categoryId?: string;
@@ -66,6 +67,7 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
   if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
   if (filters.search) q = q.ilike("description", `%${filters.search}%`);
+  if (filters.tag) q = q.contains("tags", [filters.tag.toLowerCase()]);
 
   q = q.range(page * pageSize, (page + 1) * pageSize - 1);
 

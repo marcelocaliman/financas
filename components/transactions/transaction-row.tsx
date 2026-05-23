@@ -13,6 +13,7 @@ import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { TransactionTagsEditor } from "./transaction-tags-editor";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -99,6 +100,12 @@ export function TransactionRow({
           <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
             {tx.account?.name ?? "—"}
             {tx.payment_method ? ` · ${tx.payment_method}` : ""}
+          </div>
+          <div className="mt-1">
+            <TransactionTagsEditor
+              transactionId={tx.id}
+              tags={tx.tags ?? []}
+            />
           </div>
         </td>
         <td className="py-3.5 pr-4 align-middle whitespace-nowrap">

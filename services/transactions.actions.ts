@@ -247,3 +247,21 @@ export async function deleteTransaction(id: string): Promise<{ ok?: boolean; err
   for (const p of pathsToInvalidate()) revalidatePath(p);
   return { ok: true };
 }
+
+/**
+ * Atualiza tags de uma transação. Substitui inteiro (não append).
+ */
+export async function setTransactionTags(
+  id: string,
+  tags: string[],
+): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const clean = Array.from(new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean)));
+  const { error } = await supabase
+    .from("transactions")
+    .update({ tags: clean })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true };
+}

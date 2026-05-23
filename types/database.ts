@@ -281,6 +281,7 @@ export interface Database {
            * Null = pendente (date ainda no futuro). Set pelo trigger BEFORE
            * INSERT/UPDATE quando date ≤ today (SP). */
           balance_applied_at: string | null;
+          tags: string[];
           created_at: string;
           updated_at: string;
         };
@@ -305,6 +306,7 @@ export interface Database {
           recurring_rule_id?: string | null;
           metadata?: Json;
           balance_applied_at?: string | null;
+          tags?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -329,6 +331,7 @@ export interface Database {
           recurring_rule_id?: string | null;
           metadata?: Json;
           balance_applied_at?: string | null;
+          tags?: string[];
           created_at?: string;
           updated_at?: string;
         };
