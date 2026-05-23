@@ -287,6 +287,13 @@ export function GoalCard({
         goalId={goal.id}
         goalName={goal.name}
         goalCurrency={goal.currency}
+        accounts={accounts}
+        destinationAccounts={goal.sourcesResolved
+          .filter((r) => r.source.source_type === "account" && r.source.source_id)
+          .map((r) => ({
+            accountId: r.source.source_id as string,
+            label: `${r.label} (fonte vinculada)`,
+          }))}
       />
     </>
   );

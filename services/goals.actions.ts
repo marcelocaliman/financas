@@ -233,8 +233,16 @@ export async function deleteGoal(id: string) {
 
 /**
  * Registra um aporte numa meta. Chamado pelo botão "Aportar" no card.
- *  - source: 'manual' por padrão
- *  - bumpCurrent=true: também soma no current_amount (snapshot)
+ *
+ * Três modos:
+ *  1. Simbólico (sem fromAccountId): só registra histórico + bump current_amount.
+ *     Pra metas sem fonte vinculada.
+ *  2. Transferência real (from + to): cria duas transações espelhadas via
+ *     create_transfer RPC (saída da conta origem, entrada na destino — que é
+ *     uma fonte do tipo 'account' da meta). O current_amount NÃO é bumpado,
+ *     pq o earmark live já reflete pelo saldo da conta destino. Linka a
+ *     contribuição à transação 'in' pra rastreabilidade.
+ *  3. Despesa (só fromAccountId): N/A por enquanto — fallback simbólico.
  */
 export async function recordGoalContribution(
   goalId: string,
@@ -245,22 +253,60 @@ export async function recordGoalContribution(
     notes?: string;
     transactionId?: string;
     bumpCurrent?: boolean;
+    fromAccountId?: string;
+    toAccountId?: string;
   },
 ): Promise<{ ok?: boolean; error?: string }> {
   if (amount <= 0) return { error: "Valor deve ser positivo." };
   const supabase = await createClient();
+
+  const date = opts?.date ?? new Date().toISOString().slice(0, 10);
+  let transactionId = opts?.transactionId ?? null;
+  let bumpCurrent = opts?.bumpCurrent ?? true;
+  let sourceLabel = opts?.source ?? "manual";
+
+  // Modo transferência: from + to definidos e diferentes
+  if (opts?.fromAccountId && opts?.toAccountId && opts.fromAccountId !== opts.toAccountId) {
+    const { data: pairId, error: tErr } = await supabase.rpc("create_transfer", {
+      p_from_account_id: opts.fromAccountId,
+      p_to_account_id: opts.toAccountId,
+      p_amount: amount,
+      p_date: date,
+      p_description: opts.notes?.trim() || "Aporte em meta",
+    });
+    if (tErr) return { error: tErr.message };
+
+    // Linka a contribuição à perna 'in' (entrada na conta destino vinculada)
+    if (pairId) {
+      const { data: txIn } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("transfer_pair_id", pairId)
+        .eq("transfer_direction", "in")
+        .maybeSingle();
+      if (txIn?.id) transactionId = txIn.id;
+    }
+    // Não bumpa current_amount: o earmark da fonte já sobe pelo saldo
+    bumpCurrent = false;
+    sourceLabel = "transfer";
+  } else if (opts?.fromAccountId && !opts?.toAccountId) {
+    return { error: "Conta de destino obrigatória pra transferir." };
+  }
+
   const { error } = await supabase.rpc("record_goal_contribution", {
     p_goal_id: goalId,
     p_amount: amount,
-    p_date: opts?.date ?? new Date().toISOString().slice(0, 10),
-    p_source: opts?.source ?? "manual",
+    p_date: date,
+    p_source: sourceLabel,
     p_notes: opts?.notes ?? null,
-    p_transaction_id: opts?.transactionId ?? null,
-    p_bump_current: opts?.bumpCurrent ?? true,
+    p_transaction_id: transactionId,
+    p_bump_current: bumpCurrent,
   });
   if (error) return { error: error.message };
   revalidatePath("/metas");
   revalidatePath("/dashboard");
+  revalidatePath("/contas");
+  revalidatePath("/transacoes");
   return { ok: true };
 }
 
