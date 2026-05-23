@@ -14,12 +14,17 @@ import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
 import { PillGroup } from "@/components/ui/pill-group";
 import { Textarea } from "@/components/ui/textarea";
-import { addMovement, type MovementFormState } from "@/services/movements.actions";
+import {
+  addMovement,
+  updateMovement,
+  type MovementFormState,
+} from "@/services/movements.actions";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
 
 type Investment = Tables<"investments">;
+type Movement = Tables<"investment_movements">;
 
 function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -35,21 +40,36 @@ export function MovementDialog({
   onOpenChange,
   investment,
   defaultKind = "buy",
+  movement,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   investment: Investment;
   defaultKind?: "buy" | "sell";
+  /** Quando passado, dialog entra em modo edição (prefill + updateMovement) */
+  movement?: Movement | null;
 }) {
-  const [kind, setKind] = useState<"buy" | "sell">(defaultKind);
-  const [qty, setQty] = useState<string>("");
-  const [unitPrice, setUnitPrice] = useState<number>(0);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
+  const isEdit = !!movement;
+  const initialKind: "buy" | "sell" =
+    movement && (movement.kind === "buy" || movement.kind === "sell")
+      ? movement.kind
+      : defaultKind;
+  const initialQty = movement ? String(movement.quantity) : "";
+  const initialUnitPrice = movement ? Number(movement.unit_price) : 0;
+  const initialTotalAmount = movement ? Number(movement.total_amount ?? 0) : 0;
+  const initialDate = movement?.date ?? todayISO();
+  const initialFees = movement ? Number(movement.fees ?? 0) : 0;
+  const initialNotes = movement?.notes ?? "";
+
+  const [kind, setKind] = useState<"buy" | "sell">(initialKind);
+  const [qty, setQty] = useState<string>(initialQty);
+  const [unitPrice, setUnitPrice] = useState<number>(initialUnitPrice);
+  const [totalAmount, setTotalAmount] = useState<number>(initialTotalAmount);
   const [lastTouched, setLastTouched] = useState<"unit" | "total">("unit");
-  const [date, setDate] = useState(todayISO);
+  const [date, setDate] = useState(initialDate);
 
   const [state, action, pending] = useActionState<MovementFormState | undefined, FormData>(
-    addMovement,
+    isEdit ? updateMovement : addMovement,
     undefined,
   );
 
@@ -57,12 +77,12 @@ export function MovementDialog({
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
-      setKind(defaultKind);
-      setQty("");
-      setUnitPrice(0);
-      setTotalAmount(0);
+      setKind(initialKind);
+      setQty(initialQty);
+      setUnitPrice(initialUnitPrice);
+      setTotalAmount(initialTotalAmount);
       setLastTouched("unit");
-      setDate(todayISO());
+      setDate(initialDate);
     }
   }
 
@@ -90,10 +110,16 @@ export function MovementDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success(kind === "buy" ? "Aporte registrado." : "Venda registrada.");
+      toast.success(
+        isEdit
+          ? "Movimento atualizado — preço médio recalculado."
+          : kind === "buy"
+            ? "Aporte registrado."
+            : "Venda registrada.",
+      );
       onOpenChange(false);
     }
-  }, [state, onOpenChange, kind]);
+  }, [state, onOpenChange, kind, isEdit]);
 
   const qtyNum = Number(qty) || 0;
   const total = totalAmount > 0 ? totalAmount : qtyNum * unitPrice;
@@ -118,26 +144,44 @@ export function MovementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader
-          eyebrow={`${investment.ticker} · ${kind === "buy" ? "Novo aporte" : "Venda"}`}
-          title={kind === "buy" ? "Registrar novo aporte." : "Registrar venda."}
+          eyebrow={`${investment.ticker} · ${isEdit ? "Editar lote" : kind === "buy" ? "Novo aporte" : "Venda"}`}
+          title={
+            isEdit
+              ? "Editar movimento."
+              : kind === "buy"
+                ? "Registrar novo aporte."
+                : "Registrar venda."
+          }
           description={
-            kind === "buy"
-              ? "Cada aporte vira um lote no extrato e recalcula seu preço médio."
-              : "A venda remove cotas e o custo proporcional. Preço médio do que sobra fica intacto."
+            isEdit
+              ? "Corrige os dados desse lote. O preço médio do ativo é recalculado automaticamente a partir do extrato completo."
+              : kind === "buy"
+                ? "Cada aporte vira um lote no extrato e recalcula seu preço médio."
+                : "A venda remove cotas e o custo proporcional. Preço médio do que sobra fica intacto."
           }
         />
         <form action={action} className="space-y-4">
+          {isEdit ? <input type="hidden" name="id" value={movement.id} /> : null}
           <input type="hidden" name="investmentId" value={investment.id} />
           <input type="hidden" name="kind" value={kind} />
 
-          <PillGroup
-            options={[
-              { value: "buy", label: "Comprar" },
-              { value: "sell", label: "Vender" },
-            ]}
-            value={kind}
-            onChange={(v) => setKind(v as "buy" | "sell")}
-          />
+          {isEdit ? (
+            <div className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-faint-foreground">
+              Tipo · <span className="text-foreground">{kind === "buy" ? "Compra" : "Venda"}</span>
+              <span className="ml-2 text-faint-foreground normal-case tracking-normal">
+                (não pode mudar — apague e crie um novo se necessário)
+              </span>
+            </div>
+          ) : (
+            <PillGroup
+              options={[
+                { value: "buy", label: "Comprar" },
+                { value: "sell", label: "Vender" },
+              ]}
+              value={kind}
+              onChange={(v) => setKind(v as "buy" | "sell")}
+            />
+          )}
 
           <Field label={`Quantidade (${unit})`} htmlFor="quantity" required>
             <Input
@@ -194,50 +238,63 @@ export function MovementDialog({
               />
             </Field>
             <Field label="Taxas (opcional)" htmlFor="fees" hint="Corretagem, custódia, IOF…">
-              <MoneyInput name="fees" id="fees" defaultValue={0} />
+              <MoneyInput name="fees" id="fees" defaultValue={initialFees} />
             </Field>
           </div>
 
           <Field label="Notas (opcional)" htmlFor="notes">
-            <Textarea id="notes" name="notes" rows={2} />
+            <Textarea id="notes" name="notes" rows={2} defaultValue={initialNotes} />
           </Field>
 
           {qtyNum > 0 && unitPrice > 0 ? (
-            <div className="rounded-[10px] border border-border bg-surface-muted px-4 py-3 text-[12.5px] space-y-1.5 font-mono">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total do lote</span>
-                <b className="text-foreground"><MoneyMask>{formatMoney(total)}</MoneyMask></b>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Quantidade após</span>
-                <b className="text-foreground">
-                  <MoneyMask>{newQty.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}</MoneyMask> {unit}
-                </b>
-              </div>
-              {kind === "buy" && newAvg > 0 ? (
+            isEdit ? (
+              <div className="rounded-[10px] border border-border bg-surface-muted px-4 py-3 text-[12.5px] space-y-1.5 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Novo preço médio</span>
-                  <b className="text-foreground"><MoneyMask>{formatMoney(newAvg)}</MoneyMask> / {unit.slice(0, -1)}</b>
+                  <span className="text-muted-foreground">Total deste lote</span>
+                  <b className="text-foreground"><MoneyMask>{formatMoney(total)}</MoneyMask></b>
                 </div>
-              ) : null}
-              {kind === "sell" && currentQty > 0 ? (
+                <p className="text-[11.5px] text-muted-foreground !mt-2 not-italic">
+                  Quantidade total e preço médio do ativo serão recalculados a partir
+                  do extrato completo após salvar.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-[10px] border border-border bg-surface-muted px-4 py-3 text-[12.5px] space-y-1.5 font-mono">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Resultado da venda</span>
-                  <b
-                    className={
-                      total - currentAvg * qtyNum > 0
-                        ? "text-olive-700 dark:text-olive-500"
-                        : total - currentAvg * qtyNum < 0
-                          ? "text-rust-600"
-                          : "text-foreground"
-                    }
-                  >
-                    {total - currentAvg * qtyNum >= 0 ? "+" : ""}
-                    <MoneyMask>{formatMoney(total - currentAvg * qtyNum)}</MoneyMask>
+                  <span className="text-muted-foreground">Total do lote</span>
+                  <b className="text-foreground"><MoneyMask>{formatMoney(total)}</MoneyMask></b>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Quantidade após</span>
+                  <b className="text-foreground">
+                    <MoneyMask>{newQty.toLocaleString("pt-BR", { maximumFractionDigits: 8 })}</MoneyMask> {unit}
                   </b>
                 </div>
-              ) : null}
-            </div>
+                {kind === "buy" && newAvg > 0 ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Novo preço médio</span>
+                    <b className="text-foreground"><MoneyMask>{formatMoney(newAvg)}</MoneyMask> / {unit.slice(0, -1)}</b>
+                  </div>
+                ) : null}
+                {kind === "sell" && currentQty > 0 ? (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Resultado da venda</span>
+                    <b
+                      className={
+                        total - currentAvg * qtyNum > 0
+                          ? "text-olive-700 dark:text-olive-500"
+                          : total - currentAvg * qtyNum < 0
+                            ? "text-rust-600"
+                            : "text-foreground"
+                      }
+                    >
+                      {total - currentAvg * qtyNum >= 0 ? "+" : ""}
+                      <MoneyMask>{formatMoney(total - currentAvg * qtyNum)}</MoneyMask>
+                    </b>
+                  </div>
+                ) : null}
+              </div>
+            )
           ) : null}
 
           {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
@@ -251,7 +308,13 @@ export function MovementDialog({
               variant="primary"
               disabled={pending || qtyNum <= 0 || unitPrice <= 0}
             >
-              {pending ? "Salvando…" : kind === "buy" ? "Registrar aporte" : "Registrar venda"}
+              {pending
+                ? "Salvando…"
+                : isEdit
+                  ? "Salvar alterações"
+                  : kind === "buy"
+                    ? "Registrar aporte"
+                    : "Registrar venda"}
             </Button>
           </DialogFooter>
         </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export function MovementsSheet({
   investment: Investment;
 }) {
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Movement | null>(null);
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -62,7 +63,8 @@ export function MovementsSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, investment.id, adding]);
+    // Re-roda quando fecha o dialog de novo/edição → garante lista fresca
+  }, [open, investment.id, adding, editing]);
 
   const handleDelete = async (id: string) => {
     const ok = await confirm({
@@ -157,16 +159,30 @@ export function MovementsSheet({
                     <td className="text-right font-mono text-[12.5px] font-medium whitespace-nowrap">
                       <MoneyMask>{formatMoney(m.total_amount)}</MoneyMask>
                     </td>
-                    <td className="text-right pl-2">
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => handleDelete(m.id)}
-                        className="p-1 rounded text-faint-foreground hover:text-rust-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label="Excluir movimento"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                      </button>
+                    <td className="text-right pl-2 whitespace-nowrap">
+                      <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {m.kind === "buy" || m.kind === "sell" ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => setEditing(m)}
+                            className="p-1 rounded text-faint-foreground hover:text-foreground"
+                            aria-label="Editar movimento"
+                            title="Editar (corrigir valor pago, quantidade…)"
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => handleDelete(m.id)}
+                          className="p-1 rounded text-faint-foreground hover:text-rust-600"
+                          aria-label="Excluir movimento"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -176,6 +192,14 @@ export function MovementsSheet({
         </SheetContent>
       </Sheet>
       <MovementDialog open={adding} onOpenChange={setAdding} investment={investment} />
+      <MovementDialog
+        open={editing != null}
+        onOpenChange={(o) => {
+          if (!o) setEditing(null);
+        }}
+        investment={investment}
+        movement={editing}
+      />
     </>
   );
 }
