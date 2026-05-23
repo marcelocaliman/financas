@@ -2,15 +2,19 @@ import { ArrowRight, Clock } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
-import { KpiCard } from "@/components/ui/kpi-card";
 import { NewRuleButton } from "@/components/redemptions/new-rule-button";
 import { IntentActions } from "@/components/redemptions/intent-actions";
-import { ProjectionPanel } from "@/components/redemptions/projection-panel";
 import { RuleRowActions } from "@/components/redemptions/rule-row-actions";
 import { LiveBalance } from "@/components/redemptions/live-balance";
-import { listAccounts } from "@/services/accounts";
-import { listInvestments, getLatestIndexer } from "@/services/investments";
+import { ResgatesHero } from "@/components/redemptions/resgates-hero";
+import { AssetYieldTable } from "@/components/redemptions/asset-yield-table";
+import { WithdrawSimulator } from "@/components/redemptions/withdraw-simulator";
+import { YearlyTrajectory } from "@/components/redemptions/yearly-trajectory";
+import { FireConnection } from "@/components/redemptions/fire-connection";
+import { listAccounts, getAccountsTotals } from "@/services/accounts";
+import { listInvestments, getPortfolioStats, getCoverage } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
+import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import {
   ensurePendingIntents,
   getNextPending,
@@ -18,30 +22,52 @@ import {
   listRedemptionHistory,
   listYieldRules,
 } from "@/services/redemptions";
+import { getYieldOverview } from "@/services/yield-overview";
+import { getMonthlyHistory } from "@/services/transactions";
 import { formatDateShort, formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 
 export const dynamic = "force-dynamic";
 
 export default async function ResgatesPage() {
-  // Garante que existam intents pendentes para os próximos 3 meses
   await ensurePendingIntents(3);
 
-  const [rules, nextIntent, allPending, history, investments, accounts, selic, live] =
-    await Promise.all([
-      listYieldRules(),
-      getNextPending(),
-      listPendingIntents(),
-      listRedemptionHistory(12),
-      listInvestments(),
-      listAccounts(),
-      getLatestIndexer("selic"),
-      getLivePortfolio(),
-    ]);
+  const [
+    rules,
+    nextIntent,
+    allPending,
+    history,
+    investments,
+    accounts,
+    live,
+    coverage,
+    portfolio,
+    physical,
+    accountsTotals,
+    history6,
+  ] = await Promise.all([
+    listYieldRules(),
+    getNextPending(),
+    listPendingIntents(),
+    listRedemptionHistory(12),
+    listInvestments(),
+    listAccounts(),
+    getLivePortfolio(),
+    getCoverage(),
+    getPortfolioStats(),
+    getPhysicalAssetsTotals(),
+    getAccountsTotals(),
+    getMonthlyHistory(6),
+  ]);
 
-  const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
+  const liveByAssetId = new Map(
+    live.byAsset.map((a) => [
+      a.id,
+      { id: a.id, ticker: a.ticker, baseBalance: a.baseBalance, dailyYield: a.dailyYield },
+    ]),
+  );
   const fromInvestmentId = nextIntent?.rule?.investment?.id ?? null;
-  const fromLive = fromInvestmentId ? liveByAssetId.get(fromInvestmentId) : null;
+  const fromLive = fromInvestmentId ? live.byAsset.find((a) => a.id === fromInvestmentId) : null;
 
   const destinations = accounts
     .filter((a) => a.type !== "investment" && a.type !== "credit_card")
@@ -51,36 +77,50 @@ export default async function ResgatesPage() {
     ticker: i.ticker,
     name: i.name,
   }));
+  const investmentsById = new Map(investments.map((i) => [i.id, i]));
 
-  // ProjectionPanel agora usa TODO o saldo de RF (não apenas um ativo Selic),
-  // alinhado com o jeito "viver da renda" — a carteira de RF inteira é a base.
-  const projectionInitial = live.byClass.fixedIncome.balance;
-  const projectionMonthly = nextIntent ? Number(nextIntent.suggested_amount) : 1500;
-  const selicValue = selic?.value ?? 14.5;
+  // Mapa de regras ativas indexado por investment_id, pra cruzar com a tabela
+  const rulesByInvestmentId = new Map(
+    rules
+      .filter((r) => r.is_active && r.investment?.id)
+      .map((r) => [
+        r.investment!.id,
+        {
+          id: r.id,
+          mode: r.mode,
+          suggested_amount: r.suggested_amount != null ? Number(r.suggested_amount) : null,
+          percentage: r.percentage != null ? Number(r.percentage) : null,
+          day_of_month: r.day_of_month,
+        },
+      ]),
+  );
 
-  // Total mensal estimado de saques + projeção anual
-  const monthlyRedemption = rules
-    .filter((r) => r.is_active && r.mode !== "reinvest")
-    .reduce((s, r) => s + Number(r.suggested_amount ?? 0), 0);
-  const yearlyRedemption = monthlyRedemption * 12;
-  const executedThisYear = history
-    .filter(
-      (h) =>
-        h.status === "executed" &&
-        h.due_date.slice(0, 4) === String(new Date().getUTCFullYear()),
-    )
-    .reduce((s, h) => s + Number(h.executed_amount ?? 0), 0);
+  const yieldOverview = await getYieldOverview(liveByAssetId, rulesByInvestmentId);
+
+  // Renda passiva = renda mensal estimada do portfolio TOTAL (RF + variável)
+  // No /resgates focamos só na RF (que tem rendimento previsível), mas a
+  // cobertura usa o total que de fato gera caixa.
+  const liveMonthlyYield = live.totalDailyYield * 21;
+  const monthlyExpense = coverage.monthlyAverageExpense;
+  const coverageRatio = monthlyExpense > 0 ? liveMonthlyYield / monthlyExpense : 0;
+
+  const netWorth =
+    accountsTotals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+  const monthlySavings =
+    history6.length > 0
+      ? history6.reduce((s, r) => s + Math.max(0, r.net), 0) / history6.length
+      : 0;
 
   return (
     <>
       <PageHeader
-        eyebrow="Renda passiva · saques inteligentes"
+        eyebrow="Renda passiva · viver dos juros"
         title={
           <>
             Tirar renda para <em className="not-italic font-display italic text-navy-700">viver.</em>
           </>
         }
-        subtitle="Configure o saque de cada ativo. O app lembra você mês a mês — você decide o valor exato no momento."
+        subtitle="Tudo em uma página: capacidade de saque agora, rendimento por ativo, simulador, trajetória do ano e regras."
         actions={
           <NewRuleButton investments={investmentLite} destinations={destinations} />
         }
@@ -88,49 +128,28 @@ export default async function ResgatesPage() {
 
       {investments.length === 0 ? (
         <EmptyNoInvestments />
-      ) : rules.length === 0 ? (
-        <EmptyNoRules />
       ) : (
         <>
-          {/* TIER 1 — KPIs macro */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <KpiCard
-              label="Saque mensal estimado"
-              value={monthlyRedemption}
-              tone="positive"
-              hint={`${rules.filter((r) => r.mode !== "reinvest" && r.is_active).length} regra${rules.filter((r) => r.mode !== "reinvest" && r.is_active).length === 1 ? "" : "s"} de saque`}
-            />
-            <KpiCard
-              label="Projeção anual"
-              value={yearlyRedemption}
-              tone="muted"
-              hint="se mantiver o ritmo atual"
-            />
-            <KpiCard
-              label="Já sacado em 2026"
-              value={executedThisYear}
-              tone="neutral"
-            />
-            <KpiCard
-              label="Saques pendentes"
-              textValue={`${allPending.length}`}
-              tone={allPending.length > 0 ? "negative" : "muted"}
-              hint={
-                allPending.length === 0
-                  ? "tudo em dia"
-                  : "aguardando confirmação"
-              }
-            />
-          </div>
+          {/* TIER 0 — Hero: capacidade de saque agora */}
+          <ResgatesHero
+            sacavelAgora={yieldOverview.totals.accumulatedYield}
+            dailyYield={yieldOverview.totals.dailyYield}
+            monthlyYield={yieldOverview.totals.monthlyYield}
+            monthlyExpense={monthlyExpense}
+            coverageRatio={coverageRatio}
+            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
+            isBusinessDayToday={live.isBusinessDayToday}
+          />
 
+          {/* Próximo saque destacado (mantido — usuário precisa agir) */}
           {nextIntent ? <NextRemainder intent={nextIntent} /> : null}
 
-          {/* Lista de todos os pending além do próximo */}
+          {/* Lista de outros pending */}
           {allPending.length > 1 ? (
             <Panel className="mb-6">
               <PanelHeader
                 title="Próximos saques pendentes"
-                meta={`${allPending.length - 1} ${allPending.length - 1 === 1 ? "depois do próximo" : "depois do próximo"}`}
+                meta={`${allPending.length - 1} depois do próximo`}
               />
               <ul className="divide-y divide-border">
                 {allPending.slice(1, 6).map((intent) => (
@@ -162,94 +181,132 @@ export default async function ResgatesPage() {
             </Panel>
           ) : null}
 
-          {nextIntent?.rule?.investment ? (
-            <FlowDiagram
-              fromName={nextIntent.rule.investment.name ?? "Ativo"}
-              fromBalance={Number(nextIntent.rule.investment.current_balance ?? 0)}
-              fromLiveDaily={fromLive?.dailyYield ?? 0}
-              fromLivePerSecond={fromLive?.perSecond ?? 0}
-              toName={
-                nextIntent.rule.destination?.name ?? "Conta de destino"
-              }
-              toInstitution={nextIntent.rule.destination?.institution}
-              monthlyAmount={Number(nextIntent.suggested_amount)}
-            />
-          ) : null}
-
-          <Panel>
+          {/* TIER 1 — Quanto cada ativo gera */}
+          <Panel className="mb-8">
             <PanelHeader
-              title="Regras ativas"
-              meta={`${rules.length} regra${rules.length !== 1 ? "s" : ""}`}
+              title="Quanto cada ativo gera"
+              meta="renda fixa · pode sacar até o valor acumulado sem encolher o principal"
             />
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <Th>Origem</Th>
-                    <Th>Destino</Th>
-                    <Th right>Modo</Th>
-                    <Th right>Dia</Th>
-                    <Th right>Sugerido</Th>
-                    <th className="w-9" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {rules.map((r) => (
-                    <tr
-                      key={r.id}
-                      className="border-b border-border last:border-b-0 group hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors"
-                    >
-                      <td className="py-3 pr-3">
-                        <div className="font-mono text-[13.5px] font-medium">
-                          {r.investment?.ticker ?? "—"}
-                        </div>
-                        <div className="text-[11.5px] text-faint-foreground">
-                          {r.investment?.name ?? ""}
-                        </div>
-                      </td>
-                      <td className="py-3 pr-3 text-[13px]">
-                        {r.destination?.name}
-                        <span className="text-faint-foreground text-[11.5px] ml-1">
-                          · {r.destination?.institution}
-                        </span>
-                      </td>
-                      <td className="text-right">
-                        <Badge tone={r.mode === "reinvest" ? "olive" : "navy"}>
-                          {r.mode === "reinvest"
-                            ? "Reinvestir"
-                            : r.mode === "percentage"
-                              ? `${Math.round(r.percentage ?? 0)}% renda`
-                              : "Valor fixo"}
-                        </Badge>
-                      </td>
-                      <td className="text-right font-mono text-[13px]">
-                        dia {r.day_of_month}
-                      </td>
-                      <td className="text-right font-mono text-[13px] font-medium">
-                        {r.mode === "reinvest" ? "—" : <MoneyMask>{formatMoney(r.suggested_amount ?? 0)}</MoneyMask>}
-                      </td>
-                      <td className="text-right pl-2">
-                        <RuleRowActions
-                          rule={r}
-                          investments={investmentLite}
-                          destinations={destinations}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <AssetYieldTable
+              rows={yieldOverview.rows}
+              investmentsById={investmentsById}
+              destinationAccounts={destinations}
+            />
           </Panel>
 
-          {projectionInitial > 0 ? (
-            <ProjectionPanel
-              initialBalance={projectionInitial}
-              selicAnnualPct={selicValue}
-              initialMonthly={projectionMonthly}
+          {/* TIER 2 + 5 — Simulador + Conexão FIRE lado-a-lado */}
+          <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">
+            <WithdrawSimulator
+              sacavelAgora={yieldOverview.totals.accumulatedYield}
+              principal={yieldOverview.totals.principal}
+              monthlyYield={yieldOverview.totals.monthlyYield}
+              monthlyExpense={monthlyExpense}
             />
-          ) : null}
+            <div className="space-y-4">
+              <FireConnection
+                monthlyPassiveIncome={liveMonthlyYield}
+                monthlyExpense={monthlyExpense}
+                netWorth={netWorth}
+                monthlySavings={monthlySavings}
+              />
+              {nextIntent?.rule?.investment ? (
+                <FlowDiagram
+                  fromName={nextIntent.rule.investment.name ?? "Ativo"}
+                  fromBalance={Number(nextIntent.rule.investment.current_balance ?? 0)}
+                  fromLiveDaily={fromLive?.dailyYield ?? 0}
+                  fromLivePerSecond={fromLive?.perSecond ?? 0}
+                  toName={nextIntent.rule.destination?.name ?? "Conta de destino"}
+                  toInstitution={nextIntent.rule.destination?.institution}
+                  monthlyAmount={Number(nextIntent.suggested_amount)}
+                />
+              ) : null}
+            </div>
+          </div>
 
+          {/* TIER 4 — Trajetória do ano */}
+          <div className="mb-8">
+            <YearlyTrajectory
+              year={yieldOverview.yearly.year}
+              months={yieldOverview.yearly.months}
+              executedYTD={yieldOverview.yearly.executedYTD}
+              pendingRestOfYear={yieldOverview.yearly.pendingRestOfYear}
+              projectedFullYear={yieldOverview.yearly.projectedFullYear}
+              monthlyYieldEstimate={yieldOverview.totals.monthlyYield}
+            />
+          </div>
+
+          {/* Regras ativas — operacional, mantém embaixo */}
+          {rules.length > 0 ? (
+            <Panel className="mb-8">
+              <PanelHeader
+                title="Regras de saque"
+                meta={`${rules.length} regra${rules.length !== 1 ? "s" : ""} configurada${rules.length !== 1 ? "s" : ""}`}
+              />
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <Th>Origem</Th>
+                      <Th>Destino</Th>
+                      <Th right>Modo</Th>
+                      <Th right>Dia</Th>
+                      <Th right>Sugerido</Th>
+                      <th className="w-9" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rules.map((r) => (
+                      <tr
+                        key={r.id}
+                        className="border-b border-border last:border-b-0 group hover:bg-bone-100/40 dark:hover:bg-ink-800/40 transition-colors"
+                      >
+                        <td className="py-3 pr-3">
+                          <div className="font-mono text-[13.5px] font-medium">
+                            {r.investment?.ticker ?? "—"}
+                          </div>
+                          <div className="text-[11.5px] text-faint-foreground">
+                            {r.investment?.name ?? ""}
+                          </div>
+                        </td>
+                        <td className="py-3 pr-3 text-[13px]">
+                          {r.destination?.name}
+                          <span className="text-faint-foreground text-[11.5px] ml-1">
+                            · {r.destination?.institution}
+                          </span>
+                        </td>
+                        <td className="text-right">
+                          <Badge tone={r.mode === "reinvest" ? "olive" : "navy"}>
+                            {r.mode === "reinvest"
+                              ? "Reinvestir"
+                              : r.mode === "percentage"
+                                ? `${Math.round(r.percentage ?? 0)}% renda`
+                                : "Valor fixo"}
+                          </Badge>
+                        </td>
+                        <td className="text-right font-mono text-[13px]">
+                          dia {r.day_of_month}
+                        </td>
+                        <td className="text-right font-mono text-[13px] font-medium">
+                          {r.mode === "reinvest" ? "—" : <MoneyMask>{formatMoney(r.suggested_amount ?? 0)}</MoneyMask>}
+                        </td>
+                        <td className="text-right pl-2">
+                          <RuleRowActions
+                            rule={r}
+                            investments={investmentLite}
+                            destinations={destinations}
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Panel>
+          ) : (
+            <EmptyNoRules />
+          )}
+
+          {/* Histórico */}
           <div className="mt-7">
             <h2 className="font-display italic text-[18px] tracking-[-0.02em] mb-3 font-normal">
               Histórico de saques
@@ -375,48 +432,44 @@ function FlowDiagram({
   monthlyAmount: number;
 }) {
   return (
-    <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-7 items-center mb-7">
-      <div
-        className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] !border-l-navy-800"
-      >
-        <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1.5 font-medium flex items-center gap-1.5">
-          {fromLiveDaily > 0 ? (
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+    <div className="rounded-[var(--radius-lg)] bg-surface border border-border p-5">
+      <div className="font-mono text-[10.5px] tracking-[0.14em] uppercase text-faint-foreground font-medium mb-3">
+        Próximo saque · fluxo
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center text-[12px]">
+        <div className="min-w-0">
+          <div className="font-medium text-foreground truncate inline-flex items-center gap-1.5">
+            {fromLiveDaily > 0 ? (
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
+            ) : null}
+            {fromName}
+          </div>
+          <div className="font-mono text-[14px] tracking-[-0.01em] text-foreground mt-1">
+            {fromLiveDaily > 0 ? (
+              <LiveBalance
+                baseBalance={fromBalance}
+                dailyYield={fromLiveDaily}
+                perSecond={fromLivePerSecond}
+              />
+            ) : (
+              <MoneyMask>{formatMoney(fromBalance)}</MoneyMask>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-muted-foreground">
+          <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+          <div className="font-mono text-[10px] text-olive-700 dark:text-olive-500 font-medium whitespace-nowrap">
+            <MoneyMask>{formatMoney(monthlyAmount)}</MoneyMask>
+          </div>
+        </div>
+        <div className="min-w-0 text-right">
+          <div className="font-medium text-foreground truncate">{toName}</div>
+          {toInstitution ? (
+            <div className="font-mono text-[10.5px] text-faint-foreground mt-1">
+              {toInstitution}
+            </div>
           ) : null}
-          Origem
         </div>
-        <div className="font-display text-[19px] tracking-[-0.015em] mb-3">{fromName}</div>
-        <div className="font-mono text-[22px] tracking-[-0.02em] text-foreground">
-          {fromLiveDaily > 0 ? (
-            <LiveBalance
-              baseBalance={fromBalance}
-              dailyYield={fromLiveDaily}
-              perSecond={fromLivePerSecond}
-            />
-          ) : (
-            <MoneyMask>{formatMoney(fromBalance)}</MoneyMask>
-          )}
-        </div>
-        <div className="text-[12.5px] text-muted-foreground mt-1">
-          {fromLiveDaily > 0 ? "saldo respirando ao vivo" : "Saldo atual"}
-        </div>
-      </div>
-      <div className="flex flex-col items-center gap-2 text-muted-foreground py-4">
-        <ArrowRight className="w-7 h-7" strokeWidth={1.4} />
-        <div className="font-mono text-[12px] text-olive-700 dark:text-olive-500 font-medium whitespace-nowrap">
-          <MoneyMask>{formatMoney(monthlyAmount)}</MoneyMask>/mês
-        </div>
-      </div>
-      <div className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-6 border-l-[3px] !border-l-olive-600">
-        <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground mb-1.5 font-medium">
-          Destino
-        </div>
-        <div className="font-display text-[19px] tracking-[-0.015em] mb-3">{toName}</div>
-        {toInstitution ? (
-          <div className="text-[12.5px] text-muted-foreground mt-1">{toInstitution}</div>
-        ) : (
-          <div className="text-[12.5px] text-muted-foreground mt-1">Conta corrente</div>
-        )}
       </div>
     </div>
   );
@@ -452,8 +505,8 @@ function EmptyNoRules() {
           Configure o primeiro <em className="italic">saque mensal</em>.
         </h2>
         <p className="text-[14px] text-muted-foreground mt-2.5 leading-relaxed">
-          Escolha de qual ativo quer sacar, para onde vai o dinheiro, e em que dia. O app cuida do
-          lembrete — você decide o valor na hora.
+          Use a tabela acima — botão &ldquo;Sacar&rdquo; pra um saque pontual, ou crie uma regra recorrente
+          pelo botão &ldquo;Nova regra&rdquo; no topo. O app cuida do lembrete; você decide o valor na hora.
         </p>
       </div>
     </Panel>
