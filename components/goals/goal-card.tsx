@@ -6,6 +6,7 @@ import {
   Archive,
   Trash2,
   Plus,
+  Minus,
   TrendingUp,
   Clock,
   CheckCircle2,
@@ -49,6 +50,7 @@ export function GoalCard({
 }) {
   const [editing, setEditing] = useState(false);
   const [contributing, setContributing] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
   const { displayCurrency, rates } = useMoneyContext();
@@ -57,6 +59,14 @@ export function GoalCard({
   const target = Number(goal.target_amount);
   const pct = target > 0 ? Math.min(1, current / target) : 0;
   const remaining = Math.max(0, target - current);
+
+  // Contas vinculadas como fonte (usadas como destino no Aportar e origem no Retirar)
+  const linkedAccountOptions = goal.sourcesResolved
+    .filter((r) => r.source.source_type === "account" && r.source.source_id)
+    .map((r) => ({
+      accountId: r.source.source_id as string,
+      label: `${r.label} (fonte vinculada)`,
+    }));
 
   // Aporte efetivo planejado para esta meta (em moeda da meta)
   const plannedMonthlyInGoal = computePlannedMonthly(goal, averageMonthlyAddition, displayCurrency, rates);
@@ -151,6 +161,18 @@ export function GoalCard({
               <Plus className="w-3 h-3" strokeWidth={2} />
               Aportar
             </Button>
+            {current > 0 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setWithdrawing(true)}
+                disabled={pending}
+                className="border-rust-600/40 text-rust-600 hover:bg-rust-600/10"
+              >
+                <Minus className="w-3 h-3" strokeWidth={2} />
+                Retirar
+              </Button>
+            ) : null}
             <Button size="icon" variant="ghost" onClick={() => setEditing(true)} aria-label="Editar">
               <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
             </Button>
@@ -287,13 +309,20 @@ export function GoalCard({
         goalId={goal.id}
         goalName={goal.name}
         goalCurrency={goal.currency}
+        mode="deposit"
         accounts={accounts}
-        destinationAccounts={goal.sourcesResolved
-          .filter((r) => r.source.source_type === "account" && r.source.source_id)
-          .map((r) => ({
-            accountId: r.source.source_id as string,
-            label: `${r.label} (fonte vinculada)`,
-          }))}
+        linkedAccounts={linkedAccountOptions}
+      />
+      <ContributeDialog
+        open={withdrawing}
+        onOpenChange={setWithdrawing}
+        goalId={goal.id}
+        goalName={goal.name}
+        goalCurrency={goal.currency}
+        mode="withdraw"
+        accounts={accounts}
+        linkedAccounts={linkedAccountOptions}
+        maxWithdrawable={current}
       />
     </>
   );

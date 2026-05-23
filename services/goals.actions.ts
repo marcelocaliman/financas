@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { listGoalsEnriched } from "@/services/goals";
 import type { GoalSourceType } from "@/types/database";
 
 const GOAL_TYPES = [
@@ -303,6 +304,97 @@ export async function recordGoalContribution(
     p_bump_current: bumpCurrent,
   });
   if (error) return { error: error.message };
+  revalidatePath("/metas");
+  revalidatePath("/dashboard");
+  revalidatePath("/contas");
+  revalidatePath("/transacoes");
+  return { ok: true };
+}
+
+/**
+ * Retira (saca) dinheiro de uma meta — operação simétrica ao aporte.
+ *
+ * Modos:
+ *  1. Simbólico (sem fromAccountId): decrementa current_amount + grava
+ *     contribuição com valor NEGATIVO no histórico. Pra metas sem fonte
+ *     vinculada.
+ *  2. Transferência real (from + to): cria transferência via create_transfer
+ *     da conta vinculada (fonte da meta) → conta destino escolhida pelo
+ *     usuário. O earmark cai naturalmente pelo saldo da fonte. Linka à
+ *     transação 'out' pra rastrear.
+ *
+ * Validações:
+ *  - amount > 0 (UI passa o valor absoluto)
+ *  - amount ≤ derivedCurrent (não permite saldo negativo na meta)
+ *  - se transferência: fromAccountId ≠ toAccountId
+ */
+export async function recordGoalWithdrawal(
+  goalId: string,
+  amount: number,
+  opts?: {
+    date?: string;
+    notes?: string;
+    fromAccountId?: string;
+    toAccountId?: string;
+  },
+): Promise<{ ok?: boolean; error?: string }> {
+  if (amount <= 0) return { error: "Valor deve ser positivo." };
+
+  // Defesa server-side: nunca permite retirar mais do que a meta tem
+  const enriched = await listGoalsEnriched({ includeArchived: true });
+  const goal = enriched.find((g) => g.id === goalId);
+  if (!goal) return { error: "Meta não encontrada." };
+  if (amount > goal.derivedCurrent + 0.005) {
+    return {
+      error: `Valor maior que o saldo da meta (${goal.derivedCurrent.toFixed(2)}).`,
+    };
+  }
+
+  const supabase = await createClient();
+  const date = opts?.date ?? new Date().toISOString().slice(0, 10);
+  let transactionId: string | null = null;
+  let bumpCurrent = true;
+  let sourceLabel = "manual";
+
+  // Modo transferência: from = fonte vinculada da meta, to = conta escolhida
+  if (opts?.fromAccountId && opts?.toAccountId && opts.fromAccountId !== opts.toAccountId) {
+    const { data: pairId, error: tErr } = await supabase.rpc("create_transfer", {
+      p_from_account_id: opts.fromAccountId,
+      p_to_account_id: opts.toAccountId,
+      p_amount: amount,
+      p_date: date,
+      p_description: opts.notes?.trim() || "Retirada de meta",
+    });
+    if (tErr) return { error: tErr.message };
+
+    if (pairId) {
+      const { data: txOut } = await supabase
+        .from("transactions")
+        .select("id")
+        .eq("transfer_pair_id", pairId)
+        .eq("transfer_direction", "out")
+        .maybeSingle();
+      if (txOut?.id) transactionId = txOut.id;
+    }
+    // Earmark já cai pelo saldo da conta — não decrementa current_amount
+    bumpCurrent = false;
+    sourceLabel = "transfer";
+  } else if (opts?.fromAccountId && !opts?.toAccountId) {
+    return { error: "Conta de destino obrigatória pra transferir." };
+  }
+
+  // Registra como contribuição NEGATIVA
+  const { error } = await supabase.rpc("record_goal_contribution", {
+    p_goal_id: goalId,
+    p_amount: -amount,
+    p_date: date,
+    p_source: sourceLabel,
+    p_notes: opts?.notes ?? null,
+    p_transaction_id: transactionId,
+    p_bump_current: bumpCurrent,
+  });
+  if (error) return { error: error.message };
+
   revalidatePath("/metas");
   revalidatePath("/dashboard");
   revalidatePath("/contas");
