@@ -25,7 +25,7 @@ import {
 import type { Goal, EnrichedGoal } from "@/services/goals";
 import type { Currency, GoalAllocationMode, GoalSourceType, GoalType } from "@/types/database";
 import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
-import { computeFinancing } from "@/lib/financial/mortgage";
+import { computeFinancing, getFinancingDefaults } from "@/lib/financial/mortgage";
 import { formatMoney } from "@/lib/utils/format";
 import { GOAL_TYPE_ICONS, GOAL_TYPE_LABELS, GOAL_TYPE_DESCRIPTIONS } from "./goal-icons";
 
@@ -101,6 +101,9 @@ export function GoalSheet({
   );
   // Financiamento (opcional) — quando ON, target_amount é recalculado
   // automaticamente como propertyPrice × (downPct + closingPct).
+  // Defaults dependem da moeda: BRL→Caixa SBPE (SAC, 5% custos),
+  // EUR→Itália (Price, 10% custos), USD→genérico (Price, 4% custos).
+  const initialDefaults = getFinancingDefaults(goal?.currency ?? "BRL");
   const [isFinanced, setIsFinanced] = useState<boolean>(
     goal?.property_price != null,
   );
@@ -108,19 +111,23 @@ export function GoalSheet({
     Number(goal?.property_price ?? 0),
   );
   const [downPct, setDownPct] = useState<number>(
-    Number(goal?.property_down_pct ?? 0.2),
+    Number(goal?.property_down_pct ?? initialDefaults.downPct),
   );
   const [closingPct, setClosingPct] = useState<number>(
-    Number(goal?.property_closing_pct ?? 0.05),
+    Number(goal?.property_closing_pct ?? initialDefaults.closingPct),
   );
   const [loanTermMonths, setLoanTermMonths] = useState<string>(
-    goal?.loan_term_months ? String(goal.loan_term_months) : "360",
+    goal?.loan_term_months
+      ? String(goal.loan_term_months)
+      : String(initialDefaults.loanTermMonths),
   );
   const [loanAnnualRatePct, setLoanAnnualRatePct] = useState<string>(
-    goal?.loan_annual_rate_pct ? String(goal.loan_annual_rate_pct) : "11.5",
+    goal?.loan_annual_rate_pct
+      ? String(goal.loan_annual_rate_pct)
+      : String(initialDefaults.loanAnnualRatePct),
   );
   const [loanSystem, setLoanSystem] = useState<"sac" | "price">(
-    (goal?.loan_system as "sac" | "price") ?? "sac",
+    (goal?.loan_system as "sac" | "price") ?? initialDefaults.loanSystem,
   );
   const [sources, setSources] = useState<SourceDraft[]>(() =>
     enriched
@@ -152,15 +159,20 @@ export function GoalSheet({
       setContributionDay(goal?.contribution_day ? String(goal.contribution_day) : "");
       setTrackingStartsAt(goal?.tracking_starts_at ?? "");
       setPriority(goal?.priority ? String(goal.priority) : "100");
+      const d = getFinancingDefaults(goal?.currency ?? "BRL");
       setIsFinanced(goal?.property_price != null);
       setPropertyPrice(Number(goal?.property_price ?? 0));
-      setDownPct(Number(goal?.property_down_pct ?? 0.2));
-      setClosingPct(Number(goal?.property_closing_pct ?? 0.05));
-      setLoanTermMonths(goal?.loan_term_months ? String(goal.loan_term_months) : "360");
-      setLoanAnnualRatePct(
-        goal?.loan_annual_rate_pct ? String(goal.loan_annual_rate_pct) : "11.5",
+      setDownPct(Number(goal?.property_down_pct ?? d.downPct));
+      setClosingPct(Number(goal?.property_closing_pct ?? d.closingPct));
+      setLoanTermMonths(
+        goal?.loan_term_months ? String(goal.loan_term_months) : String(d.loanTermMonths),
       );
-      setLoanSystem((goal?.loan_system as "sac" | "price") ?? "sac");
+      setLoanAnnualRatePct(
+        goal?.loan_annual_rate_pct
+          ? String(goal.loan_annual_rate_pct)
+          : String(d.loanAnnualRatePct),
+      );
+      setLoanSystem((goal?.loan_system as "sac" | "price") ?? d.loanSystem);
       setSources(
         enriched
           ? enriched.sources.map((s) => ({
@@ -207,6 +219,20 @@ export function GoalSheet({
   const updateSource = (id: string, patch: Partial<SourceDraft>) => {
     setSources((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   };
+
+  // Quando o usuário troca a moeda da meta, aplica os defaults regionais
+  // (BR/IT/US) — mas APENAS se o financiamento ainda não foi ligado, pra
+  // não sobrescrever valores que o usuário já customizou.
+  useEffect(() => {
+    if (isFinanced) return;
+    const d = getFinancingDefaults(currency);
+    setDownPct(d.downPct);
+    setClosingPct(d.closingPct);
+    setLoanTermMonths(String(d.loanTermMonths));
+    setLoanAnnualRatePct(String(d.loanAnnualRatePct));
+    setLoanSystem(d.loanSystem);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currency]);
 
   // Breakdown do financiamento (calculado em real-time quando isFinanced=true)
   const financing = isFinanced
@@ -381,7 +407,11 @@ export function GoalSheet({
                     Vai financiar?
                   </div>
                   <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
-                    Recalcula o target pra entrada + custos e mostra parcela estimada.
+                    {currency === "EUR"
+                      ? "Defaults aplicados pra Itália (mutuo casa · tasso fisso, ~3.5% a.a., 20 anos)."
+                      : currency === "USD"
+                        ? "Defaults aplicados pra EUA (fixed-rate mortgage, ~7% a.a., 30 anos)."
+                        : "Defaults aplicados pra Brasil (Caixa SBPE · SAC, ~11.5% a.a., 30 anos)."}
                   </div>
                 </div>
                 <input
@@ -417,7 +447,17 @@ export function GoalSheet({
                       />
                       <input type="hidden" name="propertyDownPct" value={downPct} />
                     </Field>
-                    <Field label="Custos cartório/ITBI (%)" htmlFor="propertyClosingPctInput" hint={`${formatMoney(financing.closingCosts, currency)}`}>
+                    <Field
+                      label={
+                        currency === "EUR"
+                          ? "Notaio + impostas (%)"
+                          : currency === "USD"
+                            ? "Closing costs (%)"
+                            : "Custos cartório/ITBI (%)"
+                      }
+                      htmlFor="propertyClosingPctInput"
+                      hint={`${formatMoney(financing.closingCosts, currency)}`}
+                    >
                       <Input
                         id="propertyClosingPctInput"
                         type="number"
@@ -443,14 +483,14 @@ export function GoalSheet({
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Prazo (meses)" htmlFor="loanTermMonths" hint={`${Math.round(Number(loanTermMonths) / 12)} anos`}>
+                    <Field label="Prazo (meses)" htmlFor="loanTermMonths" hint={`${Math.round(Number(loanTermMonths) / 12)} anos · ex: 240, 360`}>
                       <Input
                         id="loanTermMonths"
                         name="loanTermMonths"
                         type="number"
                         min={1}
                         max={600}
-                        step={12}
+                        step={1}
                         value={loanTermMonths}
                         onChange={(e) => setLoanTermMonths(e.target.value)}
                       />
@@ -469,7 +509,17 @@ export function GoalSheet({
                     </Field>
                   </div>
 
-                  <Field label="Sistema de amortização" htmlFor="loanSystem">
+                  <Field
+                    label="Sistema de amortização"
+                    htmlFor="loanSystem"
+                    hint={
+                      currency === "EUR"
+                        ? "Itália: tasso fisso = Price/Francês (padrão absoluto)"
+                        : currency === "USD"
+                          ? "Fixed-rate mortgage = Price (padrão americano)"
+                          : "Brasil habitacional: SAC é padrão da Caixa"
+                    }
+                  >
                     <Select
                       value={loanSystem}
                       onValueChange={(v) => setLoanSystem(v as "sac" | "price")}
@@ -479,12 +529,26 @@ export function GoalSheet({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sac">
-                          SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente (padrão Caixa)</span>
-                        </SelectItem>
-                        <SelectItem value="price">
-                          Price <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
-                        </SelectItem>
+                        {/* Ordem dos itens depende da moeda — o padrão regional vem primeiro */}
+                        {currency === "BRL" ? (
+                          <>
+                            <SelectItem value="sac">
+                              SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente</span>
+                            </SelectItem>
+                            <SelectItem value="price">
+                              Price (Francês) <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                            </SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="price">
+                              Price (Francês) <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela constante</span>
+                            </SelectItem>
+                            <SelectItem value="sac">
+                              SAC <span className="text-faint-foreground ml-1.5 text-[11.5px]">· parcela decrescente (raro fora do Brasil)</span>
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </Field>

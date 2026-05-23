@@ -156,3 +156,63 @@ export function classifyAffordability(
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+// ============================================================================
+// Defaults regionais por moeda
+// ============================================================================
+// Valores típicos do mercado em cada região. Usados como sugestão inicial
+// quando o usuário liga o toggle de financiamento — pode sobrescrever tudo.
+//
+// BRL (Brasil — habitacional Caixa SBPE):
+//   - Entrada 20%, custos 5% (ITBI ~3% + escritura/cartório ~1.5%)
+//   - 30 anos = 360m, ~11.5% a.a. (varia: TR+8-12%, IPCA+5-7%)
+//   - SAC é o padrão da Caixa pra habitacional
+//
+// EUR (Itália — mutuo casa):
+//   - Entrada 20%, custos ~10% (notaio ~2%, imposta registro 2-9% s/ valor
+//     catastrale, imposta sostitutiva 0.25%, IVA 4-10% se nuova, perícia, etc)
+//   - 20 anos = 240m, ~3.5% a.a. tasso fisso (médio Italia 2024)
+//   - "Tasso fisso" é sempre amortização Francês (= Price), padrão absoluto
+//
+// USD (genérico — fixed-rate mortgage):
+//   - Entrada 20%, custos ~4%
+//   - 30 anos = 360m, ~7% a.a.
+//   - Fixed-rate mortgage = Price
+// ============================================================================
+
+export type FinancingDefaults = {
+  downPct: number;
+  closingPct: number;
+  loanTermMonths: number;
+  loanAnnualRatePct: number;
+  loanSystem: LoanSystem;
+};
+
+export function getFinancingDefaults(currency: "BRL" | "EUR" | "USD"): FinancingDefaults {
+  if (currency === "EUR") {
+    return {
+      downPct: 0.20,
+      closingPct: 0.10,
+      loanTermMonths: 240,
+      loanAnnualRatePct: 3.5,
+      loanSystem: "price",
+    };
+  }
+  if (currency === "USD") {
+    return {
+      downPct: 0.20,
+      closingPct: 0.04,
+      loanTermMonths: 360,
+      loanAnnualRatePct: 7.0,
+      loanSystem: "price",
+    };
+  }
+  // BRL
+  return {
+    downPct: 0.20,
+    closingPct: 0.05,
+    loanTermMonths: 360,
+    loanAnnualRatePct: 11.5,
+    loanSystem: "sac",
+  };
+}
