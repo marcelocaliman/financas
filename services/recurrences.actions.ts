@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
-import type { RecurrenceFrequency } from "@/types/database";
+import type { RecurrenceFrequency, IRDeductibleKind } from "@/types/database";
 
 const KINDS = ["income", "expense", "transfer"] as const;
 const CURRENCIES = ["BRL", "EUR", "USD"] as const;
@@ -137,7 +137,7 @@ export async function createRecurringRule(
     end_date: parsed.data.endDate ?? null,
     notes: parsed.data.notes?.trim() ?? null,
     tags: parsed.data.isSubscription ? ["subscription"] : [],
-    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
     is_tax_deductible: parsed.data.isTaxDeductible ?? false,
     created_by: ctx.profile.id,
   });
@@ -199,7 +199,7 @@ export async function updateRecurringRule(
       end_date: parsed.data.endDate ?? null,
       notes: parsed.data.notes?.trim() ?? null,
       tags: newTags,
-      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
       is_tax_deductible: parsed.data.isTaxDeductible ?? false,
     })
     .eq("id", parsed.data.id);

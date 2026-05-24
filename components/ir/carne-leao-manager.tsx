@@ -43,7 +43,7 @@ export function CarneLeaoManager({
   const [gross, setGross] = useState(0);
   const [deductible, setDeductible] = useState(0);
   const [state, action, pending] = useActionState<IRFormState | undefined, FormData>(
-    createCarneLeao as never,
+    createCarneLeao,
     undefined,
   );
   const [opPending, startOp] = useTransition();

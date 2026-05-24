@@ -201,7 +201,7 @@ const CRYPTO_TAX_BRACKETS = [
   { upTo: Infinity, rate: 0.225 },
 ];
 
-function calcCryptoTax(profit: number): { rate: number; tax: number } {
+export function calcCryptoTax(profit: number): { rate: number; tax: number } {
   let remaining = profit;
   let tax = 0;
   let lastUsedRate = 0;

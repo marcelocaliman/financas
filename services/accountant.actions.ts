@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUserContext } from "@/services/auth";
 import { getCurrentAccountantContext } from "@/services/accountant-auth";
 import { DPA_TERMS_HASH } from "@/services/accountant-dpa";
-import { sendEmail, tmplAccountantInvite } from "@/services/email";
+import { queueEmail, tmplAccountantInvite } from "@/services/email";
 
 export type AccountantFormState = {
   ok?: boolean;
@@ -112,7 +112,7 @@ export async function createAccountantInvite(
     years: parsed.data.years_allowed,
     expiresAt: exp.toISOString(),
   });
-  await sendEmail({
+  await queueEmail({
     to: email,
     subject: tmpl.subject,
     body: tmpl.body,

@@ -24,6 +24,41 @@ export type EmailPayload = {
   metadata?: Record<string, unknown>;
 };
 
+/**
+ * Enfileira email no log com status='queued'. Não envia agora.
+ * O cron job `/api/cron/send-pending-emails` processa em background.
+ *
+ * Caller deve usar SEMPRE este por padrão — UX rápida, sem await blocking
+ * de 200-500ms do Resend.
+ */
+export async function queueEmail(p: EmailPayload): Promise<void> {
+  const admin = createAdminClient();
+  // Conserva também body+html via metadata pra o cron poder enviar depois
+  // sem precisar recomputar template.
+  const metadata = {
+    ...(p.metadata ?? {}),
+    body: p.body, // o cron usa este campo pra render HTML
+  } as Json;
+
+  await admin.from("email_notifications_log").insert({
+    recipient_email: p.to,
+    recipient_user_id: p.recipientUserId ?? null,
+    notification_type: p.notificationType,
+    subject: p.subject,
+    status: "queued",
+    related_household_id: p.relatedHouseholdId ?? null,
+    related_entity_id: p.relatedEntityId ?? null,
+    metadata,
+    error_message: null,
+    sent_at: null,
+  });
+}
+
+/**
+ * Envia imediato (síncrono) — usar APENAS quando o caller quer confirmar
+ * entrega antes de retornar (ex.: confirmação de senha via email).
+ * Pra outros casos use queueEmail.
+ */
 export async function sendEmail(p: EmailPayload): Promise<{ ok: boolean; error?: string }> {
   const admin = createAdminClient();
   const apiKey = process.env.RESEND_API_KEY;
@@ -76,6 +111,102 @@ export async function sendEmail(p: EmailPayload): Promise<{ ok: boolean; error?:
   });
 
   return { ok: status !== "failed", error: errorMessage ?? undefined };
+}
+
+/**
+ * Drena a fila — processa até `limit` emails com status='queued' e envia
+ * via Resend. Chamado pelo cron `/api/cron/send-pending-emails`.
+ *
+ * Idempotente: marca cada email pra "sent" ou "failed" individualmente.
+ * Faiilhas viram retry no próximo ciclo (status volta pra queued se < 5
+ * tentativas via metadata.attempts).
+ */
+export async function drainEmailQueue(limit = 50): Promise<{
+  attempted: number;
+  sent: number;
+  failed: number;
+  skippedNoApiKey: boolean;
+}> {
+  const admin = createAdminClient();
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return { attempted: 0, sent: 0, failed: 0, skippedNoApiKey: true };
+  }
+
+  const fromEmail =
+    process.env.EMAIL_FROM ?? "Finanças <no-reply@financas.example.com>";
+
+  const { data: pending } = await admin
+    .from("email_notifications_log")
+    .select("id, recipient_email, subject, metadata")
+    .eq("status", "queued")
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  let sent = 0;
+  let failed = 0;
+  for (const e of pending ?? []) {
+    const meta = (e.metadata ?? {}) as { body?: string; attempts?: number };
+    const body = meta.body ?? "(corpo do email vazio — verificar template)";
+    const attempts = (meta.attempts ?? 0) + 1;
+
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: e.recipient_email,
+          subject: e.subject ?? "(sem assunto)",
+          html: body,
+        }),
+      });
+      if (res.ok) {
+        await admin
+          .from("email_notifications_log")
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            metadata: { ...meta, attempts },
+          })
+          .eq("id", e.id);
+        sent++;
+      } else {
+        const errText = await res.text();
+        // Se < 5 tentativas, deixa em queued pra retry. Senão marca failed.
+        await admin
+          .from("email_notifications_log")
+          .update({
+            status: attempts >= 5 ? "failed" : "queued",
+            error_message: errText,
+            metadata: { ...meta, attempts },
+          })
+          .eq("id", e.id);
+        failed++;
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      await admin
+        .from("email_notifications_log")
+        .update({
+          status: attempts >= 5 ? "failed" : "queued",
+          error_message: msg,
+          metadata: { ...meta, attempts },
+        })
+        .eq("id", e.id);
+      failed++;
+    }
+  }
+
+  return {
+    attempted: (pending ?? []).length,
+    sent,
+    failed,
+    skippedNoApiKey: false,
+  };
 }
 
 // ============================================================================

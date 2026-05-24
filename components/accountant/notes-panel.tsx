@@ -17,6 +17,10 @@ import {
 } from "@/services/accountant-notes.actions";
 import type { Tables, AccountantNoteSection } from "@/types/database";
 
+export type AccountantNoteWithAuthor = Tables<"accountant_notes"> & {
+  accountant?: { full_name: string } | null;
+};
+
 const SECTION_LABELS: Record<AccountantNoteSection, string> = {
   bens: "Bens e Direitos",
   rendimentos: "Rendimentos",
@@ -34,9 +38,7 @@ export function NotesPanel({
 }: {
   householdId: string;
   year: number;
-  notes: (Tables<"accountant_notes"> & {
-    accountant?: { full_name: string } | null;
-  })[];
+  notes: AccountantNoteWithAuthor[];
   /** Se true, contador (pode criar/deletar). Senão, titular (só lê + resolve) */
   isAccountant: boolean;
 }) {

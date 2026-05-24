@@ -266,14 +266,19 @@ export const KNOWN_BANK_CNPJS: Record<string, string> = {
 };
 
 /**
- * Tenta achar CNPJ pelo nome da instituição. Match case-insensitive
- * e substring (ex.: "Banco Itaú S.A." casa com "Itaú").
+ * Tenta achar CNPJ pelo nome da instituição. Match case-insensitive +
+ * accent-insensitive + substring (ex.: "Banco Itaú S.A." casa com "Itaú",
+ * "ITAU UNIBANCO" casa com "Itaú").
  */
+function stripAccents(s: string): string {
+  return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
 export function lookupBankCNPJ(institution: string): string | null {
   if (!institution) return null;
-  const norm = institution.toLowerCase();
+  const norm = stripAccents(institution).toLowerCase();
   for (const [name, cnpj] of Object.entries(KNOWN_BANK_CNPJS)) {
-    if (norm.includes(name.toLowerCase())) return cnpj;
+    if (norm.includes(stripAccents(name).toLowerCase())) return cnpj;
   }
   return null;
 }

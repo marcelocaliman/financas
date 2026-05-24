@@ -70,7 +70,7 @@ export type ImpostoResult = {
   savings: number; // diferença entre o pior e o melhor modelo
 };
 
-function calcProgressiveTax(base: number): number {
+export function calcProgressiveTax(base: number): number {
   for (const b of TAX_BRACKETS) {
     if (base <= b.upTo) {
       return Math.max(0, base * b.rate - b.deduct);

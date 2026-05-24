@@ -21,7 +21,8 @@ import { RendaVariavelTable } from "@/components/ir/renda-variavel-table";
 import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { AccountantExportActions } from "@/components/accountant/export-actions";
 import { YearSwitcher } from "@/components/accountant/year-switcher";
-import { NotesPanel } from "@/components/accountant/notes-panel";
+import { NotesPanel, type AccountantNoteWithAuthor } from "@/components/accountant/notes-panel";
+import { NotesRealtimeSync } from "@/components/accountant/notes-realtime";
 import { listCarneLeao } from "@/services/ir/carne-leao";
 import { getExteriorReport, getCryptoReport } from "@/services/ir/exterior-crypto";
 
@@ -150,11 +151,13 @@ export default async function ContadorIRYearPage({
         </p>
       </Panel>
 
+      <NotesRealtimeSync />
+
       {/* Anotações do contador */}
       <NotesPanel
         householdId={householdId}
         year={year}
-        notes={(notes ?? []) as never}
+        notes={(notes ?? []) as unknown as AccountantNoteWithAuthor[]}
         isAccountant={true}
       />
 

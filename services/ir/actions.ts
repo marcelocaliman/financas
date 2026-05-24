@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { getBensReport } from "@/services/ir/bens";
 import { getRendaVariavelReport, persistDarfs } from "@/services/ir/renda-variavel";
+import type { IRDeductibleKind, IROtherIncomeCategory, Json } from "@/types/database";
 import {
   findDeductibleCandidates,
   importDeductiblesBatch,
@@ -164,7 +165,7 @@ export async function createDeductiblePayment(
   const { error } = await supabase.from("ir_deductible_payments").insert({
     household_id: ctx.household.id,
     year: parsed.data.year,
-    kind: parsed.data.kind as never,
+    kind: parsed.data.kind as IRDeductibleKind,
     description: parsed.data.description.trim(),
     recipient_name: parsed.data.recipient_name.trim(),
     recipient_cnpj_cpf: parsed.data.recipient_cnpj_cpf?.replace(/\D/g, "") || null,
@@ -230,7 +231,7 @@ export async function createOtherIncome(
   const { error } = await supabase.from("ir_other_incomes").insert({
     household_id: ctx.household.id,
     year: parsed.data.year,
-    category: parsed.data.category as never,
+    category: parsed.data.category as IROtherIncomeCategory,
     description: parsed.data.description.trim(),
     source_name: parsed.data.source_name.trim(),
     source_cnpj_cpf: parsed.data.source_cnpj_cpf?.replace(/\D/g, "") || null,
@@ -327,7 +328,7 @@ export async function setCategoryDeductibleKind(args: {
   const supabase = await createClient();
   const { error } = await supabase
     .from("categories")
-    .update({ ir_deductible_kind: args.kind as never })
+    .update({ ir_deductible_kind: args.kind as IRDeductibleKind | null })
     .eq("id", args.categoryId);
   if (error) return { error: error.message };
   revalidatePath("/ir");
@@ -357,8 +358,8 @@ export async function closeYearDeclaration(year: number): Promise<IRFormState> {
     {
       household_id: ctx.household.id,
       year,
-      bens: flatBens as never,
-      totals: bens.totals as never,
+      bens: flatBens as unknown as Json,
+      totals: bens.totals as unknown as Json,
       closed_at: new Date().toISOString(),
     },
     { onConflict: "household_id,year" },

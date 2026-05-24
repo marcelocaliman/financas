@@ -21,7 +21,8 @@ import { CloseYearButton } from "@/components/ir/close-year-button";
 import { CarneLeaoManager } from "@/components/ir/carne-leao-manager";
 import { listCarneLeao } from "@/services/ir/carne-leao";
 import { getExteriorReport, getCryptoReport } from "@/services/ir/exterior-crypto";
-import { NotesPanel } from "@/components/accountant/notes-panel";
+import { NotesPanel, type AccountantNoteWithAuthor } from "@/components/accountant/notes-panel";
+import { NotesRealtimeSync } from "@/components/accountant/notes-realtime";
 
 export const dynamic = "force-dynamic";
 
@@ -134,12 +135,14 @@ export default async function IRYearPage({
         }
       />
 
+      <NotesRealtimeSync />
+
       {/* Anotações do contador (se houver) */}
       {ctx && notes && notes.length > 0 ? (
         <NotesPanel
           householdId={ctx.household.id}
           year={year}
-          notes={notes as never}
+          notes={(notes ?? []) as unknown as AccountantNoteWithAuthor[]}
           isAccountant={false}
         />
       ) : null}

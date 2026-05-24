@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import type { IRDeductibleKind } from "@/types/database";
 
 const KINDS = ["income", "expense", "transfer"] as const;
 
@@ -55,7 +56,7 @@ export async function createCategory(
     kind: parsed.data.kind,
     icon: parsed.data.icon ?? null,
     color: parsed.data.color ?? null,
-    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
   });
   if (error) return { error: error.message };
   revalidatePath("/categorias");
@@ -84,7 +85,7 @@ export async function updateCategory(
       kind: parsed.data.kind,
       icon: parsed.data.icon ?? null,
       color: parsed.data.color ?? null,
-      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

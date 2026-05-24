@@ -1,8 +1,8 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail, tmplAccountantAccessNotification } from "@/services/email";
-import type { Tables } from "@/types/database";
+import { queueEmail, tmplAccountantAccessNotification } from "@/services/email";
+import type { Tables, Json } from "@/types/database";
 
 export type AccountantContext = {
   authId: string;
@@ -171,7 +171,7 @@ export async function logAccountantAction(args: {
       household_id: args.householdId,
       action: args.action,
       target_year: args.targetYear ?? null,
-      details: (args.details ?? {}) as never,
+      details: (args.details ?? {}) as Json,
       ip_address: args.ip ?? null,
       user_agent: args.userAgent ?? null,
     }),
@@ -216,8 +216,8 @@ export async function logAccountantAction(args: {
           year: args.targetYear,
           ip: args.ip ?? undefined,
         });
-        // Fire and forget
-        await sendEmail({
+        // Queue — drained pelo cron, sem bloquear o response
+        await queueEmail({
           to: email,
           subject: tmpl.subject,
           body: tmpl.body,

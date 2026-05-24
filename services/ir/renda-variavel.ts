@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
-import type { Currency, IRDarfKind, Tables } from "@/types/database";
+import type { Currency, IRDarfKind } from "@/types/database";
 
 /**
  * Apuração mensal de renda variável e geração de DARFs.
@@ -99,7 +99,7 @@ const DAY_TRADE_IRRF_RATE = 0.01; // 1% sobre o lucro
  * "Útil" = não fim de semana. (Sem feriados nacionais aqui — usuário
  * antecipa pra dia anterior se precisar.)
  */
-function lastBusinessDayOfNextMonth(year: number, month: number): string {
+export function lastBusinessDayOfNextMonth(year: number, month: number): string {
   // month é 1-12, vencimento é no mês seguinte
   let y = year;
   let m = month + 1;
@@ -411,10 +411,6 @@ export async function persistDarfs(
   report: RendaVariavelReport,
 ): Promise<{ persisted: number }> {
   const supabase = await createClient();
-  const rows: Tables<"ir_darfs">["Insert" extends keyof Tables<"ir_darfs"> ? never : never] extends never
-    ? Record<string, unknown>
-    : never = {} as never;
-  void rows;
 
   const allMonths = [...report.swing, ...report.dayTrade, ...report.fii, ...report.options];
   const toInsert = allMonths
