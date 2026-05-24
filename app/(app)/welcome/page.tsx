@@ -5,6 +5,7 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,13 +25,19 @@ export default async function WelcomePage({
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
 
-  const [accounts, categories] = await Promise.all([
+  const supabase = await createClient();
+  const [{ data: hh }, accounts, categories] = await Promise.all([
+    supabase
+      .from("households")
+      .select("onboarding_completed_at")
+      .eq("id", ctx.household.id)
+      .maybeSingle(),
     listAccounts(),
     listCategories({ includeArchived: false }),
   ]);
 
-  // Auto-skip: se já tem 2+ contas e !force, presume que onboarding já foi feito
-  if (accounts.length >= 2 && force !== "1") {
+  // Auto-skip: usuário já completou (ou pulou) o wizard. ?force=1 ignora.
+  if (hh?.onboarding_completed_at && force !== "1") {
     redirect("/dashboard");
   }
 

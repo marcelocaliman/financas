@@ -170,6 +170,29 @@ export async function runOnboarding(
     if (error) return { error: `Falha ao criar meta: ${error.message}` };
   }
 
+  // 7. Marca onboarding como concluído (esconde banner pra sempre)
+  await supabase
+    .from("households")
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq("id", ctx.household.id);
+
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Marca onboarding como pulado, sem criar nada. Banner não volta a aparecer.
+ * Usado quando o usuário fecha o banner sem entrar no wizard.
+ */
+export async function skipOnboarding(): Promise<{ ok?: boolean; error?: string }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("households")
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq("id", ctx.household.id);
+  if (error) return { error: error.message };
+  revalidatePath("/dashboard");
   return { ok: true };
 }

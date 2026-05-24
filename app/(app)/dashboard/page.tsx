@@ -43,6 +43,8 @@ import {
   monthRange,
 } from "@/services/transactions";
 import { IncomeVsExpenseChart } from "@/components/dashboard/income-vs-expense-chart";
+import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
+import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { formatDateFull, formatTime, getGreeting } from "@/lib/utils/format";
 import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
@@ -119,6 +121,25 @@ export default async function DashboardPage({
       ? getCategorySpendHistory(6)
       : Promise.resolve(new Map<string, number[]>()),
   ]);
+
+  // ---- Onboarding banner gating (cheap: 2 queries só quando is current) ----
+  let showOnboardingBanner = false;
+  if (isCurrent) {
+    const supabase = await createClient();
+    const [{ data: hh }, { count: txCount }] = await Promise.all([
+      supabase
+        .from("households")
+        .select("onboarding_completed_at")
+        .eq("id", ctx.household.id)
+        .maybeSingle(),
+      supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .limit(1),
+    ]);
+    showOnboardingBanner =
+      !hh?.onboarding_completed_at && (txCount ?? 0) === 0;
+  }
 
   // Patrimônio total SEM dupla contagem
   const netWorth =
@@ -266,6 +287,8 @@ export default async function DashboardPage({
           </>
         }
       />
+
+      {showOnboardingBanner ? <WelcomeBanner firstName={firstName} /> : null}
 
       <DashboardHero
         projectedNet={projection.projectedNet}

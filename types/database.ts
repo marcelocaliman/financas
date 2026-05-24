@@ -96,6 +96,7 @@ export interface Database {
           fire_expected_return_pct: number | null;
           fire_inflation_pct: number | null;
           fire_swr_pct: number | null;
+          onboarding_completed_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -120,6 +121,7 @@ export interface Database {
           fire_expected_return_pct?: number | null;
           fire_inflation_pct?: number | null;
           fire_swr_pct?: number | null;
+          onboarding_completed_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["households"]["Insert"]>;
