@@ -1,5 +1,19 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  wrapEmail,
+  heading,
+  lead,
+  paragraph,
+  button,
+  infoList,
+  kpiBox,
+  notice,
+  divider,
+  urlBox,
+  escapeHtml,
+} from "@/lib/email/layout";
+import { htmlToText } from "@/lib/email/plain-text";
 import type { Json } from "@/types/database";
 
 /**
@@ -80,12 +94,7 @@ export async function sendEmail(p: EmailPayload): Promise<{ ok: boolean; error?:
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: p.to,
-          subject: p.subject,
-          html: p.body,
-        }),
+        body: JSON.stringify(buildResendPayload(fromEmail, p.to, p.subject, p.body)),
       });
       if (res.ok) {
         status = "sent";
@@ -114,6 +123,32 @@ export async function sendEmail(p: EmailPayload): Promise<{ ok: boolean; error?:
   });
 
   return { ok: status !== "failed", error: errorMessage ?? undefined };
+}
+
+/**
+ * Constrói payload Resend com html + text + headers profissionais.
+ * Centralizado pra ambos sendEmail e drainEmailQueue usarem o mesmo formato.
+ */
+function buildResendPayload(
+  from: string,
+  to: string,
+  subject: string,
+  html: string,
+): Record<string, unknown> {
+  return {
+    from,
+    to,
+    subject,
+    html,
+    text: htmlToText(html),
+    headers: {
+      // Sinaliza pra Gmail/Apple Mail que é email transacional
+      // (melhor deliverability vs marketing classification)
+      "X-Entity-Ref-ID": crypto.randomUUID(),
+      // Resposta vai pro domínio mas com instrução clara que é unattended
+      "Reply-To": from,
+    },
+  };
 }
 
 /**
@@ -161,12 +196,14 @@ export async function drainEmailQueue(limit = 50): Promise<{
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: e.recipient_email,
-          subject: e.subject ?? "(sem assunto)",
-          html: body,
-        }),
+        body: JSON.stringify(
+          buildResendPayload(
+            fromEmail,
+            e.recipient_email,
+            e.subject ?? "(sem assunto)",
+            body,
+          ),
+        ),
       });
       if (res.ok) {
         await admin
@@ -217,6 +254,10 @@ export async function drainEmailQueue(limit = 50): Promise<{
 // Templates
 // ============================================================================
 
+function fmtBRL(n: number): string {
+  return n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export function tmplAccountantInvite(args: {
   inviterName: string;
   householdName: string;
@@ -224,22 +265,40 @@ export function tmplAccountantInvite(args: {
   years: number[];
   expiresAt: string;
 }): { subject: string; body: string } {
+  const expires = new Date(args.expiresAt).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+  const yearsLabel = args.years.join(", ");
   return {
     subject: `${args.inviterName} liberou acesso aos dados de IRPF`,
-    body: `
-      <p>Olá,</p>
-      <p>${args.inviterName} (${args.householdName}) acabou de liberar acesso aos
-      dados de IRPF dos anos-base ${args.years.join(", ")} pelo aplicativo Finanças.</p>
-      <p>Acesse o link abaixo pra ativar (válido até ${new Date(args.expiresAt).toLocaleDateString("pt-BR")}):</p>
-      <p><a href="${args.inviteUrl}">${args.inviteUrl}</a></p>
-      <p><b>O que você vai acessar:</b> Bens e Direitos, Rendimentos, Renda
-      Variável, DARFs, Imposto a pagar/restituição — tudo organizado
-      automaticamente nas seções do programa IRPF.</p>
-      <p><b>Importante:</b> acesso somente-leitura. Todas as suas ações ficam
-      registradas em audit log compartilhado com o cliente.</p>
-      <hr>
-      <p style="color:#888;font-size:11px">Email automático do Finanças. Conforme LGPD.</p>
-    `,
+    body: wrapEmail({
+      preheader: `Acesso temporário, somente leitura, válido até ${expires}.`,
+      eyebrow: "Convite · acesso ao IRPF",
+      content:
+        heading(`Você foi convidado para revisar uma declaração de IRPF`) +
+        lead(
+          `${args.inviterName} (${args.householdName}) liberou acesso aos dados de imposto de renda dos anos-base ${yearsLabel}.`,
+        ) +
+        button("Ativar acesso", args.inviteUrl) +
+        paragraph(
+          `Se o botão não funcionar, copie o endereço abaixo:`,
+        ) +
+        urlBox(args.inviteUrl) +
+        divider() +
+        paragraph(
+          `<strong style="color:#1a1a1a;">O que você vai acessar:</strong> Bens e Direitos, Rendimentos (tributáveis, isentos e exclusivos), Renda Variável, DARFs e Imposto devido. Tudo organizado exatamente nas seções do programa IRPF.`,
+        ) +
+        notice(
+          `<strong>Acesso somente-leitura.</strong> Toda visualização e download ficam registrados em audit log compartilhado com o cliente.`,
+          "info",
+        ) +
+        paragraph(
+          `<span style="color:#6a6a6a;font-size:13px;">Validade: até ${escapeHtml(expires)}. Após esse prazo o acesso expira automaticamente.</span>`,
+        ),
+      footerNote: `Acesso concedido conforme termo de tratamento de dados (LGPD).`,
+    }),
   };
 }
 
@@ -250,21 +309,46 @@ export function tmplAccountantAccessNotification(args: {
   year?: number;
   ip?: string;
 }): { subject: string; body: string } {
+  const actionLabels: Record<string, string> = {
+    view_year: "Abriu o ano",
+    view_section: "Visualizou seção",
+    export_dec: "Baixou arquivo .DEC",
+    export_txt: "Baixou relatório TXT",
+    login: "Acessou o painel",
+  };
+  const actionLabel = actionLabels[args.action] ?? args.action;
+  const items: Array<{ label: string; value: string }> = [
+    { label: "Contador", value: args.accountantName },
+    { label: "Ação", value: actionLabel },
+  ];
+  if (args.year) items.push({ label: "Ano-base", value: String(args.year) });
+  if (args.ip) items.push({ label: "IP", value: args.ip });
+  items.push({
+    label: "Quando",
+    value: new Date().toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }),
+  });
+
   return {
-    subject: `Seu contador acessou os dados de IRPF`,
-    body: `
-      <p>Olá,</p>
-      <p>${args.accountantName} acabou de acessar os dados de IRPF do ${args.householdName}.</p>
-      <ul>
-        <li>Ação: ${args.action}</li>
-        ${args.year ? `<li>Ano-base: ${args.year}</li>` : ""}
-        ${args.ip ? `<li>IP: ${args.ip}</li>` : ""}
-        <li>Horário: ${new Date().toLocaleString("pt-BR")}</li>
-      </ul>
-      <p>Veja o audit log completo na seção "Compartilhar com contador" das
-      configurações de IRPF.</p>
-      <p>Se você não autorizou esse acesso, <b>revogue imediatamente</b>.</p>
-    `,
+    subject: `Acesso do contador registrado · ${args.householdName}`,
+    body: wrapEmail({
+      preheader: `${args.accountantName} acabou de acessar seus dados de IRPF.`,
+      eyebrow: "Notificação · LGPD",
+      content:
+        heading(`Seu contador acessou os dados de IRPF`) +
+        lead(
+          `Esta é uma notificação automática de acesso aos dados sensíveis do seu lar.`,
+        ) +
+        infoList(items) +
+        button("Ver audit log completo", "https://nossasfinancas.com.br/ir") +
+        notice(
+          `Se você <strong>não autorizou</strong> este acesso ou suspeita de uso indevido, revogue imediatamente em <a href="https://nossasfinancas.com.br/ir" style="color:#ad2d10;text-decoration:underline;">Configurações de IRPF → Compartilhar com contador</a>.`,
+          "danger",
+        ),
+      footerNote: `Você recebe esta notificação porque um terceiro acessou dados do seu lar.`,
+    }),
   };
 }
 
@@ -273,16 +357,38 @@ export function tmplDarfDue(args: {
   dueDate: string;
   kind: string;
 }): { subject: string; body: string } {
+  const due = new Date(args.dueDate).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
   return {
-    subject: `DARF de R$ ${args.amount.toFixed(2)} vence em breve`,
-    body: `
-      <p>Olá,</p>
-      <p>Você tem um DARF de <b>${args.kind}</b> no valor de
-      <b>R$ ${args.amount.toFixed(2)}</b> com vencimento em
-      <b>${new Date(args.dueDate).toLocaleDateString("pt-BR")}</b>.</p>
-      <p>Pague no app do seu banco, ou no Receita.gov pra evitar multa (0,33%/dia
-      atrasado + juros Selic).</p>
-    `,
+    subject: `DARF de R$ ${fmtBRL(args.amount)} vence em ${new Date(args.dueDate).toLocaleDateString("pt-BR")}`,
+    body: wrapEmail({
+      preheader: `${args.kind} — não pagar gera multa de 0,33%/dia + juros Selic.`,
+      eyebrow: "Lembrete · DARF",
+      content:
+        heading(`Vencimento de DARF se aproxima`) +
+        lead(
+          `Você tem um DARF de ${args.kind} em aberto. Pague em dia para evitar multa e juros.`,
+        ) +
+        kpiBox({
+          label: "Valor",
+          value: `R$ ${fmtBRL(args.amount)}`,
+          hint: args.kind,
+          tone: "negative",
+        }) +
+        infoList([
+          { label: "Tipo", value: args.kind },
+          { label: "Vencimento", value: due },
+        ]) +
+        button("Ver detalhes no app", "https://nossasfinancas.com.br/ir") +
+        notice(
+          `<strong>Atraso custa caro:</strong> multa de 0,33%/dia (cap em 20%) mais juros pela taxa Selic. Pague no app do banco ou em Receita.gov.br.`,
+          "warning",
+        ),
+      footerNote: `Lembrete enviado 3 dias antes do vencimento.`,
+    }),
   };
 }
 
@@ -294,27 +400,34 @@ export function tmplCronStale(args: {
     staleAfterHours: number;
   }>;
 }): { subject: string; body: string } {
-  const rows = args.staleChecks
-    .map((c) => {
-      const ageDisplay =
-        c.ageHours < 24
-          ? `${Math.round(c.ageHours)}h`
-          : `${Math.round(c.ageHours / 24)}d`;
-      const limitDisplay = Math.round(c.staleAfterHours / 24) || 1;
-      return `<li><b>${c.name}</b> — ${ageDisplay} (limite ${limitDisplay}d)<br><span style="color:#888;font-size:11px">${c.description}</span></li>`;
-    })
-    .join("");
+  const items = args.staleChecks.map((c) => {
+    const ageDisplay =
+      c.ageHours < 24
+        ? `${Math.round(c.ageHours)} horas`
+        : `${Math.round(c.ageHours / 24)} dias`;
+    const limit = Math.round(c.staleAfterHours / 24) || 1;
+    return {
+      label: c.name,
+      value: `${ageDisplay} (limite ${limit}d)`,
+    };
+  });
   return {
-    subject: `⚠ ${args.staleChecks.length} cron${args.staleChecks.length === 1 ? "" : "s"} desatualizado${args.staleChecks.length === 1 ? "" : "s"}`,
-    body: `
-      <p>Olá,</p>
-      <p>Os seguintes crons do Finanças estão desatualizados além do limite tolerado:</p>
-      <ul>${rows}</ul>
-      <p>Verifique o dashboard Vercel pra ver erros de execução. Se o cron rodou
-      e falhou, vai aparecer nos logs. Se nem rodou, pode ser problema de schedule
-      ou plano (Hobby permite só 2 crons/dia).</p>
-      <hr>
-      <p style="color:#888;font-size:11px">Email automático do Finanças · health check</p>
-    `,
+    subject: `Alerta: ${args.staleChecks.length} cron${args.staleChecks.length === 1 ? "" : "s"} desatualizado${args.staleChecks.length === 1 ? "" : "s"}`,
+    body: wrapEmail({
+      preheader: `Verifique os logs no dashboard Vercel.`,
+      eyebrow: "Health check · sistema",
+      content:
+        heading(`Alguns jobs não rodaram como esperado`) +
+        lead(
+          `Os crons abaixo estão sem atualização há mais tempo que o tolerado. Pode ser falha de execução, problema de schedule ou limites do plano Vercel.`,
+        ) +
+        infoList(items) +
+        button("Abrir Vercel Logs", "https://vercel.com/dashboard", "secondary") +
+        notice(
+          `Vercel Hobby permite só 2 cron schedules. Se subiu acima disso, alguns não rodam silenciosamente.`,
+          "info",
+        ),
+      footerNote: `Health check diário · dedup de 20h pra não te spammar.`,
+    }),
   };
 }
