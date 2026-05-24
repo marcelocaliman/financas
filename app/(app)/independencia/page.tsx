@@ -139,7 +139,7 @@ export default async function IndependenciaPage() {
             className="inline-flex items-center gap-1.5 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
           >
             <Settings className="w-3.5 h-3.5" strokeWidth={1.7} />
-            Editar parâmetros
+            Ajustar meu plano
           </Link>
         }
       />
