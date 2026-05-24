@@ -123,10 +123,10 @@ export function AccountCard({
               {!account.is_active ? <Badge tone="gold">Arquivada</Badge> : null}
             </div>
             <div className="font-display text-[20px] tracking-[-0.015em] text-foreground truncate">
-              {account.name}
-            </div>
-            <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.04em] mt-0.5">
               {account.institution}
+            </div>
+            <div className="text-[12.5px] text-muted-foreground mt-0.5 truncate">
+              {account.name}
             </div>
           </div>
           {account.is_active ? (
