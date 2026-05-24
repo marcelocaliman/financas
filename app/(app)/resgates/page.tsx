@@ -360,7 +360,7 @@ function NextRemainder({
   return (
     <div className="rounded-[var(--radius-lg)] bg-navy-50 border border-navy-100 px-7 py-5 mb-6 flex items-start gap-4 relative overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-navy-700" />
-      <div className="w-9 h-9 rounded-[10px] bg-navy-100 text-navy-700 dark:text-navy-300 grid place-items-center shrink-0">
+      <div className="w-9 h-9 rounded-[10px] bg-navy-100 text-navy-700 dark:bg-navy-700/20 dark:text-navy-100 grid place-items-center shrink-0">
         <Clock className="w-4 h-4" strokeWidth={1.7} />
       </div>
       <div className="flex-1 min-w-0">
