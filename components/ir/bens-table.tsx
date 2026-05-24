@@ -28,7 +28,14 @@ export function BensTable({ report }: { report: BensReport }) {
             </span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px]">
+            <table className="w-full text-[12.5px] table-fixed">
+              <colgroup>
+                <col className="w-[48px]" />
+                <col />
+                <col className="w-[160px]" />
+                <col className="w-[140px]" />
+                <col className="w-[140px]" />
+              </colgroup>
               <thead>
                 <tr className="text-faint-foreground font-mono text-[10.5px] uppercase tracking-[0.12em]">
                   <th className="text-left pb-2 pr-3 font-medium">Cod</th>
@@ -49,16 +56,16 @@ export function BensTable({ report }: { report: BensReport }) {
                     <td className="py-2.5 pr-3 font-mono text-foreground">
                       {item.code}
                     </td>
-                    <td className="py-2.5 pr-3 max-w-[420px]">
+                    <td className="py-2.5 pr-3">
                       <div className="text-foreground">{item.codeLabel}</div>
-                      <div className="text-faint-foreground text-[11.5px] mt-0.5">
+                      <div className="text-faint-foreground text-[11.5px] mt-0.5 break-words">
                         {item.discrimination}
                       </div>
                       {item.fxNote ? (
                         <Badge tone="gold" className="mt-1">moeda estrangeira</Badge>
                       ) : null}
                     </td>
-                    <td className="py-2.5 pr-3 font-mono text-faint-foreground text-[11.5px]">
+                    <td className="py-2.5 pr-3 font-mono text-faint-foreground text-[11.5px] truncate">
                       {item.cnpj ?? "—"}
                     </td>
                     <td className="py-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
