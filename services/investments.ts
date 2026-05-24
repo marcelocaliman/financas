@@ -21,6 +21,7 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   stock: "Ação",
   etf: "ETF",
   crypto: "Cripto",
+  option: "Opção",
 };
 
 export async function listInvestments(): Promise<Investment[]> {

@@ -75,7 +75,9 @@ export async function getRendimentosReport(
 
   const txQuery = supabase
     .from("transactions")
-    .select("description, amount_account, currency, date, category:categories(name), account:accounts(currency, institution)")
+    .select(
+      "description, amount_account, currency, date, irrf_amount, inss_amount, category:categories(name), account:accounts(currency, institution), fonte:fontes_pagadoras(id, type, name, cnpj, cpf)",
+    )
     .gte("date", yearStart)
     .lte("date", yearEnd)
     .eq("kind", "income");
@@ -113,43 +115,103 @@ export async function getRendimentosReport(
     amount_account: number;
     currency: Currency | null;
     date: string;
+    irrf_amount: number | null;
+    inss_amount: number | null;
     category: { name: string } | { name: string }[] | null;
     account: { currency: Currency; institution: string } | { currency: Currency; institution: string }[] | null;
+    fonte:
+      | { id: string; type: string; name: string; cnpj: string | null; cpf: string | null }
+      | { id: string; type: string; name: string; cnpj: string | null; cpf: string | null }[]
+      | null;
   };
-  const txsAgg = new Map<string, { gross: number; payer: string; cat: string }>();
-  for (const t of (txs ?? []) as TxRow[]) {
+
+  // Agrupa por fonte_pagadora QUANDO existe; senão agrupa por (categoria + descrição)
+  const txsAgg = new Map<
+    string,
+    { gross: number; irrf: number; inss: number; payer: string; cnpjCpf: string | null; cat: string; isDistribuicaoLucros: boolean }
+  >();
+
+  for (const t of (txs ?? []) as unknown as TxRow[]) {
     const cat = Array.isArray(t.category) ? t.category[0] : t.category;
     const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const fonte = Array.isArray(t.fonte) ? t.fonte[0] : t.fonte;
     const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
     const amt = convertOrSame(Number(t.amount_account ?? 0), c, "BRL", rates);
+    const irrf = convertOrSame(Number(t.irrf_amount ?? 0), c, "BRL", rates);
+    const inss = convertOrSame(Number(t.inss_amount ?? 0), c, "BRL", rates);
     const catName = (cat?.name ?? "").toLowerCase();
-    const payer = (t.description ?? "Recebimento").trim();
-    const key = `${catName}::${payer}`;
-    const e = txsAgg.get(key) ?? { gross: 0, payer, cat: catName };
-    e.gross += amt;
-    txsAgg.set(key, e);
+
+    // Heurística: distribuição de lucros de PJ própria do usuário → isento
+    // Detectado quando: fonte é pj_propria E (descrição menciona "distribui*"
+    // ou "lucro" sem ser salário/pró-labore)
+    const desc = (t.description ?? "").toLowerCase();
+    const isDistribuicaoLucros =
+      fonte?.type === "pj_propria" &&
+      (desc.includes("distribu") || desc.includes("lucro") || desc.includes("dividendo"));
+
+    if (fonte) {
+      const key = `fonte:${fonte.id}${isDistribuicaoLucros ? ":lucros" : ""}`;
+      const e = txsAgg.get(key) ?? {
+        gross: 0, irrf: 0, inss: 0,
+        payer: fonte.name,
+        cnpjCpf: fonte.cnpj ?? fonte.cpf,
+        cat: catName,
+        isDistribuicaoLucros,
+      };
+      e.gross += amt;
+      e.irrf += irrf;
+      e.inss += inss;
+      txsAgg.set(key, e);
+    } else {
+      const payer = (t.description ?? "Recebimento").trim();
+      const key = `cat:${catName}::${payer}`;
+      const e = txsAgg.get(key) ?? {
+        gross: 0, irrf: 0, inss: 0,
+        payer, cnpjCpf: null, cat: catName, isDistribuicaoLucros: false,
+      };
+      e.gross += amt;
+      e.irrf += irrf;
+      e.inss += inss;
+      txsAgg.set(key, e);
+    }
   }
+
   for (const [, e] of txsAgg) {
-    if (SALARY_CATEGORIES.has(e.cat) || RENT_CATEGORIES.has(e.cat)) {
+    if (e.isDistribuicaoLucros) {
+      // Distribuição de lucros PJ própria → isento código 09
+      isentos.push({
+        source: "auto",
+        sourceId: null,
+        description: `Distribuição de lucros — ${e.payer}`,
+        payerName: e.payer,
+        payerCnpjCpf: e.cnpjCpf,
+        grossAmount: Math.round(e.gross * 100) / 100,
+        irrf: 0, inss: 0, thirteenth: 0,
+        receitaCode: "09",
+      });
+    } else if (
+      SALARY_CATEGORIES.has(e.cat) ||
+      RENT_CATEGORIES.has(e.cat) ||
+      e.cnpjCpf // se tem fonte cadastrada, vai pra tributável
+    ) {
       tributaveis.push({
         source: "auto",
         sourceId: null,
         description: e.cat || "Rendimento",
         payerName: e.payer,
-        payerCnpjCpf: null,
+        payerCnpjCpf: e.cnpjCpf,
         grossAmount: Math.round(e.gross * 100) / 100,
-        irrf: 0,
-        inss: 0,
+        irrf: Math.round(e.irrf * 100) / 100,
+        inss: Math.round(e.inss * 100) / 100,
         thirteenth: 0,
       });
     } else if (e.cat.includes("renda passiva") || e.cat.includes("dividend")) {
-      // pode ser dividendo — vai pra isentos
       isentos.push({
         source: "auto",
         sourceId: null,
         description: "Lucros e dividendos (categoria " + e.cat + ")",
         payerName: e.payer,
-        payerCnpjCpf: null,
+        payerCnpjCpf: e.cnpjCpf,
         grossAmount: Math.round(e.gross * 100) / 100,
         irrf: 0, inss: 0, thirteenth: 0,
         receitaCode: "09",

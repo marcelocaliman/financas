@@ -12,6 +12,7 @@ const ASSET_TYPE_BADGE: Record<AssetTemplate["asset_type"], string> = {
   stock: "Ação",
   etf: "ETF",
   crypto: "Cripto",
+  option: "Opção",
 };
 
 export function AssetPicker({

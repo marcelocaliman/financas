@@ -71,10 +71,12 @@ export type RendaVariavelReport = {
   swing: DarfMonth[];
   dayTrade: DarfMonth[];
   fii: DarfMonth[];
+  options: DarfMonth[]; // opções swing (com regras próprias)
   finalCarryforward: {
     swing: number;
     day_trade: number;
     fii: number;
+    options: number;
   };
   totals: {
     grossSalesYear: number;
@@ -88,6 +90,7 @@ const SWING_EXEMPTION_LIMIT = 20000; // R$ 20.000/mês
 const SWING_RATE = 0.15;
 const DAY_TRADE_RATE = 0.20;
 const FII_RATE = 0.20;
+const OPTIONS_RATE = 0.15; // swing opções (mesma 15%)
 const SWING_IRRF_RATE = 0.00005; // 0,005% sobre vendas
 const DAY_TRADE_IRRF_RATE = 0.01; // 1% sobre o lucro
 
@@ -137,6 +140,9 @@ export async function getRendaVariavelReport(
     swing: 0,
     day_trade: 0,
     fii: 0,
+    options: 0,
+    exterior: 0,
+    crypto: 0,
   };
   for (const c of carryforwards ?? []) {
     // Só conta se foi atualizado em ano <= year-1
@@ -161,16 +167,17 @@ export async function getRendaVariavelReport(
   };
 
   const positions = new Map<string, Position>();
-  const salesByKind: Record<IRDarfKind, Map<number, SaleResult[]>> = {
+  const salesByKind: Partial<Record<IRDarfKind, Map<number, SaleResult[]>>> = {
     swing: new Map(),
     day_trade: new Map(),
     fii: new Map(),
+    options: new Map(),
   };
 
   // Inicializa mapas dos 12 meses
-  for (const kind of ["swing", "day_trade", "fii"] as IRDarfKind[]) {
+  for (const kind of ["swing", "day_trade", "fii", "options"] as IRDarfKind[]) {
     for (let m = 1; m <= 12; m++) {
-      salesByKind[kind].set(m, []);
+      salesByKind[kind]!.set(m, []);
     }
   }
 
@@ -179,7 +186,7 @@ export async function getRendaVariavelReport(
     if (!inv) continue;
     if (m.kind === "dividend" || m.kind === "split") continue;
     // só renda variável aqui
-    if (!["stock", "etf", "fii"].includes(inv.asset_type)) continue;
+    if (!["stock", "etf", "fii", "option"].includes(inv.asset_type)) continue;
 
     const qty = Number(m.quantity);
     const unitPriceBRL = convertOrSame(Number(m.unit_price), inv.currency, "BRL", rates);
@@ -191,10 +198,9 @@ export async function getRendaVariavelReport(
       pos.qty += qty;
       pos.totalCost += totalBRL + feesBRL;
       positions.set(inv.id, pos);
-    } else if (m.kind === "sell") {
-      // Só conta vendas DENTRO do ano-base
+    } else if (m.kind === "sell" || m.kind === "exercise" || m.kind === "assignment" || m.kind === "expiration") {
+      // Só conta dentro do ano-base
       if (m.date < yearStart) {
-        // Atualiza posição mas não computa
         if (pos.qty > 0) {
           pos.totalCost -= (pos.totalCost / pos.qty) * qty;
         }
@@ -205,8 +211,42 @@ export async function getRendaVariavelReport(
       const month = parseInt(m.date.slice(5, 7), 10);
       const avgCost = pos.qty > 0 ? pos.totalCost / pos.qty : 0;
       const costBasis = avgCost * qty;
-      const grossSale = totalBRL - feesBRL; // valor líquido recebido
-      const profit = grossSale - costBasis;
+
+      // Cálculo de receita por tipo de movimento:
+      //   sell  → recebeu valor (sale - fees)
+      //   exercise (você exerce opção comprada) → entrega cash, recebe ações.
+      //      Pra opção em si: prejuízo = custo da opção (vai pra zero, ação fica)
+      //   assignment (sua opção lançada foi exercida) → entrega ações, recebe cash.
+      //      Pra opção: lucro = prêmio recebido (já contabilizado quando vendeu).
+      //      Pra ação: venda forçada no strike — vira sale normal a parte.
+      //   expiration (opção venceu sem exercício) →
+      //      se comprou → prejuízo 100% (perdeu o prêmio pago)
+      //      se vendeu → lucro 100% (manteve o prêmio recebido)
+      let grossSale: number;
+      let profit: number;
+      if (m.kind === "sell") {
+        grossSale = totalBRL - feesBRL;
+        profit = grossSale - costBasis;
+      } else if (m.kind === "expiration") {
+        // Vencimento sem exercício
+        if (inv.asset_type === "option" && pos.qty > 0 && pos.totalCost > 0) {
+          // Comprado: prejuízo 100% do custo
+          grossSale = 0;
+          profit = -costBasis;
+        } else {
+          // Lançado (qty negativa OU totalCost negativo): lucro = prêmio recebido
+          // Pra simplicidade, considera lucro = totalBRL (registrado quando lançou)
+          grossSale = totalBRL - feesBRL;
+          profit = grossSale - costBasis;
+        }
+      } else if (m.kind === "exercise" || m.kind === "assignment") {
+        // Exercício / assignment: vira venda no preço strike (ou compra)
+        grossSale = totalBRL - feesBRL;
+        profit = grossSale - costBasis;
+      } else {
+        grossSale = 0;
+        profit = 0;
+      }
 
       const sale: SaleResult = {
         date: m.date,
@@ -221,13 +261,13 @@ export async function getRendaVariavelReport(
       };
 
       let kind: IRDarfKind;
-      if (inv.asset_type === "fii") kind = "fii";
+      if (inv.asset_type === "option") kind = "options";
+      else if (inv.asset_type === "fii") kind = "fii";
       else if (m.is_day_trade) kind = "day_trade";
       else kind = "swing";
 
-      salesByKind[kind].get(month)!.push(sale);
+      salesByKind[kind]!.get(month)!.push(sale);
 
-      // Atualiza posição
       pos.totalCost -= costBasis;
       pos.qty -= qty;
       positions.set(inv.id, pos);
@@ -240,7 +280,7 @@ export async function getRendaVariavelReport(
   function buildMonths(kind: IRDarfKind): DarfMonth[] {
     const out: DarfMonth[] = [];
     for (let m = 1; m <= 12; m++) {
-      const sales = salesByKind[kind].get(m) ?? [];
+      const sales = salesByKind[kind]?.get(m) ?? [];
       const grossSales = sales.reduce((s, x) => s + x.grossSale, 0);
       const grossProfit = sales.reduce((s, x) => s + x.profit, 0);
 
@@ -288,7 +328,16 @@ export async function getRendaVariavelReport(
         carryUsed = Math.min(carry[kind], grossProfit);
         carry[kind] -= carryUsed;
         taxableBase = grossProfit - carryUsed;
-        const rate = kind === "swing" ? SWING_RATE : kind === "day_trade" ? DAY_TRADE_RATE : FII_RATE;
+        const rate =
+          kind === "swing"
+            ? SWING_RATE
+            : kind === "day_trade"
+              ? DAY_TRADE_RATE
+              : kind === "fii"
+                ? FII_RATE
+                : kind === "options"
+                  ? OPTIONS_RATE
+                  : SWING_RATE;
         const grossTax = taxableBase * rate;
         // IRRF retido na fonte
         irrfRetained =
@@ -296,7 +345,9 @@ export async function getRendaVariavelReport(
             ? grossSales * SWING_IRRF_RATE
             : kind === "day_trade"
               ? grossProfit * DAY_TRADE_IRRF_RATE
-              : grossSales * SWING_IRRF_RATE; // FII também 0,005% sobre vendas
+              : kind === "options"
+                ? grossSales * SWING_IRRF_RATE // opções têm IRRF similar a swing
+                : grossSales * SWING_IRRF_RATE; // FII também 0,005% sobre vendas
         taxDue = Math.max(0, grossTax - irrfRetained);
       }
 
@@ -321,8 +372,9 @@ export async function getRendaVariavelReport(
   const swing = buildMonths("swing");
   const dayTrade = buildMonths("day_trade");
   const fii = buildMonths("fii");
+  const options = buildMonths("options");
 
-  const allMonths = [...swing, ...dayTrade, ...fii];
+  const allMonths = [...swing, ...dayTrade, ...fii, ...options];
   const grossSalesYear = allMonths.reduce((s, m) => s + m.grossSales, 0);
   const grossProfitYear = allMonths.reduce((s, m) => s + m.grossProfit, 0);
   const totalTaxDue = allMonths.reduce((s, m) => s + m.taxDue, 0);
@@ -333,10 +385,12 @@ export async function getRendaVariavelReport(
     swing,
     dayTrade,
     fii,
+    options,
     finalCarryforward: {
       swing: Math.round(carry.swing * 100) / 100,
       day_trade: Math.round(carry.day_trade * 100) / 100,
       fii: Math.round(carry.fii * 100) / 100,
+      options: Math.round(carry.options * 100) / 100,
     },
     totals: {
       grossSalesYear: Math.round(grossSalesYear * 100) / 100,
@@ -362,7 +416,7 @@ export async function persistDarfs(
     : never = {} as never;
   void rows;
 
-  const allMonths = [...report.swing, ...report.dayTrade, ...report.fii];
+  const allMonths = [...report.swing, ...report.dayTrade, ...report.fii, ...report.options];
   const toInsert = allMonths
     .filter((m) => m.grossSales > 0 || m.grossProfit !== 0)
     .map((m) => ({
@@ -393,9 +447,9 @@ export async function persistDarfs(
   if (error) throw error;
 
   // Atualiza carryforward final
-  const carryRows = (["swing", "day_trade", "fii"] as IRDarfKind[]).map((k) => ({
+  const carryRows = (["swing", "day_trade", "fii", "options"] as const).map((k) => ({
     household_id: householdId,
-    kind: k,
+    kind: k as IRDarfKind,
     balance: report.finalCarryforward[k],
     last_updated_year: report.year,
     last_updated_month: 12,

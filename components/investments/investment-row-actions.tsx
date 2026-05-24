@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import {
   Archive,
+  Calculator,
   List,
   Pencil,
   Plus,
@@ -23,6 +24,7 @@ import { InvestmentSheet } from "./investment-sheet";
 import { YieldDialog } from "./yield-dialog";
 import { MovementDialog } from "./movement-dialog";
 import { MovementsSheet } from "./movements-sheet";
+import { SaleSimulatorDialog } from "./sale-simulator-dialog";
 import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
 import { WithdrawYieldDialog } from "./withdraw-yield-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -49,6 +51,7 @@ export function InvestmentRowActions({
   const [movementMode, setMovementMode] = useState<"buy" | "sell" | null>(null);
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
+  const [simulating, setSimulating] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
 
@@ -117,6 +120,12 @@ export function InvestmentRowActions({
                         label: "Vender",
                         icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />,
                         onSelect: () => setMovementMode("sell"),
+                        disabled: pending,
+                      },
+                      {
+                        label: "Simular venda (calc IR)",
+                        icon: <Calculator className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setSimulating(true),
                         disabled: pending,
                       },
                       {
@@ -218,6 +227,13 @@ export function InvestmentRowActions({
             open={showExtract}
             onOpenChange={setShowExtract}
             investment={investment}
+          />
+          <SaleSimulatorDialog
+            open={simulating}
+            onOpenChange={setSimulating}
+            investmentId={investment.id}
+            ticker={investment.ticker}
+            currentQty={Number(investment.quantity ?? 0)}
           />
         </>
       ) : null}

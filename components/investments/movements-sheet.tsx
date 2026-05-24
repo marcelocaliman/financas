@@ -21,6 +21,9 @@ const kindLabels: Record<MovementKind, string> = {
   sell: "Venda",
   dividend: "Provento",
   split: "Desdobramento",
+  exercise: "Exercício",
+  assignment: "Assignment",
+  expiration: "Vencimento",
 };
 
 export function MovementsSheet({

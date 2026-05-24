@@ -21,6 +21,7 @@ import { RendaVariavelTable } from "@/components/ir/renda-variavel-table";
 import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { AccountantExportActions } from "@/components/accountant/export-actions";
 import { YearSwitcher } from "@/components/accountant/year-switcher";
+import { NotesPanel } from "@/components/accountant/notes-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function ContadorIRYearPage({
     userAgent: hdrs.get("user-agent"),
   });
 
-  const [bens, rendimentos, rv, imposto, { data: snapshot }, { data: settings }] =
+  const [bens, rendimentos, rv, imposto, { data: snapshot }, { data: settings }, { data: notes }] =
     await Promise.all([
       getBensReport(year, householdId),
       getRendimentosReport(year, householdId),
@@ -70,6 +71,14 @@ export default async function ContadorIRYearPage({
           .select("*")
           .eq("household_id", householdId)
           .maybeSingle(),
+      ),
+      createClient().then((s) =>
+        s
+          .from("accountant_notes")
+          .select("*, accountant:accountant_profiles(full_name)")
+          .eq("household_id", householdId)
+          .eq("year", year)
+          .order("created_at", { ascending: false }),
       ),
     ]);
 
@@ -135,6 +144,14 @@ export default async function ContadorIRYearPage({
           onboarding.
         </p>
       </Panel>
+
+      {/* Anotações do contador */}
+      <NotesPanel
+        householdId={householdId}
+        year={year}
+        notes={(notes ?? []) as never}
+        isAccountant={true}
+      />
 
       {/* TIER 1 — KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

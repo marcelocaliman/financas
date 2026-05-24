@@ -144,6 +144,8 @@ export function inferInvestmentCode(
       if (["USDT", "USDC", "DAI", "BUSD"].some((s) => t.startsWith(s))) return "83";
       return "82";
     }
+    case "option":
+      return "99"; // opções não têm código próprio de Bens (são fluxo, não saldo)
   }
 }
 

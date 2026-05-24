@@ -8,6 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUserContext } from "@/services/auth";
 import { getCurrentAccountantContext } from "@/services/accountant-auth";
 import { DPA_TERMS_HASH } from "@/services/accountant-dpa";
+import { sendEmail, tmplAccountantInvite } from "@/services/email";
 
 export type AccountantFormState = {
   ok?: boolean;
@@ -78,10 +79,25 @@ export async function createAccountantInvite(
 
   if (error || !data) return { error: error?.message ?? "Falha ao criar convite." };
 
-  // O usuário recebe o URL pra repassar ao contador (email manual por enquanto)
   const base =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://financas.example.com";
   const inviteUrl = `${base}/contador/aceitar?token=${data.token}`;
+
+  // Envia email automaticamente (best-effort, não bloqueia retorno)
+  const tmpl = tmplAccountantInvite({
+    inviterName: ctx.profile.display_name,
+    householdName: ctx.household.name,
+    inviteUrl,
+    years: parsed.data.years_allowed,
+    expiresAt: exp.toISOString(),
+  });
+  await sendEmail({
+    to: email,
+    subject: tmpl.subject,
+    body: tmpl.body,
+    notificationType: "accountant_invite",
+    relatedHouseholdId: ctx.household.id,
+  });
 
   revalidatePath("/ir");
   for (const y of parsed.data.years_allowed) {

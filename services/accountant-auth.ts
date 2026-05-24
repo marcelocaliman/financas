@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail, tmplAccountantAccessNotification } from "@/services/email";
 import type { Tables } from "@/types/database";
 
 export type AccountantContext = {
@@ -175,4 +177,55 @@ export async function logAccountantAction(args: {
     }),
     supabase.rpc("touch_accountant_access", { p_household_id: args.householdId }),
   ]);
+
+  // Notifica titular por email APENAS em ações sensíveis (downloads),
+  // não em cada view. Evita spam mas mantém transparência LGPD.
+  if (args.action === "export_dec" || args.action === "export_txt") {
+    const admin = createAdminClient();
+    const [{ data: titular }, { data: hh }] = await Promise.all([
+      admin
+        .from("users")
+        .select("display_name")
+        .eq("household_id", args.householdId)
+        .eq("role", "admin")
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from("households")
+        .select("name, id")
+        .eq("id", args.householdId)
+        .maybeSingle(),
+    ]);
+
+    // Email do titular vem do auth.users — buscamos pelo id em users
+    const { data: titularUser } = await admin
+      .from("users")
+      .select("id")
+      .eq("household_id", args.householdId)
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle();
+    if (titularUser) {
+      const { data: authUser } = await admin.auth.admin.getUserById(titularUser.id);
+      const email = authUser?.user?.email;
+      if (email && hh) {
+        const tmpl = tmplAccountantAccessNotification({
+          accountantName: ctx.profile.full_name,
+          householdName: hh.name,
+          action: args.action,
+          year: args.targetYear,
+          ip: args.ip ?? undefined,
+        });
+        // Fire and forget
+        await sendEmail({
+          to: email,
+          subject: tmpl.subject,
+          body: tmpl.body,
+          notificationType: "accountant_access",
+          relatedHouseholdId: args.householdId,
+        });
+      }
+    }
+    void titular;
+  }
 }

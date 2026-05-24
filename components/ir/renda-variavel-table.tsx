@@ -15,6 +15,7 @@ export function RendaVariavelTable({ report }: { report: RendaVariavelReport }) 
     { title: "Swing trade (ações)", tone: "navy", months: report.swing },
     { title: "Day trade", tone: "gold", months: report.dayTrade },
     { title: "FII (venda de cotas)", tone: "olive", months: report.fii },
+    { title: "Opções (lançamento/compra)", tone: "gold", months: report.options ?? [] },
   ];
 
   const anyActive = sections.some((s) => s.months.some((m) => m.grossSales > 0));

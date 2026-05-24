@@ -33,12 +33,20 @@ export type AssetType =
   | "fixed_income_private"
   | "stock"
   | "etf"
-  | "crypto";
+  | "crypto"
+  | "option";
 export type Indexer = "selic" | "cdi" | "ipca" | "fixed" | "none";
 export type IndexerCode = "selic" | "cdi" | "ipca";
 export type TaxRegime = "regressive" | "exempt";
 export type YieldSource = "manual" | "calculated" | "imported";
-export type MovementKind = "buy" | "sell" | "dividend" | "split";
+export type MovementKind =
+  | "buy"
+  | "sell"
+  | "dividend"
+  | "split"
+  | "exercise"
+  | "assignment"
+  | "expiration";
 export type YieldRuleMode = "reinvest" | "fixed_amount" | "percentage";
 export type RedemptionStatus = "pending" | "executed" | "skipped";
 export type PhysicalAssetCategory =
@@ -88,8 +96,47 @@ export type IROtherIncomeCategory =
   | "isento"
   | "exclusivo_fonte"
   | "rendimento_acumulado";
-export type IRDarfKind = "swing" | "day_trade" | "fii";
+export type IRDarfKind =
+  | "swing"
+  | "day_trade"
+  | "fii"
+  | "exterior"
+  | "crypto"
+  | "options";
 export type AccountantScope = "ir_readonly";
+
+export type FontePagadoraType =
+  | "clt"
+  | "pj_propria"
+  | "pj_outros"
+  | "aluguel"
+  | "pensao"
+  | "aposentadoria"
+  | "bolsa"
+  | "outra";
+export type RegimeTributario =
+  | "mei"
+  | "simples_nacional"
+  | "lucro_presumido"
+  | "lucro_real";
+
+export type OptionType = "call" | "put";
+export type OptionPosition = "covered" | "naked" | "long";
+export type CarneLeaoKind =
+  | "aluguel"
+  | "freelance_pf"
+  | "pensao_recebida"
+  | "exterior_trabalho"
+  | "outros";
+export type AccountantNoteSection =
+  | "bens"
+  | "rendimentos"
+  | "renda_variavel"
+  | "imposto"
+  | "pagamentos"
+  | "geral";
+export type AccountantNoteStatus = "open" | "resolved";
+export type EmailNotificationStatus = "queued" | "sent" | "failed";
 
 export type GoalType =
   | "emergencia"
@@ -312,6 +359,7 @@ export interface Database {
           kind: CategoryKind;
           sort_order: number;
           is_archived: boolean;
+          ir_deductible_kind: IRDeductibleKind | null;
           created_at: string;
         };
         Insert: {
@@ -325,6 +373,7 @@ export interface Database {
           kind: CategoryKind;
           sort_order?: number;
           is_archived?: boolean;
+          ir_deductible_kind?: IRDeductibleKind | null;
           created_at?: string;
         };
         Update: {
@@ -338,6 +387,7 @@ export interface Database {
           kind?: CategoryKind;
           sort_order?: number;
           is_archived?: boolean;
+          ir_deductible_kind?: IRDeductibleKind | null;
           created_at?: string;
         };
         Relationships: [
@@ -383,6 +433,9 @@ export interface Database {
            * INSERT/UPDATE quando date ≤ today (SP). */
           balance_applied_at: string | null;
           tags: string[];
+          fonte_pagadora_id: string | null;
+          irrf_amount: number | null;
+          inss_amount: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -404,6 +457,9 @@ export interface Database {
           transfer_pair_id?: string | null;
           transfer_direction?: TransferDirection | null;
           is_recurring?: boolean;
+          fonte_pagadora_id?: string | null;
+          irrf_amount?: number | null;
+          inss_amount?: number | null;
           recurring_rule_id?: string | null;
           metadata?: Json;
           balance_applied_at?: string | null;
@@ -573,6 +629,13 @@ export interface Database {
           lifetime_dividends_received: number;
           cnpj: string | null;
           receita_code: string | null;
+          option_type: OptionType | null;
+          strike_price: number | null;
+          expiry_date: string | null;
+          underlying_ticker: string | null;
+          series_code: string | null;
+          option_position: OptionPosition | null;
+          is_exterior: boolean;
           metadata: Json;
           created_at: string;
           updated_at: string;
@@ -598,6 +661,13 @@ export interface Database {
           lifetime_dividends_received?: number;
           cnpj?: string | null;
           receita_code?: string | null;
+          option_type?: OptionType | null;
+          strike_price?: number | null;
+          expiry_date?: string | null;
+          underlying_ticker?: string | null;
+          series_code?: string | null;
+          option_position?: OptionPosition | null;
+          is_exterior?: boolean;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;
@@ -948,6 +1018,8 @@ export interface Database {
           last_materialized_date: string | null;
           notes: string | null;
           tags: string[];
+          ir_deductible_kind: IRDeductibleKind | null;
+          is_tax_deductible: boolean;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -974,6 +1046,8 @@ export interface Database {
           last_materialized_date?: string | null;
           notes?: string | null;
           tags?: string[];
+          ir_deductible_kind?: IRDeductibleKind | null;
+          is_tax_deductible?: boolean;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -1328,6 +1402,9 @@ export interface Database {
           payment_date: string | null;
           is_dependent_payment: boolean;
           notes: string | null;
+          transaction_id: string | null;
+          recurring_rule_id: string | null;
+          auto_imported: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1345,6 +1422,9 @@ export interface Database {
           payment_date?: string | null;
           is_dependent_payment?: boolean;
           notes?: string | null;
+          transaction_id?: string | null;
+          recurring_rule_id?: string | null;
+          auto_imported?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1366,6 +1446,7 @@ export interface Database {
           thirteenth_amount: number;
           currency: Currency;
           notes: string | null;
+          fonte_pagadora_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1383,6 +1464,7 @@ export interface Database {
           thirteenth_amount?: number;
           currency?: Currency;
           notes?: string | null;
+          fonte_pagadora_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1541,6 +1623,198 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["accountant_household_access"]["Insert"]>;
         Relationships: [];
       };
+      fontes_pagadoras: {
+        Row: {
+          id: string;
+          household_id: string;
+          type: FontePagadoraType;
+          name: string;
+          cnpj: string | null;
+          cpf: string | null;
+          regime_tributario: RegimeTributario | null;
+          default_irrf_rate: number | null;
+          default_inss_rate: number | null;
+          is_active: boolean;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          type: FontePagadoraType;
+          name: string;
+          cnpj?: string | null;
+          cpf?: string | null;
+          regime_tributario?: RegimeTributario | null;
+          default_irrf_rate?: number | null;
+          default_inss_rate?: number | null;
+          is_active?: boolean;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["fontes_pagadoras"]["Insert"]>;
+        Relationships: [];
+      };
+      known_institutions: {
+        Row: {
+          id: number;
+          cnpj: string;
+          name: string;
+          name_patterns: string[];
+          ir_deductible_kind: IRDeductibleKind | null;
+          category: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          cnpj: string;
+          name: string;
+          name_patterns?: string[];
+          ir_deductible_kind?: IRDeductibleKind | null;
+          category: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["known_institutions"]["Insert"]>;
+        Relationships: [];
+      };
+      carne_leao_mensal: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          month: number;
+          kind: CarneLeaoKind;
+          description: string;
+          source_name: string | null;
+          source_cpf_cnpj: string | null;
+          gross_amount: number;
+          deductible_expenses: number;
+          taxable_base: number;
+          tax_due: number;
+          due_date: string | null;
+          paid_at: string | null;
+          payment_reference: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          month: number;
+          kind: CarneLeaoKind;
+          description: string;
+          source_name?: string | null;
+          source_cpf_cnpj?: string | null;
+          gross_amount: number;
+          deductible_expenses?: number;
+          taxable_base?: number;
+          tax_due?: number;
+          due_date?: string | null;
+          paid_at?: string | null;
+          payment_reference?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["carne_leao_mensal"]["Insert"]>;
+        Relationships: [];
+      };
+      email_notifications_log: {
+        Row: {
+          id: string;
+          recipient_email: string;
+          recipient_user_id: string | null;
+          notification_type: string;
+          subject: string | null;
+          status: EmailNotificationStatus;
+          related_household_id: string | null;
+          related_entity_id: string | null;
+          metadata: Json;
+          error_message: string | null;
+          sent_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_email: string;
+          recipient_user_id?: string | null;
+          notification_type: string;
+          subject?: string | null;
+          status?: EmailNotificationStatus;
+          related_household_id?: string | null;
+          related_entity_id?: string | null;
+          metadata?: Json;
+          error_message?: string | null;
+          sent_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["email_notifications_log"]["Insert"]>;
+        Relationships: [];
+      };
+      accountant_notes: {
+        Row: {
+          id: string;
+          accountant_id: string;
+          household_id: string;
+          year: number;
+          section: AccountantNoteSection;
+          status: AccountantNoteStatus;
+          content: string;
+          resolved_by: string | null;
+          resolved_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          accountant_id: string;
+          household_id: string;
+          year: number;
+          section: AccountantNoteSection;
+          status?: AccountantNoteStatus;
+          content: string;
+          resolved_by?: string | null;
+          resolved_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_notes"]["Insert"]>;
+        Relationships: [];
+      };
+      accountant_documents: {
+        Row: {
+          id: string;
+          accountant_id: string;
+          household_id: string;
+          year: number;
+          name: string;
+          storage_path: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          notes: string | null;
+          uploaded_at: string;
+        };
+        Insert: {
+          id?: string;
+          accountant_id: string;
+          household_id: string;
+          year: number;
+          name: string;
+          storage_path?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          notes?: string | null;
+          uploaded_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_documents"]["Insert"]>;
+        Relationships: [];
+      };
       accountant_audit_log: {
         Row: {
           id: string;
@@ -1664,6 +1938,10 @@ export interface Database {
       touch_accountant_access: {
         Args: { p_household_id: string };
         Returns: void;
+      };
+      refresh_day_trade_flags: {
+        Args: { p_household_id: string };
+        Returns: number;
       };
       add_investment_movement: {
         Args: {

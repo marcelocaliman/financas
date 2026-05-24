@@ -9,6 +9,9 @@ import { DependentsManager } from "@/components/ir/dependents-manager";
 import { DeductiblesManager } from "@/components/ir/deductibles-manager";
 import { OtherIncomesManager } from "@/components/ir/other-incomes-manager";
 import { AccountantSection } from "@/components/ir/accountant-section";
+import { FontesPagadorasManager } from "@/components/ir/fontes-pagadoras-manager";
+import { AutoDeductiblesImport } from "@/components/ir/auto-deductibles-import";
+import { findDeductibleCandidates } from "@/services/ir/auto-deductibles";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +36,7 @@ export default async function IRConfigPage({
     { data: invites },
     { data: accesses },
     { data: audit },
+    { data: fontes },
   ] = await Promise.all([
     supabase.from("ir_settings").select("*").maybeSingle(),
     supabase.from("ir_dependents").select("*").order("created_at"),
@@ -62,7 +66,14 @@ export default async function IRConfigPage({
       .select("*, accountant:accountant_profiles(full_name)")
       .order("created_at", { ascending: false })
       .limit(30),
+    supabase
+      .from("fontes_pagadoras")
+      .select("*")
+      .order("type")
+      .order("name"),
   ]);
+
+  const candidates = await findDeductibleCandidates(year, ctx.household.id);
 
   return (
     <>
@@ -91,11 +102,23 @@ export default async function IRConfigPage({
 
       <Panel className="mb-5">
         <PanelHeader
+          title="Fontes pagadoras"
+          meta="Empresas/pessoas que te pagam — usado pra classificar rendimentos corretamente no IR"
+        />
+        <FontesPagadorasManager fontes={fontes ?? []} />
+      </Panel>
+
+      <Panel className="mb-5">
+        <PanelHeader
           title="Dependentes"
           meta={`${(dependents ?? []).length} cadastrado${(dependents ?? []).length === 1 ? "" : "s"}`}
         />
         <DependentsManager dependents={dependents ?? []} />
       </Panel>
+
+      <div className="mb-5">
+        <AutoDeductiblesImport year={year} candidates={candidates} />
+      </div>
 
       <Panel className="mb-5">
         <PanelHeader

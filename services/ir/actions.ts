@@ -6,6 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { getBensReport } from "@/services/ir/bens";
 import { getRendaVariavelReport, persistDarfs } from "@/services/ir/renda-variavel";
+import {
+  findDeductibleCandidates,
+  importDeductiblesBatch,
+} from "@/services/ir/auto-deductibles";
 
 const CURRENCIES = ["BRL", "EUR", "USD"] as const;
 
@@ -284,6 +288,50 @@ export async function markDarfPaid(args: {
     .eq("id", args.id);
   if (error) return { error: error.message };
   revalidatePath("/ir");
+  return { ok: true };
+}
+
+// ============================================================================
+// Importar dedutíveis automáticos
+// ============================================================================
+export async function importDeductibles(args: {
+  year: number;
+  transactionIds?: string[];
+}): Promise<IRFormState & { created?: number; skipped?: number }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+
+  const allCandidates = await findDeductibleCandidates(args.year, ctx.household.id);
+  const filtered = args.transactionIds
+    ? allCandidates.filter((c) => args.transactionIds!.includes(c.transactionId))
+    : allCandidates.filter((c) => c.confidence === "high");
+
+  try {
+    const r = await importDeductiblesBatch({
+      year: args.year,
+      candidates: filtered,
+      householdId: ctx.household.id,
+    });
+    for (const p of paths(args.year)) revalidatePath(p);
+    return { ok: true, created: r.created, skipped: r.skipped };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erro ao importar.";
+    return { error: msg };
+  }
+}
+
+export async function setCategoryDeductibleKind(args: {
+  categoryId: string;
+  kind: string | null;
+}): Promise<IRFormState> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("categories")
+    .update({ ir_deductible_kind: args.kind as never })
+    .eq("id", args.categoryId);
+  if (error) return { error: error.message };
+  revalidatePath("/ir");
+  revalidatePath("/categorias");
   return { ok: true };
 }
 

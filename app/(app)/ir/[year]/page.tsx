@@ -18,6 +18,10 @@ import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { ExportActions } from "@/components/ir/export-actions";
 import { RecomputeDarfsButton } from "@/components/ir/recompute-darfs-button";
 import { CloseYearButton } from "@/components/ir/close-year-button";
+import { CarneLeaoManager } from "@/components/ir/carne-leao-manager";
+import { listCarneLeao } from "@/services/ir/carne-leao";
+import { getExteriorReport, getCryptoReport } from "@/services/ir/exterior-crypto";
+import { NotesPanel } from "@/components/accountant/notes-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +44,27 @@ export default async function IRYearPage({
   if (!ctx) return null;
 
   const supabase = await createClient();
-  const [bens, rendimentos, rv, imposto, { data: snapshot }, { data: settings }, { data: deps }, { data: pays }] =
-    await Promise.all([
+  const [
+    bens,
+    rendimentos,
+    rv,
+    imposto,
+    exterior,
+    crypto,
+    carneLeao,
+    { data: snapshot },
+    { data: settings },
+    { data: deps },
+    { data: pays },
+    { data: notes },
+  ] = await Promise.all([
       getBensReport(year),
       getRendimentosReport(year),
       getRendaVariavelReport(year),
       computeImposto(year),
+      getExteriorReport(year),
+      getCryptoReport(year),
+      listCarneLeao(year),
       supabase
         .from("ir_year_snapshots")
         .select("closed_at")
@@ -54,6 +73,11 @@ export default async function IRYearPage({
       supabase.from("ir_settings").select("*").maybeSingle(),
       supabase.from("ir_dependents").select("id, name").eq("is_active", true),
       supabase.from("ir_deductible_payments").select("id, amount, currency").eq("year", year),
+      supabase
+        .from("accountant_notes")
+        .select("*, accountant:accountant_profiles(full_name)")
+        .eq("year", year)
+        .order("created_at", { ascending: false }),
     ]);
 
   const isClosed = !!snapshot?.closed_at;
@@ -109,6 +133,16 @@ export default async function IRYearPage({
           </>
         }
       />
+
+      {/* Anotações do contador (se houver) */}
+      {ctx && notes && notes.length > 0 ? (
+        <NotesPanel
+          householdId={ctx.household.id}
+          year={year}
+          notes={notes as never}
+          isAccountant={false}
+        />
+      ) : null}
 
       {/* TIER 1 — KPIs gerais */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -180,27 +214,121 @@ export default async function IRYearPage({
           <RecomputeDarfsButton year={year} />
         </div>
         <RendaVariavelTable report={rv} />
-        <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-4 text-[12.5px]">
+        <div className="mt-4 pt-4 border-t border-border grid grid-cols-2 lg:grid-cols-4 gap-4 text-[12.5px]">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Prejuízo a compensar — Swing
+              Prejuízo — Swing
             </div>
             <div className="font-mono text-[15px] mt-1">R$ {fmtBRL(rv.finalCarryforward.swing)}</div>
           </div>
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Prejuízo a compensar — Day
+              Prejuízo — Day
             </div>
             <div className="font-mono text-[15px] mt-1">R$ {fmtBRL(rv.finalCarryforward.day_trade)}</div>
           </div>
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Prejuízo a compensar — FII
+              Prejuízo — FII
             </div>
             <div className="font-mono text-[15px] mt-1">R$ {fmtBRL(rv.finalCarryforward.fii)}</div>
           </div>
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+              Prejuízo — Opções
+            </div>
+            <div className="font-mono text-[15px] mt-1">R$ {fmtBRL(rv.finalCarryforward.options)}</div>
+          </div>
         </div>
       </Panel>
+
+      {/* TIER 4.5 — Carnê-leão mensal */}
+      <Panel id="carne-leao" className="mb-5">
+        <PanelHeader
+          title="Carnê-leão — aluguel, freelance, exterior"
+          meta="DARF 0190 mensal, vence dia útil seguinte"
+        />
+        <CarneLeaoManager year={year} entries={carneLeao} />
+      </Panel>
+
+      {/* TIER 4.6 — Exterior + cripto */}
+      {(exterior.byAsset.length > 0 || crypto.monthly.some((m) => m.grossSales > 0)) ? (
+        <Panel id="exterior-crypto" className="mb-5">
+          <PanelHeader
+            title="Aplicações no exterior + cripto"
+            meta="Lei 14.754/2023 — 15% sobre lucro anual"
+          />
+          {exterior.byAsset.length > 0 ? (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge tone="navy">Exterior · {exterior.byAsset.length} ativos</Badge>
+                <span className="text-[12px] text-muted-foreground">
+                  Lucro anual R$ {fmtBRL(exterior.totalProfitBRL)} ·
+                  imposto R$ {fmtBRL(exterior.taxDue)}
+                </span>
+              </div>
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="text-faint-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
+                    <th className="text-left pb-1 font-medium">Ticker</th>
+                    <th className="text-left pb-1 font-medium">Nome</th>
+                    <th className="text-right pb-1 font-medium">Compras</th>
+                    <th className="text-right pb-1 font-medium">Vendas</th>
+                    <th className="text-right pb-1 font-medium">Lucro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exterior.byAsset.map((a) => (
+                    <tr key={a.investmentId} className="border-t border-border">
+                      <td className="py-1.5 font-mono text-foreground">{a.ticker}</td>
+                      <td className="py-1.5 text-muted-foreground truncate">{a.name}</td>
+                      <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(a.totalBoughtBRL)}</td>
+                      <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(a.totalSoldBRL)}</td>
+                      <td className={"py-1.5 font-mono text-right tabular-nums " + (a.profitBRL >= 0 ? "text-olive-700" : "text-rust-600")}>R$ {fmtBRL(a.profitBRL)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {crypto.monthly.some((m) => m.grossSales > 0) ? (
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge tone="gold">Criptoativos</Badge>
+                <span className="text-[12px] text-muted-foreground">
+                  Imposto total ano: R$ {fmtBRL(crypto.totalTaxDue)}
+                </span>
+              </div>
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="text-faint-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
+                    <th className="text-left pb-1 font-medium">Mês</th>
+                    <th className="text-right pb-1 font-medium">Vendas</th>
+                    <th className="text-right pb-1 font-medium">Lucro</th>
+                    <th className="text-right pb-1 font-medium">DARF</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crypto.monthly.filter((m) => m.grossSales > 0).map((m) => {
+                    const monthLabel = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][m.month - 1];
+                    return (
+                      <tr key={m.month} className="border-t border-border">
+                        <td className="py-1.5 font-mono text-foreground">{monthLabel}</td>
+                        <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(m.grossSales)}</td>
+                        <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(m.profit)}</td>
+                        <td className="py-1.5 font-mono text-right tabular-nums">
+                          {m.isExempt ? <span className="text-olive-700">isento</span> : `R$ ${fmtBRL(m.taxDue)}`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </Panel>
+      ) : null}
 
       {/* TIER 5 — Imposto devido (compare Simples vs Completo) */}
       <Panel id="imposto" className="mb-5">
