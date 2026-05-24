@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "motion/react";
 import {
   Home,
   ArrowLeftRight,
@@ -16,6 +17,13 @@ import {
   RefreshCw,
   FileText,
   Shield,
+  ChevronLeft,
+  LayoutDashboard,
+  Users as UsersIcon,
+  History,
+  Activity,
+  FileWarning,
+  Settings,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -28,10 +36,10 @@ type NavItem = {
   label: string;
   href: string;
   icon: typeof Home;
-  group: "principal" | "investir" | "config";
+  group: string;
 };
 
-const navItems: NavItem[] = [
+const mainNavItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: Home, group: "principal" },
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
@@ -46,10 +54,29 @@ const navItems: NavItem[] = [
   { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
 ];
 
-const groupLabels: Record<NavItem["group"], string> = {
+const mainGroupLabels: Record<string, string> = {
   principal: "Cotidiano",
   investir: "Patrimônio",
   config: "Bastidores",
+};
+
+const adminNavItems: NavItem[] = [
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard, group: "geral" },
+  { label: "Households", href: "/admin/households", icon: Home, group: "gestao" },
+  { label: "Usuários", href: "/admin/users", icon: UsersIcon, group: "gestao" },
+  { label: "Assinaturas", href: "/admin/subscriptions", icon: CreditCard, group: "billing" },
+  { label: "Pedidos LGPD", href: "/admin/data-requests", icon: FileWarning, group: "lgpd" },
+  { label: "Audit log", href: "/admin/audit-log", icon: History, group: "lgpd" },
+  { label: "Métricas", href: "/admin/metrics", icon: Activity, group: "observabilidade" },
+  { label: "Configurações", href: "/admin/settings", icon: Settings, group: "observabilidade" },
+];
+
+const adminGroupLabels: Record<string, string> = {
+  geral: "Visão geral",
+  gestao: "Gestão",
+  billing: "Receita",
+  lgpd: "Compliance",
+  observabilidade: "Sistema",
 };
 
 export function Sidebar({
@@ -64,17 +91,70 @@ export function Sidebar({
   isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  // /metas: combina conquistas (trophy) com lembretes vencidos (urgência).
-  // Lembretes têm prioridade visual: aparecem em vermelho.
+  const isAdminContext = pathname.startsWith("/admin");
+
+  return (
+    <aside className="hidden lg:flex flex-col w-[220px] bg-ink-950 text-navy-100 sticky top-0 h-screen border-r border-ink-800 overflow-hidden">
+      <AnimatePresence mode="wait" initial={false}>
+        {isAdminContext ? (
+          <SidebarContent
+            key="admin"
+            variant="admin"
+            slideFrom="right"
+            user={user}
+            householdName={householdName}
+            pathname={pathname}
+          />
+        ) : (
+          <SidebarContent
+            key="main"
+            variant="main"
+            slideFrom="left"
+            user={user}
+            householdName={householdName}
+            pathname={pathname}
+            badges={badges}
+            isPlatformAdmin={isPlatformAdmin}
+          />
+        )}
+      </AnimatePresence>
+    </aside>
+  );
+}
+
+function SidebarContent({
+  variant,
+  slideFrom,
+  user,
+  householdName,
+  pathname,
+  badges,
+  isPlatformAdmin,
+}: {
+  variant: "main" | "admin";
+  slideFrom: "left" | "right";
+  user: { name: string; email: string | null };
+  householdName: string;
+  pathname: string;
+  badges?: SidebarBadges;
+  isPlatformAdmin?: boolean;
+}) {
+  const navItems = variant === "admin" ? adminNavItems : mainNavItems;
+  const groupLabels = variant === "admin" ? adminGroupLabels : mainGroupLabels;
+
   const metasReminders = badges?.metasRemindersDue ?? 0;
   const metasAchieved = badges?.metasJustAchieved ?? 0;
-  const badgeByHref: Record<string, number> = {
-    "/resgates": badges?.resgatesPendingSoon ?? 0,
-    "/metas": metasReminders > 0 ? metasReminders : metasAchieved,
-  };
+  const badgeByHref: Record<string, number> =
+    variant === "main"
+      ? {
+          "/resgates": badges?.resgatesPendingSoon ?? 0,
+          "/metas": metasReminders > 0 ? metasReminders : metasAchieved,
+        }
+      : {};
   const badgeIsReminderByHref: Record<string, boolean> = {
     "/metas": metasReminders > 0,
   };
+
   const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     acc[item.group] = acc[item.group] ?? [];
     acc[item.group].push(item);
@@ -89,27 +169,63 @@ export function Sidebar({
     .toUpperCase();
 
   return (
-    <aside className="hidden lg:flex flex-col w-[220px] bg-ink-950 text-navy-100 sticky top-0 h-screen border-r border-ink-800">
+    <motion.div
+      initial={{ x: slideFrom === "right" ? "100%" : "-100%", opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      exit={{ x: slideFrom === "right" ? "100%" : "-100%", opacity: 0 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="absolute inset-0 flex flex-col"
+    >
       {/* Brand */}
       <div className="px-7 pt-7 pb-6 border-b border-ink-800">
-        <BrandMark tone="light" size="md" />
-        <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-navy-400 mt-1.5 font-medium">
-          {householdName}
-        </div>
+        {variant === "admin" ? (
+          <div>
+            <div className="flex items-center gap-2 text-gold-600">
+              <Shield className="w-4 h-4" strokeWidth={1.7} />
+              <span className="font-display italic text-[20px] tracking-[-0.02em]">
+                superadmin
+              </span>
+            </div>
+            <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-navy-400 mt-1.5 font-medium">
+              Painel da plataforma
+            </div>
+          </div>
+        ) : (
+          <>
+            <BrandMark tone="light" size="md" />
+            <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-navy-400 mt-1.5 font-medium">
+              {householdName}
+            </div>
+          </>
+        )}
       </div>
 
+      {/* Botão "voltar ao app" no topo do admin */}
+      {variant === "admin" ? (
+        <Link
+          href="/dashboard"
+          className="mx-4 mt-3 mb-1 inline-flex items-center gap-2 px-3 py-2 rounded-[7px] text-[12.5px] text-navy-200 hover:bg-ink-800 hover:text-white transition-colors"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
+          Voltar ao app
+        </Link>
+      ) : null}
+
       {/* Nav */}
-      <nav className="flex-1 px-4 pt-5 overflow-y-auto">
-        {(Object.keys(grouped) as Array<NavItem["group"]>).map((g) => (
+      <nav className="flex-1 px-4 pt-3 overflow-y-auto">
+        {(Object.keys(grouped) as string[]).map((g) => (
           <div key={g} className="mb-1">
             <div className="text-[10px] uppercase tracking-[0.16em] text-ink-600 px-3 mt-4 mb-2 font-medium">
-              {groupLabels[g]}
+              {groupLabels[g] ?? g}
             </div>
             {grouped[g].map((item) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.href ||
-                (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                (item.href !== "/dashboard" &&
+                  item.href !== "/admin" &&
+                  pathname.startsWith(item.href)) ||
+                (item.href === "/admin" && pathname === "/admin");
               const badgeCount = badgeByHref[item.href] ?? 0;
               return (
                 <Link
@@ -118,12 +234,19 @@ export function Sidebar({
                   className={cn(
                     "relative flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13.5px] mb-0.5 transition-colors",
                     isActive
-                      ? "bg-ink-800 text-white font-medium"
+                      ? variant === "admin"
+                        ? "bg-gold-600/15 text-gold-600 font-medium"
+                        : "bg-ink-800 text-white font-medium"
                       : "text-navy-200 hover:bg-ink-800 hover:text-white",
                   )}
                 >
                   {isActive ? (
-                    <span className="absolute left-0 top-2 bottom-2 w-[2px] bg-gold-600 rounded-full" />
+                    <span
+                      className={cn(
+                        "absolute left-0 top-2 bottom-2 w-[2px] rounded-full",
+                        variant === "admin" ? "bg-gold-600" : "bg-gold-600",
+                      )}
+                    />
                   ) : null}
                   <Icon
                     className={cn(
@@ -155,17 +278,12 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* Platform Admin (só se for superadmin) */}
-      {isPlatformAdmin ? (
+      {/* Entrada do admin — só visível no modo "main" */}
+      {variant === "main" && isPlatformAdmin ? (
         <div className="border-t border-ink-800 px-4 pt-3 pb-1">
           <Link
             href="/admin"
-            className={cn(
-              "flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] transition-colors",
-              pathname.startsWith("/admin")
-                ? "bg-gold-600/15 text-gold-600"
-                : "text-gold-600/80 hover:bg-ink-800 hover:text-gold-600",
-            )}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] transition-colors text-gold-600/80 hover:bg-ink-800 hover:text-gold-600"
           >
             <Shield className="w-[15px] h-[15px]" strokeWidth={1.7} />
             <span className="flex-1">Superadmin</span>
@@ -175,7 +293,7 @@ export function Sidebar({
 
       {/* User + theme + live ticker */}
       <div className="border-t border-ink-800 px-4 py-3 space-y-2">
-        <SidebarLiveTicker />
+        {variant === "main" ? <SidebarLiveTicker /> : null}
         <div className="flex items-center justify-between px-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-600 font-medium">
             Modo
@@ -202,6 +320,6 @@ export function Sidebar({
           </div>
         </Link>
       </div>
-    </aside>
+    </motion.div>
   );
 }
