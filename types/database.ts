@@ -77,18 +77,44 @@ export interface Database {
         Row: {
           id: string;
           name: string;
+          subscription_tier: "free" | "pro" | "family" | "lifetime";
+          subscription_status:
+            | "active"
+            | "trialing"
+            | "past_due"
+            | "cancelled"
+            | "suspended";
+          subscription_started_at: string | null;
+          subscription_renews_at: string | null;
+          trial_ends_at: string | null;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          created_by: string | null;
+          suspended_reason: string | null;
+          suspended_at: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           name: string;
+          subscription_tier?: "free" | "pro" | "family" | "lifetime";
+          subscription_status?:
+            | "active"
+            | "trialing"
+            | "past_due"
+            | "cancelled"
+            | "suspended";
+          subscription_started_at?: string | null;
+          subscription_renews_at?: string | null;
+          trial_ends_at?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          created_by?: string | null;
+          suspended_reason?: string | null;
+          suspended_at?: string | null;
           created_at?: string;
         };
-        Update: {
-          id?: string;
-          name?: string;
-          created_at?: string;
-        };
+        Update: Partial<Database["public"]["Tables"]["households"]["Insert"]>;
         Relationships: [];
       };
       users: {
@@ -98,6 +124,9 @@ export interface Database {
           display_name: string;
           role: "admin" | "member";
           preferences: Json;
+          is_active: boolean;
+          deactivated_at: string | null;
+          deactivated_reason: string | null;
           created_at: string;
         };
         Insert: {
@@ -106,6 +135,9 @@ export interface Database {
           display_name: string;
           role?: "admin" | "member";
           preferences?: Json;
+          is_active?: boolean;
+          deactivated_at?: string | null;
+          deactivated_reason?: string | null;
           created_at?: string;
         };
         Update: {
@@ -114,6 +146,9 @@ export interface Database {
           display_name?: string;
           role?: "admin" | "member";
           preferences?: Json;
+          is_active?: boolean;
+          deactivated_at?: string | null;
+          deactivated_reason?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -958,6 +993,110 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["household_invites"]["Insert"]>;
         Relationships: [];
       };
+      platform_admins: {
+        Row: {
+          user_id: string;
+          granted_by: string | null;
+          granted_at: string;
+          notes: string | null;
+        };
+        Insert: {
+          user_id: string;
+          granted_by?: string | null;
+          granted_at?: string;
+          notes?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["platform_admins"]["Insert"]>;
+        Relationships: [];
+      };
+      admin_audit_log: {
+        Row: {
+          id: string;
+          admin_user_id: string;
+          action: string;
+          target_household_id: string | null;
+          target_user_id: string | null;
+          details: Json | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          admin_user_id: string;
+          action: string;
+          target_household_id?: string | null;
+          target_user_id?: string | null;
+          details?: Json | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["admin_audit_log"]["Insert"]>;
+        Relationships: [];
+      };
+      user_consents: {
+        Row: {
+          id: string;
+          user_id: string;
+          consent_type:
+            | "terms_of_service"
+            | "privacy_policy"
+            | "data_processing"
+            | "marketing_emails"
+            | "analytics_cookies";
+          version: string;
+          granted: boolean;
+          granted_at: string;
+          revoked_at: string | null;
+          ip_address: string | null;
+          user_agent: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          consent_type:
+            | "terms_of_service"
+            | "privacy_policy"
+            | "data_processing"
+            | "marketing_emails"
+            | "analytics_cookies";
+          version: string;
+          granted: boolean;
+          granted_at?: string;
+          revoked_at?: string | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["user_consents"]["Insert"]>;
+        Relationships: [];
+      };
+      data_access_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          request_type: "export" | "delete" | "rectify";
+          status: "pending" | "in_progress" | "completed" | "rejected";
+          requested_at: string;
+          completed_at: string | null;
+          result_payload: Json | null;
+          admin_notes: string | null;
+          handled_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          request_type: "export" | "delete" | "rectify";
+          status?: "pending" | "in_progress" | "completed" | "rejected";
+          requested_at?: string;
+          completed_at?: string | null;
+          result_payload?: Json | null;
+          admin_notes?: string | null;
+          handled_by?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["data_access_requests"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -972,6 +1111,23 @@ export interface Database {
       current_household_id: {
         Args: Record<string, never>;
         Returns: string;
+      };
+      is_platform_admin: {
+        Args: { uid?: string };
+        Returns: boolean;
+      };
+      admin_platform_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          total_households: number;
+          total_users: number;
+          active_subscriptions: number;
+          trialing: number;
+          suspended: number;
+          pending_data_requests: number;
+          new_households_7d: number;
+          new_users_7d: number;
+        }[];
       };
       create_transfer: {
         Args: {

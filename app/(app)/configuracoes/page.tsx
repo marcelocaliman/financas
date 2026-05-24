@@ -1,4 +1,5 @@
-import { CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
+import Link from "next/link";
+import { CheckCircle2, AlertCircle, MinusCircle, Shield } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
@@ -16,20 +17,31 @@ import {
 } from "./profile-forms";
 import { ResetDataSection } from "./reset-data-section";
 import { HouseholdInvitesSection } from "./household-invites-section";
+import { MembersManagement } from "@/components/household/members-management";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracoesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
-  const [displayCurrency, comparisonCurrency, cronStatuses, members, invites] =
-    await Promise.all([
-      getDisplayCurrency(),
-      getComparisonCurrency(),
-      getCronStatuses(),
-      listHouseholdMembers(),
-      listActiveInvites(),
-    ]);
+  const admin = createAdminClient();
+  const [
+    displayCurrency,
+    comparisonCurrency,
+    cronStatuses,
+    members,
+    invites,
+    householdData,
+  ] = await Promise.all([
+    getDisplayCurrency(),
+    getComparisonCurrency(),
+    getCronStatuses(),
+    listHouseholdMembers(),
+    listActiveInvites(),
+    admin.from("households").select("created_by").eq("id", ctx.household.id).maybeSingle(),
+  ]);
+  const ownerUserId = householdData.data?.created_by ?? null;
   const comparisonValue = comparisonCurrency ?? "off";
   const staleCount = cronStatuses.filter((c) => c.status !== "ok").length;
   const isAdmin = ctx.profile.role === "admin";
@@ -77,21 +89,20 @@ export default async function ConfiguracoesPage() {
           {members.length > 1 ? (
             <div className="mt-5 pt-5 border-t border-border">
               <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-2.5">
-                Membros
+                Membros · {members.length}
               </div>
-              <ul className="space-y-2">
-                {members.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between text-[13px]"
-                  >
-                    <span className="text-foreground">{m.display_name}</span>
-                    <span className="font-mono text-[11px] text-faint-foreground uppercase tracking-[0.1em]">
-                      {m.role}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <MembersManagement
+                members={members.map((m) => ({
+                  id: m.id,
+                  display_name: m.display_name,
+                  role: m.role as "admin" | "member",
+                  is_active: true,
+                  created_at: new Date().toISOString(),
+                }))}
+                isAdmin={isAdmin}
+                currentUserId={ctx.profile.id}
+                ownerUserId={ownerUserId}
+              />
             </div>
           ) : null}
 
@@ -103,6 +114,29 @@ export default async function ConfiguracoesPage() {
               invites={invites}
               isAdmin={isAdmin}
             />
+          </div>
+        </Panel>
+
+        <Panel className="border-navy-700/30">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Shield className="w-5 h-5 text-navy-700 dark:text-navy-300 shrink-0 mt-0.5" strokeWidth={1.7} />
+              <div>
+                <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground">
+                  Privacidade e dados (LGPD)
+                </div>
+                <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                  Exporte seus dados, gerencie consentimentos ou apague sua conta.
+                  Seus direitos garantidos pela Lei 13.709/2018.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/configuracoes/privacidade"
+              className="text-navy-700 dark:text-navy-300 text-[13px] shrink-0"
+            >
+              Abrir →
+            </Link>
           </div>
         </Panel>
 

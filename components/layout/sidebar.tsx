@@ -15,6 +15,7 @@ import {
   Repeat,
   RefreshCw,
   FileText,
+  Shield,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -55,10 +56,12 @@ export function Sidebar({
   user,
   householdName,
   badges,
+  isPlatformAdmin = false,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
   badges?: SidebarBadges;
+  isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
   // /metas: combina conquistas (trophy) com lembretes vencidos (urgência).
@@ -151,6 +154,24 @@ export function Sidebar({
           </div>
         ))}
       </nav>
+
+      {/* Platform Admin (só se for superadmin) */}
+      {isPlatformAdmin ? (
+        <div className="border-t border-ink-800 px-4 pt-3 pb-1">
+          <Link
+            href="/admin"
+            className={cn(
+              "flex items-center gap-2.5 px-3 py-2 rounded-[7px] text-[13px] transition-colors",
+              pathname.startsWith("/admin")
+                ? "bg-gold-600/15 text-gold-600"
+                : "text-gold-600/80 hover:bg-ink-800 hover:text-gold-600",
+            )}
+          >
+            <Shield className="w-[15px] h-[15px]" strokeWidth={1.7} />
+            <span className="flex-1">Superadmin</span>
+          </Link>
+        </div>
+      ) : null}
 
       {/* User + theme + live ticker */}
       <div className="border-t border-ink-800 px-4 py-3 space-y-2">

@@ -20,6 +20,7 @@ import {
   Settings,
   Menu,
   X,
+  Shield,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -65,10 +66,12 @@ export function MobileDrawer({
   user,
   householdName,
   badges,
+  isPlatformAdmin = false,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
   badges?: SidebarBadges;
+  isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -209,6 +212,24 @@ export function MobileDrawer({
               </div>
             ))}
           </nav>
+
+          {/* Platform Admin */}
+          {isPlatformAdmin ? (
+            <div className="border-t border-ink-800 px-3 pt-3 pb-1">
+              <Link
+                href="/admin"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-[8px] text-[14px] transition-colors",
+                  pathname.startsWith("/admin")
+                    ? "bg-gold-600/15 text-gold-600 font-medium"
+                    : "text-gold-600/80 active:bg-ink-800",
+                )}
+              >
+                <Shield className="w-[18px] h-[18px]" strokeWidth={1.7} />
+                <span className="flex-1">Superadmin</span>
+              </Link>
+            </div>
+          ) : null}
 
           {/* User + toggles */}
           <div className="border-t border-ink-800 px-4 py-3 space-y-2">
