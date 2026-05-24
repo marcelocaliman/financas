@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils/cn";
 
 const tones = {
   neutral: "bg-surface-muted text-muted-foreground",
-  // Cada tom inverte no dark: bg escuro com tint + texto claro.
-  // O /30 deixa o bg sutil contra o tema escuro em vez de quadrado colorido.
-  olive: "bg-olive-100 text-olive-700 dark:bg-olive-700/20 dark:text-olive-100",
-  rust: "bg-rust-100 text-rust-700 dark:bg-rust-700/20 dark:text-rust-100",
-  gold: "bg-gold-100 text-gold-700 dark:bg-gold-700/20 dark:text-gold-100",
-  navy: "bg-navy-100 text-navy-700 dark:bg-navy-700/30 dark:text-navy-100",
+  // Dark mode: bg sutil (tint baixa) + texto na cor da paleta -500/-300
+  // pra contraste agradável sem clarear demais (convenção do app).
+  olive: "bg-olive-100 text-olive-700 dark:bg-olive-700/15 dark:text-olive-500",
+  rust: "bg-rust-100 text-rust-700 dark:bg-rust-700/15 dark:text-rust-500",
+  gold: "bg-gold-100 text-gold-700 dark:bg-gold-700/15 dark:text-gold-500",
+  navy: "bg-navy-100 text-navy-700 dark:bg-navy-700/15 dark:text-navy-300",
 } as const;
 
 export type BadgeTone = keyof typeof tones;

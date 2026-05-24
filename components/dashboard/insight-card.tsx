@@ -9,7 +9,7 @@ export function InsightCard({ anomalies }: { anomalies: ExpenseAnomaly[] }) {
     return (
       <div className="rounded-[var(--radius-lg)] bg-surface border border-border px-7 py-5 mb-6 flex items-start gap-4 relative overflow-hidden">
         <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-olive-600" />
-        <div className="w-9 h-9 rounded-[10px] bg-olive-100 text-olive-700 dark:bg-olive-700/20 dark:text-olive-100 grid place-items-center shrink-0">
+        <div className="w-9 h-9 rounded-[10px] bg-olive-100 text-olive-700 dark:bg-olive-700/15 dark:text-olive-500 grid place-items-center shrink-0">
           <Sparkles className="w-4 h-4" strokeWidth={1.6} />
         </div>
         <div className="flex-1">
@@ -38,8 +38,8 @@ export function InsightCard({ anomalies }: { anomalies: ExpenseAnomaly[] }) {
       <div
         className={`w-9 h-9 rounded-[10px] grid place-items-center shrink-0 ${
           severityColor === "rust"
-            ? "bg-rust-100 text-rust-700 dark:bg-rust-700/20 dark:text-rust-100"
-            : "bg-gold-100 text-gold-700 dark:bg-gold-700/20 dark:text-gold-100"
+            ? "bg-rust-100 text-rust-700 dark:bg-rust-700/15 dark:text-rust-500"
+            : "bg-gold-100 text-gold-700 dark:bg-gold-700/15 dark:text-gold-500"
         }`}
       >
         <AlertCircle className="w-4 h-4" strokeWidth={1.6} />
