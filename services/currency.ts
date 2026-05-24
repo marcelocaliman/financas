@@ -32,6 +32,29 @@ export const getRateMap = cache(async (): Promise<RateMap> => {
   return buildRateMap(Array.from(latest.values()));
 });
 
+/**
+ * Mapa de taxas vigentes em uma DATA específica (ou na cotação mais próxima
+ * anterior). Útil pro IR: a Receita exige conversão de bens em moeda
+ * estrangeira pela cotação BCB de 31/12 do ano-base.
+ */
+export async function getRateMapAt(date: string): Promise<RateMap> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("currency_rates")
+    .select("base, quote, rate, date")
+    .lte("date", date)
+    .order("date", { ascending: false });
+  if (error || !data) return buildRateMap([]);
+  const latest = new Map<string, { base: Currency; quote: Currency; rate: number }>();
+  for (const r of data) {
+    const k = `${r.base}→${r.quote}`;
+    if (!latest.has(k)) {
+      latest.set(k, { base: r.base, quote: r.quote, rate: Number(r.rate) });
+    }
+  }
+  return buildRateMap(Array.from(latest.values()));
+}
+
 const DISPLAY_CURRENCY_FALLBACK: Currency = "BRL";
 
 /**

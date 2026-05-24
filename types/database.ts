@@ -53,6 +53,43 @@ export type PhysicalAssetCategory =
 export type DepreciationMethod = "none" | "linear";
 export type Currency = "BRL" | "EUR" | "USD";
 
+export type IRModel = "simples" | "completo" | "auto";
+export type IRDependentRelationship =
+  | "conjuge"
+  | "companheiro"
+  | "filho"
+  | "filha"
+  | "enteado"
+  | "pais"
+  | "avos"
+  | "irmaos"
+  | "menor_guarda"
+  | "outros";
+export type IRDeductibleKind =
+  | "plano_saude"
+  | "hospital"
+  | "medico"
+  | "dentista"
+  | "psicologo"
+  | "outros_saude"
+  | "educacao_titular"
+  | "educacao_dependente"
+  | "inss_titular"
+  | "inss_domestico"
+  | "pgbl"
+  | "previdencia_privada"
+  | "pensao_alimenticia"
+  | "doacao_eca"
+  | "doacao_cultural"
+  | "outros";
+export type IROtherIncomeCategory =
+  | "tributavel_pj"
+  | "tributavel_pf"
+  | "isento"
+  | "exclusivo_fonte"
+  | "rendimento_acumulado";
+export type IRDarfKind = "swing" | "day_trade" | "fii";
+
 export type GoalType =
   | "emergencia"
   | "casa"
@@ -212,6 +249,9 @@ export interface Database {
           currency: Currency;
           is_active: boolean;
           sort_order: number;
+          cnpj: string | null;
+          agency: string | null;
+          account_number: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -226,6 +266,9 @@ export interface Database {
           currency?: Currency;
           is_active?: boolean;
           sort_order?: number;
+          cnpj?: string | null;
+          agency?: string | null;
+          account_number?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -240,6 +283,9 @@ export interface Database {
           currency?: Currency;
           is_active?: boolean;
           sort_order?: number;
+          cnpj?: string | null;
+          agency?: string | null;
+          account_number?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -454,6 +500,9 @@ export interface Database {
           metadata: Json;
           is_active: boolean;
           sort_order: number;
+          receita_code: string | null;
+          registration_number: string | null;
+          address: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -472,6 +521,9 @@ export interface Database {
           metadata?: Json;
           is_active?: boolean;
           sort_order?: number;
+          receita_code?: string | null;
+          registration_number?: string | null;
+          address?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -518,6 +570,8 @@ export interface Database {
           is_active: boolean;
           last_yield_at: string | null;
           lifetime_dividends_received: number;
+          cnpj: string | null;
+          receita_code: string | null;
           metadata: Json;
           created_at: string;
           updated_at: string;
@@ -541,6 +595,8 @@ export interface Database {
           is_active?: boolean;
           last_yield_at?: string | null;
           lifetime_dividends_received?: number;
+          cnpj?: string | null;
+          receita_code?: string | null;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;
@@ -575,6 +631,7 @@ export interface Database {
           total_amount: number;
           fees: number;
           notes: string | null;
+          is_day_trade: boolean;
           created_by: string | null;
           created_at: string;
         };
@@ -588,6 +645,7 @@ export interface Database {
           unit_price: number;
           fees?: number;
           notes?: string | null;
+          is_day_trade?: boolean;
           created_by?: string | null;
           created_at?: string;
         };
@@ -1204,6 +1262,210 @@ export interface Database {
           handled_by?: string | null;
         };
         Update: Partial<Database["public"]["Tables"]["data_access_requests"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_settings: {
+        Row: {
+          household_id: string;
+          preferred_model: IRModel;
+          titular_user_id: string | null;
+          cpf_titular: string | null;
+          last_year_prepared: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          household_id: string;
+          preferred_model?: IRModel;
+          titular_user_id?: string | null;
+          cpf_titular?: string | null;
+          last_year_prepared?: number | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_dependents: {
+        Row: {
+          id: string;
+          household_id: string;
+          name: string;
+          cpf: string | null;
+          birth_date: string | null;
+          relationship: IRDependentRelationship;
+          is_active: boolean;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          name: string;
+          cpf?: string | null;
+          birth_date?: string | null;
+          relationship: IRDependentRelationship;
+          is_active?: boolean;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_dependents"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_deductible_payments: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          kind: IRDeductibleKind;
+          description: string;
+          recipient_name: string;
+          recipient_cnpj_cpf: string | null;
+          beneficiary: string | null;
+          amount: number;
+          currency: Currency;
+          payment_date: string | null;
+          is_dependent_payment: boolean;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          kind: IRDeductibleKind;
+          description: string;
+          recipient_name: string;
+          recipient_cnpj_cpf?: string | null;
+          beneficiary?: string | null;
+          amount: number;
+          currency?: Currency;
+          payment_date?: string | null;
+          is_dependent_payment?: boolean;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_deductible_payments"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_other_incomes: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          category: IROtherIncomeCategory;
+          description: string;
+          source_name: string;
+          source_cnpj_cpf: string | null;
+          gross_amount: number;
+          irrf_amount: number;
+          inss_amount: number;
+          thirteenth_amount: number;
+          currency: Currency;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          category: IROtherIncomeCategory;
+          description: string;
+          source_name: string;
+          source_cnpj_cpf?: string | null;
+          gross_amount: number;
+          irrf_amount?: number;
+          inss_amount?: number;
+          thirteenth_amount?: number;
+          currency?: Currency;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_other_incomes"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_darfs: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          month: number;
+          kind: IRDarfKind;
+          gross_sales: number;
+          gross_profit: number;
+          monthly_loss: number;
+          loss_carryforward_used: number;
+          taxable_base: number;
+          irrf_retained: number;
+          tax_due: number;
+          is_exempt: boolean;
+          paid_at: string | null;
+          payment_reference: string | null;
+          generated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          month: number;
+          kind: IRDarfKind;
+          gross_sales?: number;
+          gross_profit?: number;
+          monthly_loss?: number;
+          loss_carryforward_used?: number;
+          taxable_base?: number;
+          irrf_retained?: number;
+          tax_due?: number;
+          is_exempt?: boolean;
+          paid_at?: string | null;
+          payment_reference?: string | null;
+          generated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_darfs"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_loss_carryforward: {
+        Row: {
+          household_id: string;
+          kind: IRDarfKind;
+          balance: number;
+          last_updated_year: number | null;
+          last_updated_month: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          household_id: string;
+          kind: IRDarfKind;
+          balance?: number;
+          last_updated_year?: number | null;
+          last_updated_month?: number | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_loss_carryforward"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_year_snapshots: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          bens: Json;
+          totals: Json;
+          closed_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          bens?: Json;
+          totals?: Json;
+          closed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_year_snapshots"]["Insert"]>;
         Relationships: [];
       };
     };

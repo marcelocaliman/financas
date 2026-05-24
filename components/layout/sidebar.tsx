@@ -28,6 +28,7 @@ import {
   ToggleRight,
   Megaphone,
   Server,
+  Landmark,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -50,6 +51,7 @@ const mainNavItems: NavItem[] = [
   { label: "Assinaturas", href: "/assinaturas", icon: RefreshCw, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
   { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },
+  { label: "IRPF", href: "/ir", icon: Landmark, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
   { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
   { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
