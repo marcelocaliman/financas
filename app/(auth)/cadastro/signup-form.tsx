@@ -12,8 +12,16 @@ import { signUp, type SignupState } from "./actions";
  *  - "join": ingressa em um lar existente via código de convite.
  *    Substitui "nome do lar" por "código do convite".
  */
-export function SignupForm() {
-  const [mode, setMode] = useState<"create" | "join">("create");
+export function SignupForm({
+  initialMode = "create",
+  presetEmail,
+  redirectTo,
+}: {
+  initialMode?: "create" | "join" | "accountant";
+  presetEmail?: string;
+  redirectTo?: string;
+} = {}) {
+  const [mode, setMode] = useState<"create" | "join" | "accountant">(initialMode);
   const [state, action, pending] = useActionState<SignupState | undefined, FormData>(
     signUp,
     undefined,
@@ -38,35 +46,40 @@ export function SignupForm() {
   return (
     <form action={action} className="space-y-4">
       <input type="hidden" name="mode" value={mode} />
+      {redirectTo ? (
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+      ) : null}
 
-      <div className="inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px]">
-        <button
-          type="button"
-          onClick={() => setMode("create")}
-          className={
-            "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
-            (mode === "create"
-              ? "bg-surface text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground")
-          }
-        >
-          Criar lar
-        </button>
-        <button
-          type="button"
-          onClick={() => setMode("join")}
-          className={
-            "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
-            (mode === "join"
-              ? "bg-surface text-foreground shadow-xs"
-              : "text-muted-foreground hover:text-foreground")
-          }
-        >
-          Tenho um convite
-        </button>
-      </div>
+      {mode !== "accountant" ? (
+        <div className="inline-flex items-center gap-1 p-1 bg-surface-muted rounded-[10px]">
+          <button
+            type="button"
+            onClick={() => setMode("create")}
+            className={
+              "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
+              (mode === "create"
+                ? "bg-surface text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground")
+            }
+          >
+            Criar lar
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("join")}
+            className={
+              "px-3 py-1.5 rounded-[7px] text-[12.5px] font-medium tracking-[-0.005em] transition-colors " +
+              (mode === "join"
+                ? "bg-surface text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground")
+            }
+          >
+            Tenho um convite
+          </button>
+        </div>
+      ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={mode === "accountant" ? "" : "grid grid-cols-2 gap-3"}>
         <div>
           <Label htmlFor="displayName">Seu nome</Label>
           <Input
@@ -74,7 +87,7 @@ export function SignupForm() {
             name="displayName"
             autoComplete="given-name"
             required
-            placeholder="Marcelo"
+            placeholder="Nome completo"
           />
         </div>
         {mode === "create" ? (
@@ -87,7 +100,7 @@ export function SignupForm() {
               defaultValue=""
             />
           </div>
-        ) : (
+        ) : mode === "join" ? (
           <div>
             <Label htmlFor="inviteCode">Código de convite</Label>
             <Input
@@ -100,7 +113,7 @@ export function SignupForm() {
               className="font-mono tracking-[0.08em] uppercase"
             />
           </div>
-        )}
+        ) : null}
       </div>
       <div>
         <Label htmlFor="email">E-mail</Label>
@@ -111,6 +124,8 @@ export function SignupForm() {
           autoComplete="email"
           required
           placeholder="voce@email.com"
+          defaultValue={presetEmail ?? ""}
+          readOnly={!!presetEmail && mode === "accountant"}
         />
       </div>
       <div>
@@ -129,7 +144,13 @@ export function SignupForm() {
         <p className="text-[12.5px] text-rust-600">{state.error}</p>
       ) : null}
       <Button type="submit" variant="primary" size="lg" disabled={pending} className="w-full">
-        {pending ? "Criando…" : mode === "join" ? "Ingressar no lar" : "Criar conta"}
+        {pending
+          ? "Criando…"
+          : mode === "join"
+            ? "Ingressar no lar"
+            : mode === "accountant"
+              ? "Criar conta de contador"
+              : "Criar conta"}
       </Button>
     </form>
   );

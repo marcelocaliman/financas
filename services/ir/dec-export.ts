@@ -54,11 +54,14 @@ export async function generateDec(args: {
   year: number;
   cpf: string;
   nome: string;
+  householdId?: string;
+  /** Marca d'água quando exportado por contador (LGPD evidence) */
+  accountantWatermark?: { fullName: string; crc?: string; ip?: string };
 }): Promise<DecBundle> {
   const [bens, rendimentos, rv] = await Promise.all([
-    getBensReport(args.year),
-    getRendimentosReport(args.year),
-    getRendaVariavelReport(args.year),
+    getBensReport(args.year, args.householdId),
+    getRendimentosReport(args.year, args.householdId),
+    getRendaVariavelReport(args.year, args.householdId),
   ]);
 
   const lines: string[] = [];
@@ -178,10 +181,14 @@ export async function generateDec(args: {
   const content = lines.join("\n") + "\n";
   const filename = `IRPF_${args.year}_${cpfDigits}.DEC`;
 
+  const watermark = args.accountantWatermark
+    ? `\n# ────────────────────────────────────────────────────────────────────\n# Exportado por: ${args.accountantWatermark.fullName}${args.accountantWatermark.crc ? ` (${args.accountantWatermark.crc})` : ""} via Finanças\n# Em: ${new Date().toISOString()}${args.accountantWatermark.ip ? `\n# IP: ${args.accountantWatermark.ip}` : ""}\n# Acesso autorizado pelo titular conforme LGPD.\n# ────────────────────────────────────────────────────────────────────\n`
+    : "";
+
   return {
     filename,
-    content,
-    humanReadable: generateHumanReadable(args.year, bens, rendimentos, rv),
+    content: content + (watermark ? `\n${watermark}` : ""),
+    humanReadable: watermark + generateHumanReadable(args.year, bens, rendimentos, rv),
   };
 }
 

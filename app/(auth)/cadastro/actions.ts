@@ -28,7 +28,12 @@ const joinSchema = baseSchema.extend({
     .transform((v) => v.trim().toUpperCase()),
 });
 
-const schema = z.discriminatedUnion("mode", [createSchema, joinSchema]);
+const accountantSchema = baseSchema.extend({
+  mode: z.literal("accountant"),
+  redirectTo: z.string().optional(),
+});
+
+const schema = z.discriminatedUnion("mode", [createSchema, joinSchema, accountantSchema]);
 
 export type SignupState = {
   error?: string;
@@ -40,7 +45,12 @@ export async function signUp(
   formData: FormData,
 ): Promise<SignupState> {
   const rawMode = formData.get("mode");
-  const mode = rawMode === "join" ? "join" : "create";
+  const mode =
+    rawMode === "join"
+      ? "join"
+      : rawMode === "accountant"
+        ? "accountant"
+        : "create";
 
   const parsed = schema.safeParse({
     mode,
@@ -49,6 +59,7 @@ export async function signUp(
     inviteCode: formData.get("inviteCode") ?? "",
     email: formData.get("email"),
     password: formData.get("password"),
+    redirectTo: formData.get("redirectTo") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
@@ -63,7 +74,7 @@ export async function signUp(
   };
   if (parsed.data.mode === "create") {
     userMetadata.household_name = parsed.data.householdName;
-  } else {
+  } else if (parsed.data.mode === "join") {
     userMetadata.invite_code = parsed.data.inviteCode;
   }
 
@@ -88,7 +99,7 @@ export async function signUp(
     return { needsConfirmation: true };
   }
 
-  // Já com sessão — bootstrap ou redeem invite
+  // Já com sessão — bootstrap ou redeem invite ou contador
   if (parsed.data.mode === "join") {
     const { error: redeemError } = await supabase.rpc("redeem_household_invite", {
       p_code: parsed.data.inviteCode,
@@ -102,6 +113,11 @@ export async function signUp(
       if (msg.includes("already used")) return { error: "Esse código já foi usado." };
       return { error: redeemError.message };
     }
+  } else if (parsed.data.mode === "accountant") {
+    // Contador NÃO faz bootstrap_household. Vai pra /contador/onboarding
+    // que cria accountant_profile.
+    revalidatePath("/", "layout");
+    redirect(parsed.data.redirectTo || "/contador/onboarding");
   } else {
     const { error: bootstrapError } = await supabase.rpc("bootstrap_household", {
       p_household_name: parsed.data.householdName,

@@ -8,6 +8,7 @@ import { IRSettingsForm } from "@/components/ir/settings-form";
 import { DependentsManager } from "@/components/ir/dependents-manager";
 import { DeductiblesManager } from "@/components/ir/deductibles-manager";
 import { OtherIncomesManager } from "@/components/ir/other-incomes-manager";
+import { AccountantSection } from "@/components/ir/accountant-section";
 
 export const dynamic = "force-dynamic";
 
@@ -24,21 +25,44 @@ export default async function IRConfigPage({
   if (!ctx) return null;
 
   const supabase = await createClient();
-  const [{ data: settings }, { data: dependents }, { data: pays }, { data: others }] =
-    await Promise.all([
-      supabase.from("ir_settings").select("*").maybeSingle(),
-      supabase.from("ir_dependents").select("*").order("created_at"),
-      supabase
-        .from("ir_deductible_payments")
-        .select("*")
-        .eq("year", year)
-        .order("payment_date", { ascending: true, nullsFirst: false }),
-      supabase
-        .from("ir_other_incomes")
-        .select("*")
-        .eq("year", year)
-        .order("created_at"),
-    ]);
+  const [
+    { data: settings },
+    { data: dependents },
+    { data: pays },
+    { data: others },
+    { data: invites },
+    { data: accesses },
+    { data: audit },
+  ] = await Promise.all([
+    supabase.from("ir_settings").select("*").maybeSingle(),
+    supabase.from("ir_dependents").select("*").order("created_at"),
+    supabase
+      .from("ir_deductible_payments")
+      .select("*")
+      .eq("year", year)
+      .order("payment_date", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("ir_other_incomes")
+      .select("*")
+      .eq("year", year)
+      .order("created_at"),
+    supabase
+      .from("accountant_invites")
+      .select("*")
+      .is("accepted_at", null)
+      .is("revoked_at", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("accountant_household_access")
+      .select("*, accountant:accountant_profiles(full_name, email, crc_number, crc_state)")
+      .is("revoked_at", null)
+      .order("granted_at", { ascending: false }),
+    supabase
+      .from("accountant_audit_log")
+      .select("*, accountant:accountant_profiles(full_name)")
+      .order("created_at", { ascending: false })
+      .limit(30),
+  ]);
 
   return (
     <>
@@ -87,6 +111,19 @@ export default async function IRConfigPage({
           meta="Coisas que NÃO estão no app (salário CLT externo, freelance, etc)"
         />
         <OtherIncomesManager year={year} incomes={others ?? []} />
+      </Panel>
+
+      <Panel className="mb-5">
+        <PanelHeader
+          title="Compartilhar com contador"
+          meta="Acesso temporário, somente-leitura, totalmente auditado"
+        />
+        <AccountantSection
+          year={year}
+          invites={invites ?? []}
+          accesses={(accesses ?? []) as never}
+          audit={(audit ?? []) as never}
+        />
       </Panel>
     </>
   );

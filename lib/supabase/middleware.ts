@@ -32,20 +32,69 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isAcceptInvite = pathname.startsWith("/contador/aceitar");
 
   // Sem sessão tentando entrar em rota privada
-  if (!user && !isPublic && pathname !== "/") {
+  if (!user && !isPublic && !isAcceptInvite && pathname !== "/") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(url);
   }
 
-  // Com sessão tentando entrar em /login ou /cadastro
-  if (user && (pathname === "/login" || pathname === "/cadastro" || pathname === "/")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  // Com sessão: decide se é contador ou titular pra rotear corretamente
+  if (user) {
+    // Tenta achar perfil de contador OU titular
+    const [{ data: accountantProfile }, { data: userProfile }] = await Promise.all([
+      supabase
+        .from("accountant_profiles")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("users")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle(),
+    ]);
+
+    const isAccountant = !!accountantProfile;
+    const isTitular = !!userProfile;
+    const inContador = pathname.startsWith("/contador");
+
+    // Em /login ou /cadastro estando logado → manda pra área certa
+    if (pathname === "/login" || pathname === "/cadastro" || pathname === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = isAccountant ? "/contador" : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+
+    // Contador SEM perfil completo tentando navegar fora do onboarding → força onboarding
+    if (
+      isAccountant === false &&
+      isTitular === false &&
+      inContador &&
+      pathname !== "/contador/onboarding" &&
+      !isAcceptInvite
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/contador/onboarding";
+      return NextResponse.redirect(url);
+    }
+
+    // Contador tentando entrar em rota de app titular → manda pro /contador
+    if (isAccountant && !inContador && pathname !== "/configuracoes") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/contador";
+      return NextResponse.redirect(url);
+    }
+
+    // Titular tentando entrar em /contador (exceto aceitar convite) → bloqueia
+    if (isTitular && inContador && !isAcceptInvite) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
   }
 
   return supabaseResponse;

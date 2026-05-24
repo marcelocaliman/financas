@@ -79,17 +79,20 @@ function calcProgressiveTax(base: number): number {
   return 0;
 }
 
-export async function computeImposto(year: number): Promise<ImpostoResult> {
+export async function computeImposto(
+  year: number,
+  householdId?: string,
+): Promise<ImpostoResult> {
   const supabase = await createClient();
   const rates = await getRateMapAt(`${year}-12-31`);
 
+  const depsQuery = supabase.from("ir_dependents").select("id").eq("is_active", true);
+  const paysQuery = supabase.from("ir_deductible_payments").select("*").eq("year", year);
+
   const [rendimentos, { data: deps }, { data: pagamentos }] = await Promise.all([
-    getRendimentosReport(year),
-    supabase.from("ir_dependents").select("id").eq("is_active", true),
-    supabase
-      .from("ir_deductible_payments")
-      .select("*")
-      .eq("year", year),
+    getRendimentosReport(year, householdId),
+    householdId ? depsQuery.eq("household_id", householdId) : depsQuery,
+    householdId ? paysQuery.eq("household_id", householdId) : paysQuery,
   ]);
 
   const baseTributavelBruta = rendimentos.tributaveis.total;

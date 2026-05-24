@@ -109,22 +109,27 @@ function lastBusinessDayOfNextMonth(year: number, month: number): string {
   return last.toISOString().slice(0, 10);
 }
 
-export async function getRendaVariavelReport(year: number): Promise<RendaVariavelReport> {
+export async function getRendaVariavelReport(
+  year: number,
+  householdId?: string,
+): Promise<RendaVariavelReport> {
   const supabase = await createClient();
 
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   const rates = await getRateMapAt(yearEnd);
 
+  const mvQuery = supabase
+    .from("investment_movements")
+    .select("date, kind, quantity, unit_price, total_amount, fees, is_day_trade, investment:investments(id, ticker, asset_type, currency)")
+    .lte("date", yearEnd);
+  const cfQuery = supabase
+    .from("ir_loss_carryforward")
+    .select("kind, balance, last_updated_year");
+
   const [{ data: movements }, { data: carryforwards }] = await Promise.all([
-    supabase
-      .from("investment_movements")
-      .select("date, kind, quantity, unit_price, total_amount, fees, is_day_trade, investment:investments(id, ticker, asset_type, currency)")
-      .lte("date", yearEnd)
-      .order("date", { ascending: true }),
-    supabase
-      .from("ir_loss_carryforward")
-      .select("kind, balance, last_updated_year"),
+    (householdId ? mvQuery.eq("household_id", householdId) : mvQuery).order("date", { ascending: true }),
+    householdId ? cfQuery.eq("household_id", householdId) : cfQuery,
   ]);
 
   // Carryforward inicial (do FIM do ano anterior pro INÍCIO do ano corrente)

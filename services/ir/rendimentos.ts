@@ -63,36 +63,44 @@ export type RendimentosReport = {
 const SALARY_CATEGORIES = new Set(["salário", "salario", "pró-labore", "pro labore"]);
 const RENT_CATEGORIES = new Set(["aluguel recebido", "aluguel"]);
 
-export async function getRendimentosReport(year: number): Promise<RendimentosReport> {
+export async function getRendimentosReport(
+  year: number,
+  householdId?: string,
+): Promise<RendimentosReport> {
   const supabase = await createClient();
 
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   const rates = await getRateMapAt(yearEnd);
 
+  const txQuery = supabase
+    .from("transactions")
+    .select("description, amount_account, currency, date, category:categories(name), account:accounts(currency, institution)")
+    .gte("date", yearStart)
+    .lte("date", yearEnd)
+    .eq("kind", "income");
+  const yieldsQuery = supabase
+    .from("investment_yields")
+    .select("month, gross_yield, tax, investment:investments(ticker, name, tax_regime, currency, asset_type, cnpj)")
+    .gte("month", yearStart)
+    .lte("month", yearEnd);
+  const divQuery = supabase
+    .from("investment_movements")
+    .select("date, total_amount, investment:investments(ticker, name, asset_type, currency, cnpj)")
+    .eq("kind", "dividend")
+    .gte("date", yearStart)
+    .lte("date", yearEnd);
+  const othersQuery = supabase
+    .from("ir_other_incomes")
+    .select("*")
+    .eq("year", year);
+
   const [{ data: txs }, { data: yields }, { data: dividendMovements }, { data: others }] =
     await Promise.all([
-      supabase
-        .from("transactions")
-        .select("description, amount_account, currency, date, category:categories(name), account:accounts(currency, institution)")
-        .gte("date", yearStart)
-        .lte("date", yearEnd)
-        .eq("kind", "income"),
-      supabase
-        .from("investment_yields")
-        .select("month, gross_yield, tax, investment:investments(ticker, name, tax_regime, currency, asset_type, cnpj)")
-        .gte("month", yearStart)
-        .lte("month", yearEnd),
-      supabase
-        .from("investment_movements")
-        .select("date, total_amount, investment:investments(ticker, name, asset_type, currency, cnpj)")
-        .eq("kind", "dividend")
-        .gte("date", yearStart)
-        .lte("date", yearEnd),
-      supabase
-        .from("ir_other_incomes")
-        .select("*")
-        .eq("year", year),
+      householdId ? txQuery.eq("household_id", householdId) : txQuery,
+      householdId ? yieldsQuery.eq("household_id", householdId) : yieldsQuery,
+      householdId ? divQuery.eq("household_id", householdId) : divQuery,
+      householdId ? othersQuery.eq("household_id", householdId) : othersQuery,
     ]);
 
   const tributaveis: RendimentoRow[] = [];

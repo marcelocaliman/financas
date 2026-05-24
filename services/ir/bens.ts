@@ -122,11 +122,36 @@ async function getInvestmentBalanceAt(
  * - Valores em BRL conforme Receita exige
  * - Conversão USD/EUR pela cotação BCB de 31/12 do ano N
  */
-export async function getBensReport(year: number): Promise<BensReport> {
+export async function getBensReport(
+  year: number,
+  householdId?: string,
+): Promise<BensReport> {
   const supabase = await createClient();
 
   const endOfYear = `${year}-12-31`;
   const endOfPrevYear = `${year - 1}-12-31`;
+
+  const accountsQuery = supabase
+    .from("accounts")
+    .select("id, name, institution, type, current_balance, currency, cnpj, agency, account_number")
+    .eq("is_active", true)
+    .neq("type", "credit_card");
+  const investmentsQuery = supabase
+    .from("investments")
+    .select(
+      "id, ticker, name, asset_type, tax_regime, initial_amount, current_balance, currency, quantity, cnpj, receita_code, account_id",
+    )
+    .eq("is_active", true);
+  const physicalQuery = supabase
+    .from("physical_assets")
+    .select(
+      "id, name, category, description, acquired_value, current_value, currency, receita_code, registration_number, address",
+    )
+    .eq("is_active", true);
+  const snapshotQuery = supabase
+    .from("ir_year_snapshots")
+    .select("bens, totals")
+    .eq("year", year - 1);
 
   const [
     rates,
@@ -138,29 +163,10 @@ export async function getBensReport(year: number): Promise<BensReport> {
   ] = await Promise.all([
     getRateMapAt(endOfYear),
     getRateMapAt(endOfPrevYear),
-    supabase
-      .from("accounts")
-      .select("id, name, institution, type, current_balance, currency, cnpj, agency, account_number")
-      .eq("is_active", true)
-      .neq("type", "credit_card")
-      .order("sort_order"),
-    supabase
-      .from("investments")
-      .select(
-        "id, ticker, name, asset_type, tax_regime, initial_amount, current_balance, currency, quantity, cnpj, receita_code, account_id",
-      )
-      .eq("is_active", true),
-    supabase
-      .from("physical_assets")
-      .select(
-        "id, name, category, description, acquired_value, current_value, currency, receita_code, registration_number, address",
-      )
-      .eq("is_active", true),
-    supabase
-      .from("ir_year_snapshots")
-      .select("bens, totals")
-      .eq("year", year - 1)
-      .maybeSingle(),
+    (householdId ? accountsQuery.eq("household_id", householdId) : accountsQuery).order("sort_order"),
+    householdId ? investmentsQuery.eq("household_id", householdId) : investmentsQuery,
+    householdId ? physicalQuery.eq("household_id", householdId) : physicalQuery,
+    (householdId ? snapshotQuery.eq("household_id", householdId) : snapshotQuery).maybeSingle(),
   ]);
 
   // Mapa do snapshot ano-anterior pra puxar previousYearValue

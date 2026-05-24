@@ -89,6 +89,7 @@ export type IROtherIncomeCategory =
   | "exclusivo_fonte"
   | "rendimento_acumulado";
 export type IRDarfKind = "swing" | "day_trade" | "fii";
+export type AccountantScope = "ir_readonly";
 
 export type GoalType =
   | "emergencia"
@@ -1448,6 +1449,124 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["ir_loss_carryforward"]["Insert"]>;
         Relationships: [];
       };
+      accountant_profiles: {
+        Row: {
+          id: string;
+          full_name: string;
+          email: string;
+          crc_number: string | null;
+          crc_state: string | null;
+          phone: string | null;
+          accepted_dpa_at: string;
+          dpa_terms_hash: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          full_name: string;
+          email: string;
+          crc_number?: string | null;
+          crc_state?: string | null;
+          phone?: string | null;
+          accepted_dpa_at: string;
+          dpa_terms_hash: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      accountant_invites: {
+        Row: {
+          id: string;
+          household_id: string;
+          invited_by: string;
+          email: string;
+          token: string;
+          scope: AccountantScope;
+          years_allowed: number[];
+          expires_at: string;
+          accepted_at: string | null;
+          accepted_by: string | null;
+          revoked_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          invited_by: string;
+          email: string;
+          token: string;
+          scope?: AccountantScope;
+          years_allowed?: number[];
+          expires_at: string;
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          revoked_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_invites"]["Insert"]>;
+        Relationships: [];
+      };
+      accountant_household_access: {
+        Row: {
+          id: string;
+          accountant_id: string;
+          household_id: string;
+          invite_id: string | null;
+          scope: AccountantScope;
+          years_allowed: number[];
+          granted_at: string;
+          expires_at: string;
+          revoked_at: string | null;
+          revoked_reason: string | null;
+          last_accessed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          accountant_id: string;
+          household_id: string;
+          invite_id?: string | null;
+          scope?: AccountantScope;
+          years_allowed?: number[];
+          granted_at?: string;
+          expires_at: string;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+          last_accessed_at?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_household_access"]["Insert"]>;
+        Relationships: [];
+      };
+      accountant_audit_log: {
+        Row: {
+          id: string;
+          accountant_id: string;
+          household_id: string;
+          action: string;
+          target_year: number | null;
+          details: Json;
+          ip_address: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          accountant_id: string;
+          household_id: string;
+          action: string;
+          target_year?: number | null;
+          details?: Json;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["accountant_audit_log"]["Insert"]>;
+        Relationships: [];
+      };
       ir_year_snapshots: {
         Row: {
           id: string;
@@ -1537,6 +1656,14 @@ export interface Database {
       apply_daily_yield: {
         Args: { p_investment_id: string };
         Returns: number;
+      };
+      is_accountant_with_access: {
+        Args: { p_household_id: string; p_year?: number | null };
+        Returns: boolean;
+      };
+      touch_accountant_access: {
+        Args: { p_household_id: string };
+        Returns: void;
       };
       add_investment_movement: {
         Args: {

@@ -1,20 +1,85 @@
 import { NextResponse } from "next/server";
 import { generateDec } from "@/services/ir/dec-export";
 import { getCurrentUserContext } from "@/services/auth";
+import {
+  getCurrentAccountantContext,
+  assertAccountantAccess,
+  logAccountantAction,
+} from "@/services/accountant-auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const year = parseInt(url.searchParams.get("year") ?? "", 10);
+  const householdIdParam = url.searchParams.get("householdId");
+  if (Number.isNaN(year) || year < 2000 || year > 2100) {
+    return NextResponse.json({ error: "Ano inválido." }, { status: 400 });
+  }
+
+  const ip =
+    req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? null;
+
+  // ---- Tenta como contador primeiro
+  const accountantCtx = await getCurrentAccountantContext();
+  if (accountantCtx) {
+    if (!householdIdParam) {
+      return NextResponse.json(
+        { error: "householdId obrigatório quando contador." },
+        { status: 400 },
+      );
+    }
+    const access = await assertAccountantAccess(householdIdParam, year);
+    if (!access) {
+      return NextResponse.json({ error: "Sem acesso a esse ano." }, { status: 403 });
+    }
+
+    // Busca CPF via admin (RLS bloquearia)
+    const admin = createAdminClient();
+    const { data: settings } = await admin
+      .from("ir_settings")
+      .select("cpf_titular")
+      .eq("household_id", householdIdParam)
+      .maybeSingle();
+    const cpf = settings?.cpf_titular ?? "";
+    if (!cpf) {
+      return NextResponse.json(
+        { error: "CPF do titular não cadastrado. Solicite ao cliente preencher." },
+        { status: 400 },
+      );
+    }
+
+    await logAccountantAction({
+      householdId: householdIdParam,
+      action: url.searchParams.get("format") === "txt" ? "export_txt" : "export_dec",
+      targetYear: year,
+      ip,
+      details: { format: url.searchParams.get("format") ?? "dec" },
+    });
+
+    const bundle = await generateDec({
+      year,
+      cpf,
+      nome: access.titularName ?? access.household.name,
+      householdId: householdIdParam,
+      accountantWatermark: {
+        fullName: accountantCtx.profile.full_name,
+        crc:
+          accountantCtx.profile.crc_number && accountantCtx.profile.crc_state
+            ? `CRC-${accountantCtx.profile.crc_state} ${accountantCtx.profile.crc_number}`
+            : (accountantCtx.profile.crc_number ?? undefined),
+        ip: ip ?? undefined,
+      },
+    });
+    return NextResponse.json(bundle);
+  }
+
+  // ---- Caso normal — titular
   const ctx = await getCurrentUserContext();
   if (!ctx) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
-  }
-
-  const url = new URL(req.url);
-  const year = parseInt(url.searchParams.get("year") ?? "", 10);
-  if (Number.isNaN(year) || year < 2000 || year > 2100) {
-    return NextResponse.json({ error: "Ano inválido." }, { status: 400 });
   }
 
   const supabase = await createClient();
