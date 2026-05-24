@@ -76,7 +76,7 @@ export async function createAccountantInvite(
     .maybeSingle();
   if (existing) {
     const base =
-      process.env.NEXT_PUBLIC_APP_URL ?? "https://financas.example.com";
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://nossasfinancas.com.br";
     return {
       ok: true,
       inviteUrl: `${base}/contador/aceitar?token=${existing.token}`,
@@ -101,7 +101,7 @@ export async function createAccountantInvite(
   if (error || !data) return { error: error?.message ?? "Falha ao criar convite." };
 
   const base =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://financas.example.com";
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://nossasfinancas.com.br";
   const inviteUrl = `${base}/contador/aceitar?token=${data.token}`;
 
   // Envia email automaticamente (best-effort, não bloqueia retorno)
