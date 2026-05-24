@@ -177,7 +177,7 @@ export default async function ContasPage({
       {archivedAccounts.length > 0 ? (
         <section>
           <Eyebrow className="mb-3">Arquivadas · {archivedAccounts.length}</Eyebrow>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {archivedAccounts.map((a) => (
               <AccountCard key={a.id} account={a} />
             ))}
@@ -214,7 +214,7 @@ function AccountsByType({
             <div className="flex items-baseline justify-between mb-3">
               <Eyebrow>{TYPE_LABELS[type]} · {group.length}</Eyebrow>
             </div>
-            <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {group.map((a) => (
                 <StaggeredItem key={a.id}>
                   <AccountCard
