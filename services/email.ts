@@ -62,8 +62,11 @@ export async function queueEmail(p: EmailPayload): Promise<void> {
 export async function sendEmail(p: EmailPayload): Promise<{ ok: boolean; error?: string }> {
   const admin = createAdminClient();
   const apiKey = process.env.RESEND_API_KEY;
+  // onboarding@resend.dev é o sender default do Resend free tier — funciona
+  // sem domínio verificado. Trocar pra "Finanças <no-reply@seudominio.com>"
+  // quando tiver domínio próprio configurado.
   const fromEmail =
-    process.env.EMAIL_FROM ?? "Finanças <no-reply@financas.example.com>";
+    process.env.EMAIL_FROM ?? "Finanças <onboarding@resend.dev>";
 
   let status: "queued" | "sent" | "failed" = "queued";
   let errorMessage: string | null = null;
@@ -133,8 +136,9 @@ export async function drainEmailQueue(limit = 50): Promise<{
     return { attempted: 0, sent: 0, failed: 0, skippedNoApiKey: true };
   }
 
+  // Mesma lógica do sender — usa onboarding@resend.dev quando sem domínio
   const fromEmail =
-    process.env.EMAIL_FROM ?? "Finanças <no-reply@financas.example.com>";
+    process.env.EMAIL_FROM ?? "Finanças <onboarding@resend.dev>";
 
   const { data: pending } = await admin
     .from("email_notifications_log")
