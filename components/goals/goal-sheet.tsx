@@ -441,7 +441,7 @@ export function GoalSheet({
                         type="number"
                         min={0}
                         max={100}
-                        step={1}
+                        step="any"
                         value={Math.round(downPct * 100)}
                         onChange={(e) => setDownPct(Math.max(0, Math.min(100, Number(e.target.value))) / 100)}
                       />
@@ -463,7 +463,7 @@ export function GoalSheet({
                         type="number"
                         min={0}
                         max={100}
-                        step={0.5}
+                        step="any"
                         value={Number((closingPct * 100).toFixed(2))}
                         onChange={(e) => setClosingPct(Math.max(0, Math.min(100, Number(e.target.value))) / 100)}
                       />
@@ -490,7 +490,7 @@ export function GoalSheet({
                         type="number"
                         min={1}
                         max={600}
-                        step={1}
+                        step="any"
                         value={loanTermMonths}
                         onChange={(e) => setLoanTermMonths(e.target.value)}
                       />
@@ -502,7 +502,7 @@ export function GoalSheet({
                         type="number"
                         min={0}
                         max={100}
-                        step={0.1}
+                        step="any"
                         value={loanAnnualRatePct}
                         onChange={(e) => setLoanAnnualRatePct(e.target.value)}
                       />
@@ -725,7 +725,7 @@ export function GoalSheet({
                           type="number"
                           min={0}
                           max={100}
-                          step={1}
+                          step="any"
                           placeholder="Porcentagem (ex: 100 = saldo inteiro)"
                           value={Math.round((s.allocatedPct ?? 0) * 100)}
                           onChange={(e) =>
@@ -834,7 +834,7 @@ export function GoalSheet({
                     type="number"
                     min={0}
                     max={100}
-                    step={5}
+                    step="any"
                     value={Math.round(allocationValue * 100)}
                     onChange={(e) => setAllocationValue(Math.max(0, Math.min(100, Number(e.target.value))) / 100)}
                   />

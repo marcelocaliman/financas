@@ -127,7 +127,7 @@ export function FirePreferencesForm({
                 type="number"
                 name="expectedReturnPct"
                 id="expectedReturnPct"
-                step={0.5}
+                step="any"
                 min={0}
                 max={50}
                 defaultValue={defaults.expectedReturnPct}
@@ -148,7 +148,7 @@ export function FirePreferencesForm({
                 type="number"
                 name="inflationPct"
                 id="inflationPct"
-                step={0.5}
+                step="any"
                 min={0}
                 max={50}
                 defaultValue={defaults.inflationPct}
@@ -168,7 +168,7 @@ export function FirePreferencesForm({
                 type="number"
                 name="swrPct"
                 id="swrPct"
-                step={0.25}
+                step="any"
                 min={0.1}
                 max={20}
                 defaultValue={defaults.swrPct}
@@ -217,6 +217,7 @@ export function FirePreferencesForm({
                 type="number"
                 name="targetRetirementAge"
                 id="targetRetirementAge"
+                step="any"
                 min={18}
                 max={100}
                 defaultValue={defaults.targetRetirementAge ?? ""}

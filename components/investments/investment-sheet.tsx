@@ -345,7 +345,7 @@ function LinkedLotInputs({ assetType }: { assetType: AssetType }) {
           id="quantity"
           name="quantity"
           type="number"
-          step={assetType === "crypto" ? "0.00000001" : "1"}
+          step="any"
           min="0"
           value={quantity}
           onChange={(e) => handleQtyChange(e.target.value)}

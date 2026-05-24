@@ -188,7 +188,7 @@ export function MovementDialog({
               id="quantity"
               name="quantity"
               type="number"
-              step={isCrypto ? "0.00000001" : "1"}
+              step="any"
               min="0"
               value={qty}
               onChange={(e) => handleQtyChange(e.target.value)}
