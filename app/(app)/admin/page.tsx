@@ -3,15 +3,32 @@ import { Home, Users, CreditCard, FileWarning, Activity, TrendingUp } from "luci
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { Badge } from "@/components/ui/badge";
 import { getPlatformStats, listAuditLog } from "@/services/platform-admin";
+import {
+  getActionVolume,
+  getDAUWAUMAU,
+  getHouseholdGrowth,
+  getUserGrowth,
+} from "@/services/admin-metrics";
+import { GrowthChart } from "@/components/admin/growth-chart";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const [stats, recentAudit] = await Promise.all([
+  const [
+    stats,
+    recentAudit,
+    householdGrowth,
+    userGrowth,
+    actionVolume,
+    dauwaumau,
+  ] = await Promise.all([
     getPlatformStats(),
     listAuditLog({ limit: 10 }),
+    getHouseholdGrowth(30),
+    getUserGrowth(30),
+    getActionVolume(30),
+    getDAUWAUMAU(),
   ]);
 
   return (
@@ -23,56 +40,109 @@ export default async function AdminDashboardPage() {
             Painel <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">superadmin</em>
           </>
         }
-        subtitle="Visão geral de households, usuários, assinaturas e ações recentes."
+        subtitle="Visão geral em tempo real: households, usuários, engajamento, billing e atividade admin."
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">
+      {/* KPIs primários */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
         <KpiCard
           label="Households"
-          textValue={
-            <span className="inline-flex items-center gap-2">
-              <Home className="w-3.5 h-3.5 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
-              {stats.total_households}
-            </span>
-          }
+          textValue={`${stats.total_households}`}
           tone="neutral"
-          hint={`+${stats.new_households_7d} nos últimos 7 dias`}
+          hint={`+${stats.new_households_7d} em 7d`}
         />
         <KpiCard
-          label="Usuários ativos"
-          textValue={
-            <span className="inline-flex items-center gap-2">
-              <Users className="w-3.5 h-3.5 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
-              {stats.total_users}
-            </span>
-          }
+          label="Usuários"
+          textValue={`${stats.total_users}`}
           tone="neutral"
-          hint={`+${stats.new_users_7d} nos últimos 7 dias`}
+          hint={`+${stats.new_users_7d} em 7d`}
         />
         <KpiCard
-          label="Assinaturas ativas"
-          textValue={
-            <span className="inline-flex items-center gap-2">
-              <CreditCard className="w-3.5 h-3.5 text-olive-600" strokeWidth={1.7} />
-              {stats.active_subscriptions}
-            </span>
-          }
+          label="Ativos hoje (DAU)"
+          textValue={`${dauwaumau.dau}`}
           tone="positive"
-          hint={`${stats.trialing} em trial`}
+          hint={`MAU ${dauwaumau.mau} · stickiness ${(dauwaumau.stickiness * 100).toFixed(0)}%`}
         />
         <KpiCard
           label="Pedidos LGPD"
-          textValue={
-            <span className="inline-flex items-center gap-2">
-              <FileWarning className="w-3.5 h-3.5 text-gold-600" strokeWidth={1.7} />
-              {stats.pending_data_requests}
-            </span>
-          }
+          textValue={`${stats.pending_data_requests}`}
           tone={stats.pending_data_requests > 0 ? "negative" : "muted"}
-          hint={stats.pending_data_requests > 0 ? "ATENDER em 15d (LGPD)" : "tudo em dia"}
+          hint={stats.pending_data_requests > 0 ? "ATENDER em 15d" : "tudo em dia"}
         />
       </div>
 
+      {/* Charts crescimento — 30 dias */}
+      <div className="grid lg:grid-cols-2 gap-5 mb-5">
+        <Panel>
+          <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+            Households (30 dias)
+          </div>
+          <p className="text-[11.5px] text-faint-foreground mb-3">
+            Crescimento cumulativo
+          </p>
+          <GrowthChart
+            data={householdGrowth}
+            label="Households"
+            color="var(--color-navy-700)"
+            cumulative
+          />
+        </Panel>
+
+        <Panel>
+          <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+            Usuários (30 dias)
+          </div>
+          <p className="text-[11.5px] text-faint-foreground mb-3">
+            Crescimento cumulativo
+          </p>
+          <GrowthChart
+            data={userGrowth}
+            label="Usuários"
+            color="var(--color-olive-600)"
+            cumulative
+          />
+        </Panel>
+      </div>
+
+      {/* Charts engajamento + admin */}
+      <div className="grid lg:grid-cols-2 gap-5 mb-5">
+        <Panel>
+          <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+            Engajamento
+          </div>
+          <p className="text-[11.5px] text-faint-foreground mb-3">
+            DAU / WAU / MAU
+          </p>
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <Stat label="DAU" value={dauwaumau.dau} hint="hoje" />
+            <Stat label="WAU" value={dauwaumau.wau} hint="7 dias" />
+            <Stat label="MAU" value={dauwaumau.mau} hint="30 dias" />
+          </div>
+          <div className="mt-4 pt-4 border-t border-border text-[12.5px] text-muted-foreground">
+            <b>Stickiness DAU/MAU:</b>{" "}
+            <span className="font-mono text-foreground">
+              {(dauwaumau.stickiness * 100).toFixed(0)}%
+            </span>{" "}
+            — quanto maior, mais o usuário volta diariamente
+          </div>
+        </Panel>
+
+        <Panel>
+          <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+            Ações admin (30 dias)
+          </div>
+          <p className="text-[11.5px] text-faint-foreground mb-3">
+            Volume de operações administrativas
+          </p>
+          <GrowthChart
+            data={actionVolume}
+            label="Ações"
+            color="var(--color-gold-600)"
+          />
+        </Panel>
+      </div>
+
+      {/* Status crítico */}
       {stats.suspended > 0 ? (
         <Panel className="mb-5 border-rust-600/30">
           <div className="flex items-center justify-between">
@@ -95,7 +165,7 @@ export default async function AdminDashboardPage() {
         </Panel>
       ) : null}
 
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-7">
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-5">
         <Panel>
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -130,9 +200,7 @@ export default async function AdminDashboardPage() {
                     </div>
                     <div className="font-mono text-[10.5px] text-faint-foreground mt-0.5 truncate">
                       por {r.admin_email ?? "—"}
-                      {r.target_household_name
-                        ? ` → ${r.target_household_name}`
-                        : ""}
+                      {r.target_household_name ? ` → ${r.target_household_name}` : ""}
                       {r.target_user_email ? ` → ${r.target_user_email}` : ""}
                     </div>
                   </div>
@@ -163,13 +231,13 @@ export default async function AdminDashboardPage() {
               Pedidos LGPD pendentes
             </ShortcutLink>
             <ShortcutLink href="/admin/metrics" icon={<Activity className="w-3.5 h-3.5" strokeWidth={1.7} />}>
-              Métricas e DAU
+              Métricas detalhadas
             </ShortcutLink>
           </ul>
         </Panel>
       </div>
 
-      <Panel>
+      <Panel className="border-navy-700/30">
         <div className="flex items-start gap-3">
           <TrendingUp className="w-5 h-5 text-navy-700 dark:text-navy-300 shrink-0 mt-0.5" strokeWidth={1.7} />
           <div className="text-[13px] leading-relaxed">
@@ -184,6 +252,20 @@ export default async function AdminDashboardPage() {
         </div>
       </Panel>
     </>
+  );
+}
+
+function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
+  return (
+    <div>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+        {label}
+      </div>
+      <div className="font-mono text-[24px] tabular-nums text-foreground mt-1">{value}</div>
+      {hint ? (
+        <div className="font-mono text-[10px] text-faint-foreground mt-0.5">{hint}</div>
+      ) : null}
+    </div>
   );
 }
 
@@ -208,6 +290,3 @@ function ShortcutLink({
     </li>
   );
 }
-
-// silencia warning de unused se Badge não for usado
-export { Badge as _Badge };

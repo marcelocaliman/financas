@@ -1088,6 +1088,94 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["user_consents"]["Insert"]>;
         Relationships: [];
       };
+      feature_flags: {
+        Row: {
+          key: string;
+          enabled: boolean;
+          description: string | null;
+          rollout_pct: number;
+          enabled_for_tiers: string[];
+          updated_by: string | null;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          key: string;
+          enabled?: boolean;
+          description?: string | null;
+          rollout_pct?: number;
+          enabled_for_tiers?: string[];
+          updated_by?: string | null;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["feature_flags"]["Insert"]>;
+        Relationships: [];
+      };
+      announcements: {
+        Row: {
+          id: string;
+          title: string;
+          body: string | null;
+          severity: "info" | "warning" | "critical";
+          starts_at: string | null;
+          ends_at: string | null;
+          dismissible: boolean;
+          link_url: string | null;
+          link_label: string | null;
+          target_tier: "free" | "pro" | "family" | "lifetime" | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          body?: string | null;
+          severity?: "info" | "warning" | "critical";
+          starts_at?: string | null;
+          ends_at?: string | null;
+          dismissible?: boolean;
+          link_url?: string | null;
+          link_label?: string | null;
+          target_tier?: "free" | "pro" | "family" | "lifetime" | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["announcements"]["Insert"]>;
+        Relationships: [];
+      };
+      announcement_dismissals: {
+        Row: {
+          user_id: string;
+          announcement_id: string;
+          dismissed_at: string;
+        };
+        Insert: {
+          user_id: string;
+          announcement_id: string;
+          dismissed_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["announcement_dismissals"]["Insert"]>;
+        Relationships: [];
+      };
+      system_settings: {
+        Row: {
+          key: string;
+          value: Json;
+          description: string | null;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: Json;
+          description?: string | null;
+          updated_by?: string | null;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["system_settings"]["Insert"]>;
+        Relationships: [];
+      };
       data_access_requests: {
         Row: {
           id: string;
@@ -1145,6 +1233,18 @@ export interface Database {
           new_households_7d: number;
           new_users_7d: number;
         }[];
+      };
+      admin_household_growth: {
+        Args: { p_days?: number };
+        Returns: { date: string; count: number }[];
+      };
+      admin_user_growth: {
+        Args: { p_days?: number };
+        Returns: { date: string; count: number }[];
+      };
+      admin_action_volume: {
+        Args: { p_days?: number };
+        Returns: { date: string; count: number }[];
       };
       create_transfer: {
         Args: {

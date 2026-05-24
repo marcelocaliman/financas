@@ -25,6 +25,9 @@ import {
   FileWarning,
   Settings,
   Flame,
+  ToggleRight,
+  Megaphone,
+  Server,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -64,13 +67,16 @@ const mainGroupLabels: Record<string, string> = {
 
 const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, group: "geral" },
+  { label: "Métricas", href: "/admin/metrics", icon: Activity, group: "geral" },
   { label: "Households", href: "/admin/households", icon: Home, group: "gestao" },
   { label: "Usuários", href: "/admin/users", icon: UsersIcon, group: "gestao" },
   { label: "Assinaturas", href: "/admin/subscriptions", icon: CreditCard, group: "billing" },
   { label: "Pedidos LGPD", href: "/admin/data-requests", icon: FileWarning, group: "lgpd" },
   { label: "Audit log", href: "/admin/audit-log", icon: History, group: "lgpd" },
-  { label: "Métricas", href: "/admin/metrics", icon: Activity, group: "observabilidade" },
-  { label: "Configurações", href: "/admin/settings", icon: Settings, group: "observabilidade" },
+  { label: "Feature flags", href: "/admin/feature-flags", icon: ToggleRight, group: "config" },
+  { label: "Anúncios", href: "/admin/announcements", icon: Megaphone, group: "config" },
+  { label: "Sistema", href: "/admin/system", icon: Server, group: "config" },
+  { label: "Configurações", href: "/admin/settings", icon: Settings, group: "config" },
 ];
 
 const adminGroupLabels: Record<string, string> = {
@@ -78,7 +84,7 @@ const adminGroupLabels: Record<string, string> = {
   gestao: "Gestão",
   billing: "Receita",
   lgpd: "Compliance",
-  observabilidade: "Sistema",
+  config: "Configuração",
 };
 
 export function Sidebar({
