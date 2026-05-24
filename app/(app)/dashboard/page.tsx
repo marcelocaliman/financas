@@ -36,11 +36,13 @@ import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-his
 import {
   detectExpenseAnomalies,
   getCategoryBreakdown,
+  getCategorySpendHistory,
   getMonthlyHistory,
   getMonthlySummary,
   listTransactions,
   monthRange,
 } from "@/services/transactions";
+import { IncomeVsExpenseChart } from "@/components/dashboard/income-vs-expense-chart";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { formatDateFull, formatTime, getGreeting } from "@/lib/utils/format";
 import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
@@ -90,6 +92,7 @@ export default async function DashboardPage({
     budgetRows,
     insights,
     accounts,
+    categorySpendHistory,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -112,6 +115,9 @@ export default async function DashboardPage({
     isCurrent ? getBudgetVsActual() : Promise.resolve([]),
     isCurrent ? getInsights() : Promise.resolve([]),
     listAccounts(),
+    isCurrent
+      ? getCategorySpendHistory(6)
+      : Promise.resolve(new Map<string, number[]>()),
   ]);
 
   // Patrimônio total SEM dupla contagem
@@ -341,6 +347,13 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
+      {/* TIER 2.5 — Tendência receitas vs despesas (somente mês corrente) */}
+      {isCurrent && history6.length >= 2 ? (
+        <div className="mb-8">
+          <IncomeVsExpenseChart data={history6} />
+        </div>
+      ) : null}
+
       {/* TIER 3 — Top categorias + Composição do patrimônio */}
       <div
         className={
@@ -351,6 +364,7 @@ export default async function DashboardPage({
           rows={isForecastMode && breakdown.length === 0 ? forecast.expenseByCategory : breakdown}
           monthLabel={monthLabel}
           isForecast={isForecastMode && breakdown.length === 0}
+          spendHistory={isCurrent ? categorySpendHistory : undefined}
         />
         {isCurrent ? (
           <PatrimonioComposition

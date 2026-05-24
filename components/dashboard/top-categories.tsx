@@ -1,16 +1,20 @@
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { Sparkline } from "@/components/ui/sparkline";
 import type { CategoryBreakdownRow } from "@/services/transactions";
 
 export function TopCategoriesPanel({
   rows,
   monthLabel,
   isForecast = false,
+  spendHistory,
 }: {
   rows: CategoryBreakdownRow[];
   monthLabel: string;
   isForecast?: boolean;
+  /** Map category_id → últimos N meses de gasto (mais antigo → recente). */
+  spendHistory?: Map<string, number[]>;
 }) {
   const top = rows.slice(0, 6);
   return (
@@ -37,7 +41,13 @@ export function TopCategoriesPanel({
       ) : (
         <div>
           {top.map((row, idx) => (
-            <CategoryRow key={row.category_id ?? "uncat"} row={row} maxPct={top[0]?.pct ?? 1} highlight={idx === 0} />
+            <CategoryRow
+              key={row.category_id ?? "uncat"}
+              row={row}
+              maxPct={top[0]?.pct ?? 1}
+              highlight={idx === 0}
+              spark={spendHistory?.get(row.category_id ?? "uncategorized")}
+            />
           ))}
         </div>
       )}
@@ -49,14 +59,34 @@ function CategoryRow({
   row,
   maxPct,
   highlight,
+  spark,
 }: {
   row: CategoryBreakdownRow;
   maxPct: number;
   highlight?: boolean;
+  spark?: number[];
 }) {
   const widthPct = maxPct > 0 ? (row.pct / maxPct) * 100 : 0;
+  // Tendência: último mês vs média dos meses anteriores (excluindo o último)
+  let trendTone: "neutral" | "up" | "down" = "neutral";
+  if (spark && spark.length >= 3) {
+    const last = spark[spark.length - 1];
+    const prior = spark.slice(0, -1);
+    const avg = prior.reduce((s, v) => s + v, 0) / prior.length;
+    if (avg > 0) {
+      const delta = (last - avg) / avg;
+      if (delta > 0.1) trendTone = "up";
+      else if (delta < -0.1) trendTone = "down";
+    }
+  }
+  const sparkColor =
+    trendTone === "up"
+      ? "var(--color-rust-600)"
+      : trendTone === "down"
+        ? "var(--color-olive-600)"
+        : "var(--color-faint-foreground)";
   return (
-    <div className="grid grid-cols-[1fr_88px_56px] gap-4 items-center py-3 border-b border-border last:border-b-0">
+    <div className="grid grid-cols-[1fr_56px_88px_56px] gap-3 items-center py-3 border-b border-border last:border-b-0">
       <div className="min-w-0">
         <div className="text-[14px] font-medium text-foreground tracking-[-0.005em] mb-1.5 truncate">
           {row.category_name}
@@ -67,6 +97,19 @@ function CategoryRow({
             style={{ width: `${widthPct}%` }}
           />
         </div>
+      </div>
+      <div className="h-[28px] flex items-center justify-end">
+        {spark && spark.length >= 2 ? (
+          <Sparkline
+            data={spark}
+            width={56}
+            height={20}
+            stroke={sparkColor}
+            fill={sparkColor}
+            strokeWidth={1.25}
+            showDot={false}
+          />
+        ) : null}
       </div>
       <div className="font-mono text-[13px] font-medium text-right">
         <MoneyMask>{formatMoney(row.total)}</MoneyMask>

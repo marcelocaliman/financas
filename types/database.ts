@@ -515,6 +515,7 @@ export interface Database {
           tax_regime: TaxRegime;
           is_active: boolean;
           last_yield_at: string | null;
+          lifetime_dividends_received: number;
           metadata: Json;
           created_at: string;
           updated_at: string;
@@ -537,6 +538,7 @@ export interface Database {
           tax_regime?: TaxRegime;
           is_active?: boolean;
           last_yield_at?: string | null;
+          lifetime_dividends_received?: number;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;

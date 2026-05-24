@@ -279,6 +279,83 @@ export async function getMonthlyHistory(
   return out;
 }
 
+/**
+ * Histórico mensal por categoria (apenas despesas).
+ * Retorna um Map<category_id_ou_uncategorized, number[]> com N pontos
+ * em ordem cronológica (mais antigo → mais recente). Útil pra sparkline
+ * embedada em cards de categoria.
+ *
+ * `endMonth` opcional (YYYY-MM); default = mês corrente.
+ */
+export async function getCategorySpendHistory(
+  months = 6,
+  endMonth?: string,
+): Promise<Map<string, number[]>> {
+  const supabase = await createClient();
+
+  let y: number;
+  let m: number;
+  if (endMonth) {
+    const parts = endMonth.split("-").map(Number);
+    y = parts[0];
+    m = parts[1];
+  } else {
+    const fmt = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+    });
+    const [yStr, mStr] = fmt.format(new Date()).split("-");
+    y = parseInt(yStr, 10);
+    m = parseInt(mStr, 10);
+  }
+  const start = new Date(Date.UTC(y, m - 1 - (months - 1), 1));
+  const startISO = start.toISOString().slice(0, 10);
+  const endISO = `${y}-${String(m).padStart(2, "0")}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+
+  const [{ data, error }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("amount_account, currency, date, category_id, account:accounts(currency)")
+      .gte("date", startISO)
+      .lte("date", endISO)
+      .eq("kind", "expense"),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
+  if (error) throw error;
+
+  // Pre-popula os N meses em ordem cronológica
+  const monthKeys: string[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    monthKeys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+  }
+  const monthIndex = new Map(monthKeys.map((k, i) => [k, i]));
+
+  const byCat = new Map<string, number[]>();
+  for (const t of data ?? []) {
+    const monthKey = (t.date as string).slice(0, 7);
+    const idx = monthIndex.get(monthKey);
+    if (idx === undefined) continue;
+    const key = t.category_id ?? "uncategorized";
+    const accRaw = t.account as { currency: Currency } | { currency: Currency }[] | null;
+    const acc = Array.isArray(accRaw) ? accRaw[0] : accRaw;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+    const arr = byCat.get(key) ?? new Array(months).fill(0);
+    arr[idx] += amt;
+    byCat.set(key, arr);
+  }
+  for (const [k, arr] of byCat) {
+    byCat.set(
+      k,
+      arr.map((v) => Math.round(v * 100) / 100),
+    );
+  }
+  return byCat;
+}
+
 export type ExpenseAnomaly = {
   categoryId: string | null;
   categoryName: string;

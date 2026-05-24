@@ -35,7 +35,7 @@ export const getLivePortfolio = cache(async (): Promise<LivePortfolio & { displa
   const { data: investmentsData } = await supabase
     .from("investments")
     .select(
-      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, quantity, purchase_date, last_yield_at, currency",
+      "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, current_balance, initial_amount, lifetime_dividends_received, quantity, purchase_date, last_yield_at, currency",
     )
     .eq("is_active", true);
   const raw = (investmentsData ?? []) as InvestmentRow[];
@@ -51,6 +51,12 @@ export const getLivePortfolio = cache(async (): Promise<LivePortfolio & { displa
     ),
     initial_amount: convertOrSame(
       Number(i.initial_amount ?? 0),
+      i.currency ?? "BRL",
+      displayCurrency,
+      rates,
+    ),
+    lifetime_dividends_received: convertOrSame(
+      Number(i.lifetime_dividends_received ?? 0),
       i.currency ?? "BRL",
       displayCurrency,
       rates,
