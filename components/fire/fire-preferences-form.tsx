@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sparkles, Calendar, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function FirePreferencesForm({
   /** Despesa atual usada como fallback quando renda alvo está vazia */
   currentMonthlyExpense: number;
 }) {
+  const router = useRouter();
   const [state, action, pending] = useActionState<
     SaveFireState | undefined,
     FormData
@@ -36,9 +38,13 @@ export function FirePreferencesForm({
   const [swrPct, setSwrPct] = useState<number>(defaults.swrPct);
 
   useEffect(() => {
-    if (state?.ok) toast.success("Plano atualizado.");
+    if (state?.ok) {
+      toast.success("Plano atualizado.");
+      // Redireciona automático pra trajetória — coerente com o label do botão
+      router.push("/independencia");
+    }
     if (state?.error) toast.error(state.error);
-  }, [state]);
+  }, [state, router]);
 
   const effectiveTarget = targetIncome > 0 ? targetIncome : currentMonthlyExpense;
   const fireTargetNetWorth =
@@ -300,7 +306,7 @@ export function FirePreferencesForm({
         <Button
           type="button"
           variant="ghost"
-          onClick={() => (window.location.href = "/independencia")}
+          onClick={() => router.push("/independencia")}
         >
           Cancelar
         </Button>
