@@ -60,6 +60,8 @@ export async function createCarneLeao(
   const calc = computeCarneLeaoTax({
     grossAmount: parsed.data.gross_amount,
     deductibleExpenses: parsed.data.deductible_expenses,
+    year: parsed.data.year,
+    month: parsed.data.month,
   });
 
   const { error } = await supabase.from("carne_leao_mensal").insert({

@@ -94,23 +94,35 @@ export async function getExteriorReport(
     return rateCache.get(date)!;
   }
 
+  // Estratégia correta (custo médio ponderado):
+  // - Processa TODOS os movimentos cronologicamente (inclusive pré-ano-base)
+  //   pra ter posição/custo correto na hora da venda do ano-base
+  // - `realizedCostBasis` = soma do (avgCost × sellQty) só pra vendas DO ano-base
+  // - lucro = totalSoldBRL (do ano) − realizedCostBasis
   const byAsset = new Map<string, {
     investmentId: string;
     ticker: string;
     name: string;
     currency: Currency;
-    totalBoughtBRL: number;
-    totalSoldBRL: number;
+    totalBoughtBRL: number; // só do ano-base, pra display
+    totalSoldBRL: number;   // só do ano-base
+    realizedCostBasis: number; // só do ano-base
     qty: number;
     totalCost: number;
   }>();
 
-  for (const m of (movements ?? []) as MovRow[]) {
+  // Garante ordem cronológica (a query já vem por date asc, mas redundante)
+  const sorted = [...((movements ?? []) as MovRow[])].sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+
+  for (const m of sorted) {
     const inv = Array.isArray(m.investment) ? m.investment[0] : m.investment;
     if (!inv || !inv.is_exterior) continue;
     const rates = await ratesAt(m.date);
     const totalBRL = convertOrSame(Number(m.total_amount), inv.currency, "BRL", rates);
     const feesBRL = convertOrSame(Number(m.fees ?? 0), inv.currency, "BRL", rates);
+    const inYear = m.date >= `${year}-01-01` && m.date <= yearEnd;
 
     const e = byAsset.get(inv.id) ?? {
       investmentId: inv.id,
@@ -119,35 +131,40 @@ export async function getExteriorReport(
       currency: inv.currency,
       totalBoughtBRL: 0,
       totalSoldBRL: 0,
+      realizedCostBasis: 0,
       qty: 0,
       totalCost: 0,
     };
 
     if (m.kind === "buy") {
-      e.totalBoughtBRL += totalBRL + feesBRL;
       e.qty += Number(m.quantity);
       e.totalCost += totalBRL + feesBRL;
+      if (inYear) e.totalBoughtBRL += totalBRL + feesBRL;
     } else if (m.kind === "sell") {
-      e.totalSoldBRL += totalBRL - feesBRL;
-      // Reduz custo proporcional
       const sellQty = Number(m.quantity);
-      if (e.qty > 0) {
-        e.totalCost -= (e.totalCost / e.qty) * sellQty;
+      const avgCost = e.qty > 0 ? e.totalCost / e.qty : 0;
+      const costOfSold = avgCost * sellQty;
+      if (inYear) {
+        e.totalSoldBRL += totalBRL - feesBRL;
+        e.realizedCostBasis += costOfSold;
       }
+      e.totalCost -= costOfSold;
       e.qty -= sellQty;
     }
     byAsset.set(inv.id, e);
   }
 
-  const assets = Array.from(byAsset.values()).map((a) => ({
-    investmentId: a.investmentId,
-    ticker: a.ticker,
-    name: a.name,
-    currency: a.currency,
-    totalBoughtBRL: Math.round(a.totalBoughtBRL * 100) / 100,
-    totalSoldBRL: Math.round(a.totalSoldBRL * 100) / 100,
-    profitBRL: Math.round((a.totalSoldBRL - (a.totalBoughtBRL - a.totalCost)) * 100) / 100,
-  }));
+  const assets = Array.from(byAsset.values())
+    .filter((a) => a.totalSoldBRL > 0 || a.totalBoughtBRL > 0)
+    .map((a) => ({
+      investmentId: a.investmentId,
+      ticker: a.ticker,
+      name: a.name,
+      currency: a.currency,
+      totalBoughtBRL: Math.round(a.totalBoughtBRL * 100) / 100,
+      totalSoldBRL: Math.round(a.totalSoldBRL * 100) / 100,
+      profitBRL: Math.round((a.totalSoldBRL - a.realizedCostBasis) * 100) / 100,
+    }));
 
   const totalProfit = assets.reduce((s, a) => s + a.profitBRL, 0);
   const carryforwardUsed = Math.min(carryforwardAvailable, Math.max(0, totalProfit));
@@ -170,8 +187,35 @@ export async function getExteriorReport(
 
 /**
  * Cripto: vendas até R$ 35k/mês isentas (regime ainda separado do exterior).
- * Acima: 15% até R$ 5MM, escalonando até 22.5% acima de R$ 30MM.
+ * Acima: faixas progressivas mensais sobre o LUCRO:
+ *   até R$ 5.000.000          → 15%
+ *   R$ 5.000.001 a 10.000.000 → 17,5%
+ *   R$ 10.000.001 a 30.000.000 → 20%
+ *   acima de R$ 30.000.000    → 22,5%
+ * (Lei 13.259/2016 c/c IN RFB 1888/2019)
  */
+const CRYPTO_TAX_BRACKETS = [
+  { upTo: 5_000_000, rate: 0.15 },
+  { upTo: 10_000_000, rate: 0.175 },
+  { upTo: 30_000_000, rate: 0.20 },
+  { upTo: Infinity, rate: 0.225 },
+];
+
+function calcCryptoTax(profit: number): { rate: number; tax: number } {
+  let remaining = profit;
+  let tax = 0;
+  let lastUsedRate = 0;
+  let lower = 0;
+  for (const b of CRYPTO_TAX_BRACKETS) {
+    if (remaining <= 0) break;
+    const slice = Math.min(remaining, b.upTo - lower);
+    tax += slice * b.rate;
+    remaining -= slice;
+    lower = b.upTo;
+    lastUsedRate = b.rate;
+  }
+  return { rate: lastUsedRate, tax };
+}
 export type CryptoReport = {
   year: number;
   monthly: Array<{
@@ -261,9 +305,9 @@ export async function getCryptoReport(
     let taxDue = 0;
     if (!isExempt && d.profit > 0) {
       taxableBase = d.profit;
-      // Faixas progressivas — pra MVP, 15% (cobre 95% dos casos)
-      taxRate = 0.15;
-      taxDue = taxableBase * taxRate;
+      const calc = calcCryptoTax(d.profit);
+      taxRate = calc.rate;
+      taxDue = calc.tax;
       totalTaxDue += taxDue;
     }
     return {

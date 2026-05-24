@@ -16,8 +16,21 @@ import type { Tables, CarneLeaoKind } from "@/types/database";
  *          aplica tabela progressiva mensal IRPF.
  */
 
-// Tabela progressiva mensal IRPF (ano-base 2024)
-const MONTHLY_BRACKETS = [
+// Tabelas progressivas mensais IRPF — variam por ano/mês quando há MP.
+// Conferir Anexo da IN RFB vigente antes de mudanças.
+type Bracket = { upTo: number; rate: number; deduct: number };
+
+// Tabela vigente Jan-Abr/2024
+const MONTHLY_2024_JAN_APR: Bracket[] = [
+  { upTo: 2112.00, rate: 0, deduct: 0 },
+  { upTo: 2826.65, rate: 0.075, deduct: 158.40 },
+  { upTo: 3751.05, rate: 0.15, deduct: 370.40 },
+  { upTo: 4664.68, rate: 0.225, deduct: 651.73 },
+  { upTo: Infinity, rate: 0.275, deduct: 884.96 },
+];
+
+// Tabela vigente Maio/2024+ (MP 1.171/2023) e 2025
+const MONTHLY_2024_MAY_PLUS: Bracket[] = [
   { upTo: 2259.20, rate: 0, deduct: 0 },
   { upTo: 2826.65, rate: 0.075, deduct: 169.44 },
   { upTo: 3751.05, rate: 0.15, deduct: 381.44 },
@@ -25,8 +38,18 @@ const MONTHLY_BRACKETS = [
   { upTo: Infinity, rate: 0.275, deduct: 896.00 },
 ];
 
-function calcMonthlyTax(base: number): number {
-  for (const b of MONTHLY_BRACKETS) {
+function bracketsFor(year: number, month: number): Bracket[] {
+  // 2023 e antes: tabela antiga (≤2112 isento, deduções diferentes)
+  // 2024 jan-abr: tabela 2024 original
+  // 2024 mai+ e 2025+: tabela atualizada
+  if (year < 2024) return MONTHLY_2024_JAN_APR; // aproximação — sem dados pré-2024 vivos
+  if (year === 2024 && month <= 4) return MONTHLY_2024_JAN_APR;
+  return MONTHLY_2024_MAY_PLUS;
+}
+
+function calcMonthlyTax(base: number, year?: number, month?: number): number {
+  const brackets = bracketsFor(year ?? new Date().getUTCFullYear(), month ?? 1);
+  for (const b of brackets) {
     if (base <= b.upTo) return Math.max(0, base * b.rate - b.deduct);
   }
   return 0;
@@ -68,16 +91,19 @@ export function computeCarneLeaoTax(args: {
   deductibleExpenses: number;
   /** Dedução por dependentes (no mês). R$ 189,59 × N dependentes em 2024 */
   dependentDeduction?: number;
+  /** Ano + mês pra escolher tabela progressiva vigente (mid-year MP) */
+  year?: number;
+  month?: number;
 }): { taxableBase: number; taxDue: number; dueDate: string | null } {
   const base = Math.max(
     0,
     args.grossAmount - args.deductibleExpenses - (args.dependentDeduction ?? 0),
   );
-  const taxDue = calcMonthlyTax(base);
+  const taxDue = calcMonthlyTax(base, args.year, args.month);
   return {
     taxableBase: Math.round(base * 100) / 100,
     taxDue: Math.round(taxDue * 100) / 100,
-    dueDate: null, // set quando souber year+month no caller
+    dueDate: null,
   };
 }
 

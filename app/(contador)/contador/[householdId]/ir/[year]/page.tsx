@@ -22,6 +22,8 @@ import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { AccountantExportActions } from "@/components/accountant/export-actions";
 import { YearSwitcher } from "@/components/accountant/year-switcher";
 import { NotesPanel } from "@/components/accountant/notes-panel";
+import { listCarneLeao } from "@/services/ir/carne-leao";
+import { getExteriorReport, getCryptoReport } from "@/services/ir/exterior-crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -51,12 +53,15 @@ export default async function ContadorIRYearPage({
     userAgent: hdrs.get("user-agent"),
   });
 
-  const [bens, rendimentos, rv, imposto, { data: snapshot }, { data: settings }, { data: notes }] =
+  const [bens, rendimentos, rv, imposto, exterior, crypto, carneLeao, { data: snapshot }, { data: settings }, { data: notes }] =
     await Promise.all([
       getBensReport(year, householdId),
       getRendimentosReport(year, householdId),
       getRendaVariavelReport(year, householdId),
       computeImposto(year, householdId),
+      getExteriorReport(year, householdId),
+      getCryptoReport(year, householdId),
+      listCarneLeao(year, householdId),
       createClient().then((s) =>
         s
           .from("ir_year_snapshots")
@@ -204,6 +209,97 @@ export default async function ContadorIRYearPage({
         />
         <RendaVariavelTable report={rv} />
       </Panel>
+
+      {/* Carnê-leão (read-only) */}
+      {carneLeao.length > 0 ? (
+        <Panel className="mb-5">
+          <PanelHeader
+            title="Carnê-leão (DARF 0190 mensal)"
+            meta={`${carneLeao.length} registros`}
+          />
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="text-faint-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
+                <th className="text-left pb-1 font-medium">Mês</th>
+                <th className="text-left pb-1 font-medium">Tipo</th>
+                <th className="text-left pb-1 font-medium">Descrição</th>
+                <th className="text-right pb-1 font-medium">Bruto</th>
+                <th className="text-right pb-1 font-medium">DARF</th>
+                <th className="text-left pb-1 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {carneLeao.map((e) => {
+                const m = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"][e.month - 1];
+                return (
+                  <tr key={e.id} className="border-t border-border">
+                    <td className="py-1.5 font-mono">{m}</td>
+                    <td className="py-1.5 text-faint-foreground">{e.kind}</td>
+                    <td className="py-1.5 text-foreground">{e.description}</td>
+                    <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(Number(e.gross_amount))}</td>
+                    <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(Number(e.tax_due))}</td>
+                    <td className="py-1.5">
+                      {e.paid_at ? <Badge tone="olive">pago</Badge> : <Badge tone="rust">pendente</Badge>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
+      ) : null}
+
+      {/* Exterior + Cripto (read-only) */}
+      {(exterior.byAsset.length > 0 || crypto.monthly.some((m) => m.grossSales > 0)) ? (
+        <Panel className="mb-5">
+          <PanelHeader
+            title="Aplicações no exterior + cripto"
+            meta="Lei 14.754/2023 — 15% anual"
+          />
+          {exterior.byAsset.length > 0 ? (
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge tone="navy">Exterior · {exterior.byAsset.length} ativos</Badge>
+                <span className="text-[12px] text-muted-foreground">
+                  Lucro R$ {fmtBRL(exterior.totalProfitBRL)} · imposto R$ {fmtBRL(exterior.taxDue)}
+                </span>
+              </div>
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="text-faint-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
+                    <th className="text-left pb-1 font-medium">Ticker</th>
+                    <th className="text-left pb-1 font-medium">Nome</th>
+                    <th className="text-right pb-1 font-medium">Compras</th>
+                    <th className="text-right pb-1 font-medium">Vendas</th>
+                    <th className="text-right pb-1 font-medium">Lucro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exterior.byAsset.map((a) => (
+                    <tr key={a.investmentId} className="border-t border-border">
+                      <td className="py-1.5 font-mono text-foreground">{a.ticker}</td>
+                      <td className="py-1.5 text-muted-foreground truncate">{a.name}</td>
+                      <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(a.totalBoughtBRL)}</td>
+                      <td className="py-1.5 font-mono text-right tabular-nums">R$ {fmtBRL(a.totalSoldBRL)}</td>
+                      <td className={"py-1.5 font-mono text-right tabular-nums " + (a.profitBRL >= 0 ? "text-olive-700" : "text-rust-600")}>R$ {fmtBRL(a.profitBRL)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {crypto.monthly.some((m) => m.grossSales > 0) ? (
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge tone="gold">Criptoativos</Badge>
+                <span className="text-[12px] text-muted-foreground">
+                  Imposto ano: R$ {fmtBRL(crypto.totalTaxDue)}
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </Panel>
+      ) : null}
 
       <Panel className="mb-5">
         <PanelHeader title="Imposto a pagar / restituição" />

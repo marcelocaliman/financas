@@ -164,6 +164,44 @@ export function AccountSheet({
             </Field>
           ) : null}
 
+          {/* Identificação Receita Federal — usada na declaração IR */}
+          <details className="rounded-[8px] border border-border overflow-hidden">
+            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted font-medium">
+              Identificação Receita (IRPF) ▼
+            </summary>
+            <div className="p-3 space-y-3 border-t border-border bg-bone-100 dark:bg-ink-800">
+              <Field label="CNPJ da instituição" htmlFor="cnpj" hint="Pra Bens e Direitos no IR">
+                <input
+                  id="cnpj"
+                  name="cnpj"
+                  defaultValue={account?.cnpj ?? ""}
+                  placeholder="00.000.000/0001-00"
+                  className="font-mono w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Agência" htmlFor="agency">
+                  <input
+                    id="agency"
+                    name="agency"
+                    defaultValue={account?.agency ?? ""}
+                    placeholder="1234"
+                    className="font-mono w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+                  />
+                </Field>
+                <Field label="Conta" htmlFor="accountNumber">
+                  <input
+                    id="accountNumber"
+                    name="accountNumber"
+                    defaultValue={account?.account_number ?? ""}
+                    placeholder="56789-0"
+                    className="font-mono w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+                  />
+                </Field>
+              </div>
+            </div>
+          </details>
+
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>
           ) : null}

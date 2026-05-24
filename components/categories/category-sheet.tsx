@@ -95,6 +95,40 @@ export function CategorySheet({
             />
           </Field>
 
+          {/* IR — Dedução automática quando lançar despesa nesta categoria */}
+          {kind === "expense" ? (
+            <Field
+              label="Dedutível no IRPF?"
+              htmlFor="irDeductibleKind"
+              hint="Quando setado, despesas nesta categoria viram dedução IR automática (você revisa antes)"
+            >
+              <select
+                id="irDeductibleKind"
+                name="irDeductibleKind"
+                defaultValue={category?.ir_deductible_kind ?? ""}
+                className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+              >
+                <option value="">— não dedutível</option>
+                <option value="plano_saude">Plano de saúde</option>
+                <option value="hospital">Hospital / exames</option>
+                <option value="medico">Médico</option>
+                <option value="dentista">Dentista</option>
+                <option value="psicologo">Psicólogo</option>
+                <option value="outros_saude">Outros saúde</option>
+                <option value="educacao_titular">Educação titular</option>
+                <option value="educacao_dependente">Educação dependente</option>
+                <option value="inss_titular">INSS titular</option>
+                <option value="inss_domestico">INSS doméstico</option>
+                <option value="pgbl">PGBL</option>
+                <option value="previdencia_privada">Previdência privada</option>
+                <option value="pensao_alimenticia">Pensão alimentícia</option>
+                <option value="doacao_eca">Doação ECA</option>
+                <option value="doacao_cultural">Doação cultural</option>
+                <option value="outros">Outros dedutíveis</option>
+              </select>
+            </Field>
+          ) : null}
+
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>
           ) : null}

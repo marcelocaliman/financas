@@ -3,16 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUserContext } from "@/services/auth";
 import type { MovementKind } from "@/types/database";
 
 const schema = z.object({
   investmentId: z.string().uuid(),
-  kind: z.enum(["buy", "sell", "dividend"]) as z.ZodType<MovementKind>,
+  kind: z.enum([
+    "buy", "sell", "dividend",
+    "exercise", "assignment", "expiration",
+  ]) as z.ZodType<MovementKind>,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   quantity: z.coerce.number().positive("Quantidade deve ser positiva."),
   unitPrice: z.coerce.number().nonnegative("Preço unitário inválido."),
   fees: z.coerce.number().nonnegative().default(0),
   notes: z.string().optional(),
+  isDayTrade: z.coerce.boolean().optional().default(false),
 });
 
 const updateSchema = schema.extend({ id: z.string().uuid() });
@@ -44,20 +49,59 @@ export async function addMovement(
     unitPrice: formData.get("unitPrice"),
     fees: formData.get("fees") ?? 0,
     notes: formData.get("notes") || undefined,
+    isDayTrade: formData.get("isDayTrade") === "1" || formData.get("isDayTrade") === "true",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("add_investment_movement", {
-    p_investment_id: parsed.data.investmentId,
-    p_kind: parsed.data.kind,
-    p_date: parsed.data.date,
-    p_quantity: parsed.data.quantity,
-    p_unit_price: parsed.data.unitPrice,
-    p_fees: parsed.data.fees,
-    p_notes: parsed.data.notes ?? null,
-  });
-  if (error) return { error: error.message };
+  // Pra kinds avançados (exercise/assignment/expiration), insere direto na tabela
+  // já que add_investment_movement só aceita buy/sell/dividend/split.
+  const isAdvancedKind = ["exercise", "assignment", "expiration"].includes(parsed.data.kind);
+  if (isAdvancedKind) {
+    const ctx = await getCurrentUserContext();
+    if (!ctx) return { error: "Sessão expirada." };
+    const { error } = await supabase.from("investment_movements").insert({
+      household_id: ctx.household.id,
+      investment_id: parsed.data.investmentId,
+      kind: parsed.data.kind,
+      date: parsed.data.date,
+      quantity: parsed.data.quantity,
+      unit_price: parsed.data.unitPrice,
+      fees: parsed.data.fees,
+      notes: parsed.data.notes ?? null,
+      is_day_trade: parsed.data.isDayTrade,
+      created_by: ctx.profile.id,
+    });
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.rpc("add_investment_movement", {
+      p_investment_id: parsed.data.investmentId,
+      p_kind: parsed.data.kind,
+      p_date: parsed.data.date,
+      p_quantity: parsed.data.quantity,
+      p_unit_price: parsed.data.unitPrice,
+      p_fees: parsed.data.fees,
+      p_notes: parsed.data.notes ?? null,
+    });
+    if (error) return { error: error.message };
+
+    // Atualiza is_day_trade pós-insert quando user marcou explicitamente
+    if (parsed.data.isDayTrade && parsed.data.kind === "sell") {
+      await supabase
+        .from("investment_movements")
+        .update({ is_day_trade: true })
+        .eq("investment_id", parsed.data.investmentId)
+        .eq("date", parsed.data.date)
+        .eq("kind", "sell")
+        .eq("quantity", parsed.data.quantity);
+    }
+  }
+
+  // Refresh day-trade flags pro household (vendas same-day viram day_trade)
+  const ctx = await getCurrentUserContext();
+  if (ctx) {
+    await supabase.rpc("refresh_day_trade_flags", { p_household_id: ctx.household.id });
+  }
 
   revalidatePath("/investimentos");
   revalidatePath("/dashboard");

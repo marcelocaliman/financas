@@ -63,6 +63,27 @@ export async function createAccountantInvite(
   const token = randomBytes(32).toString("hex");
   const email = parsed.data.email.toLowerCase().trim();
 
+  // Dedup: se já existe convite ativo (não aceito, não revogado, não expirado)
+  // pro mesmo email + household, retorna o existente em vez de criar outro.
+  const { data: existing } = await supabase
+    .from("accountant_invites")
+    .select("token, expires_at")
+    .eq("household_id", ctx.household.id)
+    .eq("email", email)
+    .is("accepted_at", null)
+    .is("revoked_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  if (existing) {
+    const base =
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://financas.example.com";
+    return {
+      ok: true,
+      inviteUrl: `${base}/contador/aceitar?token=${existing.token}`,
+      error: "Já existe convite ativo pra esse contador. Reutilizando o link.",
+    };
+  }
+
   const { data, error } = await supabase
     .from("accountant_invites")
     .insert({

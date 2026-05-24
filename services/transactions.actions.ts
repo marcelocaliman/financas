@@ -21,6 +21,10 @@ const baseSchema = z.object({
   categoryId: z.string().uuid().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
   paymentMethod: z.enum(PAYMENT_METHODS).optional(),
+  // IR fields (apenas pra income)
+  fontePagadoraId: z.string().uuid().optional().nullable(),
+  irrfAmount: z.coerce.number().nonnegative().optional().nullable(),
+  inssAmount: z.coerce.number().nonnegative().optional().nullable(),
 });
 
 const expenseOrIncomeSchema = baseSchema.extend({
@@ -97,6 +101,9 @@ export async function createTransaction(
     categoryId: formData.get("categoryId") || undefined,
     date: formData.get("date"),
     paymentMethod: formData.get("paymentMethod") || undefined,
+    fontePagadoraId: formData.get("fontePagadoraId") || null,
+    irrfAmount: formData.get("irrfAmount") || null,
+    inssAmount: formData.get("inssAmount") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -159,6 +166,9 @@ export async function createTransaction(
     created_by: ctx.profile.id,
     category_source: categorySource,
     category_confidence: categoryConfidence,
+    fonte_pagadora_id: parsed.data.kind === "income" ? (parsed.data.fontePagadoraId ?? null) : null,
+    irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
+    inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
   });
   if (error) return { error: error.message };
 

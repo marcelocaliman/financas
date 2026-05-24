@@ -12,6 +12,7 @@ const createSchema = z.object({
   kind: z.enum(KINDS),
   icon: z.string().optional(),
   color: z.string().optional(),
+  irDeductibleKind: z.string().optional().nullable(),
 });
 
 const updateSchema = createSchema.extend({ id: z.string().uuid() });
@@ -40,6 +41,7 @@ export async function createCategory(
     kind: formData.get("kind"),
     icon: formData.get("icon") || undefined,
     color: formData.get("color") || undefined,
+    irDeductibleKind: formData.get("irDeductibleKind") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -53,6 +55,7 @@ export async function createCategory(
     kind: parsed.data.kind,
     icon: parsed.data.icon ?? null,
     color: parsed.data.color ?? null,
+    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
   });
   if (error) return { error: error.message };
   revalidatePath("/categorias");
@@ -69,6 +72,7 @@ export async function updateCategory(
     kind: formData.get("kind"),
     icon: formData.get("icon") || undefined,
     color: formData.get("color") || undefined,
+    irDeductibleKind: formData.get("irDeductibleKind") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -80,6 +84,7 @@ export async function updateCategory(
       kind: parsed.data.kind,
       icon: parsed.data.icon ?? null,
       color: parsed.data.color ?? null,
+      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

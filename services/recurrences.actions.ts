@@ -29,6 +29,8 @@ const baseSchema = z.object({
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   notes: z.string().optional().nullable(),
   isSubscription: z.coerce.boolean().optional(),
+  irDeductibleKind: z.string().optional().nullable(),
+  isTaxDeductible: z.coerce.boolean().optional(),
 });
 
 const updateSchema = baseSchema.extend({ id: z.string().uuid() });
@@ -75,6 +77,8 @@ function readForm(formData: FormData) {
     endDate: get("endDate") || undefined,
     notes: get("notes") || undefined,
     isSubscription: get("isSubscription") === "1" || get("isSubscription") === "true",
+    irDeductibleKind: get("irDeductibleKind") || undefined,
+    isTaxDeductible: get("isTaxDeductible") === "1" || get("isTaxDeductible") === "true",
   };
 }
 
@@ -133,6 +137,8 @@ export async function createRecurringRule(
     end_date: parsed.data.endDate ?? null,
     notes: parsed.data.notes?.trim() ?? null,
     tags: parsed.data.isSubscription ? ["subscription"] : [],
+    ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+    is_tax_deductible: parsed.data.isTaxDeductible ?? false,
     created_by: ctx.profile.id,
   });
   if (error) return { error: error.message };
@@ -193,6 +199,8 @@ export async function updateRecurringRule(
       end_date: parsed.data.endDate ?? null,
       notes: parsed.data.notes?.trim() ?? null,
       tags: newTags,
+      ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as never,
+      is_tax_deductible: parsed.data.isTaxDeductible ?? false,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

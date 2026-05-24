@@ -433,6 +433,53 @@ export function RecurrenceSheet({
             </label>
           ) : null}
 
+          {/* Dedução IR — apenas pra despesa */}
+          {kind === "expense" ? (
+            <div className="px-3 py-2.5 rounded-[8px] bg-surface-muted/50 space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isTaxDeductible"
+                  value="1"
+                  defaultChecked={rule?.is_tax_deductible ?? false}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div>
+                  <div className="text-[13px] text-foreground font-medium">É dedutível no IRPF</div>
+                  <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
+                    Toda materialização desta recorrência vira candidata a pagamento dedutível.
+                  </div>
+                </div>
+              </label>
+              <Field label="Tipo de dedução" htmlFor="irDeductibleKind" hint="(opcional, se marcado acima)">
+                <select
+                  id="irDeductibleKind"
+                  name="irDeductibleKind"
+                  defaultValue={rule?.ir_deductible_kind ?? ""}
+                  className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+                >
+                  <option value="">— escolher tipo</option>
+                  <option value="plano_saude">Plano de saúde</option>
+                  <option value="hospital">Hospital / exames</option>
+                  <option value="medico">Médico</option>
+                  <option value="dentista">Dentista</option>
+                  <option value="psicologo">Psicólogo</option>
+                  <option value="outros_saude">Outros saúde</option>
+                  <option value="educacao_titular">Educação titular</option>
+                  <option value="educacao_dependente">Educação dependente</option>
+                  <option value="inss_titular">INSS titular</option>
+                  <option value="inss_domestico">INSS doméstico</option>
+                  <option value="pgbl">PGBL</option>
+                  <option value="previdencia_privada">Previdência privada</option>
+                  <option value="pensao_alimenticia">Pensão alimentícia</option>
+                  <option value="doacao_eca">Doação ECA</option>
+                  <option value="doacao_cultural">Doação cultural</option>
+                  <option value="outros">Outros dedutíveis</option>
+                </select>
+              </Field>
+            </div>
+          ) : null}
+
           {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
 
           <div className="flex justify-end gap-2 pt-3 border-t border-border">

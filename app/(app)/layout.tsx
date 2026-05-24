@@ -15,6 +15,7 @@ import { ConfirmProvider } from "@/components/ui/confirm-dialog";
 import { getCurrentUserContext } from "@/services/auth";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
+import { listFontesPagadoras } from "@/services/fontes-pagadoras";
 import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getSidebarBadges } from "@/services/sidebar-badges";
 
@@ -31,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     badges,
     termsOk,
     isAdmin,
+    fontes,
   ] = await Promise.all([
     listAccounts(),
     listCategories(),
@@ -40,6 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     getSidebarBadges(),
     hasAcceptedCurrentTerms(),
     isPlatformAdmin(),
+    listFontesPagadoras().catch(() => []),
   ]);
 
   const accountsLite = accounts.map((a) => ({
@@ -84,7 +87,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <MobileNav />
           </div>
         </div>
-        <AddTransactionDialog accounts={accountsLite} categories={categoriesLite} />
+        <AddTransactionDialog
+          accounts={accountsLite}
+          categories={categoriesLite}
+          fontes={fontes.map((f) => ({
+            id: f.id,
+            name: f.name,
+            type: f.type,
+            cnpj: f.cnpj,
+            cpf: f.cpf,
+            default_irrf_rate: f.default_irrf_rate,
+            default_inss_rate: f.default_inss_rate,
+          }))}
+        />
         <QuickAddFAB />
         {!termsOk ? (
           <ConsentBanner

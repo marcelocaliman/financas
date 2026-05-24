@@ -25,6 +25,7 @@ import type { Tables } from "@/types/database";
 
 type Investment = Tables<"investments">;
 type Movement = Tables<"investment_movements">;
+type ExtraKind = "exercise" | "assignment" | "expiration";
 
 function todayISO(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -41,6 +42,7 @@ export function MovementDialog({
   investment,
   defaultKind = "buy",
   movement,
+  forceKind,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -48,6 +50,8 @@ export function MovementDialog({
   defaultKind?: "buy" | "sell";
   /** Quando passado, dialog entra em modo edição (prefill + updateMovement) */
   movement?: Movement | null;
+  /** Força um kind específico (exercise/assignment/expiration pra opções) */
+  forceKind?: ExtraKind;
 }) {
   const isEdit = !!movement;
   const initialKind: "buy" | "sell" =
@@ -163,7 +167,7 @@ export function MovementDialog({
         <form action={action} className="space-y-4">
           {isEdit ? <input type="hidden" name="id" value={movement.id} /> : null}
           <input type="hidden" name="investmentId" value={investment.id} />
-          <input type="hidden" name="kind" value={kind} />
+          <input type="hidden" name="kind" value={forceKind ?? kind} />
 
           {isEdit ? (
             <div className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-faint-foreground">

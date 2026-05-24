@@ -93,9 +93,13 @@ function fmtMoneyBRL(v: number): string {
  * "Situação em 31/12 do ano corrente" é provisória até o usuário ajustar.
  */
 async function getAccountBalanceAt(
-  _accountId: string,
+  accountId: string,
   currentBalance: number,
+  snapshotsByAccount?: Map<string, number>,
 ): Promise<number> {
+  if (snapshotsByAccount?.has(accountId)) {
+    return snapshotsByAccount.get(accountId)!;
+  }
   return currentBalance;
 }
 
@@ -109,9 +113,13 @@ async function getAccountBalanceAt(
  * O usuário pode editar manualmente o valor final na UI antes de exportar.
  */
 async function getInvestmentBalanceAt(
-  _investmentId: string,
+  investmentId: string,
   currentBalance: number,
+  snapshotsByInvestment?: Map<string, number>,
 ): Promise<number> {
+  if (snapshotsByInvestment?.has(investmentId)) {
+    return snapshotsByInvestment.get(investmentId)!;
+  }
   return currentBalance;
 }
 
@@ -153,6 +161,16 @@ export async function getBensReport(
     .select("bens, totals")
     .eq("year", year - 1);
 
+  // Snapshots de saldo em 31/12 do ano-base (se existirem)
+  const accSnapsQuery = supabase
+    .from("account_snapshots")
+    .select("account_id, balance")
+    .eq("snapshot_date", endOfYear);
+  const invSnapsQuery = supabase
+    .from("investment_snapshots")
+    .select("investment_id, balance, quantity")
+    .eq("snapshot_date", endOfYear);
+
   const [
     rates,
     ratesPrev,
@@ -160,6 +178,8 @@ export async function getBensReport(
     { data: investments },
     { data: physical },
     { data: prevSnapshot },
+    { data: accSnaps },
+    { data: invSnaps },
   ] = await Promise.all([
     getRateMapAt(endOfYear),
     getRateMapAt(endOfPrevYear),
@@ -167,7 +187,17 @@ export async function getBensReport(
     householdId ? investmentsQuery.eq("household_id", householdId) : investmentsQuery,
     householdId ? physicalQuery.eq("household_id", householdId) : physicalQuery,
     (householdId ? snapshotQuery.eq("household_id", householdId) : snapshotQuery).maybeSingle(),
+    householdId ? accSnapsQuery.eq("household_id", householdId) : accSnapsQuery,
+    householdId ? invSnapsQuery.eq("household_id", householdId) : invSnapsQuery,
   ]);
+
+  // Mapas pra lookup rápido nos helpers
+  const accountSnapshotMap = new Map<string, number>(
+    (accSnaps ?? []).map((s) => [s.account_id, Number(s.balance)]),
+  );
+  const investmentSnapshotMap = new Map<string, number>(
+    (invSnaps ?? []).map((s) => [s.investment_id, Number(s.balance)]),
+  );
 
   // Mapa do snapshot ano-anterior pra puxar previousYearValue
   const prevValueBySource = new Map<string, number>();
@@ -187,7 +217,11 @@ export async function getBensReport(
     if (!code) continue;
     const codeMeta = BEM_CODES[code];
     const currency = a.currency as Currency;
-    const balance = await getAccountBalanceAt(a.id, Number(a.current_balance ?? 0));
+    const balance = await getAccountBalanceAt(
+      a.id,
+      Number(a.current_balance ?? 0),
+      accountSnapshotMap,
+    );
     const balanceBRL = currency === "BRL"
       ? balance
       : convertOrSame(balance, currency, "BRL", rates);
@@ -222,7 +256,11 @@ export async function getBensReport(
     );
     const codeMeta = BEM_CODES[code];
     const currency = inv.currency as Currency;
-    const balance = await getInvestmentBalanceAt(inv.id, Number(inv.current_balance ?? 0));
+    const balance = await getInvestmentBalanceAt(
+      inv.id,
+      Number(inv.current_balance ?? 0),
+      investmentSnapshotMap,
+    );
     const balanceBRL = currency === "BRL"
       ? balance
       : convertOrSame(balance, currency, "BRL", rates);

@@ -49,6 +49,9 @@ export function InvestmentRowActions({
   const [registeringYield, setRegisteringYield] = useState(false);
   const [withdrawingYield, setWithdrawingYield] = useState(false);
   const [movementMode, setMovementMode] = useState<"buy" | "sell" | null>(null);
+  const [optionAction, setOptionAction] = useState<
+    "exercise" | "assignment" | "expiration" | null
+  >(null);
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
   const [simulating, setSimulating] = useState(false);
@@ -59,7 +62,9 @@ export function InvestmentRowActions({
     investment.asset_type === "fii" ||
     investment.asset_type === "stock" ||
     investment.asset_type === "etf" ||
-    investment.asset_type === "crypto";
+    investment.asset_type === "crypto" ||
+    investment.asset_type === "option";
+  const isOption = investment.asset_type === "option";
   const isFixedIncome =
     investment.asset_type === "fixed_income_public" ||
     investment.asset_type === "fixed_income_private";
@@ -128,6 +133,28 @@ export function InvestmentRowActions({
                         onSelect: () => setSimulating(true),
                         disabled: pending,
                       },
+                      ...(isOption
+                        ? [
+                            {
+                              label: "Exercer opção",
+                              icon: <Plus className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                              onSelect: () => setOptionAction("exercise"),
+                              disabled: pending,
+                            },
+                            {
+                              label: "Sou exercido (assignment)",
+                              icon: <Plus className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                              onSelect: () => setOptionAction("assignment"),
+                              disabled: pending,
+                            },
+                            {
+                              label: "Vencimento (sem exercício)",
+                              icon: <Plus className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                              onSelect: () => setOptionAction("expiration"),
+                              disabled: pending,
+                            },
+                          ]
+                        : []),
                       {
                         label: "Ver extrato",
                         icon: <List className="w-3.5 h-3.5" strokeWidth={1.7} />,
@@ -235,6 +262,15 @@ export function InvestmentRowActions({
             ticker={investment.ticker}
             currentQty={Number(investment.quantity ?? 0)}
           />
+          {optionAction ? (
+            <MovementDialog
+              open={!!optionAction}
+              onOpenChange={(o) => !o && setOptionAction(null)}
+              investment={investment}
+              defaultKind="sell"
+              forceKind={optionAction}
+            />
+          ) : null}
         </>
       ) : null}
       {isFixedIncome ? (

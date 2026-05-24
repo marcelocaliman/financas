@@ -12,8 +12,11 @@ const ASSET_TYPES = [
   "stock",
   "etf",
   "crypto",
+  "option",
 ] as const;
 const INDEXERS = ["selic", "cdi", "ipca", "fixed", "none"] as const;
+const OPTION_TYPES = ["call", "put"] as const;
+const OPTION_POSITIONS = ["covered", "naked", "long"] as const;
 
 const createSchema = z.object({
   accountId: z.string().uuid(),
@@ -27,9 +30,18 @@ const createSchema = z.object({
   initialAmount: z.coerce.number().nonnegative(),
   currentBalance: z.coerce.number().nonnegative().optional(),
   taxRegime: z.enum(["regressive", "exempt"]).default("regressive"),
-  // Lote inicial para ativos de mercado (FII/ação/ETF/cripto)
+  // Lote inicial para ativos de mercado (FII/ação/ETF/cripto/opção)
   quantity: z.coerce.number().positive().optional(),
   unitPrice: z.coerce.number().nonnegative().optional(),
+  // IR
+  cnpj: z.string().optional().nullable(),
+  isExterior: z.coerce.boolean().optional().default(false),
+  // Opção
+  optionType: z.enum(OPTION_TYPES).optional().nullable(),
+  strikePrice: z.coerce.number().positive().optional().nullable(),
+  expiryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  underlyingTicker: z.string().optional().nullable(),
+  optionPosition: z.enum(OPTION_POSITIONS).optional().nullable(),
 });
 
 const updateSchema = createSchema.extend({ id: z.string().uuid() });
@@ -67,17 +79,38 @@ export async function createInvestment(
     taxRegime: formData.get("taxRegime") || "regressive",
     quantity: formData.get("quantity") || undefined,
     unitPrice: formData.get("unitPrice") || undefined,
+    cnpj: formData.get("cnpj") || null,
+    isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    optionType: formData.get("optionType") || null,
+    strikePrice: formData.get("strikePrice") || null,
+    expiryDate: formData.get("expiryDate") || null,
+    underlyingTicker: formData.get("underlyingTicker") || null,
+    optionPosition: formData.get("optionPosition") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return { error: "Sessão expirada." };
 
-  const isMarketable = ["fii", "stock", "etf", "crypto"].includes(parsed.data.assetType);
+  const isMarketable = ["fii", "stock", "etf", "crypto", "option"].includes(parsed.data.assetType);
   if (isMarketable && (!parsed.data.quantity || parsed.data.quantity <= 0)) {
     return {
-      fieldErrors: { quantity: "Para ações, FIIs, ETFs ou cripto informe a quantidade." },
+      fieldErrors: { quantity: "Para ativos de mercado informe a quantidade." },
     };
+  }
+  if (parsed.data.assetType === "option") {
+    if (!parsed.data.optionType) {
+      return { fieldErrors: { optionType: "Call ou Put obrigatório." } };
+    }
+    if (!parsed.data.strikePrice) {
+      return { fieldErrors: { strikePrice: "Strike obrigatório." } };
+    }
+    if (!parsed.data.expiryDate) {
+      return { fieldErrors: { expiryDate: "Vencimento obrigatório." } };
+    }
+    if (!parsed.data.optionPosition) {
+      return { fieldErrors: { optionPosition: "Posição (lançada/comprada) obrigatória." } };
+    }
   }
 
   const supabase = await createClient();
@@ -107,6 +140,13 @@ export async function createInvestment(
       current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
       currency: investmentCurrency,
       tax_regime: parsed.data.taxRegime,
+      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      is_exterior: parsed.data.isExterior ?? false,
+      option_type: parsed.data.optionType ?? null,
+      strike_price: parsed.data.strikePrice ?? null,
+      expiry_date: parsed.data.expiryDate ?? null,
+      underlying_ticker: parsed.data.underlyingTicker?.trim() || null,
+      option_position: parsed.data.optionPosition ?? null,
     })
     .select("id")
     .single();
@@ -178,6 +218,13 @@ export async function updateInvestment(
     initialAmount: formData.get("initialAmount"),
     currentBalance: formData.get("currentBalance") || undefined,
     taxRegime: formData.get("taxRegime") || "regressive",
+    cnpj: formData.get("cnpj") || null,
+    isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    optionType: formData.get("optionType") || null,
+    strikePrice: formData.get("strikePrice") || null,
+    expiryDate: formData.get("expiryDate") || null,
+    underlyingTicker: formData.get("underlyingTicker") || null,
+    optionPosition: formData.get("optionPosition") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -196,6 +243,13 @@ export async function updateInvestment(
       initial_amount: parsed.data.initialAmount,
       current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
       tax_regime: parsed.data.taxRegime,
+      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      is_exterior: parsed.data.isExterior ?? false,
+      option_type: parsed.data.optionType ?? null,
+      strike_price: parsed.data.strikePrice ?? null,
+      expiry_date: parsed.data.expiryDate ?? null,
+      underlying_ticker: parsed.data.underlyingTicker?.trim() || null,
+      option_position: parsed.data.optionPosition ?? null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

@@ -343,6 +343,13 @@ export async function closeYearDeclaration(year: number): Promise<IRFormState> {
   if (!ctx) return { error: "Sessão expirada." };
   const supabase = await createClient();
 
+  // 1) Snapshot dos saldos em 31/12 do ano-base (account_snapshots + investment_snapshots)
+  // Importante chamar ANTES de getBensReport pra que o relatório use o snapshot.
+  await supabase.rpc("snapshot_accounts_and_investments", {
+    p_household_id: ctx.household.id,
+    p_date: `${year}-12-31`,
+  });
+
   const bens = await getBensReport(year);
   const flatBens = bens.byGroup.flatMap((g) => g.items);
 

@@ -22,12 +22,15 @@ import {
 } from "@/components/ui/select";
 import { createTransaction, type TxFormState } from "@/services/transactions.actions";
 import { useQuickAdd } from "./quick-add-context";
+import type { Tables } from "@/types/database";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 type TxKind = "expense" | "income" | "transfer";
 type Currency = "BRL" | "EUR" | "USD";
 
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type FonteLite = Pick<Tables<"fontes_pagadoras">, "id" | "name" | "type" | "cnpj" | "cpf" | "default_irrf_rate" | "default_inss_rate">;
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   BRL: "R$",
@@ -55,9 +58,11 @@ function todayISO(): string {
 export function AddTransactionDialog({
   accounts,
   categories,
+  fontes = [],
 }: {
   accounts: AccountLite[];
   categories: CategoryLite[];
+  fontes?: FonteLite[];
 }) {
   const { open, defaultKind, hide } = useQuickAdd();
   const [kind, setKind] = useState<TxKind>(defaultKind);
@@ -68,6 +73,10 @@ export function AddTransactionDialog({
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [date, setDate] = useState<string>(todayISO());
   const [currency, setCurrency] = useState<Currency>("BRL");
+  const [showIR, setShowIR] = useState(false);
+  const [fontePagadoraId, setFontePagadoraId] = useState<string>("");
+  const [irrfAmount, setIrrfAmount] = useState<number>(0);
+  const [inssAmount, setInssAmount] = useState<number>(0);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Quando muda a conta, ajusta a moeda default da transação pra moeda dela.
@@ -93,6 +102,10 @@ export function AddTransactionDialog({
       setDate(todayISO());
       setCategoryId("");
       setPaymentMethod("");
+      setShowIR(false);
+      setFontePagadoraId("");
+      setIrrfAmount(0);
+      setInssAmount(0);
       let lastAccount: string | null = null;
       try {
         lastAccount = localStorage.getItem("financas:lastAccountId");
@@ -325,6 +338,67 @@ export function AddTransactionDialog({
                 </Field>
               ) : null}
             </div>
+
+            {/* Seção IR — apenas pra receitas com fontes configuradas */}
+            {kind === "income" && fontes.length > 0 ? (
+              <div className="rounded-[8px] border border-border bg-bone-100 dark:bg-ink-800 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowIR((v) => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted"
+                >
+                  <span className="font-medium">
+                    IR · fonte pagadora + IRRF/INSS retidos
+                  </span>
+                  {showIR ? (
+                    <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+                  )}
+                </button>
+                {showIR ? (
+                  <div className="p-3 space-y-3 border-t border-border">
+                    <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
+                    <input type="hidden" name="irrfAmount" value={irrfAmount} />
+                    <input type="hidden" name="inssAmount" value={inssAmount} />
+                    <Field label="Fonte pagadora" htmlFor="fonte">
+                      <Select
+                        value={fontePagadoraId}
+                        onValueChange={setFontePagadoraId}
+                      >
+                        <SelectTrigger id="fonte"><SelectValue placeholder="— escolher" /></SelectTrigger>
+                        <SelectContent>
+                          {fontes.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.name} · {f.cnpj ?? f.cpf ?? f.type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="IRRF retido" htmlFor="irrf-input">
+                        <MoneyInput
+                          name="irrf-input"
+                          defaultValue={0}
+                          onValueChange={setIrrfAmount}
+                        />
+                      </Field>
+                      <Field label="INSS" htmlFor="inss-input">
+                        <MoneyInput
+                          name="inss-input"
+                          defaultValue={0}
+                          onValueChange={setInssAmount}
+                        />
+                      </Field>
+                    </div>
+                    <p className="text-[11px] text-faint-foreground">
+                      Esses valores vão direto pro quadro &quot;Rendimentos Tributáveis Recebidos de PJ&quot; no IRPF.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             {state?.error ? (
               <p className="text-[12.5px] text-rust-600">{state.error}</p>

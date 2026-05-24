@@ -1815,6 +1815,60 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["accountant_documents"]["Insert"]>;
         Relationships: [];
       };
+      account_snapshots: {
+        Row: {
+          id: string;
+          household_id: string;
+          account_id: string;
+          snapshot_date: string;
+          balance: number;
+          currency: Currency;
+          source: "manual" | "cron" | "imported";
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          account_id: string;
+          snapshot_date: string;
+          balance: number;
+          currency?: Currency;
+          source?: "manual" | "cron" | "imported";
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["account_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
+      investment_snapshots: {
+        Row: {
+          id: string;
+          household_id: string;
+          investment_id: string;
+          snapshot_date: string;
+          balance: number;
+          quantity: number | null;
+          currency: Currency;
+          source: "manual" | "cron" | "imported";
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          investment_id: string;
+          snapshot_date: string;
+          balance: number;
+          quantity?: number | null;
+          currency?: Currency;
+          source?: "manual" | "cron" | "imported";
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["investment_snapshots"]["Insert"]>;
+        Relationships: [];
+      };
       accountant_audit_log: {
         Row: {
           id: string;
@@ -1942,6 +1996,10 @@ export interface Database {
       refresh_day_trade_flags: {
         Args: { p_household_id: string };
         Returns: number;
+      };
+      snapshot_accounts_and_investments: {
+        Args: { p_household_id: string; p_date: string };
+        Returns: void;
       };
       add_investment_movement: {
         Args: {

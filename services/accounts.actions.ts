@@ -15,6 +15,9 @@ const createSchema = z.object({
   color: z.string().optional(),
   currency: z.enum(CURRENCIES).default("BRL"),
   initialBalance: z.coerce.number().default(0),
+  cnpj: z.string().optional().nullable(),
+  agency: z.string().optional().nullable(),
+  accountNumber: z.string().optional().nullable(),
 });
 
 const updateSchema = createSchema.extend({
@@ -47,6 +50,9 @@ export async function createAccount(
     color: formData.get("color") || undefined,
     currency: formData.get("currency") || "BRL",
     initialBalance: formData.get("initialBalance") ?? 0,
+    cnpj: formData.get("cnpj") || null,
+    agency: formData.get("agency") || null,
+    accountNumber: formData.get("accountNumber") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
@@ -62,6 +68,9 @@ export async function createAccount(
     color: parsed.data.color ?? null,
     currency: parsed.data.currency,
     current_balance: parsed.data.initialBalance,
+    cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+    agency: parsed.data.agency?.trim() || null,
+    account_number: parsed.data.accountNumber?.trim() || null,
   });
   if (error) return { error: error.message };
 
@@ -82,6 +91,9 @@ export async function updateAccount(
     color: formData.get("color") || undefined,
     currency: formData.get("currency") || "BRL",
     initialBalance: formData.get("initialBalance") ?? 0,
+    cnpj: formData.get("cnpj") || null,
+    agency: formData.get("agency") || null,
+    accountNumber: formData.get("accountNumber") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
@@ -94,6 +106,9 @@ export async function updateAccount(
       name: parsed.data.name.trim(),
       color: parsed.data.color ?? null,
       currency: parsed.data.currency,
+      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      agency: parsed.data.agency?.trim() || null,
+      account_number: parsed.data.accountNumber?.trim() || null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
