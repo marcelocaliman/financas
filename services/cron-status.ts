@@ -22,7 +22,9 @@ function ageHours(iso: string | null): number | null {
   // Aceita "YYYY-MM-DD" ou "YYYY-MM-DDTHH:MM:SS..."
   const t = new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).getTime();
   if (Number.isNaN(t)) return null;
-  return (Date.now() - t) / (1000 * 60 * 60);
+  // Clamp negativo (timestamp futuro = "agora"). Defesa pra casos como
+  // BCB Selic retornar a data do próximo Copom (futuro).
+  return Math.max(0, (Date.now() - t) / (1000 * 60 * 60));
 }
 
 export type CronStatus = CronCheck & {
@@ -42,14 +44,14 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
   ] = await Promise.all([
     supabase
       .from("indexer_history")
-      .select("date")
-      .order("date", { ascending: false })
+      .select("created_at")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
       .from("currency_rates")
-      .select("date")
-      .order("date", { ascending: false })
+      .select("created_at")
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
@@ -77,14 +79,14 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     {
       name: "Indexadores BCB",
       description: "Selic, CDI, IPCA · /api/cron/update-indexers",
-      latestAt: idx?.date ?? null,
-      staleAfterHours: 48, // dia útil
+      latestAt: idx?.created_at ?? null,
+      staleAfterHours: 72, // tolera fim de semana + 1 dia
     },
     {
       name: "Taxas de câmbio",
       description: "USD/EUR/BRL · /api/cron/update-rates",
-      latestAt: rate?.date ?? null,
-      staleAfterHours: 48,
+      latestAt: rate?.created_at ?? null,
+      staleAfterHours: 72, // tolera fim de semana + 1 dia
     },
     {
       name: "Cotações de ativos (brapi)",

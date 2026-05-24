@@ -281,3 +281,36 @@ export function tmplDarfDue(args: {
     `,
   };
 }
+
+export function tmplCronStale(args: {
+  staleChecks: Array<{
+    name: string;
+    description: string;
+    ageHours: number;
+    staleAfterHours: number;
+  }>;
+}): { subject: string; body: string } {
+  const rows = args.staleChecks
+    .map((c) => {
+      const ageDisplay =
+        c.ageHours < 24
+          ? `${Math.round(c.ageHours)}h`
+          : `${Math.round(c.ageHours / 24)}d`;
+      const limitDisplay = Math.round(c.staleAfterHours / 24) || 1;
+      return `<li><b>${c.name}</b> — ${ageDisplay} (limite ${limitDisplay}d)<br><span style="color:#888;font-size:11px">${c.description}</span></li>`;
+    })
+    .join("");
+  return {
+    subject: `⚠ ${args.staleChecks.length} cron${args.staleChecks.length === 1 ? "" : "s"} desatualizado${args.staleChecks.length === 1 ? "" : "s"}`,
+    body: `
+      <p>Olá,</p>
+      <p>Os seguintes crons do Finanças estão desatualizados além do limite tolerado:</p>
+      <ul>${rows}</ul>
+      <p>Verifique o dashboard Vercel pra ver erros de execução. Se o cron rodou
+      e falhou, vai aparecer nos logs. Se nem rodou, pode ser problema de schedule
+      ou plano (Hobby permite só 2 crons/dia).</p>
+      <hr>
+      <p style="color:#888;font-size:11px">Email automático do Finanças · health check</p>
+    `,
+  };
+}
