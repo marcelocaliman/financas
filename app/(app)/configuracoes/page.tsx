@@ -117,6 +117,26 @@ export default async function ConfiguracoesPage() {
           </div>
         </Panel>
 
+        <Panel>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground">
+                Independência financeira (FIRE)
+              </div>
+              <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                Renda alvo, retorno esperado, SWR, idade, INSS. Parâmetros que
+                alimentam o cálculo de FIRE.
+              </p>
+            </div>
+            <Link
+              href="/configuracoes/fire"
+              className="text-navy-700 dark:text-navy-300 text-[13px] shrink-0"
+            >
+              Abrir →
+            </Link>
+          </div>
+        </Panel>
+
         <Panel className="border-navy-700/30">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">

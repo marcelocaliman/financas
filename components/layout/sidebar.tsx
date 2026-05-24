@@ -24,6 +24,7 @@ import {
   Activity,
   FileWarning,
   Settings,
+  Flame,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -50,6 +51,7 @@ const mainNavItems: NavItem[] = [
   { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
   { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
   { label: "Metas", href: "/metas", icon: Target, group: "investir" },
+  { label: "Independência", href: "/independencia", icon: Flame, group: "investir" },
   { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },
   { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
 ];

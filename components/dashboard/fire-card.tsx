@@ -1,6 +1,7 @@
 "use client";
 
-import { Flame, Trophy } from "lucide-react";
+import Link from "next/link";
+import { Flame, Trophy, ArrowRight } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { Money } from "@/components/ui/money";
 import { cn } from "@/lib/utils/cn";
@@ -79,6 +80,14 @@ export function FireCard({
           </div>
           <CoverageRing pct={pct} achieved={isAchieved} />
         </div>
+
+        <Link
+          href="/independencia"
+          className="absolute top-5 right-5 inline-flex items-center gap-1 text-[11.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
+        >
+          Ver análise completa
+          <ArrowRight className="w-3 h-3" strokeWidth={1.8} />
+        </Link>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-5 pt-5 border-t border-border">
           <Stat

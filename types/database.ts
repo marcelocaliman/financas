@@ -92,6 +92,10 @@ export interface Database {
           created_by: string | null;
           suspended_reason: string | null;
           suspended_at: string | null;
+          fire_target_monthly_income: number | null;
+          fire_expected_return_pct: number | null;
+          fire_inflation_pct: number | null;
+          fire_swr_pct: number | null;
           created_at: string;
         };
         Insert: {
@@ -112,6 +116,10 @@ export interface Database {
           created_by?: string | null;
           suspended_reason?: string | null;
           suspended_at?: string | null;
+          fire_target_monthly_income?: number | null;
+          fire_expected_return_pct?: number | null;
+          fire_inflation_pct?: number | null;
+          fire_swr_pct?: number | null;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["households"]["Insert"]>;
@@ -127,6 +135,9 @@ export interface Database {
           is_active: boolean;
           deactivated_at: string | null;
           deactivated_reason: string | null;
+          birth_date: string | null;
+          target_retirement_age: number | null;
+          inss_monthly_estimate: number | null;
           created_at: string;
         };
         Insert: {
@@ -138,6 +149,9 @@ export interface Database {
           is_active?: boolean;
           deactivated_at?: string | null;
           deactivated_reason?: string | null;
+          birth_date?: string | null;
+          target_retirement_age?: number | null;
+          inss_monthly_estimate?: number | null;
           created_at?: string;
         };
         Update: {
@@ -149,6 +163,9 @@ export interface Database {
           is_active?: boolean;
           deactivated_at?: string | null;
           deactivated_reason?: string | null;
+          birth_date?: string | null;
+          target_retirement_age?: number | null;
+          inss_monthly_estimate?: number | null;
           created_at?: string;
         };
         Relationships: [
