@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus, Trash2, Sparkles, Pencil } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import { Plus, Trash2, Sparkles, Search, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,45 @@ export function CategoryRulesManager({
   const [applying, startApplying] = useTransition();
   const confirm = useConfirm();
 
+  // Filtros e paginação
+  const [search, setSearch] = useState("");
+  const [filterKind, setFilterKind] = useState<"all" | "income" | "expense" | "transfer">("all");
+  const [filterCategoryId, setFilterCategoryId] = useState<string>("all");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
   const filteredCats = categories.filter((c) => c.kind === kind && !c.is_archived);
+
+  const filteredRules = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return initialRules.filter((r) => {
+      if (filterKind !== "all" && r.kind !== filterKind) return false;
+      if (filterCategoryId !== "all" && r.category_id !== filterCategoryId) return false;
+      if (q && !r.pattern.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [initialRules, search, filterKind, filterCategoryId]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRules.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedRules = filteredRules.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
+  const filterCategories = useMemo(() => {
+    if (filterKind === "all") return categories.filter((c) => !c.is_archived);
+    return categories.filter((c) => c.kind === filterKind && !c.is_archived);
+  }, [categories, filterKind]);
+
+  const hasActiveFilters = search !== "" || filterKind !== "all" || filterCategoryId !== "all";
+
+  const resetFilters = () => {
+    setSearch("");
+    setFilterKind("all");
+    setFilterCategoryId("all");
+    setPage(1);
+  };
 
   const handleCreate = () => {
     if (pattern.length < 2) return toast.error("Padrão muito curto.");
@@ -109,6 +147,77 @@ export function CategoryRulesManager({
 
       {initialRules.length > 0 ? (
         <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex-1 min-w-[180px]">
+              <Search
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-faint-foreground"
+                strokeWidth={1.7}
+              />
+              <Input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Buscar padrão…"
+                className="pl-8"
+              />
+            </div>
+            <Select
+              value={filterKind}
+              onValueChange={(v) => {
+                setFilterKind(v as typeof filterKind);
+                setFilterCategoryId("all");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos tipos</SelectItem>
+                <SelectItem value="expense">Despesa</SelectItem>
+                <SelectItem value="income">Receita</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={filterCategoryId}
+              onValueChange={(v) => {
+                setFilterCategoryId(v);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas categorias</SelectItem>
+                {filterCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded text-[11.5px] text-faint-foreground hover:text-foreground"
+                aria-label="Limpar filtros"
+              >
+                <X className="w-3 h-3" strokeWidth={1.7} />
+                Limpar
+              </button>
+            ) : null}
+          </div>
+
+          {filteredRules.length === 0 ? (
+            <div className="text-center py-6 text-[12.5px] text-muted-foreground italic">
+              Nenhuma regra bate com os filtros.
+            </div>
+          ) : (
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="text-faint-foreground font-mono text-[10px] uppercase tracking-[0.12em]">
@@ -120,7 +229,7 @@ export function CategoryRulesManager({
               </tr>
             </thead>
             <tbody>
-              {initialRules.map((r) => (
+              {pagedRules.map((r) => (
                 <tr key={r.id} className="border-t border-border-strong/40">
                   <td className="py-2.5 font-mono text-[12px]">{r.pattern}</td>
                   <td className="py-2.5 text-muted-foreground">
@@ -160,6 +269,40 @@ export function CategoryRulesManager({
               ))}
             </tbody>
           </table>
+          )}
+
+          {filteredRules.length > PAGE_SIZE ? (
+            <div className="flex items-center justify-between pt-1 text-[11.5px]">
+              <span className="text-faint-foreground font-mono tabular-nums">
+                {(currentPage - 1) * PAGE_SIZE + 1}–
+                {Math.min(currentPage * PAGE_SIZE, filteredRules.length)} de{" "}
+                {filteredRules.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 rounded text-faint-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </button>
+                <span className="font-mono tabular-nums px-2 text-muted-foreground">
+                  {currentPage}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 rounded text-faint-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex justify-between gap-2 pt-2 border-t border-border">
             <Button
