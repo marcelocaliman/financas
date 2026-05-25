@@ -2,18 +2,21 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { listCategories, getCategoryStats } from "@/services/categories";
 import { getActiveBudgetsForMonth } from "@/services/budgets";
+import { listCategoryRules } from "@/services/category-rules";
 import { CategoryRow } from "@/components/categories/category-row";
 import { ReorderableCategoryList } from "@/components/categories/reorderable-category-list";
+import { CategoryRulesManager } from "@/components/categories/category-rules-manager";
 import { NewCategoryButton } from "./new-category-button";
 import type { Currency } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function CategoriasPage() {
-  const [all, stats, budgets] = await Promise.all([
+  const [all, stats, budgets, rules] = await Promise.all([
     listCategories({ includeArchived: true }),
     getCategoryStats(3),
     getActiveBudgetsForMonth(),
+    listCategoryRules(),
   ]);
   const budgetMap = new Map<string, { amount: number; currency: Currency }>();
   for (const [catId, b] of budgets) {
@@ -79,6 +82,17 @@ export default async function CategoriasPage() {
           ) : (
             <ReorderableCategoryList initial={expense} statsMap={stats} budgetMap={budgetMap} />
           )}
+        </Panel>
+      </div>
+
+      {/* Regras de auto-categorização */}
+      <div className="mt-8">
+        <Panel>
+          <PanelHeader
+            title="Regras de auto-categorização"
+            meta={`${rules.length} regra${rules.length !== 1 ? "s" : ""} ativa${rules.length !== 1 ? "s" : ""}`}
+          />
+          <CategoryRulesManager initialRules={rules} categories={all} />
         </Panel>
       </div>
 

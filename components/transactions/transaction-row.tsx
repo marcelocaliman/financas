@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Archive, ArrowLeftRight, Pencil, Repeat, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, ArrowLeftRight, Pencil, Repeat, RotateCcw, Split, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
@@ -12,6 +12,7 @@ import { useMoneyContext } from "@/components/ui/money-provider";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
+import { SplitsDialog } from "./splits-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { TransactionTagsEditor } from "./transaction-tags-editor";
 
@@ -29,6 +30,7 @@ export function TransactionRow({
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
+  const [splitting, setSplitting] = useState(false);
   const confirm = useConfirm();
 
   const handleDelete = async () => {
@@ -171,6 +173,19 @@ export function TransactionRow({
         </td>
         <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
           <div className="flex items-center gap-0.5">
+            {/* Splits — só faz sentido pra income/expense (não transfer) */}
+            {tx.kind !== "transfer" ? (
+              <button
+                type="button"
+                onClick={() => setSplitting(true)}
+                disabled={pending}
+                className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted"
+                title="Dividir em categorias (mercado, viagem, fatura)"
+                aria-label="Splits"
+              >
+                <Split className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </button>
+            ) : null}
             {/* Transfers não podem virar históricas (mexem no saldo de 2 contas) */}
             {tx.kind !== "transfer" ? (
               <button
@@ -227,6 +242,14 @@ export function TransactionRow({
         accounts={accounts}
         categories={categories}
       />
+      {tx.kind !== "transfer" ? (
+        <SplitsDialog
+          open={splitting}
+          onOpenChange={setSplitting}
+          transaction={tx}
+          categories={categories}
+        />
+      ) : null}
     </>
   );
 }

@@ -1276,6 +1276,84 @@ export interface Database {
           },
         ];
       };
+      transaction_splits: {
+        Row: {
+          id: string;
+          transaction_id: string;
+          category_id: string | null;
+          amount: number;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          transaction_id: string;
+          category_id?: string | null;
+          amount: number;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["transaction_splits"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "transaction_splits_transaction_id_fkey";
+            columns: ["transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "transactions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transaction_splits_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      category_rules: {
+        Row: {
+          id: string;
+          household_id: string;
+          pattern: string;
+          category_id: string;
+          kind: "income" | "expense" | "transfer";
+          priority: number;
+          is_active: boolean;
+          hits: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          pattern: string;
+          category_id: string;
+          kind?: "income" | "expense" | "transfer";
+          priority?: number;
+          is_active?: boolean;
+          hits?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["category_rules"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "category_rules_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "category_rules_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       household_invites: {
         Row: {
           id: string;

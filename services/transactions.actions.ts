@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { suggestCategory } from "@/lib/financial/auto-categorize";
+import { matchCategoryRule } from "@/services/category-rules";
 import { getRateMap } from "@/services/currency";
 import { convertOrSame } from "@/lib/financial/currency";
 import type { Currency } from "@/types/database";
@@ -143,15 +144,28 @@ export async function createTransaction(
   let categoryConfidence: number | null = null;
 
   if (!resolvedCategoryId) {
-    const { data: cats } = await supabase
-      .from("categories")
-      .select("id, kind, rules")
-      .eq("is_archived", false);
-    const suggestion = suggestCategory(parsed.data.description, parsed.data.kind, cats ?? []);
-    if (suggestion) {
-      resolvedCategoryId = suggestion.categoryId;
+    // 1) Tenta regras user-defined (category_rules) — prioridade máxima
+    const userRule = await matchCategoryRule(
+      parsed.data.description,
+      parsed.data.kind,
+      ctx.household.id,
+    );
+    if (userRule) {
+      resolvedCategoryId = userRule.categoryId;
       categorySource = "rule";
-      categoryConfidence = suggestion.confidence;
+      categoryConfidence = 1.0;
+    } else {
+      // 2) Fallback: regras automáticas dentro de cada category (legado)
+      const { data: cats } = await supabase
+        .from("categories")
+        .select("id, kind, rules")
+        .eq("is_archived", false);
+      const suggestion = suggestCategory(parsed.data.description, parsed.data.kind, cats ?? []);
+      if (suggestion) {
+        resolvedCategoryId = suggestion.categoryId;
+        categorySource = "rule";
+        categoryConfidence = suggestion.confidence;
+      }
     }
   }
 
