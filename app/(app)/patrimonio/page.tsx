@@ -12,18 +12,22 @@ import {
 } from "@/services/physical-assets";
 import { getPortfolioStats } from "@/services/investments";
 import { getAccountsTotals } from "@/services/accounts";
+import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import type { PhysicalAssetCategory } from "@/types/database";
 import { formatPercent } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function PatrimonioPage() {
-  const [assets, totals, portfolio, accounts] = await Promise.all([
+  const [assets, totals, portfolio, accounts, filers, regimeCtx] = await Promise.all([
     listPhysicalAssets({ includeArchived: true }),
     getPhysicalAssetsTotals(),
     getPortfolioStats(),
     getAccountsTotals(),
+    listFilers(),
+    getRegimeContext(),
   ]);
+  const regime = regimeCtx.regime;
 
   const active = assets.filter((a) => a.is_active);
   const archived = assets.filter((a) => !a.is_active);
@@ -63,7 +67,7 @@ export default async function PatrimonioPage() {
           </>
         }
         subtitle="Apartamento, carro, moto, computador, obras, joias. Bens que têm valor mas não rendem automaticamente — entram só no patrimônio total."
-        actions={<NewPhysicalAssetButton />}
+        actions={<NewPhysicalAssetButton filers={filers} regime={regime} />}
       />
 
       {active.length === 0 ? (
@@ -215,7 +219,7 @@ export default async function PatrimonioPage() {
           <Eyebrow className="mb-3">Inventário · {active.length}</Eyebrow>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {active.map((a) => (
-              <PhysicalAssetCard key={a.id} asset={a} />
+              <PhysicalAssetCard key={a.id} asset={a} filers={filers} regime={regime} />
             ))}
           </div>
         </>
@@ -226,7 +230,7 @@ export default async function PatrimonioPage() {
           <Eyebrow className="mb-3">Arquivados · {archived.length}</Eyebrow>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {archived.map((a) => (
-              <PhysicalAssetCard key={a.id} asset={a} />
+              <PhysicalAssetCard key={a.id} asset={a} filers={filers} regime={regime} />
             ))}
           </div>
         </section>

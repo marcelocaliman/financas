@@ -24,7 +24,13 @@ const RELATIONSHIPS: { value: string; label: string }[] = [
   { value: "outros", label: "Outros" },
 ];
 
-export function DependentsManager({ dependents }: { dependents: Tables<"ir_dependents">[] }) {
+export function DependentsManager({
+  dependents,
+  filers = [],
+}: {
+  dependents: Tables<"ir_dependents">[];
+  filers?: Tables<"ir_filers">[];
+}) {
   const [showForm, setShowForm] = useState(false);
   const [state, action, pending] = useActionState<IRFormState | undefined, FormData>(
     createDependent,
@@ -121,6 +127,20 @@ export function DependentsManager({ dependents }: { dependents: Tables<"ir_depen
           <Field label="Nascimento" htmlFor="birth_date">
             <Input id="birth_date" name="birth_date" type="date" />
           </Field>
+          {filers.length >= 2 ? (
+            <Field label="Entra na declaração de" htmlFor="ownerFilerId" required>
+              <Select name="ownerFilerId" defaultValue={filers[0]?.id}>
+                <SelectTrigger id="ownerFilerId"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {filers.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : filers[0] ? (
+            <input type="hidden" name="ownerFilerId" value={filers[0].id} />
+          ) : null}
           <div className="flex gap-2">
             <Button type="submit" variant="primary" disabled={pending}>
               {pending ? "Salvando…" : "Adicionar"}

@@ -23,9 +23,11 @@ import {
   updateAccount,
   type AccountFormState,
 } from "@/services/accounts.actions";
-import type { AccountType, Currency, Tables } from "@/types/database";
+import { FilerPickerWithOwnership } from "@/components/ir/filer-picker";
+import type { AccountType, Currency, MarriageRegime, Tables } from "@/types/database";
 
 type Account = Tables<"accounts">;
+type Filer = Tables<"ir_filers">;
 
 const TYPES: { value: AccountType; label: string; hint: string }[] = [
   { value: "checking", label: "Conta corrente", hint: "movimento do dia" },
@@ -45,10 +47,14 @@ export function AccountSheet({
   open,
   onOpenChange,
   account,
+  filers = [],
+  regime = "solteiro",
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   account?: Account | null;
+  filers?: Filer[];
+  regime?: MarriageRegime;
 }) {
   const isEdit = !!account;
   const [type, setType] = useState<AccountType>(account?.type ?? "checking");
@@ -170,7 +176,35 @@ export function AccountSheet({
               Identificação Receita (IRPF) ▼
             </summary>
             <div className="p-3 space-y-3 border-t border-border bg-bone-100 dark:bg-ink-800">
-              <Field label="CNPJ da instituição" htmlFor="cnpj" hint="Pra Bens e Direitos no IR">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isExterior"
+                  value="1"
+                  defaultChecked={account?.is_exterior ?? false}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div>
+                  <div className="text-[12.5px] text-foreground font-medium">
+                    Conta no exterior (Wise, Avenue, IBKR…)
+                  </div>
+                  <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
+                    Receita usa código 62 (não 61) e não exige CNPJ — só país + nome do banco.
+                  </div>
+                </div>
+              </label>
+
+              <Field label="País (se exterior)" htmlFor="country" hint="ex: Reino Unido, Estados Unidos, Portugal">
+                <input
+                  id="country"
+                  name="country"
+                  defaultValue={account?.country ?? ""}
+                  placeholder="Reino Unido"
+                  className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
+                />
+              </Field>
+
+              <Field label="CNPJ da instituição" htmlFor="cnpj" hint="Apenas pra contas no Brasil — deixe vazio se exterior">
                 <input
                   id="cnpj"
                   name="cnpj"
@@ -201,6 +235,24 @@ export function AccountSheet({
               </div>
             </div>
           </details>
+
+          {filers.length >= 2 ? (
+            <details className="text-[12.5px] text-muted-foreground">
+              <summary className="cursor-pointer font-medium hover:text-foreground">
+                Titular do bem (IRPF) <span className="text-faint-foreground">· quem declara</span>
+              </summary>
+              <div className="pt-3">
+                <FilerPickerWithOwnership
+                  filers={filers}
+                  regime={regime}
+                  defaultOwnerFilerId={account?.owner_filer_id}
+                  defaultIsParticular={account?.is_particular}
+                  defaultParticularReason={account?.particular_reason}
+                  defaultOwnershipPercent={account?.ownership_percent}
+                />
+              </div>
+            </details>
+          ) : null}
 
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>

@@ -31,6 +31,9 @@ import { getBudgetVsActual } from "@/services/budgets";
 import { BudgetStatusCard } from "@/components/budgets/budget-status-card";
 import { getInsights } from "@/services/insights";
 import { SmartInsightsCard } from "@/components/dashboard/smart-insights-card";
+import { getSetupStatus } from "@/services/setup-status";
+import { SetupBanner } from "@/components/dashboard/setup-banner";
+import { CreditCardBillShortcut } from "@/components/dashboard/credit-card-bill-shortcut";
 import { getUpcomingObligations } from "@/services/upcoming";
 import { getPatrimonioHistory, getSobraHistory } from "@/services/patrimonio-history";
 import {
@@ -95,6 +98,7 @@ export default async function DashboardPage({
     insights,
     accounts,
     categorySpendHistory,
+    setupStatus,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -120,6 +124,7 @@ export default async function DashboardPage({
     isCurrent
       ? getCategorySpendHistory(6)
       : Promise.resolve(new Map<string, number[]>()),
+    isCurrent ? getSetupStatus() : Promise.resolve(null),
   ]);
 
   // ---- Onboarding banner gating (cheap: 2 queries só quando is current) ----
@@ -283,12 +288,14 @@ export default async function DashboardPage({
             {position === "future" ? (
               <MaterializeUntilMonthButton monthLabel={monthLabel} untilDate={to} />
             ) : null}
+            {isCurrent ? <CreditCardBillShortcut accounts={accountsLite} /> : null}
             <QuickAddTrigger />
           </>
         }
       />
 
       {showOnboardingBanner ? <WelcomeBanner firstName={firstName} /> : null}
+      {!showOnboardingBanner && setupStatus ? <SetupBanner status={setupStatus} /> : null}
 
       <DashboardHero
         projectedNet={projection.projectedNet}

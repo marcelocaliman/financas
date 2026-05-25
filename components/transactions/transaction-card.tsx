@@ -94,6 +94,14 @@ export function TransactionCard({
                 />
               ) : null}
               <span className="truncate">{tx.description}</span>
+              {tx.is_historical_ir_only ? (
+                <span
+                  className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-surface-muted text-faint-foreground border border-border shrink-0"
+                  title="Lançamento histórico — informativo pra IR, não afeta saldo nem entra em sobra/gráficos."
+                >
+                  histórica · IR
+                </span>
+              ) : null}
             </div>
             <div className="font-mono text-[11px] text-faint-foreground tracking-[0.02em] mt-1 truncate">
               <span>{formatDateShort(tx.date)}</span>

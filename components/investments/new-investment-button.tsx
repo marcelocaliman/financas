@@ -5,11 +5,16 @@ import { Plus, TrendingUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvestmentSheet } from "./investment-sheet";
 import { OptionDialog } from "./option-dialog";
+import type { MarriageRegime, Tables } from "@/types/database";
 
 export function NewInvestmentButton({
   investmentAccounts,
+  filers = [],
+  regime = "solteiro",
 }: {
   investmentAccounts: { id: string; name: string; institution: string }[];
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
 }) {
   const [open, setOpen] = useState(false);
   const [optionOpen, setOptionOpen] = useState(false);
@@ -64,6 +69,8 @@ export function NewInvestmentButton({
         open={open}
         onOpenChange={setOpen}
         investmentAccounts={investmentAccounts}
+        filers={filers}
+        regime={regime}
       />
       <OptionDialog
         open={optionOpen}

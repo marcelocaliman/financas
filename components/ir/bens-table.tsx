@@ -5,6 +5,11 @@ function fmtBRL(n: number): string {
   return n.toLocaleString("pt-BR", { minimumFractionDigits: 2 });
 }
 
+// Grupos onde a Receita exige CNPJ: 04 (renda variável), 05 (renda fixa),
+// 06 (depósito), 07 (fundos). Pra imóveis/móveis/veículos/cripto/outros
+// a coluna só vira ruído visual.
+const GROUPS_WITH_CNPJ = new Set(["04", "05", "06", "07"]);
+
 export function BensTable({ report }: { report: BensReport }) {
   if (report.byGroup.length === 0) {
     return (
@@ -17,7 +22,9 @@ export function BensTable({ report }: { report: BensReport }) {
 
   return (
     <div className="space-y-6">
-      {report.byGroup.map((g) => (
+      {report.byGroup.map((g) => {
+        const showCnpj = GROUPS_WITH_CNPJ.has(g.group);
+        return (
         <section key={g.group}>
           <div className="flex items-center gap-2 mb-2.5">
             <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-navy-700 dark:text-navy-300 font-medium">
@@ -32,7 +39,7 @@ export function BensTable({ report }: { report: BensReport }) {
               <colgroup>
                 <col className="w-[48px]" />
                 <col />
-                <col className="w-[160px]" />
+                {showCnpj ? <col className="w-[160px]" /> : null}
                 <col className="w-[140px]" />
                 <col className="w-[140px]" />
               </colgroup>
@@ -40,7 +47,9 @@ export function BensTable({ report }: { report: BensReport }) {
                 <tr className="text-faint-foreground font-mono text-[10.5px] uppercase tracking-[0.12em]">
                   <th className="text-left pb-2 pr-3 font-medium">Cod</th>
                   <th className="text-left pb-2 pr-3 font-medium">Discriminação</th>
-                  <th className="text-left pb-2 pr-3 font-medium">CNPJ</th>
+                  {showCnpj ? (
+                    <th className="text-left pb-2 pr-3 font-medium">CNPJ</th>
+                  ) : null}
                   <th className="text-right pb-2 pr-3 font-medium">
                     31/12/{report.year - 1}
                   </th>
@@ -65,9 +74,17 @@ export function BensTable({ report }: { report: BensReport }) {
                         <Badge tone="gold" className="mt-1">moeda estrangeira</Badge>
                       ) : null}
                     </td>
-                    <td className="py-2.5 pr-3 font-mono text-faint-foreground text-[11.5px] truncate">
-                      {item.cnpj ?? "—"}
-                    </td>
+                    {showCnpj ? (
+                      <td className="py-2.5 pr-3 text-faint-foreground text-[11.5px] truncate">
+                        {item.cnpj == null ? (
+                          "—"
+                        ) : item.cnpj === "não exigido" ? (
+                          <span className="italic">não exigido</span>
+                        ) : (
+                          <span className="font-mono">{item.cnpj}</span>
+                        )}
+                      </td>
+                    ) : null}
                     <td className="py-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
                       R$ {fmtBRL(item.previousYearValue)}
                     </td>
@@ -77,7 +94,10 @@ export function BensTable({ report }: { report: BensReport }) {
                   </tr>
                 ))}
                 <tr className="border-t border-border-strong">
-                  <td colSpan={3} className="pt-2.5 pr-3 font-mono text-[11px] uppercase tracking-[0.12em] text-faint-foreground font-medium">
+                  <td
+                    colSpan={showCnpj ? 3 : 2}
+                    className="pt-2.5 pr-3 font-mono text-[11px] uppercase tracking-[0.12em] text-faint-foreground font-medium"
+                  >
                     Subtotal grupo {g.group}
                   </td>
                   <td className="pt-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
@@ -91,7 +111,8 @@ export function BensTable({ report }: { report: BensReport }) {
             </table>
           </div>
         </section>
-      ))}
+        );
+      })}
       <div className="pt-4 border-t-2 border-border-strong grid grid-cols-3 gap-4">
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">

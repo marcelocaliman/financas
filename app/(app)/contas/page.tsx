@@ -12,7 +12,8 @@ import { StaggeredGrid, StaggeredItem } from "@/components/layout/staggered-grid
 import { MonthSwitcher } from "@/components/ui/month-switcher";
 import { monthRange } from "@/services/transactions";
 import { monthProgress } from "@/lib/financial/projection";
-import type { AccountType } from "@/types/database";
+import { listFilers, getRegimeContext } from "@/services/ir/filers";
+import type { AccountType, MarriageRegime, Tables } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -39,13 +40,16 @@ export default async function ContasPage({
   const [y, m] = monthISO.split("-").map(Number);
   const prevMonthEnd = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 
-  const [activeAccounts, archivedAccounts, prevTotals] = await Promise.all([
+  const [activeAccounts, archivedAccounts, prevTotals, filers, regimeCtx] = await Promise.all([
     listAccountsForMonth(to, position, { includeArchived: false }),
     isCurrent
       ? listAccounts({ includeArchived: true }).then((all) => all.filter((a) => !a.is_active))
       : Promise.resolve([]),
     isCurrent ? getAccountsTotalsAt(prevMonthEnd) : Promise.resolve(null),
+    listFilers(),
+    getRegimeContext(),
   ]);
+  const regime = regimeCtx.regime;
 
   const liquid = activeAccounts
     .filter((a) => ["checking", "savings", "investment", "cash"].includes(a.type))
@@ -103,7 +107,7 @@ export default async function ContasPage({
               isCurrent={isCurrent}
               label={monthLabel.split(" ")[0]}
             />
-            <NewAccountButton />
+            <NewAccountButton filers={filers} regime={regime} />
           </>
         }
       />
@@ -168,10 +172,10 @@ export default async function ContasPage({
           ) : null}
 
           {/* Grid de cartões agrupados por tipo */}
-          <AccountsByType accounts={activeAccounts} />
+          <AccountsByType accounts={activeAccounts} filers={filers} regime={regime} />
         </section>
       ) : (
-        <EmptyState />
+        <EmptyState filers={filers} regime={regime} />
       )}
 
       {archivedAccounts.length > 0 ? (
@@ -179,7 +183,7 @@ export default async function ContasPage({
           <Eyebrow className="mb-3">Arquivadas · {archivedAccounts.length}</Eyebrow>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {archivedAccounts.map((a) => (
-              <AccountCard key={a.id} account={a} />
+              <AccountCard key={a.id} account={a} filers={filers} regime={regime} />
             ))}
           </div>
         </section>
@@ -190,10 +194,14 @@ export default async function ContasPage({
 
 function AccountsByType({
   accounts,
+  filers,
+  regime,
 }: {
   accounts: Array<
     Awaited<ReturnType<typeof listAccountsForMonth>>[number]
   >;
+  filers: Tables<"ir_filers">[];
+  regime: MarriageRegime;
 }) {
   // Ordem dos tipos no display
   const TYPE_ORDER: AccountType[] = ["checking", "savings", "cash", "investment", "credit_card"];
@@ -222,6 +230,8 @@ function AccountsByType({
                     displayBalance={a.displayBalance}
                     balanceMode={a.balanceMode}
                     assetsBalance={a.assetsBalance}
+                    filers={filers}
+                    regime={regime}
                   />
                 </StaggeredItem>
               ))}
@@ -233,7 +243,13 @@ function AccountsByType({
   );
 }
 
-function EmptyState() {
+function EmptyState({
+  filers,
+  regime,
+}: {
+  filers: Tables<"ir_filers">[];
+  regime: MarriageRegime;
+}) {
   return (
     <div className="rounded-[var(--radius-xl)] bg-ink-950 text-white p-10 sm:p-14 relative overflow-hidden border border-ink-700">
       <div
@@ -253,7 +269,7 @@ function EmptyState() {
           Nubank, a corretora, o dinheiro na carteira.
         </p>
         <div className="mt-7">
-          <NewAccountButton variant="white" />
+          <NewAccountButton variant="white" filers={filers} regime={regime} />
         </div>
       </div>
     </div>

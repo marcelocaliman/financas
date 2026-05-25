@@ -65,6 +65,7 @@ export async function getAportSuggestions(): Promise<AportSuggestion[]> {
       )
       .eq("kind", "transfer")
       .eq("transfer_direction", "in")
+      .eq("is_historical_ir_only", false)
       .gte("date", sinceISO),
     supabase
       .from("goals")

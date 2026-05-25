@@ -66,6 +66,7 @@ export async function getCategoryStats(months = 3): Promise<Map<string, Category
       .select("category_id, amount_account, currency, date, account:accounts(currency)")
       .gte("date", startISO)
       .lte("date", endISO)
+      .eq("is_historical_ir_only", false)
       .not("category_id", "is", null),
     getDisplayCurrency(),
     getRateMap(),

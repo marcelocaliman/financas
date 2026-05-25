@@ -2,13 +2,15 @@
 
 import { useActionState, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoneyInput } from "@/components/ui/money-input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { ReceiptUploader } from "@/components/ir/receipt-uploader";
+import { DeductibleEditSheet } from "@/components/ir/deductible-edit-sheet";
 import {
   createDeductiblePayment,
   deleteDeductiblePayment,
@@ -30,6 +32,7 @@ const KINDS: { value: IRDeductibleKind; label: string }[] = [
   { value: "pgbl", label: "PGBL" },
   { value: "previdencia_privada", label: "Previdência privada" },
   { value: "pensao_alimenticia", label: "Pensão alimentícia" },
+  { value: "honorarios_advocaticios_pensao", label: "Honorários advogado (obter pensão)" },
   { value: "doacao_eca", label: "Doação ECA" },
   { value: "doacao_cultural", label: "Doação cultural" },
   { value: "outros", label: "Outros" },
@@ -42,11 +45,14 @@ function fmtBRL(n: number): string {
 export function DeductiblesManager({
   year,
   payments,
+  filers = [],
 }: {
   year: number;
   payments: Tables<"ir_deductible_payments">[];
+  filers?: Tables<"ir_filers">[];
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<Tables<"ir_deductible_payments"> | null>(null);
   const [amount, setAmount] = useState(0);
   const [state, action, pending] = useActionState<IRFormState | undefined, FormData>(
     createDeductiblePayment,
@@ -88,61 +94,106 @@ export function DeductiblesManager({
           educação tem (R$ 3.561,50 por pessoa); PGBL tem (12% da renda tributável).
         </p>
       ) : (
-        <table className="w-full text-[12.5px] mb-4">
-          <thead>
-            <tr className="text-faint-foreground font-mono text-[10.5px] uppercase tracking-[0.12em]">
-              <th className="text-left pb-2 font-medium">Tipo</th>
-              <th className="text-left pb-2 font-medium">Descrição</th>
-              <th className="text-left pb-2 font-medium">Beneficiário</th>
-              <th className="text-left pb-2 font-medium">Pago a</th>
-              <th className="text-right pb-2 font-medium">Valor</th>
-              <th className="text-right pb-2 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((p) => (
-              <tr key={p.id} className="border-t border-border">
-                <td className="py-2 text-faint-foreground text-[11.5px]">
-                  {KINDS.find((k) => k.value === p.kind)?.label ?? p.kind}
-                </td>
-                <td className="py-2 text-foreground">{p.description}</td>
-                <td className="py-2 text-muted-foreground">{p.beneficiary ?? "—"}</td>
-                <td className="py-2 text-faint-foreground">
-                  {p.recipient_name}
-                  {p.recipient_cnpj_cpf ? (
-                    <div className="font-mono text-[11px]">{p.recipient_cnpj_cpf}</div>
-                  ) : null}
-                </td>
-                <td className="py-2 text-right font-mono tabular-nums">
-                  {p.currency !== "BRL" ? <span className="text-faint-foreground text-[10.5px]">{p.currency} </span> : "R$ "}
-                  {fmtBRL(Number(p.amount))}
-                </td>
-                <td className="py-2 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(p.id, p.description)}
-                    disabled={delPending}
-                    aria-label="Remover"
-                    className="text-rust-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  </Button>
-                </td>
+        <div className="overflow-x-auto mb-4">
+          <table className="w-full text-[12.5px] table-fixed">
+            <colgroup>
+              <col className="w-[140px]" />
+              <col />
+              <col className="w-[140px]" />
+              <col className="w-[160px]" />
+              <col className="w-[120px]" />
+              <col className="w-[180px]" />
+            </colgroup>
+            <thead>
+              <tr className="text-faint-foreground font-mono text-[10.5px] uppercase tracking-[0.12em]">
+                <th className="text-left pb-2 font-medium">Tipo</th>
+                <th className="text-left pb-2 font-medium">Descrição</th>
+                <th className="text-left pb-2 font-medium">Beneficiário</th>
+                <th className="text-left pb-2 font-medium">Pago a</th>
+                <th className="text-right pb-2 pr-3 font-medium">Valor</th>
+                <th className="text-right pb-2 font-medium">Ações</th>
               </tr>
-            ))}
-            <tr className="border-t-2 border-border-strong">
-              <td colSpan={4} className="pt-2.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground">
-                Total
-              </td>
-              <td className="pt-2.5 text-right font-mono tabular-nums text-foreground font-medium">
-                R$ {fmtBRL(total)}
-              </td>
-              <td></td>
-            </tr>
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map((p) => {
+                const missingCnpj = !p.recipient_cnpj_cpf;
+                return (
+                  <tr key={p.id} className="border-t border-border align-top">
+                    <td className="py-2.5 text-faint-foreground text-[11.5px]">
+                      {KINDS.find((k) => k.value === p.kind)?.label ?? p.kind}
+                    </td>
+                    <td className="py-2.5 text-foreground truncate">{p.description}</td>
+                    <td className="py-2.5 text-muted-foreground truncate">{p.beneficiary ?? "—"}</td>
+                    <td className="py-2.5 text-faint-foreground truncate">
+                      <div className="truncate">{p.recipient_name}</div>
+                      {p.recipient_cnpj_cpf ? (
+                        <div className="font-mono text-[10.5px] truncate">{p.recipient_cnpj_cpf}</div>
+                      ) : (
+                        <div className="text-[10.5px] text-rust-600 flex items-center gap-1 mt-0.5">
+                          <AlertTriangle className="w-3 h-3" strokeWidth={1.8} />
+                          sem CNPJ/CPF
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-3 text-right font-mono tabular-nums">
+                      {p.currency !== "BRL" ? <span className="text-faint-foreground text-[10.5px]">{p.currency} </span> : "R$ "}
+                      {fmtBRL(Number(p.amount))}
+                    </td>
+                    <td className="py-2.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <ReceiptUploader
+                          deductibleId={p.id}
+                          year={year}
+                          hasReceipt={!!p.receipt_storage_path}
+                          mimeType={p.receipt_mime_type}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditing(p)}
+                          aria-label="Editar"
+                          className={missingCnpj ? "text-rust-600" : undefined}
+                          title={missingCnpj ? "Corrigir CNPJ/CPF ausente" : "Editar"}
+                        >
+                          <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(p.id, p.description)}
+                          disabled={delPending}
+                          aria-label="Remover"
+                          className="text-rust-600"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              <tr className="border-t-2 border-border-strong">
+                <td colSpan={4} className="pt-2.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground">
+                  Total
+                </td>
+                <td className="pt-2.5 pr-3 text-right font-mono tabular-nums text-foreground font-medium">
+                  R$ {fmtBRL(total)}
+                </td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       )}
+
+      {editing ? (
+        <DeductibleEditSheet
+          open={!!editing}
+          onOpenChange={(o) => { if (!o) setEditing(null); }}
+          payment={editing}
+          filers={filers}
+        />
+      ) : null}
 
       {showForm ? (
         <form action={action} className="border-t border-border pt-4 space-y-3">
@@ -195,6 +246,20 @@ export function DeductiblesManager({
                 </SelectContent>
               </Select>
             </Field>
+            {filers.length >= 2 ? (
+              <Field label="Pago por (declaração)" htmlFor="ownerFilerId" required>
+                <Select name="ownerFilerId" defaultValue={filers[0]?.id}>
+                  <SelectTrigger id="ownerFilerId"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {filers.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>{f.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : filers[0] ? (
+              <input type="hidden" name="ownerFilerId" value={filers[0].id} />
+            ) : null}
             <div className="flex gap-2">
               <Button type="submit" variant="primary" disabled={pending}>
                 {pending ? "Salvando…" : "Adicionar"}

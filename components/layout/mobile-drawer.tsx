@@ -22,6 +22,7 @@ import {
   X,
   Shield,
   Flame,
+  HandCoins,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
   { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
+  { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "investir" },
   { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
   { label: "Metas", href: "/metas", icon: Target, group: "investir" },
   { label: "Independência", href: "/independencia", icon: Flame, group: "investir" },

@@ -22,24 +22,76 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   etf: "ETF",
   crypto: "Cripto",
   option: "Opção",
+  pgbl: "Previdência PGBL",
+  vgbl: "Previdência VGBL",
 };
 
 export async function listInvestments(): Promise<Investment[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("investments")
-    .select("*, account:accounts(id,name,institution)")
+    .select("*, account:accounts!investments_account_id_fkey(id,name,institution)")
     .eq("is_active", true)
     .order("current_balance", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Investment[];
 }
 
+/**
+ * Investments encerrados (vendidos / vencidos / arquivados) num período.
+ * Usado na aba "Liquidados em {ano}" e no IR/Bens (situação anterior preservada).
+ */
+export async function listClosedInvestments(opts: {
+  yearFrom?: number;
+  yearTo?: number;
+} = {}): Promise<Investment[]> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("investments")
+    .select("*, account:accounts!investments_account_id_fkey(id,name,institution)")
+    .not("closed_at", "is", null)
+    .order("closed_at", { ascending: false });
+  if (opts.yearFrom) q = q.gte("closed_at", `${opts.yearFrom}-01-01`);
+  if (opts.yearTo) q = q.lte("closed_at", `${opts.yearTo}-12-31`);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as Investment[];
+}
+
+export type WalletMovement = Tables<"investment_movements"> & {
+  investment: Pick<Tables<"investments">, "id" | "ticker" | "name" | "asset_type" | "currency"> | null;
+};
+
+/**
+ * Timeline de movimentações (compras, vendas, dividendos, splits) da carteira
+ * num período. Ordenada por data desc. Usada na página /investimentos/movimentacoes.
+ */
+export async function listWalletMovements(opts: {
+  from?: string;
+  to?: string;
+  kind?: Tables<"investment_movements">["kind"];
+  limit?: number;
+} = {}): Promise<WalletMovement[]> {
+  const supabase = await createClient();
+  let q = supabase
+    .from("investment_movements")
+    .select("*, investment:investments(id, ticker, name, asset_type, currency)")
+    .order("date", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (opts.from) q = q.gte("date", opts.from);
+  if (opts.to) q = q.lte("date", opts.to);
+  if (opts.kind) q = q.eq("kind", opts.kind);
+  if (opts.limit) q = q.limit(opts.limit);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data ?? []) as WalletMovement[];
+}
+
 export async function getInvestment(id: string): Promise<Investment | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("investments")
-    .select("*, account:accounts(id,name,institution)")
+    .select("*, account:accounts!investments_account_id_fkey(id,name,institution)")
     .eq("id", id)
     .maybeSingle();
   return (data as Investment) ?? null;
@@ -148,6 +200,7 @@ export async function getCoverage(): Promise<{
       .from("transactions")
       .select("amount_account, currency, date, account:accounts(currency)")
       .eq("kind", "expense")
+      .eq("is_historical_ir_only", false)
       .gte("date", start)
       .lte("date", end),
     supabase

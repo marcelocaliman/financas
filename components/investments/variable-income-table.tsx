@@ -14,11 +14,15 @@ export function VariableIncomeTable({
   liveByAssetId,
   investmentAccounts,
   portfolioTotal = 0,
+  filers = [],
+  regime = "solteiro",
 }: {
   investments: Investment[];
   liveByAssetId: Map<string, LiveAssetMetrics>;
   investmentAccounts: AccountLite[];
   portfolioTotal?: number;
+  filers?: import("@/types/database").Tables<"ir_filers">[];
+  regime?: import("@/types/database").MarriageRegime;
 }) {
   if (investments.length === 0) return null;
 
@@ -220,6 +224,8 @@ export function VariableIncomeTable({
                 <InvestmentRowActions
                   investment={inv}
                   investmentAccounts={investmentAccounts}
+                  filers={filers}
+                  regime={regime}
                 />
               </div>
             </div>
@@ -356,6 +362,8 @@ export function VariableIncomeTable({
                     <InvestmentRowActions
                       investment={inv}
                       investmentAccounts={investmentAccounts}
+                      filers={filers}
+                      regime={regime}
                     />
                   </td>
                 </tr>

@@ -7,6 +7,7 @@ import { getCurrentUserContext } from "@/services/auth";
 
 const ACCOUNT_TYPES = ["checking", "savings", "credit_card", "investment", "cash"] as const;
 const CURRENCIES = ["BRL", "EUR", "USD"] as const;
+const PARTICULAR_REASONS = ["pre_casamento", "heranca", "doacao", "sub_rogacao", "outros"] as const;
 
 const createSchema = z.object({
   institution: z.string().min(1, "Qual instituição? (Itaú, Nubank, XP…)"),
@@ -18,6 +19,13 @@ const createSchema = z.object({
   cnpj: z.string().optional().nullable(),
   agency: z.string().optional().nullable(),
   accountNumber: z.string().optional().nullable(),
+  isExterior: z.coerce.boolean().optional().default(false),
+  country: z.string().optional().nullable(),
+  // Atribuição IR (couple support)
+  ownerFilerId: z.string().uuid().optional().nullable(),
+  isParticular: z.coerce.boolean().optional().default(false),
+  particularReason: z.enum(PARTICULAR_REASONS).optional().nullable(),
+  ownershipPercent: z.coerce.number().min(0).max(100).optional().nullable(),
 });
 
 const updateSchema = createSchema.extend({
@@ -53,6 +61,12 @@ export async function createAccount(
     cnpj: formData.get("cnpj") || null,
     agency: formData.get("agency") || null,
     accountNumber: formData.get("accountNumber") || null,
+    isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    country: formData.get("country") || null,
+    ownerFilerId: formData.get("ownerFilerId") || null,
+    isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
+    particularReason: formData.get("particularReason") || null,
+    ownershipPercent: formData.get("ownershipPercent") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
@@ -60,6 +74,7 @@ export async function createAccount(
   if (!ctx) return { error: "Sessão expirada." };
 
   const supabase = await createClient();
+  const isExterior = parsed.data.isExterior ?? false;
   const { error } = await supabase.from("accounts").insert({
     household_id: ctx.household.id,
     institution: parsed.data.institution.trim(),
@@ -68,9 +83,15 @@ export async function createAccount(
     color: parsed.data.color ?? null,
     currency: parsed.data.currency,
     current_balance: parsed.data.initialBalance,
-    cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+    cnpj: isExterior ? null : (parsed.data.cnpj?.replace(/\D/g, "") || null),
     agency: parsed.data.agency?.trim() || null,
     account_number: parsed.data.accountNumber?.trim() || null,
+    is_exterior: isExterior,
+    country: isExterior ? (parsed.data.country?.trim() || null) : null,
+    owner_filer_id: parsed.data.ownerFilerId || null,
+    is_particular: parsed.data.isParticular ?? false,
+    particular_reason: parsed.data.particularReason ?? null,
+    ownership_percent: parsed.data.ownershipPercent ?? null,
   });
   if (error) return { error: error.message };
 
@@ -94,10 +115,17 @@ export async function updateAccount(
     cnpj: formData.get("cnpj") || null,
     agency: formData.get("agency") || null,
     accountNumber: formData.get("accountNumber") || null,
+    isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    country: formData.get("country") || null,
+    ownerFilerId: formData.get("ownerFilerId") || null,
+    isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
+    particularReason: formData.get("particularReason") || null,
+    ownershipPercent: formData.get("ownershipPercent") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
   const supabase = await createClient();
+  const isExterior = parsed.data.isExterior ?? false;
   const { error } = await supabase
     .from("accounts")
     .update({
@@ -106,9 +134,15 @@ export async function updateAccount(
       name: parsed.data.name.trim(),
       color: parsed.data.color ?? null,
       currency: parsed.data.currency,
-      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      cnpj: isExterior ? null : (parsed.data.cnpj?.replace(/\D/g, "") || null),
       agency: parsed.data.agency?.trim() || null,
       account_number: parsed.data.accountNumber?.trim() || null,
+      is_exterior: isExterior,
+      country: isExterior ? (parsed.data.country?.trim() || null) : null,
+      owner_filer_id: parsed.data.ownerFilerId || null,
+      is_particular: parsed.data.isParticular ?? false,
+      particular_reason: parsed.data.particularReason ?? null,
+      ownership_percent: parsed.data.ownershipPercent ?? null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
@@ -186,6 +220,9 @@ export async function adjustAccountBalance(
     date: today,
     created_by: ctx.profile.id,
     category_source: "manual",
+    // Ajustes de saldo não vão pro IR (não são receita/despesa real) e
+    // não devem inflar gráficos de sobra/categorias do mês.
+    exclude_from_ir: true,
     metadata: { adjust: true, previous_balance: current, target_balance: targetBalance },
   });
   if (txErr) return { error: txErr.message };

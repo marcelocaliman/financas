@@ -102,6 +102,7 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
     supabase
       .from("transactions")
       .select("category_id, amount_account, currency, account:accounts(currency)")
+      .eq("is_historical_ir_only", false)
       .eq("kind", "expense")
       .gte("date", from)
       .lte("date", to)
@@ -109,6 +110,7 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
     supabase
       .from("transactions")
       .select("category_id, amount_account, currency, account:accounts(currency)")
+      .eq("is_historical_ir_only", false)
       .eq("kind", "expense")
       .gte("date", prevRange.from)
       .lte("date", prevRange.to)

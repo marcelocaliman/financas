@@ -50,11 +50,15 @@ export default async function WelcomePage({
             Vamos montar sua <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">casa.</em>
           </>
         }
-        subtitle="4 passos rápidos pra você sair com o essencial: contas, renda, despesas fixas e (opcional) sua primeira meta."
+        subtitle="7 passos rápidos pra preparar tudo: seus dados, família, contas, fontes pagadoras, renda, despesas fixas. Com isso, sua declaração de IR vai ficar 90% automática."
       />
 
       <Panel className="!p-8">
-        <OnboardingWizard existingAccounts={accounts} existingCategories={categories} />
+        <OnboardingWizard
+          existingAccounts={accounts}
+          existingCategories={categories}
+          defaultName={ctx.profile.display_name}
+        />
       </Panel>
     </>
   );

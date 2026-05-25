@@ -120,7 +120,8 @@ export async function getAnnualReport(year?: number): Promise<AnnualReport> {
         "kind, amount, amount_account, currency, date, category:categories(name, kind), account:accounts(currency)",
       )
       .gte("date", yearStart)
-      .lte("date", yearEnd),
+      .lte("date", yearEnd)
+      .eq("is_historical_ir_only", false),
     listAccounts({ includeArchived: true }),
     listInvestments(),
     listPhysicalAssets({ includeArchived: true }),

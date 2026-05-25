@@ -34,7 +34,9 @@ export type AssetType =
   | "stock"
   | "etf"
   | "crypto"
-  | "option";
+  | "option"
+  | "pgbl"
+  | "vgbl";
 export type Indexer = "selic" | "cdi" | "ipca" | "fixed" | "none";
 export type IndexerCode = "selic" | "cdi" | "ipca";
 export type TaxRegime = "regressive" | "exempt";
@@ -62,6 +64,21 @@ export type DepreciationMethod = "none" | "linear";
 export type Currency = "BRL" | "EUR" | "USD";
 
 export type IRModel = "simples" | "completo" | "auto";
+export type MarriageRegime =
+  | "solteiro"
+  | "comunhao_parcial"
+  | "comunhao_universal"
+  | "separacao_total"
+  | "separacao_obrigatoria"
+  | "participacao_final_aquestos";
+export type DeclarationStrategy = "separada" | "conjunta" | "auto";
+export type CommonAssetsStrategy = "split_50_50" | "all_in_primary" | "all_in_secondary";
+export type ParticularReason =
+  | "pre_casamento"
+  | "heranca"
+  | "doacao"
+  | "sub_rogacao"
+  | "outros";
 export type IRDependentRelationship =
   | "conjuge"
   | "companheiro"
@@ -87,9 +104,21 @@ export type IRDeductibleKind =
   | "pgbl"
   | "previdencia_privada"
   | "pensao_alimenticia"
+  | "honorarios_advocaticios_pensao"
   | "doacao_eca"
   | "doacao_cultural"
   | "outros";
+export type DebtKind =
+  | "financiamento_imovel"
+  | "financiamento_veiculo"
+  | "emprestimo_pessoal"
+  | "emprestimo_cheque_especial"
+  | "emprestimo_cartao_credito"
+  | "parcelamento_cartao"
+  | "emprestimo_pj"
+  | "emprestimo_pessoa_fisica"
+  | "outros";
+export type RraMethod = "mensal" | "anual";
 export type IROtherIncomeCategory =
   | "tributavel_pj"
   | "tributavel_pf"
@@ -182,6 +211,7 @@ export interface Database {
           fire_inflation_pct: number | null;
           fire_swr_pct: number | null;
           onboarding_completed_at: string | null;
+          app_start_date: string;
           created_at: string;
         };
         Insert: {
@@ -207,6 +237,7 @@ export interface Database {
           fire_inflation_pct?: number | null;
           fire_swr_pct?: number | null;
           onboarding_completed_at?: string | null;
+          app_start_date?: string;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["households"]["Insert"]>;
@@ -300,6 +331,13 @@ export interface Database {
           cnpj: string | null;
           agency: string | null;
           account_number: string | null;
+          is_exterior: boolean;
+          country: string | null;
+          owner_filer_id: string | null;
+          is_particular: boolean;
+          particular_reason: ParticularReason | null;
+          ownership_percent: number | null;
+          exclude_from_ir: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -317,6 +355,13 @@ export interface Database {
           cnpj?: string | null;
           agency?: string | null;
           account_number?: string | null;
+          is_exterior?: boolean;
+          country?: string | null;
+          owner_filer_id?: string | null;
+          is_particular?: boolean;
+          particular_reason?: ParticularReason | null;
+          ownership_percent?: number | null;
+          exclude_from_ir?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -334,6 +379,13 @@ export interface Database {
           cnpj?: string | null;
           agency?: string | null;
           account_number?: string | null;
+          is_exterior?: boolean;
+          country?: string | null;
+          owner_filer_id?: string | null;
+          is_particular?: boolean;
+          particular_reason?: ParticularReason | null;
+          ownership_percent?: number | null;
+          exclude_from_ir?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -436,6 +488,8 @@ export interface Database {
           fonte_pagadora_id: string | null;
           irrf_amount: number | null;
           inss_amount: number | null;
+          exclude_from_ir: boolean;
+          is_historical_ir_only: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -460,6 +514,8 @@ export interface Database {
           fonte_pagadora_id?: string | null;
           irrf_amount?: number | null;
           inss_amount?: number | null;
+          exclude_from_ir?: boolean;
+          is_historical_ir_only?: boolean;
           recurring_rule_id?: string | null;
           metadata?: Json;
           balance_applied_at?: string | null;
@@ -489,6 +545,8 @@ export interface Database {
           metadata?: Json;
           balance_applied_at?: string | null;
           tags?: string[];
+          exclude_from_ir?: boolean;
+          is_historical_ir_only?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -560,6 +618,20 @@ export interface Database {
           receita_code: string | null;
           registration_number: string | null;
           address: string | null;
+          // Imóveis
+          registry_office: string | null;
+          iptu_registration: string | null;
+          area_sqm: number | null;
+          ownership_percent: number | null;
+          // Veículos
+          brand: string | null;
+          model: string | null;
+          manufacture_year: number | null;
+          license_plate: string | null;
+          owner_filer_id: string | null;
+          is_particular: boolean;
+          particular_reason: ParticularReason | null;
+          exclude_from_ir: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -581,6 +653,18 @@ export interface Database {
           receita_code?: string | null;
           registration_number?: string | null;
           address?: string | null;
+          registry_office?: string | null;
+          iptu_registration?: string | null;
+          area_sqm?: number | null;
+          ownership_percent?: number | null;
+          brand?: string | null;
+          model?: string | null;
+          manufacture_year?: number | null;
+          license_plate?: string | null;
+          owner_filer_id?: string | null;
+          is_particular?: boolean;
+          particular_reason?: ParticularReason | null;
+          exclude_from_ir?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -636,6 +720,17 @@ export interface Database {
           series_code: string | null;
           option_position: OptionPosition | null;
           is_exterior: boolean;
+          owner_filer_id: string | null;
+          is_particular: boolean;
+          particular_reason: ParticularReason | null;
+          ownership_percent: number | null;
+          exclude_from_ir: boolean;
+          closed_at: string | null;
+          closed_reason: "sold" | "matured" | "archived" | null;
+          gross_proceeds_on_close: number | null;
+          ir_withheld_on_close: number | null;
+          proceeds_account_id: string | null;
+          proceeds_tx_id: string | null;
           metadata: Json;
           created_at: string;
           updated_at: string;
@@ -656,6 +751,11 @@ export interface Database {
           currency?: Currency;
           quantity?: number | null;
           tax_regime?: TaxRegime;
+          exclude_from_ir?: boolean;
+          owner_filer_id?: string | null;
+          is_particular?: boolean;
+          particular_reason?: ParticularReason | null;
+          ownership_percent?: number | null;
           is_active?: boolean;
           last_yield_at?: string | null;
           lifetime_dividends_received?: number;
@@ -668,6 +768,12 @@ export interface Database {
           series_code?: string | null;
           option_position?: OptionPosition | null;
           is_exterior?: boolean;
+          closed_at?: string | null;
+          closed_reason?: "sold" | "matured" | "archived" | null;
+          gross_proceeds_on_close?: number | null;
+          ir_withheld_on_close?: number | null;
+          proceeds_account_id?: string | null;
+          proceeds_tx_id?: string | null;
           metadata?: Json;
           created_at?: string;
           updated_at?: string;
@@ -1020,6 +1126,11 @@ export interface Database {
           tags: string[];
           ir_deductible_kind: IRDeductibleKind | null;
           is_tax_deductible: boolean;
+          fonte_pagadora_id: string | null;
+          irrf_amount: number | null;
+          inss_amount: number | null;
+          deductible_amount: number | null;
+          exclude_from_ir: boolean;
           created_by: string | null;
           created_at: string;
           updated_at: string;
@@ -1048,6 +1159,11 @@ export interface Database {
           tags?: string[];
           ir_deductible_kind?: IRDeductibleKind | null;
           is_tax_deductible?: boolean;
+          fonte_pagadora_id?: string | null;
+          irrf_amount?: number | null;
+          inss_amount?: number | null;
+          deductible_amount?: number | null;
+          exclude_from_ir?: boolean;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -1120,6 +1236,42 @@ export interface Database {
         };
         Update: Partial<Database["public"]["Tables"]["patrimonio_snapshots"]["Insert"]>;
         Relationships: [];
+      };
+      notification_preferences: {
+        Row: {
+          household_id: string;
+          darf_due_soon: boolean;
+          ir_retroactive_gaps: boolean;
+          recurring_upcoming: boolean;
+          monthly_recap: boolean;
+          darf_due_soon_last_sent: string | null;
+          ir_retroactive_gaps_last_sent: string | null;
+          monthly_recap_last_sent: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          household_id: string;
+          darf_due_soon?: boolean;
+          ir_retroactive_gaps?: boolean;
+          recurring_upcoming?: boolean;
+          monthly_recap?: boolean;
+          darf_due_soon_last_sent?: string | null;
+          ir_retroactive_gaps_last_sent?: string | null;
+          monthly_recap_last_sent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["notification_preferences"]["Insert"]>;
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: true;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       household_invites: {
         Row: {
@@ -1346,6 +1498,10 @@ export interface Database {
           titular_user_id: string | null;
           cpf_titular: string | null;
           last_year_prepared: number | null;
+          marriage_regime: MarriageRegime;
+          marriage_date: string | null;
+          declaration_strategy: DeclarationStrategy;
+          common_assets_strategy: CommonAssetsStrategy;
           updated_at: string;
         };
         Insert: {
@@ -1354,9 +1510,49 @@ export interface Database {
           titular_user_id?: string | null;
           cpf_titular?: string | null;
           last_year_prepared?: number | null;
+          marriage_regime?: MarriageRegime;
+          marriage_date?: string | null;
+          declaration_strategy?: DeclarationStrategy;
+          common_assets_strategy?: CommonAssetsStrategy;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["ir_settings"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_filers: {
+        Row: {
+          id: string;
+          household_id: string;
+          user_id: string | null;
+          full_name: string;
+          cpf: string;
+          birth_date: string | null;
+          occupation: string | null;
+          occupation_code: string | null;
+          nature_of_occupation: string | null;
+          voter_id: string | null;
+          is_primary: boolean;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          user_id?: string | null;
+          full_name: string;
+          cpf: string;
+          birth_date?: string | null;
+          occupation?: string | null;
+          occupation_code?: string | null;
+          nature_of_occupation?: string | null;
+          voter_id?: string | null;
+          is_primary?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_filers"]["Insert"]>;
         Relationships: [];
       };
       ir_dependents: {
@@ -1369,6 +1565,7 @@ export interface Database {
           relationship: IRDependentRelationship;
           is_active: boolean;
           notes: string | null;
+          belongs_to_filer_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1381,6 +1578,7 @@ export interface Database {
           relationship: IRDependentRelationship;
           is_active?: boolean;
           notes?: string | null;
+          belongs_to_filer_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1405,6 +1603,11 @@ export interface Database {
           transaction_id: string | null;
           recurring_rule_id: string | null;
           auto_imported: boolean;
+          owner_filer_id: string | null;
+          receipt_storage_path: string | null;
+          receipt_mime_type: string | null;
+          receipt_size_bytes: number | null;
+          receipt_uploaded_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -1425,6 +1628,11 @@ export interface Database {
           transaction_id?: string | null;
           recurring_rule_id?: string | null;
           auto_imported?: boolean;
+          owner_filer_id?: string | null;
+          receipt_storage_path?: string | null;
+          receipt_mime_type?: string | null;
+          receipt_size_bytes?: number | null;
+          receipt_uploaded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1447,6 +1655,11 @@ export interface Database {
           currency: Currency;
           notes: string | null;
           fonte_pagadora_id: string | null;
+          owner_filer_id: string | null;
+          rra_taxable_method: RraMethod | null;
+          rra_competence_months: number | null;
+          rra_juros: number | null;
+          rra_honorarios: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -1465,6 +1678,11 @@ export interface Database {
           currency?: Currency;
           notes?: string | null;
           fonte_pagadora_id?: string | null;
+          owner_filer_id?: string | null;
+          rra_taxable_method?: RraMethod | null;
+          rra_competence_months?: number | null;
+          rra_juros?: number | null;
+          rra_honorarios?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -1488,6 +1706,7 @@ export interface Database {
           is_exempt: boolean;
           paid_at: string | null;
           payment_reference: string | null;
+          filer_id: string | null;
           generated_at: string;
         };
         Insert: {
@@ -1506,6 +1725,7 @@ export interface Database {
           is_exempt?: boolean;
           paid_at?: string | null;
           payment_reference?: string | null;
+          filer_id?: string | null;
           generated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["ir_darfs"]["Insert"]>;
@@ -1518,6 +1738,7 @@ export interface Database {
           balance: number;
           last_updated_year: number | null;
           last_updated_month: number | null;
+          filer_id: string | null;
           updated_at: string;
         };
         Insert: {
@@ -1526,6 +1747,7 @@ export interface Database {
           balance?: number;
           last_updated_year?: number | null;
           last_updated_month?: number | null;
+          filer_id?: string | null;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["ir_loss_carryforward"]["Insert"]>;
@@ -1699,6 +1921,9 @@ export interface Database {
           paid_at: string | null;
           payment_reference: string | null;
           notes: string | null;
+          filer_id: string | null;
+          tax_computed_by_app: boolean;
+          computation_breakdown: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -1719,10 +1944,183 @@ export interface Database {
           paid_at?: string | null;
           payment_reference?: string | null;
           notes?: string | null;
+          filer_id?: string | null;
+          tax_computed_by_app?: boolean;
+          computation_breakdown?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["carne_leao_mensal"]["Insert"]>;
+        Relationships: [];
+      };
+      ir_prior_year_balances: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          account_id: string | null;
+          investment_id: string | null;
+          physical_asset_id: string | null;
+          balance: number;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          account_id?: string | null;
+          investment_id?: string | null;
+          physical_asset_id?: string | null;
+          balance?: number;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_prior_year_balances"]["Insert"]>;
+        Relationships: [];
+      };
+      physical_asset_sales: {
+        Row: {
+          id: string;
+          household_id: string;
+          physical_asset_id: string;
+          sale_date: string;
+          sale_price: number;
+          acquisition_cost: number;
+          gross_profit: number;
+          reduction_factor_pre_88: number | null;
+          reduction_factor_96_05: number | null;
+          taxable_profit: number;
+          tax_due: number;
+          exemption_kind: "unico_imovel_440k" | "reaplicacao_residencial" | "desapropriacao" | "permuta_sem_torna" | "bem_movel_35k" | "isencao_acoes_20k" | "none";
+          exemption_notes: string | null;
+          darf_due_date: string | null;
+          darf_paid_at: string | null;
+          darf_payment_reference: string | null;
+          filer_id: string | null;
+          buyer_name: string | null;
+          buyer_cpf_cnpj: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          physical_asset_id: string;
+          sale_date: string;
+          sale_price: number;
+          acquisition_cost: number;
+          gross_profit: number;
+          reduction_factor_pre_88?: number | null;
+          reduction_factor_96_05?: number | null;
+          taxable_profit: number;
+          tax_due?: number;
+          exemption_kind?: "unico_imovel_440k" | "reaplicacao_residencial" | "desapropriacao" | "permuta_sem_torna" | "bem_movel_35k" | "isencao_acoes_20k" | "none";
+          exemption_notes?: string | null;
+          darf_due_date?: string | null;
+          darf_paid_at?: string | null;
+          darf_payment_reference?: string | null;
+          filer_id?: string | null;
+          buyer_name?: string | null;
+          buyer_cpf_cnpj?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["physical_asset_sales"]["Insert"]>;
+        Relationships: [];
+      };
+      physical_asset_revaluations: {
+        Row: {
+          id: string;
+          household_id: string;
+          physical_asset_id: string;
+          revaluation_date: string;
+          previous_value: number;
+          new_value: number;
+          difference: number;
+          tax_rate: number;
+          tax_paid: number;
+          darf_paid_at: string | null;
+          darf_payment_reference: string | null;
+          filer_id: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          physical_asset_id: string;
+          revaluation_date: string;
+          previous_value: number;
+          new_value: number;
+          difference: number;
+          tax_rate?: number;
+          tax_paid: number;
+          darf_paid_at?: string | null;
+          darf_payment_reference?: string | null;
+          filer_id?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["physical_asset_revaluations"]["Insert"]>;
+        Relationships: [];
+      };
+      debts: {
+        Row: {
+          id: string;
+          household_id: string;
+          kind: DebtKind;
+          description: string;
+          creditor_name: string;
+          creditor_cnpj_cpf: string | null;
+          original_amount: number;
+          current_balance: number;
+          currency: Currency;
+          contract_date: string | null;
+          end_date: string | null;
+          interest_rate: number | null;
+          physical_asset_id: string | null;
+          owner_filer_id: string | null;
+          is_particular: boolean;
+          particular_reason: ParticularReason | null;
+          ownership_percent: number | null;
+          is_active: boolean;
+          notes: string | null;
+          exclude_from_ir: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          kind: DebtKind;
+          description: string;
+          creditor_name: string;
+          creditor_cnpj_cpf?: string | null;
+          original_amount?: number;
+          current_balance?: number;
+          currency?: Currency;
+          contract_date?: string | null;
+          end_date?: string | null;
+          interest_rate?: number | null;
+          physical_asset_id?: string | null;
+          owner_filer_id?: string | null;
+          is_particular?: boolean;
+          particular_reason?: ParticularReason | null;
+          ownership_percent?: number | null;
+          is_active?: boolean;
+          notes?: string | null;
+          exclude_from_ir?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["debts"]["Insert"]>;
         Relationships: [];
       };
       email_notifications_log: {
@@ -1915,6 +2313,28 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["ir_year_snapshots"]["Insert"]>;
         Relationships: [];
       };
+      ir_year_metadata: {
+        Row: {
+          household_id: string;
+          year: number;
+          archived_at: string | null;
+          archive_reason: string | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          household_id: string;
+          year: number;
+          archived_at?: string | null;
+          archive_reason?: string | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_year_metadata"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -2037,6 +2457,22 @@ export interface Database {
       };
       reset_household_data: {
         Args: Record<string, never>;
+        Returns: void;
+      };
+      liquidate_investment: {
+        Args: {
+          p_investment_id: string;
+          p_date: string;
+          p_gross_proceeds: number;
+          p_ir_withheld?: number;
+          p_destination_account_id?: string | null;
+          p_reason?: "sold" | "matured" | "archived";
+          p_notes?: string | null;
+        };
+        Returns: string;
+      };
+      reopen_investment: {
+        Args: { p_investment_id: string };
         Returns: void;
       };
       materialize_recurrence: {

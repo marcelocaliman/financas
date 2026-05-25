@@ -77,6 +77,7 @@ export function AddTransactionDialog({
   const [fontePagadoraId, setFontePagadoraId] = useState<string>("");
   const [irrfAmount, setIrrfAmount] = useState<number>(0);
   const [inssAmount, setInssAmount] = useState<number>(0);
+  const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Quando muda a conta, ajusta a moeda default da transação pra moeda dela.
@@ -398,6 +399,34 @@ export function AddTransactionDialog({
                   </div>
                 ) : null}
               </div>
+            ) : null}
+
+            {/* Histórica IR — só pra income/expense; pula em transfer */}
+            {kind !== "transfer" ? (
+              <label
+                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+                htmlFor="isHistoricalIrOnly"
+              >
+                <input
+                  type="checkbox"
+                  id="isHistoricalIrOnly"
+                  name="isHistoricalIrOnly"
+                  value="1"
+                  checked={isHistoricalIrOnly}
+                  onChange={(e) => setIsHistoricalIrOnly(e.target.checked)}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div className="text-[12.5px] leading-relaxed">
+                  <span className="font-medium text-foreground">
+                    Histórica — só pra declaração IR
+                  </span>
+                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                    Marca esta {kind === "income" ? "receita" : "despesa"} como já ocorrida na vida real
+                    (saldo da conta já reflete). Aparece nos relatórios do IR mas{" "}
+                    <b>não</b> mexe no saldo nem entra em gráficos/sobra mensal.
+                  </span>
+                </div>
+              </label>
             ) : null}
 
             {state?.error ? (

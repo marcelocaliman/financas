@@ -44,6 +44,9 @@ export function EditTransactionDialog({
   const [categoryId, setCategoryId] = useState<string>(transaction.category_id ?? "");
   const [paymentMethod, setPaymentMethod] = useState<string>(transaction.payment_method ?? "");
   const [date, setDate] = useState<string>(transaction.date);
+  const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(
+    transaction.is_historical_ir_only ?? false,
+  );
 
   const [state, action, pending] = useActionState<TxFormState | undefined, FormData>(
     updateTransaction,
@@ -58,6 +61,7 @@ export function EditTransactionDialog({
       setCategoryId(transaction.category_id ?? "");
       setPaymentMethod(transaction.payment_method ?? "");
       setDate(transaction.date);
+      setIsHistoricalIrOnly(transaction.is_historical_ir_only ?? false);
     }
   }
 
@@ -189,6 +193,33 @@ export function EditTransactionDialog({
               </Field>
             ) : null}
           </div>
+
+          {!isTransfer ? (
+            <label
+              className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+              htmlFor="isHistoricalIrOnly"
+            >
+              <input
+                type="checkbox"
+                id="isHistoricalIrOnly"
+                name="isHistoricalIrOnly"
+                value="1"
+                checked={isHistoricalIrOnly}
+                onChange={(e) => setIsHistoricalIrOnly(e.target.checked)}
+                className="mt-0.5 accent-navy-700"
+              />
+              <div className="text-[12.5px] leading-relaxed">
+                <span className="font-medium text-foreground">
+                  Histórica — só pra declaração IR
+                </span>
+                <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                  Marca este lançamento como já ocorrido na vida real. Aparece nos
+                  relatórios do IR mas <b>não</b> mexe no saldo nem entra em
+                  gráficos/sobra mensal.
+                </span>
+              </div>
+            </label>
+          ) : null}
 
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>

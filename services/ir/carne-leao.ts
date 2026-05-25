@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { computeCarneLeaoMonthly } from "@/lib/financial/irpf-monthly-table";
 import type { Tables, CarneLeaoKind } from "@/types/database";
 
 /**
@@ -85,6 +86,10 @@ export async function listCarneLeao(
 /**
  * Calcula imposto devido pra uma entrada de carnê-leão.
  * Usado na hora de cadastrar/editar.
+ *
+ * Adota a tabela mensal vigente (centralizada em irpf-monthly-table.ts).
+ * Retorna também o breakdown completo pra persistir em
+ * carne_leao_mensal.computation_breakdown.
  */
 export function computeCarneLeaoTax(args: {
   grossAmount: number;
@@ -94,16 +99,49 @@ export function computeCarneLeaoTax(args: {
   /** Ano + mês pra escolher tabela progressiva vigente (mid-year MP) */
   year?: number;
   month?: number;
-}): { taxableBase: number; taxDue: number; dueDate: string | null } {
+  /** Pra calcular vencimento DARF (default: 15 do mês de competência) */
+  competenceDate?: string;
+}): {
+  taxableBase: number;
+  taxDue: number;
+  dueDate: string | null;
+  breakdown: {
+    grossAmount: number;
+    deductibleExpenses: number;
+    dependentDeduction: number;
+    taxableBase: number;
+    rate: number;
+    deductPortion: number;
+    bracketDescription: string;
+  };
+} {
   const base = Math.max(
     0,
     args.grossAmount - args.deductibleExpenses - (args.dependentDeduction ?? 0),
   );
   const taxDue = calcMonthlyTax(base, args.year, args.month);
+  // Pra breakdown, usamos a tabela atual (irpf-monthly-table)
+  const competence =
+    args.competenceDate ?? `${args.year ?? new Date().getFullYear()}-${String(args.month ?? 1).padStart(2, "0")}-15`;
+  const detail = computeCarneLeaoMonthly({
+    grossIncome: args.grossAmount,
+    deductibleExpenses: args.deductibleExpenses,
+    numDependents: 0, // já vem como dependentDeduction agregado
+    competenceDate: competence,
+  });
   return {
     taxableBase: Math.round(base * 100) / 100,
     taxDue: Math.round(taxDue * 100) / 100,
-    dueDate: null,
+    dueDate: detail.darfDueDate,
+    breakdown: {
+      grossAmount: args.grossAmount,
+      deductibleExpenses: args.deductibleExpenses,
+      dependentDeduction: args.dependentDeduction ?? 0,
+      taxableBase: Math.round(base * 100) / 100,
+      rate: detail.rate,
+      deductPortion: detail.deductPortion,
+      bracketDescription: detail.bracketDescription,
+    },
   };
 }
 

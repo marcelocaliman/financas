@@ -4,13 +4,18 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AccountSheet } from "@/components/accounts/account-sheet";
+import type { MarriageRegime, Tables } from "@/types/database";
 
 export function NewAccountButton({
   variant = "primary",
   label = "Nova conta",
+  filers = [],
+  regime = "solteiro",
 }: {
   variant?: "primary" | "white";
   label?: string;
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -31,7 +36,7 @@ export function NewAccountButton({
           {label}
         </Button>
       )}
-      <AccountSheet open={open} onOpenChange={setOpen} />
+      <AccountSheet open={open} onOpenChange={setOpen} filers={filers} regime={regime} />
     </>
   );
 }

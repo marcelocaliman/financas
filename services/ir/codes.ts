@@ -146,6 +146,10 @@ export function inferInvestmentCode(
     }
     case "option":
       return "99"; // opções não têm código próprio de Bens (são fluxo, não saldo)
+    case "pgbl":
+      return "91"; // Plano de previdência PGBL (tributação completa)
+    case "vgbl":
+      return "92"; // VGBL
   }
 }
 
@@ -222,6 +226,7 @@ export const PAGAMENTO_CODES: Record<IRDeductibleKind, { code: string; label: st
   pgbl: { code: "36", label: "Contribuição a entidade aberta de previdência (PGBL)" },
   previdencia_privada: { code: "37", label: "Outras contribuições previdência privada" },
   pensao_alimenticia: { code: "30", label: "Pensão alimentícia judicial" },
+  honorarios_advocaticios_pensao: { code: "60", label: "Honorários advocatícios pra obter pensão (IN RFB 1.500/14 art. 18)" },
   doacao_eca: { code: "40", label: "Doações ao Estatuto da Criança e Adolescente" },
   doacao_cultural: { code: "44", label: "Doações culturais / Lei Rouanet" },
   outros: { code: "99", label: "Outros (especificar)" },

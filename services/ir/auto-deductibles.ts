@@ -111,7 +111,8 @@ export async function findDeductibleCandidates(
     )
     .gte("date", yearStart)
     .lte("date", yearEnd)
-    .eq("kind", "expense");
+    .eq("kind", "expense")
+    .eq("exclude_from_ir", false);
   if (householdId) txQuery = txQuery.eq("household_id", householdId);
   const { data: txs } = await txQuery;
 

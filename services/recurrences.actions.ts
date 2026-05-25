@@ -31,6 +31,11 @@ const baseSchema = z.object({
   isSubscription: z.coerce.boolean().optional(),
   irDeductibleKind: z.string().optional().nullable(),
   isTaxDeductible: z.coerce.boolean().optional(),
+  // Atribuição IRPF (salário/aluguel recorrente → fonte pagadora + retenções)
+  fontePagadoraId: z.string().uuid().optional().nullable(),
+  irrfAmount: z.coerce.number().nonnegative().optional().nullable(),
+  inssAmount: z.coerce.number().nonnegative().optional().nullable(),
+  deductibleAmount: z.coerce.number().nonnegative().optional().nullable(),
 });
 
 const updateSchema = baseSchema.extend({ id: z.string().uuid() });
@@ -79,6 +84,10 @@ function readForm(formData: FormData) {
     isSubscription: get("isSubscription") === "1" || get("isSubscription") === "true",
     irDeductibleKind: get("irDeductibleKind") || undefined,
     isTaxDeductible: get("isTaxDeductible") === "1" || get("isTaxDeductible") === "true",
+    fontePagadoraId: get("fontePagadoraId") || undefined,
+    irrfAmount: get("irrfAmount") || undefined,
+    inssAmount: get("inssAmount") || undefined,
+    deductibleAmount: get("deductibleAmount") || undefined,
   };
 }
 
@@ -139,6 +148,13 @@ export async function createRecurringRule(
     tags: parsed.data.isSubscription ? ["subscription"] : [],
     ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
     is_tax_deductible: parsed.data.isTaxDeductible ?? false,
+    fonte_pagadora_id: parsed.data.fontePagadoraId ?? null,
+    irrf_amount: parsed.data.irrfAmount ?? null,
+    inss_amount: parsed.data.inssAmount ?? null,
+    deductible_amount:
+      parsed.data.isTaxDeductible && parsed.data.deductibleAmount && parsed.data.deductibleAmount > 0
+        ? parsed.data.deductibleAmount
+        : null,
     created_by: ctx.profile.id,
   });
   if (error) return { error: error.message };
@@ -201,6 +217,13 @@ export async function updateRecurringRule(
       tags: newTags,
       ir_deductible_kind: (parsed.data.irDeductibleKind ?? null) as IRDeductibleKind | null,
       is_tax_deductible: parsed.data.isTaxDeductible ?? false,
+      fonte_pagadora_id: parsed.data.fontePagadoraId ?? null,
+      irrf_amount: parsed.data.irrfAmount ?? null,
+      inss_amount: parsed.data.inssAmount ?? null,
+      deductible_amount:
+        parsed.data.isTaxDeductible && parsed.data.deductibleAmount && parsed.data.deductibleAmount > 0
+          ? parsed.data.deductibleAmount
+          : null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

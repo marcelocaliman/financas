@@ -13,7 +13,7 @@ import {
   deleteAccount,
   restoreAccount,
 } from "@/services/accounts.actions";
-import type { AccountType, Tables } from "@/types/database";
+import type { AccountType, MarriageRegime, Tables } from "@/types/database";
 import { AccountSheet } from "./account-sheet";
 import { BalanceAdjustDialog } from "./balance-adjust-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -34,6 +34,8 @@ export function AccountCard({
   balanceMode = "current",
   balanceLabel,
   assetsBalance = 0,
+  filers = [],
+  regime = "solteiro",
 }: {
   account: Account;
   /** Saldo a exibir; default = account.current_balance */
@@ -47,6 +49,8 @@ export function AccountCard({
    * Quando > 0, o card mostra três linhas: Caixa, Ativos, Total.
    */
   assetsBalance?: number;
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
 }) {
   const [editing, setEditing] = useState(false);
   const [adjusting, setAdjusting] = useState(false);
@@ -212,7 +216,13 @@ export function AccountCard({
 
       {account.is_active ? (
         <>
-          <AccountSheet open={editing} onOpenChange={setEditing} account={account} />
+          <AccountSheet
+            open={editing}
+            onOpenChange={setEditing}
+            account={account}
+            filers={filers}
+            regime={regime}
+          />
           <BalanceAdjustDialog open={adjusting} onOpenChange={setAdjusting} account={account} />
         </>
       ) : null}

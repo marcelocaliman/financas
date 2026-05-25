@@ -15,6 +15,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const year = parseInt(url.searchParams.get("year") ?? "", 10);
   const householdIdParam = url.searchParams.get("householdId");
+  const filerIdParam = url.searchParams.get("filerId");
   if (Number.isNaN(year) || year < 2000 || year > 2100) {
     return NextResponse.json({ error: "Ano inválido." }, { status: 400 });
   }
@@ -76,19 +77,38 @@ export async function GET(req: Request) {
     return NextResponse.json(bundle);
   }
 
-  // ---- Caso normal — titular
+  // ---- Caso normal — titular (ou cônjuge via filerId)
   const ctx = await getCurrentUserContext();
   if (!ctx) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
   const supabase = await createClient();
-  const { data: settings } = await supabase
-    .from("ir_settings")
-    .select("cpf_titular")
-    .maybeSingle();
 
-  const cpf = settings?.cpf_titular ?? "";
+  // Se filerId foi passado, busca CPF/nome direto do filer.
+  // Senão, fallback pro CPF do ir_settings (compat com fluxo antigo).
+  let cpf = "";
+  let nome = ctx.profile.display_name;
+
+  if (filerIdParam) {
+    const { data: filer } = await supabase
+      .from("ir_filers")
+      .select("cpf, full_name")
+      .eq("id", filerIdParam)
+      .maybeSingle();
+    if (!filer) {
+      return NextResponse.json({ error: "Declarante não encontrado." }, { status: 404 });
+    }
+    cpf = filer.cpf;
+    nome = filer.full_name;
+  } else {
+    const { data: settings } = await supabase
+      .from("ir_settings")
+      .select("cpf_titular")
+      .maybeSingle();
+    cpf = settings?.cpf_titular ?? "";
+  }
+
   if (!cpf) {
     return NextResponse.json(
       { error: "Cadastre CPF do titular em Configurações antes de exportar." },
@@ -100,7 +120,8 @@ export async function GET(req: Request) {
     const bundle = await generateDec({
       year,
       cpf,
-      nome: ctx.profile.display_name,
+      nome,
+      filerId: filerIdParam ?? undefined,
     });
     return NextResponse.json(bundle);
   } catch (e) {

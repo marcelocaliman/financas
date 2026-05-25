@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Archive, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { Archive, ArrowUpRight, Pencil, RotateCcw, Trash2, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
@@ -15,16 +15,29 @@ import { formatMoney } from "@/lib/utils/format";
 import { Money } from "@/components/ui/money";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
-import type { Tables } from "@/types/database";
+import type { MarriageRegime, Tables } from "@/types/database";
 import { PhysicalAssetSheet } from "./physical-asset-sheet";
+import { PropertySaleDialog } from "@/components/ir/property-sale-dialog";
+import { PropertyRevaluationDialog } from "@/components/ir/property-revaluation-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Asset = Tables<"physical_assets">;
 
-export function PhysicalAssetCard({ asset }: { asset: Asset }) {
+export function PhysicalAssetCard({
+  asset,
+  filers = [],
+  regime = "solteiro",
+}: {
+  asset: Asset;
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
+}) {
   const [editing, setEditing] = useState(false);
+  const [selling, setSelling] = useState(false);
+  const [revaluing, setRevaluing] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
+  const isRealEstate = asset.category === "real_estate";
 
   const handleArchive = async () => {
     const ok = await confirm({
@@ -102,6 +115,22 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
                   disabled: pending,
                 },
                 {
+                  label: isRealEstate ? "Vender imóvel (GCAP + DARF)" : "Vender (GCAP)",
+                  icon: <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: () => setSelling(true),
+                  disabled: pending,
+                },
+                ...(isRealEstate
+                  ? [
+                      {
+                        label: "Atualizar valor (Lei 14.973/24)",
+                        icon: <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setRevaluing(true),
+                        disabled: pending,
+                      },
+                    ]
+                  : []),
+                {
                   label: "Arquivar",
                   icon: <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />,
                   onSelect: handleArchive,
@@ -160,7 +189,26 @@ export function PhysicalAssetCard({ asset }: { asset: Asset }) {
         ) : null}
       </div>
 
-      <PhysicalAssetSheet open={editing} onOpenChange={setEditing} asset={asset} />
+      <PhysicalAssetSheet
+        open={editing}
+        onOpenChange={setEditing}
+        asset={asset}
+        filers={filers}
+        regime={regime}
+      />
+      <PropertySaleDialog
+        open={selling}
+        onOpenChange={setSelling}
+        asset={asset}
+        filers={filers}
+      />
+      {isRealEstate ? (
+        <PropertyRevaluationDialog
+          open={revaluing}
+          onOpenChange={setRevaluing}
+          asset={asset}
+        />
+      ) : null}
     </>
   );
 }

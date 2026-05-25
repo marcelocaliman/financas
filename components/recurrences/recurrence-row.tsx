@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, RefreshCw, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,11 +55,13 @@ export function RecurrenceRow({
  nextOccurrences,
  accounts,
  categories,
+ fontes = [],
 }: {
  rule: Rule;
  nextOccurrences: string[];
  accounts: AccountLite[];
  categories: CategoryLite[];
+ fontes?: Pick<Tables<"fontes_pagadoras">, "id" | "type" | "name" | "cnpj" | "cpf">[];
 }) {
  const [editing, setEditing] = useState(false);
  const [pending, startTransition] = useTransition();
@@ -139,12 +141,26 @@ export function RecurrenceRow({
 
  const nextText = nextOccurrences[0] ? formatDateShort(nextOccurrences[0]) : "—";
 
+ const rowRef = useRef<HTMLDivElement | null>(null);
+ const [highlight, setHighlight] = useState(false);
+ useEffect(() => {
+   if (typeof window === "undefined") return;
+   if (window.location.hash !== `#rule-${rule.id}`) return;
+   rowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+   setHighlight(true);
+   const t = setTimeout(() => setHighlight(false), 2500);
+   return () => clearTimeout(t);
+ }, [rule.id]);
+
  return (
  <>
  <div
+ ref={rowRef}
+ id={`rule-${rule.id}`}
  className={cn(
- "group grid grid-cols-[24px_1fr_auto_auto_auto] items-center gap-3 py-2.5 px-3 rounded-[8px] hover:bg-surface-muted/60 transition-colors",
+ "group grid grid-cols-[24px_1fr_auto_auto_auto] items-center gap-3 py-2.5 px-3 rounded-[8px] hover:bg-surface-muted/60 transition-colors scroll-mt-24",
  pending && "opacity-60",
+ highlight && "ring-2 ring-gold-500/60 bg-gold-100/30 dark:bg-gold-700/15",
  )}
  >
  {/* Icon */}
@@ -279,6 +295,7 @@ export function RecurrenceRow({
  rule={rule}
  accounts={accounts}
  categories={categories}
+ fontes={fontes}
  />
  </>
  );

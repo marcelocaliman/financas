@@ -76,8 +76,10 @@ export async function createCarneLeao(
     deductible_expenses: parsed.data.deductible_expenses,
     taxable_base: calc.taxableBase,
     tax_due: calc.taxDue,
-    due_date: lastBusinessDayOfNextMonth(parsed.data.year, parsed.data.month),
+    due_date: calc.dueDate ?? lastBusinessDayOfNextMonth(parsed.data.year, parsed.data.month),
     notes: parsed.data.notes?.trim() || null,
+    tax_computed_by_app: true,
+    computation_breakdown: calc.breakdown as never,
   });
   if (error) return { error: error.message };
 

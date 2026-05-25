@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ export function ExportActions({
   nome: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const filerId = searchParams.get("filer");
 
   const downloadBlob = (filename: string, content: string, mime: string) => {
     const blob = new Blob([content], { type: mime });
@@ -27,13 +30,15 @@ export function ExportActions({
   };
 
   const handleExport = (format: "dec" | "txt") => {
-    if (!cpf) {
+    if (!cpf && !filerId) {
       toast.error("Cadastre seu CPF em Configurações antes de exportar.");
       return;
     }
     startTransition(async () => {
       try {
-        const res = await fetch(`/api/ir/export?year=${year}&format=${format}`);
+        const qs = new URLSearchParams({ year: String(year), format });
+        if (filerId) qs.set("filerId", filerId);
+        const res = await fetch(`/api/ir/export?${qs.toString()}`);
         if (!res.ok) {
           const err = await res.json().catch(() => ({ error: "Erro desconhecido" }));
           toast.error(err.error ?? "Falha na exportação");
@@ -55,13 +60,25 @@ export function ExportActions({
 
   return (
     <div className="flex gap-2">
-      <Button variant="secondary" size="sm" onClick={() => handleExport("txt")} disabled={pending}>
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={() => handleExport("txt")}
+        disabled={pending}
+        title="Relatório completo formatado pra você copiar seção por seção no programa IRPF da Receita"
+      >
         <FileText className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
-        Relatório TXT
+        Relatório IRPF (TXT)
       </Button>
-      <Button variant="primary" size="sm" onClick={() => handleExport("dec")} disabled={pending}>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => handleExport("dec")}
+        disabled={pending}
+        title="Estrutura técnica pipe-delimited pra contador conferir — NÃO importa direto no programa oficial"
+      >
         <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
-        Arquivo .DEC
+        Estrutura técnica
       </Button>
     </div>
   );

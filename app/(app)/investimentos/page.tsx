@@ -10,20 +10,30 @@ import {
   AllocationDonut,
   type DonutSegment,
 } from "@/components/ui/allocation-donut";
+import Link from "next/link";
+import { Archive, History } from "lucide-react";
 import { listAccounts } from "@/services/accounts";
-import { listInvestments, getLatestIndexer } from "@/services/investments";
+import { listInvestments, listClosedInvestments, getLatestIndexer } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
+import { listFilers, getRegimeContext } from "@/services/ir/filers";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvestimentosPage() {
-  const [investments, accounts, live, selic, cdi] = await Promise.all([
-    listInvestments(),
-    listAccounts(),
-    getLivePortfolio(),
-    getLatestIndexer("selic"),
-    getLatestIndexer("cdi"),
-  ]);
+  const [investments, closedInvestments, accounts, live, selic, cdi, filers, regimeCtx] =
+    await Promise.all([
+      listInvestments(),
+      // Só usado pro contador no header (não renderiza tabela aqui)
+      listClosedInvestments(),
+      listAccounts(),
+      getLivePortfolio(),
+      getLatestIndexer("selic"),
+      getLatestIndexer("cdi"),
+      listFilers(),
+      getRegimeContext(),
+    ]);
+  const closedCount = closedInvestments.length;
+  const regime = regimeCtx.regime;
 
   const investmentAccounts = accounts
     .filter((a) => a.type === "investment")
@@ -88,8 +98,30 @@ export default async function InvestimentosPage() {
           </>
         }
         subtitle="Tesouro/CDB rendem com a Selic do BCB; ações/FIIs marcam a valor de mercado pela brapi."
-        actions={<NewInvestmentButton investmentAccounts={investmentAccounts} />}
+        actions={<NewInvestmentButton investmentAccounts={investmentAccounts} filers={filers} regime={regime} />}
       />
+
+      <div className="flex items-center gap-4 mb-5 -mt-3">
+        <Link
+          href="/investimentos/movimentacoes"
+          className="inline-flex items-center gap-1.5 text-[11.5px] font-mono uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <History className="w-3.5 h-3.5" strokeWidth={1.7} />
+          Timeline
+        </Link>
+        <Link
+          href="/investimentos/encerrados"
+          className="inline-flex items-center gap-1.5 text-[11.5px] font-mono uppercase tracking-[0.1em] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
+          Encerrados
+          {closedCount > 0 ? (
+            <span className="px-1.5 py-0.5 rounded-full bg-surface-muted text-faint-foreground text-[10px] tabular-nums">
+              {closedCount}
+            </span>
+          ) : null}
+        </Link>
+      </div>
 
       {investments.length === 0 ? (
         <EmptyState hasInvestmentAccounts={investmentAccounts.length > 0} />
@@ -139,6 +171,8 @@ export default async function InvestimentosPage() {
                 investmentAccounts={investmentAccounts}
                 destinationAccounts={destinationAccounts}
                 portfolioTotal={portfolioTotal}
+                filers={filers}
+                regime={regime}
               />
             </ScrollTarget>
           ) : null}
@@ -150,6 +184,8 @@ export default async function InvestimentosPage() {
                 liveByAssetId={liveByAssetId}
                 investmentAccounts={investmentAccounts}
                 portfolioTotal={portfolioTotal}
+                filers={filers}
+                regime={regime}
               />
             </ScrollTarget>
           ) : null}

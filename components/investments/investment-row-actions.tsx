@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   Archive,
   Calculator,
+  CircleDollarSign,
   List,
   Pencil,
   Plus,
@@ -17,9 +18,10 @@ import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import {
   archiveInvestment,
   deleteInvestment,
+  reopenInvestment,
   restoreInvestment,
 } from "@/services/investments.actions";
-import type { Tables } from "@/types/database";
+import type { MarriageRegime, Tables } from "@/types/database";
 import { InvestmentSheet } from "./investment-sheet";
 import { YieldDialog } from "./yield-dialog";
 import { MovementDialog } from "./movement-dialog";
@@ -27,6 +29,7 @@ import { MovementsSheet } from "./movements-sheet";
 import { SaleSimulatorDialog } from "./sale-simulator-dialog";
 import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
 import { WithdrawYieldDialog } from "./withdraw-yield-dialog";
+import { LiquidateInvestmentDialog } from "./liquidate-investment-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
 type Investment = Tables<"investments"> & {
@@ -39,11 +42,15 @@ export function InvestmentRowActions({
   investmentAccounts,
   destinationAccounts = [],
   accumulatedYield = 0,
+  filers = [],
+  regime = "solteiro",
 }: {
   investment: Investment;
   investmentAccounts: AccountLite[];
   destinationAccounts?: AccountLite[];
   accumulatedYield?: number;
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
 }) {
   const [editing, setEditing] = useState(false);
   const [registeringYield, setRegisteringYield] = useState(false);
@@ -55,6 +62,7 @@ export function InvestmentRowActions({
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const [liquidating, setLiquidating] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
 
@@ -88,6 +96,23 @@ export function InvestmentRowActions({
       const r = await restoreInvestment(investment.id);
       if (r.error) toast.error(r.error);
       else toast.success("Ativo restaurado.");
+    });
+  };
+
+  const handleReopen = async () => {
+    const ok = await confirm({
+      eyebrow: "Reverter liquidação",
+      title: `Reabrir "${investment.ticker}"?`,
+      description:
+        "Apaga a venda registrada, a transação de caixa criada e desfaz o ajuste de saldo da conta destino. Útil pra corrigir liquidação feita por engano.",
+      confirmLabel: "Reabrir",
+      destructive: true,
+    });
+    if (!ok) return;
+    startTransition(async () => {
+      const r = await reopenInvestment(investment.id);
+      if (r.error) toast.error(r.error);
+      else toast.success("Investimento reaberto.");
     });
   };
 
@@ -200,7 +225,13 @@ export function InvestmentRowActions({
                   disabled: pending,
                 },
                 {
-                  label: "Arquivar",
+                  label: "Liquidar (vender/vencer)",
+                  icon: <CircleDollarSign className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                  onSelect: () => setLiquidating(true),
+                  disabled: pending,
+                },
+                {
+                  label: "Arquivar (sem venda)",
                   icon: <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />,
                   onSelect: handleArchive,
                   disabled: pending,
@@ -215,12 +246,23 @@ export function InvestmentRowActions({
                 },
               ]
             : [
-                {
-                  label: "Restaurar",
-                  icon: <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.7} />,
-                  onSelect: handleRestore,
-                  disabled: pending,
-                },
+                ...(investment.closed_at
+                  ? [
+                      {
+                        label: "Reabrir (reverter venda)",
+                        icon: <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: handleReopen,
+                        disabled: pending,
+                      },
+                    ]
+                  : [
+                      {
+                        label: "Restaurar",
+                        icon: <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: handleRestore,
+                        disabled: pending,
+                      },
+                    ]),
                 {
                   label: "Excluir definitivamente",
                   icon: <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />,
@@ -236,6 +278,14 @@ export function InvestmentRowActions({
         onOpenChange={setEditing}
         investment={investment}
         investmentAccounts={investmentAccounts}
+        filers={filers}
+        regime={regime}
+      />
+      <LiquidateInvestmentDialog
+        open={liquidating}
+        onOpenChange={setLiquidating}
+        investment={investment}
+        destinationAccounts={destinationAccounts}
       />
       <YieldDialog
         open={registeringYield}

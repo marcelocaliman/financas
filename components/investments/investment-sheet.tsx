@@ -20,9 +20,10 @@ import {
   updateInvestment,
   type InvestmentFormState,
 } from "@/services/investments.actions";
-import type { AssetType, Indexer, TaxRegime, Tables } from "@/types/database";
-import type { AssetTemplate } from "@/lib/financial/asset-catalog";
+import type { AssetType, Indexer, MarriageRegime, TaxRegime, Tables } from "@/types/database";
+import { type AssetTemplate, lookupAssetCNPJ } from "@/lib/financial/asset-catalog";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { FilerPickerWithOwnership } from "@/components/ir/filer-picker";
 import { AssetPicker } from "./asset-picker";
 
 type Investment = Tables<"investments">;
@@ -35,6 +36,8 @@ const ASSET_TYPES: { value: AssetType; label: string }[] = [
   { value: "etf", label: "ETF" },
   { value: "stock", label: "Ação" },
   { value: "crypto", label: "Cripto" },
+  { value: "pgbl", label: "Previdência PGBL" },
+  { value: "vgbl", label: "Previdência VGBL" },
 ];
 
 const INDEXERS: { value: Indexer; label: string }[] = [
@@ -54,8 +57,16 @@ function investmentToTemplate(inv: Investment): AssetTemplate {
     indexer_multiplier: inv.indexer_multiplier ?? null,
     fixed_rate: inv.fixed_rate ?? null,
     tax_regime: inv.tax_regime,
+    cnpj: inv.cnpj ?? null,
     source: "catalog",
   };
+}
+
+function fmtCNPJ(raw: string | null | undefined): string {
+  if (!raw) return "";
+  const d = raw.replace(/\D/g, "");
+  if (d.length !== 14) return raw;
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
 }
 
 export function InvestmentSheet({
@@ -63,11 +74,15 @@ export function InvestmentSheet({
   onOpenChange,
   investment,
   investmentAccounts,
+  filers = [],
+  regime = "solteiro",
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   investment?: Investment | null;
   investmentAccounts: AccountLite[];
+  filers?: Tables<"ir_filers">[];
+  regime?: MarriageRegime;
 }) {
   const isEdit = !!investment;
 
@@ -78,6 +93,11 @@ export function InvestmentSheet({
     investment?.account_id ?? investmentAccounts[0]?.id ?? "",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showIR, setShowIR] = useState(false);
+  // CNPJ controlado: usa o do investimento (edit), do catálogo (catalog hit) ou vazio.
+  const [cnpj, setCnpj] = useState<string>(
+    investment?.cnpj ? fmtCNPJ(investment.cnpj) : "",
+  );
 
   const [state, action, pending] = useActionState<InvestmentFormState | undefined, FormData>(
     isEdit ? updateInvestment : createInvestment,
@@ -91,8 +111,20 @@ export function InvestmentSheet({
       setPicked(investment ? investmentToTemplate(investment) : null);
       setAccountId(investment?.account_id ?? investmentAccounts[0]?.id ?? "");
       setShowAdvanced(false);
+      setShowIR(false);
+      setCnpj(investment?.cnpj ? fmtCNPJ(investment.cnpj) : "");
     }
   }
+
+  // Auto-popula CNPJ quando o usuário escolhe um ativo do catálogo (sem
+  // sobrescrever se já tinha algo digitado manualmente).
+  useEffect(() => {
+    if (!picked) return;
+    if (cnpj.replace(/\D/g, "").length === 14) return;
+    const fromTemplate = picked.cnpj ?? lookupAssetCNPJ(picked.ticker);
+    if (fromTemplate) setCnpj(fmtCNPJ(fromTemplate));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked?.ticker]);
 
   useEffect(() => {
     if (state?.ok) {
@@ -251,6 +283,69 @@ export function InvestmentSheet({
 
                 {showAdvanced ? (
                   <AdvancedFields template={picked} onChange={setPicked} />
+                ) : null}
+
+                {/* Bloco IR — só faz sentido pra ativos onde Receita exige CNPJ */}
+                {picked.asset_type !== "fixed_income_public" && picked.asset_type !== "crypto" ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setShowIR((v) => !v)}
+                      className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground hover:text-foreground font-medium"
+                    >
+                      {showIR ? (
+                        <ChevronUp className="w-3 h-3" strokeWidth={1.7} />
+                      ) : (
+                        <ChevronDown className="w-3 h-3" strokeWidth={1.7} />
+                      )}
+                      Identificação Receita (IRPF)
+                      {cnpj ? (
+                        <span className="text-[10.5px] font-mono text-faint-foreground ml-1">
+                          · CNPJ preenchido
+                        </span>
+                      ) : null}
+                    </button>
+
+                    {showIR ? (
+                      <div className="space-y-3 border-t border-border pt-4 -mt-1">
+                        <Field
+                          label="CNPJ"
+                          htmlFor="cnpj"
+                          hint="Auto-preenchido pra tickers conhecidos. Aparece na Ficha Bens e Direitos."
+                        >
+                          <Input
+                            id="cnpj"
+                            name="cnpj"
+                            value={cnpj}
+                            onChange={(e) => setCnpj(e.target.value)}
+                            placeholder="00.000.000/0000-00"
+                            className="font-mono"
+                            maxLength={18}
+                          />
+                        </Field>
+                      </div>
+                    ) : (
+                      <input type="hidden" name="cnpj" value={cnpj} />
+                    )}
+                  </>
+                ) : null}
+
+                {filers.length >= 2 ? (
+                  <details className="text-[12.5px] text-muted-foreground">
+                    <summary className="cursor-pointer font-medium hover:text-foreground">
+                      Titular do ativo (IRPF) <span className="text-faint-foreground">· quem declara</span>
+                    </summary>
+                    <div className="pt-3">
+                      <FilerPickerWithOwnership
+                        filers={filers}
+                        regime={regime}
+                        defaultOwnerFilerId={investment?.owner_filer_id}
+                        defaultIsParticular={investment?.is_particular}
+                        defaultParticularReason={investment?.particular_reason}
+                        defaultOwnershipPercent={investment?.ownership_percent}
+                      />
+                    </div>
+                  </details>
                 ) : null}
               </>
             ) : null}

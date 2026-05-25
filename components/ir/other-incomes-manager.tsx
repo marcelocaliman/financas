@@ -31,15 +31,22 @@ function fmtBRL(n: number): string {
 export function OtherIncomesManager({
   year,
   incomes,
+  filers = [],
 }: {
   year: number;
   incomes: Tables<"ir_other_incomes">[];
+  filers?: Tables<"ir_filers">[];
 }) {
   const [showForm, setShowForm] = useState(false);
   const [gross, setGross] = useState(0);
   const [irrf, setIrrf] = useState(0);
   const [inss, setInss] = useState(0);
   const [t13, setT13] = useState(0);
+  const [category, setCategory] = useState<string>("tributavel_pj");
+  const [rraMethod, setRraMethod] = useState<string>("mensal");
+  const [rraMonths, setRraMonths] = useState<number>(12);
+  const [rraJuros, setRraJuros] = useState(0);
+  const [rraHonorarios, setRraHonorarios] = useState(0);
   const [state, action, pending] = useActionState<IRFormState | undefined, FormData>(
     createOtherIncome,
     undefined,
@@ -136,7 +143,7 @@ export function OtherIncomesManager({
           <input type="hidden" name="thirteenth_amount" value={t13} />
           <div className="grid lg:grid-cols-3 gap-3">
             <Field label="Categoria" htmlFor="category" required>
-              <Select name="category" defaultValue="tributavel_pj">
+              <Select name="category" value={category} onValueChange={setCategory}>
                 <SelectTrigger id="category"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((c) => (
@@ -181,6 +188,69 @@ export function OtherIncomesManager({
               <MoneyInput name="t13-input" defaultValue={0} onValueChange={setT13} />
             </Field>
           </div>
+          {filers.length >= 2 ? (
+            <Field label="Quem recebeu" htmlFor="ownerFilerId" required>
+              <Select name="ownerFilerId" defaultValue={filers[0]?.id}>
+                <SelectTrigger id="ownerFilerId"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {filers.map((f) => (
+                    <SelectItem key={f.id} value={f.id}>{f.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : filers[0] ? (
+            <input type="hidden" name="ownerFilerId" value={filers[0].id} />
+          ) : null}
+
+          {/* Bloco RRA — só quando categoria = rendimento_acumulado */}
+          {category === "rendimento_acumulado" ? (
+            <div className="rounded-[8px] bg-bone-50 dark:bg-ink-900 border border-border p-3 space-y-3">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium">
+                RRA — Rendimentos Recebidos Acumuladamente
+              </div>
+              <p className="text-[11.5px] text-muted-foreground leading-relaxed">
+                Atrasados de salário, FGTS, decisão judicial. Você pode optar pela tributação
+                mensal (aplica tabela ao valor médio/mês — geralmente paga menos) ou anual.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Método de tributação" htmlFor="rra_taxable_method">
+                  <Select value={rraMethod} onValueChange={setRraMethod} name="rra_taxable_method">
+                    <SelectTrigger id="rra_taxable_method"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mensal">Mensal (recomendado)</SelectItem>
+                      <SelectItem value="anual">Anual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Meses de competência" htmlFor="rra_competence_months" hint="Qtos meses retroativos">
+                  <Input
+                    id="rra_competence_months"
+                    name="rra_competence_months"
+                    type="number"
+                    min="1"
+                    max="240"
+                    value={rraMonths}
+                    onChange={(e) => setRraMonths(Number(e.target.value))}
+                    className="font-mono"
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Juros (isentos se acessórios)" htmlFor="rra_juros">
+                  <MoneyInput name="rra_juros" defaultValue={0} onValueChange={setRraJuros} />
+                </Field>
+                <Field label="Honorários advocatícios" htmlFor="rra_honorarios" hint="Dedutíveis">
+                  <MoneyInput name="rra_honorarios" defaultValue={0} onValueChange={setRraHonorarios} />
+                </Field>
+              </div>
+              <p className="text-[11px] text-faint-foreground font-mono">
+                Valor médio/mês: R$ {rraMonths > 0 ? (gross / rraMonths).toFixed(2) : "0.00"} ·
+                Juros: R$ {rraJuros.toFixed(2)} · Honorários: R$ {rraHonorarios.toFixed(2)}
+              </p>
+            </div>
+          ) : null}
+
           <div className="flex gap-2">
             <Button type="submit" variant="primary" disabled={pending}>
               {pending ? "Salvando…" : "Adicionar"}

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { lookupAssetCNPJ } from "@/lib/financial/asset-catalog";
 
 const ASSET_TYPES = [
   "fii",
@@ -13,6 +14,8 @@ const ASSET_TYPES = [
   "etf",
   "crypto",
   "option",
+  "pgbl",
+  "vgbl",
 ] as const;
 const INDEXERS = ["selic", "cdi", "ipca", "fixed", "none"] as const;
 const OPTION_TYPES = ["call", "put"] as const;
@@ -36,6 +39,11 @@ const createSchema = z.object({
   // IR
   cnpj: z.string().optional().nullable(),
   isExterior: z.coerce.boolean().optional().default(false),
+  // Couple attribution
+  ownerFilerId: z.string().uuid().optional().nullable(),
+  isParticular: z.coerce.boolean().optional().default(false),
+  particularReason: z.enum(["pre_casamento", "heranca", "doacao", "sub_rogacao", "outros"]).optional().nullable(),
+  ownershipPercent: z.coerce.number().min(0).max(100).optional().nullable(),
   // Opção
   optionType: z.enum(OPTION_TYPES).optional().nullable(),
   strikePrice: z.coerce.number().positive().optional().nullable(),
@@ -81,6 +89,10 @@ export async function createInvestment(
     unitPrice: formData.get("unitPrice") || undefined,
     cnpj: formData.get("cnpj") || null,
     isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    ownerFilerId: formData.get("ownerFilerId") || null,
+    isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
+    particularReason: formData.get("particularReason") || null,
+    ownershipPercent: formData.get("ownershipPercent") || null,
     optionType: formData.get("optionType") || null,
     strikePrice: formData.get("strikePrice") || null,
     expiryDate: formData.get("expiryDate") || null,
@@ -124,6 +136,12 @@ export async function createInvestment(
     .maybeSingle();
   const investmentCurrency = (acc?.currency ?? "BRL") as "BRL" | "EUR" | "USD";
 
+  // Fallback: se o form não mandou CNPJ mas é ticker conhecido, pega do catálogo.
+  const cnpjResolved =
+    parsed.data.cnpj?.replace(/\D/g, "") ||
+    lookupAssetCNPJ(parsed.data.ticker)?.replace(/\D/g, "") ||
+    null;
+
   const { data: created, error } = await supabase
     .from("investments")
     .insert({
@@ -140,13 +158,17 @@ export async function createInvestment(
       current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
       currency: investmentCurrency,
       tax_regime: parsed.data.taxRegime,
-      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      cnpj: cnpjResolved,
       is_exterior: parsed.data.isExterior ?? false,
       option_type: parsed.data.optionType ?? null,
       strike_price: parsed.data.strikePrice ?? null,
       expiry_date: parsed.data.expiryDate ?? null,
       underlying_ticker: parsed.data.underlyingTicker?.trim() || null,
       option_position: parsed.data.optionPosition ?? null,
+      owner_filer_id: parsed.data.ownerFilerId || null,
+      is_particular: parsed.data.isParticular ?? false,
+      particular_reason: parsed.data.particularReason ?? null,
+      ownership_percent: parsed.data.ownershipPercent ?? null,
     })
     .select("id")
     .single();
@@ -220,6 +242,10 @@ export async function updateInvestment(
     taxRegime: formData.get("taxRegime") || "regressive",
     cnpj: formData.get("cnpj") || null,
     isExterior: formData.get("isExterior") === "1" || formData.get("isExterior") === "true",
+    ownerFilerId: formData.get("ownerFilerId") || null,
+    isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
+    particularReason: formData.get("particularReason") || null,
+    ownershipPercent: formData.get("ownershipPercent") || null,
     optionType: formData.get("optionType") || null,
     strikePrice: formData.get("strikePrice") || null,
     expiryDate: formData.get("expiryDate") || null,
@@ -229,6 +255,10 @@ export async function updateInvestment(
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const supabase = await createClient();
+  const cnpjResolved =
+    parsed.data.cnpj?.replace(/\D/g, "") ||
+    lookupAssetCNPJ(parsed.data.ticker)?.replace(/\D/g, "") ||
+    null;
   const { error } = await supabase
     .from("investments")
     .update({
@@ -243,13 +273,17 @@ export async function updateInvestment(
       initial_amount: parsed.data.initialAmount,
       current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
       tax_regime: parsed.data.taxRegime,
-      cnpj: parsed.data.cnpj?.replace(/\D/g, "") || null,
+      cnpj: cnpjResolved,
       is_exterior: parsed.data.isExterior ?? false,
       option_type: parsed.data.optionType ?? null,
       strike_price: parsed.data.strikePrice ?? null,
       expiry_date: parsed.data.expiryDate ?? null,
       underlying_ticker: parsed.data.underlyingTicker?.trim() || null,
       option_position: parsed.data.optionPosition ?? null,
+      owner_filer_id: parsed.data.ownerFilerId || null,
+      is_particular: parsed.data.isParticular ?? false,
+      particular_reason: parsed.data.particularReason ?? null,
+      ownership_percent: parsed.data.ownershipPercent ?? null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
@@ -278,6 +312,65 @@ export async function restoreInvestment(id: string) {
     .eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/investimentos");
+  return { ok: true };
+}
+
+/**
+ * Liquida um investment: registra venda + IR retido + opcionalmente lança caixa
+ * na conta destino. Tudo atômico via RPC liquidate_investment.
+ *
+ * Use pra: venda antes do vencimento (reason='sold'), vencimento natural
+ * ('matured'), ou encerramento sem dinheiro/sem venda formal ('archived').
+ */
+const liquidateSchema = z.object({
+  investmentId: z.string().uuid(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  grossProceeds: z.coerce.number().nonnegative(),
+  irWithheld: z.coerce.number().nonnegative().default(0),
+  destinationAccountId: z.string().uuid().optional().nullable(),
+  reason: z.enum(["sold", "matured", "archived"]).default("sold"),
+  notes: z.string().optional().nullable(),
+});
+
+export async function liquidateInvestment(
+  input: z.input<typeof liquidateSchema>,
+): Promise<{ ok?: boolean; error?: string; movementId?: string }> {
+  const parsed = liquidateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues.map((i) => i.message).join("; ") };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("liquidate_investment", {
+    p_investment_id: parsed.data.investmentId,
+    p_date: parsed.data.date,
+    p_gross_proceeds: parsed.data.grossProceeds,
+    p_ir_withheld: parsed.data.irWithheld,
+    p_destination_account_id: parsed.data.destinationAccountId ?? undefined,
+    p_reason: parsed.data.reason,
+    p_notes: parsed.data.notes ?? undefined,
+  });
+  if (error) return { error: error.message };
+  for (const p of ["/investimentos", "/dashboard", "/transacoes", "/resgates"]) {
+    revalidatePath(p);
+  }
+  return { ok: true, movementId: data as string };
+}
+
+/**
+ * Reabre um investment liquidado por engano. Apaga movement sell, tx de caixa
+ * e zera os campos closed_*. Saldo da conta destino é revertido.
+ */
+export async function reopenInvestment(
+  investmentId: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reopen_investment", {
+    p_investment_id: investmentId,
+  });
+  if (error) return { error: error.message };
+  for (const p of ["/investimentos", "/dashboard", "/transacoes"]) {
+    revalidatePath(p);
+  }
   return { ok: true };
 }
 

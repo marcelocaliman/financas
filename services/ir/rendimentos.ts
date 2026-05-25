@@ -66,6 +66,7 @@ const RENT_CATEGORIES = new Set(["aluguel recebido", "aluguel"]);
 export async function getRendimentosReport(
   year: number,
   householdId?: string,
+  filerId?: string,
 ): Promise<RendimentosReport> {
   const supabase = await createClient();
 
@@ -76,19 +77,20 @@ export async function getRendimentosReport(
   const txQuery = supabase
     .from("transactions")
     .select(
-      "description, amount_account, currency, date, irrf_amount, inss_amount, category:categories(name), account:accounts(currency, institution), fonte:fontes_pagadoras(id, type, name, cnpj, cpf)",
+      "description, amount_account, currency, date, irrf_amount, inss_amount, category:categories(name), account:accounts!inner(currency, institution, owner_filer_id), fonte:fontes_pagadoras(id, type, name, cnpj, cpf)",
     )
     .gte("date", yearStart)
     .lte("date", yearEnd)
-    .eq("kind", "income");
+    .eq("kind", "income")
+    .eq("exclude_from_ir", false);
   const yieldsQuery = supabase
     .from("investment_yields")
-    .select("month, gross_yield, tax, investment:investments(ticker, name, tax_regime, currency, asset_type, cnpj)")
+    .select("month, gross_yield, tax, investment:investments!inner(ticker, name, tax_regime, currency, asset_type, cnpj, owner_filer_id)")
     .gte("month", yearStart)
     .lte("month", yearEnd);
   const divQuery = supabase
     .from("investment_movements")
-    .select("date, total_amount, investment:investments(ticker, name, asset_type, currency, cnpj)")
+    .select("date, total_amount, investment:investments!inner(ticker, name, asset_type, currency, cnpj, owner_filer_id)")
     .eq("kind", "dividend")
     .gte("date", yearStart)
     .lte("date", yearEnd);
@@ -97,12 +99,19 @@ export async function getRendimentosReport(
     .select("*")
     .eq("year", year);
 
+  // Atribuição por filer: tx via account.owner_filer_id, yields/divs via
+  // investments.owner_filer_id, ir_other_incomes direto.
+  const scopedTx = filerId ? txQuery.eq("account.owner_filer_id", filerId) : txQuery;
+  const scopedYields = filerId ? yieldsQuery.eq("investment.owner_filer_id", filerId) : yieldsQuery;
+  const scopedDiv = filerId ? divQuery.eq("investment.owner_filer_id", filerId) : divQuery;
+  const scopedOthers = filerId ? othersQuery.eq("owner_filer_id", filerId) : othersQuery;
+
   const [{ data: txs }, { data: yields }, { data: dividendMovements }, { data: others }] =
     await Promise.all([
-      householdId ? txQuery.eq("household_id", householdId) : txQuery,
-      householdId ? yieldsQuery.eq("household_id", householdId) : yieldsQuery,
-      householdId ? divQuery.eq("household_id", householdId) : divQuery,
-      householdId ? othersQuery.eq("household_id", householdId) : othersQuery,
+      householdId ? scopedTx.eq("household_id", householdId) : scopedTx,
+      householdId ? scopedYields.eq("household_id", householdId) : scopedYields,
+      householdId ? scopedDiv.eq("household_id", householdId) : scopedDiv,
+      householdId ? scopedOthers.eq("household_id", householdId) : scopedOthers,
     ]);
 
   const tributaveis: RendimentoRow[] = [];

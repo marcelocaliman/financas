@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { parseCsv, parseNumber, parseDate } from "@/lib/utils/csv";
+import { parseOfx } from "@/lib/utils/ofx";
 import {
   importTransactionsCSV,
   type ImportRow,
@@ -134,6 +135,32 @@ export function ImportTransactionsDialog({
   const handleFile = async (file: File) => {
     try {
       const text = await file.text();
+      const isOfx = /\.ofx$/i.test(file.name) || /<OFX>/i.test(text.slice(0, 500));
+
+      if (isOfx) {
+        // Parse OFX → converte pra formato CSV-like (headers + rows)
+        const ofx = parseOfx(text);
+        if (ofx.transactions.length === 0) {
+          toast.error("OFX sem transações ou formato não suportado.");
+          return;
+        }
+        const hs = ["Data", "Descrição", "Valor", "Tipo"];
+        const rs = ofx.transactions.map((t) => [
+          t.date,
+          t.description,
+          Math.abs(t.amount).toFixed(2).replace(".", ","),
+          t.amount >= 0 ? "receita" : "despesa",
+        ]);
+        setHeaders(hs);
+        setRows(rs);
+        setMapping({ 0: "date", 1: "description", 2: "amount", 3: "kind" });
+        toast.success(
+          `OFX detectado: ${ofx.transactions.length} transação(ões) entre ${ofx.startDate ?? "?"} e ${ofx.endDate ?? "?"}.`,
+        );
+        setStep(2);
+        return;
+      }
+
       const { headers: hs, rows: rs } = parseCsv(text);
       if (hs.length === 0) {
         toast.error("CSV vazio ou ilegível.");
@@ -313,15 +340,15 @@ function UploadStep({ onFile }: { onFile: (f: File) => void }) {
       <Upload className="w-7 h-7 text-faint-foreground" strokeWidth={1.5} />
       <div className="text-center">
         <div className="text-[14px] font-medium text-foreground">
-          Arraste o CSV aqui ou clique
+          Arraste CSV ou OFX aqui — ou clique
         </div>
         <div className="text-[12.5px] text-muted-foreground mt-1">
-          Cabeçalho na primeira linha · UTF-8 recomendado
+          CSV: cabeçalho na 1ª linha, UTF-8. OFX: extrato do banco (Itaú, Bradesco, Nubank, etc).
         </div>
       </div>
       <input
         type="file"
-        accept=".csv,text/csv"
+        accept=".csv,.ofx,text/csv,application/x-ofx"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];

@@ -17,6 +17,8 @@ export function FixedIncomeTable({
   investmentAccounts,
   destinationAccounts = [],
   portfolioTotal = 0,
+  filers = [],
+  regime = "solteiro",
 }: {
   investments: Investment[];
   liveByAssetId: Map<string, LiveAssetMetrics>;
@@ -25,6 +27,8 @@ export function FixedIncomeTable({
   destinationAccounts?: AccountLite[];
   /** Total geral da carteira, pra calcular % de cada ativo */
   portfolioTotal?: number;
+  filers?: import("@/types/database").Tables<"ir_filers">[];
+  regime?: import("@/types/database").MarriageRegime;
 }) {
   if (investments.length === 0) return null;
 
@@ -206,6 +210,8 @@ export function FixedIncomeTable({
                       (live?.baseBalance ?? Number(inv.current_balance)) -
                       Number(inv.initial_amount)
                     }
+                    filers={filers}
+                    regime={regime}
                   />
                 </div>
               </div>
@@ -331,6 +337,8 @@ export function FixedIncomeTable({
                         (live?.baseBalance ?? Number(inv.current_balance)) -
                         Number(inv.initial_amount)
                       }
+                      filers={filers}
+                      regime={regime}
                     />
                   </td>
                 </tr>

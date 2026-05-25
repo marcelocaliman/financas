@@ -18,6 +18,12 @@ export type TransactionFilters = {
   search?: string;
   page?: number;
   pageSize?: number;
+  /** Quando true, inclui transações is_historical_ir_only. Default: false. */
+  showHistorical?: boolean;
+  /** Quando true, mostra os 2 lados de cada transfer (out + in). Default false:
+   *  mostra só a saída pra evitar percepção de "duplicata". Quando filtra por
+   *  conta específica, ignora este flag — sempre mostra o que entra/sai da conta. */
+  showTransferPairs?: boolean;
 };
 
 const DEFAULT_PAGE_SIZE = 40;
@@ -68,6 +74,15 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
   if (filters.search) q = q.ilike("description", `%${filters.search}%`);
   if (filters.tag) q = q.contains("tags", [filters.tag.toLowerCase()]);
+  // Default: esconde transações históricas IR (lançamentos retroativos que
+  // só servem pra declaração). Toggle "Históricas: ON" inclui elas.
+  if (!filters.showHistorical) q = q.eq("is_historical_ir_only", false);
+  // Default: pra transfers, mostra só a SAÍDA (out). A entrada (in) é o par
+  // espelho — somar as 2 visualmente confunde o usuário. Quando filtra por
+  // conta específica, ignora (precisa ver entrada/saída da conta).
+  if (!filters.showTransferPairs && !filters.accountId) {
+    q = q.or("kind.neq.transfer,transfer_direction.eq.out");
+  }
 
   q = q.range(page * pageSize, (page + 1) * pageSize - 1);
 
@@ -96,12 +111,16 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
   const { from, to, label } = monthRange(monthStr);
 
   // Receitas e despesas excluem transferências (que apenas movem dinheiro entre contas)
+  // Filtro is_historical_ir_only=false: ignora transações marcadas como
+  // "informativas pra IR" (já passaram, saldo já reflete) — não devem entrar
+  // em sobra/totais operacionais.
   const [{ data, error }, displayCurrency, rates] = await Promise.all([
     supabase
       .from("transactions")
       .select("kind, amount_account, currency, account:accounts(currency)")
       .gte("date", from)
       .lte("date", to)
+      .eq("is_historical_ir_only", false)
       .in("kind", ["income", "expense"]),
     getDisplayCurrency(),
     getRateMap(),
@@ -123,7 +142,8 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
     .from("transactions")
     .select("*", { count: "exact", head: true })
     .gte("date", from)
-    .lte("date", to);
+    .lte("date", to)
+    .eq("is_historical_ir_only", false);
 
   return {
     income: Math.round(income * 100) / 100,
@@ -200,6 +220,7 @@ export async function getMonthlyHistory(
       .select("kind, amount_account, currency, date, account:accounts(currency)")
       .gte("date", startISO)
       .lte("date", endISO)
+      .eq("is_historical_ir_only", false)
       .in("kind", ["income", "expense"]),
     getDisplayCurrency(),
     getRateMap(),
@@ -319,6 +340,7 @@ export async function getCategorySpendHistory(
       .select("amount_account, currency, date, category_id, account:accounts(currency)")
       .gte("date", startISO)
       .lte("date", endISO)
+      .eq("is_historical_ir_only", false)
       .eq("kind", "expense"),
     getDisplayCurrency(),
     getRateMap(),
@@ -398,12 +420,14 @@ export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
         .select("amount_account, currency, category_id, category:categories(id,name), account:accounts(currency)")
         .gte("date", startCurrent)
         .lte("date", endCurrent)
+        .eq("is_historical_ir_only", false)
         .eq("kind", "expense"),
       supabase
         .from("transactions")
         .select("amount_account, currency, category_id, date, account:accounts(currency)")
         .gte("date", startPrior)
         .lte("date", endPrior)
+        .eq("is_historical_ir_only", false)
         .eq("kind", "expense"),
       getDisplayCurrency(),
       getRateMap(),
@@ -481,6 +505,7 @@ export async function getCategoryBreakdown(
       )
       .gte("date", from)
       .lte("date", to)
+      .eq("is_historical_ir_only", false)
       .eq("kind", kind),
     getDisplayCurrency(),
     getRateMap(),

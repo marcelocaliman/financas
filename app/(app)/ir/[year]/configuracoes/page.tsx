@@ -11,7 +11,11 @@ import { OtherIncomesManager } from "@/components/ir/other-incomes-manager";
 import { AccountantSection } from "@/components/ir/accountant-section";
 import { FontesPagadorasManager } from "@/components/ir/fontes-pagadoras-manager";
 import { AutoDeductiblesImport } from "@/components/ir/auto-deductibles-import";
+import { FilersManager } from "@/components/ir/filers-manager";
+import { RegimeForm } from "@/components/ir/regime-form";
+import { PriorYearBalancesManager } from "@/components/ir/prior-year-balances-manager";
 import { findDeductibleCandidates } from "@/services/ir/auto-deductibles";
+import { listFilers } from "@/services/ir/filers";
 
 export const dynamic = "force-dynamic";
 
@@ -73,7 +77,24 @@ export default async function IRConfigPage({
       .order("name"),
   ]);
 
-  const candidates = await findDeductibleCandidates(year, ctx.household.id);
+  const [
+    candidates,
+    filers,
+    { data: accountsForBalance },
+    { data: investmentsForBalance },
+    { data: physicalForBalance },
+    { data: priorBalances },
+  ] = await Promise.all([
+    findDeductibleCandidates(year, ctx.household.id),
+    listFilers(ctx.household.id),
+    supabase.from("accounts").select("id, name, institution").eq("is_active", true).order("name"),
+    supabase.from("investments").select("id, ticker, name").eq("is_active", true).order("ticker"),
+    supabase.from("physical_assets").select("id, name").eq("is_active", true).order("name"),
+    supabase
+      .from("ir_prior_year_balances")
+      .select("*")
+      .eq("year", year - 1),
+  ]);
 
   return (
     <>
@@ -82,7 +103,7 @@ export default async function IRConfigPage({
         className="inline-flex items-center gap-1 text-[12.5px] text-navy-700 dark:text-navy-300 mb-3"
       >
         <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
-        Voltar para IRPF/{year + 1}
+        Voltar para Declaração {year} (IRPF/{year + 1})
       </Link>
 
       <PageHeader
@@ -102,6 +123,26 @@ export default async function IRConfigPage({
 
       <Panel className="mb-5">
         <PanelHeader
+          title="Declarantes do household"
+          meta={
+            filers.length >= 2
+              ? "Casal — bens podem ser declarados separados ou conjuntos"
+              : "Adicione cônjuge pra preparar 2 declarações"
+          }
+        />
+        <FilersManager filers={filers} />
+      </Panel>
+
+      <Panel className="mb-5">
+        <PanelHeader
+          title="Regime de bens e estratégia"
+          meta="Define como dividir contas, investimentos e imóveis na declaração"
+        />
+        <RegimeForm settings={settings ?? null} />
+      </Panel>
+
+      <Panel className="mb-5">
+        <PanelHeader
           title="Fontes pagadoras"
           meta="Empresas/pessoas que te pagam — usado pra classificar rendimentos corretamente no IR"
         />
@@ -113,7 +154,7 @@ export default async function IRConfigPage({
           title="Dependentes"
           meta={`${(dependents ?? []).length} cadastrado${(dependents ?? []).length === 1 ? "" : "s"}`}
         />
-        <DependentsManager dependents={dependents ?? []} />
+        <DependentsManager dependents={dependents ?? []} filers={filers} />
       </Panel>
 
       <div className="mb-5">
@@ -125,7 +166,7 @@ export default async function IRConfigPage({
           title={`Pagamentos dedutíveis · ${year}`}
           meta="Saúde, educação, INSS, PGBL, pensão, doações"
         />
-        <DeductiblesManager year={year} payments={pays ?? []} />
+        <DeductiblesManager year={year} payments={pays ?? []} filers={filers} />
       </Panel>
 
       <Panel className="mb-5">
@@ -133,7 +174,21 @@ export default async function IRConfigPage({
           title={`Outras rendas · ${year}`}
           meta="Coisas que NÃO estão no app (salário CLT externo, freelance, etc)"
         />
-        <OtherIncomesManager year={year} incomes={others ?? []} />
+        <OtherIncomesManager year={year} incomes={others ?? []} filers={filers} />
+      </Panel>
+
+      <Panel className="mb-5">
+        <PanelHeader
+          title={`Saldos em 31/12/${year - 1} — situação anterior da declaração de ${year}`}
+          meta="Bens e Direitos sempre compara saldo atual (31/12 do ano-base) com o do ano anterior. Pra quem começou a usar o app mid-year, preenche aqui os saldos passados."
+        />
+        <PriorYearBalancesManager
+          year={year}
+          accounts={accountsForBalance ?? []}
+          investments={investmentsForBalance ?? []}
+          physical={physicalForBalance ?? []}
+          existing={priorBalances ?? []}
+        />
       </Panel>
 
       <Panel className="mb-5">

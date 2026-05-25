@@ -78,12 +78,15 @@ export function IncomeVsExpenseChart({ data }: { data: Row[] }) {
               }
             />
             <Tooltip
+              cursor={{ fill: "var(--color-surface-muted)", opacity: 0.35 }}
               contentStyle={{
                 backgroundColor: "var(--color-surface)",
                 border: "1px solid var(--color-border)",
                 borderRadius: 8,
                 fontSize: 12,
               }}
+              itemStyle={{ color: "var(--color-foreground)" }}
+              labelStyle={{ color: "var(--color-muted-foreground)" }}
               labelFormatter={
                 ((label: string, payload: readonly { payload?: Row }[]) => {
                   const p = payload?.[0]?.payload;
@@ -115,16 +118,44 @@ export function IncomeVsExpenseChart({ data }: { data: Row[] }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="mt-3 pt-3 border-t border-border text-[11.5px] text-muted-foreground">
-        Sobra do último mês:{" "}
-        <span
-          className={
-            "font-mono tabular-nums " +
-            (lastNet >= 0 ? "text-olive-600" : "text-rust-600")
-          }
-        >
-          <MoneyMask>{formatMoneyCompact(lastNet)}</MoneyMask>
+      <div className="mt-3 pt-3 border-t border-border text-[11.5px] text-muted-foreground flex items-center justify-between flex-wrap gap-2">
+        <span>
+          Sobra do último mês:{" "}
+          <span
+            className={
+              "font-mono tabular-nums " +
+              (lastNet >= 0 ? "text-olive-600" : "text-rust-600")
+            }
+          >
+            <MoneyMask>{formatMoneyCompact(lastNet)}</MoneyMask>
+          </span>
         </span>
+        {data.length >= 2 ? (
+          (() => {
+            const prevNet = data[data.length - 2]?.net ?? 0;
+            const diff = lastNet - prevNet;
+            const pct = prevNet !== 0 ? (diff / Math.abs(prevNet)) * 100 : 0;
+            if (Math.abs(diff) < 0.01) return null;
+            const positive = diff > 0;
+            return (
+              <span className="font-mono text-[11px] tracking-[0.02em]">
+                <span className="text-faint-foreground">vs mês anterior:</span>{" "}
+                <span
+                  className={
+                    "tabular-nums " +
+                    (positive ? "text-olive-600" : "text-rust-600")
+                  }
+                >
+                  {positive ? "+" : ""}
+                  <MoneyMask>{formatMoneyCompact(diff)}</MoneyMask>
+                  {prevNet !== 0
+                    ? ` (${positive ? "+" : ""}${pct.toFixed(0)}%)`
+                    : ""}
+                </span>
+              </span>
+            );
+          })()
+        ) : null}
       </div>
     </Panel>
   );

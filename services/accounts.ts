@@ -100,6 +100,7 @@ export async function getAccountsTotalsAt(atDateISO: string): Promise<AccountsTo
     supabase
       .from("transactions")
       .select("account_id, kind, amount_account, transfer_direction, currency, account:accounts(currency)")
+      .eq("is_historical_ir_only", false)
       .gt("date", atDateISO),
     getDisplayCurrency(),
     getRateMap(),
@@ -258,6 +259,7 @@ export async function listAccountsForMonth(
   const { data: futureTxs } = await supabase
     .from("transactions")
     .select("account_id, kind, amount_account, transfer_direction")
+    .eq("is_historical_ir_only", false)
     .gt("date", monthEndISO);
 
   for (const t of (futureTxs ?? []) as Array<{

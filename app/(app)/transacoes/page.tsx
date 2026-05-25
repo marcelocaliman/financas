@@ -41,6 +41,8 @@ type Params = {
   q?: string;
   tag?: string;
   page?: string;
+  showHistorical?: string;
+  showTransferPairs?: string;
 };
 
 const KIND_TAB_LABEL: Record<string, string> = {
@@ -61,12 +63,29 @@ export default async function TransacoesPage({
   const tag = params.tag ?? "";
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
+  const showTransferPairs = params.showTransferPairs === "1";
 
   const { from: curFrom } = monthRange(month);
   // Mês anterior pra Δ
   const [yy, mm] = curFrom.slice(0, 7).split("-").map(Number);
   const prevYear = mm - 1 === 0 ? yy - 1 : yy;
   const prevKey = `${prevYear}-${String(mm - 1 || 12).padStart(2, "0")}`;
+
+  // Default "Históricas: ON" quando navega pra mês anterior ao corrente.
+  // Faz sentido: mês passado provavelmente só tem históricas (lançamentos
+  // retroativos pra IR). Pra mês corrente/futuro, mantém OFF.
+  const todayMonth = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+  }).format(new Date());
+  const isPastMonth = curFrom.slice(0, 7) < todayMonth;
+  const showHistorical =
+    params.showHistorical === "1"
+      ? true
+      : params.showHistorical === "0"
+        ? false
+        : isPastMonth; // default true se mês passado, false caso contrário
 
   const [{ rows, total }, summary, prevSummary, accounts, categories] = await Promise.all([
     listTransactions({
@@ -76,6 +95,8 @@ export default async function TransacoesPage({
       tag: tag || undefined,
       page,
       pageSize,
+      showHistorical,
+      showTransferPairs,
     }),
     getMonthlySummary(month),
     getMonthlySummary(prevKey),
@@ -169,6 +190,7 @@ export default async function TransacoesPage({
         monthStr={monthInputValue}
         monthLabel={monthLabel}
         isCurrentMonth={monthInputValue === currentMonthISO()}
+        historicalShownByDefault={isPastMonth}
         tabs={[
           { value: "all", label: "Todas", count: summary.transactionCount },
           { value: "income", label: "Receitas" },
@@ -187,7 +209,12 @@ export default async function TransacoesPage({
 
       <Panel className="!px-0 !py-2">
         {rows.length === 0 ? (
-          <EmptyResult monthLabel={monthLabel} hasQuery={!!q} />
+          <EmptyResult
+            monthLabel={monthLabel}
+            hasQuery={!!q}
+            isPastMonth={isPastMonth}
+            historicalShown={showHistorical}
+          />
         ) : (
           <>
             {/* Desktop: tabela */}
@@ -275,19 +302,32 @@ export default async function TransacoesPage({
 function EmptyResult({
   monthLabel,
   hasQuery,
+  isPastMonth = false,
+  historicalShown = false,
 }: {
   monthLabel: string;
   hasQuery: boolean;
+  isPastMonth?: boolean;
+  historicalShown?: boolean;
 }) {
   return (
     <div className="text-center py-16 px-6">
       <p className="font-display text-[20px] tracking-[-0.015em] text-foreground">
         {hasQuery ? "Nada bateu com essa busca." : `Nenhum movimento em ${monthLabel}.`}
       </p>
-      <p className="text-[13.5px] text-muted-foreground mt-2 max-w-[400px] mx-auto">
+      <p className="text-[13.5px] text-muted-foreground mt-2 max-w-[480px] mx-auto leading-relaxed">
         {hasQuery
           ? "Tenta limpar a busca ou mudar o mês."
-          : "Esse mês está em branco. Comece pelo botão Adicionar acima ou use ⌘K."}
+          : isPastMonth && !historicalShown
+            ? (
+              <>
+                Esse mês está em branco. Se você cadastrou recorrências de salário/despesa
+                com início em meses anteriores, ligue o toggle{" "}
+                <b className="text-foreground">&quot;Históricas: ON&quot;</b> acima pra ver os
+                lançamentos retroativos pra IR.
+              </>
+            )
+            : "Esse mês está em branco. Comece pelo botão Adicionar acima ou use ⌘K."}
       </p>
     </div>
   );

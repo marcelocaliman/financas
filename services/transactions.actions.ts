@@ -25,6 +25,8 @@ const baseSchema = z.object({
   fontePagadoraId: z.string().uuid().optional().nullable(),
   irrfAmount: z.coerce.number().nonnegative().optional().nullable(),
   inssAmount: z.coerce.number().nonnegative().optional().nullable(),
+  // Marca como "histórica pra IR" — não afeta saldo nem entra em dashboards
+  isHistoricalIrOnly: z.coerce.boolean().optional().default(false),
 });
 
 const expenseOrIncomeSchema = baseSchema.extend({
@@ -104,6 +106,7 @@ export async function createTransaction(
     fontePagadoraId: formData.get("fontePagadoraId") || null,
     irrfAmount: formData.get("irrfAmount") || null,
     inssAmount: formData.get("inssAmount") || null,
+    isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -169,6 +172,7 @@ export async function createTransaction(
     fonte_pagadora_id: parsed.data.kind === "income" ? (parsed.data.fontePagadoraId ?? null) : null,
     irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
+    is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
   });
   if (error) return { error: error.message };
 
@@ -193,6 +197,7 @@ export async function updateTransaction(
     categoryId: formData.get("categoryId") || undefined,
     date: formData.get("date"),
     paymentMethod: formData.get("paymentMethod") || undefined,
+    isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -228,6 +233,7 @@ export async function updateTransaction(
       description: parsed.data.description.trim(),
       payment_method: parsed.data.paymentMethod ?? null,
       date: parsed.data.date,
+      is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

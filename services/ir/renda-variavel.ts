@@ -115,6 +115,7 @@ export function lastBusinessDayOfNextMonth(year: number, month: number): string 
 export async function getRendaVariavelReport(
   year: number,
   householdId?: string,
+  filerId?: string,
 ): Promise<RendaVariavelReport> {
   const supabase = await createClient();
 
@@ -122,17 +123,22 @@ export async function getRendaVariavelReport(
   const yearEnd = `${year}-12-31`;
   const rates = await getRateMapAt(yearEnd);
 
+  // Operações por filer = movements de investments cujo owner_filer_id === filerId.
+  // Limite 20k/mês de isenção e prejuízos são POR CPF — então filtrar é correto.
   const mvQuery = supabase
     .from("investment_movements")
-    .select("date, kind, quantity, unit_price, total_amount, fees, is_day_trade, investment:investments(id, ticker, asset_type, currency)")
+    .select("date, kind, quantity, unit_price, total_amount, fees, is_day_trade, investment:investments!inner(id, ticker, asset_type, currency, owner_filer_id)")
     .lte("date", yearEnd);
   const cfQuery = supabase
     .from("ir_loss_carryforward")
     .select("kind, balance, last_updated_year");
 
+  const scopedMv = filerId ? mvQuery.eq("investment.owner_filer_id", filerId) : mvQuery;
+  const scopedCf = filerId ? cfQuery.eq("filer_id", filerId) : cfQuery;
+
   const [{ data: movements }, { data: carryforwards }] = await Promise.all([
-    (householdId ? mvQuery.eq("household_id", householdId) : mvQuery).order("date", { ascending: true }),
-    householdId ? cfQuery.eq("household_id", householdId) : cfQuery,
+    (householdId ? scopedMv.eq("household_id", householdId) : scopedMv).order("date", { ascending: true }),
+    householdId ? scopedCf.eq("household_id", householdId) : scopedCf,
   ]);
 
   // Carryforward inicial (do FIM do ano anterior pro INÍCIO do ano corrente)

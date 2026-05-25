@@ -84,6 +84,8 @@ const dependentSchema = z.object({
     "pais", "avos", "irmaos", "menor_guarda", "outros",
   ]),
   notes: z.string().optional().nullable(),
+  // Em qual declaração (filer) esse dependente entra
+  belongs_to_filer_id: z.string().uuid().optional().nullable(),
 });
 
 export async function createDependent(
@@ -96,6 +98,7 @@ export async function createDependent(
     birth_date: formData.get("birth_date") || null,
     relationship: formData.get("relationship"),
     notes: formData.get("notes") || null,
+    belongs_to_filer_id: formData.get("ownerFilerId") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -110,6 +113,7 @@ export async function createDependent(
     birth_date: parsed.data.birth_date,
     relationship: parsed.data.relationship,
     notes: parsed.data.notes?.trim() || null,
+    belongs_to_filer_id: parsed.data.belongs_to_filer_id || null,
   });
   if (error) return { error: error.message };
   for (const p of paths()) revalidatePath(p);
@@ -138,6 +142,7 @@ const deductibleSchema = z.object({
   currency: z.enum(CURRENCIES).default("BRL"),
   payment_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   is_dependent_payment: z.coerce.boolean().optional().default(false),
+  owner_filer_id: z.string().uuid().optional().nullable(),
 });
 
 export async function createDeductiblePayment(
@@ -155,6 +160,7 @@ export async function createDeductiblePayment(
     currency: formData.get("currency") || "BRL",
     payment_date: formData.get("payment_date") || null,
     is_dependent_payment: formData.get("is_dependent_payment") === "true",
+    owner_filer_id: formData.get("ownerFilerId") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -174,7 +180,50 @@ export async function createDeductiblePayment(
     currency: parsed.data.currency,
     payment_date: parsed.data.payment_date,
     is_dependent_payment: parsed.data.is_dependent_payment,
+    owner_filer_id: parsed.data.owner_filer_id || null,
   });
+  if (error) return { error: error.message };
+  for (const p of paths(parsed.data.year)) revalidatePath(p);
+  return { ok: true };
+}
+
+export async function updateDeductiblePayment(
+  id: string,
+  _prev: IRFormState | undefined,
+  formData: FormData,
+): Promise<IRFormState> {
+  const parsed = deductibleSchema.safeParse({
+    year: formData.get("year"),
+    kind: formData.get("kind"),
+    description: formData.get("description"),
+    recipient_name: formData.get("recipient_name"),
+    recipient_cnpj_cpf: formData.get("recipient_cnpj_cpf") || null,
+    beneficiary: formData.get("beneficiary") || null,
+    amount: formData.get("amount"),
+    currency: formData.get("currency") || "BRL",
+    payment_date: formData.get("payment_date") || null,
+    is_dependent_payment: formData.get("is_dependent_payment") === "true",
+    owner_filer_id: formData.get("ownerFilerId") || null,
+  });
+  if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("ir_deductible_payments")
+    .update({
+      year: parsed.data.year,
+      kind: parsed.data.kind as IRDeductibleKind,
+      description: parsed.data.description.trim(),
+      recipient_name: parsed.data.recipient_name.trim(),
+      recipient_cnpj_cpf: parsed.data.recipient_cnpj_cpf?.replace(/\D/g, "") || null,
+      beneficiary: parsed.data.beneficiary?.trim() || null,
+      amount: parsed.data.amount,
+      currency: parsed.data.currency,
+      payment_date: parsed.data.payment_date,
+      is_dependent_payment: parsed.data.is_dependent_payment,
+      owner_filer_id: parsed.data.owner_filer_id || null,
+    })
+    .eq("id", id);
   if (error) return { error: error.message };
   for (const p of paths(parsed.data.year)) revalidatePath(p);
   return { ok: true };
@@ -204,6 +253,12 @@ const otherIncomeSchema = z.object({
   inss_amount: z.coerce.number().nonnegative().default(0),
   thirteenth_amount: z.coerce.number().nonnegative().default(0),
   currency: z.enum(CURRENCIES).default("BRL"),
+  owner_filer_id: z.string().uuid().optional().nullable(),
+  // RRA — Rendimentos Recebidos Acumuladamente
+  rra_taxable_method: z.enum(["mensal", "anual"]).optional().nullable(),
+  rra_competence_months: z.coerce.number().int().min(1).max(240).optional().nullable(),
+  rra_juros: z.coerce.number().nonnegative().optional().nullable(),
+  rra_honorarios: z.coerce.number().nonnegative().optional().nullable(),
 });
 
 export async function createOtherIncome(
@@ -221,6 +276,11 @@ export async function createOtherIncome(
     inss_amount: formData.get("inss_amount") ?? 0,
     thirteenth_amount: formData.get("thirteenth_amount") ?? 0,
     currency: formData.get("currency") || "BRL",
+    owner_filer_id: formData.get("ownerFilerId") || null,
+    rra_taxable_method: formData.get("rra_taxable_method") || null,
+    rra_competence_months: formData.get("rra_competence_months") || null,
+    rra_juros: formData.get("rra_juros") || null,
+    rra_honorarios: formData.get("rra_honorarios") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -240,6 +300,11 @@ export async function createOtherIncome(
     inss_amount: parsed.data.inss_amount,
     thirteenth_amount: parsed.data.thirteenth_amount,
     currency: parsed.data.currency,
+    owner_filer_id: parsed.data.owner_filer_id || null,
+    rra_taxable_method: parsed.data.rra_taxable_method ?? null,
+    rra_competence_months: parsed.data.rra_competence_months ?? null,
+    rra_juros: parsed.data.rra_juros ?? null,
+    rra_honorarios: parsed.data.rra_honorarios ?? null,
   });
   if (error) return { error: error.message };
   for (const p of paths(parsed.data.year)) revalidatePath(p);

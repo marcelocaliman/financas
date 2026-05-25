@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { HealthPlanScenarioHelper } from "@/components/ir/health-plan-scenario-helper";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ import type {
 type RecurrenceRule = Tables<"recurring_rules">;
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type FonteLite = Pick<Tables<"fontes_pagadoras">, "id" | "type" | "name" | "cnpj" | "cpf">;
 
 const KIND_OPTIONS: PillOption<TransactionKind>[] = [
   { value: "expense", label: "Despesa" },
@@ -70,6 +72,7 @@ export function RecurrenceSheet({
   rule,
   accounts,
   categories,
+  fontes = [],
   defaultIsSubscription = false,
 }: {
   open: boolean;
@@ -77,6 +80,7 @@ export function RecurrenceSheet({
   rule?: RecurrenceRule | null;
   accounts: AccountLite[];
   categories: CategoryLite[];
+  fontes?: FonteLite[];
   /** Quando true, pré-marca o toggle "É assinatura" + força kind=expense */
   defaultIsSubscription?: boolean;
 }) {
@@ -107,6 +111,9 @@ export function RecurrenceSheet({
   );
   const [startDate, setStartDate] = useState(rule?.start_date ?? todayISO());
   const [endDate, setEndDate] = useState(rule?.end_date ?? "");
+  const [fontePagadoraId, setFontePagadoraId] = useState<string>(rule?.fonte_pagadora_id ?? "");
+  const [irKind, setIrKind] = useState<string>(rule?.ir_deductible_kind ?? "");
+  const [isTaxDeductible, setIsTaxDeductible] = useState<boolean>(rule?.is_tax_deductible ?? false);
 
   const [state, action, pending] = useActionState<RecurrenceFormState | undefined, FormData>(
     isEdit ? updateRecurringRule : createRecurringRule,
@@ -130,6 +137,9 @@ export function RecurrenceSheet({
       setDayOfWeek(rule?.day_of_week != null ? String(rule.day_of_week) : "");
       setStartDate(rule?.start_date ?? todayISO());
       setEndDate(rule?.end_date ?? "");
+      setFontePagadoraId(rule?.fonte_pagadora_id ?? "");
+      setIrKind(rule?.ir_deductible_kind ?? "");
+      setIsTaxDeductible(rule?.is_tax_deductible ?? false);
     }
   }
 
@@ -433,6 +443,55 @@ export function RecurrenceSheet({
             </label>
           ) : null}
 
+          {/* Fonte pagadora + retenções — apenas pra receita */}
+          {kind === "income" ? (
+            <details className="text-[12.5px] text-muted-foreground" open={!!rule?.fonte_pagadora_id}>
+              <summary className="cursor-pointer font-medium hover:text-foreground">
+                Fonte pagadora (IRPF) <span className="text-faint-foreground">· salário, aluguel recebido…</span>
+              </summary>
+              <div className="pt-3 space-y-3 px-3 py-3 rounded-[8px] bg-surface-muted/50">
+                <Field label="Empresa / quem paga" htmlFor="fontePagadoraId" hint="Cadastre fontes em /ir/configuracoes pra reusar">
+                  {/* Radix Select não aceita value=""; usamos "none" como sentinel
+                      e enviamos string vazia pro form quando "none". */}
+                  <Select
+                    value={fontePagadoraId || "none"}
+                    onValueChange={(v) => setFontePagadoraId(v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger id="fontePagadoraId">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— sem fonte específica</SelectItem>
+                      {fontes.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                          {f.cnpj ? ` · ${f.cnpj}` : f.cpf ? ` · ${f.cpf}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="IRRF retido (por ocorrência)" htmlFor="irrfAmount" hint="Padrão; pode editar cada lançamento">
+                    <MoneyInput
+                      name="irrfAmount"
+                      id="irrfAmount"
+                      defaultValue={Number(rule?.irrf_amount ?? 0)}
+                    />
+                  </Field>
+                  <Field label="INSS retido" htmlFor="inssAmount">
+                    <MoneyInput
+                      name="inssAmount"
+                      id="inssAmount"
+                      defaultValue={Number(rule?.inss_amount ?? 0)}
+                    />
+                  </Field>
+                </div>
+              </div>
+            </details>
+          ) : null}
+
           {/* Dedução IR — apenas pra despesa */}
           {kind === "expense" ? (
             <div className="px-3 py-2.5 rounded-[8px] bg-surface-muted/50 space-y-2">
@@ -441,7 +500,8 @@ export function RecurrenceSheet({
                   type="checkbox"
                   name="isTaxDeductible"
                   value="1"
-                  defaultChecked={rule?.is_tax_deductible ?? false}
+                  checked={isTaxDeductible}
+                  onChange={(e) => setIsTaxDeductible(e.target.checked)}
                   className="mt-0.5 accent-navy-700"
                 />
                 <div>
@@ -455,7 +515,8 @@ export function RecurrenceSheet({
                 <select
                   id="irDeductibleKind"
                   name="irDeductibleKind"
-                  defaultValue={rule?.ir_deductible_kind ?? ""}
+                  value={irKind}
+                  onChange={(e) => setIrKind(e.target.value)}
                   className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px]"
                 >
                   <option value="">— escolher tipo</option>
@@ -472,11 +533,30 @@ export function RecurrenceSheet({
                   <option value="pgbl">PGBL</option>
                   <option value="previdencia_privada">Previdência privada</option>
                   <option value="pensao_alimenticia">Pensão alimentícia</option>
+                  <option value="honorarios_advocaticios_pensao">Honorários advocatícios (obter pensão)</option>
                   <option value="doacao_eca">Doação ECA</option>
                   <option value="doacao_cultural">Doação cultural</option>
                   <option value="outros">Outros dedutíveis</option>
                 </select>
               </Field>
+
+              {isTaxDeductible ? (
+                <Field
+                  label="Valor dedutível (se diferente do total)"
+                  htmlFor="deductibleAmount"
+                  hint="Ex.: plano empresarial onde você paga R$ 1.869,37 mas só R$ 830,83 (parte titular) deduz. Deixe zero para deduzir o valor total."
+                >
+                  <MoneyInput
+                    name="deductibleAmount"
+                    id="deductibleAmount"
+                    defaultValue={Number(rule?.deductible_amount ?? 0)}
+                  />
+                </Field>
+              ) : null}
+
+              {irKind === "plano_saude" ? (
+                <HealthPlanScenarioHelper defaultOpen={!rule?.fonte_pagadora_id} />
+              ) : null}
             </div>
           ) : null}
 

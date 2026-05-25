@@ -26,6 +26,24 @@ const baseSchema = z.object({
   currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
   depreciationMethod: z.enum(["none", "linear"]).default("none"),
   depreciationYears: z.coerce.number().int().positive().optional(),
+  // IR — campos opcionais por categoria
+  registrationNumber: z.string().optional(),  // matrícula (imóvel) ou RENAVAM (veículo)
+  address: z.string().optional(),
+  // Imóveis
+  registryOffice: z.string().optional(),
+  iptuRegistration: z.string().optional(),
+  areaSqm: z.coerce.number().positive().optional(),
+  ownershipPercent: z.coerce.number().min(0).max(100).optional(),
+  // Veículos
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  manufactureYear: z.coerce.number().int().min(1900).max(2100).optional(),
+  licensePlate: z.string().optional(),
+  // Couple attribution
+  ownerFilerId: z.string().uuid().optional().nullable(),
+  isParticular: z.coerce.boolean().optional().default(false),
+  particularReason: z.enum(["pre_casamento", "heranca", "doacao", "sub_rogacao", "outros"]).optional().nullable(),
+  excludeFromIr: z.coerce.boolean().optional().default(false),
 });
 
 const updateSchema = baseSchema.extend({ id: z.string().uuid() });
@@ -49,11 +67,8 @@ function pathsToInvalidate() {
   return ["/patrimonio", "/dashboard"];
 }
 
-export async function createPhysicalAsset(
-  _prev: PhysicalAssetFormState | undefined,
-  formData: FormData,
-): Promise<PhysicalAssetFormState> {
-  const parsed = baseSchema.safeParse({
+function parseFromFormData(formData: FormData) {
+  return {
     name: formData.get("name"),
     category: formData.get("category"),
     description: formData.get("description") || undefined,
@@ -63,7 +78,91 @@ export async function createPhysicalAsset(
     currency: formData.get("currency") || "BRL",
     depreciationMethod: formData.get("depreciationMethod") || "none",
     depreciationYears: formData.get("depreciationYears") || undefined,
-  });
+    registrationNumber: formData.get("registrationNumber") || undefined,
+    address: formData.get("address") || undefined,
+    registryOffice: formData.get("registryOffice") || undefined,
+    iptuRegistration: formData.get("iptuRegistration") || undefined,
+    areaSqm: formData.get("areaSqm") || undefined,
+    ownershipPercent: formData.get("ownershipPercent") || undefined,
+    brand: formData.get("brand") || undefined,
+    model: formData.get("model") || undefined,
+    manufactureYear: formData.get("manufactureYear") || undefined,
+    licensePlate: formData.get("licensePlate") || undefined,
+    ownerFilerId: formData.get("ownerFilerId") || null,
+    isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
+    particularReason: formData.get("particularReason") || null,
+    excludeFromIr: formData.get("excludeFromIr") === "1" || formData.get("excludeFromIr") === "true",
+  };
+}
+
+/**
+ * Constrói o payload de IR a partir do form parseado.
+ * Só inclui campos relevantes pra categoria — evita "vazar" placa em um imóvel.
+ */
+function buildIRPayload(
+  d: z.infer<typeof baseSchema>,
+): Partial<{
+  registration_number: string | null;
+  address: string | null;
+  registry_office: string | null;
+  iptu_registration: string | null;
+  area_sqm: number | null;
+  ownership_percent: number | null;
+  brand: string | null;
+  model: string | null;
+  manufacture_year: number | null;
+  license_plate: string | null;
+}> {
+  if (d.category === "real_estate") {
+    return {
+      registration_number: d.registrationNumber?.trim() || null,
+      address: d.address?.trim() || null,
+      registry_office: d.registryOffice?.trim() || null,
+      iptu_registration: d.iptuRegistration?.trim() || null,
+      area_sqm: d.areaSqm ?? null,
+      ownership_percent: d.ownershipPercent ?? null,
+      // Limpa campos veículo (em caso de troca de categoria)
+      brand: null,
+      model: null,
+      manufacture_year: null,
+      license_plate: null,
+    };
+  }
+  if (d.category === "vehicle") {
+    return {
+      registration_number: d.registrationNumber?.trim() || null, // RENAVAM
+      brand: d.brand?.trim() || null,
+      model: d.model?.trim() || null,
+      manufacture_year: d.manufactureYear ?? null,
+      license_plate: d.licensePlate?.trim().toUpperCase() || null,
+      // Limpa campos imóvel
+      address: null,
+      registry_office: null,
+      iptu_registration: null,
+      area_sqm: null,
+      ownership_percent: null,
+    };
+  }
+  // Outras categorias não têm campos IR específicos
+  return {
+    registration_number: null,
+    address: null,
+    registry_office: null,
+    iptu_registration: null,
+    area_sqm: null,
+    ownership_percent: null,
+    brand: null,
+    model: null,
+    manufacture_year: null,
+    license_plate: null,
+  };
+}
+
+export async function createPhysicalAsset(
+  _prev: PhysicalAssetFormState | undefined,
+  formData: FormData,
+): Promise<PhysicalAssetFormState> {
+  const parsed = baseSchema.safeParse(parseFromFormData(formData));
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const ctx = await getCurrentUserContext();
@@ -81,6 +180,11 @@ export async function createPhysicalAsset(
     currency: parsed.data.currency,
     depreciation_method: parsed.data.depreciationMethod,
     depreciation_years: parsed.data.depreciationYears ?? null,
+    owner_filer_id: parsed.data.ownerFilerId || null,
+    is_particular: parsed.data.isParticular ?? false,
+    particular_reason: parsed.data.particularReason ?? null,
+    exclude_from_ir: parsed.data.excludeFromIr ?? false,
+    ...buildIRPayload(parsed.data),
   });
   if (error) return { error: error.message };
 
@@ -94,15 +198,7 @@ export async function updatePhysicalAsset(
 ): Promise<PhysicalAssetFormState> {
   const parsed = updateSchema.safeParse({
     id: formData.get("id"),
-    name: formData.get("name"),
-    category: formData.get("category"),
-    description: formData.get("description") || undefined,
-    acquiredAt: formData.get("acquiredAt") || undefined,
-    acquiredValue: formData.get("acquiredValue") ?? 0,
-    currentValue: formData.get("currentValue"),
-    currency: formData.get("currency") || "BRL",
-    depreciationMethod: formData.get("depreciationMethod") || "none",
-    depreciationYears: formData.get("depreciationYears") || undefined,
+    ...parseFromFormData(formData),
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -119,6 +215,10 @@ export async function updatePhysicalAsset(
       currency: parsed.data.currency,
       depreciation_method: parsed.data.depreciationMethod,
       depreciation_years: parsed.data.depreciationYears ?? null,
+      owner_filer_id: parsed.data.ownerFilerId || null,
+      is_particular: parsed.data.isParticular ?? false,
+      particular_reason: parsed.data.particularReason ?? null,
+      ...buildIRPayload(parsed.data),
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };

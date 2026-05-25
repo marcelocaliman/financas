@@ -16,6 +16,7 @@ import {
 } from "@/services/recurrences";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,18 @@ function aggregateMonthly(rules: RecurrenceRule[]): number {
 }
 
 export default async function RecorrentesPage() {
-  const [rules, accounts, categories] = await Promise.all([
+  const supabase = await createClient();
+  const [rules, accounts, categories, { data: fontes }] = await Promise.all([
     listRecurringRules({ includeInactive: true }),
     listAccounts(),
     listCategories(),
+    supabase
+      .from("fontes_pagadoras")
+      .select("id, type, name, cnpj, cpf")
+      .eq("is_active", true)
+      .order("name"),
   ]);
+  const fontesList = fontes ?? [];
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -103,7 +111,7 @@ export default async function RecorrentesPage() {
             />
             <MaterializeNowButton />
             <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
-            <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
+            <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} fontes={fontesList} />
           </div>
         }
       />
@@ -196,6 +204,7 @@ export default async function RecorrentesPage() {
                   nextOccurrences={computeNextOccurrences(r, today, 3)}
                   accounts={accountsLite}
                   categories={categoriesLite}
+                  fontes={fontesList}
                 />
               ))}
             </RecurrenceSection>
@@ -215,6 +224,7 @@ export default async function RecorrentesPage() {
                   nextOccurrences={computeNextOccurrences(r, today, 3)}
                   accounts={accountsLite}
                   categories={categoriesLite}
+                  fontes={fontesList}
                 />
               ))}
             </RecurrenceSection>
@@ -234,6 +244,7 @@ export default async function RecorrentesPage() {
                   nextOccurrences={computeNextOccurrences(r, today, 3)}
                   accounts={accountsLite}
                   categories={categoriesLite}
+                  fontes={fontesList}
                 />
               ))}
             </RecurrenceSection>
@@ -255,6 +266,7 @@ export default async function RecorrentesPage() {
                     nextOccurrences={[]}
                     accounts={accountsLite}
                     categories={categoriesLite}
+                    fontes={fontesList}
                   />
                 ))}
               </RecurrenceSection>

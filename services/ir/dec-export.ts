@@ -4,21 +4,30 @@ import { getRendimentosReport, type RendimentosReport } from "@/services/ir/rend
 import { getRendaVariavelReport } from "@/services/ir/renda-variavel";
 
 /**
- * Gerador de arquivo .DEC pra importação parcial no Programa IRPF.
+ * ⚠️  AVISO IMPORTANTE — leia antes de usar
  *
- * O formato .DEC é texto pipe-delimitado proprietário da Receita. Cada
- * leiaute anual tem pequenas variações. Esta implementação cobre o esqueleto
- * comum (registros R01, R20, R21, R30, R47, R51, R71) — funciona como base
- * pra revisar/ajustar antes de importar.
+ * O arquivo .DEC oficial do programa IRPF da Receita Federal é binário,
+ * proprietário e com checksum/versionamento que só o PGD (Programa Gerador
+ * da Declaração) consegue gerar/ler. Reproduzir esse formato externamente
+ * não é viável sem engenharia reversa profunda — e ainda assim quebraria
+ * a cada nova versão anual.
  *
- * IMPORTANTE: o usuário SEMPRE deve revisar no programa antes de transmitir.
- * Este arquivo é um atalho de digitação, não um substituto pro programa oficial.
+ * O que o app gera AQUI é um "Relatório técnico estruturado" inspirado nos
+ * layouts da DIRF/CIDE: pipe-delimited, R01/R27/R51/R71/R72/R73/R99. Útil
+ * pra contador conferir, mas NÃO importa diretamente no programa IRPF.
  *
- * O formato real do .DEC tem proteções e versionamento que mudam anualmente.
- * Pra produção, idealmente integrar com uma lib mantida (ex.: open-source
- * adaptada do programa IRPF). Por ora, geramos um TXT plano legível +
- * estruturado nos padrões da Receita pra copiar/colar manualmente quando
- * a importação .DEC falhar.
+ * Caminhos práticos de uso:
+ *   1) O `humanReadable` (TXT formatado) — usuário copia seção por seção
+ *      no programa IRPF. É a forma confiável que SEMPRE funciona.
+ *   2) Importação de Bens via CSV no formato XP/Itaú — o programa IRPF
+ *      aceita CSV/TXT padrão B3 pra alguns campos (TODO: implementar).
+ *   3) Esperar o PGD do ano (jan/fev) e digitar manualmente os ~10
+ *      registros principais (atalho com o TXT acima).
+ *
+ * Pra produção de verdade, considerar:
+ *   - Lib `irpf-parser` (não-oficial, comunidade)
+ *   - API do contador (entrega XML padrão ECF, depois ele gera o DEC)
+ *   - Continuar com o TXT humano (escolha atual)
  */
 
 function pad(s: string | number, n: number, char = " ", side: "left" | "right" = "right"): string {
@@ -55,13 +64,15 @@ export async function generateDec(args: {
   cpf: string;
   nome: string;
   householdId?: string;
+  /** Quando presente, gera DEC do filer específico (declaração separada) */
+  filerId?: string;
   /** Marca d'água quando exportado por contador (LGPD evidence) */
   accountantWatermark?: { fullName: string; crc?: string; ip?: string };
 }): Promise<DecBundle> {
   const [bens, rendimentos, rv] = await Promise.all([
-    getBensReport(args.year, args.householdId),
-    getRendimentosReport(args.year, args.householdId),
-    getRendaVariavelReport(args.year, args.householdId),
+    getBensReport(args.year, args.householdId, args.filerId),
+    getRendimentosReport(args.year, args.householdId, args.filerId),
+    getRendaVariavelReport(args.year, args.householdId, args.filerId),
   ]);
 
   const lines: string[] = [];
@@ -237,6 +248,29 @@ function generateHumanReadable(
   lines.push(
     `Variação patrimonial: R$ ${bens.totals.delta.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
   );
+
+  // === DÍVIDAS E ÔNUS REAIS ===
+  if (bens.dividas.items.length > 0) {
+    lines.push("\n" + sep);
+    lines.push(`DÍVIDAS E ÔNUS REAIS — Saldo em 31/12 (R$)`);
+    lines.push(
+      `Obs: declaração obrigatória pra saldos > R$ 5.000. Total declarável: ${bens.dividas.declarableCount} de ${bens.dividas.items.length}.`,
+    );
+    lines.push(sep);
+    for (const d of bens.dividas.items) {
+      const isDeclarable = d.currentBalance > 5000;
+      lines.push(`\n• [${d.kindLabel}]${isDeclarable ? " ⚠️ DECLARAR" : " (opcional)"}`);
+      lines.push(`  Credor: ${d.creditorName}${d.creditorCnpjCpf ? ` (${d.creditorCnpjCpf})` : ""}`);
+      lines.push(`  Discriminação: ${d.description}`);
+      lines.push(
+        `  Saldo em 31/12: R$ ${d.currentBalance.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}` +
+          (d.ownershipPct < 100 ? ` (${d.ownershipPct}% do total)` : ""),
+      );
+    }
+    lines.push(
+      `\nTotal de dívidas: R$ ${bens.dividas.totalCurrent.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+    );
+  }
 
   // === RENDIMENTOS TRIBUTÁVEIS PJ ===
   lines.push("\n" + sep);

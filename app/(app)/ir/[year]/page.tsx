@@ -23,6 +23,14 @@ import { listCarneLeao } from "@/services/ir/carne-leao";
 import { getExteriorReport, getCryptoReport } from "@/services/ir/exterior-crypto";
 import { NotesPanel, type AccountantNoteWithAuthor } from "@/components/accountant/notes-panel";
 import { NotesRealtimeSync } from "@/components/accountant/notes-realtime";
+import { listFilers, getRegimeContext } from "@/services/ir/filers";
+import { compareDeclarationStrategies } from "@/services/ir/comparator";
+import { getChecklistReport } from "@/services/ir/checklist";
+import { detectRetroactiveGaps } from "@/services/ir/retroactive-gaps";
+import { FilerSwitcher } from "@/components/ir/filer-switcher";
+import { ComparatorBanner } from "@/components/ir/comparator-banner";
+import { ChecklistPanel } from "@/components/ir/checklist-panel";
+import { RetroactiveGapsBanner } from "@/components/ir/retroactive-gaps-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +40,13 @@ function fmtBRL(n: number): string {
 
 export default async function IRYearPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ year: string }>;
+  searchParams: Promise<{ filer?: string }>;
 }) {
   const { year: yearStr } = await params;
+  const { filer: filerParam } = await searchParams;
   const year = parseInt(yearStr, 10);
   if (Number.isNaN(year) || year < 2000 || year > 2100) {
     return <div>Ano inválido</div>;
@@ -43,6 +54,25 @@ export default async function IRYearPage({
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+
+  // Carrega filers + regime upfront
+  const [filers, regimeCtx] = await Promise.all([
+    listFilers(ctx.household.id),
+    getRegimeContext(ctx.household.id),
+  ]);
+  // Valida que o filer pedido pertence ao household; senão cai pra conjunta
+  const selectedFiler = filerParam
+    ? filers.find((f) => f.id === filerParam)
+    : null;
+  const filerId = selectedFiler?.id;
+  const isCouple = filers.length >= 2;
+
+  // Comparator só faz sentido pra casal e na "visão geral" (sem filer fixado)
+  const [comparator, checklist, retroactiveGaps] = await Promise.all([
+    isCouple && !filerId ? compareDeclarationStrategies(year, ctx.household.id) : Promise.resolve(null),
+    getChecklistReport(year, ctx.household.id),
+    detectRetroactiveGaps(year),
+  ]);
 
   const supabase = await createClient();
   const [
@@ -59,10 +89,10 @@ export default async function IRYearPage({
     { data: pays },
     { data: notes },
   ] = await Promise.all([
-      getBensReport(year),
-      getRendimentosReport(year),
-      getRendaVariavelReport(year),
-      computeImposto(year),
+      getBensReport(year, ctx.household.id, filerId),
+      getRendimentosReport(year, ctx.household.id, filerId),
+      getRendaVariavelReport(year, ctx.household.id, filerId),
+      computeImposto(year, ctx.household.id, filerId),
       getExteriorReport(year),
       getCryptoReport(year),
       listCarneLeao(year),
@@ -120,6 +150,14 @@ export default async function IRYearPage({
         actions={
           <>
             <Link
+              href={`/ir/${year}/auditoria`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[7px] border border-border-strong text-[13px] hover:bg-surface-muted"
+              title="Compare valores do app com informes oficiais antes de exportar"
+            >
+              <Settings className="w-3.5 h-3.5" strokeWidth={1.7} />
+              Auditoria
+            </Link>
+            <Link
               href={`/ir/${year}/configuracoes`}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-[7px] border border-border-strong text-[13px] hover:bg-surface-muted"
             >
@@ -136,6 +174,28 @@ export default async function IRYearPage({
       />
 
       <NotesRealtimeSync />
+
+      {/* Switcher de declarante (só aparece pra casal) */}
+      {isCouple ? (
+        <div className="mb-5">
+          <FilerSwitcher year={year} filers={filers} selectedId={filerId ?? null} />
+        </div>
+      ) : null}
+
+      {/* Banner do comparador conjunta vs separada */}
+      {comparator?.separate && comparator.recommendation === "separate" ? (
+        <ComparatorBanner
+          year={year}
+          comparator={comparator}
+          regime={regimeCtx.regime}
+        />
+      ) : null}
+
+      {/* Banner de lacunas retroativas — só aparece se há recorrência com meses faltando */}
+      <RetroactiveGapsBanner gaps={retroactiveGaps} />
+
+      {/* Checklist pré-exportação */}
+      <ChecklistPanel report={checklist} />
 
       {/* Anotações do contador (se houver) */}
       {ctx && notes && notes.length > 0 ? (

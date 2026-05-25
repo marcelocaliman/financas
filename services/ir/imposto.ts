@@ -52,6 +52,9 @@ export type ImpostoResult = {
     pgblLimitApplied: number;
     pensaoAlimenticia: number;
     outros: number;
+    donations: number;          // ECA + Lei Rouanet bruto
+    donationsLimit: number;     // 6% do imposto devido
+    donationsApplied: number;   // min(donations, donationsLimit)
     totalDeducoes: number;
     base: number;
     grossTax: number;
@@ -82,6 +85,7 @@ export function calcProgressiveTax(base: number): number {
 export async function computeImposto(
   year: number,
   householdId?: string,
+  filerId?: string,
 ): Promise<ImpostoResult> {
   const supabase = await createClient();
   const rates = await getRateMapAt(`${year}-12-31`);
@@ -89,10 +93,14 @@ export async function computeImposto(
   const depsQuery = supabase.from("ir_dependents").select("id").eq("is_active", true);
   const paysQuery = supabase.from("ir_deductible_payments").select("*").eq("year", year);
 
+  // Quando declaração separada: deps + pagamentos atribuídos ao filer
+  const scopedDeps = filerId ? depsQuery.eq("belongs_to_filer_id", filerId) : depsQuery;
+  const scopedPays = filerId ? paysQuery.eq("owner_filer_id", filerId) : paysQuery;
+
   const [rendimentos, { data: deps }, { data: pagamentos }] = await Promise.all([
-    getRendimentosReport(year, householdId),
-    householdId ? depsQuery.eq("household_id", householdId) : depsQuery,
-    householdId ? paysQuery.eq("household_id", householdId) : paysQuery,
+    getRendimentosReport(year, householdId, filerId),
+    householdId ? scopedDeps.eq("household_id", householdId) : scopedDeps,
+    householdId ? scopedPays.eq("household_id", householdId) : scopedPays,
   ]);
 
   const baseTributavelBruta = rendimentos.tributaveis.total;
@@ -106,6 +114,7 @@ export async function computeImposto(
   let pgblPrev = 0;
   let pensao = 0;
   let outros = 0;
+  let donations = 0; // ECA + Lei Rouanet — limite 6% do imposto devido
   let inssFromPay = 0;
   let eduPeople = 0; // pra aplicar limite por pessoa
 
@@ -130,11 +139,19 @@ export async function computeImposto(
         pgblPrev += amt;
         break;
       case "pensao_alimenticia":
+      case "honorarios_advocaticios_pensao":
+        // Honorários pra obter pensão são dedutíveis junto com pensão paga
+        // (IN RFB 1.500/14 art. 18)
         pensao += amt;
         break;
       case "inss_titular":
       case "inss_domestico":
         inssFromPay += amt;
+        break;
+      case "doacao_eca":
+      case "doacao_cultural":
+        // Doações são abatidas do IMPOSTO devido, não da renda. Limite 6% (Lei 9.250/95 art. 22).
+        donations += amt;
         break;
       default:
         outros += amt;
@@ -161,7 +178,11 @@ export async function computeImposto(
     outros;
 
   const baseCompleto = Math.max(0, baseTributavelBruta - totalDeducoes);
-  const grossTaxCompleto = calcProgressiveTax(baseCompleto);
+  const grossTaxCompletoBefore = calcProgressiveTax(baseCompleto);
+  // Doações: até 6% do imposto devido (calculado ANTES da doação)
+  const donationLimit = grossTaxCompletoBefore * 0.06;
+  const donationsApplied = Math.min(donations, donationLimit);
+  const grossTaxCompleto = Math.max(0, grossTaxCompletoBefore - donationsApplied);
 
   // ============================================================
   // Modelo SIMPLES — 20% até o limite, sem deduções
@@ -195,6 +216,9 @@ export async function computeImposto(
       pgblLimitApplied: round2(pgblLimitApplied),
       pensaoAlimenticia: round2(pensao),
       outros: round2(outros),
+      donations: round2(donations),
+      donationsLimit: round2(donationLimit),
+      donationsApplied: round2(donationsApplied),
       totalDeducoes: round2(totalDeducoes),
       base: round2(baseCompleto),
       grossTax: round2(grossTaxCompleto),
