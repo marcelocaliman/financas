@@ -15,7 +15,6 @@ import {
   type CompositionBucket,
 } from "@/components/dashboard/patrimonio-composition";
 import { MonthSwitcher } from "@/components/ui/month-switcher";
-import { MaterializeUntilMonthButton } from "@/components/dashboard/materialize-until-month-button";
 import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-ticker";
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals, getAccountsTotalsAt, listAccounts } from "@/services/accounts";
@@ -285,9 +284,6 @@ export default async function DashboardPage({
               isCurrent={isCurrent}
               label={monthLabel.split(" ")[0]}
             />
-            {position === "future" ? (
-              <MaterializeUntilMonthButton monthLabel={monthLabel} untilDate={to} />
-            ) : null}
             {isCurrent ? <CreditCardBillShortcut accounts={accountsLite} /> : null}
             <QuickAddTrigger />
           </>
