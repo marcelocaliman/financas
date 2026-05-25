@@ -91,10 +91,11 @@ export async function sendPasswordReset(
   const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  // Supabase só retorna erro pra rate limit / config. Não revela se email existe.
-  // redirectTo passa pelo /callback (troca code→session) e cai em /nova-senha.
+  // Recovery flow: Supabase /auth/v1/verify processa o token DIRETO (cria session
+  // sem precisar de /callback) e redireciona pro redirectTo. Aponto direto pra
+  // /nova-senha (sem ?next= que o Supabase recorta no &).
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${appUrl}/callback?next=/nova-senha`,
+    redirectTo: `${appUrl}/nova-senha`,
   });
 
   return { ok: true };
