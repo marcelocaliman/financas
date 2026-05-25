@@ -392,6 +392,122 @@ export function tmplDarfDue(args: {
   };
 }
 
+// ============================================================================
+// AUTH templates — usados pelo Send Email Hook do Supabase
+// (POST /api/auth/email-hook intercepta os emails de auth e envia via Resend
+// com estes templates, no mesmo padrão visual dos outros emails do app)
+// ============================================================================
+
+export function tmplAuthRecovery(args: { url: string }): { subject: string; body: string } {
+  return {
+    subject: "Recuperar acesso · Finanças",
+    body: wrapEmail({
+      preheader: "Crie uma nova senha pra sua conta. Link válido por 1h.",
+      eyebrow: "Recuperar acesso",
+      content:
+        heading("Esqueceu a senha?") +
+        lead(
+          "Você pediu pra recuperar o acesso da sua conta. Clique abaixo pra criar uma nova senha.",
+        ) +
+        button("Criar nova senha", args.url) +
+        notice(
+          "O link expira em <b>1 hora</b>. Se você não pediu este email, pode ignorar — sua senha continua a mesma.",
+          "info",
+        ) +
+        paragraph(`Não consegue clicar? Cole no navegador:`) +
+        urlBox(args.url),
+      footerNote: "Se não foi você que pediu, ignore este email com segurança.",
+    }),
+  };
+}
+
+export function tmplAuthMagicLink(args: { url: string }): { subject: string; body: string } {
+  return {
+    subject: "Seu link de acesso · Finanças",
+    body: wrapEmail({
+      preheader: "Clique pra entrar no Finanças sem digitar senha.",
+      eyebrow: "Link de acesso",
+      content:
+        heading("Entre na sua conta") +
+        lead("Você pediu um link de acesso. Clique abaixo pra entrar — sem digitar senha.") +
+        button("Entrar no Finanças", args.url) +
+        notice(
+          "O link expira em <b>1 hora</b> e só funciona uma vez. Se não foi você, ignore este email.",
+          "info",
+        ) +
+        paragraph(`Não consegue clicar? Cole no navegador:`) +
+        urlBox(args.url),
+    }),
+  };
+}
+
+export function tmplAuthConfirmSignup(args: { url: string }): { subject: string; body: string } {
+  return {
+    subject: "Confirme seu email · Finanças",
+    body: wrapEmail({
+      preheader: "Quase lá! Confirme seu email pra ativar sua conta.",
+      eyebrow: "Bem-vindo",
+      content:
+        heading("Confirme seu email") +
+        lead("Quase lá! Clique abaixo pra ativar sua conta e começar a usar.") +
+        button("Ativar minha conta", args.url) +
+        paragraph(`Não consegue clicar? Cole no navegador:`) +
+        urlBox(args.url),
+    }),
+  };
+}
+
+export function tmplAuthEmailChange(args: { url: string; newEmail?: string }): {
+  subject: string;
+  body: string;
+} {
+  return {
+    subject: "Confirme seu novo email · Finanças",
+    body: wrapEmail({
+      preheader: "Confirme a mudança de email da sua conta.",
+      eyebrow: "Mudança de email",
+      content:
+        heading("Confirme seu novo email") +
+        lead(
+          args.newEmail
+            ? `Você pediu pra trocar o email da sua conta para ${args.newEmail}. Clique abaixo pra confirmar.`
+            : "Você pediu pra trocar o email da sua conta. Clique abaixo pra confirmar.",
+        ) +
+        button("Confirmar novo email", args.url) +
+        notice(
+          "Se você não fez essa solicitação, ignore — seu email atual continua ativo.",
+          "warning",
+        ) +
+        paragraph(`Não consegue clicar? Cole no navegador:`) +
+        urlBox(args.url),
+    }),
+  };
+}
+
+export function tmplAuthReauthentication(args: { token: string }): {
+  subject: string;
+  body: string;
+} {
+  return {
+    subject: "Código de verificação · Finanças",
+    body: wrapEmail({
+      preheader: `Seu código: ${args.token}`,
+      eyebrow: "Verificação",
+      content:
+        heading("Código de verificação") +
+        lead(
+          "Use o código abaixo pra confirmar uma ação sensível na sua conta (mudança de email/senha).",
+        ) +
+        kpiBox({
+          label: "Código",
+          value: args.token,
+          hint: "Expira em 5 minutos",
+        }) +
+        notice("Se não foi você, ignore este email e troque sua senha por garantia.", "warning"),
+    }),
+  };
+}
+
 export function tmplCronStale(args: {
   staleChecks: Array<{
     name: string;
