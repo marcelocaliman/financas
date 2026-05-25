@@ -91,11 +91,11 @@ export async function sendPasswordReset(
   const supabase = await createClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  // Recovery flow: Supabase /auth/v1/verify processa o token DIRETO (cria session
-  // sem precisar de /callback) e redireciona pro redirectTo. Aponto direto pra
-  // /nova-senha (sem ?next= que o Supabase recorta no &).
+  // PKCE flow: Supabase /auth/v1/verify gera code e redireciona pro redirect_to
+  // com &code=xxx. /callback exchangea code→session (cookies) e redireciona pra
+  // /nova-senha, que vê sessão via cookies e mostra form.
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${appUrl}/nova-senha`,
+    redirectTo: `${appUrl}/callback?next=/nova-senha`,
   });
 
   return { ok: true };

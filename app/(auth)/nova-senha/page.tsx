@@ -1,24 +1,26 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { NovaSenhaClient } from "./client";
+import { createClient } from "@/lib/supabase/server";
+import { NovaSenhaForm } from "./form";
 
 export const metadata: Metadata = {
   title: "Definir nova senha",
 };
 
 /**
- * Página acessada via link do email de recuperação. O Supabase usa flow
- * IMPLICIT (não PKCE), então a URL chega com `#access_token=...&type=recovery`
- * no hash fragment. Processamento precisa ser client-side — Server Component
- * não enxerga fragment (só o browser).
- *
- * NovaSenhaClient:
- *   1. Lê hash da URL
- *   2. Chama supabase.auth.setSession() com os tokens
- *   3. Mostra form pra nova senha
- *   4. Se hash vazio/inválido → redireciona pra /recuperar-senha?expired=1
+ * Página acessada via link do email de recuperação. O /callback já
+ * exchangeou code→session (PKCE flow) — chegamos aqui com usuário
+ * autenticado via cookies. Se não há sessão, link expirou.
  */
-export default function NovaSenhaPage() {
+export default async function NovaSenhaPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+
+  if (!data.user) {
+    redirect("/recuperar-senha?expired=1");
+  }
+
   return (
     <div className="w-full">
       <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-faint-foreground mb-3 font-medium">
@@ -35,16 +37,16 @@ export default function NovaSenhaPage() {
       </p>
 
       <div className="mt-10">
-        <NovaSenhaClient />
+        <NovaSenhaForm />
       </div>
 
       <p className="mt-8 text-[13px] text-muted-foreground">
         Mudou de ideia?{" "}
         <Link
-          href="/login"
+          href="/dashboard"
           className="text-foreground font-medium hover:text-navy-700 dark:text-navy-300 transition-colors"
         >
-          ← Voltar pro login
+          Ir pro dashboard sem alterar
         </Link>
       </p>
     </div>
