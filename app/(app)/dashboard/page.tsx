@@ -102,7 +102,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
-    listTransactions({ month: monthParam, pageSize: 6 }),
+    listTransactions({ month: monthParam, pageSize: 30 }),
     isCurrent ? getAccountsTotals() : getAccountsTotalsAt(to),
     isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
     getPortfolioStats(),
@@ -404,12 +404,11 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      {/* TIER 4 — Últimos movimentos (lista enxuta) */}
+      {/* TIER 4 — Últimos movimentos (10 por página + busca client-side) */}
       <LatestTransactionsPanel
         rows={latest.rows}
         forecastRows={isForecastMode ? forecast.occurrences : []}
         isForecast={isForecastMode && latest.rows.length === 0}
-        limit={4}
       />
     </>
   );
