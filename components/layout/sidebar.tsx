@@ -51,6 +51,7 @@ const mainNavItems: NavItem[] = [
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
   { label: "Assinaturas", href: "/assinaturas", icon: RefreshCw, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
+  { label: "Orçamento", href: "/orcamento", icon: Target, group: "principal" },
   { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },
   { label: "IRPF", href: "/ir", icon: Landmark, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },

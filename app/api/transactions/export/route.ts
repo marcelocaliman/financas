@@ -20,25 +20,45 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const monthStr = searchParams.get("month") ?? undefined;
+  const yearStr = searchParams.get("year") ?? undefined;
+  const fromCustom = searchParams.get("from") ?? undefined;
+  const toCustom = searchParams.get("to") ?? undefined;
   const kind = (searchParams.get("kind") ?? "all") as TransactionKind | "all";
   const q = searchParams.get("q") ?? "";
+  const categoryId = searchParams.get("categoryId") ?? "";
+  const accountId = searchParams.get("accountId") ?? "";
 
-  // monthRange duplicado pra não importar do services/transactions (que é "server-only")
-  const now = new Date();
-  let y: number, m: number;
-  if (monthStr) {
-    [y, m] = monthStr.split("-").map((x) => parseInt(x, 10));
+  // Resolve período: prioriza from/to custom, depois ano inteiro, depois mês
+  let from: string;
+  let to: string;
+  let filename: string;
+  if (fromCustom && toCustom) {
+    from = fromCustom;
+    to = toCustom;
+    filename = `transacoes-${from}-a-${to}.csv`;
+  } else if (yearStr) {
+    const y = parseInt(yearStr, 10);
+    from = `${y}-01-01`;
+    to = `${y}-12-31`;
+    filename = `transacoes-${y}.csv`;
   } else {
-    const fmt = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Sao_Paulo",
-      year: "numeric",
-      month: "2-digit",
-    }).format(now);
-    [y, m] = fmt.split("-").map((x) => parseInt(x, 10));
+    const now = new Date();
+    let y: number, m: number;
+    if (monthStr) {
+      [y, m] = monthStr.split("-").map((x) => parseInt(x, 10));
+    } else {
+      const fmt = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric",
+        month: "2-digit",
+      }).format(now);
+      [y, m] = fmt.split("-").map((x) => parseInt(x, 10));
+    }
+    from = `${y}-${String(m).padStart(2, "0")}-01`;
+    const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    filename = `transacoes-${y}-${String(m).padStart(2, "0")}.csv`;
   }
-  const from = `${y}-${String(m).padStart(2, "0")}-01`;
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
   let query = supabase
     .from("transactions")
@@ -52,6 +72,8 @@ export async function GET(req: NextRequest) {
 
   if (kind !== "all") query = query.eq("kind", kind);
   if (q) query = query.ilike("description", `%${q}%`);
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (accountId) query = query.eq("account_id", accountId);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -97,7 +119,6 @@ export async function GET(req: NextRequest) {
   ];
   const csv = buildCsv(headers, rows);
 
-  const filename = `transacoes-${y}-${String(m).padStart(2, "0")}.csv`;
   return new NextResponse(csv, {
     status: 200,
     headers: {

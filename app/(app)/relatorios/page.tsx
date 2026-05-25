@@ -4,9 +4,12 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Badge } from "@/components/ui/badge";
 import { getAnnualReport } from "@/services/annual-report";
+import { listCategories } from "@/services/categories";
+import { listAccounts } from "@/services/accounts";
 import { formatMoney, formatPercent, formatDateShort } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { YearSwitcher } from "./year-switcher";
+import { CustomExportBuilder } from "@/components/relatorios/custom-export";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +22,11 @@ export default async function RelatoriosPage({
 }) {
   const { year: yearStr } = await searchParams;
   const year = yearStr ? parseInt(yearStr, 10) : new Date().getUTCFullYear() - 1;
-  const report = await getAnnualReport(year);
+  const [report, categories, accounts] = await Promise.all([
+    getAnnualReport(year),
+    listCategories(),
+    listAccounts(),
+  ]);
 
   return (
     <>
@@ -379,13 +386,24 @@ export default async function RelatoriosPage({
           </p>
         </div>
         <a
-          href="/api/transactions/export"
-          download={`financas-${report.year}.csv`}
+          href={`/api/transactions/export?year=${report.year}`}
           className="inline-flex items-center gap-1.5 mt-4 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 transition-colors"
         >
           <Download className="w-3.5 h-3.5" strokeWidth={1.8} />
-          Exportar transações em CSV
+          Exportar todas as transações de {report.year} em CSV
         </a>
+      </Panel>
+
+      <Panel>
+        <PanelHeader
+          title="Export customizado"
+          meta="Filtre por categoria, conta, tipo e período"
+        />
+        <CustomExportBuilder
+          categories={categories.filter((c) => !c.is_archived)}
+          accounts={accounts.filter((a) => a.is_active)}
+          defaultYear={report.year}
+        />
       </Panel>
     </>
   );
