@@ -104,12 +104,15 @@ export async function getOpenCreditCardBills(): Promise<CreditCardBill[]> {
     const dueDay = (card.bill_due_day as number | null) ?? closeDay;
     const window = computeBillWindow(closeDay, dueDay, today);
 
+    // Fatura aberta = soma de TODAS as despesas no ciclo, incluindo
+    // is_historical_ir_only=true (marco zero / carryover de fatura
+    // pré-existente). Esses precisam contar pra fatura mesmo sem poluir
+    // o dashboard/orçamento/transações do mês.
     const { data: txs } = await supabase
       .from("transactions")
       .select("amount_account")
       .eq("account_id", card.id as string)
       .eq("kind", "expense")
-      .eq("is_historical_ir_only", false)
       .gte("date", window.periodStart)
       .lte("date", window.periodEnd);
 
