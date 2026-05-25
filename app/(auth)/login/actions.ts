@@ -71,3 +71,31 @@ export async function sendMagicLink(
   }
   return { ok: true };
 }
+
+/**
+ * Envia email com link de recuperação de senha. O link aponta pra
+ * /nova-senha (a página detecta o token de recuperação na URL e
+ * deixa o usuário definir nova senha sem login prévio).
+ *
+ * Sempre retorna ok=true (mesmo se email não existe) — evita enumeração.
+ */
+export async function sendPasswordReset(
+  _prev: LoginState | undefined,
+  formData: FormData,
+): Promise<LoginState> {
+  const parsed = magicSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "E-mail inválido." };
+  }
+
+  const supabase = await createClient();
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  // Supabase só retorna erro pra rate limit / config. Não revela se email existe.
+  // redirectTo passa pelo /callback (troca code→session) e cai em /nova-senha.
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${appUrl}/callback?next=/nova-senha`,
+  });
+
+  return { ok: true };
+}

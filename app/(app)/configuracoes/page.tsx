@@ -17,6 +17,7 @@ import {
 } from "./profile-forms";
 import { ResetDataSection } from "./reset-data-section";
 import { HouseholdInvitesSection } from "./household-invites-section";
+import { ChangePasswordForm } from "@/components/configuracoes/change-password-form";
 import { MembersManagement } from "@/components/household/members-management";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -58,6 +59,7 @@ export default async function ConfiguracoesPage() {
         <Panel>
           <PanelHeader title="Sua conta" meta={`E-mail: ${ctx.email ?? "—"}`} />
           <ProfileNameForm defaultValue={ctx.profile.display_name} />
+          <ChangePasswordForm />
           <div className="text-[11.5px] text-faint-foreground font-mono tracking-[0.04em] mt-5 pt-4 border-t border-border">
             ID: {ctx.authId} · Papel: {ctx.profile.role}
           </div>
