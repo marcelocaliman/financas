@@ -628,6 +628,8 @@ export interface Database {
           model: string | null;
           manufacture_year: number | null;
           license_plate: string | null;
+          // Participação societária (códigos 31, 32, 39, 49)
+          cnpj: string | null;
           owner_filer_id: string | null;
           is_particular: boolean;
           particular_reason: ParticularReason | null;
@@ -661,6 +663,7 @@ export interface Database {
           model?: string | null;
           manufacture_year?: number | null;
           license_plate?: string | null;
+          cnpj?: string | null;
           owner_filer_id?: string | null;
           is_particular?: boolean;
           particular_reason?: ParticularReason | null;

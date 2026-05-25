@@ -39,6 +39,9 @@ const baseSchema = z.object({
   model: z.string().optional(),
   manufactureYear: z.coerce.number().int().min(1900).max(2100).optional(),
   licensePlate: z.string().optional(),
+  // Participação societária (category=other com code 31/32/39/49)
+  cnpj: z.string().optional(),
+  receitaCode: z.string().optional(),
   // Couple attribution
   ownerFilerId: z.string().uuid().optional().nullable(),
   isParticular: z.coerce.boolean().optional().default(false),
@@ -88,6 +91,8 @@ function parseFromFormData(formData: FormData) {
     model: formData.get("model") || undefined,
     manufactureYear: formData.get("manufactureYear") || undefined,
     licensePlate: formData.get("licensePlate") || undefined,
+    cnpj: formData.get("cnpj") || undefined,
+    receitaCode: formData.get("receitaCode") || undefined,
     ownerFilerId: formData.get("ownerFilerId") || null,
     isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
     particularReason: formData.get("particularReason") || null,
@@ -112,6 +117,8 @@ function buildIRPayload(
   model: string | null;
   manufacture_year: number | null;
   license_plate: string | null;
+  cnpj: string | null;
+  receita_code: string | null;
 }> {
   if (d.category === "real_estate") {
     return {
@@ -121,11 +128,12 @@ function buildIRPayload(
       iptu_registration: d.iptuRegistration?.trim() || null,
       area_sqm: d.areaSqm ?? null,
       ownership_percent: d.ownershipPercent ?? null,
-      // Limpa campos veículo (em caso de troca de categoria)
+      // Limpa campos veículo + participação (em caso de troca de categoria)
       brand: null,
       model: null,
       manufacture_year: null,
       license_plate: null,
+      cnpj: null,
     };
   }
   if (d.category === "vehicle") {
@@ -135,15 +143,34 @@ function buildIRPayload(
       model: d.model?.trim() || null,
       manufacture_year: d.manufactureYear ?? null,
       license_plate: d.licensePlate?.trim().toUpperCase() || null,
-      // Limpa campos imóvel
+      // Limpa campos imóvel + participação
       address: null,
       registry_office: null,
       iptu_registration: null,
       area_sqm: null,
       ownership_percent: null,
+      cnpj: null,
     };
   }
-  // Outras categorias não têm campos IR específicos
+  if (d.category === "other") {
+    // "other" pode ser participação societária ou bem genérico — preserva
+    // CNPJ e código Receita se preenchidos.
+    return {
+      registration_number: null,
+      address: null,
+      registry_office: null,
+      iptu_registration: null,
+      area_sqm: null,
+      ownership_percent: null,
+      brand: null,
+      model: null,
+      manufacture_year: null,
+      license_plate: null,
+      cnpj: d.cnpj?.trim() || null,
+      receita_code: d.receitaCode?.trim() || null,
+    };
+  }
+  // Outras categorias (electronics, jewelry, etc): limpa tudo
   return {
     registration_number: null,
     address: null,
@@ -155,6 +182,8 @@ function buildIRPayload(
     model: null,
     manufacture_year: null,
     license_plate: null,
+    cnpj: null,
+    receita_code: null,
   };
 }
 

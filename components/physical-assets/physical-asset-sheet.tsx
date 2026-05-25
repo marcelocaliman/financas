@@ -67,7 +67,7 @@ export function PhysicalAssetSheet({
   const [currency, setCurrency] = useState<Currency>(asset?.currency ?? "BRL");
   // IR collapse aberto por padrão se já tem dados preenchidos (edit)
   const [showIR, setShowIR] = useState<boolean>(
-    !!(asset?.registration_number || asset?.address || asset?.brand),
+    !!(asset?.registration_number || asset?.address || asset?.brand || asset?.cnpj),
   );
 
   const [state, action, pending] = useActionState<
@@ -81,7 +81,7 @@ export function PhysicalAssetSheet({
     if (open) {
       setCategory(asset?.category ?? defaultCategory ?? "other");
       setCurrency(asset?.currency ?? "BRL");
-      setShowIR(!!(asset?.registration_number || asset?.address || asset?.brand));
+      setShowIR(!!(asset?.registration_number || asset?.address || asset?.brand || asset?.cnpj));
     }
   }
 
@@ -202,8 +202,8 @@ export function PhysicalAssetSheet({
             </Field>
           </div>
 
-          {/* Identificação Receita — só faz sentido pra imóveis e veículos */}
-          {category === "real_estate" || category === "vehicle" ? (
+          {/* Identificação Receita — imóveis, veículos ou participação societária */}
+          {category === "real_estate" || category === "vehicle" || category === "other" ? (
             <>
               <button
                 type="button"
@@ -217,15 +217,17 @@ export function PhysicalAssetSheet({
                 )}
                 Identificação Receita (IRPF)
                 <span className="text-[10.5px] font-mono text-faint-foreground ml-1">
-                  · {category === "real_estate" ? "imóvel" : "veículo"}
+                  · {category === "real_estate" ? "imóvel" : category === "vehicle" ? "veículo" : "outros (ex. participação societária)"}
                 </span>
               </button>
 
               {showIR ? (
                 category === "real_estate" ? (
                   <RealEstateIRFields asset={asset} />
-                ) : (
+                ) : category === "vehicle" ? (
                   <VehicleIRFields asset={asset} />
+                ) : (
+                  <OtherIRFields asset={asset} />
                 )
               ) : null}
             </>
@@ -341,6 +343,54 @@ function RealEstateIRFields({ asset }: { asset?: Asset | null }) {
 }
 
 /* ============================== IR: VEÍCULO =============================== */
+/* ====================== IR: OUTROS (participação societária) ====================== */
+/**
+ * Bens "outros" cobrem casos como: quotas de empresa do próprio sócio,
+ * participação em empresa fechada, debêntures, etc. Pra esses casos a
+ * Receita exige CNPJ da empresa + código Receita correto (31/32/39/49).
+ */
+function OtherIRFields({ asset }: { asset?: Asset | null }) {
+  return (
+    <div className="space-y-3 border-t border-border pt-4 -mt-1">
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          label="CNPJ da empresa"
+          htmlFor="cnpj"
+          hint="Obrigatório pra participação societária"
+        >
+          <Input
+            id="cnpj"
+            name="cnpj"
+            defaultValue={asset?.cnpj ?? ""}
+            placeholder="00.000.000/0000-00"
+            className="font-mono"
+            maxLength={18}
+          />
+        </Field>
+        <Field
+          label="Código Receita"
+          htmlFor="receitaCode"
+          hint="31=ações cias fechadas · 32=quotas · 39=outras"
+        >
+          <Input
+            id="receitaCode"
+            name="receitaCode"
+            defaultValue={asset?.receita_code ?? ""}
+            placeholder="32"
+            className="font-mono"
+            maxLength={2}
+          />
+        </Field>
+      </div>
+      <p className="text-[11px] text-faint-foreground leading-relaxed">
+        Use estes campos só pra <b>participação societária</b> (quotas/ações de
+        empresa). Pra bens genéricos (eletrônicos, jóias, etc), deixa em branco —
+        o app usa código <span className="font-mono">99</span> automaticamente.
+      </p>
+    </div>
+  );
+}
+
 function VehicleIRFields({ asset }: { asset?: Asset | null }) {
   return (
     <div className="space-y-3 border-t border-border pt-4 -mt-1">

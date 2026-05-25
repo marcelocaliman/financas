@@ -245,7 +245,7 @@ export async function getBensReport(
   const physicalQuery = supabase
     .from("physical_assets")
     .select(
-      "id, name, category, description, acquired_at, acquired_value, current_value, currency, receita_code, registration_number, address, registry_office, iptu_registration, area_sqm, ownership_percent, brand, model, manufacture_year, license_plate, owner_filer_id, is_particular",
+      "id, name, category, description, acquired_at, acquired_value, current_value, currency, receita_code, registration_number, address, registry_office, iptu_registration, area_sqm, ownership_percent, brand, model, manufacture_year, license_plate, cnpj, owner_filer_id, is_particular",
     )
     .eq("is_active", true)
     .eq("exclude_from_ir", false);
@@ -503,6 +503,13 @@ export async function getBensReport(
     );
     if (pct < 100) discrimination += ` · ${pct}% — bem em comum`;
     const prevKey = `physical:${p.id}`;
+    // Códigos de participação societária (31/32/39/49) precisam de CNPJ —
+    // imóveis/veículos não. Pra outros codes, deixa null (display mostra "—").
+    const REQUIRES_CNPJ_CODES = ["31", "32", "39", "49"];
+    const rawCnpj = (p as { cnpj?: string | null }).cnpj ?? null;
+    const physicalCnpj = REQUIRES_CNPJ_CODES.includes(code) && rawCnpj
+      ? fmtCNPJ(rawCnpj)
+      : null;
     bens.push({
       source: "physical",
       sourceId: p.id,
@@ -510,7 +517,7 @@ export async function getBensReport(
       codeLabel: codeMeta?.label ?? "—",
       group: codeMeta?.group ?? "09",
       discrimination,
-      cnpj: null,
+      cnpj: physicalCnpj,
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       currentYearValue: Math.round((valueBRL * pct)) / 100,
       fxNote: currency !== "BRL"
