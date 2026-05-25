@@ -40,10 +40,8 @@ function describeFrequencyShort(rule: Rule): string {
  ? `${each} sem`
  : "semanal",
  monthly:
- rule.day_of_month != null
- ? `dia ${rule.day_of_month}`
- : rule.interval_count > 1
- ? `${each} meses`
+ rule.interval_count > 1
+ ? `a cada ${rule.interval_count} meses`
  : "mensal",
  yearly: rule.interval_count > 1 ? `${each} anos` : "anual",
  };
