@@ -338,6 +338,10 @@ export interface Database {
           particular_reason: ParticularReason | null;
           ownership_percent: number | null;
           exclude_from_ir: boolean;
+          credit_limit: number | null;
+          bill_close_day: number | null;
+          bill_due_day: number | null;
+          payment_account_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -362,6 +366,10 @@ export interface Database {
           particular_reason?: ParticularReason | null;
           ownership_percent?: number | null;
           exclude_from_ir?: boolean;
+          credit_limit?: number | null;
+          bill_close_day?: number | null;
+          bill_due_day?: number | null;
+          payment_account_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -386,6 +394,10 @@ export interface Database {
           particular_reason?: ParticularReason | null;
           ownership_percent?: number | null;
           exclude_from_ir?: boolean;
+          credit_limit?: number | null;
+          bill_close_day?: number | null;
+          bill_due_day?: number | null;
+          payment_account_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

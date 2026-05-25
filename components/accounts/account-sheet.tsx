@@ -170,6 +170,48 @@ export function AccountSheet({
             </Field>
           ) : null}
 
+          {/* Campos específicos de cartão de crédito */}
+          {type === "credit_card" ? (
+            <div className="p-3 rounded-[8px] border border-border bg-bone-100 dark:bg-ink-800 space-y-3">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-muted-foreground font-medium">
+                Cartão de crédito · fatura
+              </div>
+              <Field label="Limite total" htmlFor="creditLimit" hint="Pra cálculo de utilização">
+                <MoneyInput
+                  name="creditLimit"
+                  id="creditLimit"
+                  defaultValue={Number(account?.credit_limit ?? 0)}
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Dia do fechamento" htmlFor="billCloseDay" hint="1-31, ex: 20">
+                  <input
+                    id="billCloseDay"
+                    name="billCloseDay"
+                    type="number"
+                    min={1}
+                    max={31}
+                    defaultValue={account?.bill_close_day ?? ""}
+                    className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px] font-mono"
+                    placeholder="20"
+                  />
+                </Field>
+                <Field label="Dia do vencimento" htmlFor="billDueDay" hint="1-31, ex: 27">
+                  <input
+                    id="billDueDay"
+                    name="billDueDay"
+                    type="number"
+                    min={1}
+                    max={31}
+                    defaultValue={account?.bill_due_day ?? ""}
+                    className="w-full h-9 px-3 rounded-[6px] border border-border-strong bg-surface text-[13px] font-mono"
+                    placeholder="27"
+                  />
+                </Field>
+              </div>
+            </div>
+          ) : null}
+
           {/* Identificação Receita Federal — usada na declaração IR */}
           <details className="rounded-[8px] border border-border overflow-hidden">
             <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted font-medium">

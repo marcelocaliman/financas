@@ -1,4 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
+import { getOpenCreditCardBills } from "@/services/credit-card";
+import { CreditCardBillsSection } from "@/components/accounts/credit-card-bills-section";
 import {
   listAccounts,
   listAccountsForMonth,
@@ -40,15 +42,19 @@ export default async function ContasPage({
   const [y, m] = monthISO.split("-").map(Number);
   const prevMonthEnd = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 
-  const [activeAccounts, archivedAccounts, prevTotals, filers, regimeCtx] = await Promise.all([
-    listAccountsForMonth(to, position, { includeArchived: false }),
-    isCurrent
-      ? listAccounts({ includeArchived: true }).then((all) => all.filter((a) => !a.is_active))
-      : Promise.resolve([]),
-    isCurrent ? getAccountsTotalsAt(prevMonthEnd) : Promise.resolve(null),
-    listFilers(),
-    getRegimeContext(),
-  ]);
+  const [activeAccounts, archivedAccounts, prevTotals, filers, regimeCtx, openBills] =
+    await Promise.all([
+      listAccountsForMonth(to, position, { includeArchived: false }),
+      isCurrent
+        ? listAccounts({ includeArchived: true }).then((all) => all.filter((a) => !a.is_active))
+        : Promise.resolve([]),
+      isCurrent ? getAccountsTotalsAt(prevMonthEnd) : Promise.resolve(null),
+      listFilers(),
+      getRegimeContext(),
+      isCurrent ? getOpenCreditCardBills() : Promise.resolve([]),
+    ]);
+  // Mapa rápido pra passar ao componente de faturas
+  const accountsById = new Map(activeAccounts.map((a) => [a.id, a]));
   const regime = regimeCtx.regime;
 
   const liquid = activeAccounts
@@ -169,6 +175,11 @@ export default async function ContasPage({
                 ))}
               </ul>
             </div>
+          ) : null}
+
+          {/* Faturas abertas de cartão de crédito */}
+          {openBills.length > 0 ? (
+            <CreditCardBillsSection bills={openBills} accountsById={accountsById} />
           ) : null}
 
           {/* Grid de cartões agrupados por tipo */}

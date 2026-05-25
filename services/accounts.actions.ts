@@ -26,6 +26,10 @@ const createSchema = z.object({
   isParticular: z.coerce.boolean().optional().default(false),
   particularReason: z.enum(PARTICULAR_REASONS).optional().nullable(),
   ownershipPercent: z.coerce.number().min(0).max(100).optional().nullable(),
+  // Cartão de crédito (só usado quando type=credit_card)
+  creditLimit: z.coerce.number().nonnegative().optional().nullable(),
+  billCloseDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
+  billDueDay: z.coerce.number().int().min(1).max(31).optional().nullable(),
 });
 
 const updateSchema = createSchema.extend({
@@ -67,6 +71,9 @@ export async function createAccount(
     isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
     particularReason: formData.get("particularReason") || null,
     ownershipPercent: formData.get("ownershipPercent") || null,
+    creditLimit: formData.get("creditLimit") || null,
+    billCloseDay: formData.get("billCloseDay") || null,
+    billDueDay: formData.get("billDueDay") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
@@ -75,6 +82,7 @@ export async function createAccount(
 
   const supabase = await createClient();
   const isExterior = parsed.data.isExterior ?? false;
+  const isCard = parsed.data.type === "credit_card";
   const { error } = await supabase.from("accounts").insert({
     household_id: ctx.household.id,
     institution: parsed.data.institution.trim(),
@@ -92,6 +100,9 @@ export async function createAccount(
     is_particular: parsed.data.isParticular ?? false,
     particular_reason: parsed.data.particularReason ?? null,
     ownership_percent: parsed.data.ownershipPercent ?? null,
+    credit_limit: isCard ? parsed.data.creditLimit ?? null : null,
+    bill_close_day: isCard ? parsed.data.billCloseDay ?? null : null,
+    bill_due_day: isCard ? parsed.data.billDueDay ?? null : null,
   });
   if (error) return { error: error.message };
 
@@ -121,11 +132,15 @@ export async function updateAccount(
     isParticular: formData.get("isParticular") === "1" || formData.get("isParticular") === "true",
     particularReason: formData.get("particularReason") || null,
     ownershipPercent: formData.get("ownershipPercent") || null,
+    creditLimit: formData.get("creditLimit") || null,
+    billCloseDay: formData.get("billCloseDay") || null,
+    billDueDay: formData.get("billDueDay") || null,
   });
   if (!parsed.success) return { fieldErrors: parseFieldErrors(parsed.error) };
 
   const supabase = await createClient();
   const isExterior = parsed.data.isExterior ?? false;
+  const isCard = parsed.data.type === "credit_card";
   const { error } = await supabase
     .from("accounts")
     .update({
@@ -143,6 +158,9 @@ export async function updateAccount(
       is_particular: parsed.data.isParticular ?? false,
       particular_reason: parsed.data.particularReason ?? null,
       ownership_percent: parsed.data.ownershipPercent ?? null,
+      credit_limit: isCard ? parsed.data.creditLimit ?? null : null,
+      bill_close_day: isCard ? parsed.data.billCloseDay ?? null : null,
+      bill_due_day: isCard ? parsed.data.billDueDay ?? null : null,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
