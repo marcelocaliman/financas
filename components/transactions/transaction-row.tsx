@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ArrowLeftRight, Pencil, Repeat, Trash2 } from "lucide-react";
+import { Archive, ArrowLeftRight, Pencil, Repeat, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
-import { deleteTransaction } from "@/services/transactions.actions";
+import { deleteTransaction, toggleHistoricalIrOnly } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
 import { convert, formatCurrency } from "@/lib/financial/currency";
 import { useMoneyContext } from "@/components/ui/money-provider";
@@ -45,6 +45,29 @@ export function TransactionRow({
       const r = await deleteTransaction(tx.id);
       if (r.error) toast.error(r.error);
       else toast.success("Lançamento apagado.");
+    });
+  };
+
+  const handleToggleHistorical = async () => {
+    const newValue = !tx.is_historical_ir_only;
+    if (newValue) {
+      const ok = await confirm({
+        title: "Marcar como histórica IR?",
+        description:
+          "Some do saldo da conta, dos gráficos e do dashboard. Continua aparecendo nos relatórios do IR pra você declarar. Use quando o pagamento já saiu na vida real mas você lançou no app só pra IR.",
+        confirmLabel: "Marcar histórica",
+      });
+      if (!ok) return;
+    }
+    startTransition(async () => {
+      const r = await toggleHistoricalIrOnly(tx.id, newValue);
+      if (r.error) toast.error(r.error);
+      else
+        toast.success(
+          newValue
+            ? "Marcada como histórica IR (não afeta saldo)."
+            : "Voltou a ser lançamento operacional.",
+        );
     });
   };
 
@@ -148,6 +171,34 @@ export function TransactionRow({
         </td>
         <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
           <div className="flex items-center gap-0.5">
+            {/* Transfers não podem virar históricas (mexem no saldo de 2 contas) */}
+            {tx.kind !== "transfer" ? (
+              <button
+                type="button"
+                onClick={handleToggleHistorical}
+                disabled={pending}
+                className={cn(
+                  "p-1.5 rounded-[6px]",
+                  tx.is_historical_ir_only
+                    ? "text-navy-700 dark:text-navy-300 hover:bg-navy-100/60 dark:hover:bg-navy-700/20"
+                    : "text-faint-foreground hover:text-navy-700 dark:hover:text-navy-300 hover:bg-surface-muted",
+                )}
+                title={
+                  tx.is_historical_ir_only
+                    ? "Voltar a ser lançamento operacional"
+                    : "Marcar como histórica IR (já paga, não afeta saldo)"
+                }
+                aria-label={
+                  tx.is_historical_ir_only ? "Desmarcar histórica" : "Marcar histórica IR"
+                }
+              >
+                {tx.is_historical_ir_only ? (
+                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.7} />
+                ) : (
+                  <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
+                )}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setEditing(true)}

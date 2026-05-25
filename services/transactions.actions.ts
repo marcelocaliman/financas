@@ -242,6 +242,25 @@ export async function updateTransaction(
   return { ok: true };
 }
 
+/**
+ * Toggle rápido pra marcar/desmarcar uma transaction como histórica IR
+ * (informativa pra IR, não afeta saldo nem entra em dashboards operacionais).
+ * Usado pelo botão de archive no row de /transacoes.
+ */
+export async function toggleHistoricalIrOnly(
+  id: string,
+  value: boolean,
+): Promise<{ ok?: boolean; error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ is_historical_ir_only: value })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  for (const p of pathsToInvalidate()) revalidatePath(p);
+  return { ok: true };
+}
+
 export async function deleteTransaction(id: string): Promise<{ ok?: boolean; error?: string }> {
   const supabase = await createClient();
 
