@@ -18,6 +18,7 @@ import {
 import { ResetDataSection } from "./reset-data-section";
 import { HouseholdInvitesSection } from "./household-invites-section";
 import { ChangePasswordForm } from "@/components/configuracoes/change-password-form";
+import { BackupButton } from "@/components/configuracoes/backup-button";
 import { MembersManagement } from "@/components/household/members-management";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -79,6 +80,32 @@ export default async function ConfiguracoesPage() {
         <Panel>
           <PanelHeader title="Tema" meta="Claro, escuro, ou seguir o sistema" />
           <ThemeToggle />
+        </Panel>
+
+        <Panel>
+          <PanelHeader
+            title="Backup e atividade"
+            meta="Exportar dados · ver mudanças recentes"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <BackupButton />
+            <Link
+              href="/configuracoes/atividade"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium border border-border bg-surface hover:bg-surface-muted text-foreground transition-colors"
+            >
+              Ver atividade recente →
+            </Link>
+            <Link
+              href="/configuracoes/notificacoes"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium border border-border bg-surface hover:bg-surface-muted text-foreground transition-colors"
+            >
+              Notificações →
+            </Link>
+          </div>
+          <p className="text-[11.5px] text-faint-foreground mt-3">
+            Backup gera JSON com tudo do seu lar (contas, transações,
+            investimentos, IR). Mantenha em local seguro — contém dados financeiros.
+          </p>
         </Panel>
 
         <Panel>

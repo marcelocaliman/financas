@@ -7,6 +7,7 @@ import { hasAcceptedCurrentTerms, TERMS_VERSION, PRIVACY_VERSION } from "@/servi
 import { isPlatformAdmin } from "@/services/platform-admin";
 import { RealtimeBridge } from "@/components/layout/realtime-bridge";
 import { QuickAddProvider } from "@/components/transactions/quick-add-context";
+import { CommandPalette } from "@/components/ui/command-palette";
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
 import { QuickAddFAB } from "@/components/transactions/quick-add-fab";
 import { MoneyProvider } from "@/components/ui/money-provider";
@@ -101,6 +102,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           }))}
         />
         <QuickAddFAB />
+        <CommandPalette />
         {!termsOk ? (
           <ConsentBanner
             termsVersion={TERMS_VERSION}

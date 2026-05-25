@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { updateTransaction, type TxFormState } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
+import { ReceiptUploader } from "./receipt-uploader";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -219,6 +220,16 @@ export function EditTransactionDialog({
                 </span>
               </div>
             </label>
+          ) : null}
+
+          {/* Comprovante (PDF/foto) */}
+          {!isTransfer ? (
+            <ReceiptUploader
+              transactionId={transaction.id}
+              initialPath={transaction.receipt_storage_path}
+              initialMime={transaction.receipt_mime_type}
+              initialSize={transaction.receipt_size_bytes}
+            />
           ) : null}
 
           {state?.error ? (

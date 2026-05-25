@@ -29,21 +29,30 @@ export function QuickAddProvider({ children }: { children: ReactNode }) {
 
   const hide = useCallback(() => setOpen(false), []);
 
-  // Atalho global: Cmd+K (mac) / Ctrl+K (outros) abre o modal.
-  // Escolhemos K em vez de N porque Cmd+N abre nova janela no macOS.
+  // Atalhos globais:
+  // - Cmd+Shift+T (mac) / Ctrl+Shift+T → abre quick-add (T = Transação)
+  // - Cmd+K → command palette (gerenciado em command-palette.tsx)
+  // Também escuta evento customizado pra abrir via palette.
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
       const meta = isMac ? e.metaKey : e.ctrlKey;
-      if (meta && (e.key === "k" || e.key === "K") && !e.shiftKey && !e.altKey) {
+      if (meta && e.shiftKey && (e.key === "t" || e.key === "T")) {
         const tag = (document.activeElement as HTMLElement | null)?.tagName?.toLowerCase();
         if (tag === "input" || tag === "textarea" || tag === "select") return;
         e.preventDefault();
         show("expense");
       }
     }
+    function quickAddEvent() {
+      show("expense");
+    }
     window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener("financas:quick-add", quickAddEvent);
+    return () => {
+      window.removeEventListener("keydown", handler);
+      window.removeEventListener("financas:quick-add", quickAddEvent);
+    };
   }, [show]);
 
   return (

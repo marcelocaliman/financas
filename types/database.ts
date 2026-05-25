@@ -502,6 +502,10 @@ export interface Database {
           inss_amount: number | null;
           exclude_from_ir: boolean;
           is_historical_ir_only: boolean;
+          receipt_storage_path: string | null;
+          receipt_mime_type: string | null;
+          receipt_size_bytes: number | null;
+          receipt_uploaded_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -528,6 +532,10 @@ export interface Database {
           inss_amount?: number | null;
           exclude_from_ir?: boolean;
           is_historical_ir_only?: boolean;
+          receipt_storage_path?: string | null;
+          receipt_mime_type?: string | null;
+          receipt_size_bytes?: number | null;
+          receipt_uploaded_at?: string | null;
           recurring_rule_id?: string | null;
           metadata?: Json;
           balance_applied_at?: string | null;
@@ -559,6 +567,10 @@ export interface Database {
           tags?: string[];
           exclude_from_ir?: boolean;
           is_historical_ir_only?: boolean;
+          receipt_storage_path?: string | null;
+          receipt_mime_type?: string | null;
+          receipt_size_bytes?: number | null;
+          receipt_uploaded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
