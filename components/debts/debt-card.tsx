@@ -8,6 +8,7 @@ import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { Money } from "@/components/ui/money";
 import { archiveDebt, deleteDebt } from "@/services/debts.actions";
 import { DEBT_KIND_LABELS } from "@/lib/financial/debt-labels";
+import { formatDateNumeric } from "@/lib/utils/format";
 import { DebtSheet } from "./debt-sheet";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { MarriageRegime, Tables } from "@/types/database";
@@ -139,7 +140,7 @@ export function DebtCard({
 
         {debt.end_date ? (
           <div className="mt-1.5 text-[11.5px] text-muted-foreground">
-            Quita em {new Date(debt.end_date).toLocaleDateString("pt-BR")}
+            Quita em {formatDateNumeric(debt.end_date)}
           </div>
         ) : null}
       </div>

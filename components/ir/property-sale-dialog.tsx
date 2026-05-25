@@ -20,6 +20,7 @@ import {
   type PropertySaleFormState,
 } from "@/services/ir/property-sale.actions";
 import { computeGcap } from "@/lib/financial/gcap-calculator";
+import { formatDateNumeric } from "@/lib/utils/format";
 import type { Tables } from "@/types/database";
 
 type PhysicalAsset = Pick<Tables<"physical_assets">, "id" | "name" | "category" | "acquired_at" | "acquired_value" | "current_value">;
@@ -200,7 +201,7 @@ export function PropertySaleDialog({
               </span>
             </div>
             <div className="text-[11px] text-muted-foreground font-sans">
-              DARF vence em {new Date(gcapPreview.darfDueDate).toLocaleDateString("pt-BR")}
+              DARF vence em {formatDateNumeric(gcapPreview.darfDueDate)}
             </div>
           </div>
 

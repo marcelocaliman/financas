@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { createDependent, deleteDependent, type IRFormState } from "@/services/ir/actions";
+import { formatDateNumeric } from "@/lib/utils/format";
 import type { Tables } from "@/types/database";
 
 const RELATIONSHIPS: { value: string; label: string }[] = [
@@ -86,7 +87,7 @@ export function DependentsManager({
                 <td className="py-2 font-mono text-faint-foreground">{d.cpf ?? "—"}</td>
                 <td className="py-2 text-muted-foreground capitalize">{d.relationship.replace("_", " ")}</td>
                 <td className="py-2 font-mono text-faint-foreground">
-                  {d.birth_date ? new Date(d.birth_date).toLocaleDateString("pt-BR") : "—"}
+                  {d.birth_date ? formatDateNumeric(d.birth_date) : "—"}
                 </td>
                 <td className="py-2 text-right">
                   <Button

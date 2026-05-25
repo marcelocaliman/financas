@@ -3,6 +3,7 @@ import { ArrowUpRight, Activity } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { getRecentActivity } from "@/services/user-activity";
+import { formatDateFull } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +55,7 @@ export default async function AtividadePage() {
           {grouped.map(([date, group]) => (
             <Panel key={date}>
               <PanelHeader
-                title={new Date(date).toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
+                title={formatDateFull(date)}
                 meta={`${group.length} mudança${group.length !== 1 ? "s" : ""}`}
               />
               <ul className="divide-y divide-border-strong/30">

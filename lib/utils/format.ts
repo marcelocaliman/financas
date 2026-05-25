@@ -78,40 +78,111 @@ export function formatNumber(value: number, decimals = 0): string {
 
 /* ============================== DATAS ============================== */
 
-const DATE_FULL = new Intl.DateTimeFormat("pt-BR", {
+/**
+ * Datas no app vêm em dois formatos:
+ *
+ *   1. "Calendar date" — string "YYYY-MM-DD" vinda de coluna `date` do Postgres.
+ *      Sem hora, sem fuso. Representa um dia literal e DEVE renderizar sempre
+ *      como aquele dia, independente do fuso do leitor.
+ *
+ *   2. "Instant" — objeto Date ou string ISO completa ("…T…Z") vinda de
+ *      `timestamptz`. Aí sim a renderização passa por `America/Sao_Paulo`.
+ *
+ * O bug clássico era usar `new Date("2026-06-05")` (JS interpreta como UTC
+ * meia-noite) e formatar em SP (UTC-3), o que jogava o dia 5 pra 4. Os
+ * formatadores abaixo detectam o caso 1 e formatam em UTC pra evitar o shift.
+ */
+
+const SP_TIMEZONE = "America/Sao_Paulo";
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+const DATE_FULL_SP = new Intl.DateTimeFormat("pt-BR", {
   weekday: "long",
   day: "numeric",
   month: "long",
   year: "numeric",
-  timeZone: "America/Sao_Paulo",
+  timeZone: SP_TIMEZONE,
 });
 
-const DATE_SHORT = new Intl.DateTimeFormat("pt-BR", {
+const DATE_FULL_UTC = new Intl.DateTimeFormat("pt-BR", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+const DATE_SHORT_SP = new Intl.DateTimeFormat("pt-BR", {
   day: "2-digit",
   month: "short",
-  timeZone: "America/Sao_Paulo",
+  timeZone: SP_TIMEZONE,
+});
+
+const DATE_SHORT_UTC = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "short",
+  timeZone: "UTC",
+});
+
+const DATE_NUMERIC_SP = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: SP_TIMEZONE,
+});
+
+const DATE_NUMERIC_UTC = new Intl.DateTimeFormat("pt-BR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "UTC",
 });
 
 const TIME_HM = new Intl.DateTimeFormat("pt-BR", {
   hour: "2-digit",
   minute: "2-digit",
-  timeZone: "America/Sao_Paulo",
+  timeZone: SP_TIMEZONE,
 });
 
-const MONTH_YEAR = new Intl.DateTimeFormat("pt-BR", {
+const MONTH_YEAR_SP = new Intl.DateTimeFormat("pt-BR", {
   month: "long",
   year: "numeric",
-  timeZone: "America/Sao_Paulo",
+  timeZone: SP_TIMEZONE,
 });
 
+const MONTH_YEAR_UTC = new Intl.DateTimeFormat("pt-BR", {
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+function isCalendarDate(v: Date | string): v is string {
+  return typeof v === "string" && DATE_ONLY_RE.test(v);
+}
+
+function toUtcMidnight(s: string): Date {
+  return new Date(s + "T00:00:00Z");
+}
+
 export function formatDateFull(d: Date | string): string {
+  if (isCalendarDate(d)) return DATE_FULL_UTC.format(toUtcMidnight(d));
   const date = typeof d === "string" ? new Date(d) : d;
-  return DATE_FULL.format(date);
+  return DATE_FULL_SP.format(date);
 }
 
 export function formatDateShort(d: Date | string): string {
+  if (isCalendarDate(d)) {
+    return DATE_SHORT_UTC.format(toUtcMidnight(d)).replace(".", "");
+  }
   const date = typeof d === "string" ? new Date(d) : d;
-  return DATE_SHORT.format(date).replace(".", "");
+  return DATE_SHORT_SP.format(date).replace(".", "");
+}
+
+/** dd/mm/yyyy (substitui o uso direto de `toLocaleDateString("pt-BR")` em datas) */
+export function formatDateNumeric(d: Date | string): string {
+  if (isCalendarDate(d)) return DATE_NUMERIC_UTC.format(toUtcMidnight(d));
+  const date = typeof d === "string" ? new Date(d) : d;
+  return DATE_NUMERIC_SP.format(date);
 }
 
 export function formatTime(d: Date | string): string {
@@ -120,8 +191,9 @@ export function formatTime(d: Date | string): string {
 }
 
 export function formatMonthYear(d: Date | string): string {
+  if (isCalendarDate(d)) return MONTH_YEAR_UTC.format(toUtcMidnight(d));
   const date = typeof d === "string" ? new Date(d) : d;
-  return MONTH_YEAR.format(date);
+  return MONTH_YEAR_SP.format(date);
 }
 
 /**

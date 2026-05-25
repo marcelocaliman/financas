@@ -14,6 +14,7 @@ import {
   escapeHtml,
 } from "@/lib/email/layout";
 import { htmlToText } from "@/lib/email/plain-text";
+import { formatDateNumeric } from "@/lib/utils/format";
 import type { Json } from "@/types/database";
 
 /**
@@ -357,13 +358,9 @@ export function tmplDarfDue(args: {
   dueDate: string;
   kind: string;
 }): { subject: string; body: string } {
-  const due = new Date(args.dueDate).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  const due = formatDateNumeric(args.dueDate);
   return {
-    subject: `DARF de R$ ${fmtBRL(args.amount)} vence em ${new Date(args.dueDate).toLocaleDateString("pt-BR")}`,
+    subject: `DARF de R$ ${fmtBRL(args.amount)} vence em ${due}`,
     body: wrapEmail({
       preheader: `${args.kind} — não pagar gera multa de 0,33%/dia + juros Selic.`,
       eyebrow: "Lembrete · DARF",
