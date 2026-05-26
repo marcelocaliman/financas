@@ -121,20 +121,24 @@ export function InvestmentHistoryChart({
           </defs>
           <CartesianGrid strokeDasharray="2 4" stroke="var(--color-border)" vertical={false} />
           <XAxis
-            dataKey="label"
+            // CRÍTICO: dataKey precisa ser ÚNICO por ponto (date), senão labels
+            // duplicados como "mai" em 2025/2026/2027 fazem Recharts colapsar
+            // categorias e o hover fica desalinhado (clique direita = tooltip
+            // esquerda). Usamos `date` como chave e renderizamos label custom
+            // mostrando só o mês + ano abreviado quando muda.
+            dataKey="date"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             tick={((p: any) => {
               const idx = (p?.index ?? 0) as number;
               const point = data[idx];
-              const isFuture = point?.isProjection;
+              if (!point) return <g />;
+              const isFuture = point.isProjection;
               const x = Number(p?.x ?? 0);
               const y = Number(p?.y ?? 0);
-              // Mostra label do mês + ano abreviado quando muda de ano OU é o primeiro ponto.
-              // Isso desambigua "mai" 2025 vs "mai" 2026 nos eixos quando temos 12+12 = 24 pontos.
               const showYear =
                 idx === 0 ||
-                (idx > 0 && point?.date.slice(0, 4) !== data[idx - 1]?.date.slice(0, 4));
-              const yearSuffix = showYear ? `/${point?.date.slice(2, 4)}` : "";
+                (idx > 0 && point.date.slice(0, 4) !== data[idx - 1]?.date.slice(0, 4));
+              const yearSuffix = showYear ? `/${point.date.slice(2, 4)}` : "";
               return (
                 <text
                   x={x}
@@ -145,7 +149,7 @@ export function InvestmentHistoryChart({
                   fontFamily="var(--font-mono)"
                   fontStyle={isFuture ? "italic" : "normal"}
                 >
-                  {String(p?.payload?.value ?? "")}{yearSuffix}
+                  {point.label}{yearSuffix}
                 </text>
               );
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -221,10 +225,10 @@ export function InvestmentHistoryChart({
               dot={false}
             />
           ) : null}
-          {/* Marcador no ponto "hoje" */}
+          {/* Marcador no ponto "hoje" — usa date (chave única) */}
           {todayPoint ? (
             <ReferenceDot
-              x={todayPoint.label}
+              x={todayPoint.date}
               y={Number(todayPoint[dataKey])}
               r={5}
               fill="var(--color-olive-600)"
@@ -232,19 +236,17 @@ export function InvestmentHistoryChart({
               strokeWidth={2}
             />
           ) : null}
-          {/* Marcadores de eventos (buys/sells > R$ 1k) */}
+          {/* Marcadores de eventos (buys/sells > R$ 1k) — usa date */}
           {events
-            .filter((ev) => {
-              const point = data.find((p) => p.date.slice(0, 7) === ev.date.slice(0, 7) && !p.isProjection);
-              return point != null;
-            })
             .map((ev, idx) => {
-              const point = data.find((p) => p.date.slice(0, 7) === ev.date.slice(0, 7) && !p.isProjection);
+              const point = data.find(
+                (p) => p.date.slice(0, 7) === ev.date.slice(0, 7) && !p.isProjection,
+              );
               if (!point) return null;
               return (
                 <ReferenceDot
                   key={`ev-${idx}`}
-                  x={point.label}
+                  x={point.date}
                   y={Number(point[dataKey])}
                   r={3}
                   fill={ev.kind === "buy" ? "var(--color-navy-700)" : "var(--color-rust-600)"}
