@@ -17,6 +17,7 @@ import {
   listTransactions,
   monthRange,
   getMonthlySummary,
+  listDistinctPortadores,
 } from "@/services/transactions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
@@ -40,6 +41,8 @@ type Params = {
   kind?: string;
   q?: string;
   tag?: string;
+  categoryId?: string;
+  accountId?: string;
   page?: string;
   showHistorical?: string;
   showTransferPairs?: string;
@@ -61,6 +64,8 @@ export default async function TransacoesPage({
   const kindFilter = (params.kind ?? "all") as TransactionKind | "all";
   const q = params.q ?? "";
   const tag = params.tag ?? "";
+  const categoryId = params.categoryId ?? "";
+  const accountId = params.accountId ?? "";
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
   const showTransferPairs = params.showTransferPairs === "1";
@@ -87,22 +92,26 @@ export default async function TransacoesPage({
         ? false
         : isPastMonth; // default true se mês passado, false caso contrário
 
-  const [{ rows, total }, summary, prevSummary, accounts, categories] = await Promise.all([
-    listTransactions({
-      month,
-      kind: kindFilter,
-      search: q || undefined,
-      tag: tag || undefined,
-      page,
-      pageSize,
-      showHistorical,
-      showTransferPairs,
-    }),
-    getMonthlySummary(month),
-    getMonthlySummary(prevKey),
-    listAccounts(),
-    listCategories(),
-  ]);
+  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores] =
+    await Promise.all([
+      listTransactions({
+        month,
+        kind: kindFilter,
+        search: q || undefined,
+        tag: tag || undefined,
+        categoryId: categoryId || undefined,
+        accountId: accountId || undefined,
+        page,
+        pageSize,
+        showHistorical,
+        showTransferPairs,
+      }),
+      getMonthlySummary(month),
+      getMonthlySummary(prevKey),
+      listAccounts(),
+      listCategories(),
+      listDistinctPortadores(),
+    ]);
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -191,6 +200,8 @@ export default async function TransacoesPage({
         monthLabel={monthLabel}
         isCurrentMonth={monthInputValue === currentMonthISO()}
         historicalShownByDefault={isPastMonth}
+        categories={categoriesLite}
+        portadores={portadores}
         tabs={[
           { value: "all", label: "Todas", count: summary.transactionCount },
           { value: "income", label: "Receitas" },
@@ -203,6 +214,11 @@ export default async function TransacoesPage({
         kindLabel={kindFilter !== "all" ? KIND_TAB_LABEL[kindFilter] : null}
         queryLabel={q || null}
         tagLabel={tag || null}
+        categoryLabel={
+          categoryId
+            ? categories.find((c) => c.id === categoryId)?.name ?? null
+            : null
+        }
       />
 
       <SavedViews />

@@ -16,13 +16,12 @@ export function ActiveFiltersChips({
   kindLabel,
   queryLabel,
   tagLabel,
+  categoryLabel,
 }: {
-  /** Rótulo da aba ativa (ex: "Receitas"). Null se "Todas". */
   kindLabel?: string | null;
-  /** Texto da busca. Null se vazia. */
   queryLabel?: string | null;
-  /** Tag ativa. Null se sem filtro. */
   tagLabel?: string | null;
+  categoryLabel?: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,14 +40,23 @@ export function ActiveFiltersChips({
     sp.delete("kind");
     sp.delete("q");
     sp.delete("tag");
+    sp.delete("categoryId");
     sp.delete("page");
     startTransition(() => router.push(`${pathname}?${sp.toString()}`));
   };
 
+  // Renderização de tag: se for portador, mostra só o nome
+  const tagDisplay = tagLabel?.startsWith("portador:")
+    ? `👤 ${tagLabel.replace("portador:", "")}`
+    : tagLabel
+      ? `#${tagLabel}`
+      : null;
+
   const chips: Array<{ key: string; label: string }> = [];
   if (kindLabel) chips.push({ key: "kind", label: kindLabel });
   if (queryLabel) chips.push({ key: "q", label: `“${queryLabel}”` });
-  if (tagLabel) chips.push({ key: "tag", label: `#${tagLabel}` });
+  if (categoryLabel) chips.push({ key: "categoryId", label: `🏷 ${categoryLabel}` });
+  if (tagDisplay) chips.push({ key: "tag", label: tagDisplay });
 
   if (chips.length === 0) return null;
 

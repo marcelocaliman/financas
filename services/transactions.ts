@@ -96,6 +96,25 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   };
 }
 
+/**
+ * Lista os portadores distintos (tags "portador:<nome>") usadas no household.
+ * Usado pra popular o select de filtro em /transacoes.
+ */
+export async function listDistinctPortadores(): Promise<string[]> {
+  const supabase = await createClient();
+  // unnest todos os tags e filtra pelos que começam com "portador:"
+  const { data } = await supabase
+    .from("transactions")
+    .select("tags");
+  const set = new Set<string>();
+  for (const row of (data ?? []) as Array<{ tags: string[] | null }>) {
+    for (const tag of row.tags ?? []) {
+      if (tag.startsWith("portador:")) set.add(tag);
+    }
+  }
+  return Array.from(set).sort();
+}
+
 export type MonthlySummary = {
   income: number;
   expense: number;

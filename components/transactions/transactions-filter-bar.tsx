@@ -2,12 +2,14 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
-import { Archive, ArrowLeftRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Input } from "@/components/ui/input";
 import { MonthSwitcher } from "@/components/ui/month-switcher";
+import { MoreFiltersPopover } from "./more-filters-popover";
 
 type Tab = { value: string; label: string; count?: number };
+type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 
 export function TransactionsFilterBar({
   current,
@@ -16,6 +18,8 @@ export function TransactionsFilterBar({
   monthLabel,
   isCurrentMonth,
   historicalShownByDefault = false,
+  categories = [],
+  portadores = [],
 }: {
   current: string;
   tabs: Tab[];
@@ -23,9 +27,12 @@ export function TransactionsFilterBar({
   monthLabel: string;
   isCurrentMonth: boolean;
   /** Quando true, históricas estão sendo exibidas mesmo sem flag explícita
-   *  na URL (mês passado mostra elas por default). Afeta como o toggle se
-   *  comporta. */
+   *  na URL (mês passado mostra elas por default). */
   historicalShownByDefault?: boolean;
+  /** Categorias do household pra select de filtro. */
+  categories?: CategoryLite[];
+  /** Tags "portador:<nome>" usadas no household pra select de filtro. */
+  portadores?: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -94,68 +101,11 @@ export function TransactionsFilterBar({
         label={monthLabel.split(" ")[0]}
       />
 
-      {/* Toggle pra mostrar/esconder transações históricas IR.
-          Default: mês corrente = OFF; mês passado = ON. */}
-      {(() => {
-        const urlVal = searchParams.get("showHistorical");
-        const isOn =
-          urlVal === "1" || (urlVal === null && historicalShownByDefault);
-        return (
-          <button
-            type="button"
-            onClick={() => {
-              // Alterna setando explicitamente o oposto do estado atual.
-              setParam("showHistorical", isOn ? "0" : "1");
-            }}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11.5px] font-mono uppercase tracking-[0.08em] transition-colors border",
-              isOn
-                ? "bg-navy-700 text-white border-navy-700 dark:bg-navy-300 dark:text-navy-900 dark:border-navy-300"
-                : "bg-surface text-muted-foreground border-border hover:text-foreground",
-            )}
-            title="Históricas = lançamentos retroativos que só aparecem no IR (não afetam saldo). Default ON em meses passados."
-          >
-            <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
-            {isOn ? "Históricas: ON" : "Históricas: OFF"}
-          </button>
-        );
-      })()}
-
-      {/* Toggle pra mostrar o par espelho de transferências.
-          Default: esconde (transfer aparece como linha única).
-          Quando filtra por conta, query força mostrar ambos → toggle reflete ON. */}
-      {(() => {
-        const hasAccountFilter = !!searchParams.get("accountId");
-        const isOn =
-          hasAccountFilter || searchParams.get("showTransferPairs") === "1";
-        const forced = hasAccountFilter;
-        return (
-          <button
-            type="button"
-            onClick={() => {
-              if (forced) return; // não permite toggle quando forçado pela conta
-              const showing = searchParams.get("showTransferPairs") === "1";
-              setParam("showTransferPairs", showing ? null : "1");
-            }}
-            disabled={forced}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[11.5px] font-mono uppercase tracking-[0.08em] transition-colors border",
-              isOn
-                ? "bg-navy-700 text-white border-navy-700 dark:bg-navy-300 dark:text-navy-900 dark:border-navy-300"
-                : "bg-surface text-muted-foreground border-border hover:text-foreground",
-              forced && "cursor-not-allowed opacity-90",
-            )}
-            title={
-              forced
-                ? "Filtrando por conta — sempre mostra os 2 lados de cada transfer."
-                : "Toda transferência tem 2 linhas (saída + entrada). Default mostra só a saída pra evitar duplicação visual."
-            }
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" strokeWidth={1.7} />
-            {isOn ? "Pares: ON" : "Pares: OFF"}
-          </button>
-        );
-      })()}
+      <MoreFiltersPopover
+        categories={categories}
+        portadores={portadores}
+        historicalShownByDefault={historicalShownByDefault}
+      />
     </div>
   );
 }
