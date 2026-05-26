@@ -105,40 +105,42 @@ export function TransactionRow({
             {formatDateShort(tx.date)}
           </span>
         </td>
-        <td className="py-3.5 pr-4 align-middle min-w-0">
-          <div className="font-medium text-[14px] text-foreground tracking-[-0.005em] truncate flex items-center gap-2">
-            {isTransfer ? (
-              <ArrowLeftRight
-                className="w-3 h-3 text-navy-600 shrink-0"
-                strokeWidth={1.8}
+        <td className="py-3 pr-4 align-middle min-w-0">
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0">
+            <span className="flex items-center gap-1.5 min-w-0 font-medium text-[14px] text-foreground tracking-[-0.005em]">
+              {isTransfer ? (
+                <ArrowLeftRight
+                  className="w-3 h-3 text-navy-600 shrink-0"
+                  strokeWidth={1.8}
+                />
+              ) : null}
+              {tx.is_recurring ? (
+                <Repeat
+                  className="w-3 h-3 text-faint-foreground shrink-0"
+                  strokeWidth={1.8}
+                  aria-label="Lançamento recorrente"
+                />
+              ) : null}
+              <span className="truncate">{tx.description}</span>
+              {tx.is_historical_ir_only ? (
+                <span
+                  className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-surface-muted text-faint-foreground border border-border shrink-0"
+                  title="Lançamento histórico — informativo pra IR, não afeta saldo nem entra em sobra/gráficos."
+                >
+                  histórica · IR
+                </span>
+              ) : null}
+            </span>
+            <span className="font-mono text-[11px] text-faint-foreground tracking-[0.02em] whitespace-nowrap shrink-0">
+              {tx.account?.name ?? "—"}
+              {tx.payment_method ? ` · ${tx.payment_method}` : ""}
+            </span>
+            <div className="shrink-0">
+              <TransactionTagsEditor
+                transactionId={tx.id}
+                tags={tx.tags ?? []}
               />
-            ) : null}
-            {tx.is_recurring ? (
-              <Repeat
-                className="w-3 h-3 text-faint-foreground shrink-0"
-                strokeWidth={1.8}
-                aria-label="Lançamento recorrente"
-              />
-            ) : null}
-            {tx.description}
-            {tx.is_historical_ir_only ? (
-              <span
-                className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-surface-muted text-faint-foreground border border-border shrink-0"
-                title="Lançamento histórico — informativo pra IR, não afeta saldo nem entra em sobra/gráficos."
-              >
-                histórica · IR
-              </span>
-            ) : null}
-          </div>
-          <div className="font-mono text-[11.5px] text-faint-foreground tracking-[0.02em] mt-0.5 truncate">
-            {tx.account?.name ?? "—"}
-            {tx.payment_method ? ` · ${tx.payment_method}` : ""}
-          </div>
-          <div className="mt-1">
-            <TransactionTagsEditor
-              transactionId={tx.id}
-              tags={tx.tags ?? []}
-            />
+            </div>
           </div>
         </td>
         <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
