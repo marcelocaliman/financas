@@ -10,6 +10,7 @@ import { MoreFiltersPopover } from "./more-filters-popover";
 
 type Tab = { value: string; label: string; count?: number };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type DebtLite = { id: string; description: string };
 
 export function TransactionsFilterBar({
   current,
@@ -20,19 +21,17 @@ export function TransactionsFilterBar({
   historicalShownByDefault = false,
   categories = [],
   portadores = [],
+  debts = [],
 }: {
   current: string;
   tabs: Tab[];
   monthStr: string;
   monthLabel: string;
   isCurrentMonth: boolean;
-  /** Quando true, históricas estão sendo exibidas mesmo sem flag explícita
-   *  na URL (mês passado mostra elas por default). */
   historicalShownByDefault?: boolean;
-  /** Categorias do household pra select de filtro. */
   categories?: CategoryLite[];
-  /** Tags "portador:<nome>" usadas no household pra select de filtro. */
   portadores?: string[];
+  debts?: DebtLite[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,6 +103,7 @@ export function TransactionsFilterBar({
       <MoreFiltersPopover
         categories={categories}
         portadores={portadores}
+        debts={debts}
         historicalShownByDefault={historicalShownByDefault}
       />
     </div>

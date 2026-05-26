@@ -18,15 +18,18 @@ import { TransactionTagsEditor } from "./transaction-tags-editor";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type DebtLite = { id: string; description: string };
 
 export function TransactionRow({
   tx,
   accounts,
   categories,
+  debts = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
+  debts?: DebtLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -251,6 +254,7 @@ export function TransactionRow({
         transaction={tx}
         accounts={accounts}
         categories={categories}
+        debts={debts}
       />
       {tx.kind !== "transfer" ? (
         <SplitsDialog

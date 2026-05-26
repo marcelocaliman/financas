@@ -25,6 +25,7 @@ import { ReceiptUploader } from "./receipt-uploader";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type DebtLite = { id: string; description: string };
 
 export function EditTransactionDialog({
   open,
@@ -32,17 +33,22 @@ export function EditTransactionDialog({
   transaction,
   accounts,
   categories,
+  debts = [],
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   transaction: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
+  debts?: DebtLite[];
 }) {
   const isTransfer = transaction.kind === "transfer";
 
   const [accountId, setAccountId] = useState(transaction.account_id);
   const [categoryId, setCategoryId] = useState<string>(transaction.category_id ?? "");
+  const [debtId, setDebtId] = useState<string>(
+    (transaction as { debt_id?: string | null }).debt_id ?? "",
+  );
   const [paymentMethod, setPaymentMethod] = useState<string>(transaction.payment_method ?? "");
   const [date, setDate] = useState<string>(transaction.date);
   const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(
@@ -60,6 +66,7 @@ export function EditTransactionDialog({
     if (open) {
       setAccountId(transaction.account_id);
       setCategoryId(transaction.category_id ?? "");
+      setDebtId((transaction as { debt_id?: string | null }).debt_id ?? "");
       setPaymentMethod(transaction.payment_method ?? "");
       setDate(transaction.date);
       setIsHistoricalIrOnly(transaction.is_historical_ir_only ?? false);
@@ -194,6 +201,30 @@ export function EditTransactionDialog({
               </Field>
             ) : null}
           </div>
+
+          {/* Vincula a dívida — só pra expense quando há dívidas */}
+          {transaction.kind === "expense" && debts.length > 0 ? (
+            <Field
+              label="Vincular a dívida"
+              htmlFor="debtId-edit"
+              hint="Reduz o saldo da dívida automaticamente"
+            >
+              <input type="hidden" name="debtId" value={debtId} />
+              <Select value={debtId} onValueChange={setDebtId}>
+                <SelectTrigger id="debtId-edit">
+                  <SelectValue placeholder="— Não vincula" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">— Não vincula</SelectItem>
+                  {debts.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      ↓ {d.description}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
 
           {!isTransfer ? (
             <label

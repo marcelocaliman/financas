@@ -25,6 +25,7 @@ import {
 import { formatDateNumeric } from "@/lib/utils/format";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
+import { listDebts } from "@/services/debts";
 import type { Transaction } from "@/services/transactions";
 import type { TransactionKind } from "@/types/database";
 import { formatDateFull } from "@/lib/utils/format";
@@ -47,6 +48,7 @@ type Params = {
   tag?: string;
   categoryId?: string;
   accountId?: string;
+  debtId?: string;
   page?: string;
   showHistorical?: string;
   showTransferPairs?: string;
@@ -70,6 +72,7 @@ export default async function TransacoesPage({
   const tag = params.tag ?? "";
   const categoryId = params.categoryId ?? "";
   const accountId = params.accountId ?? "";
+  const debtId = params.debtId ?? "";
   const page = Math.max(0, parseInt(params.page ?? "0", 10) || 0);
   const pageSize = 40;
   const showTransferPairs = params.showTransferPairs === "1";
@@ -96,7 +99,7 @@ export default async function TransacoesPage({
         ? false
         : isPastMonth; // default true se mês passado, false caso contrário
 
-  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending] =
+  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts] =
     await Promise.all([
       listTransactions({
         month,
@@ -105,6 +108,7 @@ export default async function TransacoesPage({
         tag: tag || undefined,
         categoryId: categoryId || undefined,
         accountId: accountId || undefined,
+        debtId: debtId || undefined,
         page,
         pageSize,
         showHistorical,
@@ -116,7 +120,9 @@ export default async function TransacoesPage({
       listCategories(),
       listDistinctPortadores(),
       getMonthlyCardSpending(month),
+      listDebts(),
     ]);
+  const debtsLite = debts.map((d) => ({ id: d.id, description: d.description }));
 
   const cardIds = accounts.filter((a) => a.type === "credit_card").map((a) => a.id);
   const firstCardId = cardIds[0] ?? null;
@@ -237,6 +243,7 @@ export default async function TransacoesPage({
         historicalShownByDefault={isPastMonth}
         categories={categoriesLite}
         portadores={portadores}
+        debts={debtsLite}
         tabs={[
           { value: "all", label: "Todas", count: summary.transactionCount },
           { value: "income", label: "Receitas" },
@@ -256,6 +263,7 @@ export default async function TransacoesPage({
               ? categories.find((c) => c.id === categoryId)?.name ?? null
               : null
         }
+        debtLabel={debtId ? debts.find((d) => d.id === debtId)?.description ?? null : null}
       />
 
       <SavedViews />
@@ -310,6 +318,7 @@ export default async function TransacoesPage({
                           tx={tx}
                           accounts={accountsLite}
                           categories={categoriesLite}
+                          debts={debtsLite}
                         />
                       ))}
                     </Fragment>

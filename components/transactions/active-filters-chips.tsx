@@ -17,11 +17,13 @@ export function ActiveFiltersChips({
   queryLabel,
   tagLabel,
   categoryLabel,
+  debtLabel,
 }: {
   kindLabel?: string | null;
   queryLabel?: string | null;
   tagLabel?: string | null;
   categoryLabel?: string | null;
+  debtLabel?: string | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -41,6 +43,7 @@ export function ActiveFiltersChips({
     sp.delete("q");
     sp.delete("tag");
     sp.delete("categoryId");
+    sp.delete("debtId");
     sp.delete("page");
     startTransition(() => router.push(`${pathname}?${sp.toString()}`));
   };
@@ -56,6 +59,7 @@ export function ActiveFiltersChips({
   if (kindLabel) chips.push({ key: "kind", label: kindLabel });
   if (queryLabel) chips.push({ key: "q", label: `“${queryLabel}”` });
   if (categoryLabel) chips.push({ key: "categoryId", label: `🏷 ${categoryLabel}` });
+  if (debtLabel) chips.push({ key: "debtId", label: `↓ ${debtLabel}` });
   if (tagDisplay) chips.push({ key: "tag", label: tagDisplay });
 
   if (chips.length === 0) return null;

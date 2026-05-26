@@ -7,15 +7,19 @@ import { Filter, X, Archive, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type DebtLite = { id: string; description: string };
 
 export function MoreFiltersPopover({
   categories,
   portadores,
+  debts = [],
   historicalShownByDefault,
 }: {
   categories: CategoryLite[];
   /** Lista de tags "portador:<nome>" usadas. */
   portadores: string[];
+  /** Dívidas ativas pra filtrar pagamentos. */
+  debts?: DebtLite[];
   historicalShownByDefault: boolean;
 }) {
   const router = useRouter();
@@ -34,6 +38,7 @@ export function MoreFiltersPopover({
 
   const currentCategoryId = searchParams.get("categoryId") ?? "";
   const currentTag = searchParams.get("tag") ?? "";
+  const currentDebtId = searchParams.get("debtId") ?? "";
   const hasAccountFilter = !!searchParams.get("accountId");
   const showHistorical = (() => {
     const urlVal = searchParams.get("showHistorical");
@@ -45,6 +50,7 @@ export function MoreFiltersPopover({
   const activeCount =
     (currentCategoryId ? 1 : 0) +
     (currentTag ? 1 : 0) +
+    (currentDebtId ? 1 : 0) +
     (searchParams.get("showHistorical") !== null ? 1 : 0) +
     (searchParams.get("showTransferPairs") === "1" ? 1 : 0);
 
@@ -52,6 +58,7 @@ export function MoreFiltersPopover({
     const sp = new URLSearchParams(searchParams.toString());
     sp.delete("categoryId");
     sp.delete("tag");
+    sp.delete("debtId");
     sp.delete("showHistorical");
     sp.delete("showTransferPairs");
     sp.delete("page");
@@ -107,6 +114,27 @@ export function MoreFiltersPopover({
               ))}
             </select>
           </div>
+
+          {/* Dívida — pagamentos vinculados */}
+          {debts.length > 0 ? (
+            <div>
+              <label className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-1.5 block">
+                Dívida
+              </label>
+              <select
+                value={currentDebtId}
+                onChange={(e) => setParam("debtId", e.target.value || null)}
+                className="w-full h-9 rounded-[8px] border border-border bg-surface text-foreground text-[13px] px-2"
+              >
+                <option value="">Todas</option>
+                {debts.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    ↓ {d.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {/* Portador */}
           {portadores.length > 0 ? (

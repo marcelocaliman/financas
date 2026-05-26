@@ -16,6 +16,8 @@ export type TransactionFilters = {
   month?: string; // YYYY-MM
   accountId?: string;
   categoryId?: string;
+  /** Filtra por dívida vinculada. */
+  debtId?: string;
   kind?: TransactionKind | "all";
   search?: string;
   page?: number;
@@ -78,6 +80,10 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
     q = q.is("category_id", null);
   } else if (filters.categoryId) {
     q = q.eq("category_id", filters.categoryId);
+  }
+  if (filters.debtId) {
+    // Cast: column added via migration 20260526060000
+    q = (q as unknown as { eq: (c: string, v: string) => typeof q }).eq("debt_id", filters.debtId);
   }
   if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
   if (filters.search) q = q.ilike("description", `%${filters.search}%`);

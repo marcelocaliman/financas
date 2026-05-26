@@ -20,6 +20,7 @@ import { listFontesPagadoras } from "@/services/fontes-pagadoras";
 import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getSidebarBadges } from "@/services/sidebar-badges";
 import { ensureMaterialized } from "@/services/auto-materialize";
+import { listDebts } from "@/services/debts";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
@@ -40,6 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     termsOk,
     isAdmin,
     fontes,
+    debts,
   ] = await Promise.all([
     listAccounts(),
     listCategories(),
@@ -50,6 +52,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     hasAcceptedCurrentTerms(),
     isPlatformAdmin(),
     listFontesPagadoras().catch(() => []),
+    listDebts().catch(() => []),
   ]);
 
   const accountsLite = accounts.map((a) => ({
@@ -105,6 +108,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             cpf: f.cpf,
             default_irrf_rate: f.default_irrf_rate,
             default_inss_rate: f.default_inss_rate,
+          }))}
+          debts={debts.map((d) => ({
+            id: d.id,
+            description: d.description,
+            current_balance: Number(d.current_balance),
           }))}
         />
         <QuickAddFAB />

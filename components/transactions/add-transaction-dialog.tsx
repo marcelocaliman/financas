@@ -31,6 +31,7 @@ type Currency = "BRL" | "EUR" | "USD";
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 type FonteLite = Pick<Tables<"fontes_pagadoras">, "id" | "name" | "type" | "cnpj" | "cpf" | "default_irrf_rate" | "default_inss_rate">;
+type DebtLite = { id: string; description: string; current_balance: number };
 
 const CURRENCY_LABELS: Record<Currency, string> = {
   BRL: "R$",
@@ -59,10 +60,12 @@ export function AddTransactionDialog({
   accounts,
   categories,
   fontes = [],
+  debts = [],
 }: {
   accounts: AccountLite[];
   categories: CategoryLite[];
   fontes?: FonteLite[];
+  debts?: DebtLite[];
 }) {
   const { open, defaultKind, hide } = useQuickAdd();
   const [kind, setKind] = useState<TxKind>(defaultKind);
@@ -70,6 +73,7 @@ export function AddTransactionDialog({
   const [fromAccountId, setFromAccountId] = useState<string>("");
   const [toAccountId, setToAccountId] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string>("");
+  const [debtId, setDebtId] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [date, setDate] = useState<string>(todayISO());
   const [currency, setCurrency] = useState<Currency>("BRL");
@@ -102,6 +106,7 @@ export function AddTransactionDialog({
       setKind(defaultKind);
       setDate(todayISO());
       setCategoryId("");
+      setDebtId("");
       setPaymentMethod("");
       setShowIR(false);
       setFontePagadoraId("");
@@ -339,6 +344,30 @@ export function AddTransactionDialog({
                 </Field>
               ) : null}
             </div>
+
+            {/* Vincular a dívida — só pra expense, quando há dívidas ativas */}
+            {kind === "expense" && debts.length > 0 ? (
+              <Field
+                label="Vincular a dívida"
+                htmlFor="debtId"
+                hint="Reduz o saldo da dívida automaticamente quando paga"
+              >
+                <input type="hidden" name="debtId" value={debtId} />
+                <Select value={debtId} onValueChange={setDebtId}>
+                  <SelectTrigger id="debtId">
+                    <SelectValue placeholder="— Não vincula" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">— Não vincula</SelectItem>
+                    {debts.map((d) => (
+                      <SelectItem key={d.id} value={d.id}>
+                        ↓ {d.description}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : null}
 
             {/* Seção IR — apenas pra receitas com fontes configuradas */}
             {kind === "income" && fontes.length > 0 ? (
