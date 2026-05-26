@@ -54,6 +54,23 @@ export function InvestmentHistoryChart({
   // Mapeia chave do mode pra dataKey
   const dataKey: keyof InvestmentHistoryPoint = mode;
 
+  // Split do dataset em "passado" (linha sólida) e "projeção" (tracejada).
+  // O ponto "hoje" (último não-projetado) aparece em AMBAS as séries — assim
+  // as linhas se conectam visualmente sem gap. Recharts não permite mudar
+  // strokeDasharray no meio do Area, então a solução é renderizar 2 Areas
+  // com dataKeys separados (realValue + projValue), com null fora do escopo
+  // de cada uma → Area pula esses pontos.
+  const chartData = data.map((p, i) => {
+    const isBridge = i === todayIdx; // ponto "hoje" — aparece nas 2 séries
+    const value = p[dataKey] as number;
+    return {
+      ...p,
+      realValue: !p.isProjection ? value : null,
+      projValue: p.isProjection || isBridge ? value : null,
+      aportesValue: p.aportes,
+    };
+  });
+
   // Events agrupados por mês pra associar aos pontos do gráfico
   const eventByLabel = new Map<string, InvestmentEvent[]>();
   for (const ev of events) {
@@ -108,7 +125,7 @@ export function InvestmentHistoryChart({
       </div>
 
       <ResponsiveContainer width="100%" height={280}>
-        <AreaChart data={data} margin={{ top: 16, right: 16, left: 0, bottom: 8 }}>
+        <AreaChart data={chartData} margin={{ top: 16, right: 16, left: 0, bottom: 8 }}>
           <defs>
             <linearGradient id="invHist-area" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-olive-600)" stopOpacity={0.35} />
@@ -191,7 +208,9 @@ export function InvestmentHistoryChart({
               }) as unknown as (label: React.ReactNode) => React.ReactNode
             }
             formatter={
-              ((value: number, name: string) => {
+              ((value: number | null, name: string) => {
+                // Esconde linhas null (curvas dividas em real/projeção têm null fora do escopo)
+                if (value == null) return null;
                 const labelName =
                   name === "total" ? MODE_LABELS.total :
                   name === "stocks" ? MODE_LABELS.stocks :
@@ -201,22 +220,39 @@ export function InvestmentHistoryChart({
               }) as unknown as (value: unknown, name: unknown) => [string, string]
             }
           />
-          {/* Curva total (verde — olive) */}
+          {/* Curva passada (sólida, verde, com fill) */}
           <Area
             type="monotone"
-            dataKey={dataKey}
+            dataKey="realValue"
+            name={dataKey}
             stroke="var(--color-olive-600)"
             strokeWidth={2}
             fill="url(#invHist-area)"
             isAnimationActive={false}
-            connectNulls
-            strokeDasharray={undefined}
+            connectNulls={false}
+            dot={false}
           />
+          {/* Curva projetada (tracejada, verde mais claro, fill mais sutil) */}
+          {showProjection ? (
+            <Area
+              type="monotone"
+              dataKey="projValue"
+              name={dataKey}
+              stroke="var(--color-olive-600)"
+              strokeWidth={2}
+              strokeDasharray="5 4"
+              fill="url(#invHist-area-proj)"
+              isAnimationActive={false}
+              connectNulls={false}
+              dot={false}
+            />
+          ) : null}
           {/* Aportes acumulados (navy, sem fill) */}
           {showAportes ? (
             <Area
               type="monotone"
-              dataKey="aportes"
+              dataKey="aportesValue"
+              name="aportes"
               stroke="var(--color-navy-700)"
               strokeWidth={1.5}
               strokeDasharray="4 4"
