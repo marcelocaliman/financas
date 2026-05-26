@@ -352,13 +352,17 @@ export function AddTransactionDialog({
                 htmlFor="debtId"
                 hint="Reduz o saldo da dívida automaticamente quando paga"
               >
-                <input type="hidden" name="debtId" value={debtId} />
-                <Select value={debtId} onValueChange={setDebtId}>
+                {/* Submete string vazia quando "__none" — action trata como null */}
+                <input type="hidden" name="debtId" value={debtId === "__none" ? "" : debtId} />
+                <Select
+                  value={debtId || "__none"}
+                  onValueChange={(v) => setDebtId(v === "__none" ? "" : v)}
+                >
                   <SelectTrigger id="debtId">
                     <SelectValue placeholder="— Não vincula" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Não vincula</SelectItem>
+                    <SelectItem value="__none">— Não vincula</SelectItem>
                     {debts.map((d) => (
                       <SelectItem key={d.id} value={d.id}>
                         ↓ {d.description}
