@@ -179,9 +179,17 @@ export default async function InvestimentosPage() {
               Evolução do patrimônio
             </div>
             <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
-              Soma de todos os ativos mês a mês — 12 meses retrospectivos + 12 meses de projeção. Toggle entre total/ações/renda fixa. Marcadores de compras e vendas registradas.
+              Soma de todos os ativos mês a mês — 12 meses retrospectivos + 12 meses de projeção Monte Carlo (500 simulações) com cone de incerteza p10–p90. Aporte mensal configurável.
             </p>
-            <InvestmentHistoryChart points={history.points} events={history.events} />
+            <InvestmentHistoryChart
+              points={history.points}
+              events={history.events}
+              projectionParams={history.projectionParams}
+              indexers={history.indexers}
+              monthsFuture={history.monthsFuture}
+              todayDate={history.todayDate}
+              initialPortfolioBRL={history.initialPortfolioBRL}
+            />
           </Panel>
 
           {fixedIncome.length > 0 ? (

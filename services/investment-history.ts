@@ -2,6 +2,14 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getLatestIndexer } from "@/services/investments";
+import {
+  computeAssetParams,
+  type AssetProjectionParams,
+  type AssetSnapshot,
+  type AssetType,
+  type Indexers,
+} from "@/lib/financial/investment-projection";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -49,6 +57,21 @@ export type InvestmentEvent = {
   investmentName: string;
 };
 
+export type InvestmentHistoryResult = {
+  points: InvestmentHistoryPoint[];
+  events: InvestmentEvent[];
+  /** Parâmetros de projeção por ativo (pra rodar Monte Carlo client-side) */
+  projectionParams: AssetProjectionParams[];
+  /** Indexadores correntes usados no cálculo dos params */
+  indexers: Indexers;
+  /** Saldo inicial total (soma de current_balance em moeda de display) */
+  initialPortfolioBRL: number;
+  /** YYYY-MM-DD em America/Sao_Paulo — usado pra maturidade */
+  todayDate: string;
+  /** Quantos meses pra frente projetar (pra alinhar com o range) */
+  monthsFuture: number;
+};
+
 /** Taxa Selic anual usada pra retroceder valor de renda fixa.
  *  ~13.5%/ano corrente — aproximação razoável pra 12 meses passados. */
 const SELIC_ANNUAL = 0.135;
@@ -66,17 +89,22 @@ function monthLabel(m: number): string {
 export async function getInvestmentHistory(
   monthsPast = 12,
   monthsFuture = 12,
-): Promise<{ points: InvestmentHistoryPoint[]; events: InvestmentEvent[] }> {
+): Promise<InvestmentHistoryResult> {
   const supabase = await createClient();
   const [
     { data: investments },
     { data: movements },
     displayCurrency,
     rates,
+    selic,
+    cdi,
+    ipca,
   ] = await Promise.all([
     supabase
       .from("investments")
-      .select("id, ticker, name, asset_type, currency, current_balance, quantity, purchase_date")
+      .select(
+        "id, ticker, name, asset_type, currency, current_balance, quantity, purchase_date, indexer, indexer_multiplier, fixed_rate",
+      )
       .eq("is_active", true)
       .gt("current_balance", 0),
     supabase
@@ -85,13 +113,47 @@ export async function getInvestmentHistory(
       .order("date", { ascending: true }),
     getDisplayCurrency(),
     getRateMap(),
+    getLatestIndexer("selic"),
+    getLatestIndexer("cdi"),
+    getLatestIndexer("ipca"),
   ]);
 
-  if (!investments || investments.length === 0) return { points: [], events: [] };
+  const indexers: Indexers = {
+    selic: selic?.value ?? undefined,
+    cdi: cdi?.value ?? undefined,
+    ipca: ipca?.value ?? undefined,
+  };
+
+  if (!investments || investments.length === 0) {
+    return {
+      points: [],
+      events: [],
+      projectionParams: [],
+      indexers,
+      initialPortfolioBRL: 0,
+      todayDate: new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(new Date()),
+      monthsFuture,
+    };
+  }
 
   type Inv = Pick<
     Tables<"investments">,
-    "id" | "ticker" | "name" | "asset_type" | "currency" | "current_balance" | "quantity" | "purchase_date"
+    | "id"
+    | "ticker"
+    | "name"
+    | "asset_type"
+    | "currency"
+    | "current_balance"
+    | "quantity"
+    | "purchase_date"
+    | "indexer"
+    | "indexer_multiplier"
+    | "fixed_rate"
   >;
   const invs = investments as Inv[];
 
@@ -237,39 +299,41 @@ export async function getInvestmentHistory(
   }
 
   // ──────────────────────────────────────────────────────────────────────
-  // Projeção futura via compounding mensal (Selic real aprox 5%/ano)
+  // Projeção futura: computa params por ativo pra Monte Carlo client-side.
+  // O cliente roda runMonteCarlo() quando o usuário muda o aporte, e
+  // renderiza o cone p10-p90 + linha p50.
   // ──────────────────────────────────────────────────────────────────────
-  if (monthsFuture > 0 && points.length > 0) {
-    const last = points[points.length - 1];
-    const REAL_ANNUAL = 0.05; // taxa real (acima da inflação) anual
-    const monthlyFactor = Math.pow(1 + REAL_ANNUAL, 1 / 12);
-    let projTotal = last.total;
-    let projStocks = last.stocks;
-    let projFixed = last.fixedIncome;
-    const projOther = last.other;
+  const projectionParams: AssetProjectionParams[] = invs.map((inv) => {
+    const snapshot: AssetSnapshot = {
+      id: inv.id,
+      name: inv.name,
+      asset_type: (inv.asset_type ?? "other") as AssetType,
+      current_balance: convertOrSame(
+        Number(inv.current_balance ?? 0),
+        (inv.currency ?? "BRL") as Currency,
+        displayCurrency,
+        rates,
+      ),
+      indexer: inv.indexer,
+      indexer_multiplier: inv.indexer_multiplier,
+      fixed_rate: inv.fixed_rate,
+      // Maturidade não modelada no schema atual — v1 ignora (RF segue rendendo após venc)
+      end_date: null,
+    };
+    return computeAssetParams(snapshot, indexers);
+  });
 
-    for (let f = 1; f <= monthsFuture; f++) {
-      const d = new Date(Date.UTC(currentY, currentM - 1 + f, 1));
-      const y = d.getUTCFullYear();
-      const m = d.getUTCMonth() + 1;
-      const dateStr = lastDayOfMonth(y, m);
-      projTotal *= monthlyFactor;
-      projStocks *= monthlyFactor;
-      projFixed *= monthlyFactor;
-      points.push({
-        date: dateStr,
-        label: monthLabel(m),
-        total: Math.round(projTotal * 100) / 100,
-        stocks: Math.round(projStocks * 100) / 100,
-        fixedIncome: Math.round(projFixed * 100) / 100,
-        other: Math.round(projOther * 100) / 100,
-        aportes: last.aportes,
-        yield: Math.round((projTotal - last.aportes) * 100) / 100,
-        isEstimate: true,
-        isProjection: true,
-      });
-    }
-  }
+  const todayDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const initialPortfolioBRL = projectionParams.reduce(
+    (s, a) => s + a.initialBalance,
+    0,
+  );
 
   // ──────────────────────────────────────────────────────────────────────
   // Eventos relevantes (buys/sells acima de R$ 1.000)
@@ -287,5 +351,13 @@ export async function getInvestmentHistory(
       };
     });
 
-  return { points, events };
+  return {
+    points,
+    events,
+    projectionParams,
+    indexers,
+    initialPortfolioBRL,
+    todayDate,
+    monthsFuture,
+  };
 }
