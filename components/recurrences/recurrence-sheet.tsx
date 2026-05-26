@@ -120,6 +120,9 @@ export function RecurrenceSheet({
   const [fontePagadoraId, setFontePagadoraId] = useState<string>(rule?.fonte_pagadora_id ?? "");
   const [irKind, setIrKind] = useState<string>(rule?.ir_deductible_kind ?? "");
   const [isTaxDeductible, setIsTaxDeductible] = useState<boolean>(rule?.is_tax_deductible ?? false);
+  const [isSubscription, setIsSubscription] = useState<boolean>(
+    rule?.tags?.includes("subscription") ?? defaultIsSubscription,
+  );
 
   const [state, action, pending] = useActionState<RecurrenceFormState | undefined, FormData>(
     isEdit ? updateRecurringRule : createRecurringRule,
@@ -146,6 +149,9 @@ export function RecurrenceSheet({
       setFontePagadoraId(rule?.fonte_pagadora_id ?? "");
       setIrKind(rule?.ir_deductible_kind ?? "");
       setIsTaxDeductible(rule?.is_tax_deductible ?? false);
+      setIsSubscription(
+        rule?.tags?.includes("subscription") ?? defaultIsSubscription,
+      );
     }
   }
 
@@ -315,6 +321,28 @@ export function RecurrenceSheet({
               </Field>
             </div>
           )}
+
+          {kind === "expense" ? (
+            <label className="flex items-start gap-2.5 cursor-pointer select-none border border-border rounded-[8px] px-3 py-2.5 hover:border-border-strong transition-colors">
+              <input
+                type="checkbox"
+                name="isSubscription"
+                value="1"
+                checked={isSubscription}
+                onChange={(e) => setIsSubscription(e.target.checked)}
+                className="mt-0.5 w-3.5 h-3.5 rounded border-border-strong cursor-pointer accent-navy-700"
+              />
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-medium text-foreground">
+                  É uma assinatura?
+                </span>
+                <span className="block text-[11.5px] text-muted-foreground mt-0.5">
+                  Streaming, software, academia, clube — qualquer cobrança contínua.
+                  Aparece também em <em className="not-italic font-medium">/assinaturas</em> com métricas anuais.
+                </span>
+              </span>
+            </label>
+          ) : null}
 
           {kind !== "transfer" ? (
             <Field label="Forma de pagamento" htmlFor="paymentMethod" hint="Opcional">

@@ -49,6 +49,43 @@ export default async function RecorrentesPage() {
   ]);
   const fontesList = fontes ?? [];
 
+  // Pre-computa: pra cada regra que é auto-sync de fatura, calcula o valor
+  // REAL da fatura na próxima ocorrência (em vez de mostrar o placeholder
+  // estático da regra). Detecção: transfer cujo destino é credit_card e
+  // origem é a payment_account configurada do cartão.
+  const cards = accounts.filter(
+    (a) => a.type === "credit_card" && a.bill_close_day != null,
+  );
+  const autoSyncMap = new Map<string, { liveAmount: number; cardName: string }>();
+  await Promise.all(
+    rules
+      .filter((r) => {
+        if (r.kind !== "transfer" || !r.to_account || !r.from_account) return false;
+        const card = cards.find((c) => c.id === r.to_account_id);
+        return card != null && card.payment_account_id === r.from_account_id;
+      })
+      .map(async (r) => {
+        const next = computeNextOccurrences(r, todayISO(), 1)[0];
+        if (!next) return;
+        // Cast: credit_card_bill_amount foi adicionada na migration 20260525120000
+        // mas os tipos auto-gerados ainda não foram regerados.
+        const { data } = await (supabase.rpc as unknown as (
+          fn: string,
+          args: Record<string, unknown>,
+        ) => Promise<{ data: number | null }>)("credit_card_bill_amount", {
+          p_card_id: r.to_account_id!,
+          p_due_date: next,
+        });
+        const card = cards.find((c) => c.id === r.to_account_id);
+        if (data != null && card) {
+          autoSyncMap.set(r.id, {
+            liveAmount: Number(data),
+            cardName: card.name,
+          });
+        }
+      }),
+  );
+
   const accountsLite = accounts.map((a) => ({
     id: a.id,
     name: a.name,
@@ -204,6 +241,7 @@ export default async function RecorrentesPage() {
                   accounts={accountsLite}
                   categories={categoriesLite}
                   fontes={fontesList}
+                  autoSync={autoSyncMap.get(r.id)}
                 />
               ))}
             </RecurrenceSection>
@@ -224,6 +262,7 @@ export default async function RecorrentesPage() {
                   accounts={accountsLite}
                   categories={categoriesLite}
                   fontes={fontesList}
+                  autoSync={autoSyncMap.get(r.id)}
                 />
               ))}
             </RecurrenceSection>
@@ -244,6 +283,7 @@ export default async function RecorrentesPage() {
                   accounts={accountsLite}
                   categories={categoriesLite}
                   fontes={fontesList}
+                  autoSync={autoSyncMap.get(r.id)}
                 />
               ))}
             </RecurrenceSection>

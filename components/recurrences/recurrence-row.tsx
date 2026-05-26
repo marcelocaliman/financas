@@ -53,12 +53,17 @@ export function RecurrenceRow({
  accounts,
  categories,
  fontes = [],
+ autoSync,
 }: {
  rule: Rule;
  nextOccurrences: string[];
  accounts: AccountLite[];
  categories: CategoryLite[];
  fontes?: Pick<Tables<"fontes_pagadoras">, "id" | "type" | "name" | "cnpj" | "cpf">[];
+ /** Quando definido, esta regra é auto-sync de fatura de cartão. O valor
+  *  exibido vira `liveAmount` (soma da fatura atual) em vez do placeholder
+  *  estático em rule.amount. */
+ autoSync?: { liveAmount: number; cardName: string };
 }) {
  const [editing, setEditing] = useState(false);
  const [pending, startTransition] = useTransition();
@@ -215,15 +220,25 @@ export function RecurrenceRow({
  </Popover.Portal>
  </Popover.Root>
 
- {/* Valor */}
+ {/* Valor — auto-sync mostra valor LIVE da fatura, não o placeholder */}
  <div className="flex items-center gap-2 min-w-[120px] justify-end">
+ <div className="flex flex-col items-end">
  <Money
- value={Number(rule.amount)}
+ value={autoSync ? autoSync.liveAmount : Number(rule.amount)}
  currency={rule.currency}
  showComparison
  className="text-[13.5px] font-medium tracking-[-0.005em] items-end text-foreground"
  secondaryClassName="text-[9.5px]"
  />
+ {autoSync ? (
+ <span
+ className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-navy-100/60 dark:bg-navy-700/20 text-navy-700 dark:text-navy-300 border border-navy-700/30 mt-0.5"
+ title={`Auto-sync · valor é a soma da fatura aberta de ${autoSync.cardName}. Atualiza automaticamente até a data de pagamento.`}
+ >
+ auto · fatura
+ </span>
+ ) : null}
+ </div>
  <div className="-mr-1.5">
  <RowActionsMenu
  actions={[
