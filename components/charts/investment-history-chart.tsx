@@ -129,6 +129,12 @@ export function InvestmentHistoryChart({
               const isFuture = point?.isProjection;
               const x = Number(p?.x ?? 0);
               const y = Number(p?.y ?? 0);
+              // Mostra label do mês + ano abreviado quando muda de ano OU é o primeiro ponto.
+              // Isso desambigua "mai" 2025 vs "mai" 2026 nos eixos quando temos 12+12 = 24 pontos.
+              const showYear =
+                idx === 0 ||
+                (idx > 0 && point?.date.slice(0, 4) !== data[idx - 1]?.date.slice(0, 4));
+              const yearSuffix = showYear ? `/${point?.date.slice(2, 4)}` : "";
               return (
                 <text
                   x={x}
@@ -139,7 +145,7 @@ export function InvestmentHistoryChart({
                   fontFamily="var(--font-mono)"
                   fontStyle={isFuture ? "italic" : "normal"}
                 >
-                  {String(p?.payload?.value ?? "")}
+                  {String(p?.payload?.value ?? "")}{yearSuffix}
                 </text>
               );
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,20 +172,28 @@ export function InvestmentHistoryChart({
             }}
             labelStyle={{ color: "var(--color-foreground)", fontWeight: 500 }}
             itemStyle={{ color: "var(--color-foreground)" }}
+            labelFormatter={
+              ((_label: string, items: Array<{ payload?: InvestmentHistoryPoint }>) => {
+                const point = items?.[0]?.payload;
+                if (!point) return _label;
+                const [year, monthNum] = point.date.split("-");
+                const monthName = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"][parseInt(monthNum, 10) - 1];
+                const suffix = point.isProjection
+                  ? " · projeção"
+                  : point.isEstimate
+                    ? " · estimativa"
+                    : "";
+                return `${monthName} ${year}${suffix}`;
+              }) as unknown as (label: React.ReactNode) => React.ReactNode
+            }
             formatter={
-              ((value: number, name: string, item: { payload?: InvestmentHistoryPoint }) => {
-                const point = item.payload;
+              ((value: number, name: string) => {
                 const labelName =
                   name === "total" ? MODE_LABELS.total :
                   name === "stocks" ? MODE_LABELS.stocks :
                   name === "fixedIncome" ? MODE_LABELS.fixedIncome :
-                  name === "aportes" ? "Aportes" : name;
-                const suffix = point?.isProjection
-                  ? " · proj"
-                  : point?.isEstimate
-                    ? " · est"
-                    : "";
-                return [`${formatMoney(value)}${suffix}`, labelName];
+                  name === "aportes" ? "Aportes acumulados" : name;
+                return [formatMoney(value), labelName];
               }) as unknown as (value: unknown, name: unknown) => [string, string]
             }
           />
