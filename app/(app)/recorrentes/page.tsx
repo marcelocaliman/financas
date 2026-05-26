@@ -5,7 +5,6 @@ import { RecurrenceRow } from "@/components/recurrences/recurrence-row";
 import { RecurrenceSection } from "@/components/recurrences/recurrence-section";
 import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-button";
 import { BatchRecurrenceButton } from "@/components/recurrences/batch-recurrence-button";
-import { MaterializeNowButton } from "@/components/recurrences/materialize-now-button";
 import { PauseAllButton } from "@/components/recurrences/pause-all-button";
 import { RecurrenceKeyboardNav } from "@/components/recurrences/keyboard-nav";
 import {
@@ -110,7 +109,6 @@ export default async function RecorrentesPage() {
               activeIds={active.map((r) => r.id)}
               pausedIds={paused.map((r) => r.id)}
             />
-            <MaterializeNowButton />
             <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
             <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} fontes={fontesList} />
           </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import * as Popover from "@radix-ui/react-popover";
-import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, RefreshCw, Tag as TagIcon, Trash2 } from "lucide-react";
+import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 import { Money } from "@/components/ui/money";
@@ -10,7 +10,6 @@ import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { formatDateShort } from "@/lib/utils/format";
 import {
  deleteRecurringRule,
- materializeRecurrenceNow,
  setRecurringRuleActive,
 } from "@/services/recurrences.actions";
 import type { Currency, RecurrenceFrequency, Tables } from "@/types/database";
@@ -91,21 +90,6 @@ export function RecurrenceRow({
  const r = await setRecurringRuleActive(rule.id, !rule.is_active);
  if (r.error) toast.error(r.error);
  else toast.success(rule.is_active ? "Pausada." : "Reativada.");
- });
- };
-
- const handleMaterialize = () => {
- startTransition(async () => {
- const r = await materializeRecurrenceNow(rule.id);
- if (r.error) {
- toast.error(r.error);
- return;
- }
- toast.success(
- (r.created ?? 0) === 0
- ? "Nada novo."
- : `${r.created} lançamento${r.created === 1 ? "" : "s"} criado${r.created === 1 ? "" : "s"}.`,
- );
  });
  };
 
@@ -248,12 +232,6 @@ export function RecurrenceRow({
  icon: <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />,
  onSelect: () => setEditing(true),
  disabled: pending,
- },
- {
- label: "Materializar agora",
- icon: <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.7} />,
- onSelect: handleMaterialize,
- disabled: pending || !rule.is_active,
  },
  {
  label: rule.is_active ? "Pausar" : "Reativar",

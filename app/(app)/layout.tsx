@@ -19,10 +19,16 @@ import { listCategories } from "@/services/categories";
 import { listFontesPagadoras } from "@/services/fontes-pagadoras";
 import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getSidebarBadges } from "@/services/sidebar-badges";
+import { ensureMaterialized } from "@/services/auto-materialize";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
+
+  // Auto-materializa qualquer ocorrência pendente das regras recorrentes
+  // antes de carregar qualquer página. Silencioso, falha graciosamente.
+  // Cron diário continua rodando como fallback.
+  await ensureMaterialized();
 
   const [
     accounts,
