@@ -71,7 +71,11 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
     .order("created_at", { ascending: false });
 
   if (filters.accountId) q = q.eq("account_id", filters.accountId);
-  if (filters.categoryId) q = q.eq("category_id", filters.categoryId);
+  if (filters.categoryId === "__none__") {
+    q = q.is("category_id", null);
+  } else if (filters.categoryId) {
+    q = q.eq("category_id", filters.categoryId);
+  }
   if (filters.kind && filters.kind !== "all") q = q.eq("kind", filters.kind);
   if (filters.search) q = q.ilike("description", `%${filters.search}%`);
   if (filters.tag) q = q.contains("tags", [filters.tag.toLowerCase()]);

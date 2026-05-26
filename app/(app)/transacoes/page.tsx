@@ -250,9 +250,11 @@ export default async function TransacoesPage({
         queryLabel={q || null}
         tagLabel={tag || null}
         categoryLabel={
-          categoryId
-            ? categories.find((c) => c.id === categoryId)?.name ?? null
-            : null
+          categoryId === "__none__"
+            ? "Sem categoria"
+            : categoryId
+              ? categories.find((c) => c.id === categoryId)?.name ?? null
+              : null
         }
       />
 

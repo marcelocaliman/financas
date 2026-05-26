@@ -98,6 +98,7 @@ export function MoreFiltersPopover({
               className="w-full h-9 rounded-[8px] border border-border bg-surface text-foreground text-[13px] px-2"
             >
               <option value="">Todas</option>
+              <option value="__none__">— Sem categoria</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
