@@ -232,7 +232,7 @@ export function InvestmentHistoryChart({
             connectNulls={false}
             dot={false}
           />
-          {/* Curva projetada (tracejada, verde mais claro, fill mais sutil) */}
+          {/* Curva projetada (tracejada, mesmo fill da passada pra uniformidade) */}
           {showProjection ? (
             <Area
               type="monotone"
@@ -241,7 +241,7 @@ export function InvestmentHistoryChart({
               stroke="var(--color-olive-600)"
               strokeWidth={2}
               strokeDasharray="5 4"
-              fill="url(#invHist-area-proj)"
+              fill="url(#invHist-area)"
               isAnimationActive={false}
               connectNulls={false}
               dot={false}
