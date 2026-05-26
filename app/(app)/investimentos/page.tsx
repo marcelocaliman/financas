@@ -41,7 +41,7 @@ export default async function InvestimentosPage() {
     getLatestIndexer("cdi"),
     listFilers(),
     getRegimeContext(),
-    getInvestmentHistory(12),
+    getInvestmentHistory(12, 12),
   ]);
   const closedCount = closedInvestments.length;
   const regime = regimeCtx.regime;
@@ -176,13 +176,12 @@ export default async function InvestimentosPage() {
 
           <Panel className="mb-8">
             <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
-              Evolução do patrimônio · últimos {history.length} meses
+              Evolução do patrimônio
             </div>
             <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
-              Soma de todos os ativos mês a mês. Ações usam preços históricos da
-              B3; renda fixa retrocedida via Selic média.
+              Soma de todos os ativos mês a mês — 12 meses retrospectivos + 12 meses de projeção. Toggle entre total/ações/renda fixa. Marcadores de compras e vendas registradas.
             </p>
-            <InvestmentHistoryChart points={history} />
+            <InvestmentHistoryChart points={history.points} events={history.events} />
           </Panel>
 
           {fixedIncome.length > 0 ? (

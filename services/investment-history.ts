@@ -31,8 +31,22 @@ export type InvestmentHistoryPoint = {
   stocks: number;
   fixedIncome: number;
   other: number;
+  /** Aportes líquidos acumulados até essa data (buys - sells) */
+  aportes: number;
+  /** Rentabilidade pura = total - aportes (ganho real do mercado) */
+  yield: number;
   /** True pra pontos baseados em estimativa (Selic constante / carry-forward) */
   isEstimate: boolean;
+  /** True pra pontos no FUTURO (projeção FIRE) */
+  isProjection: boolean;
+};
+
+export type InvestmentEvent = {
+  date: string;
+  label: string;
+  kind: "buy" | "sell" | "dividend" | "jcp";
+  total: number;
+  investmentName: string;
 };
 
 /** Taxa Selic anual usada pra retroceder valor de renda fixa.
@@ -49,25 +63,47 @@ function monthLabel(m: number): string {
   return ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][m - 1];
 }
 
-export async function getInvestmentHistory(months = 12): Promise<InvestmentHistoryPoint[]> {
+export async function getInvestmentHistory(
+  monthsPast = 12,
+  monthsFuture = 12,
+): Promise<{ points: InvestmentHistoryPoint[]; events: InvestmentEvent[] }> {
   const supabase = await createClient();
-  const [{ data: investments }, displayCurrency, rates] = await Promise.all([
+  const [
+    { data: investments },
+    { data: movements },
+    displayCurrency,
+    rates,
+  ] = await Promise.all([
     supabase
       .from("investments")
-      .select("id, ticker, asset_type, currency, current_balance, quantity, purchase_date")
+      .select("id, ticker, name, asset_type, currency, current_balance, quantity, purchase_date")
       .eq("is_active", true)
       .gt("current_balance", 0),
+    supabase
+      .from("investment_movements")
+      .select("id, date, kind, total_amount, investment_id")
+      .order("date", { ascending: true }),
     getDisplayCurrency(),
     getRateMap(),
   ]);
 
-  if (!investments || investments.length === 0) return [];
+  if (!investments || investments.length === 0) return { points: [], events: [] };
 
   type Inv = Pick<
     Tables<"investments">,
-    "id" | "ticker" | "asset_type" | "currency" | "current_balance" | "quantity" | "purchase_date"
+    "id" | "ticker" | "name" | "asset_type" | "currency" | "current_balance" | "quantity" | "purchase_date"
   >;
   const invs = investments as Inv[];
+
+  type Mov = Pick<
+    Tables<"investment_movements">,
+    "id" | "date" | "kind" | "total_amount" | "investment_id"
+  >;
+  const movs = (movements ?? []) as Mov[];
+
+  // Lookup ativo por id pra eventos
+  const invById = new Map<string, Inv>();
+  for (const inv of invs) invById.set(inv.id, inv);
 
   // Coleta tickers de ações/FIIs pra buscar histórico
   const stockTickers = Array.from(
@@ -116,7 +152,7 @@ export async function getInvestmentHistory(months = 12): Promise<InvestmentHisto
   const currentM = parseInt(todayBR[1], 10);
 
   const points: InvestmentHistoryPoint[] = [];
-  for (let i = months - 1; i >= 0; i--) {
+  for (let i = monthsPast - 1; i >= 0; i--) {
     const d = new Date(Date.UTC(currentY, currentM - 1 - i, 1));
     const y = d.getUTCFullYear();
     const m = d.getUTCMonth() + 1;
@@ -175,6 +211,17 @@ export async function getInvestmentHistory(months = 12): Promise<InvestmentHisto
     }
 
     const total = stocks + fixedIncome + other;
+
+    // Aportes líquidos acumulados até essa data (buy positivo, sell negativo)
+    let aportes = 0;
+    for (const mv of movs) {
+      if (mv.date > refDate) break;
+      const amt = Number(mv.total_amount ?? 0);
+      if (mv.kind === "buy") aportes += amt;
+      else if (mv.kind === "sell") aportes -= amt;
+    }
+    const yieldValue = total - aportes;
+
     points.push({
       date: refDate,
       label: monthLabel(m),
@@ -182,9 +229,63 @@ export async function getInvestmentHistory(months = 12): Promise<InvestmentHisto
       stocks: Math.round(stocks * 100) / 100,
       fixedIncome: Math.round(fixedIncome * 100) / 100,
       other: Math.round(other * 100) / 100,
+      aportes: Math.round(aportes * 100) / 100,
+      yield: Math.round(yieldValue * 100) / 100,
       isEstimate,
+      isProjection: false,
     });
   }
 
-  return points;
+  // ──────────────────────────────────────────────────────────────────────
+  // Projeção futura via compounding mensal (Selic real aprox 5%/ano)
+  // ──────────────────────────────────────────────────────────────────────
+  if (monthsFuture > 0 && points.length > 0) {
+    const last = points[points.length - 1];
+    const REAL_ANNUAL = 0.05; // taxa real (acima da inflação) anual
+    const monthlyFactor = Math.pow(1 + REAL_ANNUAL, 1 / 12);
+    let projTotal = last.total;
+    let projStocks = last.stocks;
+    let projFixed = last.fixedIncome;
+    const projOther = last.other;
+
+    for (let f = 1; f <= monthsFuture; f++) {
+      const d = new Date(Date.UTC(currentY, currentM - 1 + f, 1));
+      const y = d.getUTCFullYear();
+      const m = d.getUTCMonth() + 1;
+      const dateStr = lastDayOfMonth(y, m);
+      projTotal *= monthlyFactor;
+      projStocks *= monthlyFactor;
+      projFixed *= monthlyFactor;
+      points.push({
+        date: dateStr,
+        label: monthLabel(m),
+        total: Math.round(projTotal * 100) / 100,
+        stocks: Math.round(projStocks * 100) / 100,
+        fixedIncome: Math.round(projFixed * 100) / 100,
+        other: Math.round(projOther * 100) / 100,
+        aportes: last.aportes,
+        yield: Math.round((projTotal - last.aportes) * 100) / 100,
+        isEstimate: true,
+        isProjection: true,
+      });
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Eventos relevantes (buys/sells acima de R$ 1.000)
+  // ──────────────────────────────────────────────────────────────────────
+  const events: InvestmentEvent[] = movs
+    .filter((mv) => Number(mv.total_amount ?? 0) >= 1000)
+    .map((mv) => {
+      const inv = mv.investment_id ? invById.get(mv.investment_id) : null;
+      return {
+        date: mv.date,
+        label: monthLabel(parseInt(mv.date.slice(5, 7), 10)),
+        kind: mv.kind as "buy" | "sell" | "dividend" | "jcp",
+        total: Number(mv.total_amount),
+        investmentName: inv?.name ?? inv?.ticker ?? "?",
+      };
+    });
+
+  return { points, events };
 }
