@@ -38,7 +38,10 @@ export function CategoriesBarChart({ rows }: { rows: CategoryBreakdownRow[] }) {
             borderRadius: 10,
             fontFamily: "var(--font-mono)",
             fontSize: 12,
+            color: "var(--color-foreground)",
           }}
+          labelStyle={{ color: "var(--color-foreground)", fontWeight: 500 }}
+          itemStyle={{ color: "var(--color-foreground)" }}
           formatter={(v) => [formatMoney(Number(v)), "Total"]}
         />
         <Bar dataKey="total" radius={[0, 3, 3, 0]}>

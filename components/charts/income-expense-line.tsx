@@ -85,7 +85,10 @@ export function IncomeExpenseLine({ rows }: { rows: MonthlyHistoryRow[] }) {
             borderRadius: 10,
             fontFamily: "var(--font-mono)",
             fontSize: 12,
+            color: "var(--color-foreground)",
           }}
+          labelStyle={{ color: "var(--color-foreground)", fontWeight: 500 }}
+          itemStyle={{ color: "var(--color-foreground)" }}
           formatter={(v, name) => {
             const label = name === "income" ? "Entrou" : name === "expense" ? "Saiu" : "Sobra";
             return [formatMoneyCompact(Number(v)), label];

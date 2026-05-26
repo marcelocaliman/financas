@@ -51,7 +51,10 @@ export function DistributionChart({
                 border: "1px solid var(--color-border)",
                 borderRadius: 8,
                 fontSize: 12,
+                color: "var(--color-foreground)",
               }}
+              labelStyle={{ color: "var(--color-foreground)", fontWeight: 500 }}
+              itemStyle={{ color: "var(--color-foreground)" }}
               formatter={
                 ((v: number, name: string) => [
                   `${v} (${((v / total) * 100).toFixed(0)}%)`,

@@ -72,7 +72,10 @@ export function FireMonteCarloChart({
               border: "1px solid var(--color-border)",
               borderRadius: 8,
               fontSize: 11,
+              color: "var(--color-foreground)",
             }}
+            labelStyle={{ color: "var(--color-foreground)", fontWeight: 500 }}
+            itemStyle={{ color: "var(--color-foreground)" }}
             labelFormatter={((m: number) => `${(m / 12).toFixed(1)} anos`) as unknown as (label: React.ReactNode) => React.ReactNode}
             formatter={((v: number, name: string) => {
               const formatted = new Intl.NumberFormat("pt-BR", {
