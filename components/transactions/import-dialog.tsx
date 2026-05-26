@@ -168,10 +168,29 @@ export function ImportTransactionsDialog({
       }
       setHeaders(hs);
       setRows(rs);
+
+      // Tenta detectar template de banco brasileiro pelo header.
+      const { detectBankTemplate } = await import("@/lib/financial/bank-templates");
+      const template = detectBankTemplate(hs);
       const initial: Record<number, FieldKey> = {};
-      hs.forEach((h, i) => {
-        initial[i] = autoDetect(h);
-      });
+      if (template) {
+        const norm = (s: string) =>
+          s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+        hs.forEach((h, i) => {
+          const n = norm(h);
+          if (n === norm(template.mapping.date)) initial[i] = "date";
+          else if (n === norm(template.mapping.description)) initial[i] = "description";
+          else if (n === norm(template.mapping.amount)) initial[i] = "amount";
+          else initial[i] = autoDetect(h);
+        });
+        toast.success(
+          `Template detectado: ${template.bank}${template.product ? ` · ${template.product}` : ""}`,
+        );
+      } else {
+        hs.forEach((h, i) => {
+          initial[i] = autoDetect(h);
+        });
+      }
       setMapping(initial);
       setStep(2);
     } catch (err) {

@@ -56,6 +56,10 @@ export type OnboardingPayload = {
     institution: string;
     type: Tables<"accounts">["type"];
     initialBalance: number;
+    // Específicos pra credit_card
+    billCloseDay?: number;
+    billDueDay?: number;
+    creditLimit?: number;
   }>;
   // PASSO 5 — Fontes pagadoras (empresas/PFs que pagam você ou cônjuge)
   fontes?: Array<{
@@ -274,6 +278,10 @@ export async function runOnboarding(
   const createdAccountIds: string[] = [];
   for (const a of payload.accounts) {
     if (!a.name.trim() || !a.institution.trim()) continue;
+    // Pra credit_card: initialBalance representa a fatura em aberto. Convertemos
+    // pra saldo negativo (dívida) no banco. Default 0 = sem dívida pré-existente.
+    const isCard = a.type === "credit_card";
+    const balance = isCard ? -Math.abs(a.initialBalance ?? 0) : (a.initialBalance ?? 0);
     const { data, error } = await supabase
       .from("accounts")
       .insert({
@@ -282,9 +290,16 @@ export async function runOnboarding(
         institution: a.institution.trim(),
         type: a.type,
         currency: "BRL",
-        current_balance: a.initialBalance ?? 0,
+        current_balance: balance,
         is_active: true,
         owner_filer_id: primaryFilerId,
+        ...(isCard
+          ? {
+              bill_close_day: a.billCloseDay ?? null,
+              bill_due_day: a.billDueDay ?? null,
+              credit_limit: a.creditLimit ?? null,
+            }
+          : {}),
       })
       .select("id")
       .single();

@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getAnnualReport } from "@/services/annual-report";
 import { listCategories } from "@/services/categories";
 import { listAccounts } from "@/services/accounts";
@@ -27,6 +28,35 @@ export default async function RelatoriosPage({
     listCategories(),
     listAccounts(),
   ]);
+
+  // Empty state: nenhuma transação no ano (usuário novo ou ano sem atividade)
+  const hasAnyData = report.totalIncome > 0 || report.totalExpense > 0;
+  if (!hasAnyData) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Relatório anual"
+          title={
+            <>
+              Fechamento de <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">{report.year}</em>
+            </>
+          }
+          subtitle="Resumo do ano fiscal: fluxo de caixa, top categorias, bens declaráveis e proventos."
+          actions={<YearSwitcher current={report.year} />}
+        />
+        <EmptyState
+          eyebrow={`Sem dados em ${report.year}`}
+          title={
+            <>
+              Nada pra <em className="italic">agregar</em> ainda
+            </>
+          }
+          description="Esse ano não tem transações registradas. Adicione lançamentos ou importe um extrato pra ver o fechamento anual aqui. Se quiser ver outro ano, use o seletor acima."
+          cta={{ href: "/transacoes", label: "Adicionar transações" }}
+        />
+      </>
+    );
+  }
 
   return (
     <>

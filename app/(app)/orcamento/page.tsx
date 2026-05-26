@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getBudgetVsActual } from "@/services/budgets";
 import { listCategories } from "@/services/categories";
 import { BudgetManager } from "@/components/budgets/budget-manager";
@@ -23,6 +24,33 @@ export default async function OrcamentoPage({
   const totalSpent = rows.reduce((s, r) => s + r.actualSpent, 0);
   const overCount = rows.filter((r) => r.status === "over").length;
   const warningCount = rows.filter((r) => r.status === "warning").length;
+
+  // Empty state: usuário sem nenhuma categoria de despesa
+  if (expenseCategories.length === 0) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Orçamento por categoria"
+          title={
+            <>
+              Defina <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">tetos</em> de gasto
+            </>
+          }
+          subtitle="Pra orçar, primeiro você precisa de categorias de despesa cadastradas. Cadastre suas categorias e volte aqui."
+        />
+        <EmptyState
+          eyebrow="Sem categorias ainda"
+          title={
+            <>
+              Cadastre suas <em className="italic">categorias</em> primeiro
+            </>
+          }
+          description="Mercado, transporte, restaurantes, saúde... O orçamento funciona definindo tetos pra cada categoria. Vai em /categorias e adicione as principais — depois volte aqui pra definir os limites."
+          cta={{ href: "/categorias", label: "Ir pra categorias" }}
+        />
+      </>
+    );
+  }
 
   return (
     <>

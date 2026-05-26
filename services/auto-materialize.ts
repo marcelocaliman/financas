@@ -17,10 +17,30 @@ import { getCurrentUserContext } from "@/services/auth";
  * Falhas são silenciadas e logadas — não bloqueiam o carregamento da
  * página. Se algo der errado, o cron diário e a UI continuam funcionando.
  */
-async function _ensureMaterialized(): Promise<{ created: number }> {
+/** Janela mínima entre auto-materializes do mesmo household (em ms). */
+const THROTTLE_MS = 6 * 60 * 60 * 1000; // 6 horas
+
+async function _ensureMaterialized(): Promise<{ created: number; skipped?: boolean }> {
   try {
     const ctx = await getCurrentUserContext();
     if (!ctx) return { created: 0 };
+
+    const supabase = await createClient();
+
+    // Throttle: se rodou recente, pula (cron diário cobre o resto).
+    // Cast: coluna last_auto_materialize_at adicionada via migration
+    // 20260526040000 mas tipos ainda não regenerados.
+    const { data: hh } = await supabase
+      .from("households")
+      .select("last_auto_materialize_at" as never)
+      .eq("id", ctx.household.id)
+      .maybeSingle();
+    const lastRunRaw = (hh as { last_auto_materialize_at?: string | null } | null)
+      ?.last_auto_materialize_at;
+    const lastRun = lastRunRaw ? new Date(lastRunRaw).getTime() : 0;
+    if (Date.now() - lastRun < THROTTLE_MS) {
+      return { created: 0, skipped: true };
+    }
 
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Sao_Paulo",
@@ -29,7 +49,6 @@ async function _ensureMaterialized(): Promise<{ created: number }> {
       day: "2-digit",
     }).format(new Date());
 
-    const supabase = await createClient();
     const { data, error } = await supabase.rpc("materialize_all_recurrences", {
       p_household_id: ctx.household.id,
       p_until_date: today,
@@ -39,6 +58,13 @@ async function _ensureMaterialized(): Promise<{ created: number }> {
       console.error("[auto-materialize] erro silencioso:", error.message);
       return { created: 0 };
     }
+
+    // Atualiza last_auto_materialize_at independente de quantas criou.
+    await supabase
+      .from("households")
+      .update({ last_auto_materialize_at: new Date().toISOString() } as never)
+      .eq("id", ctx.household.id);
+
     return { created: data ?? 0 };
   } catch (e) {
     console.error("[auto-materialize] exception:", e);

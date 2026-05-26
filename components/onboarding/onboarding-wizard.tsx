@@ -198,7 +198,16 @@ export function OnboardingWizard({
   });
   const [dependents, setDependents] = useState<DependentRow[]>([]);
   const [accountsToCreate, setAccountsToCreate] = useState<
-    Array<{ name: string; institution: string; type: Account["type"]; initialBalance: number }>
+    Array<{
+      name: string;
+      institution: string;
+      type: Account["type"];
+      initialBalance: number;
+      // Específicos pra credit_card. Opcionais — se vazios, vc completa depois em /contas.
+      billCloseDay?: number;
+      billDueDay?: number;
+      creditLimit?: number;
+    }>
   >([]);
   const [fontes, setFontes] = useState<FonteRow[]>([]);
   const [incomes, setIncomes] = useState<IncomeRow[]>([
@@ -839,28 +848,24 @@ function StepDependents({
 
 /* ============================== STEP 3 — Contas ========================== */
 
+type AccountToCreate = {
+  name: string;
+  institution: string;
+  type: Account["type"];
+  initialBalance: number;
+  billCloseDay?: number;
+  billDueDay?: number;
+  creditLimit?: number;
+};
+
 function StepAccounts({
   existingAccounts,
   accountsToCreate,
   setAccountsToCreate,
 }: {
   existingAccounts: Account[];
-  accountsToCreate: Array<{
-    name: string;
-    institution: string;
-    type: Account["type"];
-    initialBalance: number;
-  }>;
-  setAccountsToCreate: React.Dispatch<
-    React.SetStateAction<
-      Array<{
-        name: string;
-        institution: string;
-        type: Account["type"];
-        initialBalance: number;
-      }>
-    >
-  >;
+  accountsToCreate: AccountToCreate[];
+  setAccountsToCreate: React.Dispatch<React.SetStateAction<AccountToCreate[]>>;
 }) {
   const addFromPreset = (p: (typeof PRESET_ACCOUNTS)[number]) => {
     setAccountsToCreate((arr) => [...arr, { ...p, initialBalance: 0 }]);
@@ -942,46 +947,102 @@ function StepAccounts({
           {accountsToCreate.map((a, i) => (
             <li
               key={i}
-              className="rounded-[8px] border border-border bg-surface p-3 grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-2 items-center"
+              className="rounded-[8px] border border-border bg-surface p-3 space-y-2"
             >
-              <Input
-                placeholder="Apelido"
-                value={a.name}
-                onChange={(e) => updateAt(i, { name: e.target.value })}
-              />
-              <Input
-                placeholder="Instituição"
-                value={a.institution}
-                onChange={(e) => updateAt(i, { institution: e.target.value })}
-              />
-              <Select
-                value={a.type}
-                onValueChange={(v) => updateAt(i, { type: v as Account["type"] })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="checking">Conta corrente</SelectItem>
-                  <SelectItem value="savings">Poupança</SelectItem>
-                  <SelectItem value="credit_card">Cartão</SelectItem>
-                  <SelectItem value="investment">Corretora</SelectItem>
-                  <SelectItem value="cash">Dinheiro</SelectItem>
-                </SelectContent>
-              </Select>
-              <MoneyInput
-                name={`acc-bal-${i}`}
-                defaultValue={a.initialBalance}
-                onValueChange={(v) => updateAt(i, { initialBalance: v })}
-              />
-              <button
-                type="button"
-                onClick={() => removeAt(i)}
-                className="text-faint-foreground hover:text-rust-600"
-                aria-label="Remover"
-              >
-                <X className="w-4 h-4" strokeWidth={1.7} />
-              </button>
+              <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_auto] gap-2 items-center">
+                <Input
+                  placeholder="Apelido"
+                  value={a.name}
+                  onChange={(e) => updateAt(i, { name: e.target.value })}
+                />
+                <Input
+                  placeholder="Instituição"
+                  value={a.institution}
+                  onChange={(e) => updateAt(i, { institution: e.target.value })}
+                />
+                <Select
+                  value={a.type}
+                  onValueChange={(v) => updateAt(i, { type: v as Account["type"] })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="checking">Conta corrente</SelectItem>
+                    <SelectItem value="savings">Poupança</SelectItem>
+                    <SelectItem value="credit_card">Cartão</SelectItem>
+                    <SelectItem value="investment">Corretora</SelectItem>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                  </SelectContent>
+                </Select>
+                <MoneyInput
+                  name={`acc-bal-${i}`}
+                  defaultValue={a.initialBalance}
+                  onValueChange={(v) => updateAt(i, { initialBalance: v })}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeAt(i)}
+                  className="text-faint-foreground hover:text-rust-600"
+                  aria-label="Remover"
+                >
+                  <X className="w-4 h-4" strokeWidth={1.7} />
+                </button>
+              </div>
+              {a.type === "credit_card" ? (
+                <div className="pl-2 border-l-2 border-navy-700/30 ml-2 space-y-2">
+                  <p className="text-[11.5px] text-muted-foreground">
+                    O <em>saldo inicial</em> de cartão = fatura em aberto hoje (positivo, vira dívida).
+                    Configure os dias de ciclo pro app calcular fatura aberta corretamente.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="text-[11px] font-mono text-faint-foreground block mb-1">
+                        Fecha dia
+                      </label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        placeholder="27"
+                        value={a.billCloseDay ?? ""}
+                        onChange={(e) =>
+                          updateAt(i, {
+                            billCloseDay: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-mono text-faint-foreground block mb-1">
+                        Vence dia
+                      </label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={31}
+                        placeholder="5"
+                        value={a.billDueDay ?? ""}
+                        onChange={(e) =>
+                          updateAt(i, {
+                            billDueDay: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-mono text-faint-foreground block mb-1">
+                        Limite (opcional)
+                      </label>
+                      <MoneyInput
+                        name={`acc-limit-${i}`}
+                        defaultValue={a.creditLimit ?? 0}
+                        onValueChange={(v) => updateAt(i, { creditLimit: v > 0 ? v : undefined })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

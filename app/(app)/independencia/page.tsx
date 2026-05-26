@@ -24,6 +24,7 @@ import { FireMonteCarloChart } from "@/components/fire/fire-monte-carlo-chart";
 import { FireCalculator } from "@/components/fire/fire-calculator";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,41 @@ export default async function IndependenciaPage() {
   // Patrimônio líquido
   const netWorth =
     accountsTotals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+
+  // Empty state: usuário novo sem dados FIRE configurados
+  const isFireUnconfigured =
+    netWorth === 0 &&
+    prefs.targetMonthlyIncome == null &&
+    prefs.birthDate == null;
+
+  if (isFireUnconfigured) {
+    return (
+      <>
+        <PageHeader
+          eyebrow="Independência financeira"
+          title={
+            <>
+              Quando o trabalho{" "}
+              <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">
+                vira opcional
+              </em>
+            </>
+          }
+          subtitle="FIRE = Financial Independence, Retire Early. Quanto patrimônio você precisa pra viver da renda dos investimentos sem depender de salário."
+        />
+        <EmptyState
+          eyebrow="Configure o FIRE"
+          title={
+            <>
+              Defina suas <em className="italic">metas</em>.
+            </>
+          }
+          description="Pra calcular sua trajetória até a independência financeira, precisamos saber: quanto você quer ter de renda mensal nessa fase, idade alvo, e seus investimentos atuais. Comece configurando."
+          cta={{ href: "/configuracoes/fire", label: "Configurar parâmetros FIRE" }}
+        />
+      </>
+    );
+  }
 
   // Sobra média mensal últimos 6 meses
   const positiveNets = history6.map((h) => Math.max(0, h.net));
