@@ -23,7 +23,7 @@ const ITEMS: Array<{
     key: "ir_retroactive_gaps",
     label: "Lacunas retroativas IR",
     description:
-      "1×/mês: lembra se há lançamentos retroativos pendentes pra IR (Aline jan-mai, Amil, contador…).",
+      "1×/mês: lembra se há lançamentos retroativos pendentes pra IR (rendimentos, plano de saúde, contador…).",
   },
   {
     key: "monthly_recap",

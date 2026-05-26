@@ -6,6 +6,9 @@ export const metadata = {
   title: "Política de Privacidade · Finanças",
 };
 
+const contactEmail =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "marcelo.salgado.caliman@gmail.com";
+
 export default function PoliticaPrivacidadePage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -43,7 +46,7 @@ export default function PoliticaPrivacidadePage() {
             <p>
               O Finanças é uma aplicação pessoal de gestão financeira para indivíduos e casais.
               Para questões de privacidade e proteção de dados, entre em contato pelo email do
-              titular: <a href="mailto:marcelo.salgado.caliman@gmail.com" className="text-navy-700 dark:text-navy-300">marcelo.salgado.caliman@gmail.com</a>.
+              titular: <a href={`mailto:${contactEmail}`} className="text-navy-700 dark:text-navy-300">{contactEmail}</a>.
             </p>
           </Section>
 
@@ -179,7 +182,7 @@ export default function PoliticaPrivacidadePage() {
           <Section title="13. Contato e ANPD">
             <p>
               Encarregado pelo Tratamento de Dados (DPO): a definir formalmente quando o app
-              virar SaaS comercial. Até lá: <a href="mailto:marcelo.salgado.caliman@gmail.com" className="text-navy-700 dark:text-navy-300">marcelo.salgado.caliman@gmail.com</a>.
+              virar SaaS comercial. Até lá: <a href={`mailto:${contactEmail}`} className="text-navy-700 dark:text-navy-300">{contactEmail}</a>.
             </p>
             <p>
               Vc pode também recorrer à <b>Autoridade Nacional de Proteção de Dados (ANPD)</b>:{" "}

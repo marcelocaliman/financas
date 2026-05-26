@@ -96,7 +96,7 @@ export function SignupForm({
             <Input
               id="householdName"
               name="householdName"
-              placeholder="Caliman"
+              placeholder="Sobrenome ou apelido do lar"
               defaultValue=""
             />
           </div>

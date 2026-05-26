@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { cnpjOptional, cpfOptional } from "@/lib/financial/cpf-cnpj-zod";
 
 const TYPES = [
   "clt", "pj_propria", "pj_outros", "aluguel", "pensao",
@@ -14,8 +15,8 @@ const REGIMES = ["mei", "simples_nacional", "lucro_presumido", "lucro_real"] as 
 const baseSchema = z.object({
   type: z.enum(TYPES),
   name: z.string().min(1, "Nome obrigatório."),
-  cnpj: z.string().optional().nullable(),
-  cpf: z.string().optional().nullable(),
+  cnpj: cnpjOptional,
+  cpf: cpfOptional,
   regime_tributario: z.enum(REGIMES).optional().nullable(),
   default_irrf_rate: z.coerce.number().nonnegative().optional().nullable(),
   default_inss_rate: z.coerce.number().nonnegative().optional().nullable(),

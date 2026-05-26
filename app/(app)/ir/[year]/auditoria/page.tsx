@@ -236,16 +236,16 @@ export default async function AuditPage({
             </div>
             <ul className="text-[12.5px] space-y-1.5 mt-2 text-muted-foreground">
               <li>
-                <b className="text-foreground">XP Investimentos</b>: portal cliente → Imposto de
+                <b className="text-foreground">Corretora</b>: portal cliente → Imposto de
                 Renda → Informe de Rendimentos {year}. Sai em fev/{year + 1}. Contém Tesouros,
                 dividendos, ações, FIIs.
               </li>
               <li>
-                <b className="text-foreground">PJ (MNSC DESIGN)</b>: peça ao contador o informe
+                <b className="text-foreground">PJ (se você é sócio)</b>: peça ao contador o informe
                 de rendimentos da PJ pra o sócio (pró-labore + distribuição de lucros).
               </li>
               <li>
-                <b className="text-foreground">Plano de saúde (Amil)</b>: portal Amil → demonstrativo IR.
+                <b className="text-foreground">Plano de saúde</b>: portal da operadora → demonstrativo IR.
               </li>
               <li>
                 <b className="text-foreground">Banco</b>: extratos de 31/12 + informe de

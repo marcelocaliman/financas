@@ -6,6 +6,9 @@ export const metadata = {
   title: "Termos de Uso · Finanças",
 };
 
+const contactEmail =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "marcelo.salgado.caliman@gmail.com";
+
 export default function TermosPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -173,8 +176,8 @@ export default function TermosPage() {
           <Section title="13. Contato">
             <p>
               Dúvidas:{" "}
-              <a href="mailto:marcelo.salgado.caliman@gmail.com" className="text-navy-700 dark:text-navy-300">
-                marcelo.salgado.caliman@gmail.com
+              <a href={`mailto:${contactEmail}`} className="text-navy-700 dark:text-navy-300">
+                {contactEmail}
               </a>
             </p>
           </Section>

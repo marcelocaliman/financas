@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { cpfRequired } from "@/lib/financial/cpf-cnpj-zod";
 
 const REGIMES = [
   "solteiro",
@@ -18,7 +19,7 @@ const COMMON_STRATEGIES = ["split_50_50", "all_in_primary", "all_in_secondary"] 
 
 const filerSchema = z.object({
   fullName: z.string().min(1, "Nome obrigatório."),
-  cpf: z.string().transform((s) => s.replace(/\D/g, "")).refine((s) => s.length === 11, "CPF deve ter 11 dígitos."),
+  cpf: cpfRequired,
   birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
   occupation: z.string().optional(),
   occupationCode: z.string().optional(),

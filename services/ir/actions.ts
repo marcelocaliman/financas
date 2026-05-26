@@ -11,6 +11,7 @@ import {
   findDeductibleCandidates,
   importDeductiblesBatch,
 } from "@/services/ir/auto-deductibles";
+import { cpfOptional } from "@/lib/financial/cpf-cnpj-zod";
 
 const CURRENCIES = ["BRL", "EUR", "USD"] as const;
 
@@ -40,7 +41,7 @@ function paths(year?: number) {
 // ============================================================================
 const settingsSchema = z.object({
   preferred_model: z.enum(["simples", "completo", "auto"]).default("auto"),
-  cpf_titular: z.string().optional().nullable(),
+  cpf_titular: cpfOptional,
 });
 
 export async function upsertIRSettings(
@@ -61,7 +62,7 @@ export async function upsertIRSettings(
     {
       household_id: ctx.household.id,
       preferred_model: parsed.data.preferred_model,
-      cpf_titular: parsed.data.cpf_titular?.replace(/\D/g, "") || null,
+      cpf_titular: parsed.data.cpf_titular,
       titular_user_id: ctx.profile.id,
       updated_at: new Date().toISOString(),
     },
@@ -77,7 +78,7 @@ export async function upsertIRSettings(
 // ============================================================================
 const dependentSchema = z.object({
   name: z.string().min(1, "Nome obrigatório."),
-  cpf: z.string().optional().nullable(),
+  cpf: cpfOptional,
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   relationship: z.enum([
     "conjuge", "companheiro", "filho", "filha", "enteado",

@@ -486,7 +486,7 @@ function StepTitular({
             id="onb-titular-name"
             value={titular.fullName}
             onChange={(e) => setTitular({ ...titular, fullName: e.target.value })}
-            placeholder="Marcelo Caliman"
+            placeholder="João da Silva"
             autoFocus
           />
         </Field>
@@ -608,7 +608,7 @@ function StepSpouse({
               id="onb-spouse-name"
               value={spouse.fullName}
               onChange={(e) => setSpouse({ ...spouse, fullName: e.target.value })}
-              placeholder="Maria Caliman"
+              placeholder="Maria da Silva"
             />
           </Field>
 
@@ -1160,7 +1160,7 @@ function StepIncomes({
           <li key={idx} className="rounded-[8px] border border-border bg-surface p-3 space-y-2">
             <div className="grid grid-cols-[1.5fr_1fr_70px_1.5fr_auto] gap-2 items-center">
               <Input
-                placeholder="Salário Marcelo"
+                placeholder="Salário CLT"
                 value={i.description}
                 onChange={(e) => updateAt(idx, { description: e.target.value })}
               />

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { cnpjOptional } from "@/lib/financial/cpf-cnpj-zod";
 
 const ACCOUNT_TYPES = ["checking", "savings", "credit_card", "investment", "cash"] as const;
 const CURRENCIES = ["BRL", "EUR", "USD"] as const;
@@ -16,7 +17,7 @@ const createSchema = z.object({
   color: z.string().optional(),
   currency: z.enum(CURRENCIES).default("BRL"),
   initialBalance: z.coerce.number().default(0),
-  cnpj: z.string().optional().nullable(),
+  cnpj: cnpjOptional,
   agency: z.string().optional().nullable(),
   accountNumber: z.string().optional().nullable(),
   isExterior: z.coerce.boolean().optional().default(false),

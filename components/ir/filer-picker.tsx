@@ -28,7 +28,7 @@ const COMMUNAL_REGIMES: MarriageRegime[] = ["comunhao_parcial", "comunhao_univer
  * Selector "De quem é este bem?" usado em sheets de cadastro.
  *
  * - Solo (1 filer): não renderiza nada (input hidden com o filer único).
- * - Couple + regime sem comunhão: só "Marcelo / Esposa" (100% no escolhido).
+ * - Couple + regime sem comunhão: só "Titular / Cônjuge" (100% no escolhido).
  * - Couple + comunhão: adiciona opção "Comum (50/50)" + toggle "Particular?".
  *
  * Quando "Comum" é escolhido, owner_filer_id vai pro primário (irrelevante

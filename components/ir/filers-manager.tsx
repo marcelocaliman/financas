@@ -168,7 +168,7 @@ function FilerSheet({
               id="fullName"
               name="fullName"
               defaultValue={filer?.full_name ?? ""}
-              placeholder="Maria Caliman"
+              placeholder="Nome completo do declarante"
               autoFocus
             />
             {state?.fieldErrors?.fullName ? (
