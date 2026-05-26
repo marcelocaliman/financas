@@ -130,6 +130,14 @@ export function TransactionRow({
                   histórica · IR
                 </span>
               ) : null}
+              {tx.debt ? (
+                <span
+                  className="font-mono text-[9px] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-gold-100/60 dark:bg-gold-700/20 text-gold-700 dark:text-gold-500 border border-gold-600/40 shrink-0 inline-flex items-center gap-1"
+                  title={`Pagamento da dívida: ${tx.debt.description}. Saldo da dívida atualiza automaticamente.`}
+                >
+                  ↓ {tx.debt.description}
+                </span>
+              ) : null}
             </span>
             <span className="font-mono text-[11px] text-faint-foreground tracking-[0.02em] whitespace-nowrap shrink-0">
               {tx.account?.name ?? "—"}

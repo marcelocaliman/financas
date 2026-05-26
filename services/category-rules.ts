@@ -28,12 +28,27 @@ export async function matchCategoryRule(
   description: string,
   kind: "income" | "expense" | "transfer",
   householdId: string,
-): Promise<{ categoryId: string; ruleId: string } | null> {
+): Promise<{ categoryId: string; ruleId: string; debtId: string | null } | null> {
   if (!description.trim()) return null;
   const supabase = await createClient();
-  const { data } = await supabase
+  // Inclui debt_id pra sugerir vinculação automática (ex: parcela autokraft → moto)
+  const { data } = await (supabase as unknown as {
+    from: (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: unknown) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              order: (c: string, o: { ascending: boolean }) => Promise<{
+                data: Array<{ id: string; pattern: string; category_id: string; debt_id: string | null }> | null;
+              }>;
+            };
+          };
+        };
+      };
+    };
+  })
     .from("category_rules")
-    .select("id, pattern, category_id")
+    .select("id, pattern, category_id, debt_id")
     .eq("household_id", householdId)
     .eq("is_active", true)
     .eq("kind", kind)
@@ -42,15 +57,18 @@ export async function matchCategoryRule(
   if (!data) return null;
   const haystack = description.toLowerCase();
   for (const rule of data) {
-    const needle = (rule.pattern as string).toLowerCase();
+    const needle = rule.pattern.toLowerCase();
     if (haystack.includes(needle)) {
-      // Incrementa contador async (não bloqueia)
       void supabase
         .from("category_rules")
         .update({ hits: 0 })
-        .eq("id", rule.id as string)
-        .then(); // RPC seria melhor, mas overhead pequeno
-      return { categoryId: rule.category_id as string, ruleId: rule.id as string };
+        .eq("id", rule.id)
+        .then();
+      return {
+        categoryId: rule.category_id,
+        ruleId: rule.id,
+        debtId: rule.debt_id,
+      };
     }
   }
   return null;

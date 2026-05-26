@@ -8,6 +8,7 @@ import type { Currency, Tables, TransactionKind } from "@/types/database";
 export type Transaction = Tables<"transactions"> & {
   account?: Pick<Tables<"accounts">, "id" | "name" | "institution" | "type"> | null;
   category?: Pick<Tables<"categories">, "id" | "name" | "kind" | "color" | "icon"> | null;
+  debt?: Pick<Tables<"debts">, "id" | "description" | "kind"> | null;
 };
 
 export type TransactionFilters = {
@@ -59,10 +60,12 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   const page = filters.page ?? 0;
   const pageSize = filters.pageSize ?? DEFAULT_PAGE_SIZE;
 
+  // Cast: relação transactions→debts adicionada via migration 20260526060000,
+  // tipos auto-gerados ainda não regenerados.
   let q = supabase
     .from("transactions")
     .select(
-      "*, account:accounts(id,name,institution,type), category:categories(id,name,kind,color,icon)",
+      "*, account:accounts(id,name,institution,type), category:categories(id,name,kind,color,icon), debt:debts!transactions_debt_id_fkey(id,description,kind)" as "*",
       { count: "exact" },
     )
     .gte("date", from)

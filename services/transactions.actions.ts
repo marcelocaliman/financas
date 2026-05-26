@@ -20,6 +20,8 @@ const baseSchema = z.object({
   description: z.string().min(1, "Descreva em poucas palavras."),
   accountId: z.string().uuid("Selecione uma conta."),
   categoryId: z.string().uuid().optional(),
+  /** Vincula a tx a uma dívida — trigger reduz debts.current_balance. */
+  debtId: z.string().uuid().optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida."),
   paymentMethod: z.enum(PAYMENT_METHODS).optional(),
   // IR fields (apenas pra income)
@@ -102,6 +104,7 @@ export async function createTransaction(
     description: formData.get("description"),
     accountId: formData.get("accountId"),
     categoryId: formData.get("categoryId") || undefined,
+    debtId: formData.get("debtId") || null,
     date: formData.get("date"),
     paymentMethod: formData.get("paymentMethod") || undefined,
     fontePagadoraId: formData.get("fontePagadoraId") || null,
@@ -138,13 +141,14 @@ export async function createTransaction(
   }
 
   // Auto-categorização: se o usuário não escolheu categoria, tentamos sugerir
-  // por matching de regras nas categorias do household.
+  // por matching de regras nas categorias do household. A regra também pode
+  // sugerir vincular a uma dívida (ex: pattern "autokraft" → Pagamento dívidas + moto).
   let resolvedCategoryId = parsed.data.categoryId ?? null;
+  let resolvedDebtId = parsed.data.debtId ?? null;
   let categorySource: "manual" | "rule" = "manual";
   let categoryConfidence: number | null = null;
 
   if (!resolvedCategoryId) {
-    // 1) Tenta regras user-defined (category_rules) — prioridade máxima
     const userRule = await matchCategoryRule(
       parsed.data.description,
       parsed.data.kind,
@@ -152,10 +156,13 @@ export async function createTransaction(
     );
     if (userRule) {
       resolvedCategoryId = userRule.categoryId;
+      // Só auto-sugere debt se o user não passou explicitamente
+      if (!resolvedDebtId && userRule.debtId) {
+        resolvedDebtId = userRule.debtId;
+      }
       categorySource = "rule";
       categoryConfidence = 1.0;
     } else {
-      // 2) Fallback: regras automáticas dentro de cada category (legado)
       const { data: cats } = await supabase
         .from("categories")
         .select("id, kind, rules")
@@ -169,10 +176,12 @@ export async function createTransaction(
     }
   }
 
-  const { error } = await supabase.from("transactions").insert({
+  // Cast: debt_id adicionado em migration 20260526060000, tipos não regerados.
+  const insertPayload = {
     household_id: ctx.household.id,
     account_id: parsed.data.accountId,
     category_id: resolvedCategoryId,
+    debt_id: parsed.data.kind === "expense" ? resolvedDebtId : null,
     kind: parsed.data.kind,
     amount: parsed.data.amount,
     amount_account: amountAccount,
@@ -187,7 +196,8 @@ export async function createTransaction(
     irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
-  });
+  };
+  const { error } = await supabase.from("transactions").insert(insertPayload as never);
   if (error) return { error: error.message };
 
   for (const p of pathsToInvalidate()) revalidatePath(p);
@@ -209,6 +219,7 @@ export async function updateTransaction(
     description: formData.get("description"),
     accountId: formData.get("accountId"),
     categoryId: formData.get("categoryId") || undefined,
+    debtId: formData.get("debtId") || null,
     date: formData.get("date"),
     paymentMethod: formData.get("paymentMethod") || undefined,
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
@@ -235,20 +246,23 @@ export async function updateTransaction(
     }
   }
 
+  // Cast: debt_id adicionado em migration 20260526060000, tipos não regerados.
+  const updatePayload = {
+    account_id: parsed.data.accountId,
+    category_id: parsed.data.categoryId ?? null,
+    debt_id: parsed.data.kind === "expense" ? (parsed.data.debtId ?? null) : null,
+    kind: parsed.data.kind,
+    amount: parsed.data.amount,
+    amount_account: amountAccount,
+    currency: txCurrency,
+    description: parsed.data.description.trim(),
+    payment_method: parsed.data.paymentMethod ?? null,
+    date: parsed.data.date,
+    is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
+  };
   const { error } = await supabase
     .from("transactions")
-    .update({
-      account_id: parsed.data.accountId,
-      category_id: parsed.data.categoryId ?? null,
-      kind: parsed.data.kind,
-      amount: parsed.data.amount,
-      amount_account: amountAccount,
-      currency: txCurrency,
-      description: parsed.data.description.trim(),
-      payment_method: parsed.data.paymentMethod ?? null,
-      date: parsed.data.date,
-      is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
-    })
+    .update(updatePayload as never)
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
 
