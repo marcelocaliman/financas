@@ -30,7 +30,13 @@ import type {
 } from "@/types/database";
 
 type RecurrenceRule = Tables<"recurring_rules">;
-type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
+type AccountLite = {
+  id: string;
+  name: string;
+  institution: string;
+  currency?: Currency;
+  type?: string;
+};
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 type FonteLite = Pick<Tables<"fontes_pagadoras">, "id" | "type" | "name" | "cnpj" | "cpf">;
 
@@ -269,7 +275,16 @@ export function RecurrenceSheet({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Conta" htmlFor="accountId" required>
+              <Field
+                label="Conta"
+                htmlFor="accountId"
+                required
+                hint={
+                  accounts.find((a) => a.id === accountId)?.type === "credit_card"
+                    ? "Pago no cartão · vira fatura, só sai do banco no pagamento"
+                    : undefined
+                }
+              >
                 <Select value={accountId} onValueChange={setAccountId} name="accountId">
                   <SelectTrigger id="accountId">
                     <SelectValue placeholder="Conta" />
@@ -278,6 +293,7 @@ export function RecurrenceSheet({
                     {accounts.map((a) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.name}
+                        {a.type === "credit_card" ? "  · cartão" : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>

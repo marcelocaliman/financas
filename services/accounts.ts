@@ -71,8 +71,13 @@ export async function getAccountsTotals(): Promise<AccountsTotals> {
   // Para evitar dupla contagem ao somar investments separados, o caixa da
   // corretora (type='investment') NÃO entra no total líquido. Os ativos
   // somam por fora via getPortfolioStats.
+  //
+  // Cartão de crédito (saldo negativo = dívida) também NÃO entra no patrimônio
+  // líquido. Modelo cash basis: a dívida só vira "perda de patrimônio" quando a
+  // fatura é paga (cash sai da conta corrente). Até lá é um compromisso futuro,
+  // visualizado em /contas mas não somado/subtraído do patrimônio.
   const liquidExcludingInvestmentCash =
-    byType.checking + byType.savings + byType.cash + byType.credit_card;
+    byType.checking + byType.savings + byType.cash;
   return { byType, total, liquidExcludingInvestmentCash, displayCurrency };
 }
 
@@ -141,8 +146,9 @@ export async function getAccountsTotalsAt(atDateISO: string): Promise<AccountsTo
   }
   const total =
     byType.checking + byType.savings + byType.investment + byType.cash + byType.credit_card;
+  // Mesma regra de getAccountsTotals: credit_card fica fora do patrimônio líquido.
   const liquidExcludingInvestmentCash =
-    byType.checking + byType.savings + byType.cash + byType.credit_card;
+    byType.checking + byType.savings + byType.cash;
   return { byType, total, liquidExcludingInvestmentCash, displayCurrency };
 }
 

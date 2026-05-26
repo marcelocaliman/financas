@@ -55,6 +55,7 @@ export default async function RecorrentesPage() {
     name: a.name,
     institution: a.institution,
     currency: a.currency,
+    type: a.type,
   }));
   const categoriesLite = categories.map((c) => ({
     id: c.id,
