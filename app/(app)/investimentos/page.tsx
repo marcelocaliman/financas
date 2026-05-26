@@ -16,22 +16,33 @@ import { listAccounts } from "@/services/accounts";
 import { listInvestments, listClosedInvestments, getLatestIndexer } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
+import { getInvestmentHistory } from "@/services/investment-history";
+import { InvestmentHistoryChart } from "@/components/charts/investment-history-chart";
 
 export const dynamic = "force-dynamic";
 
 export default async function InvestimentosPage() {
-  const [investments, closedInvestments, accounts, live, selic, cdi, filers, regimeCtx] =
-    await Promise.all([
-      listInvestments(),
-      // Só usado pro contador no header (não renderiza tabela aqui)
-      listClosedInvestments(),
-      listAccounts(),
-      getLivePortfolio(),
-      getLatestIndexer("selic"),
-      getLatestIndexer("cdi"),
-      listFilers(),
-      getRegimeContext(),
-    ]);
+  const [
+    investments,
+    closedInvestments,
+    accounts,
+    live,
+    selic,
+    cdi,
+    filers,
+    regimeCtx,
+    history,
+  ] = await Promise.all([
+    listInvestments(),
+    listClosedInvestments(),
+    listAccounts(),
+    getLivePortfolio(),
+    getLatestIndexer("selic"),
+    getLatestIndexer("cdi"),
+    listFilers(),
+    getRegimeContext(),
+    getInvestmentHistory(12),
+  ]);
   const closedCount = closedInvestments.length;
   const regime = regimeCtx.regime;
 
@@ -162,6 +173,17 @@ export default async function InvestimentosPage() {
               </p>
             </Panel>
           </div>
+
+          <Panel className="mb-8">
+            <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+              Evolução do patrimônio · últimos {history.length} meses
+            </div>
+            <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
+              Soma de todos os ativos mês a mês. Ações usam preços históricos da
+              B3; renda fixa retrocedida via Selic média.
+            </p>
+            <InvestmentHistoryChart points={history} />
+          </Panel>
 
           {fixedIncome.length > 0 ? (
             <ScrollTarget targetId="fixed-income">

@@ -263,3 +263,111 @@ export async function fetchQuotes(tickers: string[]): Promise<Map<string, Quote>
 
   return result;
 }
+
+/* ============================== HISTÓRICO ================================ */
+
+export type HistoricalPoint = {
+  /** YYYY-MM-DD */
+  date: string;
+  close: number;
+};
+
+type HistoricalResponse = {
+  results?: Array<{
+    symbol: string;
+    historicalDataPrice?: Array<{
+      /** Unix timestamp em segundos */
+      date: number;
+      close: number;
+    }>;
+  }>;
+  error?: string;
+};
+
+/**
+ * Busca série histórica de cotações de fechamento pra um ticker via
+ * brapi.dev. Default: último ano com 1 ponto por mês.
+ *
+ * Usado pra backfill da quote_history (1× por ticker no setup), não em
+ * hot path. Cache HTTP de 24h porque histórico não muda.
+ */
+export async function fetchHistoricalQuotes(
+  ticker: string,
+  opts: { range?: "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y"; interval?: "1d" | "1wk" | "1mo" } = {},
+): Promise<HistoricalPoint[]> {
+  const range = opts.range ?? "1y";
+  const interval = opts.interval ?? "1mo";
+  const token = process.env.BRAPI_TOKEN ?? "";
+  const url = new URL(`${ENDPOINT}/${ticker}`);
+  url.searchParams.set("range", range);
+  url.searchParams.set("interval", interval);
+  if (token) url.searchParams.set("token", token);
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(url.toString(), {
+      signal: controller.signal,
+      next: { revalidate: 86400 }, // 24h — histórico passado não muda
+      headers: { Accept: "application/json" },
+    });
+    clearTimeout(timer);
+
+    if (!res.ok) return [];
+    const json = (await res.json()) as HistoricalResponse;
+    const series = json.results?.[0]?.historicalDataPrice ?? [];
+    return series.map((p) => ({
+      date: new Date(p.date * 1000).toISOString().slice(0, 10),
+      close: p.close,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Backfill da quote_history pra uma lista de tickers. Idempotente — usa
+ * ON CONFLICT pra atualizar preços se rodar de novo.
+ *
+ * Chamado 1×/mês via cron pra manter o histórico atualizado.
+ */
+export async function backfillQuoteHistory(
+  tickers: string[],
+  opts: { range?: "1y" | "2y" | "5y" } = {},
+): Promise<{ ticker: string; inserted: number }[]> {
+  const supabase = serviceClient();
+  const out: { ticker: string; inserted: number }[] = [];
+  for (const ticker of tickers) {
+    const points = await fetchHistoricalQuotes(ticker, {
+      range: opts.range ?? "1y",
+      interval: "1mo",
+    });
+    if (points.length === 0) {
+      out.push({ ticker, inserted: 0 });
+      continue;
+    }
+    type QuoteHistoryRow = { ticker: string; date: string; close: number; source: string };
+    const rows: QuoteHistoryRow[] = points.map((p) => ({
+      ticker: ticker.toUpperCase(),
+      date: p.date,
+      close: p.close,
+      source: "brapi",
+    }));
+    const sb = supabase as unknown as {
+      from: (t: string) => {
+        upsert: (
+          rows: QuoteHistoryRow[],
+          opts: { onConflict: string },
+        ) => Promise<{ error: { message: string } | null }>;
+      };
+    };
+    const { error } = await sb
+      .from("quote_history")
+      .upsert(rows, { onConflict: "ticker,date" });
+    if (error && process.env.NODE_ENV !== "production") {
+      console.warn(`[brapi] backfill ${ticker} falhou: ${error.message}`);
+    }
+    out.push({ ticker, inserted: rows.length });
+  }
+  return out;
+}
