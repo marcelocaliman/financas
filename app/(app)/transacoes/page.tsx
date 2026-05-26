@@ -1,4 +1,6 @@
 import { Fragment } from "react";
+import Link from "next/link";
+import { cn } from "@/lib/utils/cn";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { KpiCard } from "@/components/ui/kpi-card";
@@ -18,7 +20,9 @@ import {
   monthRange,
   getMonthlySummary,
   listDistinctPortadores,
+  getMonthlyCardSpending,
 } from "@/services/transactions";
+import { formatDateNumeric } from "@/lib/utils/format";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
 import type { Transaction } from "@/services/transactions";
@@ -92,7 +96,7 @@ export default async function TransacoesPage({
         ? false
         : isPastMonth; // default true se mês passado, false caso contrário
 
-  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores] =
+  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending] =
     await Promise.all([
       listTransactions({
         month,
@@ -111,7 +115,12 @@ export default async function TransacoesPage({
       listAccounts(),
       listCategories(),
       listDistinctPortadores(),
+      getMonthlyCardSpending(month),
     ]);
+
+  const cardIds = accounts.filter((a) => a.type === "credit_card").map((a) => a.id);
+  const firstCardId = cardIds[0] ?? null;
+  const hasCardSpending = cardSpending.total > 0;
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -171,7 +180,12 @@ export default async function TransacoesPage({
         }
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-3 mb-6",
+          hasCardSpending ? "sm:grid-cols-4" : "sm:grid-cols-3",
+        )}
+      >
         <KpiCard
           label="Entrou"
           value={summary.income}
@@ -185,12 +199,33 @@ export default async function TransacoesPage({
           deltaPct={expenseDelta}
           invertDeltaColor
         />
+        {hasCardSpending ? (
+          <Link
+            href={
+              firstCardId
+                ? `/transacoes?accountId=${firstCardId}${month ? `&month=${month}` : ""}`
+                : "/contas"
+            }
+            className="block"
+          >
+            <KpiCard
+              label="No cartão"
+              value={cardSpending.total}
+              tone="muted"
+              hint={
+                cardSpending.nextDueDate
+                  ? `vence ${formatDateNumeric(cardSpending.nextDueDate)}`
+                  : `${cardSpending.txCount} compra${cardSpending.txCount === 1 ? "" : "s"}`
+              }
+            />
+          </Link>
+        ) : null}
         <KpiCard
           label="Sobra"
           value={summary.net}
           tone={summary.net >= 0 ? "positive" : "negative"}
           deltaAbs={netDelta}
-          className="col-span-2 sm:col-span-1"
+          className={hasCardSpending ? "col-span-2 sm:col-span-1" : "col-span-2 sm:col-span-1"}
         />
       </div>
 

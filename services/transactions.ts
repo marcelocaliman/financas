@@ -96,6 +96,85 @@ export async function listTransactions(filters: TransactionFilters = {}): Promis
   };
 }
 
+export type MonthlyCardSpending = {
+  total: number;
+  txCount: number;
+  /** Próxima data de vencimento entre os cartões com fatura aberta (ISO). Null se não há. */
+  nextDueDate: string | null;
+  displayCurrency: Currency;
+};
+
+/**
+ * Total de despesas no mês em accounts tipo credit_card. NÃO segue cash basis
+ * (proposital: o KPI é justamente pra mostrar o que tá deferido no cartão).
+ *
+ * Retorna também a próxima data de vencimento de fatura entre os cartões
+ * pra usar como hint no card ("vence DD/MM").
+ */
+export async function getMonthlyCardSpending(monthStr?: string): Promise<MonthlyCardSpending> {
+  const supabase = await createClient();
+  const { from, to } = monthRange(monthStr);
+  const cardIds = await getCreditCardAccountIds(supabase);
+
+  if (cardIds.length === 0) {
+    const displayCurrency = await getDisplayCurrency();
+    return { total: 0, txCount: 0, nextDueDate: null, displayCurrency };
+  }
+
+  const [{ data: txs }, displayCurrency, rates] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("amount_account, currency, account:accounts(currency)")
+      .gte("date", from)
+      .lte("date", to)
+      .in("account_id", cardIds)
+      .eq("kind", "expense"),
+    getDisplayCurrency(),
+    getRateMap(),
+  ]);
+
+  let total = 0;
+  for (const t of txs ?? []) {
+    const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+    const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+    total += convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+  }
+
+  // Próximo vencimento: o auto-sync paga a fatura no bill_due_day do cartão.
+  // Pegamos o cartão com bill_due_day configurado mais próximo da data de
+  // hoje (após hoje).
+  const { data: cards } = await supabase
+    .from("accounts")
+    .select("bill_due_day")
+    .eq("type", "credit_card")
+    .not("bill_due_day", "is", null);
+  let nextDueDate: string | null = null;
+  if (cards && cards.length > 0) {
+    const today = new Date();
+    const todayDay = today.getUTCDate();
+    const dueDays = (cards as Array<{ bill_due_day: number | null }>)
+      .map((c) => c.bill_due_day)
+      .filter((d): d is number => d != null);
+    if (dueDays.length > 0) {
+      const earliest = Math.min(...dueDays);
+      const dy = today.getUTCFullYear();
+      const dm = today.getUTCMonth() + 1; // 1-12
+      // Se ainda não passou esse dia no mês corrente, é esse. Senão, próximo mês.
+      const dueInThisMonth = todayDay <= earliest;
+      const targetY = dueInThisMonth ? dy : dm === 12 ? dy + 1 : dy;
+      const targetM = dueInThisMonth ? dm : dm === 12 ? 1 : dm + 1;
+      nextDueDate = `${targetY}-${String(targetM).padStart(2, "0")}-${String(earliest).padStart(2, "0")}`;
+    }
+  }
+
+  return {
+    total: Math.round(total * 100) / 100,
+    txCount: txs?.length ?? 0,
+    nextDueDate,
+    displayCurrency,
+  };
+}
+
 /**
  * Lista os portadores distintos (tags "portador:<nome>") usadas no household.
  * Usado pra popular o select de filtro em /transacoes.
