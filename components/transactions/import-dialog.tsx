@@ -231,7 +231,13 @@ export function ImportTransactionsDialog({
         setStep(3);
         return;
       }
-      toast.success(`${r.inserted} transação${r.inserted === 1 ? "" : "s"} importada${r.inserted === 1 ? "" : "s"}.`);
+      const inserted = r.inserted ?? 0;
+      const skipped = r.skippedDuplicates?.length ?? 0;
+      const insertedMsg = `${inserted} transação${inserted === 1 ? "" : "s"} importada${inserted === 1 ? "" : "s"}`;
+      const skippedMsg = skipped > 0
+        ? ` · ${skipped} pulada${skipped === 1 ? "" : "s"} (já existia${skipped === 1 ? "" : "m"})`
+        : "";
+      toast.success(insertedMsg + skippedMsg);
       onOpenChange(false);
     });
   };

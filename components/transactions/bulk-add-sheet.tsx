@@ -125,7 +125,11 @@ export function BulkAddSheet({
         toast.error(r.errors.map((e) => e.error).join("; "));
         return;
       }
-      toast.success(`${r.inserted} lançamento${r.inserted === 1 ? "" : "s"} criado${r.inserted === 1 ? "" : "s"}.`);
+      const inserted = r.inserted ?? 0;
+      const skipped = r.skippedDuplicates?.length ?? 0;
+      const msg = `${inserted} lançamento${inserted === 1 ? "" : "s"} criado${inserted === 1 ? "" : "s"}`
+        + (skipped > 0 ? ` · ${skipped} pulado${skipped === 1 ? "" : "s"} (já existia${skipped === 1 ? "" : "m"})` : "");
+      toast.success(msg);
       onOpenChange(false);
     });
   }

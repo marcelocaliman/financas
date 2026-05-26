@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { getRateMap } from "@/services/currency";
 import { convertOrSame } from "@/lib/financial/currency";
+import { findDuplicate, type ExistingTx, type DedupeCandidate } from "@/services/import-dedupe";
 import type { Currency, PaymentMethod, TransactionKind } from "@/types/database";
 
 /**
@@ -26,6 +27,14 @@ export type ImportResult = {
   ok?: boolean;
   inserted?: number;
   errors?: Array<{ index: number; error: string }>;
+  /** Linhas puladas por já existir transação equivalente (dedupe). */
+  skippedDuplicates?: Array<{
+    index: number;
+    candidateDescription: string;
+    existingDescription: string;
+    existingDate: string;
+    reason: string;
+  }>;
 };
 
 /**
@@ -150,18 +159,69 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
     return { errors, inserted: 0 };
   }
 
-  // Insere em batches de 500 (limite seguro do Supabase)
+  // ───── Dedupe: detecta transações já existentes que provavelmente são
+  // as mesmas das do CSV. Ex: recorrência materializou Claude AI dia 15,
+  // depois o CSV da fatura vem com a mesma cobrança. Sem dedupe, duplica.
+  //
+  // Estratégia: pre-fetch tx existentes no range de datas dos inserts
+  // (com janela ±3 dias) e match em memória via heurística (descrição
+  // similar + valor próximo).
+  const insertDates = inserts.map((i) => i.date).sort();
+  const minDate = insertDates[0];
+  const maxDate = insertDates[insertDates.length - 1];
+  const expandDay = (d: string, n: number) => {
+    const dt = new Date(d + "T00:00:00Z");
+    dt.setUTCDate(dt.getUTCDate() + n);
+    return dt.toISOString().slice(0, 10);
+  };
+  const accountIdsTouched = Array.from(new Set(inserts.map((i) => i.account_id)));
+  const { data: existing } = await supabase
+    .from("transactions")
+    .select("id, account_id, kind, date, amount_account, description, recurring_rule_id")
+    .eq("household_id", ctx.household.id)
+    .in("account_id", accountIdsTouched)
+    .gte("date", expandDay(minDate, -3))
+    .lte("date", expandDay(maxDate, 3));
+
+  const existingTxs = (existing ?? []) as ExistingTx[];
+  const skippedDuplicates: NonNullable<ImportResult["skippedDuplicates"]> = [];
+  const toInsert: typeof inserts = [];
+
+  inserts.forEach((row, i) => {
+    const candidate: DedupeCandidate = {
+      account_id: row.account_id,
+      kind: row.kind,
+      date: row.date,
+      amount_account: row.amount_account,
+      description: row.description,
+    };
+    const match = findDuplicate(candidate, existingTxs);
+    if (match) {
+      skippedDuplicates.push({
+        index: i,
+        candidateDescription: row.description,
+        existingDescription: match.description,
+        existingDate: match.date,
+        reason: match.recurring_rule_id
+          ? "já materializada via recorrência"
+          : "transação equivalente já existe",
+      });
+      return;
+    }
+    toInsert.push(row);
+  });
+
+  // Insere o que sobrou em batches de 500
   const BATCH = 500;
   let inserted = 0;
-  for (let start = 0; start < inserts.length; start += BATCH) {
-    const slice = inserts.slice(start, start + BATCH);
+  for (let start = 0; start < toInsert.length; start += BATCH) {
+    const slice = toInsert.slice(start, start + BATCH);
     const { data, error } = await supabase.from("transactions").insert(slice).select("id");
     if (error) {
-      // Se falhar no meio, retorna o erro. Inconsistente mas raro
-      // (RLS, constraint, etc.) — o user vê e re-tenta.
       return {
         errors: [{ index: -1, error: `Erro no batch ${start}-${start + slice.length}: ${error.message}` }],
         inserted,
+        skippedDuplicates,
       };
     }
     inserted += data?.length ?? 0;
@@ -171,5 +231,9 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
   revalidatePath("/dashboard");
   revalidatePath("/analise");
 
-  return { ok: true, inserted };
+  return {
+    ok: true,
+    inserted,
+    skippedDuplicates: skippedDuplicates.length > 0 ? skippedDuplicates : undefined,
+  };
 }
