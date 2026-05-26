@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getCreditCardAccountIds } from "@/services/credit-card";
 import type { Currency, Tables, TransactionKind } from "@/types/database";
 
 export type Transaction = Tables<"transactions"> & {
@@ -110,18 +111,24 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
   const supabase = await createClient();
   const { from, to, label } = monthRange(monthStr);
 
-  // Receitas e despesas excluem transferências (que apenas movem dinheiro entre contas)
-  // Filtro is_historical_ir_only=false: ignora transações marcadas como
-  // "informativas pra IR" (já passaram, saldo já reflete) — não devem entrar
-  // em sobra/totais operacionais.
+  // Modelo cash basis pra cartão: compras no cartão não viram Saiu até o
+  // pagamento da fatura. Excluímos transações cujo account é credit_card.
+  // EXCEÇÃO: o pagamento da fatura (transfer IN num cartão) conta como Saiu —
+  // é o cash real saindo do banco.
+  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
+
+  let opQuery = supabase
+    .from("transactions")
+    .select("kind, amount_account, currency, account:accounts(currency)")
+    .gte("date", from)
+    .lte("date", to)
+    .eq("is_historical_ir_only", false)
+    .in("kind", ["income", "expense"]);
+  if (cardListExpr) opQuery = opQuery.not("account_id", "in", cardListExpr);
+
   const [{ data, error }, displayCurrency, rates] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("kind, amount_account, currency, account:accounts(currency)")
-      .gte("date", from)
-      .lte("date", to)
-      .eq("is_historical_ir_only", false)
-      .in("kind", ["income", "expense"]),
+    opQuery,
     getDisplayCurrency(),
     getRateMap(),
   ]);
@@ -135,6 +142,24 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
     const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
     if (t.kind === "income") income += amt;
     else if (t.kind === "expense") expense += amt;
+  }
+
+  // Bill payments: transfer IN landing on credit card = cash real saindo do banco
+  if (cardIds.length > 0) {
+    const { data: billPayments } = await supabase
+      .from("transactions")
+      .select("amount_account, currency, account:accounts(currency)")
+      .gte("date", from)
+      .lte("date", to)
+      .eq("kind", "transfer")
+      .eq("transfer_direction", "in")
+      .in("account_id", cardIds)
+      .eq("is_historical_ir_only", false);
+    for (const t of billPayments ?? []) {
+      const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+      const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+      expense += convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+    }
   }
 
   // Conta total inclui transferências (todos os movimentos)
@@ -214,14 +239,22 @@ export async function getMonthlyHistory(
   const startISO = start.toISOString().slice(0, 10);
   const endISO = `${y}-${String(m).padStart(2, "0")}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
 
+  // Modelo cash basis (ver getMonthlySummary): exclui transações em cartão
+  // dos KPIs, mas adiciona bill payments (transfer in pra cartão) como expense.
+  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
+
+  let opQuery = supabase
+    .from("transactions")
+    .select("kind, amount_account, currency, date, account:accounts(currency)")
+    .gte("date", startISO)
+    .lte("date", endISO)
+    .eq("is_historical_ir_only", false)
+    .in("kind", ["income", "expense"]);
+  if (cardListExpr) opQuery = opQuery.not("account_id", "in", cardListExpr);
+
   const [{ data, error }, displayCurrency, rates] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("kind, amount_account, currency, date, account:accounts(currency)")
-      .gte("date", startISO)
-      .lte("date", endISO)
-      .eq("is_historical_ir_only", false)
-      .in("kind", ["income", "expense"]),
+    opQuery,
     getDisplayCurrency(),
     getRateMap(),
   ]);
@@ -254,6 +287,27 @@ export async function getMonthlyHistory(
     const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
     if (t.kind === "income") b.income += amt;
     else b.expense += amt;
+  }
+
+  // Bill payments: transfer IN no cartão = cash real saindo do banco
+  if (cardIds.length > 0) {
+    const { data: billPayments } = await supabase
+      .from("transactions")
+      .select("amount_account, currency, date, account:accounts(currency)")
+      .gte("date", startISO)
+      .lte("date", endISO)
+      .eq("kind", "transfer")
+      .eq("transfer_direction", "in")
+      .in("account_id", cardIds)
+      .eq("is_historical_ir_only", false);
+    for (const t of billPayments ?? []) {
+      const key = (t.date as string).slice(0, 7);
+      const b = buckets.get(key);
+      if (!b) continue;
+      const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+      const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+      b.expense += convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+    }
   }
 
   for (const row of out) {
@@ -413,22 +467,33 @@ export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
   const startPrior = new Date(Date.UTC(y, m - 4, 1)).toISOString().slice(0, 10);
   const endPrior = new Date(Date.UTC(y, m - 1, 0)).toISOString().slice(0, 10);
 
+  // Anomalias devem refletir cash basis: compras no cartão não disparam alerta
+  // (não saiu cash ainda — não distorce o "gastei muito esse mês").
+  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
+
+  let currQuery = supabase
+    .from("transactions")
+    .select("amount_account, currency, category_id, category:categories(id,name), account:accounts(currency)")
+    .gte("date", startCurrent)
+    .lte("date", endCurrent)
+    .eq("is_historical_ir_only", false)
+    .eq("kind", "expense");
+  if (cardListExpr) currQuery = currQuery.not("account_id", "in", cardListExpr);
+
+  let priorQuery = supabase
+    .from("transactions")
+    .select("amount_account, currency, category_id, date, account:accounts(currency)")
+    .gte("date", startPrior)
+    .lte("date", endPrior)
+    .eq("is_historical_ir_only", false)
+    .eq("kind", "expense");
+  if (cardListExpr) priorQuery = priorQuery.not("account_id", "in", cardListExpr);
+
   const [{ data: current, error: e1 }, { data: prior, error: e2 }, displayCurrency, rates] =
     await Promise.all([
-      supabase
-        .from("transactions")
-        .select("amount_account, currency, category_id, category:categories(id,name), account:accounts(currency)")
-        .gte("date", startCurrent)
-        .lte("date", endCurrent)
-        .eq("is_historical_ir_only", false)
-        .eq("kind", "expense"),
-      supabase
-        .from("transactions")
-        .select("amount_account, currency, category_id, date, account:accounts(currency)")
-        .gte("date", startPrior)
-        .lte("date", endPrior)
-        .eq("is_historical_ir_only", false)
-        .eq("kind", "expense"),
+      currQuery,
+      priorQuery,
       getDisplayCurrency(),
       getRateMap(),
     ]);

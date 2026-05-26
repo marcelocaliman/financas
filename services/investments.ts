@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getLivePortfolio } from "@/services/live-yield";
+import { getCreditCardAccountIds } from "@/services/credit-card";
 import type {
   AssetType,
   Currency,
@@ -195,14 +196,22 @@ export async function getCoverage(): Promise<{
     .toISOString()
     .slice(0, 10);
 
+  // Coverage FIRE usa cash basis: despesas médias excluem cartão (não saíram
+  // do banco). Pagamento da fatura (transfer→cartão) entra no lugar.
+  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
+
+  let expensesQuery = supabase
+    .from("transactions")
+    .select("amount_account, currency, date, account:accounts(currency)")
+    .eq("kind", "expense")
+    .eq("is_historical_ir_only", false)
+    .gte("date", start)
+    .lte("date", end);
+  if (cardListExpr) expensesQuery = expensesQuery.not("account_id", "in", cardListExpr);
+
   const [{ data: expenses }, { data: yields }, displayCurrency, rates] = await Promise.all([
-    supabase
-      .from("transactions")
-      .select("amount_account, currency, date, account:accounts(currency)")
-      .eq("kind", "expense")
-      .eq("is_historical_ir_only", false)
-      .gte("date", start)
-      .lte("date", end),
+    expensesQuery,
     supabase
       .from("investment_yields")
       .select("net_yield, month, investment:investments(currency)")
@@ -212,11 +221,29 @@ export async function getCoverage(): Promise<{
     getRateMap(),
   ]);
 
-  const monthlyExpenseTotal = (expenses ?? []).reduce((s, t) => {
+  let monthlyExpenseTotal = (expenses ?? []).reduce((s, t) => {
     const acc = Array.isArray(t.account) ? t.account[0] : t.account;
     const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
     return s + convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
   }, 0);
+
+  // Bill payments contam como despesa real (cash basis)
+  if (cardIds.length > 0) {
+    const { data: bills } = await supabase
+      .from("transactions")
+      .select("amount_account, currency, account:accounts(currency)")
+      .eq("kind", "transfer")
+      .eq("transfer_direction", "in")
+      .in("account_id", cardIds)
+      .eq("is_historical_ir_only", false)
+      .gte("date", start)
+      .lte("date", end);
+    for (const t of bills ?? []) {
+      const acc = Array.isArray(t.account) ? t.account[0] : t.account;
+      const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
+      monthlyExpenseTotal += convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
+    }
+  }
   const monthlyYieldTotal = (yields ?? []).reduce((s, y) => {
     const inv = Array.isArray(y.investment) ? y.investment[0] : y.investment;
     const c = (inv?.currency ?? "BRL") as Currency;

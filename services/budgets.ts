@@ -4,6 +4,7 @@ import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { listCategories } from "@/services/categories";
 import { monthRange } from "@/services/transactions";
+import { getCreditCardAccountIds } from "@/services/credit-card";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -89,6 +90,33 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
   const prevMonth = monthKeyForDate(prevDate);
   const prevRange = monthRange(prevMonth);
 
+  // Orçamento reflete cash basis: consumo de uma categoria não inclui compras
+  // no cartão (ainda não saíram do banco). Quando a fatura é paga, conta como
+  // gasto da categoria do mês — mas o app não distribui automaticamente entre
+  // categorias (pagamento é uma transferência única).
+  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
+
+  let currQuery = supabase
+    .from("transactions")
+    .select("category_id, amount_account, currency, account:accounts(currency)")
+    .eq("is_historical_ir_only", false)
+    .eq("kind", "expense")
+    .gte("date", from)
+    .lte("date", to)
+    .not("category_id", "is", null);
+  if (cardListExpr) currQuery = currQuery.not("account_id", "in", cardListExpr);
+
+  let prevQuery = supabase
+    .from("transactions")
+    .select("category_id, amount_account, currency, account:accounts(currency)")
+    .eq("is_historical_ir_only", false)
+    .eq("kind", "expense")
+    .gte("date", prevRange.from)
+    .lte("date", prevRange.to)
+    .not("category_id", "is", null);
+  if (cardListExpr) prevQuery = prevQuery.not("account_id", "in", cardListExpr);
+
   const [
     budgets,
     categories,
@@ -99,22 +127,8 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
   ] = await Promise.all([
     getActiveBudgetsForMonth(targetMonth),
     listCategories({ includeArchived: false }),
-    supabase
-      .from("transactions")
-      .select("category_id, amount_account, currency, account:accounts(currency)")
-      .eq("is_historical_ir_only", false)
-      .eq("kind", "expense")
-      .gte("date", from)
-      .lte("date", to)
-      .not("category_id", "is", null),
-    supabase
-      .from("transactions")
-      .select("category_id, amount_account, currency, account:accounts(currency)")
-      .eq("is_historical_ir_only", false)
-      .eq("kind", "expense")
-      .gte("date", prevRange.from)
-      .lte("date", prevRange.to)
-      .not("category_id", "is", null),
+    currQuery,
+    prevQuery,
     getDisplayCurrency(),
     getRateMap(),
   ]);

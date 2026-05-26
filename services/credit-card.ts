@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
 
@@ -6,6 +7,26 @@ import type { Tables } from "@/types/database";
  * Cálculos de cartão de crédito: período da fatura, total aberto, próximo
  * vencimento. Independente de provedor — usa close_day/due_day da conta.
  */
+
+/**
+ * IDs das contas tipo cartão de crédito do household ativo. Usado pra excluir
+ * compras de cartão dos KPIs de fluxo (modelo cash basis): card spending não
+ * conta como Saiu até a fatura ser paga.
+ *
+ * NOTA: incluímos contas inativas também — transações antigas podem ter sido
+ * feitas em cartões hoje desativados, e ainda assim devem ser excluídas dos
+ * agregados de cash.
+ */
+export async function getCreditCardAccountIds(
+  supabase?: SupabaseClient,
+): Promise<string[]> {
+  const sb = supabase ?? (await createClient());
+  const { data } = await sb
+    .from("accounts")
+    .select("id")
+    .eq("type", "credit_card");
+  return (data ?? []).map((r) => r.id as string);
+}
 
 export type CreditCardBill = {
   accountId: string;

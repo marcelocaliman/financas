@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { computeNextOccurrences } from "@/services/recurrences";
+import { getCreditCardAccountIds } from "@/services/credit-card";
 import type { Currency, Tables } from "@/types/database";
 
 export type UpcomingItem = {
@@ -54,22 +55,24 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
   const today = todayISO();
   const until = addDaysISO(today, days);
 
-  const [{ data: rules }, displayCurrency, rates] = await Promise.all([
+  const [{ data: rules }, displayCurrency, rates, cardIds] = await Promise.all([
     supabase
       .from("recurring_rules")
       .select(
-        `id, amount, currency, kind, description,
+        `id, account_id, from_account_id, to_account_id, amount, currency, kind, description,
          start_date, end_date, frequency, interval_count, day_of_month, day_of_week,
          last_materialized_date,
-         account:accounts!recurring_rules_account_id_fkey(name),
+         account:accounts!recurring_rules_account_id_fkey(name,type),
          from_account:accounts!recurring_rules_from_account_id_fkey(name),
-         to_account:accounts!recurring_rules_to_account_id_fkey(name),
+         to_account:accounts!recurring_rules_to_account_id_fkey(name,type),
          category:categories(name)`,
       )
       .eq("is_active", true),
     getDisplayCurrency(),
     getRateMap(),
+    getCreditCardAccountIds(supabase),
   ]);
+  const cardSet = new Set(cardIds);
 
   const items: UpcomingItem[] = [];
   let totalIncome = 0;
@@ -80,6 +83,9 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
   type RuleRow = Pick<
     Tables<"recurring_rules">,
     | "id"
+    | "account_id"
+    | "from_account_id"
+    | "to_account_id"
     | "amount"
     | "currency"
     | "kind"
@@ -92,9 +98,9 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
     | "day_of_week"
     | "last_materialized_date"
   > & {
-    account: { name: string } | { name: string }[] | null;
+    account: { name: string; type?: string } | { name: string; type?: string }[] | null;
     from_account: { name: string } | { name: string }[] | null;
-    to_account: { name: string } | { name: string }[] | null;
+    to_account: { name: string; type?: string } | { name: string; type?: string }[] | null;
     category: { name: string } | { name: string }[] | null;
   };
   const flatten = <T,>(v: T | T[] | null): T | null => (Array.isArray(v) ? v[0] : v);
@@ -110,6 +116,13 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
       rates,
     );
     const matCutoff = r.last_materialized_date ?? "1900-01-01";
+
+    // Cash basis: regra de expense num cartão não conta como Saiu projetado.
+    // Regra de transfer cujo destino é cartão (pagamento de fatura) SIM conta.
+    const isCardExpense =
+      r.kind === "expense" && r.account_id != null && cardSet.has(r.account_id);
+    const isBillPayment =
+      r.kind === "transfer" && r.to_account_id != null && cardSet.has(r.to_account_id);
 
     for (const d of occurrences) {
       if (d > until) break;
@@ -132,11 +145,17 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
         toAccountName: toAcc?.name ?? null,
       });
 
-      if (r.kind === "income") totalIncome += amountConverted;
-      else if (r.kind === "expense") totalExpense += amountConverted;
-      else if (r.kind === "transfer") {
-        totalTransferIn += amountConverted;
-        totalTransferOut += amountConverted;
+      if (r.kind === "income") {
+        totalIncome += amountConverted;
+      } else if (r.kind === "expense") {
+        if (!isCardExpense) totalExpense += amountConverted;
+      } else if (r.kind === "transfer") {
+        if (isBillPayment) {
+          totalExpense += amountConverted; // pagamento de fatura = cash real saindo
+        } else {
+          totalTransferIn += amountConverted;
+          totalTransferOut += amountConverted;
+        }
       }
     }
   }
