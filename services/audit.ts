@@ -212,6 +212,8 @@ export async function runAudit(): Promise<AuditReport> {
   }
 
   // ─── 5) Liquidações no ano sem lançamento exclusivo ───────────────
+  // Ancorado em description (sempre tem o ticker), não source_name (vira
+  // "Tesouro Nacional" pra todos os TD e quebra a deteção).
   for (const c of closedInYear) {
     const { count } = await supabase
       .from("ir_other_incomes")
@@ -219,7 +221,7 @@ export async function runAudit(): Promise<AuditReport> {
       .eq("household_id", ctx.household.id)
       .eq("year", currentYear)
       .eq("category", "exclusivo_fonte")
-      .like("source_name", `%${c.ticker}%`);
+      .like("description", `%${c.ticker}%`);
     if ((count ?? 0) === 0 && Number(c.gross_proceeds_on_close ?? 0) > 0) {
       add({
         severity: "minor",
@@ -229,6 +231,19 @@ export async function runAudit(): Promise<AuditReport> {
         fix: {
           label: "Gerar automaticamente",
           action: "generate-exclusive-income-from-closures",
+        },
+      });
+    }
+    // Detecta duplicatas (>1 lançamento pro mesmo ticker no ano)
+    if ((count ?? 0) > 1) {
+      add({
+        severity: "major",
+        area: "IR · Rendimentos exclusivos",
+        title: `${c.ticker}: ${count} lançamentos duplicados em "Rendimentos exclusivos fonte"`,
+        detail: `Há ${count} entradas na declaração pra esse ticker (deveria ter só 1). Apague as extras em /ir/${currentYear} → Rendimentos exclusivos.`,
+        fix: {
+          label: `Ir pra /ir/${currentYear}`,
+          href: `/ir/${currentYear}`,
         },
       });
     }

@@ -49,14 +49,16 @@ export async function generateExclusiveIncomeFromClosures(): Promise<{
   for (const c of closed ?? []) {
     if (!c.gross_proceeds_on_close || Number(c.gross_proceeds_on_close) <= 0) continue;
 
-    // Verifica se já existe
+    // Idempotência: a description SEMPRE carrega o ticker no formato
+    // "Rendimento exclusivo fonte · <TICKER> · liquidação <DD/MM/AAAA>".
+    // Usar source_name não funciona pra TD (vira "Tesouro Nacional" pra todos).
     const { count } = await supabase
       .from("ir_other_incomes")
       .select("id", { count: "exact", head: true })
       .eq("household_id", ctx.household.id)
       .eq("year", currentYear)
       .eq("category", "exclusivo_fonte")
-      .like("source_name", `%${c.ticker}%`);
+      .like("description", `%${c.ticker}%`);
     if ((count ?? 0) > 0) continue; // já existe, pula
 
     const rendimentoBruto = Math.max(
