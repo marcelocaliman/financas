@@ -10,8 +10,7 @@ import {
   getPhysicalAssetsTotals,
   listPhysicalAssets,
 } from "@/services/physical-assets";
-import { getPortfolioStats } from "@/services/investments";
-import { getAccountsTotals } from "@/services/accounts";
+import { getPortfolioState } from "@/services/portfolio-state";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import type { PhysicalAssetCategory } from "@/types/database";
 import { formatPercent } from "@/lib/utils/format";
@@ -19,11 +18,11 @@ import { formatPercent } from "@/lib/utils/format";
 export const dynamic = "force-dynamic";
 
 export default async function PatrimonioPage() {
-  const [assets, totals, portfolio, accounts, filers, regimeCtx] = await Promise.all([
+  const currentYear = new Date().getFullYear();
+  const [assets, totals, portfolioState, filers, regimeCtx] = await Promise.all([
     listPhysicalAssets({ includeArchived: true }),
     getPhysicalAssetsTotals(),
-    getPortfolioStats(),
-    getAccountsTotals(),
+    getPortfolioState(currentYear),
     listFilers(),
     getRegimeContext(),
   ]);
@@ -32,8 +31,7 @@ export default async function PatrimonioPage() {
   const active = assets.filter((a) => a.is_active);
   const archived = assets.filter((a) => !a.is_active);
 
-  const netWorth =
-    accounts.liquidExcludingInvestmentCash + portfolio.total + totals.total;
+  const netWorth = portfolioState.totalsNet.today;
   const sharePct = netWorth > 0 ? totals.total / netWorth : 0;
 
   // Categorias com pelo menos 1 ativo, em ordem do total decrescente

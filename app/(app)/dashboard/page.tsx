@@ -21,6 +21,7 @@ import { getAccountsTotals, getAccountsTotalsAt, listAccounts } from "@/services
 import { getCoverage, getPortfolioStats } from "@/services/investments";
 import { getLivePortfolio } from "@/services/live-yield";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
+import { getPortfolioState } from "@/services/portfolio-state";
 import { getRecurrencesForecast } from "@/services/recurrences";
 import { listGoalsEnriched } from "@/services/goals";
 import { getAportSuggestions } from "@/services/goal-suggestions";
@@ -75,6 +76,7 @@ export default async function DashboardPage({
   const { label: monthLabel, from, to } = monthRange(monthParam);
   const currentMonth = from.slice(0, 7);
 
+  const currentYearForState = new Date().getFullYear();
   const [
     summary,
     breakdown,
@@ -85,6 +87,7 @@ export default async function DashboardPage({
     coverage,
     live,
     physical,
+    portfolioState,
     forecast,
     goals,
     upcoming,
@@ -108,6 +111,7 @@ export default async function DashboardPage({
     getCoverage(),
     getLivePortfolio(),
     getPhysicalAssetsTotals(),
+    getPortfolioState(currentYearForState),
     position === "future" ? getRecurrencesForecast(currentMonth) : null,
     isCurrent ? listGoalsEnriched() : Promise.resolve([]),
     isCurrent ? getUpcomingObligations(7) : Promise.resolve(null),
@@ -145,9 +149,10 @@ export default async function DashboardPage({
       !hh?.onboarding_completed_at && (txCount ?? 0) === 0;
   }
 
-  // Patrimônio total SEM dupla contagem
-  const netWorth =
-    totals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+  // Patrimônio líquido — fonte única em portfolio-state.totalsNet
+  // (exclui caixa de corretora e cartão como passivo, equivalente à fórmula
+  // antiga `liquidExcludingInvestmentCash + portfolio.total + physical.total`)
+  const netWorth = portfolioState.totalsNet.today;
 
   // Pra o GoalRemindersCard abrir o ContributeDialog completo (com origem
   // + destino), passamos a lista de contas + mapa goalId → contas vinculadas.
