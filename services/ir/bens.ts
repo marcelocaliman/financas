@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
 import { businessDaysSinceContinuous, dateInSP } from "@/lib/financial/business-days";
+import { getLiveBalanceMap } from "@/services/live-yield";
 import {
   inferAccountCode,
   inferInvestmentCode,
@@ -468,6 +469,7 @@ export async function getBensReport(
     { data: priorYearManual },
     { data: debts },
     { data: indexerRows },
+    liveBalances,
   ] = await Promise.all([
     getRateMapAt(endOfYear),
     getRateMapAt(endOfPrevYear),
@@ -484,7 +486,11 @@ export async function getBensReport(
       .from("indexer_history")
       .select("indexer, value, date")
       .order("date", { ascending: false }),
+    // Saldos ao vivo (brapi pra stocks/FIIs + Selic compound pra RF) — pra
+    // o IR mostrar o mesmo número que /investimentos mostra
+    getLiveBalanceMap(),
   ]);
+  const liveBalanceMap = liveBalances.map;
 
   // Resolve indexadores correntes (Selic/CDI em % a.a., IPCA em % mensal)
   const indexerRates: IndexerRates = { selic: null, cdi: null, ipca: null };
@@ -629,10 +635,20 @@ export async function getBensReport(
     );
     const codeMeta = BEM_CODES[code];
     const currency = inv.currency as Currency;
+    // Sempre usa o valor LIVE quando disponível (mesma fonte que /investimentos):
+    //  - Ações/FIIs/ETFs: marketBalance = qty × cotação brapi atual
+    //  - RF: derivedBalance = current_balance composto via Selic/CDI/IPCA
+    //        desde last_yield_at até agora
+    // Fallback pra current_balance bruto se live não tiver o ativo (cron
+    // ainda não rodou, ativo sem indexador, etc.)
+    const liveValue = liveBalanceMap.get(inv.id);
+    const rawCurrentForCalc = liveValue != null
+      ? liveValue
+      : Number(inv.current_balance ?? 0);
     const invResult = await getInvestmentBalanceAt(
       {
         id: inv.id,
-        current_balance: Number(inv.current_balance ?? 0),
+        current_balance: rawCurrentForCalc,
         indexer: (inv as { indexer?: string | null }).indexer ?? null,
         indexer_multiplier: (inv as { indexer_multiplier?: number | null }).indexer_multiplier ?? null,
         fixed_rate: (inv as { fixed_rate?: number | null }).fixed_rate ?? null,
@@ -707,13 +723,13 @@ export async function getBensReport(
       previousYearValue: Math.round((prevInvValueRaw * pct)) / 100,
       // Liquidado no ano: situação atual = 0 (saiu do patrimônio).
       currentYearValue: isClosedInYear ? 0 : Math.round((balanceBRL * pct)) / 100,
-      // Valor de hoje = current_balance cru × pct (sem projeção). Pra renda
-      // variável e provisórios coincide com currentYearValue; pra RF projetada
-      // mostra o ponto de partida da composição.
+      // Valor de hoje × pct. Pra renda variável: usa cotação brapi live
+      // (igual ao /investimentos). Pra RF: usa o derivedBalance que já
+      // incluiu composição contínua até agora.
       todayValue: isClosedInYear ? 0 : Math.round((
         (currency === "BRL"
-          ? Number(inv.current_balance ?? 0)
-          : convertOrSame(Number(inv.current_balance ?? 0), currency, "BRL", rates)
+          ? rawCurrentForCalc
+          : convertOrSame(rawCurrentForCalc, currency, "BRL", rates)
         ) * pct
       )) / 100,
       // Custo de aquisição = initial_amount (capital aplicado). Liquidado: 0.
