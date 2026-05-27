@@ -145,70 +145,128 @@ export function BensTable({ report }: { report: BensReport }) {
               <thead>
                 <tr className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground">
                   <th className="text-left pb-2 font-medium">Classe</th>
+                  <th className="text-right pb-2 font-medium pl-4">Aplicado</th>
                   <th className="text-right pb-2 font-medium pl-4">Atual · hoje</th>
+                  <th className="text-right pb-2 font-medium pl-4">Variação</th>
                   {inProgress ? (
                     <>
-                      <th className="text-right pb-2 font-medium pl-4">Projeção 31/12/{report.year}</th>
+                      <th className="text-right pb-2 font-medium pl-4">Projeção 31/12</th>
                       <th className="text-right pb-2 font-medium pl-4">Ganho até 31/12</th>
                     </>
                   ) : null}
                 </tr>
               </thead>
               <tbody>
-                {report.byClass.map((c) => (
-                  <tr key={c.label} className="border-t border-border/60">
-                    <td className="py-2 text-foreground">{c.label}</td>
-                    <td className="py-2 pl-4 font-mono text-right tabular-nums text-foreground">
-                      R$ {fmtBRL(c.today)}
-                    </td>
-                    {inProgress ? (
-                      <>
-                        <td className="py-2 pl-4 font-mono text-right tabular-nums text-muted-foreground">
-                          R$ {fmtBRL(c.projected)}
-                        </td>
-                        <td className="py-2 pl-4 font-mono text-right tabular-nums">
-                          {c.yieldProjected > 0.005 ? (
-                            <span className="text-olive-700 dark:text-olive-500">
-                              +R$ {fmtBRL(c.yieldProjected)}
-                            </span>
-                          ) : (
-                            <span className="text-faint-foreground italic">—</span>
-                          )}
-                        </td>
-                      </>
-                    ) : null}
-                  </tr>
-                ))}
-                <tr className="border-t-2 border-border-strong font-medium">
-                  <td className="pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
-                    Patrimônio total
-                  </td>
-                  <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
-                    R$ {fmtBRL(report.totals.today)}
-                  </td>
-                  {inProgress ? (
-                    <>
-                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
-                        R$ {fmtBRL(report.totals.current)}
+                {report.byClass.map((c) => {
+                  const varColor =
+                    c.variation > 0.005
+                      ? "text-olive-700 dark:text-olive-500"
+                      : c.variation < -0.005
+                        ? "text-rust-600"
+                        : "text-faint-foreground";
+                  // Conta corrente não tem conceito de "aplicado" (saldo = saldo). Exibe — se
+                  // aplicado for igual a atual e classe é "Contas" pra evitar ruído.
+                  const isAccountClass = c.label.startsWith("Contas");
+                  const hideVariation = isAccountClass && Math.abs(c.variation) < 0.005;
+                  return (
+                    <tr key={c.label} className="border-t border-border/60">
+                      <td className="py-2 text-foreground">{c.label}</td>
+                      <td className="py-2 pl-4 font-mono text-right tabular-nums text-muted-foreground">
+                        R$ {fmtBRL(c.applied)}
                       </td>
-                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-olive-700 dark:text-olive-500 text-[15px]">
-                        {report.totals.yieldProjected > 0.005 ? (
-                          <>+R$ {fmtBRL(report.totals.yieldProjected)}</>
+                      <td className="py-2 pl-4 font-mono text-right tabular-nums text-foreground">
+                        R$ {fmtBRL(c.today)}
+                      </td>
+                      <td className="py-2 pl-4 font-mono text-right tabular-nums">
+                        {hideVariation ? (
+                          <span className="text-faint-foreground italic">—</span>
                         ) : (
-                          <span className="text-faint-foreground italic text-[12.5px]">—</span>
+                          <div className="flex flex-col items-end leading-tight">
+                            <span className={varColor}>
+                              {c.variation >= 0 ? "+" : ""}R$ {fmtBRL(c.variation)}
+                            </span>
+                            <span className={`text-[10.5px] ${varColor}`}>
+                              {c.variation >= 0 ? "+" : ""}{c.variationPct.toFixed(1).replace(".", ",")}%
+                            </span>
+                          </div>
                         )}
                       </td>
-                    </>
-                  ) : null}
-                </tr>
+                      {inProgress ? (
+                        <>
+                          <td className="py-2 pl-4 font-mono text-right tabular-nums text-muted-foreground">
+                            R$ {fmtBRL(c.projected)}
+                          </td>
+                          <td className="py-2 pl-4 font-mono text-right tabular-nums">
+                            {c.yieldProjected > 0.005 ? (
+                              <span className="text-olive-700 dark:text-olive-500">
+                                +R$ {fmtBRL(c.yieldProjected)}
+                              </span>
+                            ) : (
+                              <span className="text-faint-foreground italic">—</span>
+                            )}
+                          </td>
+                        </>
+                      ) : null}
+                    </tr>
+                  );
+                })}
+                {(() => {
+                  const totalApplied = report.byClass.reduce((s, c) => s + c.applied, 0);
+                  const totalVariation = report.totals.today - totalApplied;
+                  const totalVariationPct = totalApplied > 0 ? (totalVariation / totalApplied) * 100 : 0;
+                  const varColor =
+                    totalVariation > 0.005
+                      ? "text-olive-700 dark:text-olive-500"
+                      : totalVariation < -0.005
+                        ? "text-rust-600"
+                        : "text-foreground";
+                  return (
+                    <tr className="border-t-2 border-border-strong font-medium">
+                      <td className="pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
+                        Patrimônio total
+                      </td>
+                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-muted-foreground text-[15px]">
+                        R$ {fmtBRL(totalApplied)}
+                      </td>
+                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
+                        R$ {fmtBRL(report.totals.today)}
+                      </td>
+                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-[15px]">
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className={varColor}>
+                            {totalVariation >= 0 ? "+" : ""}R$ {fmtBRL(totalVariation)}
+                          </span>
+                          <span className={`text-[10.5px] ${varColor}`}>
+                            {totalVariation >= 0 ? "+" : ""}{totalVariationPct.toFixed(1).replace(".", ",")}%
+                          </span>
+                        </div>
+                      </td>
+                      {inProgress ? (
+                        <>
+                          <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
+                            R$ {fmtBRL(report.totals.current)}
+                          </td>
+                          <td className="pt-3 pl-4 font-mono text-right tabular-nums text-olive-700 dark:text-olive-500 text-[15px]">
+                            {report.totals.yieldProjected > 0.005 ? (
+                              <>+R$ {fmtBRL(report.totals.yieldProjected)}</>
+                            ) : (
+                              <span className="text-faint-foreground italic text-[12.5px]">—</span>
+                            )}
+                          </td>
+                        </>
+                      ) : null}
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
             {inProgress ? (
               <p className="font-mono text-[10.5px] text-faint-foreground mt-3 leading-relaxed">
-                <b className="not-italic text-muted-foreground">Atual · hoje</b>: estado real
-                do broker agora. <b className="not-italic text-muted-foreground">Projeção 31/12</b>:
-                renda fixa composta pela Selic/CDI/IPCA atual até dezembro; demais classes
-                mantêm valor atual (sem base pra projetar com precisão).
+                <b className="not-italic text-muted-foreground">Aplicado</b>: custo de
+                aquisição. <b className="not-italic text-muted-foreground">Atual · hoje</b>:
+                valor de mercado agora. <b className="not-italic text-muted-foreground">Variação</b>:
+                lucro/prejuízo acumulado (atual − aplicado). <b className="not-italic text-muted-foreground">Projeção 31/12</b>:
+                renda fixa composta pela Selic/CDI/IPCA atual; demais classes mantêm valor atual.
               </p>
             ) : null}
           </div>

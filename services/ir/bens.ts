@@ -37,6 +37,15 @@ export type BemDeclaravel = {
   currentYearValue: number;  // 31/12 do ano N, em BRL (projetado/provisório/final)
   /** Valor de HOJE em BRL — útil pra UI mostrar "atual" lado a lado com projeção */
   todayValue: number;
+  /**
+   * Valor APLICADO (custo de aquisição) em BRL × pct do filer.
+   * - Investimento: initial_amount
+   * - Bem físico: acquired_value
+   * - Conta: current_balance (sem conceito de custo — conta tem saldo, não custo)
+   * Usado pra calcular variação = todayValue - appliedValue (lucro/prejuízo
+   * acumulado vs o que foi botado).
+   */
+  appliedValue: number;
   /** Câmbio usado pra converter (vazio se ativo nativo BRL) */
   fxNote?: string;
   /**
@@ -87,8 +96,11 @@ export type BensReport = {
    */
   byClass: Array<{
     label: string;        // "Renda fixa", "Renda variável", "Bens físicos", "Contas e caixa"
+    applied: number;      // soma de aplicado (custo de aquisição: initial_amount / acquired_value)
     today: number;        // soma de todayValue dos itens dessa classe
     projected: number;    // soma de currentYearValue (projetado quando RF, atual quando outros)
+    variation: number;    // today - applied (lucro/prejuízo acumulado vs custo)
+    variationPct: number; // variation / applied × 100 (em %)
     yieldProjected: number; // projected - today (positivo só pra RF)
   }>;
   /** Dívidas e Ônus Reais — ficha separada no programa IRPF */
@@ -592,6 +604,8 @@ export async function getBensReport(
       previousYearValue: Math.round((prevValueRaw * pct)) / 100,
       currentYearValue: Math.round((balanceBRL * pct)) / 100,
       todayValue: Math.round((todayBalanceBRL * pct)) / 100,
+      // Contas não têm custo de aquisição — usa o próprio saldo atual
+      appliedValue: Math.round((todayBalanceBRL * pct)) / 100,
       valuationKind: accResult.valuationKind,
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
@@ -702,6 +716,13 @@ export async function getBensReport(
           : convertOrSame(Number(inv.current_balance ?? 0), currency, "BRL", rates)
         ) * pct
       )) / 100,
+      // Custo de aquisição = initial_amount (capital aplicado). Liquidado: 0.
+      appliedValue: isClosedInYear ? 0 : Math.round((
+        (currency === "BRL"
+          ? Number(inv.initial_amount ?? 0)
+          : convertOrSame(Number(inv.initial_amount ?? 0), currency, "BRL", rates)
+        ) * pct
+      )) / 100,
       // Liquidado vira FINAL (valor 0 é definitivo). Caso contrário, usa o
       // resultado da projeção/snapshot.
       valuationKind: isClosedInYear ? "final" : invResult.valuationKind,
@@ -758,6 +779,13 @@ export async function getBensReport(
       currentYearValue: Math.round((valueBRL * pct)) / 100,
       // Bens físicos: valor "hoje" = valor "currentYear" (não tem projeção)
       todayValue: Math.round((valueBRL * pct)) / 100,
+      // Custo de aquisição do bem físico (valor pago na compra)
+      appliedValue: Math.round((
+        (currency === "BRL"
+          ? Number(p.acquired_value ?? 0)
+          : convertOrSame(Number(p.acquired_value ?? 0), currency, "BRL", rates)
+        ) * pct
+      )) / 100,
       // Sem como projetar — valor atual é provisório se 31/12 futuro
       valuationKind: endOfYear > todayIso ? "provisional" : "provisional",
       fxNote: currency !== "BRL"
@@ -819,10 +847,11 @@ export async function getBensReport(
     if (["91", "92", "97", "99"].includes(code)) return "Previdência e outros direitos";
     return "Outros";
   }
-  const classMap = new Map<string, { today: number; projected: number }>();
+  const classMap = new Map<string, { applied: number; today: number; projected: number }>();
   for (const b of bens) {
     const cls = classifyForFooter(b.code);
-    const cur = classMap.get(cls) ?? { today: 0, projected: 0 };
+    const cur = classMap.get(cls) ?? { applied: 0, today: 0, projected: 0 };
+    cur.applied += b.appliedValue;
     cur.today += b.todayValue;
     cur.projected += b.currentYearValue;
     classMap.set(cls, cur);
@@ -831,12 +860,18 @@ export async function getBensReport(
     // Ordena por today desc pra colocar as classes mais relevantes em cima
     .sort(([, a], [, b]) => b.today - a.today)
     .filter(([, v]) => v.today > 0 || v.projected > 0)
-    .map(([label, v]) => ({
-      label,
-      today: Math.round(v.today * 100) / 100,
-      projected: Math.round(v.projected * 100) / 100,
-      yieldProjected: Math.round((v.projected - v.today) * 100) / 100,
-    }));
+    .map(([label, v]) => {
+      const variation = v.today - v.applied;
+      return {
+        label,
+        applied: Math.round(v.applied * 100) / 100,
+        today: Math.round(v.today * 100) / 100,
+        projected: Math.round(v.projected * 100) / 100,
+        variation: Math.round(variation * 100) / 100,
+        variationPct: v.applied > 0 ? Math.round((variation / v.applied) * 10000) / 100 : 0,
+        yieldProjected: Math.round((v.projected - v.today) * 100) / 100,
+      };
+    });
 
   // Nota de câmbio (mostra ratos USD e EUR pra BRL se houver bens estrangeiros)
   const hasUSD = bens.some((b) => b.fxNote?.includes("USD"));
