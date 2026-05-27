@@ -292,6 +292,73 @@ export async function updateInvestment(
   return { ok: true };
 }
 
+/**
+ * Sincroniza o saldo de um ativo de RF com o valor real vindo do broker
+ * (Tesouro Direto, app do banco, etc). Override direto pra eliminar drift
+ * acumulado por cálculo automático.
+ *
+ *   - current_balance = valor informado (truth-source = broker)
+ *   - last_yield_at = hoje (sem yield futuro em cima imediatamente)
+ *   - purchase_date opcionalmente atualizado pra data REAL de compra
+ *
+ * A partir daí, o cron diário aplica Selic em cima desse baseline.
+ */
+const syncBrokerSchema = z.object({
+  id: z.string().uuid(),
+  currentBalance: z.coerce.number().nonnegative(),
+  purchaseDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional()
+    .nullable(),
+});
+
+export async function syncBrokerBalance(
+  _prev: { ok?: boolean; error?: string } | undefined,
+  formData: FormData,
+): Promise<{ ok?: boolean; error?: string }> {
+  const parsed = syncBrokerSchema.safeParse({
+    id: formData.get("id"),
+    currentBalance: formData.get("currentBalance"),
+    purchaseDate: formData.get("purchaseDate") || null,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
+  }
+
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Auth required" };
+
+  const supabase = await createClient();
+  const todayIso = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+
+  const update: {
+    current_balance: number;
+    last_yield_at: string;
+    purchase_date?: string;
+  } = {
+    current_balance: Math.round(parsed.data.currentBalance * 100) / 100,
+    last_yield_at: todayIso,
+  };
+  if (parsed.data.purchaseDate) update.purchase_date = parsed.data.purchaseDate;
+
+  const { error } = await supabase
+    .from("investments")
+    .update(update)
+    .eq("id", parsed.data.id)
+    .eq("household_id", ctx.household.id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/investimentos");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function archiveInvestment(id: string) {
   const supabase = await createClient();
   const { error } = await supabase

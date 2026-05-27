@@ -8,6 +8,7 @@ import {
   List,
   Pencil,
   Plus,
+  RefreshCw,
   RotateCcw,
   Sparkles,
   Trash2,
@@ -28,6 +29,7 @@ import { MovementDialog } from "./movement-dialog";
 import { MovementsSheet } from "./movements-sheet";
 import { SaleSimulatorDialog } from "./sale-simulator-dialog";
 import { FixedIncomeContributionDialog } from "./fixed-income-contribution-dialog";
+import { SyncBrokerBalanceDialog } from "./sync-broker-balance-dialog";
 import { WithdrawYieldDialog } from "./withdraw-yield-dialog";
 import { LiquidateInvestmentDialog } from "./liquidate-investment-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -61,6 +63,7 @@ export function InvestmentRowActions({
   >(null);
   const [showExtract, setShowExtract] = useState(false);
   const [aportingFixed, setAportingFixed] = useState(false);
+  const [syncingBroker, setSyncingBroker] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [liquidating, setLiquidating] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -197,6 +200,12 @@ export function InvestmentRowActions({
                         disabled: pending,
                       },
                       {
+                        label: "Sincronizar saldo (broker)",
+                        icon: <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.7} />,
+                        onSelect: () => setSyncingBroker(true),
+                        disabled: pending,
+                      },
+                      {
                         label: "Sacar rendimento",
                         icon: <ArrowDownToLine className="w-3.5 h-3.5" strokeWidth={1.7} />,
                         onSelect: () => {
@@ -328,6 +337,11 @@ export function InvestmentRowActions({
           <FixedIncomeContributionDialog
             open={aportingFixed}
             onOpenChange={setAportingFixed}
+            investment={investment}
+          />
+          <SyncBrokerBalanceDialog
+            open={syncingBroker}
+            onOpenChange={setSyncingBroker}
             investment={investment}
           />
           <WithdrawYieldDialog
