@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { runAudit, type Finding, type Severity } from "@/services/audit";
+import { AuditFixButton } from "@/components/configuracoes/audit-fix-button";
 import { AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 
@@ -147,7 +148,9 @@ function FindingRow({ finding }: { finding: Finding }) {
               {finding.detail}
             </div>
           ) : null}
-          {finding.fix?.href ? (
+          {finding.fix?.action ? (
+            <AuditFixButton action={finding.fix.action} label={finding.fix.label} />
+          ) : finding.fix?.href ? (
             <Link
               href={finding.fix.href}
               className="inline-block mt-2 text-[11.5px] font-mono uppercase tracking-[0.08em] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 underline"
