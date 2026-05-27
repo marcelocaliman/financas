@@ -57,7 +57,7 @@ export async function createCarneLeao(
   if (!ctx) return { error: "Sessão expirada." };
   const supabase = await createClient();
 
-  const calc = computeCarneLeaoTax({
+  const calc = await computeCarneLeaoTax({
     grossAmount: parsed.data.gross_amount,
     deductibleExpenses: parsed.data.deductible_expenses,
     year: parsed.data.year,

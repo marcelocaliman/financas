@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import type { ImpostoResult } from "@/services/ir/imposto";
@@ -11,6 +12,24 @@ export function ImpostoCompareCard({ imposto }: { imposto: ImpostoResult }) {
 
   return (
     <div>
+      {/* Fonte da tabela IRPF aplicada — transparência sobre qual MP/Lei vigora */}
+      <div className="flex items-baseline gap-2 mb-3 font-mono text-[10.5px] tracking-[0.06em] text-faint-foreground">
+        <span className="text-muted-foreground uppercase tracking-[0.14em]">
+          Ano-base {imposto.year}
+        </span>
+        <span>·</span>
+        <span>Tabela: {imposto.taxTableSource}</span>
+        {imposto.taxTableIsEstimate ? (
+          <>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1 text-gold-700 dark:text-gold-500">
+              <AlertTriangle className="w-3 h-3" strokeWidth={1.7} />
+              estimativa (oficial pendente)
+            </span>
+          </>
+        ) : null}
+      </div>
+
       <div className="grid lg:grid-cols-2 gap-4 mb-4">
         <ModelCard
           title="Modelo Completo"

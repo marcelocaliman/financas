@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { computeCarneLeaoMonthly } from "@/lib/financial/irpf-monthly-table";
+import { getMonthlyTaxTable } from "@/services/ir/ir-tax-tables";
 import type { Tables, CarneLeaoKind } from "@/types/database";
 
 /**
@@ -14,47 +15,8 @@ import type { Tables, CarneLeaoKind } from "@/types/database";
  *
  * Vencimento: último dia útil do mês seguinte.
  * Cálculo: rendimento bruto − deduções legais (INSS, dependentes, etc.)
- *          aplica tabela progressiva mensal IRPF.
+ *          aplica tabela progressiva mensal IRPF (lida de ir_tax_table_monthly).
  */
-
-// Tabelas progressivas mensais IRPF — variam por ano/mês quando há MP.
-// Conferir Anexo da IN RFB vigente antes de mudanças.
-type Bracket = { upTo: number; rate: number; deduct: number };
-
-// Tabela vigente Jan-Abr/2024
-const MONTHLY_2024_JAN_APR: Bracket[] = [
-  { upTo: 2112.00, rate: 0, deduct: 0 },
-  { upTo: 2826.65, rate: 0.075, deduct: 158.40 },
-  { upTo: 3751.05, rate: 0.15, deduct: 370.40 },
-  { upTo: 4664.68, rate: 0.225, deduct: 651.73 },
-  { upTo: Infinity, rate: 0.275, deduct: 884.96 },
-];
-
-// Tabela vigente Maio/2024+ (MP 1.171/2023) e 2025
-const MONTHLY_2024_MAY_PLUS: Bracket[] = [
-  { upTo: 2259.20, rate: 0, deduct: 0 },
-  { upTo: 2826.65, rate: 0.075, deduct: 169.44 },
-  { upTo: 3751.05, rate: 0.15, deduct: 381.44 },
-  { upTo: 4664.68, rate: 0.225, deduct: 662.77 },
-  { upTo: Infinity, rate: 0.275, deduct: 896.00 },
-];
-
-function bracketsFor(year: number, month: number): Bracket[] {
-  // 2023 e antes: tabela antiga (≤2112 isento, deduções diferentes)
-  // 2024 jan-abr: tabela 2024 original
-  // 2024 mai+ e 2025+: tabela atualizada
-  if (year < 2024) return MONTHLY_2024_JAN_APR; // aproximação — sem dados pré-2024 vivos
-  if (year === 2024 && month <= 4) return MONTHLY_2024_JAN_APR;
-  return MONTHLY_2024_MAY_PLUS;
-}
-
-function calcMonthlyTax(base: number, year?: number, month?: number): number {
-  const brackets = bracketsFor(year ?? new Date().getUTCFullYear(), month ?? 1);
-  for (const b of brackets) {
-    if (base <= b.upTo) return Math.max(0, base * b.rate - b.deduct);
-  }
-  return 0;
-}
 
 function lastBusinessDayOfNextMonth(year: number, month: number): string {
   let y = year;
@@ -91,17 +53,17 @@ export async function listCarneLeao(
  * Retorna também o breakdown completo pra persistir em
  * carne_leao_mensal.computation_breakdown.
  */
-export function computeCarneLeaoTax(args: {
+export async function computeCarneLeaoTax(args: {
   grossAmount: number;
   deductibleExpenses: number;
-  /** Dedução por dependentes (no mês). R$ 189,59 × N dependentes em 2024 */
+  /** Dedução por dependentes (no mês). Calculada via tabela do banco se omitida. */
   dependentDeduction?: number;
   /** Ano + mês pra escolher tabela progressiva vigente (mid-year MP) */
   year?: number;
   month?: number;
   /** Pra calcular vencimento DARF (default: 15 do mês de competência) */
   competenceDate?: string;
-}): {
+}): Promise<{
   taxableBase: number;
   taxDue: number;
   dueDate: string | null;
@@ -113,25 +75,31 @@ export function computeCarneLeaoTax(args: {
     rate: number;
     deductPortion: number;
     bracketDescription: string;
+    tableSource: string;
   };
-} {
-  const base = Math.max(
-    0,
-    args.grossAmount - args.deductibleExpenses - (args.dependentDeduction ?? 0),
-  );
-  const taxDue = calcMonthlyTax(base, args.year, args.month);
-  // Pra breakdown, usamos a tabela atual (irpf-monthly-table)
+}> {
+  const year = args.year ?? new Date().getUTCFullYear();
+  const month = args.month ?? 1;
+  // Carrega tabela vigente em (year, month) do banco. Throw se não cadastrada.
+  const taxTable = await getMonthlyTaxTable(year, month);
+
   const competence =
-    args.competenceDate ?? `${args.year ?? new Date().getFullYear()}-${String(args.month ?? 1).padStart(2, "0")}-15`;
+    args.competenceDate ?? `${year}-${String(month).padStart(2, "0")}-15`;
   const detail = computeCarneLeaoMonthly({
     grossIncome: args.grossAmount,
     deductibleExpenses: args.deductibleExpenses,
     numDependents: 0, // já vem como dependentDeduction agregado
     competenceDate: competence,
+    brackets: taxTable.brackets,
+    dependentDeductionPerOne: taxTable.dependentDeduction,
   });
+  const base = Math.max(
+    0,
+    args.grossAmount - args.deductibleExpenses - (args.dependentDeduction ?? 0),
+  );
   return {
     taxableBase: Math.round(base * 100) / 100,
-    taxDue: Math.round(taxDue * 100) / 100,
+    taxDue: Math.round(detail.taxDue * 100) / 100,
     dueDate: detail.darfDueDate,
     breakdown: {
       grossAmount: args.grossAmount,
@@ -141,6 +109,7 @@ export function computeCarneLeaoTax(args: {
       rate: detail.rate,
       deductPortion: detail.deductPortion,
       bracketDescription: detail.bracketDescription,
+      tableSource: taxTable.source,
     },
   };
 }
@@ -192,4 +161,4 @@ export async function getCarneLeaoSummary(
   };
 }
 
-export { lastBusinessDayOfNextMonth, calcMonthlyTax };
+export { lastBusinessDayOfNextMonth };

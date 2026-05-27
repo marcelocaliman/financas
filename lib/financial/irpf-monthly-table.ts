@@ -1,18 +1,18 @@
 /**
- * Tabela progressiva MENSAL do IRPF — usada no carnê-leão e na retenção
- * mensal de salários.
+ * Cálculo do IRPF mensal (carnê-leão / retenção fonte).
  *
- * Atualizada conforme MP 1.171/2023 + Lei 14.663/23 (vigência maio/2023):
- *   Até R$ 2.259,20             — isento
- *   R$ 2.259,21 a R$ 2.826,65   — 7,5% (parcela a deduzir: R$ 169,44)
- *   R$ 2.826,66 a R$ 3.751,05   — 15%  (parcela a deduzir: R$ 381,44)
- *   R$ 3.751,06 a R$ 4.664,68   — 22,5% (parcela a deduzir: R$ 662,77)
- *   Acima de R$ 4.664,68         — 27,5% (parcela a deduzir: R$ 896,00)
+ * As tabelas progressivas (faixas + dedução por dependente) viviam aqui
+ * hardcoded. Agora vivem no banco em `ir_tax_table_monthly` — a função
+ * aceita as faixas como parâmetro pra ficar pura.
  *
- * Dedução por dependente (mensal): R$ 189,59
+ * Fallback: se brackets não forem informados, usa a MP 1206/24 (vigente
+ * mai/2024+) como default. Útil pra testes ou retrocompat.
  */
 
-const MONTHLY_BRACKETS = [
+type Bracket = { upTo: number; rate: number; deduct: number };
+
+/** Fallback (MP 1206/24 vigente mai/2024+). Usar só em testes/retrocompat. */
+const DEFAULT_MONTHLY_BRACKETS: Bracket[] = [
   { upTo: 2259.20, rate: 0, deduct: 0 },
   { upTo: 2826.65, rate: 0.075, deduct: 169.44 },
   { upTo: 3751.05, rate: 0.15, deduct: 381.44 },
@@ -20,6 +20,7 @@ const MONTHLY_BRACKETS = [
   { upTo: Infinity, rate: 0.275, deduct: 896.00 },
 ];
 
+/** Fallback de dedução por dependente (mensal R$ 189,59 — MP 1206/24) */
 export const MONTHLY_DEPENDENT_DEDUCTION = 189.59;
 
 export type CarneLeaoCalc = {
@@ -46,6 +47,11 @@ function lastBusinessDayOfNextMonth(refDate: string): string {
 
 /**
  * Calcula o IR devido no carnê-leão pra UM mês.
+ *
+ * @param args.brackets - Faixas progressivas mensais (carregadas de
+ *   ir_tax_table_monthly pelo caller). Default: MP 1206/24.
+ * @param args.dependentDeductionPerOne - Dedução mensal por dependente
+ *   (carregada do banco). Default: R$ 189,59.
  */
 export function computeCarneLeaoMonthly(args: {
   /** Rendimentos brutos do mês (já em BRL) */
@@ -56,16 +62,22 @@ export function computeCarneLeaoMonthly(args: {
   numDependents?: number;
   /** Data de competência (ex.: 2026-04-15 → DARF até último dia útil de maio) */
   competenceDate: string;
+  /** Tabela progressiva (do banco); fallback MP 1206/24 */
+  brackets?: Bracket[];
+  /** Dedução mensal por dependente; fallback R$ 189,59 */
+  dependentDeductionPerOne?: number;
 }): CarneLeaoCalc {
+  const brackets = args.brackets ?? DEFAULT_MONTHLY_BRACKETS;
+  const depPerOne = args.dependentDeductionPerOne ?? MONTHLY_DEPENDENT_DEDUCTION;
   const gross = Math.max(0, args.grossIncome);
   const deductibles = Math.max(0, args.deductibleExpenses ?? 0);
   const numDep = Math.max(0, args.numDependents ?? 0);
-  const depsDeduction = numDep * MONTHLY_DEPENDENT_DEDUCTION;
+  const depsDeduction = numDep * depPerOne;
   const base = Math.max(0, gross - deductibles - depsDeduction);
 
   // Encontra a faixa
-  let bracket = MONTHLY_BRACKETS[0];
-  for (const b of MONTHLY_BRACKETS) {
+  let bracket = brackets[0];
+  for (const b of brackets) {
     bracket = b;
     if (base <= b.upTo) break;
   }
