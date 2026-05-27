@@ -101,6 +101,12 @@ export default async function ConfiguracoesPage() {
             >
               Notificações →
             </Link>
+            <Link
+              href="/configuracoes/auditoria"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium border border-border bg-surface hover:bg-surface-muted text-foreground transition-colors"
+            >
+              Saúde do sistema →
+            </Link>
           </div>
           <p className="text-[11.5px] text-faint-foreground mt-3">
             Backup gera JSON com tudo do seu lar (contas, transações,
