@@ -208,9 +208,12 @@ export function InvestmentHistoryChart({
             type="checkbox"
             checked={showAportes}
             onChange={(e) => setShowAportes(e.target.checked)}
-            className="accent-navy-700"
+            className="accent-rust-600"
           />
-          Aportes acumulados
+          <span className="inline-flex items-center gap-1">
+            <span className="w-3 h-0.5 bg-rust-600" style={{ borderTop: "1px dashed currentColor" }} />
+            Aportes acumulados
+          </span>
         </label>
       </div>
 
@@ -387,18 +390,20 @@ export function InvestmentHistoryChart({
             dot={false}
           />
 
-          {/* Aportes acumulados (navy, sem fill) */}
+          {/* Aportes acumulados — rust pra contrastar com olive, traço grosso
+              e dots pra ficar legível mesmo por cima do fill da área verde */}
           {showAportes ? (
             <Area
               type="monotone"
               dataKey="aportesValue"
               name="aportesValue"
-              stroke="var(--color-navy-700)"
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
+              stroke="var(--color-rust-600)"
+              strokeWidth={2}
+              strokeDasharray="6 3"
               fill="none"
               isAnimationActive={false}
-              dot={false}
+              dot={{ r: 2.5, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 1 }}
+              activeDot={{ r: 4, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 2 }}
             />
           ) : null}
 

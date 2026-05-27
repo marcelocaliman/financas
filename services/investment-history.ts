@@ -103,7 +103,7 @@ export async function getInvestmentHistory(
     supabase
       .from("investments")
       .select(
-        "id, ticker, name, asset_type, currency, current_balance, quantity, purchase_date, indexer, indexer_multiplier, fixed_rate",
+        "id, ticker, name, asset_type, currency, current_balance, quantity, purchase_date, indexer, indexer_multiplier, fixed_rate, initial_amount",
       )
       .eq("is_active", true)
       .gt("current_balance", 0),
@@ -154,6 +154,7 @@ export async function getInvestmentHistory(
     | "indexer"
     | "indexer_multiplier"
     | "fixed_rate"
+    | "initial_amount"
   >;
   const invs = investments as Inv[];
 
@@ -166,6 +167,18 @@ export async function getInvestmentHistory(
   // Lookup ativo por id pra eventos
   const invById = new Map<string, Inv>();
   for (const inv of invs) invById.set(inv.id, inv);
+
+  // Ativos COM histórico de buy movements (geralmente stocks/FIIs/ETFs cadastrados
+  // via "Lote inicial"). Pra esses, aportes = soma de buys do investment_movements.
+  // Pros DEMAIS (RF cadastrada direto, sem movements), aportes = initial_amount
+  // creditado no purchase_date — senão a linha de aportes ficaria zerada pra
+  // toda a renda fixa e o yield ficaria inflado.
+  const investmentsWithBuyMovements = new Set<string>();
+  for (const mv of movs) {
+    if (mv.kind === "buy" && mv.investment_id) {
+      investmentsWithBuyMovements.add(mv.investment_id);
+    }
+  }
 
   // Coleta tickers de ações/FIIs pra buscar histórico
   const stockTickers = Array.from(
@@ -274,13 +287,27 @@ export async function getInvestmentHistory(
 
     const total = stocks + fixedIncome + other;
 
-    // Aportes líquidos acumulados até essa data (buy positivo, sell negativo)
+    // Aportes líquidos acumulados até essa data.
+    // (a) Movements: buy positivo, sell negativo, dividendo/jcp ignorados
     let aportes = 0;
     for (const mv of movs) {
       if (mv.date > refDate) break;
       const amt = Number(mv.total_amount ?? 0);
       if (mv.kind === "buy") aportes += amt;
       else if (mv.kind === "sell") aportes -= amt;
+    }
+    // (b) Investments cadastrados direto sem buy movement (típico de RF):
+    //     soma initial_amount no purchase_date pra refletir o capital realmente investido
+    for (const inv of invs) {
+      if (investmentsWithBuyMovements.has(inv.id)) continue;
+      if (!inv.purchase_date || inv.purchase_date > refDate) continue;
+      const c = (inv.currency ?? "BRL") as Currency;
+      aportes += convertOrSame(
+        Number(inv.initial_amount ?? 0),
+        c,
+        displayCurrency,
+        rates,
+      );
     }
     const yieldValue = total - aportes;
 
