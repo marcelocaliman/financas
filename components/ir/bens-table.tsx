@@ -125,7 +125,12 @@ export function BensTable({ report }: { report: BensReport }) {
         </section>
         );
       })}
-      <div className="pt-4 border-t-2 border-border-strong grid grid-cols-3 gap-4">
+      <div
+        className={
+          "pt-4 border-t-2 border-border-strong grid gap-4 " +
+          (report.yearStatus === "in_progress" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3")
+        }
+      >
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
             Total 31/12/{report.year - 1}
@@ -134,13 +139,26 @@ export function BensTable({ report }: { report: BensReport }) {
             R$ {fmtBRL(report.totals.previous)}
           </div>
         </div>
+        {report.yearStatus === "in_progress" ? (
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+              Atual · hoje
+            </div>
+            <div className="font-mono text-[17px] tabular-nums mt-1 text-muted-foreground">
+              R$ {fmtBRL(report.totals.today)}
+            </div>
+            <div className="font-mono text-[10px] text-faint-foreground mt-1">
+              estado real do patrimônio
+            </div>
+          </div>
+        ) : null}
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
             Total 31/12/{report.year}
             {report.yearStatus === "in_progress" ? (
               <Badge
                 tone="navy"
-                title="Ano em curso: RF é projetada pela Selic atual; demais ativos refletem hoje. Edite manualmente antes de exportar pra Receita."
+                title="Ano em curso: RF é projetada pela Selic/CDI/IPCA atual; demais ativos refletem hoje. Edite manualmente antes de exportar pra Receita."
               >
                 provisório
               </Badge>
@@ -150,21 +168,14 @@ export function BensTable({ report }: { report: BensReport }) {
             R$ {fmtBRL(report.totals.current)}
           </div>
           {report.yearStatus === "in_progress" ? (
-            <div className="font-mono text-[10px] text-faint-foreground mt-1 leading-snug">
-              {report.yearStatusBreakdown.projected > 0 ? (
-                <>
-                  {report.yearStatusBreakdown.projected} projetado
-                  {report.yearStatusBreakdown.projected === 1 ? "" : "s"} ·{" "}
-                </>
-              ) : null}
-              {report.yearStatusBreakdown.provisional} provisóri
-              {report.yearStatusBreakdown.provisional === 1 ? "o" : "os"}
+            <div className="font-mono text-[10px] text-olive-700 dark:text-olive-500 mt-1 leading-snug">
+              +R$ {fmtBRL(report.totals.yieldProjected)} de ganho projetado
             </div>
           ) : null}
         </div>
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-            Variação
+            Variação vs {report.year - 1}
           </div>
           <div
             className={

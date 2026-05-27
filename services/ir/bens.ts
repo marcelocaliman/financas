@@ -34,7 +34,9 @@ export type BemDeclaravel = {
   /** CNPJ formatado (XX.XXX.XXX/XXXX-XX) — opcional */
   cnpj: string | null;
   previousYearValue: number; // 31/12 do ano N-1, em BRL
-  currentYearValue: number;  // 31/12 do ano N, em BRL
+  currentYearValue: number;  // 31/12 do ano N, em BRL (projetado/provisório/final)
+  /** Valor de HOJE em BRL — útil pra UI mostrar "atual" lado a lado com projeção */
+  todayValue: number;
   /** Câmbio usado pra converter (vazio se ativo nativo BRL) */
   fxNote?: string;
   /**
@@ -70,9 +72,11 @@ export type BensReport = {
     totalPrevious: number;
   }>;
   totals: {
-    current: number;
-    previous: number;
-    delta: number;
+    current: number;  // soma de currentYearValue (projetado/provisório/final)
+    previous: number; // soma do ano anterior (31/12/N-1)
+    today: number;    // soma do valor de HOJE (pré-projeção)
+    delta: number;    // current - previous (variação projetada vs ano-base anterior)
+    yieldProjected: number; // current - today (ganho esperado até 31/12)
   };
   /** Dívidas e Ônus Reais — ficha separada no programa IRPF */
   dividas: {
@@ -547,6 +551,11 @@ export async function getBensReport(
     if (currency !== "BRL") parts.push(`saldo em ${currency}: ${fmtMoneyBRL(balance)}`);
     if (pct < 100) parts.push(`${pct}% — bem em comum`);
     const prevKey = `account:${a.id}`;
+    // Pra contas, "hoje" = saldo atual cru × pct (mesma coisa que currentYearValue
+    // quando provisional). Só diverge se algum dia tivermos projeção de conta.
+    const todayBalanceBRL = currency === "BRL"
+      ? Number(a.current_balance ?? 0)
+      : convertOrSame(Number(a.current_balance ?? 0), currency, "BRL", rates);
     bens.push({
       source: "account",
       sourceId: a.id,
@@ -557,6 +566,7 @@ export async function getBensReport(
       cnpj,
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       currentYearValue: Math.round((balanceBRL * pct)) / 100,
+      todayValue: Math.round((todayBalanceBRL * pct)) / 100,
       valuationKind: accResult.valuationKind,
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
@@ -655,6 +665,15 @@ export async function getBensReport(
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       // Liquidado no ano: situação atual = 0 (saiu do patrimônio).
       currentYearValue: isClosedInYear ? 0 : Math.round((balanceBRL * pct)) / 100,
+      // Valor de hoje = current_balance cru × pct (sem projeção). Pra renda
+      // variável e provisórios coincide com currentYearValue; pra RF projetada
+      // mostra o ponto de partida da composição.
+      todayValue: isClosedInYear ? 0 : Math.round((
+        (currency === "BRL"
+          ? Number(inv.current_balance ?? 0)
+          : convertOrSame(Number(inv.current_balance ?? 0), currency, "BRL", rates)
+        ) * pct
+      )) / 100,
       // Liquidado vira FINAL (valor 0 é definitivo). Caso contrário, usa o
       // resultado da projeção/snapshot.
       valuationKind: isClosedInYear ? "final" : invResult.valuationKind,
@@ -706,7 +725,9 @@ export async function getBensReport(
       cnpj: physicalCnpj,
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       currentYearValue: Math.round((valueBRL * pct)) / 100,
-      // Bens físicos sem como projetar — valor atual é provisório se 31/12 futuro
+      // Bens físicos: valor "hoje" = valor "currentYear" (não tem projeção)
+      todayValue: Math.round((valueBRL * pct)) / 100,
+      // Sem como projetar — valor atual é provisório se 31/12 futuro
       valuationKind: endOfYear > todayIso ? "provisional" : "provisional",
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
@@ -738,6 +759,7 @@ export async function getBensReport(
 
   const totalCurrent = byGroup.reduce((s, g) => s + g.totalCurrent, 0);
   const totalPrevious = byGroup.reduce((s, g) => s + g.totalPrevious, 0);
+  const totalToday = bens.reduce((s, b) => s + b.todayValue, 0);
 
   // Nota de câmbio (mostra ratos USD e EUR pra BRL se houver bens estrangeiros)
   const hasUSD = bens.some((b) => b.fxNote?.includes("USD"));
@@ -815,7 +837,9 @@ export async function getBensReport(
     totals: {
       current: Math.round(totalCurrent * 100) / 100,
       previous: Math.round(totalPrevious * 100) / 100,
+      today: Math.round(totalToday * 100) / 100,
       delta: Math.round((totalCurrent - totalPrevious) * 100) / 100,
+      yieldProjected: Math.round((totalCurrent - totalToday) * 100) / 100,
     },
     dividas: {
       items: dividaItems,
