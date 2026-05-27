@@ -68,8 +68,9 @@ export type BensReport = {
     group: string;
     groupLabel: string;
     items: BemDeclaravel[];
-    totalCurrent: number;
-    totalPrevious: number;
+    totalCurrent: number;  // soma de currentYearValue (projeção 31/12)
+    totalPrevious: number; // soma de previousYearValue (31/12/N-1 manual)
+    totalToday: number;    // soma de todayValue (estado real agora)
   }>;
   totals: {
     current: number;  // soma de currentYearValue (projetado/provisório/final)
@@ -766,12 +767,14 @@ export async function getBensReport(
       items.sort((a, b) => a.code.localeCompare(b.code));
       const totalCurrent = items.reduce((s, i) => s + i.currentYearValue, 0);
       const totalPrevious = items.reduce((s, i) => s + i.previousYearValue, 0);
+      const totalToday = items.reduce((s, i) => s + i.todayValue, 0);
       return {
         group,
         groupLabel: GROUP_LABELS[group] ?? group,
         items,
         totalCurrent: Math.round(totalCurrent * 100) / 100,
         totalPrevious: Math.round(totalPrevious * 100) / 100,
+        totalToday: Math.round(totalToday * 100) / 100,
       };
     });
 

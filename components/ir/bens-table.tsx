@@ -26,6 +26,15 @@ export function BensTable({ report }: { report: BensReport }) {
   const showPrevYear = report.previousYearIsComplete && report.totals.previous > 0;
   // Variação só faz sentido se tiver os 2 lados completos
   const showVariation = showPrevYear;
+  // Ano em curso → tabela mostra valor ATUAL (estado real do broker).
+  // Ano fechado → tabela mostra o valor FINAL do snapshot 31/12.
+  // A projeção 31/12 fica visível só no rodapé como stat agregado.
+  const inProgress = report.yearStatus === "in_progress";
+  const currentColumnHeader = inProgress ? "Atual · hoje" : `31/12/${report.year}`;
+  const getItemDisplayValue = (item: typeof report.byGroup[number]["items"][number]) =>
+    inProgress ? item.todayValue : item.currentYearValue;
+  const getGroupDisplayTotal = (g: typeof report.byGroup[number]) =>
+    inProgress ? g.totalToday : g.totalCurrent;
 
   return (
     <div className="space-y-6">
@@ -62,7 +71,7 @@ export function BensTable({ report }: { report: BensReport }) {
                       31/12/{report.year - 1}
                     </th>
                   ) : null}
-                  <th className="text-right pb-2 font-medium">31/12/{report.year}</th>
+                  <th className="text-right pb-2 font-medium">{currentColumnHeader}</th>
                 </tr>
               </thead>
               <tbody>
@@ -100,7 +109,7 @@ export function BensTable({ report }: { report: BensReport }) {
                       </td>
                     ) : null}
                     <td className="py-2.5 font-mono text-right tabular-nums text-foreground font-medium">
-                      R$ {fmtBRL(item.currentYearValue)}
+                      R$ {fmtBRL(getItemDisplayValue(item))}
                     </td>
                   </tr>
                 ))}
@@ -117,7 +126,7 @@ export function BensTable({ report }: { report: BensReport }) {
                     </td>
                   ) : null}
                   <td className="pt-2.5 font-mono text-right tabular-nums text-foreground font-medium">
-                    R$ {fmtBRL(g.totalCurrent)}
+                    R$ {fmtBRL(getGroupDisplayTotal(g))}
                   </td>
                 </tr>
               </tbody>
@@ -152,31 +161,34 @@ export function BensTable({ report }: { report: BensReport }) {
             </div>
           </div>
         ) : null}
-        {report.yearStatus === "in_progress" ? (
+        {inProgress ? (
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
               Atual · hoje
             </div>
-            <div className="font-mono text-[17px] tabular-nums mt-1 text-muted-foreground">
+            <div className="font-mono text-[17px] tabular-nums mt-1 text-foreground font-medium">
               R$ {fmtBRL(report.totals.today)}
+            </div>
+            <div className="font-mono text-[10px] text-faint-foreground mt-1">
+              soma dos saldos do broker
             </div>
           </div>
         ) : null}
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-            Total 31/12/{report.year}
-            {report.yearStatus === "in_progress" ? (
-              <span className="ml-1.5 text-faint-foreground/80 normal-case tracking-normal italic">
-                · provisório
-              </span>
-            ) : null}
+            {inProgress ? `Projeção 31/12/${report.year}` : `Total 31/12/${report.year}`}
           </div>
-          <div className="font-mono text-[17px] tabular-nums mt-1 text-foreground font-medium">
+          <div
+            className={
+              "font-mono text-[17px] tabular-nums mt-1 font-medium " +
+              (inProgress ? "text-muted-foreground" : "text-foreground")
+            }
+          >
             R$ {fmtBRL(report.totals.current)}
           </div>
-          {report.yearStatus === "in_progress" && report.totals.yieldProjected > 0 ? (
+          {inProgress && report.totals.yieldProjected > 0 ? (
             <div className="font-mono text-[10px] text-olive-700 dark:text-olive-500 mt-1 leading-snug">
-              +R$ {fmtBRL(report.totals.yieldProjected)} de ganho projetado
+              +R$ {fmtBRL(report.totals.yieldProjected)} estimado pela Selic
             </div>
           ) : null}
         </div>
