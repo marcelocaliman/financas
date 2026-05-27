@@ -66,10 +66,20 @@ export async function GET(req: NextRequest) {
     const latest = await fetchLatest(serie);
     results[code] = latest;
     if (latest) {
-      const { error } = await supabase
-        .from("indexer_history")
+      // Inclui fetched_at no payload pra UPSERT tocar a coluna mesmo quando
+      // o valor não mudou (Selic só muda no Copom). Health check usa essa coluna.
+      // Cast: coluna fetched_at adicionada via migration 20260527030000, types ainda não regenerados
+      const { error } = await (supabase.from("indexer_history") as unknown as {
+        upsert: (data: object, opts: { onConflict: string }) => Promise<{ error: { message: string } | null }>;
+      })
         .upsert(
-          { indexer: code, date: latest.date, value: latest.value, source: "bcb" },
+          {
+            indexer: code,
+            date: latest.date,
+            value: latest.value,
+            source: "bcb",
+            fetched_at: new Date().toISOString(),
+          },
           { onConflict: "indexer,date" },
         );
       if (error) {

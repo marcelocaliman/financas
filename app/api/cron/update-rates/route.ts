@@ -57,13 +57,19 @@ export async function GET(req: NextRequest) {
     const key = `${from}→${to}`;
     results[key] = latest;
     if (latest) {
-      const { error } = await supabase.from("currency_rates").upsert(
+      // fetched_at no payload pra health check refletir execução do cron
+      // (sem isso, created_at fica parado se a taxa não mudou no dia)
+      // Cast: coluna fetched_at adicionada via migration 20260527030000, types não regenerados
+      const { error } = await (supabase.from("currency_rates") as unknown as {
+        upsert: (data: object, opts: { onConflict: string }) => Promise<{ error: { message: string } | null }>;
+      }).upsert(
         {
           base: from,
           quote: to,
           date: latest.date,
           rate: latest.rate,
           source: "frankfurter",
+          fetched_at: new Date().toISOString(),
         },
         { onConflict: "base,quote,date" },
       );

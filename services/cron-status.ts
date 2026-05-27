@@ -42,16 +42,40 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     { data: snap },
     { data: lastApplied },
   ] = await Promise.all([
-    supabase
+    // Usa fetched_at (tocado em todo upsert do cron) em vez de created_at
+    // (que só é setado na primeira INSERT). Sem isso, "última atualização"
+    // ficaria parado nos dias em que Selic/câmbio não mudaram.
+    // Cast: fetched_at adicionada via migration 20260527030000, types não regenerados
+    (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          order: (c: string, o: object) => {
+            limit: (n: number) => {
+              maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+            };
+          };
+        };
+      };
+    })
       .from("indexer_history")
-      .select("created_at")
-      .order("created_at", { ascending: false })
+      .select("fetched_at")
+      .order("fetched_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase
+    (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          order: (c: string, o: object) => {
+            limit: (n: number) => {
+              maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+            };
+          };
+        };
+      };
+    })
       .from("currency_rates")
-      .select("created_at")
-      .order("created_at", { ascending: false })
+      .select("fetched_at")
+      .order("fetched_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
     supabase
@@ -79,14 +103,14 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     {
       name: "Indexadores BCB",
       description: "Selic, CDI, IPCA · /api/cron/update-indexers",
-      latestAt: idx?.created_at ?? null,
-      staleAfterHours: 72, // tolera fim de semana + 1 dia
+      latestAt: idx?.fetched_at ?? null,
+      staleAfterHours: 36, // cron diário às 06h BRT → 36h cobre fds + 1 dia
     },
     {
       name: "Taxas de câmbio",
       description: "USD/EUR/BRL · /api/cron/update-rates",
-      latestAt: rate?.created_at ?? null,
-      staleAfterHours: 72, // tolera fim de semana + 1 dia
+      latestAt: rate?.fetched_at ?? null,
+      staleAfterHours: 36, // cron diário → 36h cobre fds + 1 dia
     },
     {
       name: "Cotações de ativos (brapi)",
