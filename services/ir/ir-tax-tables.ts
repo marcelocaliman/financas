@@ -100,7 +100,7 @@ export const getAnnualTaxTable = cache(
 
     return {
       year: data.year,
-      brackets: data.brackets,
+      brackets: parseBrackets(data.brackets, "annual", year),
       simplesPct: Number(data.simples_pct),
       simplesLimit: Number(data.simples_limit),
       dependentDeduction: Number(data.dependent_deduction),
@@ -112,6 +112,30 @@ export const getAnnualTaxTable = cache(
     };
   },
 );
+
+/**
+ * JSONB do Postgres geralmente chega desserializado pelo client Supabase,
+ * mas dependendo da versão/cast pode vir como string. Garantimos array
+ * válido com tipos numéricos.
+ */
+function parseBrackets(
+  raw: unknown,
+  kind: "annual" | "monthly",
+  year: number,
+): TaxBracket[] {
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    throw new Error(
+      `Tabela IRPF ${kind} do ano ${year}: brackets vazio ou malformado. ` +
+        `Verifique ir_tax_table_${kind} no banco.`,
+    );
+  }
+  return parsed.map((b: { upTo: number | string; rate: number | string; deduct: number | string }) => ({
+    upTo: Number(b.upTo),
+    rate: Number(b.rate),
+    deduct: Number(b.deduct),
+  }));
+}
 
 /**
  * Busca a tabela mensal vigente em (year, month). Retorna a tabela com
@@ -172,7 +196,7 @@ export const getMonthlyTaxTable = cache(
     return {
       year: data.year,
       effectiveFromMonth: data.effective_from_month,
-      brackets: data.brackets,
+      brackets: parseBrackets(data.brackets, "monthly", year),
       dependentDeduction: Number(data.dependent_deduction),
       source: data.source,
       isEstimate: data.is_estimate,
@@ -184,14 +208,26 @@ export const getMonthlyTaxTable = cache(
 /**
  * Aplica a tabela progressiva sobre uma base de cálculo.
  * Genérico — funciona tanto pra anual quanto mensal.
+ *
+ * Throw se brackets vazio/inválido — evita o silent failure de retornar 0
+ * (que escondeu o bug "imposto = R$ 0,00 com base R$ 28k").
  */
 export function calcProgressiveTax(base: number, brackets: TaxBracket[]): number {
+  if (!Array.isArray(brackets) || brackets.length === 0) {
+    throw new Error(
+      "calcProgressiveTax recebeu brackets vazio ou inválido. " +
+        "Verifique se a tabela do ano correto está cadastrada em ir_tax_table_annual.",
+    );
+  }
   for (const b of brackets) {
     if (base <= b.upTo) {
       return Math.max(0, base * b.rate - b.deduct);
     }
   }
-  return 0;
+  // Base maior que upTo da última faixa não deveria acontecer (sempre tem
+  // faixa-teto com upTo ~ Infinity), mas defendemos a degenerada.
+  const last = brackets[brackets.length - 1];
+  return Math.max(0, base * last.rate - last.deduct);
 }
 
 /**
@@ -229,7 +265,7 @@ export const listAnnualTaxTables = cache(async (): Promise<AnnualTaxTable[]> => 
 
   return (data ?? []).map((d) => ({
     year: d.year,
-    brackets: d.brackets,
+    brackets: parseBrackets(d.brackets, "annual", d.year),
     simplesPct: Number(d.simples_pct),
     simplesLimit: Number(d.simples_limit),
     dependentDeduction: Number(d.dependent_deduction),

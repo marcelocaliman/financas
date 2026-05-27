@@ -41,6 +41,10 @@ export const ensureExclusiveIncomeForClosures = cache(
     let kept = 0;
 
     for (const c of closed ?? []) {
+      // Aceita venda sem lucro (gross == initial) — vai com gross_amount = 0
+      // mas só se houve IR retido (pra evitar lançamentos vazios).
+      // Vendas com prejuízo (gross < initial) também viram entry com gross=0,
+      // o prejuízo em si vai pra apuração de Renda Variável (não aqui).
       if (!c.gross_proceeds_on_close || Number(c.gross_proceeds_on_close) <= 0) continue;
 
       // Procura entradas existentes pra esse ticker no ano.

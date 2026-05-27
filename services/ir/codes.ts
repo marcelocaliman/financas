@@ -111,7 +111,11 @@ export function inferAccountCode(type: AccountType): string {
     case "cash":
       return "63";
     case "investment":
-      return "47"; // sub-conta de corretora, usuário pode editar
+      // Caixa parado em corretora — Grupo 06 (depósito à vista). Código 47
+      // (CDB/RDB) estava ERRADO: cash em corretora não é título, é só dinheiro
+      // sem investimento, equivalente a um saldo bancário. Receita aceita
+      // discriminar "Conta investimento - Corretora XP" no código 61.
+      return "61";
     case "credit_card":
       return ""; // cartão de crédito NÃO é bem (pode ser passivo, fora da declaração)
   }

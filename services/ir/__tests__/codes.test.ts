@@ -18,8 +18,8 @@ describe("inferAccountCode", () => {
   it("cash → 63 (dinheiro em espécie)", () => {
     expect(inferAccountCode("cash")).toBe("63");
   });
-  it("investment → 47", () => {
-    expect(inferAccountCode("investment")).toBe("47");
+  it("investment → 61 (caixa em corretora vai pra Grupo 06 numerário, não código 47 que é CDB)", () => {
+    expect(inferAccountCode("investment")).toBe("61");
   });
   it("credit_card → vazio (não é bem)", () => {
     expect(inferAccountCode("credit_card")).toBe("");
