@@ -11,7 +11,7 @@ import { NextResponse, type NextRequest } from "next/server";
  *   1. advance-balances (aplica deltas de transações pré-agendadas)
  *   2. materialize-recurrences (cria transactions das regras recorrentes)
  *   3. Paralelo: update-indexers + update-rates (independentes)
- *   4. update-balances (depende dos indexers)
+ *   4. update-balances + sync-tesouro-prices (depende dos indexers e PU)
  *   5. snapshot-patrimonio (só roda no dia 1 do mês — verificação interna)
  *   6. send-pending-emails (drena fila)
  *   7. health-check (verifica se algo ficou stale e alerta)
@@ -101,6 +101,7 @@ export async function GET(req: NextRequest) {
   ]);
   const wave2 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/update-balances", secret),
+    callEndpoint(baseUrl, "/api/cron/sync-tesouro-prices", secret),
   ]);
   const wave3 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/health-check", secret),

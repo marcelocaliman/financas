@@ -337,15 +337,40 @@ export async function syncBrokerBalance(
     day: "2-digit",
   }).format(new Date());
 
+  // Carrega o investimento pra inferir quantity automaticamente (se for Tesouro)
+  const { data: inv } = await supabase
+    .from("investments")
+    .select("id, ticker, name, asset_type, quantity")
+    .eq("id", parsed.data.id)
+    .eq("household_id", ctx.household.id)
+    .maybeSingle();
+  if (!inv) return { error: "Ativo não encontrado" };
+
+  const balanceRounded = Math.round(parsed.data.currentBalance * 100) / 100;
+
   const update: {
     current_balance: number;
     last_yield_at: string;
     purchase_date?: string;
+    quantity?: number;
   } = {
-    current_balance: Math.round(parsed.data.currentBalance * 100) / 100,
+    current_balance: balanceRounded,
     last_yield_at: todayIso,
   };
   if (parsed.data.purchaseDate) update.purchase_date = parsed.data.purchaseDate;
+
+  // Auto-deriva quantity pra Tesouro Direto se ainda não tiver — assim o cron
+  // sync-tesouro-prices cuida da atualização diária automaticamente daqui pra frente
+  const currentQty = Number(inv.quantity ?? 0);
+  if (inv.asset_type === "fixed_income_public" && currentQty <= 0) {
+    const params = inferTesouroTitle(inv.ticker, inv.name);
+    if (params) {
+      const pu = await fetchLatestPu(supabase, params.title_type, params.maturity_date);
+      if (pu && pu.pu_base > 0) {
+        update.quantity = Math.round((balanceRounded / pu.pu_base) * 10000) / 10000;
+      }
+    }
+  }
 
   const { error } = await supabase
     .from("investments")
@@ -357,6 +382,81 @@ export async function syncBrokerBalance(
   revalidatePath("/investimentos");
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+/** Heurística pra mapear ticker/name → (title_type, maturity_date) do Tesouro. */
+function inferTesouroTitle(
+  ticker: string,
+  name: string,
+): { title_type: string; maturity_date: string } | null {
+  const text = `${name} ${ticker}`.toLowerCase();
+  const yearMatch = text.match(/\b(20\d{2})\b/);
+  if (!yearMatch) return null;
+  const year = yearMatch[1];
+
+  let title: string;
+  let dm: string;
+  if (text.includes("selic")) {
+    title = "Tesouro Selic";
+    dm = "03-01";
+  } else if (text.includes("ipca")) {
+    if (text.includes("principal")) {
+      title = "Tesouro IPCA+";
+      dm = "05-15";
+    } else {
+      title = "Tesouro IPCA+ com Juros Semestrais";
+      dm = "08-15";
+    }
+  } else if (text.includes("renda+")) {
+    title = "Tesouro RendA+";
+    dm = "01-15";
+  } else if (text.includes("educa")) {
+    title = "Tesouro Educa+";
+    dm = "01-15";
+  } else if (text.includes("prefixado")) {
+    title = text.includes("juros")
+      ? "Tesouro Prefixado com Juros Semestrais"
+      : "Tesouro Prefixado";
+    dm = "01-01";
+  } else {
+    return null;
+  }
+  return { title_type: title, maturity_date: `${year}-${dm}` };
+}
+
+/** Busca último PU disponível pra (title_type, maturity_date) em tesouro_quotes. */
+async function fetchLatestPu(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  titleType: string,
+  maturityIso: string,
+): Promise<{ pu_base: number; base_date: string } | null> {
+  // Cast: tabela tesouro_quotes criada via migration 20260527010000
+  const { data } = await (supabase as unknown as {
+    from: (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: string) => {
+          eq: (c: string, v: string) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => {
+                maybeSingle: () => Promise<{
+                  data: { pu_base: number; base_date: string } | null;
+                }>;
+              };
+            };
+          };
+        };
+      };
+    };
+  })
+    .from("tesouro_quotes")
+    .select("pu_base, base_date")
+    .eq("title_type", titleType)
+    .eq("maturity_date", maturityIso)
+    .order("base_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return { pu_base: Number(data.pu_base), base_date: data.base_date };
 }
 
 export async function archiveInvestment(id: string) {
