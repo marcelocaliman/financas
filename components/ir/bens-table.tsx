@@ -1,4 +1,3 @@
-import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { BensReport } from "@/services/ir/bens";
 
@@ -21,27 +20,15 @@ export function BensTable({ report }: { report: BensReport }) {
     );
   }
 
+  // Decide se mostra coluna do ano anterior. Quando incompleto (faltam saldos
+  // manuais pra ativos que existiam em 31/12/N-1), esconde pra evitar
+  // comparação enganosa com dados parciais.
+  const showPrevYear = report.previousYearIsComplete && report.totals.previous > 0;
+  // Variação só faz sentido se tiver os 2 lados completos
+  const showVariation = showPrevYear;
+
   return (
     <div className="space-y-6">
-      {report.previousYearInferredCount > 0 ? (
-        <div className="rounded-[10px] border border-gold-600/30 bg-gold-50/40 dark:bg-gold-700/10 px-4 py-3.5 flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-gold-700 dark:text-gold-500 shrink-0 mt-0.5" strokeWidth={1.7} />
-          <div className="flex-1 text-[12.5px] leading-relaxed">
-            <div className="text-foreground font-medium mb-0.5">
-              {report.previousYearInferredCount}{" "}
-              {report.previousYearInferredCount === 1 ? "item" : "itens"} sem saldo cadastrado em 31/12/{report.year - 1}
-            </div>
-            <div className="text-muted-foreground">
-              Pra esses ativos, estou usando o <b>valor de compra</b> (
-              <span className="italic">initial_amount</span> / <span className="italic">acquired_value</span>)
-              como estimativa pra 31/12/{report.year - 1}. Marcados com badge{" "}
-              <Badge tone="gold" className="inline-block">estimado</Badge> abaixo.
-              Pra precisão real, edite manualmente em{" "}
-              <span className="font-mono text-[11.5px]">/ir/{report.year}/configuracoes</span>.
-            </div>
-          </div>
-        </div>
-      ) : null}
       {report.byGroup.map((g) => {
         const showCnpj = GROUPS_WITH_CNPJ.has(g.group);
         return (
@@ -60,7 +47,7 @@ export function BensTable({ report }: { report: BensReport }) {
                 <col className="w-[48px]" />
                 <col />
                 {showCnpj ? <col className="w-[160px]" /> : null}
-                <col className="w-[140px]" />
+                {showPrevYear ? <col className="w-[140px]" /> : null}
                 <col className="w-[140px]" />
               </colgroup>
               <thead>
@@ -70,9 +57,11 @@ export function BensTable({ report }: { report: BensReport }) {
                   {showCnpj ? (
                     <th className="text-left pb-2 pr-3 font-medium">CNPJ</th>
                   ) : null}
-                  <th className="text-right pb-2 pr-3 font-medium">
-                    31/12/{report.year - 1}
-                  </th>
+                  {showPrevYear ? (
+                    <th className="text-right pb-2 pr-3 font-medium">
+                      31/12/{report.year - 1}
+                    </th>
+                  ) : null}
                   <th className="text-right pb-2 font-medium">31/12/{report.year}</th>
                 </tr>
               </thead>
@@ -90,21 +79,9 @@ export function BensTable({ report }: { report: BensReport }) {
                       <div className="text-faint-foreground text-[11.5px] mt-0.5 break-words">
                         {item.discrimination}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        {item.fxNote ? (
-                          <Badge tone="gold">moeda estrangeira</Badge>
-                        ) : null}
-                        {item.valuationKind === "projected" ? (
-                          <Badge tone="olive" title="Projetado por composição da taxa atual (Selic/CDI/IPCA) até 31/12">
-                            projetado
-                          </Badge>
-                        ) : null}
-                        {item.valuationKind === "provisional" ? (
-                          <Badge tone="navy" title="Valor de hoje — ainda vai mudar até 31/12">
-                            provisório
-                          </Badge>
-                        ) : null}
-                      </div>
+                      {item.fxNote ? (
+                        <Badge tone="gold" className="mt-1">moeda estrangeira</Badge>
+                      ) : null}
                     </td>
                     {showCnpj ? (
                       <td className="py-2.5 pr-3 text-faint-foreground text-[11.5px] truncate">
@@ -117,19 +94,11 @@ export function BensTable({ report }: { report: BensReport }) {
                         )}
                       </td>
                     ) : null}
-                    <td className="py-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {item.previousYearValueIsInferred ? (
-                          <Badge
-                            tone="gold"
-                            title="Estimativa baseada no valor de compra — sem entry manual em 31/12 do ano anterior"
-                          >
-                            estimado
-                          </Badge>
-                        ) : null}
-                        <span>R$ {fmtBRL(item.previousYearValue)}</span>
-                      </div>
-                    </td>
+                    {showPrevYear ? (
+                      <td className="py-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
+                        R$ {fmtBRL(item.previousYearValue)}
+                      </td>
+                    ) : null}
                     <td className="py-2.5 font-mono text-right tabular-nums text-foreground font-medium">
                       R$ {fmtBRL(item.currentYearValue)}
                     </td>
@@ -142,9 +111,11 @@ export function BensTable({ report }: { report: BensReport }) {
                   >
                     Subtotal grupo {g.group}
                   </td>
-                  <td className="pt-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
-                    R$ {fmtBRL(g.totalPrevious)}
-                  </td>
+                  {showPrevYear ? (
+                    <td className="pt-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
+                      R$ {fmtBRL(g.totalPrevious)}
+                    </td>
+                  ) : null}
                   <td className="pt-2.5 font-mono text-right tabular-nums text-foreground font-medium">
                     R$ {fmtBRL(g.totalCurrent)}
                   </td>
@@ -155,31 +126,32 @@ export function BensTable({ report }: { report: BensReport }) {
         </section>
         );
       })}
+
+      {/* Rodapé. Layout adapta: quando ano em curso E sem dados completos
+          de N-1, mostra só Atual + Projeção (2 colunas). Caso contrário,
+          inclui 31/12/N-1 e Variação. */}
       <div
         className={
           "pt-4 border-t-2 border-border-strong grid gap-4 " +
-          (report.yearStatus === "in_progress" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3")
+          (showPrevYear
+            ? report.yearStatus === "in_progress"
+              ? "grid-cols-2 sm:grid-cols-4"
+              : "grid-cols-3"
+            : report.yearStatus === "in_progress"
+              ? "grid-cols-1 sm:grid-cols-2"
+              : "grid-cols-1 sm:grid-cols-2")
         }
       >
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
-            Total 31/12/{report.year - 1}
-            {report.previousYearInferredCount > 0 ? (
-              <Badge tone="gold" title={`${report.previousYearInferredCount} itens estimados via valor de compra`}>
-                parcial
-              </Badge>
-            ) : null}
-          </div>
-          <div className="font-mono text-[17px] tabular-nums mt-1">
-            R$ {fmtBRL(report.totals.previous)}
-          </div>
-          {report.previousYearInferredCount > 0 ? (
-            <div className="font-mono text-[10px] text-faint-foreground mt-1">
-              {report.previousYearInferredCount} estimado
-              {report.previousYearInferredCount === 1 ? "" : "s"}
+        {showPrevYear ? (
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+              Total 31/12/{report.year - 1}
             </div>
-          ) : null}
-        </div>
+            <div className="font-mono text-[17px] tabular-nums mt-1">
+              R$ {fmtBRL(report.totals.previous)}
+            </div>
+          </div>
+        ) : null}
         {report.yearStatus === "in_progress" ? (
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
@@ -188,55 +160,42 @@ export function BensTable({ report }: { report: BensReport }) {
             <div className="font-mono text-[17px] tabular-nums mt-1 text-muted-foreground">
               R$ {fmtBRL(report.totals.today)}
             </div>
-            <div className="font-mono text-[10px] text-faint-foreground mt-1">
-              estado real do patrimônio
-            </div>
           </div>
         ) : null}
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
             Total 31/12/{report.year}
             {report.yearStatus === "in_progress" ? (
-              <Badge
-                tone="navy"
-                title="Ano em curso: RF é projetada pela Selic/CDI/IPCA atual; demais ativos refletem hoje. Edite manualmente antes de exportar pra Receita."
-              >
-                provisório
-              </Badge>
+              <span className="ml-1.5 text-faint-foreground/80 normal-case tracking-normal italic">
+                · provisório
+              </span>
             ) : null}
           </div>
           <div className="font-mono text-[17px] tabular-nums mt-1 text-foreground font-medium">
             R$ {fmtBRL(report.totals.current)}
           </div>
-          {report.yearStatus === "in_progress" ? (
+          {report.yearStatus === "in_progress" && report.totals.yieldProjected > 0 ? (
             <div className="font-mono text-[10px] text-olive-700 dark:text-olive-500 mt-1 leading-snug">
               +R$ {fmtBRL(report.totals.yieldProjected)} de ganho projetado
             </div>
           ) : null}
         </div>
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-            Variação vs {report.year - 1}
+        {showVariation ? (
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+              Variação vs {report.year - 1}
+            </div>
+            <div
+              className={
+                "font-mono text-[17px] tabular-nums mt-1 " +
+                (report.totals.delta >= 0 ? "text-olive-700" : "text-rust-600")
+              }
+            >
+              {report.totals.delta >= 0 ? "+" : ""}R$ {fmtBRL(report.totals.delta)}
+            </div>
           </div>
-          <div
-            className={
-              "font-mono text-[17px] tabular-nums mt-1 " +
-              (report.totals.delta >= 0 ? "text-olive-700" : "text-rust-600")
-            }
-          >
-            {report.totals.delta >= 0 ? "+" : ""}R$ {fmtBRL(report.totals.delta)}
-          </div>
-        </div>
+        ) : null}
       </div>
-      {report.yearStatus === "in_progress" ? (
-        <p className="text-[11.5px] text-muted-foreground italic leading-relaxed pt-3 border-t border-border/40">
-          O ano-base ainda está em curso. Valores marcados como{" "}
-          <b className="not-italic">projetado</b> são compostos pela Selic/CDI/IPCA atual
-          até 31/12/{report.year}; <b className="not-italic">provisórios</b> refletem o
-          valor de hoje (contas, ações, FIIs, bens — sem base pra projetar com precisão).
-          Edite manualmente antes de exportar pra Receita.
-        </p>
-      ) : null}
     </div>
   );
 }

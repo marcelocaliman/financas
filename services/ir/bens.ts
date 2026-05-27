@@ -33,13 +33,7 @@ export type BemDeclaravel = {
   discrimination: string;
   /** CNPJ formatado (XX.XXX.XXX/XXXX-XX) — opcional */
   cnpj: string | null;
-  previousYearValue: number; // 31/12 do ano N-1, em BRL
-  /**
-   * True quando previousYearValue foi INFERIDO (initial_amount / acquired_value)
-   * em vez de vir de snapshot ou entrada manual. Aviso pro user que pode
-   * estar inexato — valor de compra ≠ valor de mercado em 31/12.
-   */
-  previousYearValueIsInferred: boolean;
+  previousYearValue: number; // 31/12 do ano N-1, em BRL (manual only)
   currentYearValue: number;  // 31/12 do ano N, em BRL (projetado/provisório/final)
   /** Valor de HOJE em BRL — útil pra UI mostrar "atual" lado a lado com projeção */
   todayValue: number;
@@ -104,11 +98,12 @@ export type BensReport = {
     final: number;
   };
   /**
-   * Quantos itens tiveram previousYearValue INFERIDO via initial_amount/acquired_value
-   * (ativo existia em 31/12 do ano N-1 mas não havia entry manual). Se > 0, UI
-   * avisa o user pra refinar manualmente pra precisão.
+   * True se TODOS os ativos ativos que existiam antes de 31/12/N-1 têm
+   * entry manual em ir_prior_year_balances. Quando false (gap ou vazio),
+   * a UI esconde a coluna "31/12/N-1" e "Variação vs N-1" pra evitar
+   * comparações enganosas com dados incompletos.
    */
-  previousYearInferredCount: number;
+  previousYearIsComplete: boolean;
 };
 
 const GROUP_LABELS: Record<string, string> = {
@@ -503,50 +498,6 @@ export async function getBensReport(
   const bens: BemDeclaravel[] = [];
 
   /**
-   * Set de "{source}:{group}" onde o user JÁ tem entries manuais em
-   * prior_year_balances. Usado pra evitar inferência tola: se o user
-   * gerencia manualmente um grupo (ex: RF group 05), assumimos que ele
-   * já cadastrou todos os ativos relevantes daquele grupo — não vamos
-   * adicionar inferências por cima (que podem dobrar contagem se ele
-   * tiver feito swap, ex: vendeu LFT antiga e comprou nova com placeholder).
-   */
-  const manualGroupsBySource = new Set<string>();
-  for (const r of priorYearManual ?? []) {
-    if (r.investment_id) {
-      const inv = (investments ?? []).find((i) => i.id === r.investment_id);
-      if (inv) {
-        const c = inv.receita_code ?? inferInvestmentCode(
-          inv.asset_type as Parameters<typeof inferInvestmentCode>[0],
-          inv.tax_regime,
-          inv.ticker,
-        );
-        const g = BEM_CODES[c]?.group;
-        if (g) manualGroupsBySource.add(`investment:${g}`);
-      }
-    }
-    if (r.account_id) {
-      const acc = (accounts ?? []).find((a) => a.id === r.account_id);
-      if (acc) {
-        const c = acc.is_exterior
-          ? "62"
-          : acc.type === "investment"
-            ? "47"
-            : inferAccountCode(acc.type);
-        const g = c ? BEM_CODES[c]?.group : null;
-        if (g) manualGroupsBySource.add(`account:${g}`);
-      }
-    }
-    if (r.physical_asset_id) {
-      const p = (physical ?? []).find((x) => x.id === r.physical_asset_id);
-      if (p) {
-        const c = p.receita_code ?? inferPhysicalCode(p.category as Parameters<typeof inferPhysicalCode>[0]);
-        const g = BEM_CODES[c]?.group;
-        if (g) manualGroupsBySource.add(`physical:${g}`);
-      }
-    }
-  }
-
-  /**
    * Calcula a fração (0–100) que o filer pedido detém num bem.
    * Se filerId for undefined, retorna 100 (visão conjunta = soma tudo).
    * Aplica o regime de bens automaticamente.
@@ -613,32 +564,9 @@ export async function getBensReport(
       ? Number(a.current_balance ?? 0)
       : convertOrSame(Number(a.current_balance ?? 0), currency, "BRL", rates);
 
-    // Resolve previousYearValue: prioriza entry manual; senão infere via
-    // current_balance se a conta existia em 31/12/N-1 (created_at <= endOfPrevYear)
-    // EXCETO se o user já cadastrou manualmente outro item do mesmo grupo
-    // (provavelmente está gerenciando esse grupo à mão).
-    const hasManualPrev = prevValueBySource.has(prevKey);
-    const accGroup = codeMeta?.group;
-    const userManagesGroup = accGroup
-      ? manualGroupsBySource.has(`account:${accGroup}`)
-      : false;
-    let prevValueRaw: number;
-    let prevInferred = false;
-    if (hasManualPrev) {
-      prevValueRaw = prevValueBySource.get(prevKey)!;
-    } else if (
-      !userManagesGroup &&
-      acc.created_at &&
-      acc.created_at.slice(0, 10) <= endOfPrevYear
-    ) {
-      // Conta existia, user não cadastrou saldo 31/12/N-1, e ele não está
-      // gerenciando esse grupo manualmente. Infere via saldo atual.
-      prevValueRaw = todayBalanceBRL;
-      prevInferred = true;
-    } else {
-      // Conta criada DEPOIS de 31/12/N-1 OU user gerencia o grupo manualmente
-      prevValueRaw = 0;
-    }
+    // Sem inferência: usa só entry manual (se houver). Sem entry → 0.
+    // A flag previousYearIsComplete no report sinaliza pra UI se há gaps.
+    const prevValueRaw: number = prevValueBySource.get(prevKey) ?? 0;
 
     bens.push({
       source: "account",
@@ -649,7 +577,6 @@ export async function getBensReport(
       discrimination: parts.join(" · "),
       cnpj,
       previousYearValue: Math.round((prevValueRaw * pct)) / 100,
-      previousYearValueIsInferred: prevInferred,
       currentYearValue: Math.round((balanceBRL * pct)) / 100,
       todayValue: Math.round((todayBalanceBRL * pct)) / 100,
       valuationKind: accResult.valuationKind,
@@ -739,33 +666,8 @@ export async function getBensReport(
       discrParts.push(saleParts.join(" · "));
     }
     const prevKey = `investment:${inv.id}`;
-    // Resolve previousYearValue: manual > inferido via initial_amount
-    // EXCETO se o user gerencia esse GRUPO manualmente (skip inferência pra
-    // evitar double-count com posições já vendidas/listadas no prior_year).
-    const hasManualPrevInv = prevValueBySource.has(prevKey);
-    const invGroup = codeMeta?.group;
-    const userManagesInvGroup = invGroup
-      ? manualGroupsBySource.has(`investment:${invGroup}`)
-      : false;
-    let prevInvValueRaw: number;
-    let prevInvInferred = false;
-    if (hasManualPrevInv) {
-      prevInvValueRaw = prevValueBySource.get(prevKey)!;
-    } else if (
-      !userManagesInvGroup &&
-      inv.purchase_date &&
-      inv.purchase_date <= endOfPrevYear
-    ) {
-      // Ativo existia em 31/12/N-1, user não cadastrou saldo, e grupo não
-      // tem entries manuais (improvável swap/double-count). Infere via initial_amount.
-      const initialBRL = currency === "BRL"
-        ? Number(inv.initial_amount ?? 0)
-        : convertOrSame(Number(inv.initial_amount ?? 0), currency, "BRL", rates);
-      prevInvValueRaw = initialBRL;
-      prevInvInferred = true;
-    } else {
-      prevInvValueRaw = 0;
-    }
+    // Sem inferência: usa entry manual ou 0.
+    const prevInvValueRaw: number = prevValueBySource.get(prevKey) ?? 0;
 
     bens.push({
       source: "investment",
@@ -776,7 +678,6 @@ export async function getBensReport(
       discrimination: discrParts.join(" · "),
       cnpj,
       previousYearValue: Math.round((prevInvValueRaw * pct)) / 100,
-      previousYearValueIsInferred: prevInvInferred,
       // Liquidado no ano: situação atual = 0 (saiu do patrimônio).
       currentYearValue: isClosedInYear ? 0 : Math.round((balanceBRL * pct)) / 100,
       // Valor de hoje = current_balance cru × pct (sem projeção). Pra renda
@@ -829,32 +730,8 @@ export async function getBensReport(
     const physicalCnpj = REQUIRES_CNPJ_CODES.includes(code) && rawCnpj
       ? fmtCNPJ(rawCnpj)
       : null;
-    // Resolve previousYearValue: manual > inferido via acquired_value
-    // EXCETO se user gerencia esse grupo de bens manualmente.
-    const hasManualPrevPhy = prevValueBySource.has(prevKey);
-    const phyGroup = codeMeta?.group;
-    const userManagesPhyGroup = phyGroup
-      ? manualGroupsBySource.has(`physical:${phyGroup}`)
-      : false;
-    let prevPhyValueRaw: number;
-    let prevPhyInferred = false;
-    if (hasManualPrevPhy) {
-      prevPhyValueRaw = prevValueBySource.get(prevKey)!;
-    } else if (
-      !userManagesPhyGroup &&
-      p.acquired_at &&
-      p.acquired_at <= endOfPrevYear
-    ) {
-      // Bem físico existia em 31/12/N-1, grupo sem entries manuais. Usa
-      // acquired_value (sem depreciação automática).
-      const acquiredBRLFull = currency === "BRL"
-        ? Number(p.acquired_value ?? 0)
-        : convertOrSame(Number(p.acquired_value ?? 0), currency, "BRL", rates);
-      prevPhyValueRaw = acquiredBRLFull;
-      prevPhyInferred = true;
-    } else {
-      prevPhyValueRaw = 0;
-    }
+    // Sem inferência: usa entry manual ou 0.
+    const prevPhyValueRaw: number = prevValueBySource.get(prevKey) ?? 0;
 
     bens.push({
       source: "physical",
@@ -865,7 +742,6 @@ export async function getBensReport(
       discrimination,
       cnpj: physicalCnpj,
       previousYearValue: Math.round((prevPhyValueRaw * pct)) / 100,
-      previousYearValueIsInferred: prevPhyInferred,
       currentYearValue: Math.round((valueBRL * pct)) / 100,
       // Bens físicos: valor "hoje" = valor "currentYear" (não tem projeção)
       todayValue: Math.round((valueBRL * pct)) / 100,
@@ -971,7 +847,43 @@ export async function getBensReport(
     yearStatusBreakdown.projected === 0 && yearStatusBreakdown.provisional === 0
       ? "final"
       : "in_progress";
-  const previousYearInferredCount = bens.filter((b) => b.previousYearValueIsInferred).length;
+
+  // Completude do 31/12/N-1: true se todos os ativos atuais que existiam
+  // antes daquela data tem entry manual. Gap → false → UI esconde a coluna.
+  const previousYearIsComplete = (() => {
+    // Investimentos: precisam de entry manual se purchase_date <= endOfPrevYear
+    for (const inv of investments ?? []) {
+      if (
+        inv.purchase_date &&
+        inv.purchase_date <= endOfPrevYear &&
+        !prevValueBySource.has(`investment:${inv.id}`)
+      ) {
+        return false;
+      }
+    }
+    // Contas: precisam de entry se created_at <= endOfPrevYear
+    for (const a of accounts ?? []) {
+      const acc = a as Tables<"accounts">;
+      if (
+        acc.created_at &&
+        acc.created_at.slice(0, 10) <= endOfPrevYear &&
+        !prevValueBySource.has(`account:${a.id}`)
+      ) {
+        return false;
+      }
+    }
+    // Bens físicos: precisam de entry se acquired_at <= endOfPrevYear
+    for (const p of physical ?? []) {
+      if (
+        p.acquired_at &&
+        p.acquired_at <= endOfPrevYear &&
+        !prevValueBySource.has(`physical:${p.id}`)
+      ) {
+        return false;
+      }
+    }
+    return true;
+  })();
 
   return {
     year,
@@ -991,6 +903,6 @@ export async function getBensReport(
     },
     yearStatus,
     yearStatusBreakdown,
-    previousYearInferredCount,
+    previousYearIsComplete,
   };
 }
