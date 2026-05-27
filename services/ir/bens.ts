@@ -79,6 +79,18 @@ export type BensReport = {
     delta: number;    // current - previous (variação projetada vs ano-base anterior)
     yieldProjected: number; // current - today (ganho esperado até 31/12)
   };
+  /**
+   * Breakdown agregado por classe pra exibir no rodapé com discriminação clara.
+   * Cada classe agrupa códigos relacionados — RF (codes 02, 47, 48, etc),
+   * Variável (04 ações + 07 FIIs), Bens (01 imóveis + 03 veículos + 09 outros),
+   * Contas (06 depósito à vista + 62 exterior).
+   */
+  byClass: Array<{
+    label: string;        // "Renda fixa", "Renda variável", "Bens físicos", "Contas e caixa"
+    today: number;        // soma de todayValue dos itens dessa classe
+    projected: number;    // soma de currentYearValue (projetado quando RF, atual quando outros)
+    yieldProjected: number; // projected - today (positivo só pra RF)
+  }>;
   /** Dívidas e Ônus Reais — ficha separada no programa IRPF */
   dividas: {
     items: DividaDeclaravel[];
@@ -782,6 +794,36 @@ export async function getBensReport(
   const totalPrevious = byGroup.reduce((s, g) => s + g.totalPrevious, 0);
   const totalToday = bens.reduce((s, b) => s + b.todayValue, 0);
 
+  // Breakdown por classe — agrupa códigos Receita em 4 buckets pro rodapé
+  // discriminado. Não bate 1:1 com BEM_CODES.group porque a Receita tem
+  // 9 grupos enquanto pra UX humana 4 categorias bastam.
+  function classifyForFooter(code: string): string {
+    if (code === "02" || code === "47" || code === "48" || code === "49") return "Renda fixa";
+    if (code === "04" || code === "07") return "Renda variável (Ações, FIIs, ETFs)";
+    if (code === "06" || code === "62") return "Contas e caixa";
+    if (code === "01" || code === "03" || code === "09" || code === "26" || code === "31" || code === "32" || code === "39") return "Bens físicos e participações";
+    if (code === "81") return "Criptoativos";
+    return "Outros";
+  }
+  const classMap = new Map<string, { today: number; projected: number }>();
+  for (const b of bens) {
+    const cls = classifyForFooter(b.code);
+    const cur = classMap.get(cls) ?? { today: 0, projected: 0 };
+    cur.today += b.todayValue;
+    cur.projected += b.currentYearValue;
+    classMap.set(cls, cur);
+  }
+  const byClass = Array.from(classMap.entries())
+    // Ordena por today desc pra colocar as classes mais relevantes em cima
+    .sort(([, a], [, b]) => b.today - a.today)
+    .filter(([, v]) => v.today > 0 || v.projected > 0)
+    .map(([label, v]) => ({
+      label,
+      today: Math.round(v.today * 100) / 100,
+      projected: Math.round(v.projected * 100) / 100,
+      yieldProjected: Math.round((v.projected - v.today) * 100) / 100,
+    }));
+
   // Nota de câmbio (mostra ratos USD e EUR pra BRL se houver bens estrangeiros)
   const hasUSD = bens.some((b) => b.fxNote?.includes("USD"));
   const hasEUR = bens.some((b) => b.fxNote?.includes("EUR"));
@@ -907,5 +949,6 @@ export async function getBensReport(
     yearStatus,
     yearStatusBreakdown,
     previousYearIsComplete,
+    byClass,
   };
 }

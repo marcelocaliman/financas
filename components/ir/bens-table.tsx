@@ -136,75 +136,114 @@ export function BensTable({ report }: { report: BensReport }) {
         );
       })}
 
-      {/* Rodapé. Layout adapta: quando ano em curso E sem dados completos
-          de N-1, mostra só Atual + Projeção (2 colunas). Caso contrário,
-          inclui 31/12/N-1 e Variação. */}
-      <div
-        className={
-          "pt-4 border-t-2 border-border-strong grid gap-4 " +
-          (showPrevYear
-            ? report.yearStatus === "in_progress"
-              ? "grid-cols-2 sm:grid-cols-4"
-              : "grid-cols-3"
-            : report.yearStatus === "in_progress"
-              ? "grid-cols-1 sm:grid-cols-2"
-              : "grid-cols-1 sm:grid-cols-2")
-        }
-      >
-        {showPrevYear ? (
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Total 31/12/{report.year - 1}
-            </div>
-            <div className="font-mono text-[17px] tabular-nums mt-1">
-              R$ {fmtBRL(report.totals.previous)}
-            </div>
+      {/* Rodapé discriminado: tabela com breakdown por classe + totais */}
+      <div className="pt-4 border-t-2 border-border-strong space-y-4">
+        {/* Tabela de breakdown por classe */}
+        {report.byClass.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[12.5px]">
+              <thead>
+                <tr className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground">
+                  <th className="text-left pb-2 font-medium">Classe</th>
+                  <th className="text-right pb-2 font-medium pl-4">Atual · hoje</th>
+                  {inProgress ? (
+                    <>
+                      <th className="text-right pb-2 font-medium pl-4">Projeção 31/12/{report.year}</th>
+                      <th className="text-right pb-2 font-medium pl-4">Ganho até 31/12</th>
+                    </>
+                  ) : null}
+                </tr>
+              </thead>
+              <tbody>
+                {report.byClass.map((c) => (
+                  <tr key={c.label} className="border-t border-border/60">
+                    <td className="py-2 text-foreground">{c.label}</td>
+                    <td className="py-2 pl-4 font-mono text-right tabular-nums text-foreground">
+                      R$ {fmtBRL(c.today)}
+                    </td>
+                    {inProgress ? (
+                      <>
+                        <td className="py-2 pl-4 font-mono text-right tabular-nums text-muted-foreground">
+                          R$ {fmtBRL(c.projected)}
+                        </td>
+                        <td className="py-2 pl-4 font-mono text-right tabular-nums">
+                          {c.yieldProjected > 0.005 ? (
+                            <span className="text-olive-700 dark:text-olive-500">
+                              +R$ {fmtBRL(c.yieldProjected)}
+                            </span>
+                          ) : (
+                            <span className="text-faint-foreground italic">—</span>
+                          )}
+                        </td>
+                      </>
+                    ) : null}
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-border-strong font-medium">
+                  <td className="pt-3 font-mono text-[11px] uppercase tracking-[0.12em] text-foreground">
+                    Patrimônio total
+                  </td>
+                  <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
+                    R$ {fmtBRL(report.totals.today)}
+                  </td>
+                  {inProgress ? (
+                    <>
+                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
+                        R$ {fmtBRL(report.totals.current)}
+                      </td>
+                      <td className="pt-3 pl-4 font-mono text-right tabular-nums text-olive-700 dark:text-olive-500 text-[15px]">
+                        {report.totals.yieldProjected > 0.005 ? (
+                          <>+R$ {fmtBRL(report.totals.yieldProjected)}</>
+                        ) : (
+                          <span className="text-faint-foreground italic text-[12.5px]">—</span>
+                        )}
+                      </td>
+                    </>
+                  ) : null}
+                </tr>
+              </tbody>
+            </table>
+            {inProgress ? (
+              <p className="font-mono text-[10.5px] text-faint-foreground mt-3 leading-relaxed">
+                <b className="not-italic text-muted-foreground">Atual · hoje</b>: estado real
+                do broker agora. <b className="not-italic text-muted-foreground">Projeção 31/12</b>:
+                renda fixa composta pela Selic/CDI/IPCA atual até dezembro; demais classes
+                mantêm valor atual (sem base pra projetar com precisão).
+              </p>
+            ) : null}
           </div>
         ) : null}
-        {inProgress ? (
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Atual · hoje
-            </div>
-            <div className="font-mono text-[17px] tabular-nums mt-1 text-foreground font-medium">
-              R$ {fmtBRL(report.totals.today)}
-            </div>
-            <div className="font-mono text-[10px] text-faint-foreground mt-1">
-              soma dos saldos do broker
-            </div>
-          </div>
-        ) : null}
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-            {inProgress ? `Projeção 31/12/${report.year}` : `Total 31/12/${report.year}`}
-          </div>
-          <div
-            className={
-              "font-mono text-[17px] tabular-nums mt-1 font-medium " +
-              (inProgress ? "text-muted-foreground" : "text-foreground")
-            }
-          >
-            R$ {fmtBRL(report.totals.current)}
-          </div>
-          {inProgress && report.totals.yieldProjected > 0 ? (
-            <div className="font-mono text-[10px] text-olive-700 dark:text-olive-500 mt-1 leading-snug">
-              +R$ {fmtBRL(report.totals.yieldProjected)} estimado pela Selic
-            </div>
-          ) : null}
-        </div>
-        {showVariation ? (
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
-              Variação vs {report.year - 1}
-            </div>
-            <div
-              className={
-                "font-mono text-[17px] tabular-nums mt-1 " +
-                (report.totals.delta >= 0 ? "text-olive-700" : "text-rust-600")
-              }
-            >
-              {report.totals.delta >= 0 ? "+" : ""}R$ {fmtBRL(report.totals.delta)}
-            </div>
+
+        {/* Variação vs N-1 só quando tem dados completos do ano anterior */}
+        {showPrevYear || showVariation ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-3 border-t border-border/60">
+            {showPrevYear ? (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+                  Total 31/12/{report.year - 1}
+                </div>
+                <div className="font-mono text-[15px] tabular-nums mt-1 text-muted-foreground">
+                  R$ {fmtBRL(report.totals.previous)}
+                </div>
+              </div>
+            ) : null}
+            {showVariation ? (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+                  Variação vs {report.year - 1}
+                </div>
+                <div
+                  className={
+                    "font-mono text-[15px] tabular-nums mt-1 " +
+                    (report.totals.delta >= 0
+                      ? "text-olive-700 dark:text-olive-500"
+                      : "text-rust-600")
+                  }
+                >
+                  {report.totals.delta >= 0 ? "+" : ""}R$ {fmtBRL(report.totals.delta)}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
