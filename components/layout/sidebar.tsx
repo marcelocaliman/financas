@@ -30,6 +30,7 @@ import {
   Server,
   Landmark,
   HandCoins,
+  Stethoscope,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -63,6 +64,7 @@ const mainNavItems: NavItem[] = [
   { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },
   { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
   { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "config" },
+  { label: "Saúde", href: "/configuracoes/auditoria", icon: Stethoscope, group: "config" },
 ];
 
 const mainGroupLabels: Record<string, string> = {
