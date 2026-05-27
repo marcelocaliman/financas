@@ -78,26 +78,27 @@ export function WithdrawYieldDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      const invaded = state.invadedPrincipal ?? 0;
-      if (invaded > 0) {
-        toast.success(
-          `Saque registrado · R$ ${formatMoney(state.fromYield ?? 0)} do yield + R$ ${formatMoney(invaded)} do principal.`,
-        );
-      } else {
-        toast.success("Saque de rendimento registrado.");
-      }
+      const fy = state.fromYield ?? 0;
+      const pr = state.principalReduction ?? 0;
+      toast.success(
+        `Saque registrado · R$ ${formatMoney(fy)} de rendimento + R$ ${formatMoney(pr)} de custo (proporcional).`,
+      );
       onOpenChange(false);
     }
   }, [state, onOpenChange]);
 
   const currentBalance = Number(investment.current_balance ?? 0);
+  const accYield = Math.max(0, accumulatedYield);
 
-  // Preview client-side da cascading: quanto sai do yield vs principal.
-  // O servidor calcula com saldo derivado (mais preciso); aqui usamos o
-  // accumulatedYield passado pelo caller como aproximação visual.
-  const previewFromYield = Math.min(amount, Math.max(0, accumulatedYield));
-  const previewInvadesPrincipal = Math.max(0, amount - Math.max(0, accumulatedYield));
-  const showInvadeWarning = previewInvadesPrincipal > 0.005;
+  // Preview proporcional (TD-style): saque divide entre yield/custo na mesma
+  // proporção que eles ocupam no saldo. Saldo final reduz proporcionalmente.
+  const ratio = currentBalance > 0 ? Math.min(amount, currentBalance) / currentBalance : 0;
+  const previewFromYield = currentBalance > 0 ? (accYield / currentBalance) * amount : 0;
+  const previewPrincipalReduction =
+    currentBalance > 0 ? ((currentBalance - accYield) / currentBalance) * amount : 0;
+  // Warning: saque maior que rendimento acumulado = está reduzindo capital
+  // além do que ganhou
+  const exceededYield = amount > accYield + 0.005;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -105,7 +106,7 @@ export function WithdrawYieldDialog({
         <DialogHeader
           eyebrow={`Sacar · ${investment.ticker}`}
           title="Sacar do ativo."
-          description="O saque sai primeiro do rendimento acumulado. Se ultrapassar, invade o principal (e reduz o valor aplicado proporcionalmente)."
+          description="Venda parcial proporcional (modelo Tesouro Direto): rendimento e custo de aquisição reduzem na mesma fração da posição vendida. Rentabilidade % preservada."
         />
 
         <form action={action} className="space-y-4">
@@ -138,7 +139,7 @@ export function WithdrawYieldDialog({
             label="Valor a sacar"
             htmlFor="amount"
             required
-            hint="Até o rendimento acumulado: sai só do yield. Acima: invade o principal."
+            hint="A posição reduz proporcionalmente. Acima do rendimento acumulado: você diminui capital além dos ganhos (alerta)."
           >
             <MoneyInput
               name="amount"
@@ -153,37 +154,43 @@ export function WithdrawYieldDialog({
             ) : null}
           </Field>
 
-          {/* Preview cascading quando há valor digitado */}
+          {/* Preview proporcional + warning quando saque > rendimento */}
           {amount > 0 ? (
             <div
               className={
                 "rounded-[10px] px-4 py-3 text-[12.5px] " +
-                (showInvadeWarning
+                (exceededYield
                   ? "bg-rust-100/40 dark:bg-rust-700/15 border border-rust-600/30"
                   : "bg-olive-50 dark:bg-olive-700/10 border border-olive-600/25")
               }
             >
-              {showInvadeWarning ? (
+              {exceededYield ? (
                 <div className="flex items-start gap-2 text-rust-600 mb-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.7} />
-                  <b>Esse valor invade o principal.</b>
+                  <b>Saque maior que o rendimento acumulado — está reduzindo capital além dos ganhos.</b>
                 </div>
               ) : null}
               <div className="font-mono space-y-0.5">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Do rendimento</span>
-                  <span className="text-olive-700 dark:text-olive-500">
+                  <span className="text-muted-foreground">Vende {(ratio * 100).toFixed(2).replace(".", ",")}% da posição</span>
+                  <span className="text-foreground tabular-nums">R$ {formatMoney(amount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">→ parte que é rendimento</span>
+                  <span className="text-olive-700 dark:text-olive-500 tabular-nums">
                     R$ {formatMoney(previewFromYield)}
                   </span>
                 </div>
-                {showInvadeWarning ? (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Do principal</span>
-                    <span className="text-rust-600">
-                      R$ {formatMoney(previewInvadesPrincipal)}
-                    </span>
-                  </div>
-                ) : null}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">→ parte que é custo (initial reduz)</span>
+                  <span className="text-navy-700 dark:text-navy-300 tabular-nums">
+                    R$ {formatMoney(previewPrincipalReduction)}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-border/40 pt-1 mt-1">
+                  <span className="text-faint-foreground">Rentabilidade % preservada</span>
+                  <span className="text-faint-foreground tabular-nums">✓</span>
+                </div>
               </div>
             </div>
           ) : null}
@@ -238,13 +245,13 @@ export function WithdrawYieldDialog({
             </Button>
             <Button
               type="submit"
-              variant={showInvadeWarning ? "danger" : "primary"}
+              variant={exceededYield ? "danger" : "primary"}
               disabled={pending || amount <= 0}
             >
               {pending
                 ? "Sacando…"
-                : showInvadeWarning
-                  ? "Sacar invadindo principal"
+                : exceededYield
+                  ? "Sacar reduzindo capital"
                   : "Registrar saque"}
             </Button>
           </DialogFooter>

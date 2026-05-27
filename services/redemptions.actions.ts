@@ -175,31 +175,36 @@ export type WithdrawYieldState = {
   ok?: boolean;
   error?: string;
   fieldErrors?: Record<string, string>;
-  /**
-   * Quanto saiu do rendimento acumulado e quanto invadiu o principal.
-   * Quando invadedPrincipal > 0, a UI mostra aviso pra confirmar a "comida"
-   * do principal — vide WithdrawYieldDialog.
-   */
+  /** Parte do saque que representa rendimento (proporcional). */
   fromYield?: number;
+  /** Parte do saque que representa principal (proporcional). */
+  principalReduction?: number;
+  /** True se o saque excede o rendimento acumulado (sinal de alerta). */
+  exceededYield?: boolean;
+  /** @deprecated alias mantido pra retrocompat — use principalReduction */
   invadedPrincipal?: number;
 };
 
 /**
- * Saca dinheiro de um ativo de renda fixa com REGRA YIELD-FIRST → PRINCIPAL.
+ * Saca dinheiro de um ativo de renda fixa com REGRA PROPORCIONAL (TD-style).
  *
- * Lógica:
- *  1. Calcula o saldo DERIVADO ao vivo (composição contínua até now)
- *  2. yield_disponivel = derived − initial_amount
- *  3. Se amount ≤ yield_disponivel: só "come" do yield
- *     - new_current_balance = derived − amount
- *     - initial_amount intacto
- *  4. Se amount > yield_disponivel: come tudo o yield + invade principal
- *     - invade = amount − yield_disponivel
- *     - new_current_balance = derived − amount
- *     - new_initial_amount = initial_amount − invade
- *  5. last_yield_at = today (zera o "histórico de composição" pra evitar
- *     re-compor a partir de referência antiga após o update)
- *  6. Cria transaction de income na conta destino com metadata pra auditoria
+ * Modelo: trata o saque como venda parcial proporcional da posição. Mesma
+ * matemática usada pelo Tesouro Direto e pela Receita Federal pra custo médio.
+ *
+ *   ratio = amount / current_balance         // fração da posição vendida
+ *   new_balance = current_balance − amount
+ *   new_initial = initial × (1 − ratio)      // custo reduzido proporcional
+ *
+ * Resultado: rentabilidade % é preservada após o saque
+ *   (rendimento/custo permanece igual, refletindo que vendemos uma fatia).
+ *
+ * Pra reporting:
+ *   fromYield = amount × (accumulatedYield / current_balance)
+ *   principalReduction = amount × (initial / current_balance)
+ *   exceededYield = amount > accumulatedYield (saque maior que ganhos)
+ *
+ *  - last_yield_at = today (zera composição pra evitar recompor de ref antiga)
+ *  - Cria transaction de income na conta destino com metadata pra auditoria
  */
 export async function withdrawYield(
   _prev: WithdrawYieldState | undefined,
@@ -258,11 +263,14 @@ export async function withdrawYield(
     };
   }
 
-  // 4. Cascading yield-first → principal
-  const fromYield = Math.min(amount, accumulatedYield);
-  const invadedPrincipal = Math.max(0, amount - accumulatedYield);
+  // 4. Proporcional (TD-style): reduz custo na mesma fração da posição vendida
+  const ratio = amount / derivedBalance;
   const newCurrentBalance = derivedBalance - amount;
-  const newInitialAmount = initialAmount - invadedPrincipal;
+  const newInitialAmount = initialAmount * (1 - ratio);
+  // Breakdown do saque pra reporting/metadata (não afeta o cálculo)
+  const fromYield = (accumulatedYield / derivedBalance) * amount;
+  const principalReduction = (initialAmount / derivedBalance) * amount;
+  const exceededYield = amount > accumulatedYield;
 
   // 5. Update investimento com snapshot novo e last_yield_at = hoje
   //    (last_yield_at resetado pra evitar re-composição a partir de ref antiga)
@@ -285,10 +293,9 @@ export async function withdrawYield(
     amount,
     amount_account: amount,
     currency: acc.currency,
-    description:
-      invadedPrincipal > 0
-        ? `Saque · ${inv.ticker}`
-        : `Saque de rendimento · ${inv.ticker}`,
+    description: exceededYield
+      ? `Saque · ${inv.ticker}`
+      : `Saque de rendimento · ${inv.ticker}`,
     date: parsed.data.date,
     created_by: ctx.profile.id,
     category_source: "manual",
@@ -296,8 +303,10 @@ export async function withdrawYield(
       yield_withdrawal: true,
       investment_id: inv.id,
       investment_ticker: inv.ticker,
+      sell_ratio: Math.round(ratio * 10000) / 100, // %
       from_yield: Math.round(fromYield * 100) / 100,
-      invaded_principal: Math.round(invadedPrincipal * 100) / 100,
+      principal_reduction: Math.round(principalReduction * 100) / 100,
+      exceeded_yield: exceededYield,
       notes: parsed.data.notes?.trim() ?? null,
     },
   });
@@ -321,6 +330,8 @@ export async function withdrawYield(
   return {
     ok: true,
     fromYield: Math.round(fromYield * 100) / 100,
-    invadedPrincipal: Math.round(invadedPrincipal * 100) / 100,
+    principalReduction: Math.round(principalReduction * 100) / 100,
+    exceededYield,
+    invadedPrincipal: Math.round(principalReduction * 100) / 100,
   };
 }
