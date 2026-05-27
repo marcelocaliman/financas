@@ -164,21 +164,31 @@ export async function getInvestmentHistory(
   >;
   const movs = (movements ?? []) as Mov[];
 
-  // Lookup ativo por id pra eventos
+  // Lookup ativo por id pra eventos + agrupamento de movements por ativo
   const invById = new Map<string, Inv>();
   for (const inv of invs) invById.set(inv.id, inv);
+  const activeIds = new Set(invs.map((i) => i.id));
 
-  // Ativos COM histórico de buy movements (geralmente stocks/FIIs/ETFs cadastrados
-  // via "Lote inicial"). Pra esses, aportes = soma de buys do investment_movements.
-  // Pros DEMAIS (RF cadastrada direto, sem movements), aportes = initial_amount
-  // creditado no purchase_date — senão a linha de aportes ficaria zerada pra
-  // toda a renda fixa e o yield ficaria inflado.
-  const investmentsWithBuyMovements = new Set<string>();
+  // Agrupa buys por investment_id pra cálculo de aportes.
+  // SEMÂNTICA: aportes_t = soma das compras (sem subtrair vendas) DAS POSIÇÕES
+  // AINDA ATIVAS. Pros ativos sem buy movement (RF cadastrada direto), usa
+  // initial_amount. Essa escolha:
+  //   1) Ignora sells — evita drops bizarros se o user vendeu parcial
+  //   2) Filtra posições encerradas — sells de ativos já fechados não somem
+  //      patrimônio do hoje, então também não deveriam afetar a linha
+  //   3) Resulta numa linha monotonicamente crescente (ou plana) que
+  //      representa "capital investido nas posições que ainda tenho"
+  type BuyMv = { date: string; total_amount: number };
+  const buysByInvestment = new Map<string, BuyMv[]>();
   for (const mv of movs) {
-    if (mv.kind === "buy" && mv.investment_id) {
-      investmentsWithBuyMovements.add(mv.investment_id);
-    }
+    if (mv.kind !== "buy" || !mv.investment_id) continue;
+    if (!activeIds.has(mv.investment_id)) continue;
+    const list = buysByInvestment.get(mv.investment_id) ?? [];
+    list.push({ date: mv.date, total_amount: Number(mv.total_amount ?? 0) });
+    buysByInvestment.set(mv.investment_id, list);
   }
+  // Ordena pra usar break-out cedo
+  for (const [, list] of buysByInvestment) list.sort((a, b) => a.date.localeCompare(b.date));
 
   // Coleta tickers de ações/FIIs pra buscar histórico
   const stockTickers = Array.from(
@@ -287,27 +297,29 @@ export async function getInvestmentHistory(
 
     const total = stocks + fixedIncome + other;
 
-    // Aportes líquidos acumulados até essa data.
-    // (a) Movements: buy positivo, sell negativo, dividendo/jcp ignorados
+    // Capital investido nas posições ativas até essa data.
+    // Pra cada ativo ainda na carteira:
+    //   - Com buys registrados: soma buys até refDate (em moeda do ativo, convertido)
+    //   - Sem buys (RF cadastrada direto): usa initial_amount no purchase_date
     let aportes = 0;
-    for (const mv of movs) {
-      if (mv.date > refDate) break;
-      const amt = Number(mv.total_amount ?? 0);
-      if (mv.kind === "buy") aportes += amt;
-      else if (mv.kind === "sell") aportes -= amt;
-    }
-    // (b) Investments cadastrados direto sem buy movement (típico de RF):
-    //     soma initial_amount no purchase_date pra refletir o capital realmente investido
     for (const inv of invs) {
-      if (investmentsWithBuyMovements.has(inv.id)) continue;
-      if (!inv.purchase_date || inv.purchase_date > refDate) continue;
       const c = (inv.currency ?? "BRL") as Currency;
-      aportes += convertOrSame(
-        Number(inv.initial_amount ?? 0),
-        c,
-        displayCurrency,
-        rates,
-      );
+      const buys = buysByInvestment.get(inv.id);
+      if (buys && buys.length > 0) {
+        let sumBuys = 0;
+        for (const b of buys) {
+          if (b.date > refDate) break;
+          sumBuys += b.total_amount;
+        }
+        aportes += convertOrSame(sumBuys, c, displayCurrency, rates);
+      } else if (inv.purchase_date && inv.purchase_date <= refDate) {
+        aportes += convertOrSame(
+          Number(inv.initial_amount ?? 0),
+          c,
+          displayCurrency,
+          rates,
+        );
+      }
     }
     const yieldValue = total - aportes;
 
