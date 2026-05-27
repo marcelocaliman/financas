@@ -55,7 +55,8 @@ type ChartRow = InvestmentHistoryPoint & {
   projP90: number | null;
   /** [p10, p90] como tupla pra Area renderizar a banda */
   projBand: [number, number] | null;
-  aportesValue: number;
+  /** Null no passado (escondida) pra não confundir o user */
+  aportesValue: number | null;
 };
 
 export function InvestmentHistoryChart({
@@ -130,6 +131,15 @@ export function InvestmentHistoryChart({
   const todayPastPoint = points[points.length - 1];
   const todayPastValue = Number(todayPastPoint[dataKey]);
 
+  // ─── Capital investido nas posições ainda ativas (passa do server) ───
+  // Pra cada past month vem `aportes` = cost basis acumulado.
+  // Pra UX: queremos mostrar essa linha SÓ no futuro, partindo do valor de
+  // hoje e somando aportes mensais projetados. Assim:
+  //   - aporte = 0 → linha plana = "se eu não aportar mais nada"
+  //   - aporte = 1k → linha sobe linear = aportes acumulados projetados
+  //   - GAP entre essa linha e o p50 da projeção = rendimento esperado
+  const aportesHoje = todayPastPoint.aportes;
+
   // ─── Monta dataset combinado: passado + projeção ───
   const pastRows: ChartRow[] = points.map((p, i) => {
     const isLast = i === points.length - 1;
@@ -141,13 +151,16 @@ export function InvestmentHistoryChart({
       projP10: isLast ? todayPastValue : null,
       projP90: isLast ? todayPastValue : null,
       projBand: isLast ? [todayPastValue, todayPastValue] : null,
-      aportesValue: p.aportes,
+      // Aportes line: ESCONDE no passado pra não confundir. Só bridge point
+      // no último past pra linha conectar com o futuro.
+      aportesValue: isLast ? aportesHoje : null,
     };
   });
 
-  // Futuro: projeção Monte Carlo
+  // Futuro: projeção Monte Carlo + trajetória de aportes
   const futureRows: ChartRow[] = monteCarlo.map((mc) => {
     const [y, m] = mc.date.split("-").map(Number);
+    const aportesAcum = aportesHoje + projectionForMode.contribution * mc.monthIndex;
     return {
       date: lastDayOfMonth(y, m),
       label: monthLabel(m),
@@ -155,8 +168,8 @@ export function InvestmentHistoryChart({
       stocks: mode === "stocks" ? mc.p50 : 0,
       fixedIncome: mode === "fixedIncome" ? mc.p50 : 0,
       other: 0,
-      aportes: todayPastPoint.aportes + projectionForMode.contribution * mc.monthIndex,
-      yield: mc.p50 - todayPastPoint.aportes,
+      aportes: aportesAcum,
+      yield: mc.p50 - aportesAcum,
       isEstimate: true,
       isProjection: true,
       realValue: null,
@@ -164,7 +177,7 @@ export function InvestmentHistoryChart({
       projP10: mc.p10,
       projP90: mc.p90,
       projBand: [mc.p10, mc.p90],
-      aportesValue: todayPastPoint.aportes + projectionForMode.contribution * mc.monthIndex,
+      aportesValue: aportesAcum,
     };
   });
 
@@ -203,7 +216,10 @@ export function InvestmentHistoryChart({
           />
           Projeção (Monte Carlo)
         </label>
-        <label className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground cursor-pointer">
+        <label
+          className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground cursor-pointer"
+          title="Linha base sem rendimento: capital investido hoje + aportes mensais projetados. O gap pra projeção (mediana) = rendimento esperado."
+        >
           <input
             type="checkbox"
             checked={showAportes}
@@ -212,7 +228,7 @@ export function InvestmentHistoryChart({
           />
           <span className="inline-flex items-center gap-1">
             <span className="w-3 h-0.5 bg-rust-600" style={{ borderTop: "1px dashed currentColor" }} />
-            Aportes acumulados
+            Linha sem rendimento
           </span>
         </label>
       </div>
@@ -340,7 +356,7 @@ export function InvestmentHistoryChart({
                 const labelName =
                   name === "realValue" ? MODE_LABELS[mode] :
                   name === "projP50" ? "Mediana projetada" :
-                  name === "aportesValue" ? "Aportes acumulados" : name;
+                  name === "aportesValue" ? "Sem rendimento (base)" : name;
                 return [formatMoney(value), labelName];
               }) as unknown as (value: unknown, name: unknown) => [string, string]
             }
@@ -390,9 +406,9 @@ export function InvestmentHistoryChart({
             dot={false}
           />
 
-          {/* Aportes acumulados — rust pra contrastar com olive, traço grosso
-              e dots pra ficar legível mesmo por cima do fill da área verde */}
-          {showAportes ? (
+          {/* Linha sem rendimento (rust dashed) — capital investido hoje
+              + aportes futuros mensais. Só aparece na projeção. */}
+          {showAportes && showProjection ? (
             <Area
               type="monotone"
               dataKey="aportesValue"
@@ -402,6 +418,7 @@ export function InvestmentHistoryChart({
               strokeDasharray="6 3"
               fill="none"
               isAnimationActive={false}
+              connectNulls={false}
               dot={{ r: 2.5, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 1 }}
               activeDot={{ r: 4, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 2 }}
             />
@@ -443,24 +460,54 @@ export function InvestmentHistoryChart({
 
       {/* Resumo numérico da projeção */}
       {showProjection && monteCarlo.length > 0 ? (
-        <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border/60">
-          <ProjectionStat
-            label={`Em ${monthsFuture}m · p10 (pessimista)`}
-            value={monteCarlo[monteCarlo.length - 1].p10}
-            initial={initialPortfolioBRL}
-          />
-          <ProjectionStat
-            label={`Em ${monthsFuture}m · mediana`}
-            value={monteCarlo[monteCarlo.length - 1].p50}
-            initial={initialPortfolioBRL}
-            highlight
-          />
-          <ProjectionStat
-            label={`Em ${monthsFuture}m · p90 (otimista)`}
-            value={monteCarlo[monteCarlo.length - 1].p90}
-            initial={initialPortfolioBRL}
-          />
-        </div>
+        <>
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-border/60">
+            <ProjectionStat
+              label={`Em ${monthsFuture}m · p10 (pessimista)`}
+              value={monteCarlo[monteCarlo.length - 1].p10}
+              initial={initialPortfolioBRL}
+            />
+            <ProjectionStat
+              label={`Em ${monthsFuture}m · mediana`}
+              value={monteCarlo[monteCarlo.length - 1].p50}
+              initial={initialPortfolioBRL}
+              highlight
+            />
+            <ProjectionStat
+              label={`Em ${monthsFuture}m · p90 (otimista)`}
+              value={monteCarlo[monteCarlo.length - 1].p90}
+              initial={initialPortfolioBRL}
+            />
+          </div>
+          {/* Breakdown do retorno: capital investido vs. rendimento esperado */}
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-3 text-[11px] font-mono text-faint-foreground">
+            <span>
+              Capital investido hoje:{" "}
+              <span className="text-muted-foreground tabular-nums">
+                {formatMoney(aportesHoje)}
+              </span>
+            </span>
+            {monthlyContribution > 0 ? (
+              <span>
+                +{" "}
+                <span className="text-muted-foreground tabular-nums">
+                  {formatMoney(projectionForMode.contribution * monthsFuture)}
+                </span>{" "}
+                em aportes futuros
+              </span>
+            ) : null}
+            <span>
+              · Rendimento esperado em {monthsFuture}m:{" "}
+              <span className="text-olive-600 tabular-nums">
+                {formatMoney(
+                  monteCarlo[monteCarlo.length - 1].p50 -
+                    aportesHoje -
+                    projectionForMode.contribution * monthsFuture,
+                )}
+              </span>
+            </span>
+          </div>
+        </>
       ) : null}
 
       {/* Legenda dos marcadores */}

@@ -179,7 +179,7 @@ export default async function InvestimentosPage() {
               Evolução do patrimônio
             </div>
             <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
-              Soma de todos os ativos mês a mês — 12 meses retrospectivos + 12 meses de projeção Monte Carlo (500 simulações) com cone de incerteza p10–p90. Aporte mensal configurável.
+              Soma de todos os ativos mês a mês — 12 meses retrospectivos + 12 meses de projeção Monte Carlo (500 simulações) com cone de incerteza p10–p90. Aporte mensal configurável; a <em className="italic">linha sem rendimento</em> mostra onde seu capital estaria sem render, então o gap pra mediana é o yield esperado.
             </p>
             <InvestmentHistoryChart
               points={history.points}
