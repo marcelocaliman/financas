@@ -1,3 +1,4 @@
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { BensReport } from "@/services/ir/bens";
 
@@ -22,6 +23,25 @@ export function BensTable({ report }: { report: BensReport }) {
 
   return (
     <div className="space-y-6">
+      {report.previousYearInferredCount > 0 ? (
+        <div className="rounded-[10px] border border-gold-600/30 bg-gold-50/40 dark:bg-gold-700/10 px-4 py-3.5 flex items-start gap-3">
+          <AlertTriangle className="w-4 h-4 text-gold-700 dark:text-gold-500 shrink-0 mt-0.5" strokeWidth={1.7} />
+          <div className="flex-1 text-[12.5px] leading-relaxed">
+            <div className="text-foreground font-medium mb-0.5">
+              {report.previousYearInferredCount}{" "}
+              {report.previousYearInferredCount === 1 ? "item" : "itens"} sem saldo cadastrado em 31/12/{report.year - 1}
+            </div>
+            <div className="text-muted-foreground">
+              Pra esses ativos, estou usando o <b>valor de compra</b> (
+              <span className="italic">initial_amount</span> / <span className="italic">acquired_value</span>)
+              como estimativa pra 31/12/{report.year - 1}. Marcados com badge{" "}
+              <Badge tone="gold" className="inline-block">estimado</Badge> abaixo.
+              Pra precisão real, edite manualmente em{" "}
+              <span className="font-mono text-[11.5px]">/ir/{report.year}/configuracoes</span>.
+            </div>
+          </div>
+        </div>
+      ) : null}
       {report.byGroup.map((g) => {
         const showCnpj = GROUPS_WITH_CNPJ.has(g.group);
         return (
@@ -98,7 +118,17 @@ export function BensTable({ report }: { report: BensReport }) {
                       </td>
                     ) : null}
                     <td className="py-2.5 pr-3 font-mono text-right tabular-nums text-faint-foreground">
-                      R$ {fmtBRL(item.previousYearValue)}
+                      <div className="flex items-center justify-end gap-1.5">
+                        {item.previousYearValueIsInferred ? (
+                          <Badge
+                            tone="gold"
+                            title="Estimativa baseada no valor de compra — sem entry manual em 31/12 do ano anterior"
+                          >
+                            estimado
+                          </Badge>
+                        ) : null}
+                        <span>R$ {fmtBRL(item.previousYearValue)}</span>
+                      </div>
                     </td>
                     <td className="py-2.5 font-mono text-right tabular-nums text-foreground font-medium">
                       R$ {fmtBRL(item.currentYearValue)}
@@ -132,12 +162,23 @@ export function BensTable({ report }: { report: BensReport }) {
         }
       >
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
             Total 31/12/{report.year - 1}
+            {report.previousYearInferredCount > 0 ? (
+              <Badge tone="gold" title={`${report.previousYearInferredCount} itens estimados via valor de compra`}>
+                parcial
+              </Badge>
+            ) : null}
           </div>
           <div className="font-mono text-[17px] tabular-nums mt-1">
             R$ {fmtBRL(report.totals.previous)}
           </div>
+          {report.previousYearInferredCount > 0 ? (
+            <div className="font-mono text-[10px] text-faint-foreground mt-1">
+              {report.previousYearInferredCount} estimado
+              {report.previousYearInferredCount === 1 ? "" : "s"}
+            </div>
+          ) : null}
         </div>
         {report.yearStatus === "in_progress" ? (
           <div>

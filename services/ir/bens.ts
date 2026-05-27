@@ -34,6 +34,12 @@ export type BemDeclaravel = {
   /** CNPJ formatado (XX.XXX.XXX/XXXX-XX) — opcional */
   cnpj: string | null;
   previousYearValue: number; // 31/12 do ano N-1, em BRL
+  /**
+   * True quando previousYearValue foi INFERIDO (initial_amount / acquired_value)
+   * em vez de vir de snapshot ou entrada manual. Aviso pro user que pode
+   * estar inexato — valor de compra ≠ valor de mercado em 31/12.
+   */
+  previousYearValueIsInferred: boolean;
   currentYearValue: number;  // 31/12 do ano N, em BRL (projetado/provisório/final)
   /** Valor de HOJE em BRL — útil pra UI mostrar "atual" lado a lado com projeção */
   todayValue: number;
@@ -97,6 +103,12 @@ export type BensReport = {
     provisional: number;
     final: number;
   };
+  /**
+   * Quantos itens tiveram previousYearValue INFERIDO via initial_amount/acquired_value
+   * (ativo existia em 31/12 do ano N-1 mas não havia entry manual). Se > 0, UI
+   * avisa o user pra refinar manualmente pra precisão.
+   */
+  previousYearInferredCount: number;
 };
 
 const GROUP_LABELS: Record<string, string> = {
@@ -556,6 +568,24 @@ export async function getBensReport(
     const todayBalanceBRL = currency === "BRL"
       ? Number(a.current_balance ?? 0)
       : convertOrSame(Number(a.current_balance ?? 0), currency, "BRL", rates);
+
+    // Resolve previousYearValue: prioriza entry manual; senão infere via
+    // current_balance se a conta existia em 31/12/N-1 (created_at <= endOfPrevYear)
+    const hasManualPrev = prevValueBySource.has(prevKey);
+    let prevValueRaw: number;
+    let prevInferred = false;
+    if (hasManualPrev) {
+      prevValueRaw = prevValueBySource.get(prevKey)!;
+    } else if (acc.created_at && acc.created_at.slice(0, 10) <= endOfPrevYear) {
+      // Conta existia mas user não cadastrou saldo 31/12/N-1.
+      // Inferência conservadora: usa saldo atual como estimativa (sem como
+      // saber o saldo real naquela data sem account_snapshots).
+      prevValueRaw = todayBalanceBRL;
+      prevInferred = true;
+    } else {
+      prevValueRaw = 0; // conta criada DEPOIS de 31/12/N-1 → não existia
+    }
+
     bens.push({
       source: "account",
       sourceId: a.id,
@@ -564,7 +594,8 @@ export async function getBensReport(
       group: codeMeta?.group ?? "06",
       discrimination: parts.join(" · "),
       cnpj,
-      previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
+      previousYearValue: Math.round((prevValueRaw * pct)) / 100,
+      previousYearValueIsInferred: prevInferred,
       currentYearValue: Math.round((balanceBRL * pct)) / 100,
       todayValue: Math.round((todayBalanceBRL * pct)) / 100,
       valuationKind: accResult.valuationKind,
@@ -654,6 +685,24 @@ export async function getBensReport(
       discrParts.push(saleParts.join(" · "));
     }
     const prevKey = `investment:${inv.id}`;
+    // Resolve previousYearValue: manual > inferido via initial_amount
+    const hasManualPrevInv = prevValueBySource.has(prevKey);
+    let prevInvValueRaw: number;
+    let prevInvInferred = false;
+    if (hasManualPrevInv) {
+      prevInvValueRaw = prevValueBySource.get(prevKey)!;
+    } else if (inv.purchase_date && inv.purchase_date <= endOfPrevYear) {
+      // Ativo existia em 31/12/N-1 mas user não cadastrou saldo. Usa
+      // initial_amount (capital investido) como estimativa em BRL.
+      const initialBRL = currency === "BRL"
+        ? Number(inv.initial_amount ?? 0)
+        : convertOrSame(Number(inv.initial_amount ?? 0), currency, "BRL", rates);
+      prevInvValueRaw = initialBRL;
+      prevInvInferred = true;
+    } else {
+      prevInvValueRaw = 0; // comprado depois de 31/12/N-1
+    }
+
     bens.push({
       source: "investment",
       sourceId: inv.id,
@@ -662,7 +711,8 @@ export async function getBensReport(
       group: codeMeta?.group ?? "04",
       discrimination: discrParts.join(" · "),
       cnpj,
-      previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
+      previousYearValue: Math.round((prevInvValueRaw * pct)) / 100,
+      previousYearValueIsInferred: prevInvInferred,
       // Liquidado no ano: situação atual = 0 (saiu do patrimônio).
       currentYearValue: isClosedInYear ? 0 : Math.round((balanceBRL * pct)) / 100,
       // Valor de hoje = current_balance cru × pct (sem projeção). Pra renda
@@ -715,6 +765,24 @@ export async function getBensReport(
     const physicalCnpj = REQUIRES_CNPJ_CODES.includes(code) && rawCnpj
       ? fmtCNPJ(rawCnpj)
       : null;
+    // Resolve previousYearValue: manual > inferido via acquired_value
+    const hasManualPrevPhy = prevValueBySource.has(prevKey);
+    let prevPhyValueRaw: number;
+    let prevPhyInferred = false;
+    if (hasManualPrevPhy) {
+      prevPhyValueRaw = prevValueBySource.get(prevKey)!;
+    } else if (p.acquired_at && p.acquired_at <= endOfPrevYear) {
+      // Bem físico existia em 31/12/N-1. Usa acquired_value (sem depreciação
+      // automática — user pode ajustar manualmente se quiser refinar).
+      const acquiredBRLFull = currency === "BRL"
+        ? Number(p.acquired_value ?? 0)
+        : convertOrSame(Number(p.acquired_value ?? 0), currency, "BRL", rates);
+      prevPhyValueRaw = acquiredBRLFull;
+      prevPhyInferred = true;
+    } else {
+      prevPhyValueRaw = 0;
+    }
+
     bens.push({
       source: "physical",
       sourceId: p.id,
@@ -723,7 +791,8 @@ export async function getBensReport(
       group: codeMeta?.group ?? "09",
       discrimination,
       cnpj: physicalCnpj,
-      previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
+      previousYearValue: Math.round((prevPhyValueRaw * pct)) / 100,
+      previousYearValueIsInferred: prevPhyInferred,
       currentYearValue: Math.round((valueBRL * pct)) / 100,
       // Bens físicos: valor "hoje" = valor "currentYear" (não tem projeção)
       todayValue: Math.round((valueBRL * pct)) / 100,
@@ -829,6 +898,7 @@ export async function getBensReport(
     yearStatusBreakdown.projected === 0 && yearStatusBreakdown.provisional === 0
       ? "final"
       : "in_progress";
+  const previousYearInferredCount = bens.filter((b) => b.previousYearValueIsInferred).length;
 
   return {
     year,
@@ -848,5 +918,6 @@ export async function getBensReport(
     },
     yearStatus,
     yearStatusBreakdown,
+    previousYearInferredCount,
   };
 }
