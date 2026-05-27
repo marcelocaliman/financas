@@ -55,8 +55,6 @@ type ChartRow = InvestmentHistoryPoint & {
   projP90: number | null;
   /** [p10, p90] como tupla pra Area renderizar a banda */
   projBand: [number, number] | null;
-  /** Null no passado (escondida) pra não confundir o user */
-  aportesValue: number | null;
 };
 
 export function InvestmentHistoryChart({
@@ -78,7 +76,6 @@ export function InvestmentHistoryChart({
 }) {
   const [mode, setMode] = useState<Mode>("total");
   const [showProjection, setShowProjection] = useState(true);
-  const [showAportes, setShowAportes] = useState(false);
   const [monthlyContribution, setMonthlyContribution] = useState(0);
 
   // ─── Filtra params pro modo ativo ───
@@ -131,14 +128,10 @@ export function InvestmentHistoryChart({
   const todayPastPoint = points[points.length - 1];
   const todayPastValue = Number(todayPastPoint[dataKey]);
 
-  // ─── Capital investido nas posições ainda ativas (passa do server) ───
-  // Pra cada past month vem `aportes` = cost basis acumulado.
-  // Pra UX: queremos mostrar essa linha SÓ no futuro, partindo do valor de
-  // hoje e somando aportes mensais projetados. Assim:
-  //   - aporte = 0 → linha plana = "se eu não aportar mais nada"
-  //   - aporte = 1k → linha sobe linear = aportes acumulados projetados
-  //   - GAP entre essa linha e o p50 da projeção = rendimento esperado
+  // Cost basis hoje só é coerente no modo "total" (o service agrega aportes
+  // sem breakdown por classe). Usado nos stats do rodapé.
   const aportesHoje = todayPastPoint.aportes;
+  const isTotalMode = mode === "total";
 
   // ─── Monta dataset combinado: passado + projeção ───
   const pastRows: ChartRow[] = points.map((p, i) => {
@@ -151,16 +144,12 @@ export function InvestmentHistoryChart({
       projP10: isLast ? todayPastValue : null,
       projP90: isLast ? todayPastValue : null,
       projBand: isLast ? [todayPastValue, todayPastValue] : null,
-      // Aportes line: ESCONDE no passado pra não confundir. Só bridge point
-      // no último past pra linha conectar com o futuro.
-      aportesValue: isLast ? aportesHoje : null,
     };
   });
 
-  // Futuro: projeção Monte Carlo + trajetória de aportes
+  // Futuro: projeção Monte Carlo
   const futureRows: ChartRow[] = monteCarlo.map((mc) => {
     const [y, m] = mc.date.split("-").map(Number);
-    const aportesAcum = aportesHoje + projectionForMode.contribution * mc.monthIndex;
     return {
       date: lastDayOfMonth(y, m),
       label: monthLabel(m),
@@ -168,8 +157,8 @@ export function InvestmentHistoryChart({
       stocks: mode === "stocks" ? mc.p50 : 0,
       fixedIncome: mode === "fixedIncome" ? mc.p50 : 0,
       other: 0,
-      aportes: aportesAcum,
-      yield: mc.p50 - aportesAcum,
+      aportes: aportesHoje + projectionForMode.contribution * mc.monthIndex,
+      yield: 0,
       isEstimate: true,
       isProjection: true,
       realValue: null,
@@ -177,7 +166,6 @@ export function InvestmentHistoryChart({
       projP10: mc.p10,
       projP90: mc.p90,
       projBand: [mc.p10, mc.p90],
-      aportesValue: aportesAcum,
     };
   });
 
@@ -215,21 +203,6 @@ export function InvestmentHistoryChart({
             className="accent-olive-600"
           />
           Projeção (Monte Carlo)
-        </label>
-        <label
-          className="inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground cursor-pointer"
-          title="Linha base sem rendimento: capital investido hoje + aportes mensais projetados. O gap pra projeção (mediana) = rendimento esperado."
-        >
-          <input
-            type="checkbox"
-            checked={showAportes}
-            onChange={(e) => setShowAportes(e.target.checked)}
-            className="accent-rust-600"
-          />
-          <span className="inline-flex items-center gap-1">
-            <span className="w-3 h-0.5 bg-rust-600" style={{ borderTop: "1px dashed currentColor" }} />
-            Linha sem rendimento
-          </span>
         </label>
       </div>
 
@@ -355,8 +328,7 @@ export function InvestmentHistoryChart({
                 if (Array.isArray(value)) return null;
                 const labelName =
                   name === "realValue" ? MODE_LABELS[mode] :
-                  name === "projP50" ? "Mediana projetada" :
-                  name === "aportesValue" ? "Sem rendimento (base)" : name;
+                  name === "projP50" ? "Mediana projetada" : name;
                 return [formatMoney(value), labelName];
               }) as unknown as (value: unknown, name: unknown) => [string, string]
             }
@@ -405,24 +377,6 @@ export function InvestmentHistoryChart({
             connectNulls={false}
             dot={false}
           />
-
-          {/* Linha sem rendimento (rust dashed) — capital investido hoje
-              + aportes futuros mensais. Só aparece na projeção. */}
-          {showAportes && showProjection ? (
-            <Area
-              type="monotone"
-              dataKey="aportesValue"
-              name="aportesValue"
-              stroke="var(--color-rust-600)"
-              strokeWidth={2}
-              strokeDasharray="6 3"
-              fill="none"
-              isAnimationActive={false}
-              connectNulls={false}
-              dot={{ r: 2.5, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 1 }}
-              activeDot={{ r: 4, fill: "var(--color-rust-600)", stroke: "var(--color-surface)", strokeWidth: 2 }}
-            />
-          ) : null}
 
           {/* Marcador no ponto "hoje" */}
           {todayPastPoint ? (
@@ -479,34 +433,37 @@ export function InvestmentHistoryChart({
               initial={initialPortfolioBRL}
             />
           </div>
-          {/* Breakdown do retorno: capital investido vs. rendimento esperado */}
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-3 text-[11px] font-mono text-faint-foreground">
-            <span>
-              Capital investido hoje:{" "}
-              <span className="text-muted-foreground tabular-nums">
-                {formatMoney(aportesHoje)}
-              </span>
-            </span>
-            {monthlyContribution > 0 ? (
+          {/* Breakdown — só no modo "total" porque aportesHoje é agregado.
+              Nos modos filtrados, o service não dá breakdown por classe. */}
+          {isTotalMode ? (
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 mt-3 text-[11px] font-mono text-faint-foreground">
               <span>
-                +{" "}
+                Capital investido hoje:{" "}
                 <span className="text-muted-foreground tabular-nums">
-                  {formatMoney(projectionForMode.contribution * monthsFuture)}
-                </span>{" "}
-                em aportes futuros
+                  {formatMoney(aportesHoje)}
+                </span>
               </span>
-            ) : null}
-            <span>
-              · Rendimento esperado em {monthsFuture}m:{" "}
-              <span className="text-olive-600 tabular-nums">
-                {formatMoney(
-                  monteCarlo[monteCarlo.length - 1].p50 -
-                    aportesHoje -
-                    projectionForMode.contribution * monthsFuture,
-                )}
+              {monthlyContribution > 0 ? (
+                <span>
+                  +{" "}
+                  <span className="text-muted-foreground tabular-nums">
+                    {formatMoney(projectionForMode.contribution * monthsFuture)}
+                  </span>{" "}
+                  em aportes futuros
+                </span>
+              ) : null}
+              <span>
+                · Rendimento esperado em {monthsFuture}m:{" "}
+                <span className="text-olive-600 tabular-nums">
+                  {formatMoney(
+                    monteCarlo[monteCarlo.length - 1].p50 -
+                      aportesHoje -
+                      projectionForMode.contribution * monthsFuture,
+                  )}
+                </span>
               </span>
-            </span>
-          </div>
+            </div>
+          ) : null}
         </>
       ) : null}
 
