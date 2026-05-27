@@ -794,15 +794,29 @@ export async function getBensReport(
   const totalPrevious = byGroup.reduce((s, g) => s + g.totalPrevious, 0);
   const totalToday = bens.reduce((s, b) => s + b.todayValue, 0);
 
-  // Breakdown por classe — agrupa códigos Receita em 4 buckets pro rodapé
-  // discriminado. Não bate 1:1 com BEM_CODES.group porque a Receita tem
-  // 9 grupos enquanto pra UX humana 4 categorias bastam.
+  // Breakdown por classe — agrupa códigos Receita em buckets humanos pro
+  // rodapé discriminado. Códigos Receita 2024+ leiaute:
+  //   Imóveis: 11/12/13/14/15/19
+  //   Veículos: 21/22/23
+  //   Bens móveis: 25/26/29
+  //   Renda variável (mercado): 31 Ações, 73 FII, 74 ETF, 46 Ouro
+  //   Participações societárias: 32 Quotas, 39 Outras
+  //   Renda fixa: 47 Mercado financeiro/caixa corretora, 48 Tesouro, 49 LCI/LCA/CRI/CRA
+  //   Contas e caixa: 45 Poupança, 61 CC, 62 Exterior, 63 Espécie BRL, 64 Espécie ext
+  //   Fundos: 71 RF, 72 Ações, 75 Multi, 79 Outros
+  //   Criptoativos: 81/82/83/89
+  //   Previdência e outros: 91 PGBL, 92 VGBL, 97 Crédito, 99 Outros
   function classifyForFooter(code: string): string {
-    if (code === "02" || code === "47" || code === "48" || code === "49") return "Renda fixa";
-    if (code === "04" || code === "07") return "Renda variável (Ações, FIIs, ETFs)";
-    if (code === "06" || code === "62") return "Contas e caixa";
-    if (code === "01" || code === "03" || code === "09" || code === "26" || code === "31" || code === "32" || code === "39") return "Bens físicos e participações";
-    if (code === "81") return "Criptoativos";
+    if (["11", "12", "13", "14", "15", "19"].includes(code)) return "Imóveis";
+    if (["21", "22", "23"].includes(code)) return "Veículos";
+    if (["25", "26", "29"].includes(code)) return "Bens móveis";
+    if (["31", "46", "73", "74"].includes(code)) return "Renda variável (Ações, FIIs, ETFs)";
+    if (["32", "39"].includes(code)) return "Participações societárias";
+    if (["47", "48", "49"].includes(code)) return "Renda fixa";
+    if (["45", "61", "62", "63", "64"].includes(code)) return "Contas e caixa";
+    if (["71", "72", "75", "79"].includes(code)) return "Fundos de investimento";
+    if (["81", "82", "83", "89"].includes(code)) return "Criptoativos";
+    if (["91", "92", "97", "99"].includes(code)) return "Previdência e outros direitos";
     return "Outros";
   }
   const classMap = new Map<string, { today: number; projected: number }>();
