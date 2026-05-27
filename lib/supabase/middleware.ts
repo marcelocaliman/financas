@@ -9,6 +9,10 @@ const PUBLIC_PATHS = [
   "/auth",
   "/recuperar-senha",
   "/nova-senha",
+  // Endpoints chamados pelo Vercel Cron (sem cookie de user). Cada um faz
+  // sua própria auth via header x-vercel-cron ou Authorization: Bearer CRON_SECRET.
+  // Sem essa exceção, o middleware redireciona pra /login e o cron nunca roda.
+  "/api/cron",
 ];
 
 export async function updateSession(request: NextRequest) {

@@ -3,22 +3,18 @@ import { createClient } from "@supabase/supabase-js";
 import type { Currency, Database } from "@/types/database";
 
 /**
- * Cron mensal: tira uma foto do patrimônio de cada household no fim de cada
- * mês. Os snapshots viram a fonte de verdade para a sparkline 12m no
- * /dashboard (que hoje aproxima usando valor atual de invest/bens em todos
- * os pontos).
+ * Cron diário: snapshot do patrimônio de cada household marcado pelo
+ * último dia do MÊS CORRENTE. Roda dentro do daily-master.
  *
- * Schedule recomendado (vercel.json):
- *   { "path": "/api/cron/snapshot-patrimonio", "schedule": "0 9 1 * *" }
- *   (dia 1 às 09:00 UTC = 06:00 BRT — grava o fim do mês ANTERIOR)
+ * Como funciona:
+ *  - Cada execução faz UPSERT por (household_id, current_month_end)
+ *  - Durante o mês, a linha é sobrescrita diariamente com o estado atual
+ *  - Quando o mês vira (dia 1), insere nova linha pro novo mês — a linha
+ *    do mês anterior fica "congelada" automaticamente com a última escrita
+ *    (estado de jogo do último dia do mês)
+ *  - Resultado: histórico real do patrimônio mês a mês pra sparkline 12m
  *
- * Idempotente: usa UPSERT por (household_id, month_end). Pode rodar várias
- * vezes no mesmo dia sem efeito colateral.
- *
- * Esquemaa simplificado: capturamos o estado ATUAL e marcamos como snapshot
- * do month_end do mês anterior. Investimentos e bens físicos contribuem
- * com valor atual (mesma aproximação de hoje), mas ao longo do tempo o
- * conjunto de snapshots vira histórico real.
+ * Idempotente. Pode rodar várias vezes no mesmo dia.
  */
 export const dynamic = "force-dynamic";
 
@@ -49,9 +45,10 @@ type PhysicalRow = {
 
 // Conversão simplificada — assume BRL como exibição padrão dos snapshots.
 // (Os dashboards de display continuam convertendo per-user via getRateMap.)
-function lastMonthEnd(now: Date): string {
-  // Pega último dia do mês anterior em UTC
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
+function currentMonthEnd(now: Date): string {
+  // Último dia do mês CORRENTE em UTC.
+  // new Date(year, month+1, 0) retorna o último dia do mês `month` (0-indexed).
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
   return d.toISOString().slice(0, 10);
 }
 
@@ -65,7 +62,7 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
 
-  const monthEnd = lastMonthEnd(new Date());
+  const monthEnd = currentMonthEnd(new Date());
 
   // Lê contas, investimentos e bens — agrupa por household
   const [{ data: accounts }, { data: investments }, { data: physicals }] =
