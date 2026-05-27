@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { computeCarneLeaoMonthly } from "@/lib/financial/irpf-monthly-table";
 import { getMonthlyTaxTable } from "@/services/ir/ir-tax-tables";
-import type { Tables, CarneLeaoKind } from "@/types/database";
+import type { Tables } from "@/types/database";
 
 /**
  * Carnê-leão mensal — DARF código 0190.
