@@ -130,9 +130,15 @@ function ipcaMonthlyToAnnual(monthlyPct: number): number {
  *
  * Usa contagem REAL de dias úteis (excluindo finais de semana e feriados
  * nacionais brasileiros), com fração do dia atual quando hoje é dia útil.
- * Resultado: composição contínua matematicamente correta.
  *
- * `current_balance` é só a foto da última vez que o cron rodou (ou da compra).
+ * CONTRATO COM O CRON (update-balances):
+ *   - `last_yield_at` = "data até cujo FIM o current_balance inclui yield"
+ *   - O cron só baka dias úteis COMPLETOS (Math.floor da contagem).
+ *   - Esta função adiciona dias úteis subsequentes + fração do dia corrente.
+ *   - Assim, NÃO há double-count entre cron e live calc.
+ *
+ * Se o cron falhar por N dias, esta função compensa naturalmente — vai
+ * contar os N dias úteis perdidos + fração de hoje, dando o valor correto.
  */
 function deriveCheckpointBalance(
   currentBalance: number,
