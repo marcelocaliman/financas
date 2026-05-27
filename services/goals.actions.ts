@@ -463,3 +463,40 @@ export async function reorderGoals(ids: string[]): Promise<{ ok?: boolean; error
   revalidatePath("/metas");
   return { ok: true };
 }
+
+/**
+ * Dispensa uma sugestão de aporte detectada (banner no dashboard).
+ * Persiste em aport_suggestion_dismissals pra não reaparecer.
+ */
+export async function dismissAportSuggestion(
+  transactionId: string,
+  goalId: string,
+): Promise<{ ok?: boolean; error?: string }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Auth required" };
+
+  const supabase = await createClient();
+  // Cast: tabela aport_suggestion_dismissals criada via migration 20260527020000
+  const { error } = await (supabase as unknown as {
+    from: (t: string) => {
+      upsert: (
+        data: object,
+        options: { onConflict: string },
+      ) => Promise<{ error: { message: string } | null }>;
+    };
+  })
+    .from("aport_suggestion_dismissals")
+    .upsert(
+      {
+        household_id: ctx.household.id,
+        transaction_id: transactionId,
+        goal_id: goalId,
+        dismissed_by: ctx.authId,
+      },
+      { onConflict: "household_id,transaction_id,goal_id" },
+    );
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

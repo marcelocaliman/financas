@@ -5,7 +5,7 @@ import { Sparkles, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
-import { recordGoalContribution } from "@/services/goals.actions";
+import { dismissAportSuggestion, recordGoalContribution } from "@/services/goals.actions";
 import { formatMoney, formatDateShort } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { AportSuggestion } from "@/services/goal-suggestions";
@@ -53,9 +53,19 @@ export function ApportSuggestionCard({
   };
 
   const dismiss = (s: AportSuggestion) => {
+    // Otimista: remove imediatamente da UI
     setSuggestions((prev) =>
       prev.filter((x) => !(x.transactionId === s.transactionId && x.goalId === s.goalId)),
     );
+    // Persiste no banco pra não reaparecer no próximo refresh
+    startTransition(async () => {
+      const r = await dismissAportSuggestion(s.transactionId, s.goalId);
+      if (r.error) {
+        toast.error(`Não consegui dispensar: ${r.error}`);
+        // Restaura na UI se falhou
+        setSuggestions((prev) => [...prev, s]);
+      }
+    });
   };
 
   return (

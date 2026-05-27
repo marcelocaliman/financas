@@ -55,6 +55,7 @@ export async function getAportSuggestions(): Promise<AportSuggestion[]> {
     { data: goals },
     { data: sources },
     { data: existingContribs },
+    dismissedData,
     displayCurrency,
     rates,
   ] = await Promise.all([
@@ -80,9 +81,24 @@ export async function getAportSuggestions(): Promise<AportSuggestion[]> {
       .select("transaction_id")
       .not("transaction_id", "is", null)
       .gte("date", sinceISO),
+    // Cast: tabela aport_suggestion_dismissals criada via migration 20260527020000
+    (supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => Promise<{
+          data: Array<{ transaction_id: string; goal_id: string }> | null;
+        }>;
+      };
+    })
+      .from("aport_suggestion_dismissals")
+      .select("transaction_id, goal_id"),
     getDisplayCurrency(),
     getRateMap(),
   ]);
+
+  // Set de "txn|goal" dispensados pelo user
+  const dismissedKeys = new Set(
+    (dismissedData?.data ?? []).map((d) => `${d.transaction_id}|${d.goal_id}`),
+  );
 
   // Mapa account_id → goals que tem essa conta como fonte ou linkedAccount
   const goalsByAccount = new Map<string, Array<Tables<"goals">>>();
@@ -150,6 +166,8 @@ export async function getAportSuggestions(): Promise<AportSuggestion[]> {
     if (amountInDisplay < MIN_AMOUNT_BRL) continue;
 
     for (const g of accountGoals) {
+      // Pula se o user já dispensou essa combinação txn+goal
+      if (dismissedKeys.has(`${t.id}|${g.id}`)) continue;
       const goalCurrency = g.currency;
       const amountInGoal = convertOrSame(
         Number(t.amount_account ?? 0),
