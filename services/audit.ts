@@ -211,43 +211,10 @@ export async function runAudit(): Promise<AuditReport> {
     }
   }
 
-  // ─── 5) Liquidações no ano sem lançamento exclusivo ───────────────
-  // Ancorado em description (sempre tem o ticker), não source_name (vira
-  // "Tesouro Nacional" pra todos os TD e quebra a deteção).
-  for (const c of closedInYear) {
-    const { count } = await supabase
-      .from("ir_other_incomes")
-      .select("id", { count: "exact", head: true })
-      .eq("household_id", ctx.household.id)
-      .eq("year", currentYear)
-      .eq("category", "exclusivo_fonte")
-      .like("description", `%${c.ticker}%`);
-    if ((count ?? 0) === 0 && Number(c.gross_proceeds_on_close ?? 0) > 0) {
-      add({
-        severity: "minor",
-        area: "IR · Rendimentos exclusivos",
-        title: `${c.ticker} liquidado sem lançamento em "Rendimentos exclusivos fonte"`,
-        detail: `Venda em ${(c.closed_at as string).slice(0, 10)} por R$ ${Number(c.gross_proceeds_on_close).toFixed(2)} (IR retido R$ ${Number(c.ir_withheld_on_close ?? 0).toFixed(2)}). Esse rendimento deve aparecer na declaração.`,
-        fix: {
-          label: "Gerar automaticamente",
-          action: "generate-exclusive-income-from-closures",
-        },
-      });
-    }
-    // Detecta duplicatas (>1 lançamento pro mesmo ticker no ano)
-    if ((count ?? 0) > 1) {
-      add({
-        severity: "major",
-        area: "IR · Rendimentos exclusivos",
-        title: `${c.ticker}: ${count} lançamentos duplicados em "Rendimentos exclusivos fonte"`,
-        detail: `Há ${count} entradas na declaração pra esse ticker (deveria ter só 1). Apague as extras em /ir/${currentYear} → Rendimentos exclusivos.`,
-        fix: {
-          label: `Ir pra /ir/${currentYear}`,
-          href: `/ir/${currentYear}`,
-        },
-      });
-    }
-  }
+  // (5) Lançamento de rendimento exclusivo de fonte por liquidação:
+  // agora é tratado automaticamente em services/ir/exclusive-income-sync.ts
+  // — chamado em liquidateInvestment e no render de /ir/[year].
+  // Nada pra detectar aqui; se houver gap, o próprio /ir conserta.
 
   // ─── 6) Rendimentos do ano (tributáveis) ──────────────────────────
   const { data: txIncomesRaw } = await supabase

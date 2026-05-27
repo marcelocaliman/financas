@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, AlertCircle, MinusCircle, Shield, Stethoscope } from "lucide-react";
+import { CheckCircle2, AlertCircle, MinusCircle, Shield } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,6 @@ import { getCurrentUserContext } from "@/services/auth";
 import { getComparisonCurrency, getDisplayCurrency } from "@/services/currency";
 import { getCronStatuses, formatAge, type CronStatus } from "@/services/cron-status";
 import { listHouseholdMembers, listActiveInvites } from "@/services/household";
-import { runAudit } from "@/services/audit";
 import { signOut } from "../_actions/sign-out";
 import {
   ComparisonCurrencyForm,
@@ -36,7 +35,6 @@ export default async function ConfiguracoesPage() {
     members,
     invites,
     householdData,
-    audit,
   ] = await Promise.all([
     getDisplayCurrency(),
     getComparisonCurrency(),
@@ -44,13 +42,11 @@ export default async function ConfiguracoesPage() {
     listHouseholdMembers(),
     listActiveInvites(),
     admin.from("households").select("created_by").eq("id", ctx.household.id).maybeSingle(),
-    runAudit(),
   ]);
   const ownerUserId = householdData.data?.created_by ?? null;
   const comparisonValue = comparisonCurrency ?? "off";
   const staleCount = cronStatuses.filter((c) => c.status !== "ok").length;
   const isAdmin = ctx.profile.role === "admin";
-  const auditIssues = audit.counts.critical + audit.counts.major + audit.counts.minor;
 
   return (
     <>
@@ -112,55 +108,6 @@ export default async function ConfiguracoesPage() {
           </p>
         </Panel>
 
-        <Link
-          href="/configuracoes/auditoria"
-          className={`block rounded-[10px] border px-5 py-4 transition-colors group ${
-            auditIssues === 0
-              ? "border-olive-600/30 bg-olive-50 dark:bg-olive-900/15 hover:bg-olive-100/60 dark:hover:bg-olive-900/25"
-              : audit.counts.critical > 0
-                ? "border-rust-600/30 bg-rust-50 dark:bg-rust-900/15 hover:bg-rust-100/60 dark:hover:bg-rust-900/25"
-                : "border-gold-600/30 bg-gold-50 dark:bg-gold-900/15 hover:bg-gold-100/60 dark:hover:bg-gold-900/25"
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <Stethoscope
-              className={`w-5 h-5 shrink-0 ${
-                auditIssues === 0
-                  ? "text-olive-700 dark:text-olive-500"
-                  : audit.counts.critical > 0
-                    ? "text-rust-700 dark:text-rust-400"
-                    : "text-gold-700 dark:text-gold-500"
-              }`}
-              strokeWidth={1.7}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="font-display text-[16.5px] tracking-[-0.01em] text-foreground">
-                Saúde do sistema
-              </div>
-              <div className="text-[12.5px] text-muted-foreground mt-0.5">
-                {auditIssues === 0
-                  ? "Tudo em ordem — sem inconsistências detectadas."
-                  : `${auditIssues} ${auditIssues === 1 ? "ponto" : "pontos"} de atenção — abra pra ver e corrigir.`}
-              </div>
-            </div>
-            {auditIssues > 0 ? (
-              <span
-                className={`font-mono text-[11px] uppercase tracking-[0.1em] font-semibold px-2.5 py-1 rounded-full ${
-                  audit.counts.critical > 0
-                    ? "bg-rust-600 text-white"
-                    : "bg-gold-600 text-ink-950"
-                }`}
-              >
-                {auditIssues}
-              </span>
-            ) : (
-              <CheckCircle2 className="w-5 h-5 text-olive-700 dark:text-olive-500" strokeWidth={1.7} />
-            )}
-            <span className="text-[14px] text-faint-foreground group-hover:translate-x-0.5 transition-transform">
-              →
-            </span>
-          </div>
-        </Link>
 
         <Panel>
           <PanelHeader

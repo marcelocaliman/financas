@@ -97,6 +97,7 @@ export async function GET(req: NextRequest) {
     callEndpoint(baseUrl, "/api/cron/update-indexers", secret),
     callEndpoint(baseUrl, "/api/cron/update-rates", secret),
     callEndpoint(baseUrl, "/api/cron/snapshot-patrimonio", secret),
+    callEndpoint(baseUrl, "/api/cron/year-end-snapshot", secret),
     callEndpoint(baseUrl, "/api/cron/send-pending-emails", secret),
   ]);
   const wave2 = await Promise.all([

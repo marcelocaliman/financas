@@ -31,6 +31,7 @@ import { FilerSwitcher } from "@/components/ir/filer-switcher";
 import { ComparatorBanner } from "@/components/ir/comparator-banner";
 import { ChecklistPanel } from "@/components/ir/checklist-panel";
 import { RetroactiveGapsBanner } from "@/components/ir/retroactive-gaps-banner";
+import { ensureExclusiveIncomeForClosures } from "@/services/ir/exclusive-income-sync";
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +55,15 @@ export default async function IRYearPage({
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+
+  // Self-healing: garante que toda liquidação do ano tem 1 lançamento
+  // em "Rendimentos exclusivos de fonte" (e nem mais nem menos).
+  // Não bloqueia o render se falhar — só loga.
+  try {
+    await ensureExclusiveIncomeForClosures(year, ctx.household.id);
+  } catch (e) {
+    console.error("[/ir/page] ensureExclusiveIncomeForClosures:", e);
+  }
 
   // Carrega filers + regime upfront
   const [filers, regimeCtx] = await Promise.all([

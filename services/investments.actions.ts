@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { lookupAssetCNPJ } from "@/lib/financial/asset-catalog";
+import { ensureExclusiveIncomeForClosures } from "@/services/ir/exclusive-income-sync";
 
 const ASSET_TYPES = [
   "fii",
@@ -517,6 +518,20 @@ export async function liquidateInvestment(
     p_notes: parsed.data.notes ?? undefined,
   });
   if (error) return { error: error.message };
+
+  // Cria automaticamente o lançamento de "Rendimentos exclusivos de fonte"
+  // pra essa liquidação, se ainda não existir. Idempotente — sem botão extra.
+  const ctx = await getCurrentUserContext();
+  if (ctx) {
+    const year = Number(parsed.data.date.slice(0, 4));
+    try {
+      await ensureExclusiveIncomeForClosures(year, ctx.household.id);
+    } catch (e) {
+      // Não bloqueia a liquidação se a sync IR falhar
+      console.error("[liquidateInvestment] ensureExclusiveIncomeForClosures:", e);
+    }
+    revalidatePath(`/ir/${year}`);
+  }
   for (const p of ["/investimentos", "/dashboard", "/transacoes", "/resgates"]) {
     revalidatePath(p);
   }
