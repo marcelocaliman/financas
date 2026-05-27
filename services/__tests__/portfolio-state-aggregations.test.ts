@@ -34,6 +34,26 @@ function aggregate(items: Item[]) {
     totals.applied > 0 ? round2((totals.variation / totals.applied) * 100) : 0;
   totals.yieldUntilEnd = round2(totals.projected - totals.today);
 
+  // totalsNet: exclui caixa de corretora e cartão (alinhado com portfolio-state)
+  const isNetIncluded = (it: Item) =>
+    it.assetClass !== "account_investment_cash" &&
+    it.assetClass !== "account_credit_card";
+  const net = items.filter(isNetIncluded);
+  const totalsNet = {
+    applied: round2(net.reduce((s, i) => s + i.applied, 0)),
+    today: round2(net.reduce((s, i) => s + i.today, 0)),
+    projected: round2(net.reduce((s, i) => s + i.projected, 0)),
+    variation: 0,
+    variationPct: 0,
+    yieldUntilEnd: 0,
+  };
+  totalsNet.variation = round2(totalsNet.today - totalsNet.applied);
+  totalsNet.variationPct =
+    totalsNet.applied > 0
+      ? round2((totalsNet.variation / totalsNet.applied) * 100)
+      : 0;
+  totalsNet.yieldUntilEnd = round2(totalsNet.projected - totalsNet.today);
+
   const classMap = new Map<string, { applied: number; today: number; projected: number }>();
   for (const i of items) {
     const cur = classMap.get(i.assetClass) ?? { applied: 0, today: 0, projected: 0 };
@@ -52,7 +72,7 @@ function aggregate(items: Item[]) {
     yieldUntilEnd: round2(v.projected - v.today),
   }));
 
-  return { totals, byClass };
+  return { totals, totalsNet, byClass };
 }
 
 describe("portfolio-state · agregações", () => {
@@ -101,6 +121,35 @@ describe("portfolio-state · agregações", () => {
     expect(acoes?.applied).toBe(500);
     expect(acoes?.variation).toBe(-20);
     expect(acoes?.variationPct).toBe(-4);
+  });
+
+  it("totalsNet exclui caixa de corretora e cartão", () => {
+    const items: Item[] = [
+      { applied: 1000, today: 1100, projected: 1100, assetClass: "stock" },
+      { applied: 500, today: 500, projected: 500, assetClass: "account_checking" },
+      // Caixa parado em corretora — vai dobrar com investimentos se contado:
+      { applied: 200, today: 200, projected: 200, assetClass: "account_investment_cash" },
+      // Cartão como saldo negativo (dívida) — não conta no líquido:
+      { applied: -300, today: -300, projected: -300, assetClass: "account_credit_card" },
+    ];
+    const { totals, totalsNet } = aggregate(items);
+    // Bruto: tudo somado (cartão como negativo + caixa corretora positivo)
+    expect(totals.today).toBe(1500); // 1100 + 500 + 200 - 300
+    // Net: só stock + checking
+    expect(totalsNet.today).toBe(1600); // 1100 + 500
+    expect(totalsNet.applied).toBe(1500); // 1000 + 500
+  });
+
+  it("totalsNet = totals quando não tem caixa-corretora nem cartão", () => {
+    const items: Item[] = [
+      { applied: 1000, today: 1100, projected: 1200, assetClass: "fixed_income_public" },
+      { applied: 500, today: 500, projected: 500, assetClass: "account_checking" },
+      { applied: 2000, today: 1900, projected: 1900, assetClass: "physical_vehicle" },
+    ];
+    const { totals, totalsNet } = aggregate(items);
+    expect(totalsNet.applied).toBe(totals.applied);
+    expect(totalsNet.today).toBe(totals.today);
+    expect(totalsNet.projected).toBe(totals.projected);
   });
 
   it("portfolio do Marcelo (cenário real): bate na soma", () => {

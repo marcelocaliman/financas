@@ -86,7 +86,35 @@ export type PortfolioState = {
   displayCurrency: Currency;
   generatedAt: string;
   items: PortfolioItem[];
+  /**
+   * `totals` = visão BRUTA: soma direta de items.applied/today/projected.
+   * Inclui caixa de corretora e cartão como ATIVO positivo.
+   *
+   * É a visão correta pra IR (Bens e Direitos lista TUDO que existe,
+   * inclusive caixa em corretora; cartão entra em Dívidas separado).
+   *
+   * Pra patrimônio líquido visível em /dashboard, /patrimonio e
+   * /investimentos, use `totalsNet` — exclui caixa de corretora (evita
+   * dupla contagem com investimentos que ele lastreia) e exclui cartão
+   * (modelo cash basis: dívida só pesa quando fatura é paga).
+   */
   totals: {
+    applied: number;
+    today: number;
+    projected: number;
+    previousYearEnd: number;
+    variation: number;
+    variationPct: number;
+    yieldUntilEnd: number;
+  };
+  /**
+   * Visão LÍQUIDA pra UIs de patrimônio:
+   *   - exclui `account_investment_cash` (caixa parado na corretora — já
+   *     lastreia futuros investimentos, contar separado duplica)
+   *   - exclui `account_credit_card` (dívida só conta quando paga, cash
+   *     basis — alinhado com [services/accounts.ts] liquidExcludingInvestmentCash)
+   */
+  totalsNet: {
     applied: number;
     today: number;
     projected: number;
@@ -338,7 +366,7 @@ export const getPortfolioState = cache(
       });
     }
 
-    // ────────── TOTALS ──────────
+    // ────────── TOTALS (bruto) ──────────
     const totals = {
       applied: round2(items.reduce((s, i) => s + i.applied, 0)),
       today: round2(items.reduce((s, i) => s + i.today, 0)),
@@ -353,6 +381,27 @@ export const getPortfolioState = cache(
       ? round2((totals.variation / totals.applied) * 100)
       : 0;
     totals.yieldUntilEnd = round2(totals.projected - totals.today);
+
+    // ────────── TOTALS NET (patrimônio líquido) ──────────
+    const isNetIncluded = (it: PortfolioItem) =>
+      it.assetClass !== "account_investment_cash" &&
+      it.assetClass !== "account_credit_card";
+    const totalsNet = {
+      applied: round2(items.filter(isNetIncluded).reduce((s, i) => s + i.applied, 0)),
+      today: round2(items.filter(isNetIncluded).reduce((s, i) => s + i.today, 0)),
+      projected: round2(items.filter(isNetIncluded).reduce((s, i) => s + i.projected, 0)),
+      previousYearEnd: round2(
+        items.filter(isNetIncluded).reduce((s, i) => s + i.previousYearEnd, 0),
+      ),
+      variation: 0,
+      variationPct: 0,
+      yieldUntilEnd: 0,
+    };
+    totalsNet.variation = round2(totalsNet.today - totalsNet.applied);
+    totalsNet.variationPct = totalsNet.applied > 0
+      ? round2((totalsNet.variation / totalsNet.applied) * 100)
+      : 0;
+    totalsNet.yieldUntilEnd = round2(totalsNet.projected - totalsNet.today);
 
     // ────────── BY CLASS ──────────
     const classMap = new Map<
@@ -402,6 +451,7 @@ export const getPortfolioState = cache(
       generatedAt: new Date().toISOString(),
       items,
       totals,
+      totalsNet,
       byClass,
       projectionStatus,
       previousYearComplete,
