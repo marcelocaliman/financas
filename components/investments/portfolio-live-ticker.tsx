@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { LivePortfolio } from "@/lib/financial/live-yield";
-import { dayUtilizationRatio } from "@/lib/financial/live-yield";
 import { formatMoney, formatMoneyParts, formatPercent } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import {
@@ -14,13 +12,16 @@ import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/curre
 import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
- * Card de rendimento ao vivo do portfólio.
+ * Card de rendimento do portfólio.
  *  - "compact": versão pro dashboard
  *  - "full": versão grande pra /investimentos
  *
- * Padrão React 19: nada de chamar performance.now() ou ler refs durante o
- * render. Mantemos um `now` em estado que avança a cada 1s; todos os
- * cálculos derivam dele de forma determinística.
+ * Mostra o rendimento acumulado LIFETIME (desde a compra dos ativos) como
+ * número estático. Selic/Tesouro rendem em incrementos DIÁRIOS na vida
+ * real — não tem ticker por segundo, é interpolação visual mentirosa.
+ *
+ * Atualiza 1× por dia útil quando o cron sync-tesouro-prices + update-balances
+ * rodam (06h BRT). Pulsinho verde animado fica só pelo charme do "vivo".
  */
 export function PortfolioLiveTicker({
   portfolio,
@@ -29,26 +30,14 @@ export function PortfolioLiveTicker({
   portfolio: LivePortfolio;
   variant?: "compact" | "full";
 }) {
-  const [now, setNow] = useState(() => Date.now());
   const displayCurrency = useDisplayCurrency();
   const comparisonCurrency = useComparisonCurrency();
   const { rates } = useMoneyContext();
   const symbol = CURRENCY_SYMBOLS[displayCurrency];
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const ratio = dayUtilizationRatio(new Date(now));
-  // LIFETIME accumulated yield + tick do dia em curso. O número não reseta
-  // a cada dia útil — cresce continuamente desde a compra dos ativos.
-  // base = totalFixedIncomeAccumulatedYield (calculado server-side, lifetime)
-  // tick = totalDailyYield × ratio (fração do dia útil corrente)
-  const accumulatedLifetime =
-    portfolio.totalFixedIncomeAccumulatedYield + portfolio.totalDailyYield * ratio;
-  // Mantém o nome antigo da variável pra reaproveitar nos sites de uso abaixo.
-  const accumulatedToday = accumulatedLifetime;
+  // Valor estático — vem do server-side com today's fraction já incluída
+  // no derivedBalance. Refresh da página re-busca; sem timer no client.
+  const accumulatedToday = portfolio.totalFixedIncomeAccumulatedYield;
   const ratioMarket = portfolio.totalMarketBalance / Math.max(1, portfolio.totalBaseBalance);
 
   // Comparação — converte accumulatedToday e patrimônio pra moeda de comparação
@@ -97,8 +86,9 @@ export function PortfolioLiveTicker({
             ) : null}
             <div className="flex flex-wrap gap-2 mt-3 text-[11.5px] font-mono text-navy-200">
               <Pill>
+                Por dia útil{" "}
                 <b className="text-olive-500">
-                  + {symbol} <MoneyMask>{portfolio.totalPerSecond.toFixed(4).replace(".", ",")}</MoneyMask>/s
+                  +<MoneyMask>{formatMoney(portfolio.totalDailyYield, displayCurrency)}</MoneyMask>
                 </b>
               </Pill>
               <Pill>
@@ -134,10 +124,10 @@ export function PortfolioLiveTicker({
         <div>
           <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 font-medium flex items-center gap-2 mb-3.5">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-olive-600 animate-pulse" />
-            Carteira respirando ao vivo
+            Rendimento acumulado
           </div>
           <div className="font-display italic text-[20px] tracking-[-0.01em] mb-6 text-navy-200">
-            <em>Rendimento acumulado desde a compra, vivo no presente.</em>
+            <em>Desde a compra dos ativos — Selic do BCB + PU oficial do Tesouro.</em>
           </div>
 
           <div className="flex items-baseline gap-3 font-mono">
@@ -155,18 +145,15 @@ export function PortfolioLiveTicker({
 
           <div className="flex gap-2 mt-5 flex-wrap">
             <Pill>
-              Por segundo{" "}
-              <b className="text-olive-500">
-                + {symbol} <MoneyMask>{portfolio.totalPerSecond.toFixed(4).replace(".", ",")}</MoneyMask>
-              </b>
-            </Pill>
-            <Pill>
               Estimado por dia útil{" "}
               <b className="text-olive-500"><MoneyMask>{formatMoney(portfolio.totalDailyYield, displayCurrency)}</MoneyMask></b>
             </Pill>
             <Pill>
               Mês estimado{" "}
               <b className="text-olive-500"><MoneyMask>{formatMoney(portfolio.totalDailyYield * 21, displayCurrency)}</MoneyMask></b>
+            </Pill>
+            <Pill>
+              Próximo update <span className="text-navy-300">amanhã 06h BRT</span>
             </Pill>
           </div>
         </div>
