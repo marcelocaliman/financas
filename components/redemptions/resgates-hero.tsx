@@ -85,7 +85,7 @@ export function ResgatesHero({
           </div>
         </div>
 
-        {/* Live accrued counter (respirando) — reaproveita componente da home */}
+        {/* Rendimento acumulado (estático, atualiza com cron diário) */}
         <div className="mb-7">
           <CoverageLiveAccrued
             accumulatedUntilToday={accumulatedYieldUntilToday}

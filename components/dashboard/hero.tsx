@@ -328,7 +328,7 @@ function Stat({
           {approximate
             ? "contas no fim do mês · investimentos e bens a valor atual"
             : live
-              ? "contas + investimentos + bens · respirando ao vivo"
+              ? "contas + investimentos + bens · atualizado hoje"
               : "contas + investimentos + bens"}
         </div>
       ) : null}

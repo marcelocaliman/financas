@@ -1,44 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { dayUtilizationRatio } from "@/lib/financial/live-yield";
-
 /**
- * Devolve "rendimento acumulado hoje" subindo a cada segundo.
+ * Devolve "rendimento extra do dia" — sempre 0.
  *
- * Fórmula: accumulated = dailyYield × dayUtilizationRatio(now)
+ * No-op intencional desde 2026-05-27. Selic/Tesouro/CDI rendem em
+ * incrementos DIÁRIOS na vida real, não por segundo. A animação tick
+ * × ratio era ficção visual confusa: fazia o número "voltar" no refresh
+ * e divergir do que o broker mostra.
  *
- * dayUtilizationRatio cresce linearmente de 0 (10h BRT) até 1.0 (18h BRT)
- * durante o pregão. O resultado para em `dailyYield` às 18h e fica estável.
+ * O valor do dia em curso JÁ ESTÁ INCLUÍDO no derivedBalance do
+ * server-side (today's business progress conta no businessDaysSinceContinuous),
+ * então não precisa adicionar nada aqui.
  *
- * O parâmetro `perSecond` é mantido na assinatura por compatibilidade com
- * call-sites antigos, mas IGNORADO — usar ele aqui dobrava a contagem
- * (perSecond * elapsed crescia à mesma taxa de dailyYield × ratio,
- * resultando em acumulador 2× mais rápido e sem cap).
- *
- * Estratégia SSR-safe:
- *  - estado inicial = 0 (servidor e cliente concordam; sem hydration mismatch)
- *  - após o mount no client, calcula valor real e atualiza por interval
+ * Mantido na codebase com a assinatura original pra retrocompat dos call-sites.
+ * Eventualmente pode ser removido completamente.
  */
-export function useLiveYield(dailyYield: number, _perSecond?: number) {
-  const [accumulated, setAccumulated] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  // _perSecond mantido só pra retrocompat; ignorado pra evitar dupla contagem
+export function useLiveYield(_dailyYield: number, _perSecond?: number) {
+  void _dailyYield;
   void _perSecond;
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-    if (dailyYield <= 0) return;
-
-    const tick = () => {
-      const now = new Date();
-      setAccumulated(dailyYield * dayUtilizationRatio(now));
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [dailyYield]);
-
-  return { accumulated, mounted };
+  return { accumulated: 0, mounted: true };
 }
