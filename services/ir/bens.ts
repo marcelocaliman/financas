@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
+import { businessDaysSinceContinuous, dateInSP } from "@/lib/financial/business-days";
 import {
   inferAccountCode,
   inferInvestmentCode,
@@ -11,7 +12,7 @@ import {
 } from "@/services/ir/codes";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import { splitAssetByRegime, type AssetForSplit, type FilerForSplit } from "@/lib/financial/ownership-split";
-import type { Currency, Tables } from "@/types/database";
+import type { Currency, IndexerCode, Tables } from "@/types/database";
 
 /**
  * Bem declarável na Ficha "Bens e Direitos".
@@ -36,6 +37,14 @@ export type BemDeclaravel = {
   currentYearValue: number;  // 31/12 do ano N, em BRL
   /** Câmbio usado pra converter (vazio se ativo nativo BRL) */
   fxNote?: string;
+  /**
+   * "projected"  → currentYearValue calculado por composição até 31/12
+   *               (RF indexada, taxa atual). Vai mudar conforme rate move.
+   * "provisional" → currentYearValue é o valor de HOJE, não 31/12 real
+   *                (contas/ações/cripto/bens — sem como projetar com precisão)
+   * "final"      → currentYearValue é o valor REAL de 31/12 (snapshot ou ano fechado)
+   */
+  valuationKind: "projected" | "provisional" | "final";
 };
 
 export type DividaDeclaravel = {
@@ -71,6 +80,18 @@ export type BensReport = {
     totalCurrent: number;
     /** Dívidas declaráveis = saldo > R$ 5k (obrigatórias na ficha) */
     declarableCount: number;
+  };
+  /**
+   * Status global da coluna "31/12/year":
+   *   - "final": ano já terminou (snapshots existem) — valor definitivo
+   *   - "in_progress": estamos dentro do ano — alguns valores são projeção, outros provisórios
+   */
+  yearStatus: "final" | "in_progress";
+  /** Quantos itens são projeção (RF composta) e quantos provisórios (valor de hoje) */
+  yearStatusBreakdown: {
+    projected: number;
+    provisional: number;
+    final: number;
   };
 };
 
@@ -163,35 +184,165 @@ function buildPhysicalDiscrimination(
  * pragmática, usamos o current_balance e SINALIZAMOS no UI que a
  * "Situação em 31/12 do ano corrente" é provisória até o usuário ajustar.
  */
+type AccBalanceResult = {
+  balance: number;
+  valuationKind: "projected" | "provisional" | "final";
+};
+
 async function getAccountBalanceAt(
   accountId: string,
   currentBalance: number,
-  snapshotsByAccount?: Map<string, number>,
-): Promise<number> {
+  snapshotsByAccount: Map<string, number> | undefined,
+  targetIso: string,
+  todayIso: string,
+): Promise<AccBalanceResult> {
   if (snapshotsByAccount?.has(accountId)) {
-    return snapshotsByAccount.get(accountId)!;
+    return {
+      balance: snapshotsByAccount.get(accountId)!,
+      valuationKind: "final",
+    };
   }
-  return currentBalance;
+  // Sem como projetar conta corrente (depende de fluxos futuros indeterminados).
+  // Se target ainda no futuro, valor é apenas provisório.
+  const isProvisional = targetIso > todayIso;
+  return {
+    balance: currentBalance,
+    valuationKind: isProvisional ? "provisional" : "provisional",
+  };
 }
 
 /**
- * Calcula o saldo de um INVESTIMENTO em 31/12 de um ano dado.
+ * Calcula o saldo de um INVESTIMENTO em 31/12 de um ano dado, projetando se necessário.
  *
- * Pra renda fixa: compõe da data de compra até 31/12 (se ano corrente),
- * ou do checkpoint até 31/12 (se ano passado). MVP: usa current_balance.
- * Pra renda variável: qty × cotação no fechamento de 31/12. MVP: current_balance.
- *
- * O usuário pode editar manualmente o valor final na UI antes de exportar.
+ * Prioridade:
+ *   1. Snapshot real de 31/12 (`investment_snapshots`) → valor FINAL
+ *   2. Para RF indexada (Selic/CDI/IPCA/Prefixado), com 31/12 ainda no futuro:
+ *      projeta compondo a taxa atual sobre dias úteis até 31/12 → PROJECTED
+ *   3. Senão: current_balance → PROVISIONAL
  */
-async function getInvestmentBalanceAt(
-  investmentId: string,
-  currentBalance: number,
-  snapshotsByInvestment?: Map<string, number>,
-): Promise<number> {
-  if (snapshotsByInvestment?.has(investmentId)) {
-    return snapshotsByInvestment.get(investmentId)!;
+type IndexerRates = {
+  selic: number | null; // % a.a.
+  cdi: number | null;
+  ipca: number | null;  // % mensal (precisa anualizar)
+};
+
+type InvForProjection = {
+  id: string;
+  current_balance: number;
+  indexer: string | null;
+  indexer_multiplier: number | null;
+  fixed_rate: number | null;
+  asset_type: string;
+};
+
+function ipcaMonthlyToAnnual(monthlyPct: number): number {
+  return (Math.pow(1 + monthlyPct / 100, 12) - 1) * 100;
+}
+
+function dailyFromAnnualPct(annualPct: number): number {
+  if (annualPct <= 0) return 0;
+  return Math.pow(1 + annualPct / 100, 1 / 252) - 1;
+}
+
+/**
+ * Conta dias úteis entre fromIso (exclusivo) e toIso (inclusivo).
+ * Diferente de businessDaysSinceContinuous: aqui não somamos fração do dia
+ * corrente — o saldo projetado é fechamento de 31/12, ponto.
+ */
+function businessDaysBetween(fromIso: string, toIso: string): number {
+  if (fromIso >= toIso) return 0;
+  const toDate = new Date(`${toIso}T23:59:59Z`); // fim do dia
+  // businessDaysSinceContinuous conta [from+1, today midnight) + today fraction
+  // Pra contar fechado [from+1, to] dias úteis completos, usamos to + 1 como "hoje"
+  // (assim to fica iterado no loop com cursor < toUTC, e a fração de "tomorrow" é 0)
+  const tomorrowOfTo = new Date(toDate.getTime() + 86400000);
+  return Math.floor(businessDaysSinceContinuous(fromIso, tomorrowOfTo));
+}
+
+/**
+ * Computa fator de composição pra RF entre duas datas.
+ * Retorna null se o ativo não tem indexador suportado.
+ */
+function rfProjectionFactor(
+  inv: InvForProjection,
+  fromIso: string,
+  toIso: string,
+  rates: IndexerRates,
+): { factor: number; sourceLabel: string } | null {
+  if (fromIso >= toIso) return { factor: 1, sourceLabel: "" };
+  const multiplier = Number(inv.indexer_multiplier ?? 1);
+  let annualPct: number | null = null;
+  let label = "";
+
+  if (inv.indexer === "selic" && rates.selic != null) {
+    annualPct = rates.selic * multiplier;
+    label = `${Math.round(multiplier * 100)}% Selic (${rates.selic.toFixed(2)}% a.a.)`;
+  } else if (inv.indexer === "cdi" && rates.cdi != null) {
+    annualPct = rates.cdi * multiplier;
+    label = `${Math.round(multiplier * 100)}% CDI (${rates.cdi.toFixed(2)}% a.a.)`;
+  } else if (inv.indexer === "ipca" && rates.ipca != null) {
+    const ipcaAnnual = ipcaMonthlyToAnnual(rates.ipca);
+    const spread = Number(inv.fixed_rate ?? 0);
+    annualPct = ((1 + ipcaAnnual / 100) * (1 + spread / 100) - 1) * 100;
+    label = `IPCA + ${spread.toFixed(2)}% (≈${annualPct.toFixed(2)}% a.a.)`;
+  } else if (inv.indexer === "fixed" && inv.fixed_rate != null) {
+    annualPct = Number(inv.fixed_rate);
+    label = `Prefixado ${annualPct.toFixed(2)}% a.a.`;
   }
-  return currentBalance;
+
+  if (annualPct == null) return null;
+  const dailyRate = dailyFromAnnualPct(annualPct);
+  const days = businessDaysBetween(fromIso, toIso);
+  if (days <= 0) return { factor: 1, sourceLabel: label };
+  return { factor: Math.pow(1 + dailyRate, days), sourceLabel: label };
+}
+
+type InvBalanceResult = {
+  balance: number;
+  valuationKind: "projected" | "provisional" | "final";
+  projectionNote?: string;
+};
+
+async function getInvestmentBalanceAt(
+  inv: InvForProjection,
+  snapshotsByInvestment: Map<string, number> | undefined,
+  targetIso: string,
+  todayIso: string,
+  rates: IndexerRates,
+): Promise<InvBalanceResult> {
+  // 1. Snapshot existe → final
+  if (snapshotsByInvestment?.has(inv.id)) {
+    return {
+      balance: snapshotsByInvestment.get(inv.id)!,
+      valuationKind: "final",
+    };
+  }
+
+  const currentBalance = Number(inv.current_balance ?? 0);
+
+  // 2. Target já passou (ano fechado sem snapshot) → provisional usa current_balance
+  if (targetIso <= todayIso) {
+    return { balance: currentBalance, valuationKind: "provisional" };
+  }
+
+  // 3. Target no futuro: projeta RF indexada
+  const isFixedIncome =
+    inv.asset_type === "fixed_income_public" ||
+    inv.asset_type === "fixed_income_private";
+
+  if (isFixedIncome) {
+    const proj = rfProjectionFactor(inv, todayIso, targetIso, rates);
+    if (proj) {
+      return {
+        balance: Math.round(currentBalance * proj.factor * 100) / 100,
+        valuationKind: "projected",
+        projectionNote: `Projetado de ${todayIso.split("-").reverse().join("/")} até ${targetIso.split("-").reverse().join("/")} via ${proj.sourceLabel}`,
+      };
+    }
+  }
+
+  // 4. Não-RF ou sem indexador conhecido: provisório (current_balance)
+  return { balance: currentBalance, valuationKind: "provisional" };
 }
 
 /**
@@ -235,7 +386,7 @@ export async function getBensReport(
   const investmentsQuery = supabase
     .from("investments")
     .select(
-      "id, ticker, name, asset_type, tax_regime, initial_amount, current_balance, currency, quantity, cnpj, receita_code, account_id, owner_filer_id, is_particular, ownership_percent, purchase_date, closed_at, closed_reason, gross_proceeds_on_close, ir_withheld_on_close",
+      "id, ticker, name, asset_type, tax_regime, initial_amount, current_balance, currency, quantity, cnpj, receita_code, account_id, owner_filer_id, is_particular, ownership_percent, purchase_date, closed_at, closed_reason, gross_proceeds_on_close, ir_withheld_on_close, indexer, indexer_multiplier, fixed_rate",
     )
     .eq("exclude_from_ir", false)
     // Inclui ativos (closed_at NULL) OU liquidados DURANTE o ano-base
@@ -280,6 +431,7 @@ export async function getBensReport(
     { data: invSnaps },
     { data: priorYearManual },
     { data: debts },
+    { data: indexerRows },
   ] = await Promise.all([
     getRateMapAt(endOfYear),
     getRateMapAt(endOfPrevYear),
@@ -291,7 +443,24 @@ export async function getBensReport(
     householdId ? invSnapsQuery.eq("household_id", householdId) : invSnapsQuery,
     householdId ? priorYearQuery.eq("household_id", householdId) : priorYearQuery,
     householdId ? debtsQuery.eq("household_id", householdId) : debtsQuery,
+    // Indexadores mais recentes do BCB pra projetar RF até 31/12
+    supabase
+      .from("indexer_history")
+      .select("indexer, value, date")
+      .order("date", { ascending: false }),
   ]);
+
+  // Resolve indexadores correntes (Selic/CDI em % a.a., IPCA em % mensal)
+  const indexerRates: IndexerRates = { selic: null, cdi: null, ipca: null };
+  for (const row of indexerRows ?? []) {
+    const k = row.indexer as IndexerCode;
+    if (k in indexerRates && indexerRates[k] == null) {
+      indexerRates[k] = Number(row.value);
+    }
+  }
+
+  // Data de "hoje" em SP — usada pra decidir se 31/12 é passado/futuro
+  const todayIso = dateInSP(new Date()).iso;
 
   // Mapas pra lookup rápido nos helpers
   const accountSnapshotMap = new Map<string, number>(
@@ -354,11 +523,14 @@ export async function getBensReport(
     if (!code) continue;
     const codeMeta = BEM_CODES[code];
     const currency = a.currency as Currency;
-    const balance = await getAccountBalanceAt(
+    const accResult = await getAccountBalanceAt(
       a.id,
       Number(a.current_balance ?? 0),
       accountSnapshotMap,
+      endOfYear,
+      todayIso,
     );
+    const balance = accResult.balance;
     const balanceBRL = currency === "BRL"
       ? balance
       : convertOrSame(balance, currency, "BRL", rates);
@@ -385,6 +557,7 @@ export async function getBensReport(
       cnpj,
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       currentYearValue: Math.round((balanceBRL * pct)) / 100,
+      valuationKind: accResult.valuationKind,
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
         : undefined,
@@ -407,11 +580,21 @@ export async function getBensReport(
     );
     const codeMeta = BEM_CODES[code];
     const currency = inv.currency as Currency;
-    const balance = await getInvestmentBalanceAt(
-      inv.id,
-      Number(inv.current_balance ?? 0),
+    const invResult = await getInvestmentBalanceAt(
+      {
+        id: inv.id,
+        current_balance: Number(inv.current_balance ?? 0),
+        indexer: (inv as { indexer?: string | null }).indexer ?? null,
+        indexer_multiplier: (inv as { indexer_multiplier?: number | null }).indexer_multiplier ?? null,
+        fixed_rate: (inv as { fixed_rate?: number | null }).fixed_rate ?? null,
+        asset_type: inv.asset_type,
+      },
       investmentSnapshotMap,
+      endOfYear,
+      todayIso,
+      indexerRates,
     );
+    const balance = invResult.balance;
     const balanceBRL = currency === "BRL"
       ? balance
       : convertOrSame(balance, currency, "BRL", rates);
@@ -472,6 +655,9 @@ export async function getBensReport(
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       // Liquidado no ano: situação atual = 0 (saiu do patrimônio).
       currentYearValue: isClosedInYear ? 0 : Math.round((balanceBRL * pct)) / 100,
+      // Liquidado vira FINAL (valor 0 é definitivo). Caso contrário, usa o
+      // resultado da projeção/snapshot.
+      valuationKind: isClosedInYear ? "final" : invResult.valuationKind,
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
         : undefined,
@@ -520,6 +706,8 @@ export async function getBensReport(
       cnpj: physicalCnpj,
       previousYearValue: Math.round((prevValueBySource.get(prevKey) ?? 0) * pct) / 100,
       currentYearValue: Math.round((valueBRL * pct)) / 100,
+      // Bens físicos sem como projetar — valor atual é provisório se 31/12 futuro
+      valuationKind: endOfYear > todayIso ? "provisional" : "provisional",
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
         : undefined,
@@ -609,6 +797,17 @@ export async function getBensReport(
   ) / 100;
   const declarableCount = dividaItems.filter((x) => x.currentBalance > 5000).length;
 
+  // Breakdown agregado pra UI mostrar quantos itens são projeção vs provisório
+  const yearStatusBreakdown = {
+    projected: bens.filter((b) => b.valuationKind === "projected").length,
+    provisional: bens.filter((b) => b.valuationKind === "provisional").length,
+    final: bens.filter((b) => b.valuationKind === "final").length,
+  };
+  const yearStatus: "final" | "in_progress" =
+    yearStatusBreakdown.projected === 0 && yearStatusBreakdown.provisional === 0
+      ? "final"
+      : "in_progress";
+
   return {
     year,
     fxNote,
@@ -623,5 +822,7 @@ export async function getBensReport(
       totalCurrent: dividasTotalCurrent,
       declarableCount,
     },
+    yearStatus,
+    yearStatusBreakdown,
   };
 }

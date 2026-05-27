@@ -70,9 +70,21 @@ export function BensTable({ report }: { report: BensReport }) {
                       <div className="text-faint-foreground text-[11.5px] mt-0.5 break-words">
                         {item.discrimination}
                       </div>
-                      {item.fxNote ? (
-                        <Badge tone="gold" className="mt-1">moeda estrangeira</Badge>
-                      ) : null}
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {item.fxNote ? (
+                          <Badge tone="gold">moeda estrangeira</Badge>
+                        ) : null}
+                        {item.valuationKind === "projected" ? (
+                          <Badge tone="olive" title="Projetado por composição da taxa atual (Selic/CDI/IPCA) até 31/12">
+                            projetado
+                          </Badge>
+                        ) : null}
+                        {item.valuationKind === "provisional" ? (
+                          <Badge tone="navy" title="Valor de hoje — ainda vai mudar até 31/12">
+                            provisório
+                          </Badge>
+                        ) : null}
+                      </div>
                     </td>
                     {showCnpj ? (
                       <td className="py-2.5 pr-3 text-faint-foreground text-[11.5px] truncate">
@@ -123,12 +135,32 @@ export function BensTable({ report }: { report: BensReport }) {
           </div>
         </div>
         <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
             Total 31/12/{report.year}
+            {report.yearStatus === "in_progress" ? (
+              <Badge
+                tone="navy"
+                title="Ano em curso: RF é projetada pela Selic atual; demais ativos refletem hoje. Edite manualmente antes de exportar pra Receita."
+              >
+                provisório
+              </Badge>
+            ) : null}
           </div>
           <div className="font-mono text-[17px] tabular-nums mt-1 text-foreground font-medium">
             R$ {fmtBRL(report.totals.current)}
           </div>
+          {report.yearStatus === "in_progress" ? (
+            <div className="font-mono text-[10px] text-faint-foreground mt-1 leading-snug">
+              {report.yearStatusBreakdown.projected > 0 ? (
+                <>
+                  {report.yearStatusBreakdown.projected} projetado
+                  {report.yearStatusBreakdown.projected === 1 ? "" : "s"} ·{" "}
+                </>
+              ) : null}
+              {report.yearStatusBreakdown.provisional} provisóri
+              {report.yearStatusBreakdown.provisional === 1 ? "o" : "os"}
+            </div>
+          ) : null}
         </div>
         <div>
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
@@ -144,6 +176,15 @@ export function BensTable({ report }: { report: BensReport }) {
           </div>
         </div>
       </div>
+      {report.yearStatus === "in_progress" ? (
+        <p className="text-[11.5px] text-muted-foreground italic leading-relaxed pt-3 border-t border-border/40">
+          O ano-base ainda está em curso. Valores marcados como{" "}
+          <b className="not-italic">projetado</b> são compostos pela Selic/CDI/IPCA atual
+          até 31/12/{report.year}; <b className="not-italic">provisórios</b> refletem o
+          valor de hoje (contas, ações, FIIs, bens — sem base pra projetar com precisão).
+          Edite manualmente antes de exportar pra Receita.
+        </p>
+      ) : null}
     </div>
   );
 }
