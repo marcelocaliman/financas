@@ -108,7 +108,13 @@ export function BensTable({ report }: { report: BensReport }) {
                         R$ {fmtBRL(item.previousYearValue)}
                       </td>
                     ) : null}
-                    <td className="py-2.5 font-mono text-right tabular-nums text-foreground font-medium">
+                    <td
+                      className={`py-2.5 font-mono text-right tabular-nums font-medium ${
+                        getItemDisplayValue(item) > 0.005
+                          ? "text-foreground"
+                          : "text-faint-foreground/60"
+                      }`}
+                    >
                       R$ {fmtBRL(getItemDisplayValue(item))}
                     </td>
                   </tr>
@@ -125,7 +131,13 @@ export function BensTable({ report }: { report: BensReport }) {
                       R$ {fmtBRL(g.totalPrevious)}
                     </td>
                   ) : null}
-                  <td className="pt-2.5 font-mono text-right tabular-nums text-foreground font-medium">
+                  <td
+                    className={`pt-2.5 font-mono text-right tabular-nums font-medium ${
+                      getGroupDisplayTotal(g) > 0.005
+                        ? "text-foreground"
+                        : "text-faint-foreground/60"
+                    }`}
+                  >
                     R$ {fmtBRL(getGroupDisplayTotal(g))}
                   </td>
                 </tr>
