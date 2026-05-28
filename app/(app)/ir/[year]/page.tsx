@@ -240,20 +240,27 @@ export default async function IRYearPage({
           tone={rv.totals.totalTaxDue > 0 ? "negative" : "muted"}
           hint={`vendas R$ ${fmtBRL(rv.totals.grossSalesYear)} · lucro R$ ${fmtBRL(rv.totals.grossProfitYear)}`}
         />
-        <KpiCard
-          label={imposto.recommendation === "completo" ? "Modelo Completo (recomendado)" : "Modelo Simples (recomendado)"}
-          textValue={
+        {(() => {
+          const netDue =
             imposto.recommendation === "completo"
-              ? `R$ ${fmtBRL(imposto.completo.netDue)}`
-              : `R$ ${fmtBRL(imposto.simples.netDue)}`
-          }
-          tone={(imposto.recommendation === "completo" ? imposto.completo.netDue : imposto.simples.netDue) > 0 ? "negative" : "positive"}
-          hint={
-            (imposto.recommendation === "completo" ? imposto.completo.netDue : imposto.simples.netDue) > 0
-              ? "imposto a pagar"
-              : "restituição"
-          }
-        />
+              ? imposto.completo.netDue
+              : imposto.simples.netDue;
+          const isRefund = netDue < 0;
+          // Mostra valor absoluto pra não confundir com sinal de matemática.
+          // O label "a pagar" / "a restituir" já comunica a direção.
+          return (
+            <KpiCard
+              label={
+                imposto.recommendation === "completo"
+                  ? "Modelo Completo (recomendado)"
+                  : "Modelo Simples (recomendado)"
+              }
+              textValue={`R$ ${fmtBRL(Math.abs(netDue))}`}
+              tone={netDue > 0 ? "negative" : "positive"}
+              hint={isRefund ? "a restituir" : netDue > 0 ? "a pagar" : "sem ajuste"}
+            />
+          );
+        })()}
       </div>
 
       {/* TIER 2 — Bens e Direitos */}
