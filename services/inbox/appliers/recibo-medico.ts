@@ -76,7 +76,7 @@ export async function applyReciboMedico(args: {
         year,
         kind,
         amount: args.data.amount,
-        currency: "BRL",
+        currency: args.data.currency ?? "BRL",
         description: args.data.description,
         provider_name: args.data.provider_name,
         provider_cnpj_cpf: args.data.provider_cnpj_cpf,

@@ -1,6 +1,9 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { Holerite } from "../document-types";
+import { computeAmountAccount } from "../currency-convert";
+import type { Currency } from "@/types/database";
 
 /**
  * Aplica holerite extraído.
@@ -24,9 +27,34 @@ export async function applyHolerite(args: {
   | { ok: false; error: string }
 > {
   const admin = createAdminClient();
+  const supabase = await createClient();
   const year = Number(args.data.competence_month.slice(0, 4));
   const competence = `${args.data.competence_month}-01`;
   const txDate = args.data.payment_date ?? `${args.data.competence_month}-05`;
+  const docCurrency = (args.data.currency ?? "BRL") as Currency;
+
+  // Moeda da conta destino — pra computar amount_account
+  type AccBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { currency: Currency } | null }> };
+    };
+  };
+  const { data: acc } = await (
+    supabase.from as unknown as (t: string) => AccBuilder
+  )("accounts")
+    .select("currency")
+    .eq("id", args.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+  const netSalaryConverted = await computeAmountAccount({
+    amount: args.data.net_salary,
+    fromCurrency: docCurrency,
+    accountCurrency,
+    date: txDate,
+  });
 
   // Dedup: checa se já existe ir_other_income com mesmas chaves
   type ExistingBuilder = {
@@ -81,8 +109,8 @@ export async function applyHolerite(args: {
         date: txDate,
         description: `Salário ${args.data.employee_name}${args.data.is_thirteenth ? " (13º)" : ""}`,
         amount: args.data.gross_salary,
-        amount_account: args.data.net_salary,
-        currency: "BRL",
+        amount_account: netSalaryConverted,
+        currency: docCurrency,
         irrf_amount: args.data.irrf_retained,
         inss_amount: args.data.inss_retained,
         exclude_from_ir: false,
@@ -132,7 +160,7 @@ export async function applyHolerite(args: {
         irrf_amount: args.data.irrf_retained,
         inss_amount: args.data.inss_retained,
         thirteenth_amount: args.data.is_thirteenth ? args.data.gross_salary : 0,
-        currency: "BRL",
+        currency: docCurrency,
         owner_filer_id: args.ownerFilerId,
         notes: `Importado via OpenAI inbox · ${competence}`,
       },

@@ -1,11 +1,14 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { FaturaCartao } from "../document-types";
 import {
   applyDedupCounts,
   normalizeDescription,
   transactionDedupKey,
 } from "../dedup";
+import { computeAmountAccount } from "../currency-convert";
+import type { Currency } from "@/types/database";
 
 /**
  * Aplica fatura de cartão extraída.
@@ -32,63 +35,96 @@ export async function applyFaturaCartao(args: {
   | { ok: false; error: string }
 > {
   const admin = createAdminClient();
+  const supabase = await createClient();
   const itemsAfterPayment = args.data.items.filter((i) => !i.is_payment);
 
   if (itemsAfterPayment.length === 0) {
     return { ok: false, error: "Nenhum item aplicável (todos eram pagamentos)." };
   }
 
-  // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
-  type Row = {
-    payload: Record<string, unknown>;
-    key: string;
-  };
-  const rows: Row[] = itemsAfterPayment.map((item) => {
-    const absAmount = Math.abs(item.amount);
-    const isRefund = item.amount < 0;
-    const installmentLabel =
-      item.installment_current != null && item.installment_total != null
-        ? ` · ${item.installment_current}/${item.installment_total}`
-        : "";
-    const description = `${item.description}${installmentLabel}`;
-    return {
-      payload: {
-        household_id: args.householdId,
-        created_by: args.userId,
-        account_id: args.accountId,
-        kind: isRefund ? "income" : "expense",
-        date: item.date,
-        description,
-        amount: absAmount,
-        amount_account: absAmount,
-        currency: "BRL",
-        category_source: "openai",
-        tags: item.portador
-          ? [`portador:${item.portador.toLowerCase().split(" ")[0]}`]
-          : [],
-        exclude_from_ir: false,
-        is_historical_ir_only: false,
-        is_recurring: false,
-        metadata: {
-          source: "openai_inbox",
-          document_id: args.documentId,
-          portador: item.portador,
-          original_date: item.date,
-          original_description: item.description,
-          ...(isRefund ? { is_refund: true } : {}),
-          ...(item.installment_current != null && item.installment_total != null
-            ? { parcela: `${item.installment_current}/${item.installment_total}` }
-            : {}),
-        },
-      },
-      key: transactionDedupKey({
-        accountId: args.accountId,
-        date: item.date,
-        amount: absAmount,
-        description,
-      }),
+  // Moeda da fatura (default BRL) vs moeda da conta cartão
+  const faturaCurrency = (args.data.currency ?? "BRL") as Currency;
+  type AccBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { currency: Currency } | null }> };
     };
-  });
+  };
+  const { data: acc } = await (
+    supabase.from as unknown as (t: string) => AccBuilder
+  )("accounts")
+    .select("currency")
+    .eq("id", args.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+
+  // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
+  type Row = { payload: Record<string, unknown>; key: string };
+  const rows: Row[] = await Promise.all(
+    itemsAfterPayment.map(async (item) => {
+      const absAmount = Math.abs(item.amount);
+      const isRefund = item.amount < 0;
+      const installmentLabel =
+        item.installment_current != null && item.installment_total != null
+          ? ` · ${item.installment_current}/${item.installment_total}`
+          : "";
+      const description = `${item.description}${installmentLabel}`;
+      // amount = valor cobrado em faturaCurrency (já é a moeda do que entra na conta)
+      // amount_account = converte se moeda do cartão for diferente da fatura
+      const amountAccount = await computeAmountAccount({
+        amount: absAmount,
+        fromCurrency: faturaCurrency,
+        accountCurrency,
+        date: item.date,
+      });
+      return {
+        payload: {
+          household_id: args.householdId,
+          created_by: args.userId,
+          account_id: args.accountId,
+          kind: isRefund ? "income" : "expense",
+          date: item.date,
+          description,
+          amount: absAmount,
+          amount_account: amountAccount,
+          currency: faturaCurrency,
+          category_source: "openai",
+          tags: item.portador
+            ? [`portador:${item.portador.toLowerCase().split(" ")[0]}`]
+            : [],
+          exclude_from_ir: false,
+          is_historical_ir_only: false,
+          is_recurring: false,
+          metadata: {
+            source: "openai_inbox",
+            document_id: args.documentId,
+            portador: item.portador,
+            original_date: item.date,
+            original_description: item.description,
+            ...(isRefund ? { is_refund: true } : {}),
+            ...(item.installment_current != null && item.installment_total != null
+              ? { parcela: `${item.installment_current}/${item.installment_total}` }
+              : {}),
+            // Compra internacional: registra moeda original + valor original
+            ...(item.original_amount != null && item.original_currency != null
+              ? {
+                  original_currency: item.original_currency,
+                  original_amount: Math.abs(item.original_amount),
+                }
+              : {}),
+          },
+        },
+        key: transactionDedupKey({
+          accountId: args.accountId,
+          date: item.date,
+          amount: amountAccount,
+          description,
+        }),
+      };
+    }),
+  );
 
   // Busca existentes na conta no range de datas
   const dates = Array.from(new Set(rows.map((r) => r.payload.date as string))).sort();

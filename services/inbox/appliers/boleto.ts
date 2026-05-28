@@ -1,7 +1,10 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { Boleto } from "../document-types";
 import { transactionDedupKey } from "../dedup";
+import { computeAmountAccount } from "../currency-convert";
+import type { Currency } from "@/types/database";
 
 /**
  * Aplica boleto extraído. Dedup por chave de transação.
@@ -18,11 +21,35 @@ export async function applyBoleto(args: {
   | { ok: false; error: string }
 > {
   const admin = createAdminClient();
+  const supabase = await createClient();
   const description = `${args.data.payee_name} · ${args.data.description}`;
+  const docCurrency = (args.data.currency ?? "BRL") as Currency;
+
+  type AccBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { currency: Currency } | null }> };
+    };
+  };
+  const { data: acc } = await (
+    supabase.from as unknown as (t: string) => AccBuilder
+  )("accounts")
+    .select("currency")
+    .eq("id", args.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+  const amountAccount = await computeAmountAccount({
+    amount: args.data.amount,
+    fromCurrency: docCurrency,
+    accountCurrency,
+    date: args.data.due_date,
+  });
   const key = transactionDedupKey({
     accountId: args.accountId,
     date: args.data.due_date,
-    amount: args.data.amount,
+    amount: amountAccount,
     description,
   });
 
@@ -42,13 +69,13 @@ export async function applyBoleto(args: {
     .select("id, description")
     .eq("account_id", args.accountId)
     .eq("date", args.data.due_date)
-    .eq("amount", args.data.amount);
+    .eq("amount", amountAccount);
   const hit = (existing ?? []).find(
     (tx) =>
       transactionDedupKey({
         accountId: args.accountId,
         date: args.data.due_date,
-        amount: args.data.amount,
+        amount: amountAccount,
         description: tx.description,
       }) === key,
   );
@@ -77,8 +104,8 @@ export async function applyBoleto(args: {
         date: args.data.due_date,
         description,
         amount: args.data.amount,
-        amount_account: args.data.amount,
-        currency: "BRL",
+        amount_account: amountAccount,
+        currency: docCurrency,
         category_id: args.categoryId ?? null,
         category_source: "openai",
         exclude_from_ir: false,
@@ -90,6 +117,9 @@ export async function applyBoleto(args: {
           payee_name: args.data.payee_name,
           payee_cnpj_cpf: args.data.payee_cnpj_cpf,
           barcode: args.data.barcode,
+          ...(docCurrency !== accountCurrency
+            ? { original_currency: docCurrency, original_amount: args.data.amount }
+            : {}),
         },
       },
     ])

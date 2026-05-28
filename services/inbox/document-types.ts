@@ -53,7 +53,11 @@ export const FaturaCartaoSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .describe("Data de vencimento (YYYY-MM-DD)"),
-  total: z.number().describe("Valor total a pagar"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe("Moeda em que a fatura é CARGADA na conta (BRL pra Visa nacional)"),
+  total: z.number().describe("Valor total a pagar na moeda da fatura"),
   items: z
     .array(
       z.object({
@@ -62,7 +66,21 @@ export const FaturaCartaoSchema = z.object({
           .regex(/^\d{4}-\d{2}-\d{2}$/)
           .describe("Data da compra (YYYY-MM-DD)"),
         description: z.string().describe("Nome do estabelecimento como está na fatura"),
-        amount: z.number().describe("Valor positivo (compra) ou negativo (estorno/pagamento)"),
+        amount: z
+          .number()
+          .describe(
+            "Valor COBRADO na fatura (na moeda da fatura). Positivo = compra, negativo = estorno/pagamento.",
+          ),
+        original_amount: z
+          .number()
+          .nullable()
+          .describe(
+            "Valor ORIGINAL em moeda estrangeira (se compra internacional). Ex: US$ 50,00 → 50.00",
+          ),
+        original_currency: z
+          .enum(["BRL", "USD", "EUR"])
+          .nullable()
+          .describe("Moeda original da compra (USD, EUR) se for internacional. Null se nacional."),
         portador: z
           .string()
           .nullable()
@@ -100,6 +118,10 @@ export const HoleriteSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .describe("Data do pagamento (YYYY-MM-DD)"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe("Moeda dos valores (BRL pra holerite brasileiro)"),
   gross_salary: z.number().describe("Salário bruto antes de descontos"),
   inss_retained: z.number().describe("INSS retido pela empresa"),
   irrf_retained: z.number().describe("IRRF retido pela empresa"),
@@ -131,6 +153,12 @@ export const NotaCorretagemSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .describe("Data de liquidação D+2 (YYYY-MM-DD)"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe(
+      "Moeda dos valores (BRL pra B3, USD pra brokers americanos como IB, EUR pra europeus)",
+    ),
   operations: z
     .array(
       z.object({
@@ -164,6 +192,10 @@ export const ReciboMedicoSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .describe("Data do pagamento (YYYY-MM-DD)"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe("Moeda do recibo (BRL pra prestador brasileiro)"),
   amount: z.number().describe("Valor pago"),
   kind: z
     .enum([
@@ -191,6 +223,10 @@ export type ReciboMedico = z.infer<typeof ReciboMedicoSchema>;
 export const BoletoSchema = z.object({
   payee_name: z.string().describe("Beneficiário (quem recebe)"),
   payee_cnpj_cpf: z.string().nullable().describe("CNPJ ou CPF do beneficiário"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe("Moeda (boletos brasileiros são sempre BRL)"),
   amount: z.number().describe("Valor a pagar"),
   due_date: z
     .string()
@@ -214,8 +250,14 @@ export const ExtratoBancarioSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .describe("Fim do período (YYYY-MM-DD)"),
-  opening_balance: z.number().describe("Saldo inicial do período"),
-  closing_balance: z.number().describe("Saldo final do período"),
+  currency: z
+    .enum(["BRL", "USD", "EUR"])
+    .default("BRL")
+    .describe(
+      "Moeda da CONTA (BRL pra bancos brasileiros, USD/EUR pra Wise multi-moeda, contas no exterior)",
+    ),
+  opening_balance: z.number().describe("Saldo inicial do período (na moeda da conta)"),
+  closing_balance: z.number().describe("Saldo final do período (na moeda da conta)"),
   movements: z
     .array(
       z.object({

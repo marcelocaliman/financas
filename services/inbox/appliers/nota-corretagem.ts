@@ -68,7 +68,7 @@ export async function applyNotaCorretagem(args: {
         asset_type: "stock",
         initial_amount: 0,
         current_balance: 0,
-        currency: "BRL",
+        currency: args.data.currency ?? "BRL",
         account_id: args.accountId,
         is_active: true,
         exclude_from_ir: false,
@@ -140,6 +140,7 @@ export async function applyNotaCorretagem(args: {
         broker_cnpj: args.data.broker_cnpj,
         gross_total: op.gross_total,
         fees: op.fees,
+        currency: args.data.currency ?? "BRL",
       },
     });
   }

@@ -57,11 +57,26 @@ const EXTRACT_SYSTEM_PROMPT = `Você é um extrator de dados de documentos finan
 REGRAS CRÍTICAS DE FORMATAÇÃO:
 - Datas SEMPRE no formato YYYY-MM-DD (ex: 2026-05-28). Converta de dd/mm/aaaa.
   Se o documento mostrar só dd/mm sem ano, assume o ano do contexto.
-- Valores monetários: número JSON puro em reais, com ponto decimal.
-  EXEMPLO: "R$ 1.234,56" → 1234.56 (sem R$, sem ponto de milhar, ponto como decimal).
+- Valores monetários: número JSON puro com ponto decimal.
+  EXEMPLO: "R$ 1.234,56" → 1234.56 (sem símbolo, sem ponto de milhar, ponto como decimal).
   "R$ -16.416,79" → -16416.79.
-- Se ver "USD", "US$", "EUR", "€" no documento, MENTA assim mesmo nos valores
-  (não converta) — mas avise no resumo se for tipo "outros".
+
+DETECÇÃO DE MOEDA (campo "currency" em vários schemas):
+- BRL: "R$", banco BR (Itaú, Bradesco, XP), CNPJ brasileiro
+- USD: "US$", "$", "USD", Interactive Brokers, Wise USD, Bank of America, Chase
+- EUR: "€", "EUR", banco europeu, Wise EUR
+
+CASO ESPECIAL: FATURA DE CARTÃO INTERNACIONAL (Visa Internacional, etc.)
+A fatura em si é em BRL (o que vai descontar da conta), mas pode ter items
+com origem em moeda estrangeira. Para esses items específicos:
+  · amount = valor em BRL (o que aparece debitado)
+  · original_amount = valor na moeda original
+  · original_currency = "USD" ou "EUR"
+Exemplo de linha: "AMAZON US$ 50,00 — R$ 275,00"
+  → amount=275.00, original_amount=50.00, original_currency="USD"
+
+NÃO faça conversão entre moedas — sempre extraia os valores que aparecem
+escritos. A conversão é responsabilidade do app, não sua.
 
 REGRAS POR TIPO:
 - Fatura de cartão:

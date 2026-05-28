@@ -1,7 +1,10 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { ExtratoBancario } from "../document-types";
 import { applyDedupCounts, transactionDedupKey } from "../dedup";
+import { computeAmountAccount } from "../currency-convert";
+import type { Currency } from "@/types/database";
 
 /**
  * Aplica extrato bancário extraído. Dedup por contagem como na fatura.
@@ -21,6 +24,7 @@ export async function applyExtratoBancario(args: {
   | { ok: false; error: string }
 > {
   const admin = createAdminClient();
+  const supabase = await createClient();
   const allowedKinds = new Set(args.includeKinds ?? ["income", "expense", "interest"]);
   const toApply = args.data.movements.filter((m) => allowedKinds.has(m.kind));
 
@@ -28,43 +32,73 @@ export async function applyExtratoBancario(args: {
     return { ok: false, error: "Nenhum movimento aplicável (todos foram filtrados)." };
   }
 
-  type Row = { payload: Record<string, unknown>; key: string };
-  const rows: Row[] = toApply.map((m) => {
-    const isIncome =
-      m.kind === "income" ||
-      m.kind === "interest" ||
-      (m.amount >= 0 && m.kind !== "expense" && m.kind !== "fee");
-    const absAmount = Math.abs(m.amount);
-    return {
-      payload: {
-        household_id: args.householdId,
-        created_by: args.userId,
-        account_id: args.accountId,
-        kind: isIncome ? "income" : "expense",
-        date: m.date,
-        description: m.description,
-        amount: absAmount,
-        amount_account: absAmount,
-        currency: "BRL",
-        category_source: "openai",
-        exclude_from_ir: false,
-        is_historical_ir_only: false,
-        is_recurring: false,
-        metadata: {
-          source: "openai_inbox",
-          document_id: args.documentId,
-          bank_name: args.data.bank_name,
-          original_kind: m.kind,
-        },
-      },
-      key: transactionDedupKey({
-        accountId: args.accountId,
-        date: m.date,
-        amount: absAmount,
-        description: m.description,
-      }),
+  // Moeda do documento (default BRL) vs moeda da conta destino
+  const docCurrency = (args.data.currency ?? "BRL") as Currency;
+  type AccBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { currency: Currency } | null }> };
     };
-  });
+  };
+  const { data: acc } = await (
+    supabase.from as unknown as (t: string) => AccBuilder
+  )("accounts")
+    .select("currency")
+    .eq("id", args.accountId)
+    .maybeSingle();
+  const accountCurrency = (acc?.currency ?? "BRL") as Currency;
+
+  type Row = { payload: Record<string, unknown>; key: string };
+  const rows: Row[] = await Promise.all(
+    toApply.map(async (m) => {
+      const isIncome =
+        m.kind === "income" ||
+        m.kind === "interest" ||
+        (m.amount >= 0 && m.kind !== "expense" && m.kind !== "fee");
+      const absAmount = Math.abs(m.amount);
+      // amount fica na moeda do documento (nativa), amount_account na da conta
+      const amountAccount = await computeAmountAccount({
+        amount: absAmount,
+        fromCurrency: docCurrency,
+        accountCurrency,
+        date: m.date,
+      });
+      return {
+        payload: {
+          household_id: args.householdId,
+          created_by: args.userId,
+          account_id: args.accountId,
+          kind: isIncome ? "income" : "expense",
+          date: m.date,
+          description: m.description,
+          amount: absAmount,
+          amount_account: amountAccount,
+          currency: docCurrency,
+          category_source: "openai",
+          exclude_from_ir: false,
+          is_historical_ir_only: false,
+          is_recurring: false,
+          metadata: {
+            source: "openai_inbox",
+            document_id: args.documentId,
+            bank_name: args.data.bank_name,
+            original_kind: m.kind,
+            ...(docCurrency !== accountCurrency
+              ? { original_currency: docCurrency, original_amount: absAmount }
+              : {}),
+          },
+        },
+        key: transactionDedupKey({
+          accountId: args.accountId,
+          date: m.date,
+          amount: amountAccount,
+          description: m.description,
+        }),
+      };
+    }),
+  );
 
   // Busca existentes
   const dates = Array.from(new Set(rows.map((r) => r.payload.date as string))).sort();
