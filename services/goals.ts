@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
-import { getLiveBalanceMap } from "@/services/live-yield";
+import { getCurrentValueMap } from "@/services/quotes";
 import type {
   Currency,
   GoalAllocationMode,
@@ -77,7 +77,7 @@ export async function listGoalsEnriched(opts?: {
         .in("goal_id", goalIds),
       getDisplayCurrency(),
       getRateMap(),
-      getLiveBalanceMap(),
+      getCurrentValueMap(),
     ]);
 
   const sourcesByGoal = new Map<string, GoalSource[]>();

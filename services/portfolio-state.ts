@@ -1,11 +1,11 @@
 import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getLivePortfolio, getLiveBalanceMap } from "@/services/live-yield";
+import { getCurrentValueMap } from "@/services/quotes";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
-import { businessDaysSinceContinuous, dateInSP } from "@/lib/financial/business-days";
-import type { Currency, IndexerCode, Tables } from "@/types/database";
+import { dateInSP } from "@/lib/financial/business-days";
+import type { Currency, Tables } from "@/types/database";
 
 /**
  * SINGLE SOURCE OF TRUTH pro estado do patrimônio.
@@ -151,18 +151,15 @@ export const getPortfolioState = cache(
     const [
       displayCurrency,
       rates,
-      live,
-      liveBalances,
+      currentValues,
       { data: investments },
       { data: accounts },
       { data: physical },
       { data: priorYearManual },
-      { data: indexerRows },
     ] = await Promise.all([
       getDisplayCurrency(),
       getRateMap(),
-      getLivePortfolio(),
-      getLiveBalanceMap(),
+      getCurrentValueMap(),
       (householdId
         ? supabase
             .from("investments")
@@ -199,24 +196,7 @@ export const getPortfolioState = cache(
         : supabase
             .from("ir_prior_year_balances")
             .select("account_id, investment_id, physical_asset_id, balance"),
-      supabase
-        .from("indexer_history")
-        .select("indexer, value, date")
-        .order("date", { ascending: false }),
     ]);
-
-    void live; // usamos só liveBalances; mantido pra possível debug
-
-    // Indexadores correntes
-    const indexers: Record<IndexerCode, number | null> = {
-      selic: null,
-      cdi: null,
-      ipca: null,
-    };
-    for (const r of indexerRows ?? []) {
-      const k = r.indexer as IndexerCode;
-      if (indexers[k] == null) indexers[k] = Number(r.value);
-    }
 
     // Mapa de prior_year_balances por (source:id)
     const prevValueMap = new Map<string, number>();
@@ -239,42 +219,19 @@ export const getPortfolioState = cache(
 
       const c = (inv.currency ?? "BRL") as Currency;
       const initial = Number(inv.initial_amount ?? 0);
-      const liveValue = liveBalances.map.get(inv.id);
+      // Valor atual: pra ações/FIIs/ETFs vem da brapi (quote × qty);
+      // pra RF/cripto/outros usa o current_balance (manual).
+      const currentValue = currentValues.map.get(inv.id);
       const todayNative =
-        liveValue != null
-          ? liveValue // já em displayCurrency (mas pode estar em moeda nativa do ativo)
-          : Number(inv.current_balance ?? 0);
+        currentValue != null ? currentValue : Number(inv.current_balance ?? 0);
 
       // Conversão pra BRL
       const initialBRL = c === "BRL" ? initial : convertOrSame(initial, c, "BRL", rates);
       const todayBRL = c === "BRL" ? todayNative : convertOrSame(todayNative, c, "BRL", rates);
 
-      // Projeção 31/12: pra RF indexada, compõe usando indexer × multiplier
-      // (em modo conservador: dias úteis da hoje até 31/12)
-      let projectedBRL = todayBRL;
-      let isProjected = false;
-      const isRF =
-        inv.asset_type === "fixed_income_public" ||
-        inv.asset_type === "fixed_income_private";
-      if (isRF && inProgress && !isClosedInYear) {
-        const annualPct = computeAnnualRatePct(
-          inv.indexer,
-          Number(inv.indexer_multiplier ?? 1),
-          Number(inv.fixed_rate ?? 0),
-          indexers,
-        );
-        if (annualPct != null && annualPct > 0) {
-          const daily = Math.pow(1 + annualPct / 100, 1 / 252) - 1;
-          const days = businessDaysWholeOnly(todayIso, endOfYear);
-          projectedBRL = todayBRL * Math.pow(1 + daily, days);
-          isProjected = true;
-        }
-      }
-
-      // Liquidado no ano: situação atual = 0, projetado = 0
-      if (isClosedInYear) {
-        projectedBRL = 0;
-      }
+      // Projeção 31/12 = mesmo valor atual (sem compound automático).
+      // O usuário atualiza current_balance manualmente quando quiser.
+      const projectedBRL = isClosedInYear ? 0 : todayBRL;
 
       const assetClass = mapInvestmentAssetClass(inv.asset_type);
       const previousYearEnd = prevValueMap.get(`investment:${inv.id}`) ?? 0;
@@ -293,8 +250,8 @@ export const getPortfolioState = cache(
         previousYearEnd: round2(previousYearEnd),
         variation: round2(variation),
         variationPct: initialBRL > 0 ? round2((variation / initialBRL) * 100) : 0,
-        yieldUntilEnd: round2(projectedBRL - todayBRL),
-        isProjected,
+        yieldUntilEnd: 0,
+        isProjected: false,
         isClosed: isClosedInYear,
         closedAt: inv.closed_at,
         closedReason: inv.closed_reason,
@@ -463,29 +420,6 @@ export const getPortfolioState = cache(
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
-}
-
-function businessDaysWholeOnly(fromIso: string, toIso: string): number {
-  if (fromIso >= toIso) return 0;
-  const toDate = new Date(`${toIso}T23:59:59Z`);
-  const tomorrow = new Date(toDate.getTime() + 86400000);
-  return Math.floor(businessDaysSinceContinuous(fromIso, tomorrow));
-}
-
-function computeAnnualRatePct(
-  indexer: string | null,
-  multiplier: number,
-  fixedRate: number,
-  indexers: Record<IndexerCode, number | null>,
-): number | null {
-  if (indexer === "selic" && indexers.selic != null) return indexers.selic * multiplier;
-  if (indexer === "cdi" && indexers.cdi != null) return indexers.cdi * multiplier;
-  if (indexer === "ipca" && indexers.ipca != null) {
-    const ipcaAnnual = (Math.pow(1 + indexers.ipca / 100, 12) - 1) * 100;
-    return ((1 + ipcaAnnual / 100) * (1 + fixedRate / 100) - 1) * 100;
-  }
-  if (indexer === "fixed" && fixedRate > 0) return fixedRate;
-  return null;
 }
 
 function mapInvestmentAssetClass(t: string): AssetClass {

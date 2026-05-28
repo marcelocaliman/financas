@@ -2,8 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
-import { businessDaysSinceContinuous, dateInSP } from "@/lib/financial/business-days";
-import { getLiveBalanceMap } from "@/services/live-yield";
+import { dateInSP } from "@/lib/financial/business-days";
+import { getCurrentValueMap } from "@/services/quotes";
 import {
   inferAccountCode,
   inferInvestmentCode,
@@ -272,68 +272,6 @@ type InvForProjection = {
   asset_type: string;
 };
 
-function ipcaMonthlyToAnnual(monthlyPct: number): number {
-  return (Math.pow(1 + monthlyPct / 100, 12) - 1) * 100;
-}
-
-function dailyFromAnnualPct(annualPct: number): number {
-  if (annualPct <= 0) return 0;
-  return Math.pow(1 + annualPct / 100, 1 / 252) - 1;
-}
-
-/**
- * Conta dias úteis entre fromIso (exclusivo) e toIso (inclusivo).
- * Diferente de businessDaysSinceContinuous: aqui não somamos fração do dia
- * corrente — o saldo projetado é fechamento de 31/12, ponto.
- */
-function businessDaysBetween(fromIso: string, toIso: string): number {
-  if (fromIso >= toIso) return 0;
-  const toDate = new Date(`${toIso}T23:59:59Z`); // fim do dia
-  // businessDaysSinceContinuous conta [from+1, today midnight) + today fraction
-  // Pra contar fechado [from+1, to] dias úteis completos, usamos to + 1 como "hoje"
-  // (assim to fica iterado no loop com cursor < toUTC, e a fração de "tomorrow" é 0)
-  const tomorrowOfTo = new Date(toDate.getTime() + 86400000);
-  return Math.floor(businessDaysSinceContinuous(fromIso, tomorrowOfTo));
-}
-
-/**
- * Computa fator de composição pra RF entre duas datas.
- * Retorna null se o ativo não tem indexador suportado.
- */
-function rfProjectionFactor(
-  inv: InvForProjection,
-  fromIso: string,
-  toIso: string,
-  rates: IndexerRates,
-): { factor: number; sourceLabel: string } | null {
-  if (fromIso >= toIso) return { factor: 1, sourceLabel: "" };
-  const multiplier = Number(inv.indexer_multiplier ?? 1);
-  let annualPct: number | null = null;
-  let label = "";
-
-  if (inv.indexer === "selic" && rates.selic != null) {
-    annualPct = rates.selic * multiplier;
-    label = `${Math.round(multiplier * 100)}% Selic (${rates.selic.toFixed(2)}% a.a.)`;
-  } else if (inv.indexer === "cdi" && rates.cdi != null) {
-    annualPct = rates.cdi * multiplier;
-    label = `${Math.round(multiplier * 100)}% CDI (${rates.cdi.toFixed(2)}% a.a.)`;
-  } else if (inv.indexer === "ipca" && rates.ipca != null) {
-    const ipcaAnnual = ipcaMonthlyToAnnual(rates.ipca);
-    const spread = Number(inv.fixed_rate ?? 0);
-    annualPct = ((1 + ipcaAnnual / 100) * (1 + spread / 100) - 1) * 100;
-    label = `IPCA + ${spread.toFixed(2)}% (≈${annualPct.toFixed(2)}% a.a.)`;
-  } else if (inv.indexer === "fixed" && inv.fixed_rate != null) {
-    annualPct = Number(inv.fixed_rate);
-    label = `Prefixado ${annualPct.toFixed(2)}% a.a.`;
-  }
-
-  if (annualPct == null) return null;
-  const dailyRate = dailyFromAnnualPct(annualPct);
-  const days = businessDaysBetween(fromIso, toIso);
-  if (days <= 0) return { factor: 1, sourceLabel: label };
-  return { factor: Math.pow(1 + dailyRate, days), sourceLabel: label };
-}
-
 type InvBalanceResult = {
   balance: number;
   valuationKind: "projected" | "provisional" | "final";
@@ -343,43 +281,22 @@ type InvBalanceResult = {
 async function getInvestmentBalanceAt(
   inv: InvForProjection,
   snapshotsByInvestment: Map<string, number> | undefined,
-  targetIso: string,
-  todayIso: string,
-  rates: IndexerRates,
+  _targetIso: string,
+  _todayIso: string,
+  _rates: IndexerRates,
 ): Promise<InvBalanceResult> {
-  // 1. Snapshot existe → final
+  // 1. Snapshot existe → final (ano fechado)
   if (snapshotsByInvestment?.has(inv.id)) {
     return {
       balance: snapshotsByInvestment.get(inv.id)!,
       valuationKind: "final",
     };
   }
-
-  const currentBalance = Number(inv.current_balance ?? 0);
-
-  // 2. Target já passou (ano fechado sem snapshot) → provisional usa current_balance
-  if (targetIso <= todayIso) {
-    return { balance: currentBalance, valuationKind: "provisional" };
-  }
-
-  // 3. Target no futuro: projeta RF indexada
-  const isFixedIncome =
-    inv.asset_type === "fixed_income_public" ||
-    inv.asset_type === "fixed_income_private";
-
-  if (isFixedIncome) {
-    const proj = rfProjectionFactor(inv, todayIso, targetIso, rates);
-    if (proj) {
-      return {
-        balance: Math.round(currentBalance * proj.factor * 100) / 100,
-        valuationKind: "projected",
-        projectionNote: `Projetado de ${todayIso.split("-").reverse().join("/")} até ${targetIso.split("-").reverse().join("/")} via ${proj.sourceLabel}`,
-      };
-    }
-  }
-
-  // 4. Não-RF ou sem indexador conhecido: provisório (current_balance)
-  return { balance: currentBalance, valuationKind: "provisional" };
+  // 2. Ano em curso → usa current_balance (atualizado manualmente pelo usuário)
+  return {
+    balance: Number(inv.current_balance ?? 0),
+    valuationKind: "provisional",
+  };
 }
 
 /**
@@ -468,7 +385,6 @@ export async function getBensReport(
     { data: invSnaps },
     { data: priorYearManual },
     { data: debts },
-    { data: indexerRows },
     liveBalances,
   ] = await Promise.all([
     getRateMapAt(endOfYear),
@@ -481,25 +397,15 @@ export async function getBensReport(
     householdId ? invSnapsQuery.eq("household_id", householdId) : invSnapsQuery,
     householdId ? priorYearQuery.eq("household_id", householdId) : priorYearQuery,
     householdId ? debtsQuery.eq("household_id", householdId) : debtsQuery,
-    // Indexadores mais recentes do BCB pra projetar RF até 31/12
-    supabase
-      .from("indexer_history")
-      .select("indexer, value, date")
-      .order("date", { ascending: false }),
-    // Saldos ao vivo (brapi pra stocks/FIIs + Selic compound pra RF) — pra
-    // o IR mostrar o mesmo número que /investimentos mostra
-    getLiveBalanceMap(),
+    // Valores atuais (brapi quote × qty pra B3, current_balance pra resto)
+    getCurrentValueMap(),
   ]);
   const liveBalanceMap = liveBalances.map;
 
-  // Resolve indexadores correntes (Selic/CDI em % a.a., IPCA em % mensal)
+  // IndexerRates mantido como interface vazia — compound foi removido,
+  // mas getInvestmentBalanceAt ainda aceita por compat com chamadas futuras
+  // de projeção fora do escopo IR (se houver).
   const indexerRates: IndexerRates = { selic: null, cdi: null, ipca: null };
-  for (const row of indexerRows ?? []) {
-    const k = row.indexer as IndexerCode;
-    if (k in indexerRates && indexerRates[k] == null) {
-      indexerRates[k] = Number(row.value);
-    }
-  }
 
   // Data de "hoje" em SP — usada pra decidir se 31/12 é passado/futuro
   const todayIso = dateInSP(new Date()).iso;

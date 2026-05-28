@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { getRecurrencesForecast } from "@/services/recurrences";
-import { getLiveBalanceMap } from "@/services/live-yield";
+import { getCurrentValueMap } from "@/services/quotes";
 import type { AccountType, Currency, Tables } from "@/types/database";
 
 export type Account = Tables<"accounts">;
@@ -185,7 +185,7 @@ export type AccountWithBalance = Account & {
 /**
  * Calcula soma de ativos por account_id em moeda nativa de cada conta.
  *
- * Usa `getLiveBalanceMap()` como fonte — o MESMO mapa que /investimentos
+ * Usa `getCurrentValueMap()` como fonte — o MESMO mapa que /investimentos
  * usa pra mostrar saldo de cada ativo. Garante que o "Em ativos" no card
  * de uma conta XP bata centavo com o "Saldo total" mostrado em
  * /investimentos. Sem cache duplicado: getLivePortfolio é cacheado por
@@ -201,15 +201,15 @@ async function getAssetsBalanceByAccount(
 
   const supabase = await createClient();
   // Precisamos apenas do account_id e currency de cada investment pra
-  // saber a moeda nativa do ativo. O saldo virá do liveBalanceMap.
-  const [{ data: invs }, { map: liveBalance, displayCurrency }, rates] =
+  // saber a moeda nativa do ativo. O valor vem do getCurrentValueMap.
+  const [{ data: invs }, { map: currentValue, displayCurrency }, rates] =
     await Promise.all([
       supabase
         .from("investments")
         .select("id, account_id, currency")
         .eq("is_active", true)
         .in("account_id", investmentAccountIds),
-      getLiveBalanceMap(),
+      getCurrentValueMap(),
       getRateMap(),
     ]);
 
@@ -218,8 +218,8 @@ async function getAssetsBalanceByAccount(
   for (const i of invs ?? []) {
     const acc = accountById.get(i.account_id);
     if (!acc) continue;
-    // liveBalance retorna em displayCurrency. Convertemos pra moeda da conta.
-    const inDisplay = liveBalance.get(i.id) ?? 0;
+    // currentValue está em displayCurrency. Convertemos pra moeda da conta.
+    const inDisplay = currentValue.get(i.id) ?? 0;
     const inAccCurrency = convertOrSame(
       inDisplay,
       displayCurrency,

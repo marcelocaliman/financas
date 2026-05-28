@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
-import { getLivePortfolio } from "@/services/live-yield";
 
 const ruleSchema = z.object({
   investmentId: z.string().uuid(),
@@ -246,30 +245,28 @@ export async function withdrawYield(
     return { error: "Acesso negado." };
   }
 
-  // 2. Pega o saldo DERIVADO ao vivo (composição contínua até agora) e o
-  //    accumulatedYield (lifetime) do live portfolio. Cache por request.
-  const live = await getLivePortfolio();
-  const liveAsset = live.byAsset.find((a) => a.id === inv.id);
-
-  const derivedBalance = liveAsset?.baseBalance ?? Number(inv.current_balance);
-  const accumulatedYield = Math.max(0, liveAsset?.accumulatedYield ?? 0);
+  // 2. Saldo atual do ativo = current_balance no banco (atualizado
+  //    manualmente pelo usuário).
+  const currentBalance = Number(inv.current_balance);
   const initialAmount = Number(inv.initial_amount);
   const amount = parsed.data.amount;
+  // accumulatedYield estimado: saldo atual - aplicado (se positivo)
+  const accumulatedYield = Math.max(0, currentBalance - initialAmount);
 
-  // 3. Validação: não permite sacar mais do que o saldo derivado total
-  if (amount > derivedBalance + 0.005) {
+  // 3. Validação: não permite sacar mais do que o saldo atual
+  if (amount > currentBalance + 0.005) {
     return {
-      error: `Valor maior que o saldo do ativo (R$ ${derivedBalance.toFixed(2)}).`,
+      error: `Valor maior que o saldo do ativo (R$ ${currentBalance.toFixed(2)}).`,
     };
   }
 
   // 4. Proporcional (TD-style): reduz custo na mesma fração da posição vendida
-  const ratio = amount / derivedBalance;
-  const newCurrentBalance = derivedBalance - amount;
+  const ratio = amount / currentBalance;
+  const newCurrentBalance = currentBalance - amount;
   const newInitialAmount = initialAmount * (1 - ratio);
   // Breakdown do saque pra reporting/metadata (não afeta o cálculo)
-  const fromYield = (accumulatedYield / derivedBalance) * amount;
-  const principalReduction = (initialAmount / derivedBalance) * amount;
+  const fromYield = (accumulatedYield / currentBalance) * amount;
+  const principalReduction = (initialAmount / currentBalance) * amount;
   const exceededYield = amount > accumulatedYield;
 
   // 5. Update investimento com snapshot novo e last_yield_at = hoje

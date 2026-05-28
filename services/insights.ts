@@ -1,6 +1,5 @@
 import "server-only";
 import { getMonthlyHistory, getCategoryMovers, getMonthlySummary } from "@/services/transactions";
-import { getLivePortfolio } from "@/services/live-yield";
 import { getCoverage } from "@/services/investments";
 import { getGoalReminders } from "@/services/goal-reminders";
 import { getBudgetVsActual } from "@/services/budgets";
@@ -35,7 +34,6 @@ export async function getInsights(): Promise<Insight[]> {
     history,
     summary,
     movers,
-    live,
     coverage,
     reminders,
     budgets,
@@ -45,7 +43,6 @@ export async function getInsights(): Promise<Insight[]> {
     getMonthlyHistory(6),
     getMonthlySummary(),
     getCategoryMovers().catch(() => []),
-    getLivePortfolio(),
     getCoverage(),
     getGoalReminders(7),
     getBudgetVsActual(),
@@ -148,9 +145,10 @@ export async function getInsights(): Promise<Insight[]> {
   }
 
   // ---------- Cobertura FIRE ----------
-  if (coverage.monthlyAverageExpense > 0) {
-    const liveCov = live.totalDailyYield * 21 / coverage.monthlyAverageExpense;
-    if (liveCov >= 1) {
+  // Usa yield mensal real cadastrado em investment_yields, via getCoverage.
+  if (coverage.monthlyAverageExpense > 0 && coverage.monthlyAverageYield > 0) {
+    const cov = coverage.monthlyAverageYield / coverage.monthlyAverageExpense;
+    if (cov >= 1) {
       insights.push({
         id: "fire-achieved",
         severity: "positive",
@@ -159,11 +157,11 @@ export async function getInsights(): Promise<Insight[]> {
         href: "/resgates",
         hrefLabel: "Ver renda",
       });
-    } else if (liveCov >= 0.5 && liveCov < 0.7) {
+    } else if (cov >= 0.5 && cov < 0.7) {
       insights.push({
         id: "fire-halfway",
         severity: "positive",
-        title: `Renda passiva cobre ${Math.round(liveCov * 100)}% das despesas`,
+        title: `Renda passiva cobre ${Math.round(cov * 100)}% das despesas`,
         description: "Mais que meio caminho andado pra IF. Mantém o ritmo.",
       });
     }
@@ -199,12 +197,7 @@ export async function getInsights(): Promise<Insight[]> {
     });
   }
 
-  // ---------- Renda passiva crescendo ----------
-  if (live.totalDailyYield > 0 && history.length >= 3) {
-    void summary;
-    // simples: se renda diária × 30 > 1% do total de despesa dos 3 meses
-    // É um proxy fraco mas serve como "sinal de tração"
-  }
+  void summary;
 
   // ---------- Patrimônio batendo recorde ----------
   // (Skipping — precisaria comparar com histórico de snapshots, complexo)
