@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { recordSystemAlert } from "@/services/system-alerts";
 
 /**
  * Materializa silenciosamente qualquer ocorrência pendente das regras
@@ -55,7 +56,12 @@ async function _ensureMaterialized(): Promise<{ created: number; skipped?: boole
     });
 
     if (error) {
-      console.error("[auto-materialize] erro silencioso:", error.message);
+      await recordSystemAlert({
+        kind: "auto_materialize_failed",
+        message: "Falha na materialização automática de recorrências.",
+        householdId: ctx.household.id,
+        context: { error: error.message, untilDate: today },
+      });
       return { created: 0 };
     }
 
@@ -67,7 +73,11 @@ async function _ensureMaterialized(): Promise<{ created: number; skipped?: boole
 
     return { created: data ?? 0 };
   } catch (e) {
-    console.error("[auto-materialize] exception:", e);
+    await recordSystemAlert({
+      kind: "auto_materialize_exception",
+      message: "Exceção inesperada na materialização automática.",
+      context: { error: e instanceof Error ? e.message : String(e) },
+    });
     return { created: 0 };
   }
 }

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { lookupAssetCNPJ } from "@/lib/financial/asset-catalog";
 import { ensureExclusiveIncomeForClosures } from "@/services/ir/exclusive-income-sync";
+import { recordSystemAlert } from "@/services/system-alerts";
 
 const ASSET_TYPES = [
   "fii",
@@ -527,8 +528,18 @@ export async function liquidateInvestment(
     try {
       await ensureExclusiveIncomeForClosures(year, ctx.household.id);
     } catch (e) {
-      // Não bloqueia a liquidação se a sync IR falhar
-      console.error("[liquidateInvestment] ensureExclusiveIncomeForClosures:", e);
+      // Não bloqueia a liquidação se a sync IR falhar — só registra.
+      await recordSystemAlert({
+        kind: "ir_exclusive_income_sync_failed",
+        message:
+          "Falhou ao gerar o lançamento de Rendimentos Exclusivos de Fonte após liquidação. Abra /ir e o sistema tenta de novo automaticamente.",
+        householdId: ctx.household.id,
+        context: {
+          investmentId: parsed.data.investmentId,
+          year,
+          error: e instanceof Error ? e.message : String(e),
+        },
+      });
     }
     revalidatePath(`/ir/${year}`);
   }
