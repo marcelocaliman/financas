@@ -222,6 +222,9 @@ export async function updateTransaction(
     debtId: formData.get("debtId") || null,
     date: formData.get("date"),
     paymentMethod: formData.get("paymentMethod") || undefined,
+    fontePagadoraId: formData.get("fontePagadoraId") || null,
+    irrfAmount: formData.get("irrfAmount") || null,
+    inssAmount: formData.get("inssAmount") || null,
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -258,6 +261,9 @@ export async function updateTransaction(
     description: parsed.data.description.trim(),
     payment_method: parsed.data.paymentMethod ?? null,
     date: parsed.data.date,
+    fonte_pagadora_id: parsed.data.kind === "income" ? (parsed.data.fontePagadoraId ?? null) : null,
+    irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
+    inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
   };
   const { error } = await supabase

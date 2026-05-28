@@ -26,6 +26,7 @@ import { formatDateNumeric } from "@/lib/utils/format";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
 import { listDebts } from "@/services/debts";
+import { listFontesPagadoras } from "@/services/fontes-pagadoras";
 import type { Transaction } from "@/services/transactions";
 import type { TransactionKind } from "@/types/database";
 import { formatDateFull } from "@/lib/utils/format";
@@ -99,7 +100,7 @@ export default async function TransacoesPage({
         ? false
         : isPastMonth; // default true se mês passado, false caso contrário
 
-  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts] =
+  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts, fontes] =
     await Promise.all([
       listTransactions({
         month,
@@ -121,8 +122,16 @@ export default async function TransacoesPage({
       listDistinctPortadores(),
       getMonthlyCardSpending(month),
       listDebts(),
+      listFontesPagadoras(),
     ]);
   const debtsLite = debts.map((d) => ({ id: d.id, description: d.description }));
+  const fontesLite = fontes.map((f) => ({
+    id: f.id,
+    name: f.name,
+    type: f.type,
+    cnpj: f.cnpj,
+    cpf: f.cpf,
+  }));
 
   const cardIds = accounts.filter((a) => a.type === "credit_card").map((a) => a.id);
   const firstCardId = cardIds[0] ?? null;
@@ -319,6 +328,7 @@ export default async function TransacoesPage({
                           accounts={accountsLite}
                           categories={categoriesLite}
                           debts={debtsLite}
+                          fontes={fontesLite}
                         />
                       ))}
                     </Fragment>
@@ -344,6 +354,7 @@ export default async function TransacoesPage({
                       tx={tx}
                       accounts={accountsLite}
                       categories={categoriesLite}
+                      fontes={fontesLite}
                     />
                   ))}
                 </div>

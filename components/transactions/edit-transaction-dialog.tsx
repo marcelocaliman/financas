@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,11 +22,16 @@ import {
 } from "@/components/ui/select";
 import { updateTransaction, type TxFormState } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
+import type { Tables } from "@/types/database";
 import { ReceiptUploader } from "./receipt-uploader";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 type DebtLite = { id: string; description: string };
+type FonteLite = Pick<
+  Tables<"fontes_pagadoras">,
+  "id" | "name" | "type" | "cnpj" | "cpf"
+>;
 
 export function EditTransactionDialog({
   open,
@@ -34,6 +40,7 @@ export function EditTransactionDialog({
   accounts,
   categories,
   debts = [],
+  fontes = [],
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -41,6 +48,7 @@ export function EditTransactionDialog({
   accounts: AccountLite[];
   categories: CategoryLite[];
   debts?: DebtLite[];
+  fontes?: FonteLite[];
 }) {
   const isTransfer = transaction.kind === "transfer";
 
@@ -53,6 +61,18 @@ export function EditTransactionDialog({
   const [date, setDate] = useState<string>(transaction.date);
   const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(
     transaction.is_historical_ir_only ?? false,
+  );
+  const [fontePagadoraId, setFontePagadoraId] = useState<string>(
+    transaction.fonte_pagadora_id ?? "",
+  );
+  const [irrfAmount, setIrrfAmount] = useState<number>(
+    Number(transaction.irrf_amount ?? 0),
+  );
+  const [inssAmount, setInssAmount] = useState<number>(
+    Number(transaction.inss_amount ?? 0),
+  );
+  const [showIR, setShowIR] = useState<boolean>(
+    !!(transaction.fonte_pagadora_id || transaction.irrf_amount || transaction.inss_amount),
   );
 
   const [state, action, pending] = useActionState<TxFormState | undefined, FormData>(
@@ -70,6 +90,12 @@ export function EditTransactionDialog({
       setPaymentMethod(transaction.payment_method ?? "");
       setDate(transaction.date);
       setIsHistoricalIrOnly(transaction.is_historical_ir_only ?? false);
+      setFontePagadoraId(transaction.fonte_pagadora_id ?? "");
+      setIrrfAmount(Number(transaction.irrf_amount ?? 0));
+      setInssAmount(Number(transaction.inss_amount ?? 0));
+      setShowIR(
+        !!(transaction.fonte_pagadora_id || transaction.irrf_amount || transaction.inss_amount),
+      );
     }
   }
 
@@ -227,6 +253,66 @@ export function EditTransactionDialog({
                 </SelectContent>
               </Select>
             </Field>
+          ) : null}
+
+          {/* Seção IR — apenas pra receitas com fontes configuradas */}
+          {transaction.kind === "income" && fontes.length > 0 ? (
+            <div className="rounded-[8px] border border-border bg-bone-100 dark:bg-ink-800 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowIR((v) => !v)}
+                className="w-full flex items-center justify-between px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted"
+              >
+                <span className="font-medium">
+                  IR · fonte pagadora + IRRF/INSS retidos
+                </span>
+                {showIR ? (
+                  <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+                )}
+              </button>
+              {showIR ? (
+                <div className="p-3 space-y-3 border-t border-border">
+                  <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
+                  <input type="hidden" name="irrfAmount" value={irrfAmount} />
+                  <input type="hidden" name="inssAmount" value={inssAmount} />
+                  <Field label="Fonte pagadora" htmlFor="fonte-edit">
+                    <Select value={fontePagadoraId} onValueChange={setFontePagadoraId}>
+                      <SelectTrigger id="fonte-edit">
+                        <SelectValue placeholder="— escolher" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fontes.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.name} · {f.cnpj ?? f.cpf ?? f.type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="IRRF retido" htmlFor="irrf-input-edit">
+                      <MoneyInput
+                        name="irrf-input-edit"
+                        defaultValue={irrfAmount}
+                        onValueChange={setIrrfAmount}
+                      />
+                    </Field>
+                    <Field label="INSS" htmlFor="inss-input-edit">
+                      <MoneyInput
+                        name="inss-input-edit"
+                        defaultValue={inssAmount}
+                        onValueChange={setInssAmount}
+                      />
+                    </Field>
+                  </div>
+                  <p className="text-[11px] text-faint-foreground">
+                    Esses valores vão direto pro quadro &quot;Rendimentos Tributáveis Recebidos de PJ&quot; no IRPF.
+                  </p>
+                </div>
+              ) : null}
+            </div>
           ) : null}
 
           {!isTransfer ? (

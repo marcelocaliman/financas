@@ -14,9 +14,14 @@ import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { TransactionTagsEditor } from "./transaction-tags-editor";
+import type { Tables } from "@/types/database";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type FonteLite = Pick<
+  Tables<"fontes_pagadoras">,
+  "id" | "name" | "type" | "cnpj" | "cpf"
+>;
 
 /**
  * Versão card de TransactionRow — usada apenas no mobile.
@@ -28,10 +33,12 @@ export function TransactionCard({
   tx,
   accounts,
   categories,
+  fontes = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
+  fontes?: FonteLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -177,6 +184,7 @@ export function TransactionCard({
         transaction={tx}
         accounts={accounts}
         categories={categories}
+        fontes={fontes}
       />
     </>
   );

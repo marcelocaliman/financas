@@ -15,21 +15,28 @@ import { EditTransactionDialog } from "./edit-transaction-dialog";
 import { SplitsDialog } from "./splits-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { TransactionTagsEditor } from "./transaction-tags-editor";
+import type { Tables } from "@/types/database";
 
 type AccountLite = { id: string; name: string; institution: string };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
 type DebtLite = { id: string; description: string };
+type FonteLite = Pick<
+  Tables<"fontes_pagadoras">,
+  "id" | "name" | "type" | "cnpj" | "cpf"
+>;
 
 export function TransactionRow({
   tx,
   accounts,
   categories,
   debts = [],
+  fontes = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
   debts?: DebtLite[];
+  fontes?: FonteLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -255,6 +262,7 @@ export function TransactionRow({
         accounts={accounts}
         categories={categories}
         debts={debts}
+        fontes={fontes}
       />
       {tx.kind !== "transfer" ? (
         <SplitsDialog
