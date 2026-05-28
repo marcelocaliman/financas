@@ -138,24 +138,59 @@ export async function createDocumentUpload(args: {
 
   const hash = computeFileHash(args.fileContent);
 
-  // Check dup
+  // Check dup — pula docs discarded (user pode re-upar arquivo descartado)
   const admin = createAdminClient();
   type DupQuery = {
     select: (s: string) => {
       eq: (
         c: string,
         v: unknown,
-      ) => { eq: (c: string, v: unknown) => Promise<{ data: { id: string }[] | null }> };
+      ) => {
+        eq: (
+          c: string,
+          v: unknown,
+        ) => {
+          neq: (
+            c: string,
+            v: unknown,
+          ) => Promise<{
+            data: Array<{
+              id: string;
+              status: string;
+              created_at: string;
+              detected_type: string | null;
+            }> | null;
+          }>;
+        };
+      };
     };
   };
   const { data: existing } = await (
     admin.from as unknown as (t: string) => DupQuery
   )("document_uploads")
-    .select("id")
+    .select("id, status, created_at, detected_type")
     .eq("household_id", args.householdId)
-    .eq("file_hash", hash);
+    .eq("file_hash", hash)
+    .neq("status", "discarded");
   if (existing && existing.length > 0) {
-    return { error: "Esse arquivo já foi enviado antes." };
+    const prev = existing[0];
+    const when = new Date(prev.created_at).toLocaleString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const statusLabel =
+      prev.status === "confirmed"
+        ? "já foi aplicado"
+        : prev.status === "review"
+          ? "está aguardando confirmação"
+          : prev.status === "error"
+            ? "está com erro"
+            : "está em processamento";
+    return {
+      error: `Esse arquivo já foi enviado em ${when} e ${statusLabel}. Acesse /inbox pra ver.`,
+    };
   }
 
   const now = new Date();
