@@ -267,7 +267,7 @@ export async function getChecklistReport(
           : "Recebimentos sem fonte pagadora caem em 'Outros' no IR e não geram IRRF/INSS corretos. Cadastre as empresas em /ir/configuracoes e ligue.",
       link: firstRuleId
         ? { href: `/recorrentes#rule-${firstRuleId}`, label: "Editar recorrência" }
-        : { href: `/transacoes?kind=income`, label: "Revisar transações" },
+        : { href: `/transacoes?kind=income&showHistorical=1`, label: "Revisar transações" },
     });
   }
 
