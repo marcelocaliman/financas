@@ -33,6 +33,7 @@ declare
   v_deductible_amt numeric(14, 2);
   v_app_start date;
   v_is_historical boolean;
+  v_account_type text;
 begin
   select * into v_rule from public.recurring_rules where id = p_rule_id;
   if not found or not v_rule.is_active then
@@ -45,6 +46,12 @@ begin
     from public.households where id = v_rule.household_id;
   -- Fallback defensivo: se household sem app_start_date, assume "tudo passado é histórico"
   v_app_start := coalesce(v_app_start, p_until_date + 1);
+
+  -- Tipo da conta — cartão de crédito é exceção ao marco zero. Cash basis
+  -- já trata cartão corretamente (compras só viram "Saiu" quando a fatura
+  -- é paga), e marcar histórica tira do breakdown por categoria/mês.
+  select type::text into v_account_type
+    from public.accounts where id = v_rule.account_id;
 
   v_end := least(p_until_date, coalesce(v_rule.end_date, p_until_date));
 
@@ -63,8 +70,10 @@ begin
   ));
 
   while v_cursor <= v_end loop
-    -- Auto-classifica como histórica-IR se a data é anterior ao marco zero
-    v_is_historical := v_cursor < v_app_start;
+    -- Auto-classifica como histórica-IR se data < marco zero
+    -- EXCEÇÃO: cartão de crédito nunca vira histórica (cash basis cuida)
+    v_is_historical := v_cursor < v_app_start
+                       and coalesce(v_account_type, '') <> 'credit_card';
 
     if v_rule.kind = 'transfer' then
       perform public.create_transfer(
