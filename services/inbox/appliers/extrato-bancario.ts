@@ -1,62 +1,114 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ExtratoBancario } from "../document-types";
+import { applyDedupCounts, transactionDedupKey } from "../dedup";
 
 /**
- * Aplica extrato bancário extraído: cria N transactions (uma por movimento)
- * na conta indicada.
+ * Aplica extrato bancário extraído. Dedup por contagem como na fatura.
  *
- * Pula movimentos kind='transfer' e kind='fee' por padrão — esses precisam
- * de input humano (qual a conta destino da transferência, qual categoria).
- *
- * Modelo: amount positivo = income, amount negativo = expense.
+ * Pula movimentos kind='transfer' e kind='fee' por default — esses precisam
+ * de input humano (qual conta destino, qual categoria).
  */
 export async function applyExtratoBancario(args: {
   householdId: string;
   userId: string;
   documentId: string;
   data: ExtratoBancario;
-  /** Conta destino dos lançamentos */
   accountId: string;
-  /** Quais kinds aplicar (default: ['income', 'expense', 'interest']) */
   includeKinds?: Array<"income" | "expense" | "transfer" | "fee" | "interest">;
-}): Promise<{ ok: true; createdIds: string[] } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; createdIds: string[]; skippedCount: number }
+  | { ok: false; error: string }
+> {
   const admin = createAdminClient();
-  const allowedKinds = new Set(
-    args.includeKinds ?? ["income", "expense", "interest"],
-  );
-
+  const allowedKinds = new Set(args.includeKinds ?? ["income", "expense", "interest"]);
   const toApply = args.data.movements.filter((m) => allowedKinds.has(m.kind));
 
   if (toApply.length === 0) {
     return { ok: false, error: "Nenhum movimento aplicável (todos foram filtrados)." };
   }
 
-  const rows = toApply.map((m) => {
-    const isIncome = m.kind === "income" || m.kind === "interest" || (m.amount >= 0 && m.kind !== "expense" && m.kind !== "fee");
+  type Row = { payload: Record<string, unknown>; key: string };
+  const rows: Row[] = toApply.map((m) => {
+    const isIncome =
+      m.kind === "income" ||
+      m.kind === "interest" ||
+      (m.amount >= 0 && m.kind !== "expense" && m.kind !== "fee");
     const absAmount = Math.abs(m.amount);
     return {
-      household_id: args.householdId,
-      created_by: args.userId,
-      account_id: args.accountId,
-      kind: isIncome ? "income" : "expense",
-      date: m.date,
-      description: m.description,
-      amount: absAmount,
-      amount_account: absAmount,
-      currency: "BRL",
-      category_source: "openai",
-      exclude_from_ir: false,
-      is_historical_ir_only: false,
-      is_recurring: false,
-      metadata: {
-        source: "openai_inbox",
-        document_id: args.documentId,
-        bank_name: args.data.bank_name,
-        original_kind: m.kind,
+      payload: {
+        household_id: args.householdId,
+        created_by: args.userId,
+        account_id: args.accountId,
+        kind: isIncome ? "income" : "expense",
+        date: m.date,
+        description: m.description,
+        amount: absAmount,
+        amount_account: absAmount,
+        currency: "BRL",
+        category_source: "openai",
+        exclude_from_ir: false,
+        is_historical_ir_only: false,
+        is_recurring: false,
+        metadata: {
+          source: "openai_inbox",
+          document_id: args.documentId,
+          bank_name: args.data.bank_name,
+          original_kind: m.kind,
+        },
       },
+      key: transactionDedupKey({
+        accountId: args.accountId,
+        date: m.date,
+        amount: absAmount,
+        description: m.description,
+      }),
     };
   });
+
+  // Busca existentes
+  const dates = Array.from(new Set(rows.map((r) => r.payload.date as string))).sort();
+  type ExistingBuilder = {
+    select: (s: string) => {
+      eq: (c: string, v: unknown) => {
+        gte: (
+          c: string,
+          v: unknown,
+        ) => {
+          lte: (c: string, v: unknown) => Promise<{
+            data: Array<{ date: string; amount: string | number; description: string }> | null;
+          }>;
+        };
+      };
+    };
+  };
+  const { data: existing } = await (
+    admin.from as unknown as (t: string) => ExistingBuilder
+  )("transactions")
+    .select("date, amount, description")
+    .eq("account_id", args.accountId)
+    .gte("date", dates[0])
+    .lte("date", dates[dates.length - 1]);
+
+  const existingCounts = new Map<string, number>();
+  for (const tx of existing ?? []) {
+    const k = transactionDedupKey({
+      accountId: args.accountId,
+      date: tx.date,
+      amount: Number(tx.amount),
+      description: tx.description,
+    });
+    existingCounts.set(k, (existingCounts.get(k) ?? 0) + 1);
+  }
+
+  const { toInsert, skippedCount } = applyDedupCounts(
+    rows.map((r) => ({ item: r.payload, key: r.key })),
+    existingCounts,
+  );
+
+  if (toInsert.length === 0) {
+    return { ok: true, createdIds: [], skippedCount };
+  }
 
   type Builder = {
     insert: (rows: Record<string, unknown>[]) => {
@@ -69,12 +121,12 @@ export async function applyExtratoBancario(args: {
   const { data: inserted, error } = await (
     admin.from as unknown as (t: string) => Builder
   )("transactions")
-    .insert(rows)
+    .insert(toInsert)
     .select("id");
 
   if (error || !inserted) {
     return { ok: false, error: error?.message ?? "Falha ao inserir transações." };
   }
 
-  return { ok: true, createdIds: inserted.map((r) => r.id) };
+  return { ok: true, createdIds: inserted.map((r) => r.id), skippedCount };
 }

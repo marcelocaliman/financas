@@ -76,11 +76,20 @@ export function InboxReviewPanel({
         toast.error(r.error);
         return;
       }
-      const count = Object.values(r.createdIds ?? {}).reduce(
+      const inserted = Object.values(r.createdIds ?? {}).reduce(
         (s, ids) => s + ids.length,
         0,
       );
-      toast.success(`${count} registro(s) aplicado(s).`);
+      const skipped = r.skippedCount ?? 0;
+      if (inserted === 0 && skipped > 0) {
+        toast.success(
+          `Nada novo: ${skipped} item(s) já existiam no app. Documento marcado como aplicado.`,
+        );
+      } else if (skipped > 0) {
+        toast.success(`${inserted} novo(s) registro(s). ${skipped} já existiam (pulados).`);
+      } else {
+        toast.success(`${inserted} registro(s) aplicado(s).`);
+      }
       router.push("/inbox");
     });
   };

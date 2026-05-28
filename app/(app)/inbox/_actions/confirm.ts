@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUserContext } from "@/services/auth";
-import {
-  getDocumentUpload,
-  markConfirmed,
-  saveReviewedData,
-} from "@/services/inbox/document-uploads";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getDocumentUpload, saveReviewedData } from "@/services/inbox/document-uploads";
 import { applyFaturaCartao } from "@/services/inbox/appliers/fatura-cartao";
 import { applyHolerite } from "@/services/inbox/appliers/holerite";
 import { applyNotaCorretagem } from "@/services/inbox/appliers/nota-corretagem";
@@ -21,151 +18,279 @@ import type {
   ReciboMedico,
   Boleto,
   ExtratoBancario,
+  DocumentType,
 } from "@/services/inbox/document-types";
 
 /**
- * Confirma um documento em review: roda o applier correspondente ao tipo
- * detectado, aplicando os dados nas tabelas reais. Marca status=confirmed
- * e guarda os IDs criados em applied_record_ids.
+ * Confirma um documento em review com proteção CAS (compare-and-swap)
+ * contra double-click e race conditions.
  *
- * Recebe os dados EDITADOS pelo user (reviewedData) — se omitido, usa
- * extracted_data como veio da IA.
+ * Fluxo:
+ *  1. CAS: marca status='extracting' (reusa como "lock") só se status atual
+ *     for 'review' ou 'error'. Se outro request marcou antes, retorna erro.
+ *  2. Roda o applier
+ *  3. Marca status='confirmed' ou volta pra 'review' em caso de falha.
  */
 export type ConfirmDocumentArgs = {
   documentId: string;
-  /** Dados após edição manual (ou null pra usar extracted_data). */
   reviewedData?: ExtractedData["data"] | null;
-  /** Conta destino quando aplicável (fatura, holerite, boleto, extrato). */
   accountId?: string | null;
-  /** Filer dono (holerite, recibo médico). */
   ownerFilerId?: string | null;
-  /** Categoria opcional (boleto). */
   categoryId?: string | null;
 };
 
-export async function confirmDocumentAction(
-  args: ConfirmDocumentArgs,
-): Promise<{ ok?: boolean; error?: string; createdIds?: Record<string, string[]> }> {
+export type ConfirmResult = {
+  ok?: boolean;
+  error?: string;
+  createdIds?: Record<string, string[]>;
+  skippedCount?: number;
+};
+
+/** Tipos de conta esperados por tipo de documento. */
+const EXPECTED_ACCOUNT_TYPES: Record<DocumentType, string[]> = {
+  fatura_cartao: ["credit_card"],
+  holerite: ["checking", "savings"],
+  boleto: ["checking", "savings", "cash"],
+  extrato_bancario: ["checking", "savings", "investment", "cash"],
+  nota_corretagem: ["investment"],
+  recibo_medico: [],
+  outros: [],
+};
+
+/** Helper pra evitar repetir o cast — types do Supabase ainda não conhecem document_uploads. */
+type UpdateBuilder = {
+  update: (row: Record<string, unknown>) => {
+    eq: (c: string, v: string) => Promise<{ error: unknown }>;
+  };
+};
+function updateUploadRow(admin: ReturnType<typeof createAdminClient>) {
+  return (admin.from as unknown as (t: string) => UpdateBuilder)("document_uploads");
+}
+
+export async function confirmDocumentAction(args: ConfirmDocumentArgs): Promise<ConfirmResult> {
   const ctx = await getCurrentUserContext();
   if (!ctx) return { error: "Sessão expirada." };
 
-  const doc = await getDocumentUpload(args.documentId);
-  if (!doc) return { error: "Documento não encontrado." };
+  const admin = createAdminClient();
+
+  // CAS lock
+  type CASBuilder = {
+    update: (row: Record<string, unknown>) => {
+      eq: (c: string, v: unknown) => {
+        in: (
+          c: string,
+          v: string[],
+        ) => {
+          select: (s: string) => Promise<{
+            data: Array<{
+              id: string;
+              detected_type: DocumentType | null;
+              extracted_data: ExtractedData["data"] | null;
+              household_id: string;
+            }> | null;
+          }>;
+        };
+      };
+    };
+  };
+  const { data: locked } = await (
+    admin.from as unknown as (t: string) => CASBuilder
+  )("document_uploads")
+    .update({ status: "extracting" })
+    .eq("id", args.documentId)
+    .in("status", ["review", "error"])
+    .select("id, detected_type, extracted_data, household_id");
+
+  if (!locked || locked.length === 0) {
+    const current = await getDocumentUpload(args.documentId);
+    return {
+      error: current
+        ? `Documento já está em estado '${current.status}'. Atualize a página.`
+        : "Documento não encontrado.",
+    };
+  }
+  const doc = locked[0];
   if (doc.household_id !== ctx.household.id) {
+    await updateUploadRow(admin)
+      .update({ status: "review" })
+      .eq("id", args.documentId);
     return { error: "Acesso negado." };
   }
-  if (doc.status !== "review" && doc.status !== "error") {
-    return { error: `Documento já está com status '${doc.status}'.` };
-  }
   if (!doc.detected_type || !doc.extracted_data) {
+    await updateUploadRow(admin)
+      .update({ status: "error", error_message: "Documento sem dados extraídos." })
+      .eq("id", args.documentId);
     return { error: "Documento sem dados extraídos. Tente re-extrair antes." };
   }
 
-  const data = args.reviewedData ?? doc.extracted_data;
+  // Validação: tipo de conta compatível
+  const expectedTypes = EXPECTED_ACCOUNT_TYPES[doc.detected_type];
+  if (args.accountId && expectedTypes.length > 0) {
+    type AccTypeBuilder = {
+      select: (s: string) => {
+        eq: (c: string, v: string) => {
+          maybeSingle: () => Promise<{ data: { type: string } | null }>;
+        };
+      };
+    };
+    const { data: acc } = await (
+      admin.from as unknown as (t: string) => AccTypeBuilder
+    )("accounts")
+      .select("type")
+      .eq("id", args.accountId)
+      .maybeSingle();
+    if (acc && !expectedTypes.includes(acc.type)) {
+      await updateUploadRow(admin)
+        .update({ status: "review" })
+        .eq("id", args.documentId);
+      return {
+        error: `Tipo de conta incompatível: documento '${doc.detected_type}' espera ${expectedTypes.join("/")}, mas conta selecionada é '${acc.type}'.`,
+      };
+    }
+  }
 
-  // Persistir edição manual antes de aplicar (rastreabilidade)
+  const data = args.reviewedData ?? doc.extracted_data;
   if (args.reviewedData) {
     await saveReviewedData(args.documentId, args.reviewedData);
   }
 
   let result:
-    | { ok: true; createdIds: Record<string, string[]> }
+    | { ok: true; createdIds: Record<string, string[]>; skippedCount: number }
     | { ok: false; error: string };
 
-  switch (doc.detected_type) {
-    case "fatura_cartao": {
-      if (!args.accountId) return { error: "Escolha a conta do cartão." };
-      const r = await applyFaturaCartao({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as FaturaCartao,
-        accountId: args.accountId,
-      });
-      result = r.ok ? { ok: true, createdIds: { transactions: r.createdIds } } : r;
-      break;
+  try {
+    switch (doc.detected_type) {
+      case "fatura_cartao": {
+        if (!args.accountId) throw new Error("Escolha a conta do cartão.");
+        const r = await applyFaturaCartao({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as FaturaCartao,
+          accountId: args.accountId,
+        });
+        result = r.ok
+          ? { ok: true, createdIds: { transactions: r.createdIds }, skippedCount: r.skippedCount }
+          : r;
+        break;
+      }
+      case "holerite": {
+        if (!args.accountId) throw new Error("Escolha a conta onde o salário cai.");
+        if (!args.ownerFilerId) throw new Error("Escolha o filer dono do salário.");
+        const r = await applyHolerite({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as Holerite,
+          accountId: args.accountId,
+          ownerFilerId: args.ownerFilerId,
+        });
+        result = r.ok
+          ? { ok: true, createdIds: r.createdIds, skippedCount: r.skipped ? 1 : 0 }
+          : r;
+        break;
+      }
+      case "nota_corretagem": {
+        const r = await applyNotaCorretagem({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as NotaCorretagem,
+          accountId: args.accountId ?? null,
+        });
+        result = r.ok
+          ? { ok: true, createdIds: r.createdIds, skippedCount: r.skippedCount }
+          : r;
+        break;
+      }
+      case "recibo_medico": {
+        if (!args.ownerFilerId) throw new Error("Escolha o filer dono do gasto.");
+        const r = await applyReciboMedico({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as ReciboMedico,
+          ownerFilerId: args.ownerFilerId,
+        });
+        result = r.ok
+          ? {
+              ok: true,
+              createdIds: { ir_deductible_payments: r.createdIds },
+              skippedCount: r.skipped ? 1 : 0,
+            }
+          : r;
+        break;
+      }
+      case "boleto": {
+        if (!args.accountId) throw new Error("Escolha a conta que vai pagar o boleto.");
+        const r = await applyBoleto({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as Boleto,
+          accountId: args.accountId,
+          categoryId: args.categoryId,
+        });
+        result = r.ok
+          ? {
+              ok: true,
+              createdIds: { transactions: r.createdIds },
+              skippedCount: r.skipped ? 1 : 0,
+            }
+          : r;
+        break;
+      }
+      case "extrato_bancario": {
+        if (!args.accountId) throw new Error("Escolha a conta destino dos lançamentos.");
+        const r = await applyExtratoBancario({
+          householdId: ctx.household.id,
+          userId: ctx.authId,
+          documentId: args.documentId,
+          data: data as ExtratoBancario,
+          accountId: args.accountId,
+        });
+        result = r.ok
+          ? { ok: true, createdIds: { transactions: r.createdIds }, skippedCount: r.skippedCount }
+          : r;
+        break;
+      }
+      case "outros":
+        throw new Error("Tipo 'outros' não tem aplicador. Re-extraia ou descarte.");
+      default:
+        throw new Error(`Tipo não suportado: ${doc.detected_type}`);
     }
-    case "holerite": {
-      if (!args.accountId) return { error: "Escolha a conta onde o salário cai." };
-      if (!args.ownerFilerId) return { error: "Escolha o filer dono do salário." };
-      const r = await applyHolerite({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as Holerite,
-        accountId: args.accountId,
-        ownerFilerId: args.ownerFilerId,
-      });
-      result = r.ok ? { ok: true, createdIds: r.createdIds } : r;
-      break;
-    }
-    case "nota_corretagem": {
-      const r = await applyNotaCorretagem({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as NotaCorretagem,
-        accountId: args.accountId ?? null,
-      });
-      result = r.ok ? { ok: true, createdIds: r.createdIds } : r;
-      break;
-    }
-    case "recibo_medico": {
-      if (!args.ownerFilerId) return { error: "Escolha o filer dono do gasto." };
-      const r = await applyReciboMedico({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as ReciboMedico,
-        ownerFilerId: args.ownerFilerId,
-      });
-      result = r.ok
-        ? { ok: true, createdIds: { ir_deductible_payments: r.createdIds } }
-        : r;
-      break;
-    }
-    case "boleto": {
-      if (!args.accountId) return { error: "Escolha a conta que vai pagar o boleto." };
-      const r = await applyBoleto({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as Boleto,
-        accountId: args.accountId,
-        categoryId: args.categoryId,
-      });
-      result = r.ok ? { ok: true, createdIds: { transactions: r.createdIds } } : r;
-      break;
-    }
-    case "extrato_bancario": {
-      if (!args.accountId) return { error: "Escolha a conta destino dos lançamentos." };
-      const r = await applyExtratoBancario({
-        householdId: ctx.household.id,
-        userId: ctx.authId,
-        documentId: args.documentId,
-        data: data as ExtratoBancario,
-        accountId: args.accountId,
-      });
-      result = r.ok ? { ok: true, createdIds: { transactions: r.createdIds } } : r;
-      break;
-    }
-    case "outros": {
-      return { error: "Tipo 'outros' não tem aplicador automático. Reextraia como outro tipo ou descarte." };
-    }
-    default:
-      return { error: `Tipo não suportado: ${doc.detected_type}` };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    await updateUploadRow(admin)
+      .update({ status: "review", error_message: msg })
+      .eq("id", args.documentId);
+    return { error: msg };
   }
 
-  if (!result.ok) return { error: result.error };
+  if (!result.ok) {
+    await updateUploadRow(admin)
+      .update({ status: "review", error_message: result.error })
+      .eq("id", args.documentId);
+    return { error: result.error };
+  }
 
-  await markConfirmed(args.documentId, result.createdIds);
+  await updateUploadRow(admin)
+    .update({
+      status: "confirmed",
+      confirmed_at: new Date().toISOString(),
+      applied_record_ids: result.createdIds as Record<string, unknown>,
+    })
+    .eq("id", args.documentId);
 
-  // Revalidação ampla — qualquer página que mostre dados afetados precisa atualizar
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/transacoes");
   revalidatePath("/ir");
   revalidatePath("/investimentos");
 
-  return { ok: true, createdIds: result.createdIds };
+  return {
+    ok: true,
+    createdIds: result.createdIds,
+    skippedCount: result.skippedCount,
+  };
 }

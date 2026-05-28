@@ -1,25 +1,60 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Boleto } from "../document-types";
+import { transactionDedupKey } from "../dedup";
 
 /**
- * Aplica boleto extraído: cria 1 transaction expense agendada pra data
- * de vencimento. Pra qualquer conta de origem (user escolhe na confirmação).
- *
- * Modelo do app: transações futuras existem como "agendadas" e o cron
- * advance-balances aplica o delta quando a data chega.
+ * Aplica boleto extraído. Dedup por chave de transação.
  */
 export async function applyBoleto(args: {
   householdId: string;
   userId: string;
   documentId: string;
   data: Boleto;
-  /** Conta corrente que vai pagar o boleto */
   accountId: string;
-  /** Categoria opcional (user pode definir, default null) */
   categoryId?: string | null;
-}): Promise<{ ok: true; createdIds: string[] } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; createdIds: string[]; skipped: boolean }
+  | { ok: false; error: string }
+> {
   const admin = createAdminClient();
+  const description = `${args.data.payee_name} · ${args.data.description}`;
+  const key = transactionDedupKey({
+    accountId: args.accountId,
+    date: args.data.due_date,
+    amount: args.data.amount,
+    description,
+  });
+
+  // Dedup
+  type ExistingBuilder = {
+    select: (s: string) => {
+      eq: (c: string, v: unknown) => {
+        eq: (c: string, v: unknown) => {
+          eq: (c: string, v: unknown) => Promise<{ data: { id: string; description: string }[] | null }>;
+        };
+      };
+    };
+  };
+  const { data: existing } = await (
+    admin.from as unknown as (t: string) => ExistingBuilder
+  )("transactions")
+    .select("id, description")
+    .eq("account_id", args.accountId)
+    .eq("date", args.data.due_date)
+    .eq("amount", args.data.amount);
+  const hit = (existing ?? []).find(
+    (tx) =>
+      transactionDedupKey({
+        accountId: args.accountId,
+        date: args.data.due_date,
+        amount: args.data.amount,
+        description: tx.description,
+      }) === key,
+  );
+  if (hit) {
+    return { ok: true, createdIds: [], skipped: true };
+  }
 
   type Builder = {
     insert: (rows: Record<string, unknown>[]) => {
@@ -40,7 +75,7 @@ export async function applyBoleto(args: {
         account_id: args.accountId,
         kind: "expense",
         date: args.data.due_date,
-        description: `${args.data.payee_name} · ${args.data.description}`,
+        description,
         amount: args.data.amount,
         amount_account: args.data.amount,
         currency: "BRL",
@@ -64,5 +99,5 @@ export async function applyBoleto(args: {
     return { ok: false, error: error?.message ?? "Falha ao criar transação." };
   }
 
-  return { ok: true, createdIds: inserted.map((r) => r.id) };
+  return { ok: true, createdIds: inserted.map((r) => r.id), skipped: false };
 }

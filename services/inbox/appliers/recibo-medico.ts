@@ -3,24 +3,22 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { ReciboMedico } from "../document-types";
 
 /**
- * Aplica recibo médico extraído: cria entrada em ir_deductible_payments
- * pra entrar como dedução de despesa médica no IR.
- *
- * O kind do schema mapeia direto pro kind do ir_deductible_payments
- * (medico, dentista, psicologo, hospital, plano_saude, outros_saude).
+ * Aplica recibo médico extraído. Dedup por (year, kind, amount cents,
+ * provider_cnpj, payment_date, owner_filer).
  */
 export async function applyReciboMedico(args: {
   householdId: string;
   userId: string;
   documentId: string;
   data: ReciboMedico;
-  /** Filer dono do gasto (pra split de IR conjugal) */
   ownerFilerId: string;
-}): Promise<{ ok: true; createdIds: string[] } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; createdIds: string[]; skipped: boolean }
+  | { ok: false; error: string }
+> {
   const admin = createAdminClient();
   const year = Number(args.data.payment_date.slice(0, 4));
 
-  // Mapeamento dos kinds do schema OpenAI pros enums do banco
   const kindMap: Record<ReciboMedico["kind"], string> = {
     medico: "medico",
     dentista: "dentista",
@@ -31,6 +29,34 @@ export async function applyReciboMedico(args: {
     exames: "outros_saude",
     outros_saude: "outros_saude",
   };
+  const kind = kindMap[args.data.kind];
+
+  // Dedup: mesmo provider + valor + data + tipo + filer
+  type DedupBuilder = {
+    select: (s: string) => {
+      eq: (c: string, v: unknown) => {
+        eq: (c: string, v: unknown) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              eq: (c: string, v: unknown) => Promise<{ data: { id: string }[] | null }>;
+            };
+          };
+        };
+      };
+    };
+  };
+  const { data: existing } = await (
+    admin.from as unknown as (t: string) => DedupBuilder
+  )("ir_deductible_payments")
+    .select("id")
+    .eq("household_id", args.householdId)
+    .eq("year", year)
+    .eq("kind", kind)
+    .eq("amount", args.data.amount)
+    .eq("owner_filer_id", args.ownerFilerId);
+  if (existing && existing.length > 0) {
+    return { ok: true, createdIds: [], skipped: true };
+  }
 
   type Builder = {
     insert: (rows: Record<string, unknown>[]) => {
@@ -48,7 +74,7 @@ export async function applyReciboMedico(args: {
       {
         household_id: args.householdId,
         year,
-        kind: kindMap[args.data.kind],
+        kind,
         amount: args.data.amount,
         currency: "BRL",
         description: args.data.description,
@@ -65,5 +91,5 @@ export async function applyReciboMedico(args: {
     return { ok: false, error: error?.message ?? "Falha ao criar dedução IR." };
   }
 
-  return { ok: true, createdIds: inserted.map((r) => r.id) };
+  return { ok: true, createdIds: inserted.map((r) => r.id), skipped: false };
 }

@@ -80,7 +80,44 @@ export async function listDocumentUploads(opts?: {
   const { data } = await q
     .order("created_at", { ascending: false })
     .limit(opts?.limit ?? 50);
+
+  // Watchdog: marca como erro qualquer doc preso em 'extracting' por >5 min.
+  // Best-effort, dispara fire-and-forget pra não atrasar o render.
+  await unstickStuckExtractions(data ?? []);
   return data ?? [];
+}
+
+/**
+ * Marca como 'error' qualquer doc em 'extracting' há mais de 5 minutos.
+ * Pega casos de crash mid-extract ou execution timeout.
+ */
+async function unstickStuckExtractions(rows: DocumentUploadRow[]): Promise<void> {
+  const STUCK_THRESHOLD_MS = 5 * 60 * 1000;
+  const now = Date.now();
+  const stuck = rows.filter(
+    (r) =>
+      r.status === "extracting" &&
+      now - new Date(r.updated_at).getTime() > STUCK_THRESHOLD_MS,
+  );
+  if (stuck.length === 0) return;
+  const admin = createAdminClient();
+  for (const r of stuck) {
+    await (admin.from as unknown as (t: string) => {
+      update: (row: Record<string, unknown>) => {
+        eq: (c: string, v: string) => Promise<{ error: unknown }>;
+      };
+    })("document_uploads")
+      .update({
+        status: "error",
+        error_message:
+          "Extração ficou presa por mais de 5 minutos. Tente re-extrair ou descartar.",
+      })
+      .eq("id", r.id);
+    // Mutate em memória pra UI já refletir
+    r.status = "error";
+    r.error_message =
+      "Extração ficou presa por mais de 5 minutos. Tente re-extrair ou descartar.";
+  }
 }
 
 export async function getDocumentUpload(id: string): Promise<DocumentUploadRow | null> {

@@ -3,32 +3,64 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { Holerite } from "../document-types";
 
 /**
- * Aplica um holerite extraído:
- *   1. Cria 1 transaction de receita (salário líquido) na conta destino
- *   2. Atualiza/cria entrada em ir_other_incomes (rendimento tributável)
- *      com gross_salary, IRRF retido, INSS retido
+ * Aplica holerite extraído.
  *
- * Marca metadata.source='openai_inbox' pra rastreabilidade.
+ * Dedup: por (year, competence_month, payer_cnpj, owner_filer_id, is_thirteenth).
+ * Se já existe transação OU lançamento IR pra esse mês+empresa+filer, pula.
  */
 export async function applyHolerite(args: {
   householdId: string;
   userId: string;
   documentId: string;
   data: Holerite;
-  /** Conta corrente onde o salário cai */
   accountId: string;
-  /** Filer dono do salário (Marcelo ou Aline) */
   ownerFilerId: string;
 }): Promise<
-  | { ok: true; createdIds: { transactions: string[]; ir_other_incomes: string[] } }
+  | {
+      ok: true;
+      createdIds: { transactions: string[]; ir_other_incomes: string[] };
+      skipped: boolean;
+    }
   | { ok: false; error: string }
 > {
   const admin = createAdminClient();
-
-  // 1. Transaction de receita (salário líquido)
-  const competence = args.data.competence_month + "-01";
+  const year = Number(args.data.competence_month.slice(0, 4));
+  const competence = `${args.data.competence_month}-01`;
   const txDate = args.data.payment_date ?? `${args.data.competence_month}-05`;
 
+  // Dedup: checa se já existe ir_other_income com mesmas chaves
+  type ExistingBuilder = {
+    select: (s: string) => {
+      eq: (c: string, v: unknown) => {
+        eq: (c: string, v: unknown) => {
+          eq: (c: string, v: unknown) => {
+            like: (c: string, p: string) => Promise<{ data: { id: string }[] | null }>;
+          };
+        };
+      };
+    };
+  };
+  const { data: existing } = await (
+    admin.from as unknown as (t: string) => ExistingBuilder
+  )("ir_other_incomes")
+    .select("id")
+    .eq("household_id", args.householdId)
+    .eq("year", year)
+    .eq("owner_filer_id", args.ownerFilerId)
+    .like(
+      "description",
+      `%${args.data.employee_name}%competência ${args.data.competence_month}%${args.data.is_thirteenth ? "13º" : ""}%`,
+    );
+
+  if (existing && existing.length > 0) {
+    return {
+      ok: true,
+      createdIds: { transactions: [], ir_other_incomes: [] },
+      skipped: true,
+    };
+  }
+
+  // 1. Transaction de receita (salário líquido)
   type TxBuilder = {
     insert: (rows: Record<string, unknown>[]) => {
       select: (s: string) => Promise<{
@@ -75,7 +107,6 @@ export async function applyHolerite(args: {
   }
 
   // 2. Entrada em ir_other_incomes
-  const year = Number(args.data.competence_month.slice(0, 4));
   type IrBuilder = {
     insert: (rows: Record<string, unknown>[]) => {
       select: (s: string) => Promise<{
@@ -114,5 +145,6 @@ export async function applyHolerite(args: {
       transactions: txInserted.map((r) => r.id),
       ir_other_incomes: irInserted?.map((r) => r.id) ?? [],
     },
+    skipped: false,
   };
 }

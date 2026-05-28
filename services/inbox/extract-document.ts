@@ -54,12 +54,41 @@ Retorne APENAS o JSON, sem markdown ou explicação.`;
 
 const EXTRACT_SYSTEM_PROMPT = `Você é um extrator de dados de documentos financeiros brasileiros.
 
-REGRAS:
-- Datas SEMPRE no formato YYYY-MM-DD (ex: 2026-05-28). Converta dd/mm/aaaa se necessário.
-- Valores monetários: número positivo em reais (sem R$, sem milhar, ponto decimal).
-- Para fatura de cartão: cada compra é uma linha. Pagamentos da fatura anterior (com valor negativo) marque is_payment=true. Detecte parcelas no formato "3/6" ou "3 de 6".
-- Se um campo opcional não estiver claramente visível, retorne null.
-- Não invente dados. Se não tiver certeza, prefira null.
+REGRAS CRÍTICAS DE FORMATAÇÃO:
+- Datas SEMPRE no formato YYYY-MM-DD (ex: 2026-05-28). Converta de dd/mm/aaaa.
+  Se o documento mostrar só dd/mm sem ano, assume o ano do contexto.
+- Valores monetários: número JSON puro em reais, com ponto decimal.
+  EXEMPLO: "R$ 1.234,56" → 1234.56 (sem R$, sem ponto de milhar, ponto como decimal).
+  "R$ -16.416,79" → -16416.79.
+- Se ver "USD", "US$", "EUR", "€" no documento, MENTA assim mesmo nos valores
+  (não converta) — mas avise no resumo se for tipo "outros".
+
+REGRAS POR TIPO:
+- Fatura de cartão:
+  · Cada compra é uma linha em items[].
+  · Pagamento da fatura anterior (valor negativo, descrição tipo "Pagamento de fatura"
+    ou "Crédito") → marque is_payment=true.
+  · Estorno/devolução (valor negativo mas é compra cancelada) → amount fica
+    negativo, is_payment=FALSE.
+  · Parcelas: "3/6", "3 de 6", "PARC 3/6" → installment_current=3, installment_total=6.
+  · Portador: leia o nome do portador do cartão se aparecer (pode estar em coluna
+    separada ou na linha do estabelecimento).
+
+- Holerite:
+  · gross_salary = total de proventos (salário base + bônus + comissão + horas extras).
+  · net_salary = total líquido depositado.
+  · is_thirteenth = true SÓ se é folha de 13º (procure "13º", "decimo terceiro",
+    "PARCELA 13"). Folha normal mensal = false.
+
+- Nota corretagem:
+  · operations[] = uma entrada por operação executada (não por trade).
+  · side: "buy" pra compra (C), "sell" pra venda (V).
+  · quantity em cotas, unit_price em R$ por cota.
+  · ir_withheld só se mostrar IRRF retido explicitamente.
+
+REGRAS GERAIS:
+- Se um campo opcional não estiver visível, retorne null. NÃO invente.
+- Se está em dúvida entre dois valores, prefira null e siga em frente.
 - Retorne APENAS o JSON correspondente ao schema, sem markdown ou comentários.`;
 
 /**
@@ -111,49 +140,70 @@ export async function extractDocument(args: {
 
   // ─── 3. Extrai dados conforme o schema do tipo ──────────────────────────
   const schema = DOCUMENT_SCHEMAS[detectedType];
-  const extractPrompt = `Tipo identificado: ${DOCUMENT_TYPE_LABELS[detectedType]}.
 
-Extraia os dados estruturados deste documento conforme o schema. Lembre: datas YYYY-MM-DD, valores numéricos positivos.`;
-
+  // Auto-retry: até 2 tentativas. Se a 1ª der JSON malformado ou falhar Zod,
+  // refazemos com um "feedback" pedindo correção. Geralmente acerta na 2ª.
   let extractResp;
-  try {
-    extractResp = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: EXTRACT_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: extractPrompt },
-            ...input.contentParts,
-          ],
-        },
-      ],
-      response_format: zodResponseFormat(schema, detectedType),
-      max_tokens: 4_000,
-    });
-  } catch (e) {
-    return {
-      error: "Falha ao extrair dados na OpenAI.",
-      detail: e instanceof Error ? e.message : String(e),
-    };
-  }
-
-  const extractContent = extractResp.choices[0]?.message?.content ?? "{}";
+  let extractContent = "";
   let extractedRaw: unknown;
-  try {
-    extractedRaw = JSON.parse(extractContent);
-  } catch {
-    return { error: "OpenAI retornou JSON malformado." };
+  let validated: ReturnType<typeof schema.safeParse> | null = null;
+  let lastError = "";
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const isRetry = attempt === 2;
+    const extractPrompt = isRetry
+      ? `Tipo: ${DOCUMENT_TYPE_LABELS[detectedType]}.
+
+A tentativa anterior FALHOU: ${lastError}
+
+Reextraia conforme o schema. Datas YYYY-MM-DD. Números puros (sem R$, sem milhar).
+Retorne SOMENTE o JSON, nada mais.`
+      : `Tipo identificado: ${DOCUMENT_TYPE_LABELS[detectedType]}.
+
+Extraia os dados estruturados deste documento conforme o schema.`;
+
+    try {
+      extractResp = await openai.chat.completions.create({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: "system", content: EXTRACT_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: [{ type: "text", text: extractPrompt }, ...input.contentParts],
+          },
+        ],
+        response_format: zodResponseFormat(schema, detectedType),
+        max_tokens: 8_000,
+      });
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      if (attempt === 2) {
+        return { error: "Falha ao extrair dados na OpenAI.", detail: lastError };
+      }
+      continue;
+    }
+
+    extractContent = extractResp.choices[0]?.message?.content ?? "{}";
+    try {
+      extractedRaw = JSON.parse(extractContent);
+    } catch {
+      lastError = "JSON malformado";
+      if (attempt === 2) return { error: "OpenAI retornou JSON malformado após retry." };
+      continue;
+    }
+
+    validated = schema.safeParse(extractedRaw);
+    if (validated.success) break;
+    lastError = validated.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    if (attempt === 2) {
+      return { error: "Extração não passou na validação após retry.", detail: lastError };
+    }
   }
 
-  // ─── 4. Valida com Zod ─────────────────────────────────────────────────
-  const validated = schema.safeParse(extractedRaw);
-  if (!validated.success) {
-    return {
-      error: "Extração não passou na validação do schema.",
-      detail: validated.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
-    };
+  if (!validated || !validated.success || !extractResp) {
+    return { error: "Falha desconhecida na extração." };
   }
 
   // ─── 5. Métricas ────────────────────────────────────────────────────────
