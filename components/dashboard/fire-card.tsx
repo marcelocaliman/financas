@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils/cn";
  * construindo patrimônio rumo à IF.
  *
  * Mostra:
- *  - Renda passiva mensal estimada (live yield × 21 dias úteis)
+ *  - Renda passiva mensal média (vem de investment_yields cadastrados)
  *  - Despesa fixa média (últimos 3 meses)
  *  - % de cobertura
  *  - ETA: quantos meses pra atingir 100% de cobertura no ritmo atual

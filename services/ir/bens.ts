@@ -708,8 +708,9 @@ export async function getBensReport(
           : convertOrSame(Number(p.acquired_value ?? 0), currency, "BRL", rates)
         ) * pct
       )) / 100,
-      // Sem como projetar — valor atual é provisório se 31/12 futuro
-      valuationKind: endOfYear > todayIso ? "provisional" : "provisional",
+      // Bens físicos: provisional enquanto 31/12 está no futuro, final quando
+      // o ano já passou (current_value cadastrado representa o saldo final).
+      valuationKind: endOfYear > todayIso ? "provisional" : "final",
       fxNote: currency !== "BRL"
         ? `Convertido ${currency}→BRL pela cotação BCB de 31/12/${year}`
         : undefined,

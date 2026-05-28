@@ -11,9 +11,11 @@ import type { Database } from "@/types/database";
  * Autenticação: requer header `Authorization: Bearer <CRON_SECRET>` ou
  * o header `x-vercel-cron` (Vercel auto-injetado em cron jobs).
  *
- * Séries do BCB SGS — formato consumível pelo live-yield:
+ * Séries do BCB SGS — usadas como benchmarks de comparação na UI
+ * (Selic atual, CDI, IPCA). Já NÃO alimentam compound diário automático
+ * (esse sistema foi removido).
  *   selic e cdi: % ao ano
- *   ipca: % ao mês (anualizado no cálculo)
+ *   ipca: % ao mês
  *
  *   432  → Meta Selic Copom (% a.a.)
  *   4389 → CDI anualizado base 252 (% a.a.)

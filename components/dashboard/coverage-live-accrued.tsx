@@ -5,9 +5,9 @@ import { Money } from "@/components/ui/money";
 /**
  * "Rendimento acumulado" da carteira de renda fixa — número estático.
  *
- * Selic/Tesouro rendem em incrementos DIÁRIOS quando o cron roda às 06h BRT
- * (não por segundo). O valor exibido vem do server, com today's fraction
- * já incluída no derivedBalance. Refresh da página re-busca.
+ * Props mantidas pra compat de chamadores, mas dailyYield/isBusinessDayToday
+ * agora chegam 0/true (compound diário automático foi removido). Acumulado
+ * vem direto do que o usuário atualizou em current_balance.
  */
 export function CoverageLiveAccrued({
   accumulatedUntilToday,

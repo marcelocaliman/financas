@@ -18,14 +18,15 @@ import type { Currency, Tables } from "@/types/database";
  *   - Mesma fonte = mesmos números em todas as páginas (impossível divergir)
  *   - Cache por request (React `cache()`) — chamadas múltiplas no mesmo
  *     render reusam o resultado
- *   - Live: investimentos vêm de getLivePortfolio (brapi + Selic compound)
- *   - Projeção 31/12: usa indexadores atuais do BCB
+ *   - Valor atual de ativos vem de getCurrentValueMap (services/quotes.ts):
+ *     ações/FIIs/ETFs via brapi (quote × qty), RF/cripto via current_balance
+ *     manual cadastrado pelo usuário.
  *   - Aplicado: initial_amount / acquired_value
  *
  * Cada item tem 4 valores monetários nucleares:
  *   - applied: capital posto (custo de aquisição)
- *   - today: estado real agora (live)
- *   - projected: projeção 31/12/year (compound RF, valor atual outros)
+ *   - today: estado real agora (current_balance ou quote × qty)
+ *   - projected: = today (sem compound automático — usuário atualiza manual)
  *   - previousYearEnd: 31/12/(year-1) — só se houver entry manual/snapshot
  */
 

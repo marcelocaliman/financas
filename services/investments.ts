@@ -119,7 +119,6 @@ export type PortfolioStats = {
   invested: number;
   monthlyAverage: number;
   dyAnnualized: number;
-  liveAsset: Investment | null;
   displayCurrency: Currency;
 };
 
@@ -168,7 +167,6 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
     invested: Math.round(invested * 100) / 100,
     monthlyAverage: Math.round(monthlyAverage * 100) / 100,
     dyAnnualized,
-    liveAsset: null,
     displayCurrency,
   };
 }
