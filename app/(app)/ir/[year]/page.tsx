@@ -125,7 +125,10 @@ export default async function IRYearPage({
   const numDependents = (deps ?? []).length;
   const numDeductibles = (pays ?? []).length;
 
-  const totalAtivos = bens.totals.current;
+  // Sempre usa o valor de HOJE no header — a "Situação em 31/12" da declaração
+  // converge naturalmente pro `today` à medida que o ano avança. Pra ano fechado,
+  // o `today` é o valor congelado de 31/12 (snapshot do close-year).
+  const totalAtivos = bens.totals.today;
   const totalRendimentos =
     rendimentos.tributaveis.total + rendimentos.isentos.total + rendimentos.exclusivos.total;
 

@@ -146,14 +146,8 @@ export function BensTable({ report }: { report: BensReport }) {
                 <tr className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground">
                   <th className="text-left pb-2 font-medium">Classe</th>
                   <th className="text-right pb-2 font-medium pl-4">Aplicado</th>
-                  <th className="text-right pb-2 font-medium pl-4">Atual · hoje</th>
+                  <th className="text-right pb-2 font-medium pl-4">{inProgress ? "Atual · hoje" : `31/12/${report.year}`}</th>
                   <th className="text-right pb-2 font-medium pl-4">Variação</th>
-                  {inProgress ? (
-                    <>
-                      <th className="text-right pb-2 font-medium pl-4">Projeção 31/12</th>
-                      <th className="text-right pb-2 font-medium pl-4">Ganho até 31/12</th>
-                    </>
-                  ) : null}
                 </tr>
               </thead>
               <tbody>
@@ -191,22 +185,6 @@ export function BensTable({ report }: { report: BensReport }) {
                           </div>
                         )}
                       </td>
-                      {inProgress ? (
-                        <>
-                          <td className="py-2 pl-4 font-mono text-right tabular-nums text-muted-foreground">
-                            R$ {fmtBRL(c.projected)}
-                          </td>
-                          <td className="py-2 pl-4 font-mono text-right tabular-nums">
-                            {c.yieldProjected > 0.005 ? (
-                              <span className="text-olive-700 dark:text-olive-500">
-                                +R$ {fmtBRL(c.yieldProjected)}
-                              </span>
-                            ) : (
-                              <span className="text-faint-foreground italic">—</span>
-                            )}
-                          </td>
-                        </>
-                      ) : null}
                     </tr>
                   );
                 })}
@@ -241,34 +219,18 @@ export function BensTable({ report }: { report: BensReport }) {
                           </span>
                         </div>
                       </td>
-                      {inProgress ? (
-                        <>
-                          <td className="pt-3 pl-4 font-mono text-right tabular-nums text-foreground text-[15px]">
-                            R$ {fmtBRL(report.totals.current)}
-                          </td>
-                          <td className="pt-3 pl-4 font-mono text-right tabular-nums text-olive-700 dark:text-olive-500 text-[15px]">
-                            {report.totals.yieldProjected > 0.005 ? (
-                              <>+R$ {fmtBRL(report.totals.yieldProjected)}</>
-                            ) : (
-                              <span className="text-faint-foreground italic text-[12.5px]">—</span>
-                            )}
-                          </td>
-                        </>
-                      ) : null}
                     </tr>
                   );
                 })()}
               </tbody>
             </table>
-            {inProgress ? (
-              <p className="font-mono text-[10.5px] text-faint-foreground mt-3 leading-relaxed">
-                <b className="not-italic text-muted-foreground">Aplicado</b>: custo de
-                aquisição. <b className="not-italic text-muted-foreground">Atual · hoje</b>:
-                valor de mercado agora. <b className="not-italic text-muted-foreground">Variação</b>:
-                lucro/prejuízo acumulado (atual − aplicado). <b className="not-italic text-muted-foreground">Projeção 31/12</b>:
-                renda fixa composta pela Selic/CDI/IPCA atual; demais classes mantêm valor atual.
-              </p>
-            ) : null}
+            <p className="font-mono text-[10.5px] text-faint-foreground mt-3 leading-relaxed">
+              <b className="not-italic text-muted-foreground">Aplicado</b>: custo de
+              aquisição. <b className="not-italic text-muted-foreground">{inProgress ? "Atual · hoje" : `31/12/${report.year}`}</b>:
+              {inProgress ? " valor de mercado agora — vai virar o saldo de 31/12 quando o ano fechar." : " valor congelado da declaração."} {" "}
+              <b className="not-italic text-muted-foreground">Variação</b>:
+              lucro/prejuízo acumulado (atual − aplicado).
+            </p>
           </div>
         ) : null}
 
