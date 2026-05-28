@@ -110,6 +110,14 @@ function validateKindTargets(d: {
   return null;
 }
 
+function validateDateRange(startDate: string, endDate: string | null | undefined): string | null {
+  if (!endDate) return null;
+  if (endDate < startDate) {
+    return `A data de fim (${endDate}) é anterior à data de início (${startDate}). Ajuste o início pra uma data mais antiga ou mude o fim.`;
+  }
+  return null;
+}
+
 export async function createRecurringRule(
   _prev: RecurrenceFormState | undefined,
   formData: FormData,
@@ -124,6 +132,9 @@ export async function createRecurringRule(
     toAccountId: parsed.data.toAccountId ?? null,
   });
   if (err) return { error: err };
+
+  const dateErr = validateDateRange(parsed.data.startDate, parsed.data.endDate);
+  if (dateErr) return { error: dateErr };
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return { error: "Sessão expirada." };
@@ -184,6 +195,9 @@ export async function updateRecurringRule(
     toAccountId: parsed.data.toAccountId ?? null,
   });
   if (err) return { error: err };
+
+  const dateErr = validateDateRange(parsed.data.startDate, parsed.data.endDate);
+  if (dateErr) return { error: dateErr };
 
   const supabase = await createClient();
   const isTransfer = parsed.data.kind === "transfer";

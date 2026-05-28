@@ -447,11 +447,12 @@ export function RecurrenceSheet({
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </Field>
-            <Field label="Fim" htmlFor="endDate" hint="Opcional — vazio = sem fim">
+            <Field label="Fim" htmlFor="endDate" hint="Opcional — vazio = sem fim. Tem que ser igual ou depois do início.">
               <Input
                 id="endDate"
                 name="endDate"
                 type="date"
+                min={startDate || undefined}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
