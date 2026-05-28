@@ -36,6 +36,8 @@ const baseSchema = z.object({
   irrfAmount: z.coerce.number().nonnegative().optional().nullable(),
   inssAmount: z.coerce.number().nonnegative().optional().nullable(),
   deductibleAmount: z.coerce.number().nonnegative().optional().nullable(),
+  // "Não declarar no IRPF" — herda pras transactions materializadas
+  excludeFromIr: z.coerce.boolean().optional(),
 });
 
 const updateSchema = baseSchema.extend({ id: z.string().uuid() });
@@ -88,6 +90,7 @@ function readForm(formData: FormData) {
     irrfAmount: get("irrfAmount") || undefined,
     inssAmount: get("inssAmount") || undefined,
     deductibleAmount: get("deductibleAmount") || undefined,
+    excludeFromIr: get("excludeFromIr") === "1" || get("excludeFromIr") === "true",
   };
 }
 
@@ -155,6 +158,7 @@ export async function createRecurringRule(
       parsed.data.isTaxDeductible && parsed.data.deductibleAmount && parsed.data.deductibleAmount > 0
         ? parsed.data.deductibleAmount
         : null,
+    exclude_from_ir: parsed.data.excludeFromIr ?? false,
     created_by: ctx.profile.id,
   });
   if (error) return { error: error.message };
@@ -224,9 +228,27 @@ export async function updateRecurringRule(
         parsed.data.isTaxDeductible && parsed.data.deductibleAmount && parsed.data.deductibleAmount > 0
           ? parsed.data.deductibleAmount
           : null,
+      exclude_from_ir: parsed.data.excludeFromIr ?? false,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
+
+  // Backfill: propaga campos de IR pras transactions já materializadas dessa
+  // regra. Sem isso, o usuário editaria a fonte do salário mas todos os
+  // lançamentos anteriores continuariam sem fonte — e o checklist do IR
+  // continuaria reclamando indefinidamente.
+  if (!isTransfer) {
+    const backfillPayload = {
+      fonte_pagadora_id: parsed.data.fontePagadoraId ?? null,
+      irrf_amount: parsed.data.irrfAmount ?? null,
+      inss_amount: parsed.data.inssAmount ?? null,
+      exclude_from_ir: parsed.data.excludeFromIr ?? false,
+    };
+    await supabase
+      .from("transactions")
+      .update(backfillPayload as never)
+      .eq("recurring_rule_id", parsed.data.id);
+  }
 
   for (const p of pathsToInvalidate()) revalidatePath(p);
   return { ok: true };

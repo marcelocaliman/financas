@@ -123,6 +123,9 @@ export function RecurrenceSheet({
   const [isSubscription, setIsSubscription] = useState<boolean>(
     rule?.tags?.includes("subscription") ?? defaultIsSubscription,
   );
+  const [excludeFromIr, setExcludeFromIr] = useState<boolean>(
+    rule?.exclude_from_ir ?? false,
+  );
 
   const [state, action, pending] = useActionState<RecurrenceFormState | undefined, FormData>(
     isEdit ? updateRecurringRule : createRecurringRule,
@@ -534,6 +537,34 @@ export function RecurrenceSheet({
                 </div>
               </div>
             </details>
+          ) : null}
+
+          {/* Não declarar no IRPF — só pra receita */}
+          {kind === "income" ? (
+            <label
+              className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+              htmlFor="excludeFromIr"
+            >
+              <input
+                type="checkbox"
+                id="excludeFromIr"
+                name="excludeFromIr"
+                value="1"
+                checked={excludeFromIr}
+                onChange={(e) => setExcludeFromIr(e.target.checked)}
+                className="mt-0.5 accent-navy-700"
+              />
+              <div className="text-[12.5px] leading-relaxed">
+                <span className="font-medium text-foreground">
+                  Não declarar no IRPF
+                </span>
+                <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                  Receita fica no app pra controle pessoal mas é ignorada nos
+                  relatórios e no arquivo .DEC. Vale tanto pras transações
+                  já materializadas quanto pras futuras.
+                </span>
+              </div>
+            </label>
           ) : null}
 
           {/* Dedução IR — apenas pra despesa */}
