@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -56,12 +57,14 @@ export function SyncBrokerBalanceDialog({
     }
   }
 
+  const router = useRouter();
   useEffect(() => {
     if (state?.ok) {
       toast.success("Saldo sincronizado com o broker.");
       onOpenChange(false);
+      router.refresh();
     }
-  }, [state, onOpenChange]);
+  }, [state, onOpenChange, router]);
 
   const delta = newBalance - current;
   const newYield = newBalance - initial;

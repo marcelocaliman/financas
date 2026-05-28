@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -59,12 +60,14 @@ export function FixedIncomeContributionDialog({
     }
   }
 
+  const router = useRouter();
   useEffect(() => {
     if (state?.ok) {
       toast.success("Aporte registrado.");
       onOpenChange(false);
+      router.refresh();
     }
-  }, [state, onOpenChange]);
+  }, [state, onOpenChange, router]);
 
   const current = Number(investment.current_balance);
   const newBalance = current + amount;

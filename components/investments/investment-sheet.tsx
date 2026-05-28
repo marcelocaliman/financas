@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
@@ -126,12 +127,17 @@ export function InvestmentSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [picked?.ticker]);
 
+  const router = useRouter();
   useEffect(() => {
     if (state?.ok) {
       toast.success(isEdit ? "Ativo atualizado." : "Ativo cadastrado.");
       onOpenChange(false);
+      // Refresh do RSC da página atual — combinado com staleTimes:0 no
+      // next.config, garante que /investimentos mostra o novo valor
+      // imediatamente sem hard reload.
+      router.refresh();
     }
-  }, [state, isEdit, onOpenChange]);
+  }, [state, isEdit, onOpenChange, router]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { CircleDollarSign, ArrowDownToLine } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export function LiquidateInvestmentDialog({
   );
   const [notes, setNotes] = useState("");
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const initial = Number(investment.initial_amount ?? 0);
   const grossGain = Math.max(0, gross - initial);
@@ -118,6 +120,7 @@ export function LiquidateInvestmentDialog({
             : "Investimento encerrado.",
       );
       onOpenChange(false);
+      router.refresh();
     });
   };
 

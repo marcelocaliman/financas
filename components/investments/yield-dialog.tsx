@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -39,6 +40,7 @@ export function YieldDialog({
   const [gross, setGross] = useState(0);
   const [tax, setTax] = useState(0);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
@@ -59,6 +61,7 @@ export function YieldDialog({
       else {
         toast.success("Rendimento registrado.");
         onOpenChange(false);
+        router.refresh();
       }
     });
   };
