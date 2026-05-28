@@ -160,7 +160,7 @@ export function PortfolioLiveTicker({
 
         <div className="sm:pl-9 sm:border-l border-ink-700 grid gap-4 content-start min-w-[220px]">
           <SideCell
-            label="Patrimônio total"
+            label="Carteira de investimentos"
             value={formatMoney(portfolio.totalMarketBalance, displayCurrency)}
             hint={
               patrimonioComp != null && comparisonCurrency

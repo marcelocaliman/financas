@@ -229,10 +229,10 @@ export default async function IRYearPage({
           hint={`${bens.byGroup.reduce((s, g) => s + g.items.length, 0)} itens em ${bens.byGroup.length} grupos`}
         />
         <KpiCard
-          label="Rendimentos totais"
+          label="Recebimentos no ano"
           textValue={`R$ ${fmtBRL(totalRendimentos)}`}
           tone="positive"
-          hint={`tribut R$ ${fmtBRL(rendimentos.tributaveis.total)} + isentos R$ ${fmtBRL(rendimentos.isentos.total)}`}
+          hint={`tribut R$ ${fmtBRL(rendimentos.tributaveis.total)} + exclusivos R$ ${fmtBRL(rendimentos.exclusivos.total)}`}
         />
         <KpiCard
           label="DARFs renda variável"
