@@ -175,14 +175,20 @@ export async function computeImposto(
   // Doações: até 6% do imposto devido (calculado ANTES da doação)
   const donationLimit = grossTaxCompletoBefore * 0.06;
   const donationsApplied = Math.min(donations, donationLimit);
-  const grossTaxCompleto = Math.max(0, grossTaxCompletoBefore - donationsApplied);
+  const grossTaxCompletoAfterDon = Math.max(0, grossTaxCompletoBefore - donationsApplied);
+  // Redutor da Lei 15.270/2025 (a partir de 2026): zera imposto até R$ 60k/ano
+  // anuais e decai linear até R$ 88.200/ano.
+  const redutorCompleto = computeRedutorAnual(year, baseTributavelBruta, grossTaxCompletoAfterDon);
+  const grossTaxCompleto = Math.max(0, grossTaxCompletoAfterDon - redutorCompleto);
 
   // ============================================================
   // Modelo SIMPLES — 20% até o limite, sem deduções
   // ============================================================
   const descontoPadrao = Math.min(baseTributavelBruta * taxTable.simplesPct, taxTable.simplesLimit);
   const baseSimples = Math.max(0, baseTributavelBruta - descontoPadrao);
-  const grossTaxSimples = calcFromTable(baseSimples, taxTable.brackets);
+  const grossTaxSimplesBefore = calcFromTable(baseSimples, taxTable.brackets);
+  const redutorSimples = computeRedutorAnual(year, baseTributavelBruta, grossTaxSimplesBefore);
+  const grossTaxSimples = Math.max(0, grossTaxSimplesBefore - redutorSimples);
 
   const irrfRetained = rendimentos.tributaveis.totalIrrf;
 
@@ -230,4 +236,38 @@ export async function computeImposto(
     recommendation,
     savings: round2(savings),
   };
+}
+
+/**
+ * Redutor anual instituído pela Lei 15.270/2025 (vigor a partir de
+ * ano-calendário 2026).
+ *
+ * Lógica:
+ *   - Renda anual ≤ R$ 60.000: redutor zera o imposto (limitado ao bruto).
+ *   - R$ 60.000 < renda ≤ R$ 88.200: redutor decai linearmente até zero
+ *     (proporcional ao quanto a renda excede R$ 60k em relação a R$ 28,2k
+ *     de zona de transição).
+ *   - Renda > R$ 88.200: redutor = 0.
+ *
+ * Sempre limitado a 0 ≤ redutor ≤ imposto_bruto (não gera crédito).
+ *
+ * @param year ano-base (só aplica a partir de 2026)
+ * @param rendaAnualBruta rendimento tributável anual antes das deduções
+ * @param impostoBruto imposto calculado pela tabela progressiva
+ */
+function computeRedutorAnual(
+  year: number,
+  rendaAnualBruta: number,
+  impostoBruto: number,
+): number {
+  if (year < 2026) return 0;
+  if (rendaAnualBruta <= 60_000) {
+    return impostoBruto; // zera tudo
+  }
+  if (rendaAnualBruta >= 88_200) return 0;
+  // Decaimento linear entre 60k e 88.200 — proporcional ao quanto sobrou
+  // da zona de transição. Limitado ao imposto bruto.
+  const fracao = (88_200 - rendaAnualBruta) / (88_200 - 60_000);
+  const redutorMax = impostoBruto * fracao;
+  return Math.max(0, Math.min(redutorMax, impostoBruto));
 }

@@ -66,6 +66,8 @@ export function computeCarneLeaoMonthly(args: {
   brackets?: Bracket[];
   /** Dedução mensal por dependente; fallback R$ 189,59 */
   dependentDeductionPerOne?: number;
+  /** Ano-base — aplica redutor da Lei 15.270/2025 a partir de 2026 */
+  year?: number;
 }): CarneLeaoCalc {
   const brackets = args.brackets ?? DEFAULT_MONTHLY_BRACKETS;
   const depPerOne = args.dependentDeductionPerOne ?? MONTHLY_DEPENDENT_DEDUCTION;
@@ -81,7 +83,12 @@ export function computeCarneLeaoMonthly(args: {
     bracket = b;
     if (base <= b.upTo) break;
   }
-  const taxDue = Math.max(0, base * bracket.rate - bracket.deduct);
+  const taxBeforeReduction = Math.max(0, base * bracket.rate - bracket.deduct);
+  // Redutor Lei 15.270/25 (a partir de ano-base 2026) — opera sobre o
+  // RENDIMENTO BRUTO mensal, não sobre a base. Zera até R$ 5.000;
+  // decai até R$ 7.350 pela fórmula 978,62 − 0,133145 × renda_bruta.
+  const redutor = computeRedutorMensal(args.year ?? 0, gross);
+  const taxDue = Math.max(0, taxBeforeReduction - redutor);
 
   const bracketDescription =
     bracket.rate === 0
@@ -99,4 +106,24 @@ export function computeCarneLeaoMonthly(args: {
     darfDueDate: lastBusinessDayOfNextMonth(args.competenceDate),
     bracketDescription,
   };
+}
+
+/**
+ * Redutor mensal instituído pela Lei 15.270/2025 (ano-base 2026+).
+ *
+ *  - Renda bruta ≤ R$ 5.000: redutor = R$ 312,89 (limitado ao imposto bruto).
+ *  - R$ 5.000 < renda ≤ R$ 7.350: redutor = 978,62 − 0,133145 × renda.
+ *  - Renda > R$ 7.350: redutor = 0.
+ *
+ * NÃO gera crédito — só limita a 0 ≤ redutor ≤ imposto_bruto, o caller faz
+ * a clampagem final com o imposto.
+ */
+export function computeRedutorMensal(
+  year: number,
+  rendaBrutaMensal: number,
+): number {
+  if (year < 2026) return 0;
+  if (rendaBrutaMensal <= 5_000) return 312.89;
+  if (rendaBrutaMensal >= 7_350) return 0;
+  return Math.max(0, 978.62 - 0.133145 * rendaBrutaMensal);
 }

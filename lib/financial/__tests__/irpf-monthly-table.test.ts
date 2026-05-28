@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { computeCarneLeaoMonthly } from "@/lib/financial/irpf-monthly-table";
+import {
+  computeCarneLeaoMonthly,
+  computeRedutorMensal,
+} from "@/lib/financial/irpf-monthly-table";
 
 describe("computeCarneLeaoMonthly", () => {
   it("renda < isenção → imposto zero", () => {
@@ -60,5 +63,43 @@ describe("computeCarneLeaoMonthly", () => {
     });
     expect(r.rate).toBe(0);
     expect(r.taxDue).toBe(0);
+  });
+});
+
+describe("Redutor mensal Lei 15.270/25 (ano-base 2026+)", () => {
+  it("year < 2026 → redutor zero (lei ainda não em vigor)", () => {
+    expect(computeRedutorMensal(2025, 6000)).toBe(0);
+    expect(computeRedutorMensal(2024, 4000)).toBe(0);
+  });
+
+  it("renda ≤ R$ 5.000 → redutor fixo R$ 312,89", () => {
+    expect(computeRedutorMensal(2026, 1000)).toBe(312.89);
+    expect(computeRedutorMensal(2026, 4500)).toBe(312.89);
+    expect(computeRedutorMensal(2026, 5000)).toBe(312.89);
+  });
+
+  it("renda na zona de transição → fórmula 978,62 − 0,133145 × renda", () => {
+    // R$ 6.000: 978,62 − 0,133145 × 6.000 = 978,62 − 798,87 = R$ 179,75
+    expect(computeRedutorMensal(2026, 6000)).toBeCloseTo(179.75, 2);
+    // R$ 7.000: 978,62 − 0,133145 × 7.000 = 978,62 − 932,015 = R$ 46,605
+    expect(computeRedutorMensal(2026, 7000)).toBeCloseTo(46.61, 1);
+  });
+
+  it("renda ≥ R$ 7.350 → redutor zero", () => {
+    expect(computeRedutorMensal(2026, 7350)).toBe(0);
+    expect(computeRedutorMensal(2026, 10000)).toBe(0);
+    expect(computeRedutorMensal(2026, 50000)).toBe(0);
+  });
+
+  it("Aline R$ 6.000 brutos: imposto líquido R$ 395,61", () => {
+    const r = computeCarneLeaoMonthly({
+      grossIncome: 6000,
+      deductibleExpenses: 649.59, // INSS 2025
+      competenceDate: "2026-04-15",
+      year: 2026,
+    });
+    // Base: 6000 - 649.59 = 5350.41. Faixa 27.5%: 5350.41 × 0.275 − 896 = 575.36
+    // Redutor: R$ 179,75. Líquido: 575,36 − 179,75 = R$ 395,61
+    expect(r.taxDue).toBeCloseTo(395.61, 1);
   });
 });

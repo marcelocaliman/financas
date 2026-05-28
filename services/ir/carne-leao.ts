@@ -92,6 +92,7 @@ export async function computeCarneLeaoTax(args: {
     competenceDate: competence,
     brackets: taxTable.brackets,
     dependentDeductionPerOne: taxTable.dependentDeduction,
+    year,
   });
   const base = Math.max(
     0,
