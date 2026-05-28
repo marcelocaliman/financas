@@ -5,6 +5,7 @@ import { Panel, PanelHeader } from "@/components/ui/panel";
 import { getCurrentUserContext } from "@/services/auth";
 import { getAuditTotals } from "@/services/ir/audit";
 import { AuditRow } from "@/components/ir/audit-row";
+import { AiAuditPanel } from "@/components/ir/ai-audit-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,8 @@ export default async function AuditPage({
         }
         subtitle={`Cole na coluna "Oficial" os valores dos informes que você receber (XP, banco, plano de saúde, contador). O app marca em verde o que bate, em vermelho o que diverge mais de 5%. Use em janeiro/${year + 1} antes de exportar.`}
       />
+
+      <AiAuditPanel year={year} />
 
       <Panel className="mb-5 border-navy-700/30">
         <div className="flex items-start gap-3">
