@@ -5,6 +5,7 @@ import {
   collectMonthlyData,
   generateMonthlyNarrative,
 } from "@/services/ai/monthly-narrative";
+import { computeBillWindow } from "@/services/credit-card";
 
 /**
  * Sistema de notificações por email. Roda via cron `/api/cron/notifications`
@@ -91,7 +92,13 @@ export async function runDailyNotifications(): Promise<NotificationResult[]> {
       }
     }
 
-    // 3. Resumo mensal narrativo (gerado por IA) — dispara no dia 2 do mês,
+    // 3. Fatura de cartão pendente/atrasada — dispara alerta no sino
+    //    (user_facing=true) 3 dias antes do vencimento e diariamente após.
+    const billResult = await checkCreditCardBills(admin, h.id);
+    if (billResult)
+      results.push({ householdId: h.id, type: "credit_card_bill", ...billResult });
+
+    // 4. Resumo mensal narrativo (gerado por IA) — dispara no dia 2 do mês,
     //    cobre o mês anterior. Idempotente via monthly_recap_last_sent.
     if (effectivePrefs.monthly_recap) {
       const today = new Date();
@@ -315,5 +322,197 @@ async function sendMonthlyRecap(
     .update({ monthly_recap_last_sent: new Date().toISOString() })
     .eq("household_id", householdId);
 
+  return { status: "sent" };
+}
+
+/**
+ * Avalia faturas de cartão e cria alertas no sino (user_facing=true) pra
+ * fatura próxima do vencimento ou atrasada. Idempotente diário via
+ * system_alerts.kind + context.due_date — se já tem alerta pra essa
+ * fatura no mesmo dia, pula.
+ *
+ * Regras:
+ *  - 3 dias antes do vencimento → alerta warning "vence em 3 dias"
+ *  - 1 dia antes → alerta warning "vence amanhã"
+ *  - Dia do vencimento → alerta warning "vence hoje"
+ *  - Após vencimento (1+ dia) → alerta error "atrasada há N dias"
+ *
+ * Pagamento detectado pela soma de transfers PRA a conta-cartão no
+ * período [closeDate, dueDate+30d] >= 95% do valor da fatura.
+ */
+async function checkCreditCardBills(
+  admin: AdminClient,
+  householdId: string,
+): Promise<{ status: "sent" | "skipped" | "error"; reason?: string } | null> {
+  // Cartões ativos com config de fatura
+  type CardRow = {
+    id: string;
+    name: string;
+    institution: string;
+    bill_close_day: number;
+    bill_due_day: number | null;
+  };
+  const { data: cards } = await (
+    admin.from as unknown as (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: unknown) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              not: (c: string, op: string, v: unknown) => Promise<{ data: CardRow[] | null }>;
+            };
+          };
+        };
+      };
+    }
+  )("accounts")
+    .select("id, name, institution, bill_close_day, bill_due_day")
+    .eq("household_id", householdId)
+    .eq("type", "credit_card")
+    .eq("is_active", true)
+    .not("bill_close_day", "is", null);
+
+  if (!cards || cards.length === 0) return null;
+
+  let alerted = 0;
+  const today = new Date();
+
+  for (const card of cards) {
+    const closeDay = card.bill_close_day;
+    const dueDay = card.bill_due_day ?? closeDay;
+
+    // Calcula janela atual e descobre a fatura anterior (que está pendente
+    // até ser paga). Espelha a lógica de getOpenCreditCardBills sem importar
+    // a função (evita ciclo de dependência).
+    const current = computeBillWindow(closeDay, dueDay, today);
+    const shiftMonths = (iso: string, n: number) => {
+      const [y, m, d] = iso.split("-").map(Number);
+      return new Date(Date.UTC(y, m - 1 + n, d)).toISOString().slice(0, 10);
+    };
+    const prevCloseDate = shiftMonths(current.closeDate, -1);
+    const prevDueDate = shiftMonths(current.dueDate, -1);
+    const prevPeriodStart = shiftMonths(current.periodStart, -1);
+    const prevPeriodEnd = shiftMonths(current.periodEnd, -1);
+
+    type Tx = { amount_account: string | number };
+    const [{ data: expenses }, { data: payments }] = await Promise.all([
+      (
+        admin.from as unknown as (t: string) => {
+          select: (s: string) => {
+            eq: (c: string, v: unknown) => {
+              eq: (c: string, v: unknown) => {
+                gte: (c: string, v: unknown) => {
+                  lte: (c: string, v: unknown) => Promise<{ data: Tx[] | null }>;
+                };
+              };
+            };
+          };
+        }
+      )("transactions")
+        .select("amount_account")
+        .eq("account_id", card.id)
+        .eq("kind", "expense")
+        .gte("date", prevPeriodStart)
+        .lte("date", prevPeriodEnd),
+      (
+        admin.from as unknown as (t: string) => {
+          select: (s: string) => {
+            eq: (c: string, v: unknown) => {
+              eq: (c: string, v: unknown) => {
+                eq: (c: string, v: unknown) => {
+                  gte: (c: string, v: unknown) => {
+                    lte: (c: string, v: unknown) => Promise<{ data: Tx[] | null }>;
+                  };
+                };
+              };
+            };
+          };
+        }
+      )("transactions")
+        .select("amount_account")
+        .eq("account_id", card.id)
+        .eq("kind", "transfer")
+        .eq("transfer_direction", "in")
+        .gte("date", prevCloseDate)
+        .lte("date", shiftMonths(prevDueDate, 0).slice(0, 7) + "-31"), // generoso
+    ]);
+
+    const billTotal = (expenses ?? []).reduce(
+      (s, t) => s + Number(t.amount_account),
+      0,
+    );
+    if (billTotal < 0.01) continue; // sem fatura anterior
+
+    const paid = (payments ?? []).reduce(
+      (s, t) => s + Number(t.amount_account),
+      0,
+    );
+    if (paid >= billTotal * 0.95) continue; // já paga
+
+    // Calcula daysUntilDue
+    const todayISO = today.toISOString().slice(0, 10);
+    const dueT = new Date(prevDueDate + "T00:00:00Z").getTime();
+    const todayT = new Date(todayISO + "T00:00:00Z").getTime();
+    const daysUntilDue = Math.round((dueT - todayT) / 86400000);
+
+    // Decide severity e mensagem
+    let severity: "warning" | "error";
+    let userMessage: string;
+    if (daysUntilDue < 0) {
+      severity = "error";
+      const overdue = Math.abs(daysUntilDue);
+      userMessage = `Fatura do ${card.name} (${card.institution}) está atrasada há ${overdue} dia${overdue !== 1 ? "s" : ""}. Valor: R$ ${billTotal.toFixed(2).replace(".", ",")}.`;
+    } else if (daysUntilDue === 0) {
+      severity = "warning";
+      userMessage = `Fatura do ${card.name} (${card.institution}) vence hoje. Valor: R$ ${billTotal.toFixed(2).replace(".", ",")}.`;
+    } else if (daysUntilDue <= 3) {
+      severity = "warning";
+      userMessage = `Fatura do ${card.name} (${card.institution}) vence em ${daysUntilDue} dia${daysUntilDue !== 1 ? "s" : ""}. Valor: R$ ${billTotal.toFixed(2).replace(".", ",")}.`;
+    } else {
+      continue; // ainda longe pra alertar
+    }
+
+    // Dedup: não cria alerta duplicado pra mesma fatura no mesmo dia
+    type Existing = { id: string };
+    const { data: existing } = await (
+      admin.from as unknown as (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              gte: (c: string, v: unknown) => Promise<{ data: Existing[] | null }>;
+            };
+          };
+        };
+      }
+    )("system_alerts")
+      .select("id")
+      .eq("kind", "credit_card_bill_due")
+      .eq("household_id", householdId)
+      .gte("created_at", todayISO);
+
+    if (existing && existing.length > 0) continue;
+
+    await (
+      admin.from as unknown as (t: string) => {
+        insert: (row: Record<string, unknown>) => Promise<{ error: unknown }>;
+      }
+    )("system_alerts").insert({
+      kind: "credit_card_bill_due",
+      message: `Fatura ${card.name} ${prevDueDate}: R$ ${billTotal.toFixed(2)} (${daysUntilDue} dias até vencer)`,
+      severity,
+      household_id: householdId,
+      user_facing: true,
+      user_message: userMessage,
+      context: {
+        account_id: card.id,
+        due_date: prevDueDate,
+        bill_total: billTotal,
+        paid_amount: paid,
+        days_until_due: daysUntilDue,
+      },
+    });
+    alerted++;
+  }
+
+  if (alerted === 0) return { status: "skipped", reason: "Sem fatura próxima do vencimento." };
   return { status: "sent" };
 }

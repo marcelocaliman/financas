@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { CreditCard, AlertCircle } from "lucide-react";
+import { CreditCard, AlertCircle, AlertTriangle, Clock } from "lucide-react";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Money } from "@/components/ui/money";
+import { Badge } from "@/components/ui/badge";
 import type { CreditCardBill } from "@/services/credit-card";
 import type { Tables } from "@/types/database";
 
@@ -16,6 +17,28 @@ function daysUntil(iso: string): number {
   return Math.ceil((target.getTime() - today.getTime()) / 86400000);
 }
 
+function statusBadge(bill: CreditCardBill): React.ReactNode {
+  if (bill.status === "overdue") {
+    const overdue = Math.abs(bill.daysUntilDue ?? 0);
+    return (
+      <Badge tone="rust">
+        <AlertTriangle className="w-3 h-3" strokeWidth={2} />
+        Atrasada há {overdue} dia{overdue !== 1 ? "s" : ""}
+      </Badge>
+    );
+  }
+  if (bill.status === "closed_pending") {
+    const days = bill.daysUntilDue ?? 0;
+    return (
+      <Badge tone="gold">
+        <Clock className="w-3 h-3" strokeWidth={2} />
+        {days === 0 ? "Vence hoje" : `Vence em ${days} dia${days !== 1 ? "s" : ""}`}
+      </Badge>
+    );
+  }
+  return null;
+}
+
 export function CreditCardBillsSection({
   bills,
   accountsById,
@@ -24,6 +47,9 @@ export function CreditCardBillsSection({
   accountsById: Map<string, Tables<"accounts">>;
 }) {
   if (bills.length === 0) return null;
+  const cardCount = new Set(bills.map((b) => b.accountId)).size;
+  const overdueCount = bills.filter((b) => b.status === "overdue").length;
+  const pendingCount = bills.filter((b) => b.status === "closed_pending").length;
 
   return (
     <Panel className="mb-5">
@@ -34,7 +60,11 @@ export function CreditCardBillsSection({
             Faturas abertas
           </span>
         }
-        meta={`${bills.length} cartão${bills.length !== 1 ? "es" : ""}`}
+        meta={
+          overdueCount + pendingCount > 0
+            ? `${overdueCount + pendingCount} a pagar · ${cardCount} cartão${cardCount !== 1 ? "es" : ""}`
+            : `${cardCount} cartão${cardCount !== 1 ? "es" : ""}`
+        }
       />
       <div className="space-y-3">
         {bills.map((bill) => {
@@ -52,15 +82,23 @@ export function CreditCardBillsSection({
                   ? "bg-gold-600"
                   : "bg-rust-600";
 
+          const ringClass =
+            bill.status === "overdue"
+              ? "border-rust-300 dark:border-rust-700/60 bg-rust-50/40 dark:bg-rust-950/20"
+              : bill.status === "closed_pending"
+                ? "border-gold-300 dark:border-gold-700/60 bg-gold-50/40 dark:bg-gold-950/20"
+                : "border-border bg-bone-100/40 dark:bg-ink-800/40";
+
           return (
             <div
-              key={bill.accountId}
-              className="border border-border rounded-[8px] p-4 bg-bone-100/40 dark:bg-ink-800/40"
+              key={`${bill.accountId}-${bill.status}-${bill.dueDate}`}
+              className={`border rounded-[8px] p-4 ${ringClass}`}
             >
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                  <div className="font-medium text-[14.5px] text-foreground">
+                  <div className="font-medium text-[14.5px] text-foreground flex items-center gap-2 flex-wrap">
                     {acc.institution} · {acc.name}
+                    {statusBadge(bill)}
                   </div>
                   <div className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground mt-0.5">
                     Período {fmtDateBR(bill.periodStart)} → {fmtDateBR(bill.periodEnd)}
@@ -77,7 +115,9 @@ export function CreditCardBillsSection({
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint-foreground mb-0.5">
-                    Fatura aberta
+                    {bill.status === "overdue" || bill.status === "closed_pending"
+                      ? "A pagar"
+                      : "Em formação"}
                   </div>
                   <Money
                     value={bill.totalOpen}
@@ -85,6 +125,9 @@ export function CreditCardBillsSection({
                   />
                   <div className="text-[11px] text-muted-foreground mt-0.5">
                     {bill.txCount} compra{bill.txCount !== 1 ? "s" : ""}
+                    {bill.paidAmount > 0
+                      ? ` · R$ ${bill.paidAmount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} pago`
+                      : ""}
                   </div>
                 </div>
                 <div>
