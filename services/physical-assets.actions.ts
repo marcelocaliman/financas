@@ -247,6 +247,7 @@ export async function updatePhysicalAsset(
       owner_filer_id: parsed.data.ownerFilerId || null,
       is_particular: parsed.data.isParticular ?? false,
       particular_reason: parsed.data.particularReason ?? null,
+      exclude_from_ir: parsed.data.excludeFromIr ?? false,
       ...buildIRPayload(parsed.data),
     })
     .eq("id", parsed.data.id);
