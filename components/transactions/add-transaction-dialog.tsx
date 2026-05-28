@@ -396,7 +396,7 @@ export function AddTransactionDialog({
                     <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
                     <input type="hidden" name="irrfAmount" value={irrfAmount} />
                     <input type="hidden" name="inssAmount" value={inssAmount} />
-                    <Field label="Fonte pagadora" htmlFor="fonte">
+                    <Field label="Fonte pagadora" htmlFor="fonte" hint="Só empresas que pagam VOCÊ (salário, aluguel, dividendos). Médicos e planos de saúde não entram aqui.">
                       <Select
                         value={fontePagadoraId}
                         onValueChange={setFontePagadoraId}

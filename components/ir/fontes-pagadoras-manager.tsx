@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Pencil, Plus, Trash2, Building2, Briefcase, Home, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,17 @@ export function FontesPagadorasManager({ fontes }: { fontes: Fonte[] }) {
 
   return (
     <div>
+      <div className="rounded-[8px] border border-gold-200 dark:border-gold-900/40 bg-gold-50/30 dark:bg-gold-950/10 px-3 py-2.5 mb-4 text-[12px] leading-relaxed">
+        <b className="text-foreground">Atenção:</b> fontes pagadoras são <b>empresas
+        ou pessoas que pagam VOCÊ</b> (empregador CLT, sua PJ, locatário do imóvel,
+        INSS quando recebe aposentadoria). Médicos, planos de saúde, hospitais e
+        outros prestadores que você paga <b>não</b> entram aqui — esses moram em{" "}
+        <Link href="/ir" className="text-navy-700 dark:text-navy-300 underline">
+          Pagamentos Dedutíveis
+        </Link>{" "}
+        dentro de cada ano-base.
+      </div>
+
       {fontes.length === 0 ? (
         <p className="text-[13px] text-muted-foreground italic mb-4">
           Nenhuma fonte pagadora cadastrada. Quando cadastrar (empresa CLT, sua PJ,

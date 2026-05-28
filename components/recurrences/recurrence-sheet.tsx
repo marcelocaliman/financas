@@ -497,7 +497,7 @@ export function RecurrenceSheet({
                 Fonte pagadora (IRPF) <span className="text-faint-foreground">· salário, aluguel recebido…</span>
               </summary>
               <div className="pt-3 space-y-3 px-3 py-3 rounded-[8px] bg-surface-muted/50">
-                <Field label="Empresa / quem paga" htmlFor="fontePagadoraId" hint="Cadastre fontes em /ir/configuracoes pra reusar">
+                <Field label="Empresa / quem paga" htmlFor="fontePagadoraId" hint="Só liste empresas que pagam VOCÊ (salário, aluguel, dividendos). Médicos, planos de saúde e outros prestadores que você paga não entram aqui.">
                   {/* Radix Select não aceita value=""; usamos "none" como sentinel
                       e enviamos string vazia pro form quando "none". */}
                   <Select
