@@ -152,6 +152,53 @@ export async function getAccountsTotalsAt(atDateISO: string): Promise<AccountsTo
   return { byType, total, liquidExcludingInvestmentCash, displayCurrency };
 }
 
+/**
+ * Saldo por conta em uma data específica (em moeda NATIVA da conta).
+ * Reverte transações posteriores: current_balance − Σ(deltas após atDateISO).
+ *
+ * Útil pra relatórios anuais que precisam mostrar saldo em 31/12/N quando hoje
+ * já é N+1 e o current_balance avançou.
+ */
+export async function getAccountBalancesAt(
+  atDateISO: string,
+): Promise<Map<string, number>> {
+  const supabase = await createClient();
+  const [accounts, { data: futureTxs }] = await Promise.all([
+    listAccounts({ includeArchived: true }),
+    supabase
+      .from("transactions")
+      .select("account_id, kind, amount_account, transfer_direction")
+      .eq("is_historical_ir_only", false)
+      .gt("date", atDateISO),
+  ]);
+
+  const deltaByAccount = new Map<string, number>();
+  for (const t of (futureTxs ?? []) as Array<{
+    account_id: string;
+    kind: "income" | "expense" | "transfer";
+    amount_account: number;
+    transfer_direction: "in" | "out" | null;
+  }>) {
+    const amt = Number(t.amount_account ?? 0);
+    let delta = 0;
+    if (t.kind === "income") delta = amt;
+    else if (t.kind === "expense") delta = -amt;
+    else if (t.kind === "transfer") {
+      if (t.transfer_direction === "in") delta = amt;
+      else if (t.transfer_direction === "out") delta = -amt;
+    }
+    deltaByAccount.set(t.account_id, (deltaByAccount.get(t.account_id) ?? 0) + delta);
+  }
+
+  const out = new Map<string, number>();
+  for (const a of accounts) {
+    const current = Number(a.current_balance ?? 0);
+    const futureDelta = deltaByAccount.get(a.id) ?? 0;
+    out.set(a.id, current - futureDelta);
+  }
+  return out;
+}
+
 /* ========================================================================== *
  * Saldos por conta num mês específico (passado ou futuro)
  *

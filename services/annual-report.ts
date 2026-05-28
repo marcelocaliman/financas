@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
-import { listAccounts, getAccountsTotalsAt } from "@/services/accounts";
+import { listAccounts, getAccountBalancesAt } from "@/services/accounts";
 import { listInvestments } from "@/services/investments";
 import { listPhysicalAssets } from "@/services/physical-assets";
 import type { Currency, Tables } from "@/types/database";
@@ -108,7 +108,7 @@ export async function getAnnualReport(year?: number): Promise<AnnualReport> {
     accounts,
     investments,
     physical,
-    accountsAtEoY,
+    accountBalancesAtEoY,
     { data: movements },
     { data: yieldsRows },
   ] = await Promise.all([
@@ -125,7 +125,7 @@ export async function getAnnualReport(year?: number): Promise<AnnualReport> {
     listAccounts({ includeArchived: true }),
     listInvestments(),
     listPhysicalAssets({ includeArchived: true }),
-    getAccountsTotalsAt(yearEnd),
+    getAccountBalancesAt(yearEnd),
     supabase
       .from("investment_movements")
       .select(
@@ -142,7 +142,6 @@ export async function getAnnualReport(year?: number): Promise<AnnualReport> {
       .lte("month", yearEnd),
   ]);
 
-  void accountsAtEoY;
 
   type TxRow = {
     kind: "income" | "expense" | "transfer";
@@ -209,16 +208,16 @@ export async function getAnnualReport(year?: number): Promise<AnnualReport> {
     .slice(0, 10);
 
   // ---- Bens declaráveis em 31/dez
+  // Saldo em 31/12/targetYear = current_balance − Σ(deltas após 31/12/targetYear)
+  // Pra targetYear corrente, accountBalancesAtEoY ≈ current_balance.
+  // Pra anos passados, reverte as transações que vieram depois.
   const declarableAccounts = accounts
     .filter((a) => a.type !== "credit_card")
     .map((a) => ({
       name: a.name,
       institution: a.institution,
       type: a.type,
-      // Pra simplificar: usa current_balance atual. (Idealmente seria o saldo
-      // em 31/dez do targetYear via getAccountsTotalsAt + breakdown. Aproximação
-      // aceitável quando targetYear = ano anterior + advance-balances já rodou.)
-      balanceEndOfYear: Number(a.current_balance ?? 0),
+      balanceEndOfYear: accountBalancesAtEoY.get(a.id) ?? Number(a.current_balance ?? 0),
       currency: a.currency,
     }));
 
