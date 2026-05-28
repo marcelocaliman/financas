@@ -30,11 +30,13 @@ import {
   Server,
   Landmark,
   HandCoins,
+  AlertTriangle,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { SidebarLiveTicker } from "@/components/layout/sidebar-live-ticker";
 import { PrivacyToggle } from "@/components/layout/privacy-toggle";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils/cn";
 import type { SidebarBadges } from "@/services/sidebar-badges";
 
@@ -79,6 +81,7 @@ const adminNavItems: NavItem[] = [
   { label: "Assinaturas", href: "/admin/subscriptions", icon: CreditCard, group: "billing" },
   { label: "Pedidos LGPD", href: "/admin/data-requests", icon: FileWarning, group: "lgpd" },
   { label: "Audit log", href: "/admin/audit-log", icon: History, group: "lgpd" },
+  { label: "System alerts", href: "/admin/system-alerts", icon: AlertTriangle, group: "lgpd" },
   { label: "Feature flags", href: "/admin/feature-flags", icon: ToggleRight, group: "config" },
   { label: "Anúncios", href: "/admin/announcements", icon: Megaphone, group: "config" },
   { label: "Sistema", href: "/admin/system", icon: Server, group: "config" },
@@ -98,11 +101,14 @@ export function Sidebar({
   householdName,
   badges,
   isPlatformAdmin = false,
+  notificationBell,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
   badges?: SidebarBadges;
   isPlatformAdmin?: boolean;
+  /** Slot pro <NotificationBell /> (server component). Renderizado no rodapé. */
+  notificationBell?: ReactNode;
 }) {
   const pathname = usePathname();
   const isAdminContext = pathname.startsWith("/admin");
@@ -116,6 +122,7 @@ export function Sidebar({
             variant="admin"
             slideFrom="right"
             user={user}
+            notificationBell={notificationBell}
             householdName={householdName}
             pathname={pathname}
           />
@@ -129,6 +136,7 @@ export function Sidebar({
             pathname={pathname}
             badges={badges}
             isPlatformAdmin={isPlatformAdmin}
+            notificationBell={notificationBell}
           />
         )}
       </AnimatePresence>
@@ -144,6 +152,7 @@ function SidebarContent({
   pathname,
   badges,
   isPlatformAdmin,
+  notificationBell,
 }: {
   variant: "main" | "admin";
   slideFrom: "left" | "right";
@@ -152,6 +161,7 @@ function SidebarContent({
   pathname: string;
   badges?: SidebarBadges;
   isPlatformAdmin?: boolean;
+  notificationBell?: ReactNode;
 }) {
   const navItems = variant === "admin" ? adminNavItems : mainNavItems;
   const groupLabels = variant === "admin" ? adminGroupLabels : mainGroupLabels;
@@ -313,6 +323,7 @@ function SidebarContent({
             Modo
           </span>
           <div className="flex items-center gap-1">
+            {notificationBell}
             <PrivacyToggle tone="dark" />
             <ThemeToggle tone="dark" />
           </div>

@@ -532,13 +532,15 @@ export async function liquidateInvestment(
       await recordSystemAlert({
         kind: "ir_exclusive_income_sync_failed",
         message:
-          "Falhou ao gerar o lançamento de Rendimentos Exclusivos de Fonte após liquidação. Abra /ir e o sistema tenta de novo automaticamente.",
+          "Falhou ao gerar lançamento de Rendimentos Exclusivos de Fonte após liquidação.",
+        severity: "info", // self-healing já cobre — só log
         householdId: ctx.household.id,
         context: {
           investmentId: parsed.data.investmentId,
           year,
           error: e instanceof Error ? e.message : String(e),
         },
+        // não vai pra UI do user — abrir /ir já reroda o sync
       });
     }
     revalidatePath(`/ir/${year}`);

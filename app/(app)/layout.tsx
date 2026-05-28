@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { MobileDrawer } from "@/components/layout/mobile-drawer";
 import { ConsentBanner } from "@/components/lgpd/consent-banner";
 import { hasAcceptedCurrentTerms, TERMS_VERSION, PRIVACY_VERSION } from "@/services/lgpd";
@@ -83,6 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             householdName={ctx.household.name}
             badges={badges}
             isPlatformAdmin={isAdmin}
+            notificationBell={<NotificationBell tone="dark" />}
           />
           <MobileDrawer
             user={{ name: ctx.profile.display_name, email: ctx.email }}

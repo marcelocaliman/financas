@@ -59,8 +59,13 @@ async function _ensureMaterialized(): Promise<{ created: number; skipped?: boole
       await recordSystemAlert({
         kind: "auto_materialize_failed",
         message: "Falha na materialização automática de recorrências.",
+        severity: "warning",
         householdId: ctx.household.id,
         context: { error: error.message, untilDate: today },
+        userFacing: true,
+        userMessage:
+          "Algumas recorrências de hoje não foram criadas automaticamente. " +
+          "Atualize a página em alguns minutos — se persistir, entre em contato.",
       });
       return { created: 0 };
     }
@@ -76,7 +81,9 @@ async function _ensureMaterialized(): Promise<{ created: number; skipped?: boole
     await recordSystemAlert({
       kind: "auto_materialize_exception",
       message: "Exceção inesperada na materialização automática.",
+      severity: "error",
       context: { error: e instanceof Error ? e.message : String(e) },
+      // sem userFacing — exception genérica, admin investiga
     });
     return { created: 0 };
   }
