@@ -11,6 +11,7 @@ import { formatDateShort, formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { SubscriptionRowActions } from "@/components/subscriptions/subscription-row-actions";
 import { NewSubscriptionButton } from "@/components/subscriptions/new-subscription-button";
+import { AiDetectorPanel } from "@/components/subscriptions/ai-detector-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +52,14 @@ export default async function AssinaturasPage() {
           </>
         }
         subtitle="Streamings, academia, plano de software — o gotejamento silencioso. Cada uma parece pouco; o total anual nem tanto."
-        actions={<NewSubscriptionButton accounts={accountsLite} categories={categoriesLite} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <AiDetectorPanel
+              accounts={accountsLite.map((a) => ({ id: a.id, name: a.name, type: a.type }))}
+            />
+            <NewSubscriptionButton accounts={accountsLite} categories={categoriesLite} />
+          </div>
+        }
       />
 
       {subs.length === 0 ? (
