@@ -10,11 +10,12 @@ import { NextResponse, type NextRequest } from "next/server";
  * Jobs executados (ordem):
  *   1. advance-balances (aplica deltas de transações pré-agendadas)
  *   2. materialize-recurrences (cria transactions das regras recorrentes)
- *   3. Paralelo: update-indexers + update-rates (independentes)
- *   4. update-balances + sync-tesouro-prices (depende dos indexers e PU)
+ *   3. Paralelo: update-indexers + update-rates (benchmark Selic/CDI/IPCA + FX)
+ *   4. sync-tesouro-prices (PU oficial → atualiza current_balance de Tesouros)
  *   5. snapshot-patrimonio (só roda no dia 1 do mês — verificação interna)
- *   6. send-pending-emails (drena fila)
- *   7. health-check (verifica se algo ficou stale e alerta)
+ *   6. year-end-snapshot (só age em 02/janeiro)
+ *   7. send-pending-emails (drena fila)
+ *   8. health-check (verifica se algo ficou stale e alerta)
  */
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -82,15 +83,6 @@ export async function GET(req: NextRequest) {
   }
 
   // Vercel Hobby = 10s timeout. Paralelizamos em 3 ondas pra caber.
-  //
-  // Wave 1 — independentes (sem deps de dados):
-  //   advance-balances, materialize-recurrences, update-indexers,
-  //   update-rates, snapshot-patrimonio (interno decide se é dia 1),
-  //   send-pending-emails
-  // Wave 2 — depende de indexers atualizados:
-  //   update-balances
-  // Wave 3 — checa se algo ficou stale:
-  //   health-check
   const wave1 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/advance-balances", secret),
     callEndpoint(baseUrl, "/api/cron/materialize-recurrences", secret),
@@ -101,7 +93,6 @@ export async function GET(req: NextRequest) {
     callEndpoint(baseUrl, "/api/cron/send-pending-emails", secret),
   ]);
   const wave2 = await Promise.all([
-    callEndpoint(baseUrl, "/api/cron/update-balances", secret),
     callEndpoint(baseUrl, "/api/cron/sync-tesouro-prices", secret),
   ]);
   const wave3 = await Promise.all([
