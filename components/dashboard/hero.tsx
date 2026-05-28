@@ -4,7 +4,6 @@ import { formatMoneyParts } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 import { RollingNumber } from "@/components/ui/rolling-number";
 import { Sparkline } from "@/components/ui/sparkline";
-import { useLiveYield } from "@/hooks/use-live-yield";
 import { useComparisonCurrency, useDisplayCurrency, useMoneyContext } from "@/components/ui/money-provider";
 import { convert, CURRENCY_SYMBOLS, formatCurrency } from "@/lib/financial/currency";
 import { maskMoneyString, usePrivacy } from "@/components/ui/privacy-provider";
@@ -53,10 +52,10 @@ export function DashboardHero({
   const comparisonCurrency = useComparisonCurrency();
   const { rates } = useMoneyContext();
   const { hidden } = usePrivacy();
-  const { accumulated: liveAccrued } = useLiveYield(liveDailyYield, livePerSecond);
-  // Patrimônio total respira ao vivo somando o rendimento do dia até este instante.
-  // Só faz sentido no mês corrente — para meses passados/futuros mostramos estático.
-  const patrimonioLive = isCurrentMonth ? patrimonio + liveAccrued : patrimonio;
+  // Patrimônio estático — sem live yield (removido).
+  void liveDailyYield;
+  void livePerSecond;
+  const patrimonioLive = patrimonio;
   const { currency, integer, cents, sign } = formatMoneyParts(projectedNet, displayCurrency);
   const positiveTrend = projectedNet >= 0;
   const currencySymbol = CURRENCY_SYMBOLS[displayCurrency];

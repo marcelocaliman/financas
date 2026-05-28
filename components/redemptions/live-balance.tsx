@@ -1,12 +1,9 @@
-"use client";
-
-import { useLiveYield } from "@/hooks/use-live-yield";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 
 /**
- * Saldo de um ativo que respira ao vivo no FlowDiagram da página /resgates.
- * Some o rendimento acumulado do dia ao saldo base.
+ * Saldo estático de um ativo no FlowDiagram da página /resgates.
+ * Antes pulsava com rendimento do dia; sem compound, mostra direto o baseBalance.
  */
 export function LiveBalance({
   baseBalance,
@@ -17,11 +14,11 @@ export function LiveBalance({
   dailyYield: number;
   perSecond: number;
 }) {
-  const { accumulated } = useLiveYield(dailyYield, perSecond);
-  const value = baseBalance + accumulated;
+  void dailyYield;
+  void perSecond;
   return (
     <span className="font-mono tabular-nums">
-      <MoneyMask>{formatMoney(value)}</MoneyMask>
+      <MoneyMask>{formatMoney(baseBalance)}</MoneyMask>
     </span>
   );
 }

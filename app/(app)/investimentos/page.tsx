@@ -14,7 +14,7 @@ import Link from "next/link";
 import { Archive, History } from "lucide-react";
 import { listAccounts } from "@/services/accounts";
 import { listInvestments, listClosedInvestments, getLatestIndexer } from "@/services/investments";
-import { getLivePortfolio } from "@/services/live-yield";
+import { getCurrentValueMap, getAssetSnapshotMap } from "@/services/quotes";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import { getInvestmentHistory } from "@/services/investment-history";
 import { InvestmentHistoryChart } from "@/components/charts/investment-history-chart";
@@ -26,7 +26,8 @@ export default async function InvestimentosPage() {
     investments,
     closedInvestments,
     accounts,
-    live,
+    currentValues,
+    assetSnapshots,
     selic,
     cdi,
     filers,
@@ -36,7 +37,8 @@ export default async function InvestimentosPage() {
     listInvestments(),
     listClosedInvestments(),
     listAccounts(),
-    getLivePortfolio(),
+    getCurrentValueMap(),
+    getAssetSnapshotMap(),
     getLatestIndexer("selic"),
     getLatestIndexer("cdi"),
     listFilers(),
@@ -53,7 +55,7 @@ export default async function InvestimentosPage() {
     .filter((a) => ["checking", "savings", "cash"].includes(a.type))
     .map((a) => ({ id: a.id, name: a.name, institution: a.institution }));
 
-  const liveByAssetId = new Map(live.byAsset.map((a) => [a.id, a]));
+  const liveByAssetId = assetSnapshots;
 
   const fixedIncome = investments.filter(
     (i) => i.asset_type === "fixed_income_public" || i.asset_type === "fixed_income_private",
@@ -71,33 +73,29 @@ export default async function InvestimentosPage() {
     {
       key: "fixedIncome",
       label: "Renda fixa",
-      value: live.byClass.fixedIncome.balance,
+      value: currentValues.byClass.fixedIncome.balance,
       color: "var(--color-olive-600)",
     },
     {
       key: "fiis",
       label: "FIIs",
-      value: live.byClass.fiis.balance,
+      value: currentValues.byClass.fiis.balance,
       color: "var(--color-navy-700)",
     },
     {
       key: "stocks",
       label: "Ações / ETFs",
-      value: live.byClass.stocks.balance,
+      value: currentValues.byClass.stocks.balance,
       color: "var(--color-gold-600)",
     },
     {
       key: "other",
       label: "Cripto / outros",
-      value: live.byClass.other.balance,
+      value: currentValues.byClass.other.balance,
       color: "var(--color-rust-600)",
     },
   ];
-  const portfolioTotal =
-    live.byClass.fixedIncome.balance +
-    live.byClass.fiis.balance +
-    live.byClass.stocks.balance +
-    live.byClass.other.balance;
+  const portfolioTotal = currentValues.totalMarketBalance;
 
   return (
     <>
@@ -138,7 +136,12 @@ export default async function InvestimentosPage() {
         <EmptyState hasInvestmentAccounts={investmentAccounts.length > 0} />
       ) : (
         <>
-          <PortfolioLiveTicker portfolio={live} variant="full" />
+          <PortfolioLiveTicker
+            totalMarketBalance={currentValues.totalMarketBalance}
+            totalBaseBalance={currentValues.totalBaseBalance}
+            displayCurrency={currentValues.displayCurrency}
+            variant="full"
+          />
 
           {/* Alocação + Benchmarks (lado a lado em telas grandes) */}
           <div className="grid lg:grid-cols-[1.4fr_1fr] gap-5 mb-8">

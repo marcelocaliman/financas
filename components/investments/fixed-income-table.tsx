@@ -7,7 +7,7 @@ import { Money } from "@/components/ui/money";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { ASSET_TYPE_LABELS, type Investment } from "@/services/investments";
-import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
+import type { AssetSnapshot } from "@/services/quotes";
 
 type AccountLite = { id: string; name: string; institution: string };
 
@@ -21,7 +21,7 @@ export function FixedIncomeTable({
   regime = "solteiro",
 }: {
   investments: Investment[];
-  liveByAssetId: Map<string, LiveAssetMetrics>;
+  liveByAssetId: Map<string, AssetSnapshot>;
   investmentAccounts: AccountLite[];
   /** Contas pra receber saques de rendimento (não-investment) */
   destinationAccounts?: AccountLite[];

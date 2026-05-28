@@ -2,7 +2,7 @@
 
 import * as Popover from "@radix-ui/react-popover";
 import { Info } from "lucide-react";
-import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
+import type { AssetSnapshot } from "@/services/quotes";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils/cn";
  * cotação atual, valor a mercado, ganho/perda.
  * Aparece ao clicar no ícone "i" da linha.
  */
-export function AssetDetailPopover({ asset }: { asset: LiveAssetMetrics }) {
+export function AssetDetailPopover({ asset }: { asset: AssetSnapshot }) {
   return (
     <Popover.Root>
       <Popover.Trigger asChild>

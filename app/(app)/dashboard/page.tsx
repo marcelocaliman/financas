@@ -19,7 +19,7 @@ import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-tic
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals, getAccountsTotalsAt, listAccounts } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
-import { getLivePortfolio } from "@/services/live-yield";
+import { getCurrentValueMap } from "@/services/quotes";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getPortfolioState } from "@/services/portfolio-state";
 import { getRecurrencesForecast } from "@/services/recurrences";
@@ -85,7 +85,7 @@ export default async function DashboardPage({
     anomalies,
     portfolio,
     coverage,
-    live,
+    currentValues,
     physical,
     portfolioState,
     forecast,
@@ -109,7 +109,7 @@ export default async function DashboardPage({
     isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
     getPortfolioStats(),
     getCoverage(),
-    getLivePortfolio(),
+    getCurrentValueMap(),
     getPhysicalAssetsTotals(),
     getPortfolioState(currentYearForState),
     position === "future" ? getRecurrencesForecast(currentMonth) : null,
@@ -198,12 +198,9 @@ export default async function DashboardPage({
       ? patrimonioHistory[patrimonioHistory.length - 2].netWorth
       : null;
 
-  // Coverage: fallback quando investment_yields tá vazio mas há live yield.
-  // Mais honesto pro usuário ver "renda atual estimada × despesa média"
-  // do que ver "R$ 0,00/mês" quando claramente está rendendo.
-  const liveMonthlyYield = live.totalDailyYield * 21;
-  const monthlyYieldDisplay =
-    coverage.monthlyAverageYield > 0 ? coverage.monthlyAverageYield : liveMonthlyYield;
+  // Cobertura: usa yield mensal médio real cadastrado (investment_yields).
+  // Sem fallback de live compound — se não tem yield cadastrado, mostra 0.
+  const monthlyYieldDisplay = coverage.monthlyAverageYield;
   const coverageRatioDisplay =
     coverage.monthlyAverageExpense > 0
       ? monthlyYieldDisplay / coverage.monthlyAverageExpense
@@ -223,7 +220,7 @@ export default async function DashboardPage({
     {
       key: "fixed-income",
       label: "Renda fixa",
-      value: live.byClass.fixedIncome.balance,
+      value: currentValues.byClass.fixedIncome.balance,
       tone: "olive",
       hint: "Tesouro, CDB, LCI, LCA",
     },
@@ -231,9 +228,9 @@ export default async function DashboardPage({
       key: "variable",
       label: "Renda variável",
       value:
-        live.byClass.fiis.balance +
-        live.byClass.stocks.balance +
-        live.byClass.other.balance,
+        currentValues.byClass.fiis.balance +
+        currentValues.byClass.stocks.balance +
+        currentValues.byClass.other.balance,
       tone: "gold",
       hint: "FIIs, ações, cripto",
     },
@@ -257,10 +254,10 @@ export default async function DashboardPage({
   }
   const compositionTotal =
     liquidAccounts +
-    live.byClass.fixedIncome.balance +
-    live.byClass.fiis.balance +
-    live.byClass.stocks.balance +
-    live.byClass.other.balance +
+    currentValues.byClass.fixedIncome.balance +
+    currentValues.byClass.fiis.balance +
+    currentValues.byClass.stocks.balance +
+    currentValues.byClass.other.balance +
     physical.total;
 
   const subtitle = isCurrent
@@ -307,8 +304,8 @@ export default async function DashboardPage({
         patrimonio={netWorth}
         monthRatio={ratio}
         expenseRatio={expenseVsIncome}
-        liveDailyYield={live.totalDailyYield}
-        livePerSecond={live.totalPerSecond}
+        liveDailyYield={0}
+        livePerSecond={0}
         isCurrentMonth={isCurrent}
         isForecast={isForecastMode}
         patrimonioPrevious={patrimonioPrev}
@@ -316,8 +313,15 @@ export default async function DashboardPage({
         sobraSparkline={sobraSpark}
       />
 
-      {/* Ticker live só faz sentido "agora" */}
-      {isCurrent ? <PortfolioLiveTicker portfolio={live} variant="compact" /> : null}
+      {/* Ticker do portfolio (totais agregados, sem animação live) */}
+      {isCurrent ? (
+        <PortfolioLiveTicker
+          totalMarketBalance={currentValues.totalMarketBalance}
+          totalBaseBalance={currentValues.totalBaseBalance}
+          displayCurrency={currentValues.displayCurrency}
+          variant="compact"
+        />
+      ) : null}
 
       {/* Insight de anomalias (somente mês corrente) */}
       {isCurrent && insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
@@ -348,7 +352,7 @@ export default async function DashboardPage({
       {isCurrent ? (
         <div className="grid lg:grid-cols-2 gap-5 mb-8">
           <FireCard
-            monthlyPassiveIncome={liveMonthlyYield}
+            monthlyPassiveIncome={coverage.monthlyAverageYield}
             monthlyExpense={
               coverage.monthlyAverageExpense > 0
                 ? coverage.monthlyAverageExpense
@@ -362,10 +366,10 @@ export default async function DashboardPage({
             monthlyExpense={coverage.monthlyAverageExpense}
             ratio={coverageRatioDisplay}
             hasInvestments={portfolio.total > 0}
-            liveDailyYield={live.totalDailyYield}
-            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
-            isBusinessDayToday={live.isBusinessDayToday}
-            usingLiveFallback={coverage.monthlyAverageYield <= 0 && liveMonthlyYield > 0}
+            liveDailyYield={0}
+            accumulatedYieldUntilToday={0}
+            isBusinessDayToday={true}
+            usingLiveFallback={false}
           />
         </div>
       ) : null}

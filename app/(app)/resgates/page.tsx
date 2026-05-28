@@ -12,7 +12,7 @@ import { WithdrawSimulator } from "@/components/redemptions/withdraw-simulator";
 import { YearlyTrajectory } from "@/components/redemptions/yearly-trajectory";
 import { listAccounts } from "@/services/accounts";
 import { listInvestments, getCoverage } from "@/services/investments";
-import { getLivePortfolio } from "@/services/live-yield";
+import { getAssetSnapshotMap } from "@/services/quotes";
 import {
   ensurePendingIntents,
   getNextPending,
@@ -36,7 +36,7 @@ export default async function ResgatesPage() {
     history,
     investments,
     accounts,
-    live,
+    assetSnapshots,
     coverage,
   ] = await Promise.all([
     listYieldRules(),
@@ -45,18 +45,20 @@ export default async function ResgatesPage() {
     listRedemptionHistory(12),
     listInvestments(),
     listAccounts(),
-    getLivePortfolio(),
+    getAssetSnapshotMap(),
     getCoverage(),
   ]);
 
+  // Reduz pra forma esperada pelos componentes downstream (id, ticker,
+  // baseBalance, dailyYield). dailyYield = 0 sem compound.
   const liveByAssetId = new Map(
-    live.byAsset.map((a) => [
+    Array.from(assetSnapshots.values()).map((a) => [
       a.id,
-      { id: a.id, ticker: a.ticker, baseBalance: a.baseBalance, dailyYield: a.dailyYield },
+      { id: a.id, ticker: a.ticker, baseBalance: a.baseBalance, dailyYield: 0 },
     ]),
   );
   const fromInvestmentId = nextIntent?.rule?.investment?.id ?? null;
-  const fromLive = fromInvestmentId ? live.byAsset.find((a) => a.id === fromInvestmentId) : null;
+  const fromLive = fromInvestmentId ? assetSnapshots.get(fromInvestmentId) ?? null : null;
 
   const destinations = accounts
     .filter((a) => a.type !== "investment" && a.type !== "credit_card")
@@ -86,12 +88,11 @@ export default async function ResgatesPage() {
 
   const yieldOverview = await getYieldOverview(liveByAssetId, rulesByInvestmentId);
 
-  // Renda passiva = renda mensal estimada do portfolio TOTAL (RF + variável).
-  // No /resgates focamos só na RF (que tem rendimento previsível), mas a
-  // cobertura usa o total que de fato gera caixa.
-  const liveMonthlyYield = live.totalDailyYield * 21;
+  // Renda passiva mensal vem do que está cadastrado em investment_yields
+  // (via getCoverage). Sem live compound, é o valor real informado.
   const monthlyExpense = coverage.monthlyAverageExpense;
-  const coverageRatio = monthlyExpense > 0 ? liveMonthlyYield / monthlyExpense : 0;
+  const coverageRatio =
+    monthlyExpense > 0 ? coverage.monthlyAverageYield / monthlyExpense : 0;
 
   return (
     <>
@@ -119,8 +120,8 @@ export default async function ResgatesPage() {
             monthlyYield={yieldOverview.totals.monthlyYield}
             monthlyExpense={monthlyExpense}
             coverageRatio={coverageRatio}
-            accumulatedYieldUntilToday={live.totalFixedIncomeAccumulatedYield}
-            isBusinessDayToday={live.isBusinessDayToday}
+            accumulatedYieldUntilToday={0}
+            isBusinessDayToday={true}
           />
 
           {/* Próximo saque destacado (mantido — usuário precisa agir) */}

@@ -1,24 +1,25 @@
-"use client";
-
-import { useLiveYield } from "@/hooks/use-live-yield";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
-import type { LiveAssetMetrics } from "@/lib/financial/live-yield";
+import type { AssetSnapshot } from "@/services/quotes";
 
 /**
- * Cells client-side da linha de Renda Fixa que precisam pulsar a cada
- * segundo: saldo atual + variação em R$ e %. Tudo derivado do
- * `baseBalance` (checkpoint composto) + acumulado do dia via useLiveYield.
+ * Cells da linha de Renda Fixa: saldo atual + variação em R$ e %.
  *
- * O resto da linha (ticker, indexador, ações) fica como server-rendered.
+ * Sem compound diário — usa baseBalance direto (current_balance manual).
+ * Mantidos os mesmos nomes pra compat com chamadores.
  */
 
-export function LiveSaldoCell({ asset, fallback }: { asset: LiveAssetMetrics; fallback: number }) {
-  const { accumulated } = useLiveYield(asset.dailyYield, asset.perSecond);
-  const saldo = asset.baseBalance + accumulated;
+export function LiveSaldoCell({
+  asset,
+  fallback,
+}: {
+  asset: AssetSnapshot;
+  fallback: number;
+}) {
+  const saldo = asset.baseBalance > 0 ? asset.baseBalance : fallback;
   return (
     <span className="font-mono text-[13px] font-medium tabular-nums">
-      <MoneyMask>{formatMoney(saldo > 0 ? saldo : fallback)}</MoneyMask>
+      <MoneyMask>{formatMoney(saldo)}</MoneyMask>
     </span>
   );
 }
@@ -27,11 +28,10 @@ export function LiveVariationCell({
   asset,
   initialAmount,
 }: {
-  asset: LiveAssetMetrics;
+  asset: AssetSnapshot;
   initialAmount: number;
 }) {
-  const { accumulated } = useLiveYield(asset.dailyYield, asset.perSecond);
-  const saldo = asset.baseBalance + accumulated;
+  const saldo = asset.baseBalance;
   const delta = saldo - initialAmount;
   const deltaPct = initialAmount > 0 ? delta / initialAmount : 0;
 
@@ -40,9 +40,7 @@ export function LiveVariationCell({
   }
 
   const tone =
-    delta > 0
-      ? "text-olive-700 dark:text-olive-500"
-      : "text-rust-600";
+    delta > 0 ? "text-olive-700 dark:text-olive-500" : "text-rust-600";
   const sign = delta > 0 ? "+" : "";
 
   return (
