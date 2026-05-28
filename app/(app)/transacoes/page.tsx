@@ -84,21 +84,17 @@ export default async function TransacoesPage({
   const prevYear = mm - 1 === 0 ? yy - 1 : yy;
   const prevKey = `${prevYear}-${String(mm - 1 || 12).padStart(2, "0")}`;
 
-  // Default "Históricas: ON" quando navega pra mês anterior ao corrente.
-  // Faz sentido: mês passado provavelmente só tem históricas (lançamentos
-  // retroativos pra IR). Pra mês corrente/futuro, mantém OFF.
+  // Default "Históricas: ON" — tx histórica deve aparecer no /transacoes
+  // do mês correto (com badge "Histórica"). Ela não afeta saldo nem
+  // dashboard, mas o usuário precisa vê-la pra conferir o lançamento.
+  // Pode esconder via toggle (?showHistorical=0).
+  const showHistorical = params.showHistorical !== "0";
   const todayMonth = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
   }).format(new Date());
   const isPastMonth = curFrom.slice(0, 7) < todayMonth;
-  const showHistorical =
-    params.showHistorical === "1"
-      ? true
-      : params.showHistorical === "0"
-        ? false
-        : isPastMonth; // default true se mês passado, false caso contrário
 
   const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts, fontes] =
     await Promise.all([
