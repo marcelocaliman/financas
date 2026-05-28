@@ -1,6 +1,5 @@
 import { Money } from "@/components/ui/money";
 import { MoneyMask } from "@/components/ui/privacy-provider";
-import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
@@ -219,7 +218,6 @@ export function VariableIncomeTable({
               </div>
 
               <div className="flex items-center justify-end gap-1 mt-3 pt-3 border-t border-border/60">
-                {live ? <AssetLiveCell asset={live} /> : null}
                 {live ? <AssetDetailPopover asset={live} /> : null}
                 <InvestmentRowActions
                   investment={inv}
@@ -246,7 +244,6 @@ export function VariableIncomeTable({
               <Th right>% carteira</Th>
               <Th right>Variação</Th>
               <Th right>Dividendo (12m)</Th>
-              <th className="w-9" />
               <th className="w-9" />
             </tr>
           </thead>
@@ -351,9 +348,6 @@ export function VariableIncomeTable({
                     ) : (
                       <span className="text-faint-foreground">—</span>
                     )}
-                  </td>
-                  <td className="text-right pl-2">
-                    {live ? <AssetLiveCell asset={live} /> : "—"}
                   </td>
                   <td className="text-right pl-1">
                     {live ? <AssetDetailPopover asset={live} /> : null}

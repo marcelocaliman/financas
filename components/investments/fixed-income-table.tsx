@@ -1,4 +1,3 @@
-import { AssetLiveCell } from "./asset-live-cell";
 import { AssetDetailPopover } from "./asset-detail-popover";
 import { InvestmentRowActions } from "./investment-row-actions";
 import { LiveSaldoCell, LiveVariationCell } from "./fixed-income-row-live";
@@ -200,7 +199,6 @@ export function FixedIncomeTable({
                         : "—"}
                 </Badge>
                 <div className="flex items-center gap-1">
-                  {live ? <AssetLiveCell asset={live} /> : null}
                   {live ? <AssetDetailPopover asset={live} /> : null}
                   <InvestmentRowActions
                     investment={inv}
@@ -231,7 +229,6 @@ export function FixedIncomeTable({
               <Th right>% carteira</Th>
               <Th right>Variação</Th>
               <Th right>Indexador</Th>
-              <Th right>Acumulado · vivo</Th>
               <th className="w-9" />
               <th className="w-9" />
             </tr>
@@ -321,9 +318,6 @@ export function FixedIncomeTable({
                             ? `IPCA + ${inv.fixed_rate ?? 0}%`
                             : "—"}
                     </Badge>
-                  </td>
-                  <td className="text-right pl-2">
-                    {live ? <AssetLiveCell asset={live} /> : "—"}
                   </td>
                   <td className="text-right pl-1">
                     {live ? <AssetDetailPopover asset={live} /> : null}
