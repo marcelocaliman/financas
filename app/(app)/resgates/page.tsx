@@ -120,7 +120,6 @@ export default async function ResgatesPage() {
             monthlyYield={yieldOverview.totals.monthlyYield}
             monthlyExpense={monthlyExpense}
             coverageRatio={coverageRatio}
-            accumulatedYieldUntilToday={0}
             isBusinessDayToday={true}
           />
 

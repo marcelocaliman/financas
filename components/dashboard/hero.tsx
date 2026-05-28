@@ -20,8 +20,6 @@ export function DashboardHero({
   patrimonio,
   monthRatio,
   expenseRatio,
-  liveDailyYield = 0,
-  livePerSecond = 0,
   isCurrentMonth = true,
   isForecast = false,
   patrimonioPrevious = null,
@@ -36,8 +34,6 @@ export function DashboardHero({
   patrimonio: number;
   monthRatio: number; // 0..1
   expenseRatio: number; // gasto vs receita 0..1+
-  liveDailyYield?: number;
-  livePerSecond?: number;
   isCurrentMonth?: boolean;
   /** Mês futuro com previsão de recorrências (não materializadas ainda) */
   isForecast?: boolean;
@@ -53,8 +49,6 @@ export function DashboardHero({
   const { rates } = useMoneyContext();
   const { hidden } = usePrivacy();
   // Patrimônio estático — sem live yield (removido).
-  void liveDailyYield;
-  void livePerSecond;
   const patrimonioLive = patrimonio;
   const { currency, integer, cents, sign } = formatMoneyParts(projectedNet, displayCurrency);
   const positiveTrend = projectedNet >= 0;
@@ -201,7 +195,7 @@ export function DashboardHero({
               label={isCurrentMonth ? "Patrimônio" : `Patrimônio · ${monthLabel.split(" ")[0]}`}
               value={patrimonioLive}
               accent
-              live={isCurrentMonth && liveDailyYield > 0}
+              live={false}
               symbol={currencySymbol}
               hidden={hidden}
               displayCurrency={displayCurrency}

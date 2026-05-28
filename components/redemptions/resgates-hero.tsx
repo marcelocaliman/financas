@@ -1,4 +1,3 @@
-import { CoverageLiveAccrued } from "@/components/dashboard/coverage-live-accrued";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 
@@ -21,7 +20,6 @@ export function ResgatesHero({
   monthlyYield,
   monthlyExpense,
   coverageRatio,
-  accumulatedYieldUntilToday,
   isBusinessDayToday,
 }: {
   sacavelAgora: number;
@@ -30,7 +28,6 @@ export function ResgatesHero({
   monthlyExpense: number;
   /** monthlyYield / monthlyExpense (0..2+) */
   coverageRatio: number;
-  accumulatedYieldUntilToday: number;
   isBusinessDayToday: boolean;
 }) {
   const coveragePct = Math.min(200, Math.round(coverageRatio * 100));
@@ -83,15 +80,6 @@ export function ResgatesHero({
             </div>
             <div className="text-[11.5px] text-navy-400">de despesa fixa coberta</div>
           </div>
-        </div>
-
-        {/* Rendimento acumulado (estático, atualiza com cron diário) */}
-        <div className="mb-7">
-          <CoverageLiveAccrued
-            accumulatedUntilToday={accumulatedYieldUntilToday}
-            dailyYield={dailyYield}
-            isBusinessDayToday={isBusinessDayToday}
-          />
         </div>
 
         <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-6" />

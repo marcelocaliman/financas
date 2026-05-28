@@ -1,7 +1,6 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
-import { CoverageLiveAccrued } from "@/components/dashboard/coverage-live-accrued";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
@@ -304,8 +303,6 @@ export default async function DashboardPage({
         patrimonio={netWorth}
         monthRatio={ratio}
         expenseRatio={expenseVsIncome}
-        liveDailyYield={0}
-        livePerSecond={0}
         isCurrentMonth={isCurrent}
         isForecast={isForecastMode}
         patrimonioPrevious={patrimonioPrev}
@@ -366,10 +363,6 @@ export default async function DashboardPage({
             monthlyExpense={coverage.monthlyAverageExpense}
             ratio={coverageRatioDisplay}
             hasInvestments={portfolio.total > 0}
-            liveDailyYield={0}
-            accumulatedYieldUntilToday={0}
-            isBusinessDayToday={true}
-            usingLiveFallback={false}
           />
         </div>
       ) : null}
@@ -424,20 +417,11 @@ function CoveragePanel({
   monthlyExpense,
   ratio,
   hasInvestments,
-  liveDailyYield = 0,
-  accumulatedYieldUntilToday = 0,
-  isBusinessDayToday = true,
-  usingLiveFallback = false,
 }: {
   monthlyYield: number;
   monthlyExpense: number;
   ratio: number;
   hasInvestments: boolean;
-  liveDailyYield?: number;
-  accumulatedYieldUntilToday?: number;
-  isBusinessDayToday?: boolean;
-  /** True quando o número de yield veio da renda diária × 21 (sem dados em investment_yields) */
-  usingLiveFallback?: boolean;
 }) {
   const pct = Math.min(100, Math.round(ratio * 100));
   return (
@@ -458,18 +442,8 @@ function CoveragePanel({
         <p className="text-[12.5px] text-muted-foreground mt-1.5">
           {!hasInvestments
             ? "ainda sem ativos cadastrados"
-            : usingLiveFallback
-              ? "estimativa · renda diária × 21 dias úteis"
-              : "média líquida · últimos 3 meses"}
+            : "média líquida · últimos 3 meses"}
         </p>
-
-        {hasInvestments ? (
-          <CoverageLiveAccrued
-            accumulatedUntilToday={accumulatedYieldUntilToday}
-            dailyYield={liveDailyYield}
-            isBusinessDayToday={isBusinessDayToday}
-          />
-        ) : null}
 
         <div className="mt-6 flex items-center gap-4">
           <div className="relative w-[86px] h-[86px] shrink-0">
