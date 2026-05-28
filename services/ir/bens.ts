@@ -463,11 +463,10 @@ export async function getBensReport(
     if (pct === 0) continue; // não aparece na declaração desse filer
     // Conta no exterior usa código 62 (depósito em moeda estrangeira) — não
     // importa o type (checking/savings/investment): a Receita exige 62.
-    const code = acc.is_exterior
-      ? "62"
-      : acc.type === "investment"
-        ? "47"
-        : inferAccountCode(acc.type);
+    // Caixa em corretora (account.type=investment) vai pra 61 via
+    // inferAccountCode — é dinheiro parado, não título. CDB/RDB de verdade
+    // entram via tabela investments, não via accounts.
+    const code = acc.is_exterior ? "62" : inferAccountCode(acc.type);
     if (!code) continue;
     const codeMeta = BEM_CODES[code];
     const currency = a.currency as Currency;
