@@ -15,12 +15,12 @@ import type { Database, Currency } from "@/types/database";
 export const dynamic = "force-dynamic";
 
 const PAIRS: Array<[Currency, Currency]> = [
-  ["BRL", "EUR"],
-  ["EUR", "BRL"],
-  ["BRL", "USD"],
-  ["USD", "BRL"],
-  ["EUR", "USD"],
-  ["USD", "EUR"],
+  ["BRL", "EUR"], ["EUR", "BRL"],
+  ["BRL", "USD"], ["USD", "BRL"],
+  ["BRL", "GBP"], ["GBP", "BRL"],
+  ["EUR", "USD"], ["USD", "EUR"],
+  ["EUR", "GBP"], ["GBP", "EUR"],
+  ["USD", "GBP"], ["GBP", "USD"],
 ];
 
 async function fetchRate(from: Currency, to: Currency): Promise<{ date: string; rate: number } | null> {

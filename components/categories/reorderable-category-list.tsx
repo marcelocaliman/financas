@@ -26,7 +26,7 @@ export function ReorderableCategoryList({
   initial: Category[];
   statsMap: Map<string, CategoryStats>;
   /** Map<categoryId, {amount, currency}> com budget vigente */
-  budgetMap?: Map<string, { amount: number; currency: "BRL" | "EUR" | "USD" }>;
+  budgetMap?: Map<string, { amount: number; currency: "BRL" | "EUR" | "USD" | "GBP" }>;
 }) {
   const [, isPending] = useTransition();
   void isPending;

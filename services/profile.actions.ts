@@ -15,7 +15,7 @@ const householdSchema = z.object({
 });
 
 const displayCurrencySchema = z.object({
-  currency: z.enum(["BRL", "EUR", "USD"]),
+  currency: z.enum(["BRL", "EUR", "USD", "GBP"]),
 });
 
 const comparisonCurrencySchema = z.object({

@@ -41,6 +41,7 @@ const CURRENCIES: { value: Currency; label: string }[] = [
   { value: "BRL", label: "R$ Real (BRL)" },
   { value: "EUR", label: "€ Euro (EUR)" },
   { value: "USD", label: "US$ Dólar (USD)" },
+  { value: "GBP", label: "£ Libra (GBP)" },
 ];
 
 export function AccountSheet({

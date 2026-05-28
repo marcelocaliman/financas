@@ -24,6 +24,7 @@ type FonteLite = Pick<
   Tables<"fontes_pagadoras">,
   "id" | "name" | "type" | "cnpj" | "cpf"
 >;
+type TripLite = { id: string; name: string; destination: string };
 
 export function TransactionRow({
   tx,
@@ -31,12 +32,14 @@ export function TransactionRow({
   categories,
   debts = [],
   fontes = [],
+  trips = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
   debts?: DebtLite[];
   fontes?: FonteLite[];
+  trips?: TripLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -84,7 +87,7 @@ export function TransactionRow({
   };
 
   const { displayCurrency, rates } = useMoneyContext();
-  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD" | "GBP";
   const convertedAmount = convert(Number(tx.amount), txCurrency, displayCurrency, rates) ?? Number(tx.amount);
   const finalCurrency = txCurrency !== displayCurrency && convertedAmount !== Number(tx.amount)
     ? displayCurrency
@@ -263,6 +266,7 @@ export function TransactionRow({
         categories={categories}
         debts={debts}
         fontes={fontes}
+        trips={trips}
       />
       {tx.kind !== "transfer" ? (
         <SplitsDialog

@@ -32,7 +32,7 @@ const createSchema = z.object({
   description: z.string().optional(),
   targetAmount: z.coerce.number().positive(),
   currentAmount: z.coerce.number().nonnegative().default(0),
-  currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
+  currency: z.enum(["BRL", "EUR", "USD", "GBP"]).default("BRL"),
   targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   linkedAccountId: z.string().uuid().optional(),
   goalType: z.enum(GOAL_TYPES).default("outro"),

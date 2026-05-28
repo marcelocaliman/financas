@@ -23,7 +23,7 @@ const baseSchema = z.object({
   acquiredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
   acquiredValue: z.coerce.number().nonnegative().default(0),
   currentValue: z.coerce.number().nonnegative(),
-  currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
+  currency: z.enum(["BRL", "EUR", "USD", "GBP"]).default("BRL"),
   depreciationMethod: z.enum(["none", "linear"]).default("none"),
   depreciationYears: z.coerce.number().int().positive().optional(),
   // IR — campos opcionais por categoria

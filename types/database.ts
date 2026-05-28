@@ -61,7 +61,7 @@ export type PhysicalAssetCategory =
   | "tools"
   | "other";
 export type DepreciationMethod = "none" | "linear";
-export type Currency = "BRL" | "EUR" | "USD";
+export type Currency = "BRL" | "EUR" | "USD" | "GBP";
 
 export type IRModel = "simples" | "completo" | "auto";
 export type MarriageRegime =

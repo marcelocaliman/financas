@@ -23,7 +23,7 @@ export type GoalReminder = {
   daysUntil: number; // negativo = atrasado
   status: "overdue" | "due_today" | "upcoming";
   expectedAmount: number | null; // null = waterfall (depende da sobra real)
-  goalCurrency: "BRL" | "EUR" | "USD";
+  goalCurrency: "BRL" | "EUR" | "USD" | "GBP";
 };
 
 function todayISO(): string {

@@ -187,7 +187,7 @@ export function LatestTransactionsPanel({
 }
 
 function Row({ tx }: { tx: Transaction }) {
-  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+  const txCurrency = (tx.currency ?? "BRL") as "BRL" | "EUR" | "USD" | "GBP";
   const { integer, cents, currency: symbol } = formatMoneyParts(tx.amount, txCurrency);
   const isIncome = tx.kind === "income";
   const isTransfer = tx.kind === "transfer";

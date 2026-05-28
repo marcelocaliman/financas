@@ -234,8 +234,8 @@ function Stat({
   live?: boolean;
   symbol: string;
   hidden?: boolean;
-  displayCurrency: "BRL" | "EUR" | "USD";
-  comparisonCurrency: "BRL" | "EUR" | "USD" | null;
+  displayCurrency: "BRL" | "EUR" | "USD" | "GBP";
+  comparisonCurrency: "BRL" | "EUR" | "USD" | "GBP" | null;
   rates: Record<string, number>;
   approximate?: boolean;
   /** Δ% vs período anterior */

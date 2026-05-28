@@ -96,7 +96,7 @@ export type OnboardingPayload = {
     type: GoalType;
     name: string;
     targetAmount: number;
-    currency: "BRL" | "EUR" | "USD";
+    currency: "BRL" | "EUR" | "USD" | "GBP";
     targetDate?: string;
   };
 };

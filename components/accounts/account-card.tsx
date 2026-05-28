@@ -248,7 +248,7 @@ function InvestmentBreakdown({
 }: {
   cash: number;
   assets: number;
-  currency: "BRL" | "EUR" | "USD";
+  currency: "BRL" | "EUR" | "USD" | "GBP";
   balanceMode: "current" | "historical" | "forecast";
 }) {
   const total = cash + assets;

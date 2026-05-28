@@ -159,7 +159,7 @@ type GoalState = {
   type: GoalType;
   name: string;
   targetAmount: number;
-  currency: "BRL" | "EUR" | "USD";
+  currency: "BRL" | "EUR" | "USD" | "GBP";
   targetDate: string;
 };
 
@@ -1504,7 +1504,7 @@ function StepFinal({
               <Field label="Moeda" htmlFor="onb-goal-currency">
                 <Select
                   value={goal.currency}
-                  onValueChange={(v) => setGoal({ ...goal, currency: v as "BRL" | "EUR" | "USD" })}
+                  onValueChange={(v) => setGoal({ ...goal, currency: v as "BRL" | "EUR" | "USD" | "GBP" })}
                 >
                   <SelectTrigger id="onb-goal-currency">
                     <SelectValue />

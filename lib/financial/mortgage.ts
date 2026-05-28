@@ -188,7 +188,7 @@ export type FinancingDefaults = {
   loanSystem: LoanSystem;
 };
 
-export function getFinancingDefaults(currency: "BRL" | "EUR" | "USD"): FinancingDefaults {
+export function getFinancingDefaults(currency: "BRL" | "EUR" | "USD" | "GBP"): FinancingDefaults {
   if (currency === "EUR") {
     return {
       downPct: 0.20,

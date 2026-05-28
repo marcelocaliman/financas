@@ -572,16 +572,16 @@ function computePlannedMonthly(
   }
   if (goal.allocation_mode === "percentage" && goal.allocation_value != null) {
     const inDisplay = monthlySavingsInDisplay * Number(goal.allocation_value);
-    return convertOrSame(inDisplay, displayCurrency as "BRL" | "EUR" | "USD", goal.currency, rates);
+    return convertOrSame(inDisplay, displayCurrency as "BRL" | "EUR" | "USD" | "GBP", goal.currency, rates);
   }
   if (goal.allocation_mode === "waterfall") {
     // Estimativa otimista — assume que toda a sobra cai aqui
-    return convertOrSame(monthlySavingsInDisplay, displayCurrency as "BRL" | "EUR" | "USD", goal.currency, rates);
+    return convertOrSame(monthlySavingsInDisplay, displayCurrency as "BRL" | "EUR" | "USD" | "GBP", goal.currency, rates);
   }
   return 0;
 }
 
-function formatMoneyCompact(v: number, currency: "BRL" | "EUR" | "USD"): string {
+function formatMoneyCompact(v: number, currency: "BRL" | "EUR" | "USD" | "GBP"): string {
   const symbol = CURRENCY_SYMBOLS[currency];
   if (v >= 1_000_000) return `${symbol} ${(v / 1_000_000).toFixed(1).replace(".", ",")}M`;
   if (v >= 10_000) return `${symbol} ${(v / 1000).toFixed(0)}k`;

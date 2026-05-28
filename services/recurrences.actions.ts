@@ -7,7 +7,7 @@ import { getCurrentUserContext } from "@/services/auth";
 import type { RecurrenceFrequency, IRDeductibleKind } from "@/types/database";
 
 const KINDS = ["income", "expense", "transfer"] as const;
-const CURRENCIES = ["BRL", "EUR", "USD"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD", "GBP"] as const;
 const FREQUENCIES = ["daily", "weekly", "monthly", "yearly"] as const;
 const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
 

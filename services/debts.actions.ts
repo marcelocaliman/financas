@@ -17,7 +17,7 @@ const KINDS = [
   "outros",
 ] as const;
 
-const CURRENCIES = ["BRL", "EUR", "USD"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD", "GBP"] as const;
 const PARTICULAR_REASONS = ["pre_casamento", "heranca", "doacao", "sub_rogacao", "outros"] as const;
 
 const schema = z.object({

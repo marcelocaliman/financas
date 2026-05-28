@@ -13,7 +13,7 @@ import {
 } from "@/services/ir/auto-deductibles";
 import { cpfOptional } from "@/lib/financial/cpf-cnpj-zod";
 
-const CURRENCIES = ["BRL", "EUR", "USD"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD", "GBP"] as const;
 
 export type IRFormState = {
   ok?: boolean;

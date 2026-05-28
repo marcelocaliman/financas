@@ -136,7 +136,7 @@ export async function createInvestment(
     .select("currency")
     .eq("id", parsed.data.accountId)
     .maybeSingle();
-  const investmentCurrency = (acc?.currency ?? "BRL") as "BRL" | "EUR" | "USD";
+  const investmentCurrency = (acc?.currency ?? "BRL") as "BRL" | "EUR" | "USD" | "GBP";
 
   // Fallback: se o form não mandou CNPJ mas é ticker conhecido, pega do catálogo.
   const cnpjResolved =

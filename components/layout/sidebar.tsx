@@ -32,6 +32,7 @@ import {
   HandCoins,
   AlertTriangle,
   Inbox,
+  Plane,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -54,6 +55,7 @@ const mainNavItems: NavItem[] = [
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
   { label: "Assinaturas", href: "/assinaturas", icon: RefreshCw, group: "principal" },
+  { label: "Viagens", href: "/viagens", icon: Plane, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
   { label: "Orçamento", href: "/orcamento", icon: Target, group: "principal" },
   { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },

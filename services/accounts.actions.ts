@@ -7,7 +7,7 @@ import { getCurrentUserContext } from "@/services/auth";
 import { cnpjOptional } from "@/lib/financial/cpf-cnpj-zod";
 
 const ACCOUNT_TYPES = ["checking", "savings", "credit_card", "investment", "cash"] as const;
-const CURRENCIES = ["BRL", "EUR", "USD"] as const;
+const CURRENCIES = ["BRL", "EUR", "USD", "GBP"] as const;
 const PARTICULAR_REASONS = ["pre_casamento", "heranca", "doacao", "sub_rogacao", "outros"] as const;
 
 const createSchema = z.object({

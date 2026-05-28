@@ -8,7 +8,7 @@ import { getCurrentUserContext } from "@/services/auth";
 const upsertSchema = z.object({
   categoryId: z.string().uuid(),
   amount: z.coerce.number().nonnegative(),
-  currency: z.enum(["BRL", "EUR", "USD"]).default("BRL"),
+  currency: z.enum(["BRL", "EUR", "USD", "GBP"]).default("BRL"),
   alertThreshold: z.coerce.number().min(0).max(1).default(0.8),
   // YYYY-MM (mês a partir do qual vale). Default: mês corrente.
   startMonth: z
@@ -35,7 +35,7 @@ function currentMonthSP(): string {
 export async function upsertBudget(input: {
   categoryId: string;
   amount: number;
-  currency?: "BRL" | "EUR" | "USD";
+  currency?: "BRL" | "EUR" | "USD" | "GBP";
   alertThreshold?: number;
   startMonth?: string;
 }): Promise<BudgetActionState> {

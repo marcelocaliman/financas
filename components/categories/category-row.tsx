@@ -47,7 +47,7 @@ export function CategoryRow({
  stats?: CategoryStats;
  /** Orçamento mensal atual desta categoria, 0 se não há */
  budgetAmount?: number;
- budgetCurrency?: "BRL" | "EUR" | "USD";
+ budgetCurrency?: "BRL" | "EUR" | "USD" | "GBP";
  canMoveUp?: boolean;
  canMoveDown?: boolean;
  onMoveUp?: () => void;

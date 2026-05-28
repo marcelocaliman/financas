@@ -25,6 +25,7 @@ const CURRENCY_SYMBOLS: Record<Currency, string> = {
   BRL: "R$",
   EUR: "€",
   USD: "US$",
+  GBP: "£",
 };
 
 /**

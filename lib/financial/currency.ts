@@ -11,7 +11,7 @@ import type { Currency } from "@/types/database";
  * Pares idênticos (BRL→BRL) sempre retornam 1.
  */
 
-export const SUPPORTED_CURRENCIES: Currency[] = ["BRL", "EUR", "USD"];
+export const SUPPORTED_CURRENCIES: Currency[] = ["BRL", "EUR", "USD", "GBP"];
 
 export type RateMap = Record<string, number>;
 
@@ -69,12 +69,14 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   BRL: "R$",
   EUR: "€",
   USD: "US$",
+  GBP: "£",
 };
 
 export const CURRENCY_LOCALES: Record<Currency, string> = {
   BRL: "pt-BR",
   EUR: "pt-PT",
   USD: "en-US",
+  GBP: "en-GB",
 };
 
 const FORMATTERS: Partial<Record<Currency, Intl.NumberFormat>> = {};
