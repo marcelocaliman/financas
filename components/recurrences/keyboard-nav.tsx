@@ -8,6 +8,7 @@ const KEY_TO_SECTION: Record<string, SectionKey> = {
   d: "despesas",
   t: "transferencias",
   p: "pausadas",
+  e: "encerradas",
 };
 
 /**
@@ -18,7 +19,7 @@ const KEY_TO_SECTION: Record<string, SectionKey> = {
 export function RecurrenceKeyboardNav({
   available,
 }: {
-  available: { receitas: boolean; despesas: boolean; transferencias: boolean; pausadas: boolean };
+  available: { receitas: boolean; despesas: boolean; transferencias: boolean; pausadas: boolean; encerradas: boolean };
 }) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
@@ -48,6 +49,7 @@ export function RecurrenceKeyboardNav({
     { key: "d", label: "Despesas", visible: available.despesas },
     { key: "t", label: "Transferências", visible: available.transferencias },
     { key: "p", label: "Pausadas", visible: available.pausadas },
+    { key: "e", label: "Encerradas", visible: available.encerradas },
   ];
 
   const visibleItems = items.filter((i) => i.visible);

@@ -99,14 +99,19 @@ export default async function RecorrentesPage() {
     kind: c.kind,
   }));
 
-  const active = rules.filter((r) => r.is_active);
+  const today = todayISO();
+  const isEnded = (r: typeof rules[number]) =>
+    !!r.end_date && r.end_date < today;
+
+  // Pausadas (is_active=false) + Encerradas (end_date < hoje) saem do bloco
+  // principal — não geram mais transações, então poluem KPIs e calendário.
+  const ended = rules.filter((r) => r.is_active && isEnded(r));
   const paused = rules.filter((r) => !r.is_active);
+  const active = rules.filter((r) => r.is_active && !isEnded(r));
 
   const incomes = active.filter((r) => r.kind === "income");
   const expenses = active.filter((r) => r.kind === "expense");
   const transfers = active.filter((r) => r.kind === "transfer");
-
-  const today = todayISO();
 
   // Resumo macro
   const monthlyIncome = aggregateMonthly(incomes);
@@ -310,6 +315,28 @@ export default async function RecorrentesPage() {
                 ))}
               </RecurrenceSection>
             ) : null}
+
+            {ended.length > 0 ? (
+              <RecurrenceSection
+                keyboardId="encerradas"
+                label="Encerradas"
+                ruleIds={ended.map((r) => r.id)}
+                monthlyTotal={0}
+                tone="neutral"
+                defaultOpen={false}
+              >
+                {ended.map((r) => (
+                  <RecurrenceRow
+                    key={r.id}
+                    rule={r}
+                    nextOccurrences={[]}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                    fontes={fontesList}
+                  />
+                ))}
+              </RecurrenceSection>
+            ) : null}
           </div>
 
           <RecurrenceKeyboardNav
@@ -318,6 +345,7 @@ export default async function RecorrentesPage() {
               despesas: expenses.length > 0,
               transferencias: transfers.length > 0,
               pausadas: paused.length > 0,
+              encerradas: ended.length > 0,
             }}
           />
         </>

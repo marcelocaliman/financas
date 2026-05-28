@@ -10,7 +10,7 @@ import { Panel } from "@/components/ui/panel";
 import { setRecurringRulesActiveBatch } from "@/services/recurrences.actions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 
-export type SectionKey = "receitas" | "despesas" | "transferencias" | "pausadas";
+export type SectionKey = "receitas" | "despesas" | "transferencias" | "pausadas" | "encerradas";
 
 /**
  * Section da página /recorrentes. Recebe a lista de regras já filtradas
