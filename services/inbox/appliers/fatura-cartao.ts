@@ -60,6 +60,24 @@ export async function applyFaturaCartao(args: {
     .maybeSingle();
   const accountCurrency = (acc?.currency ?? "BRL") as Currency;
 
+  // Marco zero do household — itens com date < app_start_date entram como
+  // histórica-IR (aparecem no IR mas não mexem em saldo/dashboards).
+  type HhBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { app_start_date: string } | null }> };
+    };
+  };
+  const { data: hh } = await (
+    supabase.from as unknown as (t: string) => HhBuilder
+  )("households")
+    .select("app_start_date")
+    .eq("id", args.householdId)
+    .maybeSingle();
+  const appStartDate = hh?.app_start_date ?? null;
+
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
   type Row = { payload: Record<string, unknown>; key: string };
   const rows: Row[] = await Promise.all(
@@ -95,7 +113,7 @@ export async function applyFaturaCartao(args: {
             ? [`portador:${item.portador.toLowerCase().split(" ")[0]}`]
             : [],
           exclude_from_ir: false,
-          is_historical_ir_only: false,
+          is_historical_ir_only: appStartDate ? item.date < appStartDate : false,
           is_recurring: false,
           metadata: {
             source: "openai_inbox",

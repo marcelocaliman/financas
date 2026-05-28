@@ -56,6 +56,24 @@ export async function applyHolerite(args: {
     date: txDate,
   });
 
+  // Marco zero — salário com txDate pré-marco vira histórica-IR
+  type HhBuilder = {
+    select: (s: string) => {
+      eq: (
+        c: string,
+        v: string,
+      ) => { maybeSingle: () => Promise<{ data: { app_start_date: string } | null }> };
+    };
+  };
+  const { data: hh } = await (
+    supabase.from as unknown as (t: string) => HhBuilder
+  )("households")
+    .select("app_start_date")
+    .eq("id", args.householdId)
+    .maybeSingle();
+  const appStartDate = hh?.app_start_date ?? null;
+  const isHistorical = appStartDate ? txDate < appStartDate : false;
+
   // Dedup: checa se já existe ir_other_income com mesmas chaves
   type ExistingBuilder = {
     select: (s: string) => {
@@ -114,7 +132,7 @@ export async function applyHolerite(args: {
         irrf_amount: args.data.irrf_retained,
         inss_amount: args.data.inss_retained,
         exclude_from_ir: false,
-        is_historical_ir_only: false,
+        is_historical_ir_only: isHistorical,
         is_recurring: false,
         metadata: {
           source: "openai_inbox",
