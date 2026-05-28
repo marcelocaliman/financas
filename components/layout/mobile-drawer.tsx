@@ -23,6 +23,7 @@ import {
   Shield,
   Flame,
   HandCoins,
+  Inbox,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -39,6 +40,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "Home", href: "/dashboard", icon: Home, group: "principal" },
+  { label: "Inbox", href: "/inbox", icon: Inbox, group: "principal" },
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
   { label: "Assinaturas", href: "/assinaturas", icon: RefreshCw, group: "principal" },

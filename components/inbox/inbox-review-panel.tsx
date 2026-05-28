@@ -1,0 +1,353 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Panel } from "@/components/ui/panel";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { confirmDocumentAction } from "@/app/(app)/inbox/_actions/confirm";
+import { discardDocumentAction } from "@/app/(app)/inbox/_actions/discard";
+import { reextractAction } from "@/app/(app)/inbox/_actions/upload";
+import type { DocumentType, ExtractedData } from "@/services/inbox/document-types";
+
+type AccountLite = { id: string; name: string; type: string; institution: string | null };
+type FilerLite = { id: string; name: string };
+
+/**
+ * Painel de review do documento extraído. Permite editar campos críticos,
+ * escolher conta/filer/categoria e confirmar a aplicação nas tabelas reais.
+ */
+export function InboxReviewPanel({
+  documentId,
+  detectedType,
+  extractedData,
+  reviewedData,
+  accounts,
+  filers,
+}: {
+  documentId: string;
+  detectedType: DocumentType;
+  extractedData: ExtractedData["data"] | null;
+  reviewedData: ExtractedData["data"] | null;
+  accounts: AccountLite[];
+  filers: FilerLite[];
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  const data = (reviewedData ?? extractedData) as ExtractedData["data"];
+
+  // Estados de input (campos que o user escolhe)
+  const [accountId, setAccountId] = useState<string>(
+    accounts.find((a) => requiredAccountTypes(detectedType).includes(a.type))?.id ?? "",
+  );
+  const [filerId, setFilerId] = useState<string>(
+    filers.find((f) => f.name.toLowerCase().includes("marcelo"))?.id ?? filers[0]?.id ?? "",
+  );
+
+  const needsAccount = ["fatura_cartao", "holerite", "boleto", "extrato_bancario"].includes(
+    detectedType,
+  );
+  const needsFiler = ["holerite", "recibo_medico"].includes(detectedType);
+
+  const handleConfirm = () => {
+    if (needsAccount && !accountId) {
+      toast.error("Escolha uma conta.");
+      return;
+    }
+    if (needsFiler && !filerId) {
+      toast.error("Escolha um filer.");
+      return;
+    }
+    startTransition(async () => {
+      const r = await confirmDocumentAction({
+        documentId,
+        accountId: accountId || null,
+        ownerFilerId: filerId || null,
+      });
+      if (r.error) {
+        toast.error(r.error);
+        return;
+      }
+      const count = Object.values(r.createdIds ?? {}).reduce(
+        (s, ids) => s + ids.length,
+        0,
+      );
+      toast.success(`${count} registro(s) aplicado(s).`);
+      router.push("/inbox");
+    });
+  };
+
+  const handleDiscard = () => {
+    startTransition(async () => {
+      const r = await discardDocumentAction(documentId);
+      if (r.error) toast.error(r.error);
+      else {
+        toast.success("Descartado.");
+        router.push("/inbox");
+      }
+    });
+  };
+
+  const handleReextract = () => {
+    startTransition(async () => {
+      const r = await reextractAction(documentId);
+      if (r.error) toast.error(r.error);
+      else {
+        toast.success("Re-extraído.");
+        router.refresh();
+      }
+    });
+  };
+
+  // Filtra contas relevantes pro tipo
+  const accountOptions = accounts.filter((a) =>
+    requiredAccountTypes(detectedType).includes(a.type),
+  );
+
+  return (
+    <Panel>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium mb-3">
+        Dados extraídos
+      </div>
+
+      {/* Summary do que será aplicado */}
+      <DataSummary detectedType={detectedType} data={data} />
+
+      {/* Inputs de configuração */}
+      <div className="mt-5 pt-5 border-t border-border space-y-3">
+        {needsAccount ? (
+          <div>
+            <label className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium block mb-1.5">
+              Conta destino
+            </label>
+            <Select value={accountId} onValueChange={setAccountId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a conta…" />
+              </SelectTrigger>
+              <SelectContent>
+                {accountOptions.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name} {a.institution ? `· ${a.institution}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+
+        {needsFiler ? (
+          <div>
+            <label className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium block mb-1.5">
+              Filer dono
+            </label>
+            <Select value={filerId} onValueChange={setFilerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o filer…" />
+              </SelectTrigger>
+              <SelectContent>
+                {filers.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>
+                    {f.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-5 pt-4 border-t border-border flex flex-wrap items-center gap-2">
+        <Button onClick={handleConfirm} disabled={pending}>
+          {pending ? "Aplicando…" : "Confirmar e aplicar"}
+        </Button>
+        <Button variant="ghost" onClick={handleReextract} disabled={pending}>
+          Re-extrair
+        </Button>
+        <Button variant="ghost" onClick={handleDiscard} disabled={pending}>
+          Descartar
+        </Button>
+      </div>
+    </Panel>
+  );
+}
+
+function requiredAccountTypes(detectedType: DocumentType): string[] {
+  switch (detectedType) {
+    case "fatura_cartao":
+      return ["credit_card"];
+    case "holerite":
+      return ["checking", "savings"];
+    case "boleto":
+      return ["checking", "savings", "cash"];
+    case "extrato_bancario":
+      return ["checking", "savings", "investment"];
+    default:
+      return ["checking", "savings", "cash", "investment", "credit_card"];
+  }
+}
+
+/**
+ * Resumo legível do que será aplicado, por tipo de documento.
+ * Não edita os dados — só mostra. Edição inline pode vir em iteração futura.
+ */
+function DataSummary({
+  detectedType,
+  data,
+}: {
+  detectedType: DocumentType;
+  data: ExtractedData["data"];
+}) {
+  if (detectedType === "fatura_cartao") {
+    const d = data as Extract<ExtractedData, { type: "fatura_cartao" }>["data"];
+    const newItems = d.items.filter((i) => !i.is_payment && i.amount > 0);
+    return (
+      <div className="space-y-2">
+        <Row label="Total" value={`R$ ${d.total.toFixed(2).replace(".", ",")}`} />
+        <Row label="Vencimento" value={d.due_date ?? "—"} />
+        <Row label="Compras a importar" value={`${newItems.length} item(s)`} />
+        {d.items.some((i) => i.is_payment) ? (
+          <div className="text-[11.5px] text-muted-foreground italic mt-2">
+            (Pagamento da fatura anterior será ignorado.)
+          </div>
+        ) : null}
+        <details className="mt-3">
+          <summary className="text-[11.5px] font-mono text-faint-foreground cursor-pointer">
+            Ver itens ({newItems.length})
+          </summary>
+          <ul className="mt-2 space-y-1 max-h-[300px] overflow-y-auto">
+            {newItems.map((it, i) => (
+              <li key={i} className="text-[11.5px] flex justify-between gap-3 py-1 border-b border-border/40">
+                <span className="text-foreground truncate">
+                  {it.date} · {it.description}
+                  {it.installment_current && it.installment_total
+                    ? ` · ${it.installment_current}/${it.installment_total}`
+                    : ""}
+                </span>
+                <span className="font-mono tabular-nums shrink-0">
+                  R$ {it.amount.toFixed(2).replace(".", ",")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
+    );
+  }
+
+  if (detectedType === "holerite") {
+    const d = data as Extract<ExtractedData, { type: "holerite" }>["data"];
+    return (
+      <div className="space-y-2">
+        <Row label="Empresa" value={d.payer_name} />
+        <Row label="Funcionário" value={d.employee_name} />
+        <Row label="Competência" value={d.competence_month} />
+        <Row label="Salário bruto" value={`R$ ${d.gross_salary.toFixed(2).replace(".", ",")}`} />
+        <Row label="INSS" value={`R$ ${d.inss_retained.toFixed(2).replace(".", ",")}`} />
+        <Row label="IRRF" value={`R$ ${d.irrf_retained.toFixed(2).replace(".", ",")}`} />
+        <Row label="Líquido" value={`R$ ${d.net_salary.toFixed(2).replace(".", ",")}`} />
+        {d.is_thirteenth ? (
+          <div className="text-[11.5px] text-olive-700 dark:text-olive-500 italic mt-2">
+            13º salário — vai como rendimento exclusivo de fonte.
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (detectedType === "nota_corretagem") {
+    const d = data as Extract<ExtractedData, { type: "nota_corretagem" }>["data"];
+    return (
+      <div className="space-y-2">
+        <Row label="Corretora" value={d.broker_name} />
+        <Row label="Data" value={d.trade_date} />
+        <Row label="Operações" value={`${d.operations.length}`} />
+        <Row label="Taxas totais" value={`R$ ${d.total_fees.toFixed(2).replace(".", ",")}`} />
+        <details className="mt-3">
+          <summary className="text-[11.5px] font-mono text-faint-foreground cursor-pointer">
+            Ver operações
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {d.operations.map((op, i) => (
+              <li key={i} className="text-[11.5px] flex justify-between gap-3 py-1 border-b border-border/40">
+                <span>{op.ticker} · {op.side === "buy" ? "C" : "V"} {op.quantity}</span>
+                <span className="font-mono">R$ {op.unit_price.toFixed(2)}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
+    );
+  }
+
+  if (detectedType === "recibo_medico") {
+    const d = data as Extract<ExtractedData, { type: "recibo_medico" }>["data"];
+    return (
+      <div className="space-y-2">
+        <Row label="Prestador" value={d.provider_name} />
+        <Row label="Tipo" value={d.kind} />
+        <Row label="Data" value={d.payment_date} />
+        <Row label="Valor" value={`R$ ${d.amount.toFixed(2).replace(".", ",")}`} />
+        {d.patient_name ? <Row label="Paciente" value={d.patient_name} /> : null}
+      </div>
+    );
+  }
+
+  if (detectedType === "boleto") {
+    const d = data as Extract<ExtractedData, { type: "boleto" }>["data"];
+    return (
+      <div className="space-y-2">
+        <Row label="Beneficiário" value={d.payee_name} />
+        <Row label="Vencimento" value={d.due_date} />
+        <Row label="Valor" value={`R$ ${d.amount.toFixed(2).replace(".", ",")}`} />
+        <Row label="Descrição" value={d.description} />
+      </div>
+    );
+  }
+
+  if (detectedType === "extrato_bancario") {
+    const d = data as Extract<ExtractedData, { type: "extrato_bancario" }>["data"];
+    return (
+      <div className="space-y-2">
+        <Row label="Banco" value={d.bank_name} />
+        <Row label="Período" value={`${d.period_start} a ${d.period_end}`} />
+        <Row label="Movimentos" value={`${d.movements.length}`} />
+        <Row label="Saldo inicial" value={`R$ ${d.opening_balance.toFixed(2)}`} />
+        <Row label="Saldo final" value={`R$ ${d.closing_balance.toFixed(2)}`} />
+      </div>
+    );
+  }
+
+  // Outros
+  const d = data as Extract<ExtractedData, { type: "outros" }>["data"];
+  return (
+    <div className="space-y-2">
+      <div className="text-[12.5px] text-muted-foreground italic mb-2">{d.summary}</div>
+      <ul className="space-y-1">
+        {d.key_facts.map((f, i) => (
+          <li key={i}>
+            <Row label={f.label} value={f.value} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-baseline gap-3 text-[12.5px]">
+      <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground shrink-0">
+        {label}
+      </span>
+      <span className="text-foreground font-medium tabular-nums text-right">{value}</span>
+    </div>
+  );
+}
