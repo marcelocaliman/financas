@@ -82,6 +82,7 @@ export function AddTransactionDialog({
   const [irrfAmount, setIrrfAmount] = useState<number>(0);
   const [inssAmount, setInssAmount] = useState<number>(0);
   const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(false);
+  const [excludeFromIr, setExcludeFromIr] = useState<boolean>(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   // Quando muda a conta, ajusta a moeda default da transação pra moeda dela.
@@ -432,6 +433,34 @@ export function AddTransactionDialog({
                   </div>
                 ) : null}
               </div>
+            ) : null}
+
+            {/* Não declarar no IRPF — só pra income (receitas isentas, presentes, reembolsos, etc.) */}
+            {kind === "income" ? (
+              <label
+                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+                htmlFor="excludeFromIr"
+              >
+                <input
+                  type="checkbox"
+                  id="excludeFromIr"
+                  name="excludeFromIr"
+                  value="1"
+                  checked={excludeFromIr}
+                  onChange={(e) => setExcludeFromIr(e.target.checked)}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div className="text-[12.5px] leading-relaxed">
+                  <span className="font-medium text-foreground">
+                    Não declarar no IRPF
+                  </span>
+                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                    Receita fica no app pra controle pessoal mas é ignorada nos
+                    relatórios e no arquivo .DEC. Use pra presentes, reembolsos,
+                    transferências entre contas próprias, etc.
+                  </span>
+                </div>
+              </label>
             ) : null}
 
             {/* Histórica IR — só pra income/expense; pula em transfer */}

@@ -28,6 +28,8 @@ const baseSchema = z.object({
   fontePagadoraId: z.string().uuid().optional().nullable(),
   irrfAmount: z.coerce.number().nonnegative().optional().nullable(),
   inssAmount: z.coerce.number().nonnegative().optional().nullable(),
+  // "Não declarar no IRPF" — ignora pra fins de IR (relatórios, .DEC, checklist)
+  excludeFromIr: z.coerce.boolean().optional().default(false),
   // Marca como "histórica pra IR" — não afeta saldo nem entra em dashboards
   isHistoricalIrOnly: z.coerce.boolean().optional().default(false),
 });
@@ -110,6 +112,7 @@ export async function createTransaction(
     fontePagadoraId: formData.get("fontePagadoraId") || null,
     irrfAmount: formData.get("irrfAmount") || null,
     inssAmount: formData.get("inssAmount") || null,
+    excludeFromIr: formData.get("excludeFromIr") === "1",
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -195,6 +198,7 @@ export async function createTransaction(
     fonte_pagadora_id: parsed.data.kind === "income" ? (parsed.data.fontePagadoraId ?? null) : null,
     irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
+    exclude_from_ir: parsed.data.excludeFromIr ?? false,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
   };
   const { error } = await supabase.from("transactions").insert(insertPayload as never);
@@ -225,6 +229,7 @@ export async function updateTransaction(
     fontePagadoraId: formData.get("fontePagadoraId") || null,
     irrfAmount: formData.get("irrfAmount") || null,
     inssAmount: formData.get("inssAmount") || null,
+    excludeFromIr: formData.get("excludeFromIr") === "1",
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
@@ -264,6 +269,7 @@ export async function updateTransaction(
     fonte_pagadora_id: parsed.data.kind === "income" ? (parsed.data.fontePagadoraId ?? null) : null,
     irrf_amount: parsed.data.kind === "income" ? (parsed.data.irrfAmount ?? null) : null,
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
+    exclude_from_ir: parsed.data.excludeFromIr ?? false,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
   };
   const { error } = await supabase
