@@ -129,8 +129,6 @@ export default async function IRYearPage({
   // converge naturalmente pro `today` à medida que o ano avança. Pra ano fechado,
   // o `today` é o valor congelado de 31/12 (snapshot do close-year).
   const totalAtivos = bens.totals.today;
-  const totalRendimentos =
-    rendimentos.tributaveis.total + rendimentos.isentos.total + rendimentos.exclusivos.total;
 
   return (
     <>
@@ -221,18 +219,12 @@ export default async function IRYearPage({
       ) : null}
 
       {/* TIER 1 — KPIs gerais */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
         <KpiCard
           label="Total de bens"
           textValue={`R$ ${fmtBRL(totalAtivos)}`}
           tone="neutral"
           hint={`${bens.byGroup.reduce((s, g) => s + g.items.length, 0)} itens em ${bens.byGroup.length} grupos`}
-        />
-        <KpiCard
-          label="Recebimentos no ano"
-          textValue={`R$ ${fmtBRL(totalRendimentos)}`}
-          tone="positive"
-          hint={`tribut R$ ${fmtBRL(rendimentos.tributaveis.total)} + exclusivos R$ ${fmtBRL(rendimentos.exclusivos.total)}`}
         />
         <KpiCard
           label="DARFs renda variável"
@@ -261,6 +253,22 @@ export default async function IRYearPage({
             />
           );
         })()}
+      </div>
+
+      {/* TIER 1.5 — Renda discriminada (tributável vs já-pago-na-fonte) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <KpiCard
+          label="Renda tributável"
+          textValue={`R$ ${fmtBRL(rendimentos.tributaveis.total)}`}
+          tone="positive"
+          hint="Salário, aluguel, autônomo — é em cima disso que a Receita calcula o imposto"
+        />
+        <KpiCard
+          label="Já pago na fonte"
+          textValue={`R$ ${fmtBRL(rendimentos.exclusivos.total)}`}
+          tone="muted"
+          hint="Vendas TD, JCP, 13º — IR já retido na hora. Só declarado, não entra na conta"
+        />
       </div>
 
       {/* TIER 2 — Bens e Direitos */}
