@@ -5,6 +5,8 @@ import { getCurrentValueMap } from "@/services/quotes";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { dateInSP } from "@/lib/financial/business-days";
+import { valueForFiler, type FilerForSplit } from "@/lib/financial/ownership-split";
+import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -142,7 +144,6 @@ export const getPortfolioState = cache(
     householdId?: string,
     filerId?: string,
   ): Promise<PortfolioState> => {
-    void filerId; // TODO: filtro por filer (ownership split) — segunda iteração
     const supabase = await createClient();
     const todayIso = dateInSP(new Date()).iso;
     const endOfYear = `${year}-12-31`;
@@ -165,30 +166,30 @@ export const getPortfolioState = cache(
         ? supabase
             .from("investments")
             .select(
-              "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, initial_amount, current_balance, currency, quantity, purchase_date, closed_at, closed_reason, owner_filer_id, ownership_percent, is_active, exclude_from_ir",
+              "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, initial_amount, current_balance, currency, quantity, purchase_date, closed_at, closed_reason, owner_filer_id, ownership_percent, is_particular, is_active, exclude_from_ir",
             )
             .eq("household_id", householdId)
         : supabase
             .from("investments")
             .select(
-              "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, initial_amount, current_balance, currency, quantity, purchase_date, closed_at, closed_reason, owner_filer_id, ownership_percent, is_active, exclude_from_ir",
+              "id, ticker, name, asset_type, indexer, indexer_multiplier, fixed_rate, initial_amount, current_balance, currency, quantity, purchase_date, closed_at, closed_reason, owner_filer_id, ownership_percent, is_particular, is_active, exclude_from_ir",
             )),
       (householdId
         ? supabase
             .from("accounts")
-            .select("id, name, type, current_balance, currency, is_active, created_at, exclude_from_ir, owner_filer_id, ownership_percent")
+            .select("id, name, type, current_balance, currency, is_active, created_at, exclude_from_ir, owner_filer_id, ownership_percent, is_particular")
             .eq("household_id", householdId)
         : supabase
             .from("accounts")
-            .select("id, name, type, current_balance, currency, is_active, created_at, exclude_from_ir, owner_filer_id, ownership_percent")),
+            .select("id, name, type, current_balance, currency, is_active, created_at, exclude_from_ir, owner_filer_id, ownership_percent, is_particular")),
       (householdId
         ? supabase
             .from("physical_assets")
-            .select("id, name, category, acquired_value, current_value, currency, acquired_at, is_active, exclude_from_ir, owner_filer_id, ownership_percent")
+            .select("id, name, category, acquired_value, current_value, currency, acquired_at, is_active, exclude_from_ir, owner_filer_id, ownership_percent, is_particular")
             .eq("household_id", householdId)
         : supabase
             .from("physical_assets")
-            .select("id, name, category, acquired_value, current_value, currency, acquired_at, is_active, exclude_from_ir, owner_filer_id, ownership_percent")),
+            .select("id, name, category, acquired_value, current_value, currency, acquired_at, is_active, exclude_from_ir, owner_filer_id, ownership_percent, is_particular")),
       householdId
         ? supabase
             .from("ir_prior_year_balances")
@@ -206,6 +207,45 @@ export const getPortfolioState = cache(
       if (p.account_id) prevValueMap.set(`account:${p.account_id}`, Number(p.balance));
       if (p.physical_asset_id) prevValueMap.set(`physical:${p.physical_asset_id}`, Number(p.balance));
     }
+
+    // Filer split (ownership): se filerId foi passado, carrega contexto de
+    // regime + filers e aplica a proporção a cada ativo. Senão, retorna 100%.
+    const filersForSplit: FilerForSplit[] = [];
+    let regime: import("@/types/database").MarriageRegime = "solteiro";
+    let marriageDate: string | null = null;
+    if (filerId) {
+      const [allFilers, regimeCtx] = await Promise.all([
+        listFilers(householdId),
+        getRegimeContext(householdId),
+      ]);
+      filersForSplit.push(
+        ...allFilers.map((f) => ({ id: f.id, is_primary: f.is_primary })),
+      );
+      regime = regimeCtx.regime;
+      marriageDate = regimeCtx.marriageDate;
+    }
+    const applyFilerShare = (
+      fullValue: number,
+      asset: {
+        owner_filer_id: string | null;
+        is_particular: boolean | null;
+        ownership_percent: number | null;
+      },
+    ): number => {
+      if (!filerId) return fullValue;
+      return valueForFiler(
+        fullValue,
+        {
+          owner_filer_id: asset.owner_filer_id,
+          is_particular: asset.is_particular ?? false,
+          ownership_percent: asset.ownership_percent,
+        },
+        filersForSplit,
+        regime,
+        marriageDate,
+        filerId,
+      );
+    };
 
     const items: PortfolioItem[] = [];
 
@@ -226,9 +266,13 @@ export const getPortfolioState = cache(
       const todayNative =
         currentValue != null ? currentValue : Number(inv.current_balance ?? 0);
 
-      // Conversão pra BRL
-      const initialBRL = c === "BRL" ? initial : convertOrSame(initial, c, "BRL", rates);
-      const todayBRL = c === "BRL" ? todayNative : convertOrSame(todayNative, c, "BRL", rates);
+      // Conversão pra BRL e aplicação do filer share (se filerId)
+      const fullInitialBRL =
+        c === "BRL" ? initial : convertOrSame(initial, c, "BRL", rates);
+      const fullTodayBRL =
+        c === "BRL" ? todayNative : convertOrSame(todayNative, c, "BRL", rates);
+      const initialBRL = applyFilerShare(fullInitialBRL, inv);
+      const todayBRL = applyFilerShare(fullTodayBRL, inv);
 
       // Projeção 31/12 = mesmo valor atual (sem compound automático).
       // O usuário atualiza current_balance manualmente quando quiser.
@@ -266,7 +310,9 @@ export const getPortfolioState = cache(
       if (!a.is_active) continue;
       const c = (a.currency ?? "BRL") as Currency;
       const balance = Number(a.current_balance ?? 0);
-      const balanceBRL = c === "BRL" ? balance : convertOrSame(balance, c, "BRL", rates);
+      const fullBalanceBRL =
+        c === "BRL" ? balance : convertOrSame(balance, c, "BRL", rates);
+      const balanceBRL = applyFilerShare(fullBalanceBRL, a);
       const previousYearEnd = prevValueMap.get(`account:${a.id}`) ?? 0;
 
       items.push({
@@ -297,8 +343,12 @@ export const getPortfolioState = cache(
       const c = (p.currency ?? "BRL") as Currency;
       const acquired = Number(p.acquired_value ?? 0);
       const current = Number(p.current_value ?? 0);
-      const acquiredBRL = c === "BRL" ? acquired : convertOrSame(acquired, c, "BRL", rates);
-      const currentBRL = c === "BRL" ? current : convertOrSame(current, c, "BRL", rates);
+      const fullAcquiredBRL =
+        c === "BRL" ? acquired : convertOrSame(acquired, c, "BRL", rates);
+      const fullCurrentBRL =
+        c === "BRL" ? current : convertOrSame(current, c, "BRL", rates);
+      const acquiredBRL = applyFilerShare(fullAcquiredBRL, p);
+      const currentBRL = applyFilerShare(fullCurrentBRL, p);
       const previousYearEnd = prevValueMap.get(`physical:${p.id}`) ?? 0;
       const variation = currentBRL - acquiredBRL;
 
