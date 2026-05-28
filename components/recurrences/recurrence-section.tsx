@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
@@ -46,6 +47,7 @@ export function RecurrenceSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const count = ruleIds.length;
   const confirm = useConfirm();
@@ -97,6 +99,7 @@ export function RecurrenceSection({
       toast.success(
         `${r.updated} recorrência${r.updated === 1 ? "" : "s"} ${active ? "reativada" : "pausada"}${r.updated === 1 ? "" : "s"}.`,
       );
+      router.refresh();
     });
   };
 

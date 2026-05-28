@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import * as Popover from "@radix-ui/react-popover";
 import { ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Calendar, Pause, Pencil, Play, Tag as TagIcon, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -68,6 +69,7 @@ export function RecurrenceRow({
  const [editing, setEditing] = useState(false);
  const [pending, startTransition] = useTransition();
  const confirm = useConfirm();
+ const router = useRouter();
 
  const kindIcon =
  rule.kind === "income" ? (
@@ -94,7 +96,10 @@ export function RecurrenceRow({
  startTransition(async () => {
  const r = await setRecurringRuleActive(rule.id, !rule.is_active);
  if (r.error) toast.error(r.error);
- else toast.success(rule.is_active ? "Pausada." : "Reativada.");
+ else {
+ toast.success(rule.is_active ? "Pausada." : "Reativada.");
+ router.refresh();
+ }
  });
  };
 
@@ -103,10 +108,12 @@ export function RecurrenceRow({
  startTransition(async () => {
  const r = await toggleSubscriptionTag(rule.id, !isSubscription);
  if (r.error) toast.error(r.error);
- else
+ else {
  toast.success(
  isSubscription ? "Removida das assinaturas." : "Marcada como assinatura.",
  );
+ router.refresh();
+ }
  });
  };
 
@@ -122,7 +129,10 @@ export function RecurrenceRow({
  startTransition(async () => {
  const r = await deleteRecurringRule(rule.id);
  if (r.error) toast.error(r.error);
- else toast.success("Excluída.");
+ else {
+ toast.success("Excluída.");
+ router.refresh();
+ }
  });
  };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Archive, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ export function DebtCard({
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const confirm = useConfirm();
+  const router = useRouter();
 
   const current = Number(debt.current_balance);
   const original = Number(debt.original_amount);
@@ -46,7 +48,10 @@ export function DebtCard({
     startTransition(async () => {
       const r = await archiveDebt(debt.id);
       if (r.error) toast.error(r.error);
-      else toast.success("Arquivada.");
+      else {
+        toast.success("Arquivada.");
+        router.refresh();
+      }
     });
   }
 
@@ -61,7 +66,10 @@ export function DebtCard({
     startTransition(async () => {
       const r = await deleteDebt(debt.id);
       if (r.error) toast.error(r.error);
-      else toast.success("Excluída.");
+      else {
+        toast.success("Excluída.");
+        router.refresh();
+      }
     });
   }
 

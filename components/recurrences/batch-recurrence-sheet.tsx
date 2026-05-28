@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Plus, Check } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -127,6 +128,7 @@ export function BatchRecurrenceSheet({
 }) {
   const [drafts, setDrafts] = useState<DraftRule[]>([]);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
@@ -214,6 +216,7 @@ export function BatchRecurrenceSheet({
       }
       toast.success(`${r.created} recorrência${r.created === 1 ? "" : "s"} criada${r.created === 1 ? "" : "s"}.`);
       onOpenChange(false);
+      router.refresh();
     });
   }
 

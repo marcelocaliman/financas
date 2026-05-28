@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Pause, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export function PauseAllButton({
   pausedIds: string[];
 }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const confirm = useConfirm();
   const hasActive = activeIds.length > 0;
   const hasPaused = pausedIds.length > 0;
@@ -44,6 +46,7 @@ export function PauseAllButton({
       toast.success(
         `${r.updated} ${mode === "resume" ? "reativada" : "pausada"}${(r.updated ?? 0) === 1 ? "" : "s"}.`,
       );
+      router.refresh();
     });
   };
 

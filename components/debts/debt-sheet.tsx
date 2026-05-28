@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -65,12 +66,14 @@ export function DebtSheet({
     }
   }
 
+  const router = useRouter();
   useEffect(() => {
     if (state?.ok) {
       toast.success(isEdit ? "Dívida atualizada." : "Dívida cadastrada.");
       onOpenChange(false);
+      router.refresh();
     }
-  }, [state, isEdit, onOpenChange]);
+  }, [state, isEdit, onOpenChange, router]);
 
   const linkableAssets = assets.filter((a) =>
     kind === "financiamento_imovel"

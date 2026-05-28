@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export function BudgetInlineEditor({
   const [editing, setEditing] = useState(false);
   const [amount, setAmount] = useState(currentAmount);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const handleSave = () => {
     startTransition(async () => {
@@ -43,6 +45,7 @@ export function BudgetInlineEditor({
       }
       toast.success(amount === 0 ? "Orçamento removido." : "Orçamento atualizado.");
       setEditing(false);
+      router.refresh();
     });
   };
 

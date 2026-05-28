@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -33,6 +34,7 @@ export function BudgetManager({
 }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
   const [newCategoryId, setNewCategoryId] = useState<string>("");
   const [newAmount, setNewAmount] = useState<number>(0);
 
@@ -49,6 +51,7 @@ export function BudgetManager({
       }
       toast.success(amount === 0 ? "Orçamento removido." : "Orçamento salvo.");
       setEditing(null);
+      router.refresh();
     });
   };
 
