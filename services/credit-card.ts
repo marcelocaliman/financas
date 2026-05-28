@@ -56,14 +56,18 @@ function dateISO(y: number, m: number, d: number): string {
 /**
  * Calcula a fatura ATUALMENTE ABERTA pra um cartão.
  *
- * Semântica de close_day (alinhada com bancos brasileiros): close_day é o
- * dia em que a fatura FECHA/É GERADA. O ciclo contém transações do close_day
- * do mês anterior (inclusivo) até o dia ANTERIOR ao close_day atual (inclusivo).
+ * Semântica de close_day INCLUSIVO (alinhada com bancos brasileiros):
+ * close_day é o dia em que a fatura fecha — compras DESSE dia ainda entram
+ * na fatura que fecha. O ciclo cobre do dia SEGUINTE ao close_day do mês
+ * anterior até o close_day atual (incluso).
  *
- * Ex: close=27, due=5. Hoje=20/05 (ainda não fechou esse mês):
- *   - Fatura abre: 27/04
- *   - Fatura fecha: 27/05 (período termina em 26/05)
+ * Ex: close=26, due=5. Hoje=20/05 (ainda não fechou esse mês):
+ *   - Fatura abre: 27/04 (dia seguinte ao close anterior)
+ *   - Fatura fecha: 26/05 (período termina em 26/05, incluso)
  *   - Vence: 05/06
+ *
+ * Espelha a função SQL public.bill_window_for_due_date — ambas precisam
+ * usar a mesma semântica pra cálculos baterem.
  */
 export function computeBillWindow(
   closeDay: number,
@@ -74,8 +78,8 @@ export function computeBillWindow(
   const m = today.getUTCMonth() + 1; // 1-12
   const d = today.getUTCDate();
 
-  // Fatura desse mês já fechou? (close_day inclusivo significa que no DIA
-  // close_day a fatura ainda tá aberta — ela fecha na transição pro dia seguinte)
+  // Fatura desse mês já fechou? close_day inclusivo: no DIA close_day a
+  // fatura ainda tá aberta — fecha na transição pro dia seguinte.
   const thisMonthClose = clampDay(closeDay, y, m);
   const alreadyClosed = d > thisMonthClose;
 
@@ -88,19 +92,18 @@ export function computeBillWindow(
   const dueM = dueDay > closeDay ? targetM : (targetM === 12 ? 1 : targetM + 1);
   const dueD = clampDay(dueDay, dueY, dueM);
 
-  // Período: do close_day do mês anterior (inclusivo) ao dia ANTES do close atual.
+  // Período: do dia SEGUINTE ao close_day do mês anterior até o close_day
+  // atual (incluso). Ex: close=26, ciclo Mai = [27/04, 26/05].
   const prevY = targetM === 1 ? targetY - 1 : targetY;
   const prevM = targetM === 1 ? 12 : targetM - 1;
   const prevCloseD = clampDay(closeDay, prevY, prevM);
-  const periodStart = dateISO(prevY, prevM, prevCloseD);
-
-  // periodEnd = close_day - 1 dia. Se close=1, vira último dia do mês anterior.
-  const periodEnd = (() => {
-    if (closeD > 1) return dateISO(targetY, targetM, closeD - 1);
-    const lastPrevM = targetM === 1 ? 12 : targetM - 1;
-    const lastPrevY = targetM === 1 ? targetY - 1 : targetY;
-    return dateISO(lastPrevY, lastPrevM, lastDayOfMonth(lastPrevY, lastPrevM));
+  // periodStart = prevClose + 1 dia. Se prevClose == último dia do mês, vira dia 1 do mês alvo.
+  const periodStart = (() => {
+    const prevLastDay = lastDayOfMonth(prevY, prevM);
+    if (prevCloseD < prevLastDay) return dateISO(prevY, prevM, prevCloseD + 1);
+    return dateISO(targetY, targetM, 1);
   })();
+  const periodEnd = dateISO(targetY, targetM, closeD);
 
   return {
     closeDate: dateISO(targetY, targetM, closeD),
