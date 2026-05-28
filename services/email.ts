@@ -505,6 +505,49 @@ export function tmplAuthReauthentication(args: { token: string }): {
   };
 }
 
+export function tmplMonthlyNarrative(args: {
+  recipientName: string | null;
+  monthLabel: string;
+  title: string;
+  lead: string;
+  paragraphs: string[];
+  closing: string;
+  highlights: Array<{ label: string; value: string; tone: "positive" | "negative" | "neutral" }>;
+}): { subject: string; body: string } {
+  const greeting = args.recipientName
+    ? `Olá, ${escapeHtml(args.recipientName)}.`
+    : "Olá.";
+
+  const highlightsHtml = args.highlights
+    .map((h) =>
+      kpiBox({
+        label: h.label,
+        value: h.value,
+        tone: h.tone === "positive" ? "positive" : h.tone === "negative" ? "negative" : "neutral",
+      }),
+    )
+    .join("");
+
+  const paragraphsHtml = args.paragraphs.map((p) => paragraph(escapeHtml(p))).join("");
+
+  return {
+    subject: `Resumo de ${args.monthLabel} — ${args.title}`,
+    body: wrapEmail({
+      preheader: args.lead,
+      eyebrow: `Resumo mensal · ${args.monthLabel}`,
+      content:
+        heading(args.title) +
+        lead(`${greeting} ${args.lead}`) +
+        highlightsHtml +
+        divider() +
+        paragraphsHtml +
+        paragraph(`<em style="color:#6a6a6a;">${escapeHtml(args.closing)}</em>`) +
+        button("Abrir o app", "https://nossasfinancas.com.br/dashboard"),
+      footerNote: `Resumo gerado por IA com base nos seus dados do mês. Você pode desativar em Configurações → Notificações.`,
+    }),
+  };
+}
+
 export function tmplCronStale(args: {
   staleChecks: Array<{
     name: string;

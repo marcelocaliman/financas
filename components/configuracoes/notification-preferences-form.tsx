@@ -27,9 +27,9 @@ const ITEMS: Array<{
   },
   {
     key: "monthly_recap",
-    label: "Resumo mensal",
+    label: "Resumo mensal narrativo (IA)",
     description:
-      "Dia 1 de cada mês: resumo do mês anterior (receita, despesa, sobra, patrimônio).",
+      "Primeiros dias do mês: resumo editorial do mês anterior gerado por IA — receita, despesa, principais movimentos vs mês anterior e padrões anômalos.",
   },
   {
     key: "recurring_upcoming",

@@ -1,6 +1,10 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendEmail } from "@/services/email";
+import { queueEmail, sendEmail, tmplMonthlyNarrative } from "@/services/email";
+import {
+  collectMonthlyData,
+  generateMonthlyNarrative,
+} from "@/services/ai/monthly-narrative";
 
 /**
  * Sistema de notificações por email. Roda via cron `/api/cron/notifications`
@@ -84,6 +88,23 @@ export async function runDailyNotifications(): Promise<NotificationResult[]> {
       if (daysSince >= 30) {
         const result = await checkIrGaps(admin, h.id, email, owner.display_name);
         if (result) results.push({ householdId: h.id, type: "ir_retroactive_gaps", ...result });
+      }
+    }
+
+    // 3. Resumo mensal narrativo (gerado por IA) — dispara no dia 2 do mês,
+    //    cobre o mês anterior. Idempotente via monthly_recap_last_sent.
+    if (effectivePrefs.monthly_recap) {
+      const today = new Date();
+      const dayOfMonth = today.getUTCDate();
+      if (dayOfMonth >= 2 && dayOfMonth <= 7) {
+        const lastSent = effectivePrefs.monthly_recap_last_sent;
+        const daysSince = lastSent
+          ? (Date.now() - new Date(lastSent).getTime()) / 86400000
+          : Infinity;
+        if (daysSince >= 25) {
+          const result = await sendMonthlyRecap(admin, h.id, email, owner.display_name);
+          if (result) results.push({ householdId: h.id, type: "monthly_recap", ...result });
+        }
       }
     }
   }
@@ -241,4 +262,58 @@ Acesse /ir/${currentYear} e clique em "Preencher tudo" no banner amarelo pra cad
   }
 
   return r.ok ? { status: "sent" } : { status: "error", reason: r.error };
+}
+
+async function sendMonthlyRecap(
+  admin: AdminClient,
+  householdId: string,
+  email: string,
+  name: string,
+): Promise<{ status: "sent" | "skipped" | "error"; reason?: string } | null> {
+  // Cobre o MÊS ANTERIOR (sempre mês fechado)
+  const today = new Date();
+  const prev = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - 1, 1));
+  const monthStr = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, "0")}`;
+
+  let data: Awaited<ReturnType<typeof collectMonthlyData>>;
+  try {
+    data = await collectMonthlyData(householdId, monthStr);
+  } catch (e) {
+    return { status: "error", reason: e instanceof Error ? e.message : String(e) };
+  }
+
+  // Não envia recap se não tem dados (mês vazio)
+  if (data.income === 0 && data.expense === 0) {
+    return { status: "skipped", reason: "Sem movimentação no mês." };
+  }
+
+  const ai = await generateMonthlyNarrative(data);
+  if (!ai.ok) {
+    return { status: "error", reason: ai.error };
+  }
+
+  const tmpl = tmplMonthlyNarrative({
+    recipientName: name,
+    monthLabel: data.monthLabel,
+    title: ai.result.title,
+    lead: ai.result.lead,
+    paragraphs: ai.result.paragraphs,
+    closing: ai.result.closing,
+    highlights: ai.result.highlights,
+  });
+
+  await queueEmail({
+    to: email,
+    subject: tmpl.subject,
+    body: tmpl.body,
+    notificationType: "monthly_recap",
+    relatedHouseholdId: householdId,
+  });
+
+  await admin
+    .from("notification_preferences")
+    .update({ monthly_recap_last_sent: new Date().toISOString() })
+    .eq("household_id", householdId);
+
+  return { status: "sent" };
 }
