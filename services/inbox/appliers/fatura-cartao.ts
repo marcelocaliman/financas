@@ -103,7 +103,7 @@ export async function applyFaturaCartao(args: {
           amount: absAmount,
           amount_account: amountAccount,
           currency: faturaCurrency,
-          category_source: "openai",
+          category_source: "ai",
           tags: item.portador
             ? [`portador:${item.portador.toLowerCase().split(" ")[0]}`]
             : [],

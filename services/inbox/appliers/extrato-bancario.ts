@@ -94,7 +94,7 @@ export async function applyExtratoBancario(args: {
           amount: absAmount,
           amount_account: amountAccount,
           currency: docCurrency,
-          category_source: "openai",
+          category_source: "ai",
           exclude_from_ir: false,
           is_historical_ir_only: appStartDate ? m.date < appStartDate : false,
           is_recurring: false,
