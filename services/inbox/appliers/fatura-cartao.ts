@@ -80,6 +80,7 @@ export async function applyFaturaCartao(args: {
   // cálculo do extrato. Se faltar info, usa o que veio do doc como fallback.
   const billDueDate = args.data.due_date ?? null;
   let billPeriodEnd: string | null = null;
+  let billPeriodStart: string | null = null;
 
   if (billDueDate && acc?.bill_close_day) {
     type RpcBuilder = {
@@ -99,9 +100,27 @@ export async function applyFaturaCartao(args: {
       },
     );
     billPeriodEnd = win?.[0]?.period_end ?? args.data.period_end ?? null;
+    billPeriodStart = win?.[0]?.period_start ?? args.data.period_start ?? null;
   } else {
     billPeriodEnd = args.data.period_end ?? null;
+    billPeriodStart = args.data.period_start ?? null;
   }
+
+  /**
+   * Data efetiva da tx no extrato:
+   *   - Item DENTRO do ciclo (compra à vista do mês): mantém data original.
+   *   - Item ANTERIOR ao ciclo (parcela de compra antiga, ou compra retroativa
+   *     que só apareceu agora): usa period_end. Conceito: essa cobrança
+   *     "aconteceu" no fim do ciclo desta fatura.
+   *
+   * Sem isso, parcelas espalham a tx pelo mês da compra ORIGINAL, fora do
+   * mês da fatura — usuário não vê elas em /transacoes filtrado pelo mês
+   * da fatura.
+   */
+  const effectiveTxDate = (purchaseDate: string): string => {
+    if (!billPeriodEnd || !billPeriodStart) return purchaseDate;
+    return purchaseDate < billPeriodStart ? billPeriodEnd : purchaseDate;
+  };
 
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
   type Row = { payload: Record<string, unknown>; key: string };
@@ -122,13 +141,14 @@ export async function applyFaturaCartao(args: {
         accountCurrency,
         date: item.date,
       });
+      const txDate = effectiveTxDate(item.date);
       return {
         payload: {
           household_id: args.householdId,
           created_by: args.userId,
           account_id: args.accountId,
           kind: isRefund ? "income" : "expense",
-          date: item.date,
+          date: txDate,
           description,
           amount: absAmount,
           amount_account: amountAccount,
@@ -163,7 +183,7 @@ export async function applyFaturaCartao(args: {
         },
         key: transactionDedupKey({
           accountId: args.accountId,
-          date: item.date,
+          date: txDate,
           amount: amountAccount,
           description,
         }),
