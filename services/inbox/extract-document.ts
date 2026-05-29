@@ -108,9 +108,14 @@ REGRAS GERAIS:
 
 /**
  * Pipeline completo: classify → extract → validate.
+ *
+ * `forceType`, se fornecido, pula a classificação por IA e usa o tipo
+ * informado. Útil pra (a) re-extração com correção manual após a IA
+ * errar, (b) upload com tipo escolhido pelo usuário.
  */
 export async function extractDocument(args: {
   file: { content: Buffer; mimeType: string; name: string };
+  forceType?: DocumentType;
 }): Promise<ExtractionResult | ExtractionError> {
   const openai = getOpenAI();
 
@@ -118,39 +123,58 @@ export async function extractDocument(args: {
   const input = await buildInput(args.file);
   if ("error" in input) return input;
 
-  // ─── 2. Classifica o tipo ─────────────────────────────────────────────
-  let classifyResp;
-  try {
-    classifyResp = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: CLASSIFY_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: input.contentParts,
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 50,
-    });
-  } catch (e) {
-    return {
-      error: "Falha ao classificar o documento na OpenAI.",
-      detail: e instanceof Error ? e.message : String(e),
-    };
-  }
-
-  const classifyContent = classifyResp.choices[0]?.message?.content ?? "{}";
+  // ─── 2. Classifica o tipo ──────────────────────────────────────────────
+  // Ordem de prioridade:
+  //   a) forceType (override manual) — pula a IA
+  //   b) hint do nome do arquivo — pula a IA também (alta confiança)
+  //   c) IA classifica
   let detectedType: DocumentType;
-  try {
-    const parsed = JSON.parse(classifyContent) as { type?: string };
-    if (!parsed.type || !(parsed.type in DOCUMENT_SCHEMAS)) {
-      detectedType = "outros";
-    } else {
-      detectedType = parsed.type as DocumentType;
+  let classifyTokens = { prompt: 0, completion: 0 };
+
+  const filenameHint = inferTypeFromFilename(args.file.name);
+
+  if (args.forceType) {
+    detectedType = args.forceType;
+  } else if (filenameHint) {
+    detectedType = filenameHint;
+  } else {
+    let classifyResp;
+    try {
+      classifyResp = await openai.chat.completions.create({
+        model: OPENAI_MODEL,
+        messages: [
+          { role: "system", content: CLASSIFY_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: input.contentParts,
+          },
+        ],
+        response_format: { type: "json_object" },
+        max_tokens: 50,
+      });
+    } catch (e) {
+      return {
+        error: "Falha ao classificar o documento na OpenAI.",
+        detail: e instanceof Error ? e.message : String(e),
+      };
     }
-  } catch {
-    detectedType = "outros";
+
+    classifyTokens = {
+      prompt: classifyResp.usage?.prompt_tokens ?? 0,
+      completion: classifyResp.usage?.completion_tokens ?? 0,
+    };
+
+    const classifyContent = classifyResp.choices[0]?.message?.content ?? "{}";
+    try {
+      const parsed = JSON.parse(classifyContent) as { type?: string };
+      if (!parsed.type || !(parsed.type in DOCUMENT_SCHEMAS)) {
+        detectedType = "outros";
+      } else {
+        detectedType = parsed.type as DocumentType;
+      }
+    } catch {
+      detectedType = "outros";
+    }
   }
 
   // ─── 3. Extrai dados conforme o schema do tipo ──────────────────────────
@@ -226,10 +250,9 @@ Extraia os dados estruturados deste documento conforme o schema.`;
 
   // ─── 5. Métricas ────────────────────────────────────────────────────────
   const inputTokens =
-    (classifyResp.usage?.prompt_tokens ?? 0) + (extractResp.usage?.prompt_tokens ?? 0);
+    classifyTokens.prompt + (extractResp.usage?.prompt_tokens ?? 0);
   const outputTokens =
-    (classifyResp.usage?.completion_tokens ?? 0) +
-    (extractResp.usage?.completion_tokens ?? 0);
+    classifyTokens.completion + (extractResp.usage?.completion_tokens ?? 0);
 
   return {
     detected_type: detectedType,
@@ -245,6 +268,48 @@ Extraia os dados estruturados deste documento conforme o schema.`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Tenta inferir o tipo do documento pelo nome do arquivo. Quando bate,
+ * pula a classificação por IA (mais barato + mais determinístico).
+ *
+ * Ordem de prioridade: padrões mais específicos primeiro. Não retornar
+ * nada quando ambíguo (deixa a IA classificar).
+ */
+function inferTypeFromFilename(name: string): DocumentType | null {
+  const n = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, ""); // remove acentos
+
+  // Cartão de crédito
+  if (/\bfatura\b/.test(n) || /\bcredit.card\b/.test(n)) return "fatura_cartao";
+
+  // Holerite / contracheque
+  if (/\bholerite\b/.test(n) || /\bcontracheque\b/.test(n) || /\bfolha.?(pagamento|pgto)\b/.test(n))
+    return "holerite";
+
+  // Boleto
+  if (/\bboleto\b/.test(n) || /\bpagamento.?conta\b/.test(n)) return "boleto";
+
+  // Recibo médico / saúde
+  if (
+    /\brecibo\b.*\b(medic|saude|dentist|psicolog|hospital|clinic)/.test(n) ||
+    /\b(medic|saude|dentist|psicolog|hospital|clinic).*\brecibo\b/.test(n) ||
+    /\bplano.?saude\b/.test(n) ||
+    /\bnota.?fiscal.?(servic|medic|saude)/.test(n)
+  )
+    return "recibo_medico";
+
+  // Nota de corretagem
+  if (/\bnota.?(corretagem|negociac)\b/.test(n) || /\bnota.?neg\b/.test(n))
+    return "nota_corretagem";
+
+  // Extrato bancário
+  if (/\bextrato\b/.test(n)) return "extrato_bancario";
+
+  return null;
+}
 
 /**
  * Pós-processa o resultado da IA pra cobrir buracos comuns:

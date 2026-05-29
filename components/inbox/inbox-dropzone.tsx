@@ -6,6 +6,25 @@ import { Upload, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadAndExtractAction } from "@/app/(app)/inbox/_actions/upload";
 
+type DocType =
+  | "auto"
+  | "fatura_cartao"
+  | "holerite"
+  | "nota_corretagem"
+  | "recibo_medico"
+  | "boleto"
+  | "extrato_bancario";
+
+const TYPE_OPTIONS: Array<{ value: DocType; label: string }> = [
+  { value: "auto", label: "Detectar automaticamente" },
+  { value: "fatura_cartao", label: "Fatura de cartão" },
+  { value: "holerite", label: "Holerite / contracheque" },
+  { value: "nota_corretagem", label: "Nota de corretagem" },
+  { value: "recibo_medico", label: "Recibo médico / saúde" },
+  { value: "boleto", label: "Boleto" },
+  { value: "extrato_bancario", label: "Extrato bancário" },
+];
+
 const ACCEPTED_MIME = [
   "application/pdf",
   "image/jpeg",
@@ -25,6 +44,7 @@ export function InboxDropzone({
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [docType, setDocType] = useState<DocType>("auto");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -36,6 +56,7 @@ export function InboxDropzone({
     startTransition(async () => {
       const fd = new FormData();
       fd.append("file", file);
+      if (docType !== "auto") fd.append("forceType", docType);
       const r = await uploadAndExtractAction(fd);
       if (r.error) {
         toast.error(r.error);
@@ -49,6 +70,31 @@ export function InboxDropzone({
   };
 
   return (
+    <div className="space-y-3">
+      {/* Seletor de tipo — força a IA a usar esse schema, ignorando classificação */}
+      <div className="flex items-center gap-2">
+        <label className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+          Tipo do documento
+        </label>
+        <select
+          value={docType}
+          onChange={(e) => setDocType(e.target.value as DocType)}
+          disabled={pending}
+          className="text-[12.5px] bg-surface border border-border rounded-[6px] px-2.5 py-1.5"
+        >
+          {TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {docType !== "auto" ? (
+          <span className="font-mono text-[10.5px] text-olive-700 dark:text-olive-300">
+            ✓ tipo travado — IA não vai reclassificar
+          </span>
+        ) : null}
+      </div>
+
     <div
       onDragOver={(e) => {
         e.preventDefault();
@@ -105,6 +151,7 @@ export function InboxDropzone({
           </p>
         </>
       )}
+    </div>
     </div>
   );
 }

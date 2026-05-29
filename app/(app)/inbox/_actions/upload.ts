@@ -12,6 +12,22 @@ import {
 } from "@/services/inbox/document-uploads";
 import { extractDocument } from "@/services/inbox/extract-document";
 import { isOpenAIConfigured } from "@/lib/openai/client";
+import type { DocumentType } from "@/services/inbox/document-types";
+
+const VALID_TYPES: DocumentType[] = [
+  "fatura_cartao",
+  "holerite",
+  "nota_corretagem",
+  "recibo_medico",
+  "boleto",
+  "extrato_bancario",
+  "outros",
+];
+
+function parseForceType(raw: unknown): DocumentType | undefined {
+  if (typeof raw !== "string") return undefined;
+  return VALID_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : undefined;
+}
 
 /**
  * Server action principal: recebe um arquivo, salva no storage, dispara
@@ -38,6 +54,7 @@ export async function uploadAndExtractAction(
     return { error: "Arquivo vazio." };
   }
 
+  const forceType = parseForceType(formData.get("forceType"));
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const created = await createDocumentUpload({
@@ -63,6 +80,7 @@ export async function uploadAndExtractAction(
         mimeType: file.type || "application/octet-stream",
         name: file.name,
       },
+      forceType,
     });
 
     if ("error" in result) {
@@ -95,6 +113,7 @@ export async function uploadAndExtractAction(
  */
 export async function reextractAction(
   documentId: string,
+  forceTypeRaw?: string,
 ): Promise<{ ok?: boolean; error?: string }> {
   if (!isOpenAIConfigured()) {
     return { error: "OpenAI não configurado." };
@@ -105,10 +124,13 @@ export async function reextractAction(
   const buffer = await downloadDocumentContent(doc.storage_path);
   if (!buffer) return { error: "Falha ao baixar arquivo do storage." };
 
+  const forceType = parseForceType(forceTypeRaw);
+
   await markExtracting(documentId);
   try {
     const result = await extractDocument({
       file: { content: buffer, mimeType: doc.mime_type, name: doc.original_filename },
+      forceType,
     });
     if ("error" in result) {
       await markExtractionError(documentId, result.error);

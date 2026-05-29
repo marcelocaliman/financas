@@ -66,6 +66,13 @@ export async function applyFaturaCartao(args: {
   // visíveis em breakdown por categoria/mês — marcar como histórica-IR
   // tiraria delas dessas analytics. Vide /transacoes.ts:268-273.
 
+  // Ciclo da fatura — resolve PARCELAS. period_end (fechamento) e due_date
+  // (vencimento) vêm do próprio doc. Quando setados nas tx, o cálculo de
+  // fatura usa essas datas em vez de date (que é a data da compra original
+  // pra parcelas, podendo ser meses atrás).
+  const billPeriodEnd = args.data.period_end ?? null;
+  const billDueDate = args.data.due_date ?? null;
+
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
   type Row = { payload: Record<string, unknown>; key: string };
   const rows: Row[] = await Promise.all(
@@ -103,6 +110,8 @@ export async function applyFaturaCartao(args: {
           exclude_from_ir: false,
           is_historical_ir_only: false,
           is_recurring: false,
+          bill_period_end: billPeriodEnd,
+          bill_due_date: billDueDate,
           metadata: {
             source: "openai_inbox",
             document_id: args.documentId,

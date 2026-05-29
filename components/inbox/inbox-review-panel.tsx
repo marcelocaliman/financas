@@ -105,12 +105,16 @@ export function InboxReviewPanel({
     });
   };
 
-  const handleReextract = () => {
+  const handleReextract = (forceType?: DocumentType) => {
     startTransition(async () => {
-      const r = await reextractAction(documentId);
+      const r = await reextractAction(documentId, forceType);
       if (r.error) toast.error(r.error);
       else {
-        toast.success("Re-extraído.");
+        toast.success(
+          forceType
+            ? `Re-extraído como ${TYPE_LABELS[forceType] ?? forceType}.`
+            : "Re-extraído.",
+        );
         router.refresh();
       }
     });
@@ -177,9 +181,34 @@ export function InboxReviewPanel({
         <Button onClick={handleConfirm} disabled={pending}>
           {pending ? "Aplicando…" : "Confirmar e aplicar"}
         </Button>
-        <Button variant="ghost" onClick={handleReextract} disabled={pending}>
+        <Button variant="ghost" onClick={() => handleReextract()} disabled={pending}>
           Re-extrair
         </Button>
+        <Select
+          value=""
+          onValueChange={(v) => handleReextract(v as DocumentType)}
+        >
+          <SelectTrigger className="w-[180px] !h-8">
+            <SelectValue placeholder="…como outro tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            {(
+              [
+                "fatura_cartao",
+                "holerite",
+                "nota_corretagem",
+                "recibo_medico",
+                "boleto",
+                "extrato_bancario",
+                "outros",
+              ] as DocumentType[]
+            ).map((t) => (
+              <SelectItem key={t} value={t}>
+                {TYPE_LABELS[t]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button variant="ghost" onClick={handleDiscard} disabled={pending}>
           Descartar
         </Button>
@@ -187,6 +216,16 @@ export function InboxReviewPanel({
     </Panel>
   );
 }
+
+const TYPE_LABELS: Record<DocumentType, string> = {
+  fatura_cartao: "Fatura de cartão",
+  holerite: "Holerite",
+  nota_corretagem: "Nota de corretagem",
+  recibo_medico: "Recibo médico",
+  boleto: "Boleto",
+  extrato_bancario: "Extrato bancário",
+  outros: "Outros",
+};
 
 function requiredAccountTypes(detectedType: DocumentType): string[] {
   switch (detectedType) {
