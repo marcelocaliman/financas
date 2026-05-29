@@ -107,27 +107,50 @@ export async function applyFaturaCartao(args: {
   }
 
   /**
-   * Data efetiva da tx no extrato:
-   *   - Item DENTRO do ciclo (compra à vista do mês): mantém data original.
-   *   - Item ANTERIOR ao ciclo (parcela de compra antiga, ou compra retroativa
-   *     que só apareceu agora): usa period_START do ciclo. Conceito: essa
-   *     parcela "começou a ser cobrada" no início do ciclo da fatura.
+   * Data efetiva da tx no extrato, seguindo o modelo de parcela do banco
+   * brasileiro: cada parcela N "bate" no cartão no mesmo dia-do-mês da
+   * compra original, mas N-1 meses depois.
    *
-   * Por que period_start e não period_end?
-   *   - period_start é SEMPRE passado pra qualquer fatura razoável (você
-   *     não importa fatura cujo ciclo ainda nem começou)
-   *   - period_end pode ser futuro pra ciclo ATUAL (ex: hoje 29/05, ciclo
-   *     fecha 26/06) — colocar parcela em 26/06 dá data futura, confunde
-   *   - Determinístico: não depende de "hoje", então re-importar a mesma
-   *     fatura produz o mesmo date e dedup funciona corretamente
-   *   - Semanticamente: a parcela está no MÊS em que o ciclo começou,
-   *     que é como o usuário pensa ("gastos de abril dentro da fatura de
-   *     junho" → parcela em 27/04 pra fatura de junho)
+   *   - Parcela N/M (N > 1): data = original + (N-1) meses
+   *   - Parcela 1/M, sem parcela ou compra à vista: data = original
+   *
+   * Ex: DROGARIA VENANCIO comprado em 29/03/2026 em 3 parcelas:
+   *     - Parcela 1/3 → 29/03/2026 (na fatura que fecha 26/04)
+   *     - Parcela 2/3 → 29/04/2026 (na fatura que fecha 26/05)
+   *     - Parcela 3/3 → 29/05/2026 (na fatura que fecha 26/06)
+   *
+   * Determinístico: mesma compra produz sempre o mesmo date, dedup
+   * funciona em re-imports sem duplicar.
    */
-  const effectiveTxDate = (purchaseDate: string): string => {
-    if (!billPeriodEnd || !billPeriodStart) return purchaseDate;
-    return purchaseDate < billPeriodStart ? billPeriodStart : purchaseDate;
+  const effectiveTxDate = (
+    purchaseDate: string,
+    installmentCurrent: number | null,
+    installmentTotal: number | null,
+  ): string => {
+    if (
+      installmentCurrent != null &&
+      installmentCurrent > 1 &&
+      installmentTotal != null &&
+      installmentTotal > 1
+    ) {
+      return addMonthsClamped(purchaseDate, installmentCurrent - 1);
+    }
+    return purchaseDate;
   };
+
+  /**
+   * Adiciona N meses preservando o dia-do-mês, com clamp pro último dia
+   * válido (ex: 31/01 + 1 mês → 28/02 ou 29/02 se bissexto).
+   */
+  function addMonthsClamped(iso: string, months: number): string {
+    const [y, m, d] = iso.split("-").map(Number);
+    const totalMonth = m - 1 + months;
+    const newYear = y + Math.floor(totalMonth / 12);
+    const newMonth = ((totalMonth % 12) + 12) % 12; // 0-11, handles negatives
+    const daysInMonth = new Date(Date.UTC(newYear, newMonth + 1, 0)).getUTCDate();
+    const newDay = Math.min(d, daysInMonth);
+    return `${newYear}-${String(newMonth + 1).padStart(2, "0")}-${String(newDay).padStart(2, "0")}`;
+  }
 
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
   type Row = { payload: Record<string, unknown>; key: string };
@@ -148,7 +171,11 @@ export async function applyFaturaCartao(args: {
         accountCurrency,
         date: item.date,
       });
-      const txDate = effectiveTxDate(item.date);
+      const txDate = effectiveTxDate(
+        item.date,
+        item.installment_current ?? null,
+        item.installment_total ?? null,
+      );
       return {
         payload: {
           household_id: args.householdId,
