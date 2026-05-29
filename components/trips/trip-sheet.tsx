@@ -33,6 +33,15 @@ const CURRENCIES: Array<{ value: Currency; label: string }> = [
   { value: "GBP", label: "£ Libra (GBP)" },
 ];
 
+function flagEmoji(code: string): string {
+  if (!code || code.length !== 2) return "";
+  const A = 0x1f1e6;
+  return String.fromCodePoint(
+    A + code.toUpperCase().charCodeAt(0) - 65,
+    A + code.toUpperCase().charCodeAt(1) - 65,
+  );
+}
+
 const STATUSES: TripStatus[] = [
   "planning",
   "confirmed",
@@ -62,6 +71,7 @@ export function TripSheet({
   const [longitude, setLongitude] = useState<string>(
     trip?.longitude?.toString() ?? "",
   );
+  const [resolvedLocation, setResolvedLocation] = useState<string>("");
   const [startDate, setStartDate] = useState(trip?.start_date ?? "");
   const [endDate, setEndDate] = useState(trip?.end_date ?? "");
   const [status, setStatus] = useState<TripStatus>(trip?.status ?? "planning");
@@ -114,7 +124,16 @@ export function TripSheet({
           setLatitude(data.latitude.toString());
           setLongitude(data.longitude.toString());
           if (data.country_code) setCountryCode(data.country_code.toUpperCase());
-          toast.success(`Localização: ${data.display_name?.slice(0, 60) ?? "OK"}`);
+          // display_name vem cheio (ex: "Londres, Greater London, Inglaterra,
+          // SW1A 2BX, Reino Unido"). Reduz pras 2 primeiras partes — geralmente
+          // cidade + região/estado — pra ficar legível.
+          const parts = (data.display_name ?? "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const short = parts.slice(0, 2).join(", ") + (parts.length > 2 ? `, ${parts[parts.length - 1]}` : "");
+          setResolvedLocation(short || data.display_name || "");
+          toast.success(`Localização: ${short.slice(0, 60)}`);
         } else {
           toast.error("Destino não encontrado no OpenStreetMap.");
         }
@@ -180,10 +199,21 @@ export function TripSheet({
               </Button>
             </div>
             {latitude && longitude ? (
-              <p className="text-[11px] text-faint-foreground mt-1 font-mono">
-                {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}{" "}
-                {countryCode ? `· ${countryCode}` : ""}
-              </p>
+              <div className="mt-1.5 inline-flex items-start gap-1.5 px-2.5 py-1.5 rounded-[6px] bg-olive-100/40 dark:bg-olive-900/15 border border-olive-200/60 dark:border-olive-800/40">
+                <MapPin
+                  className="w-3 h-3 mt-[1px] text-olive-700 dark:text-olive-300 shrink-0"
+                  strokeWidth={2}
+                />
+                <div className="text-[11.5px] leading-tight">
+                  <div className="text-foreground font-medium">
+                    {countryCode ? flagEmoji(countryCode) + " " : ""}
+                    {resolvedLocation || destination}
+                  </div>
+                  <div className="font-mono text-[10px] text-faint-foreground mt-0.5 tracking-[0.02em]">
+                    {Number(latitude).toFixed(4)}, {Number(longitude).toFixed(4)}
+                  </div>
+                </div>
+              </div>
             ) : null}
           </Field>
 
