@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Archive, ArrowLeftRight, Pencil, Repeat, RotateCcw, Split, Trash2 } from "lucide-react";
+import { ArrowLeftRight, History, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
@@ -12,7 +12,6 @@ import { useMoneyContext } from "@/components/ui/money-provider";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
-import { SplitsDialog } from "./splits-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { TransactionTagsEditor } from "./transaction-tags-editor";
 import type { Tables } from "@/types/database";
@@ -43,7 +42,6 @@ export function TransactionRow({
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
-  const [splitting, setSplitting] = useState(false);
   const confirm = useConfirm();
 
   const handleDelete = async () => {
@@ -196,20 +194,9 @@ export function TransactionRow({
         </td>
         <td className="py-3.5 pl-2 align-middle whitespace-nowrap">
           <div className="flex items-center gap-0.5">
-            {/* Splits — só faz sentido pra income/expense (não transfer) */}
-            {tx.kind !== "transfer" ? (
-              <button
-                type="button"
-                onClick={() => setSplitting(true)}
-                disabled={pending}
-                className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted"
-                title="Dividir em categorias (mercado, viagem, fatura)"
-                aria-label="Splits"
-              >
-                <Split className="w-3.5 h-3.5" strokeWidth={1.7} />
-              </button>
-            ) : null}
-            {/* Transfers não podem virar históricas (mexem no saldo de 2 contas) */}
+            {/* Histórica IR: já paga na vida real, não mexe no saldo,
+                só conta pro relatório de IR. Transfers não podem virar
+                históricas (mexem no saldo de 2 contas). */}
             {tx.kind !== "transfer" ? (
               <button
                 type="button"
@@ -218,23 +205,19 @@ export function TransactionRow({
                 className={cn(
                   "p-1.5 rounded-[6px]",
                   tx.is_historical_ir_only
-                    ? "text-navy-700 dark:text-navy-300 hover:bg-navy-100/60 dark:hover:bg-navy-700/20"
+                    ? "text-navy-700 dark:text-navy-300 bg-navy-100/40 dark:bg-navy-900/20 hover:bg-navy-100/60 dark:hover:bg-navy-700/30"
                     : "text-faint-foreground hover:text-navy-700 dark:hover:text-navy-300 hover:bg-surface-muted",
                 )}
                 title={
                   tx.is_historical_ir_only
                     ? "Voltar a ser lançamento operacional"
-                    : "Marcar como histórica IR (já paga, não afeta saldo)"
+                    : "Marcar como já paga (só pra IR — não afeta saldo nem dashboards)"
                 }
                 aria-label={
-                  tx.is_historical_ir_only ? "Desmarcar histórica" : "Marcar histórica IR"
+                  tx.is_historical_ir_only ? "Desmarcar histórica" : "Marcar como já paga (histórica IR)"
                 }
               >
-                {tx.is_historical_ir_only ? (
-                  <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.7} />
-                ) : (
-                  <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
-                )}
+                <History className="w-3.5 h-3.5" strokeWidth={1.7} />
               </button>
             ) : null}
             <button
@@ -268,14 +251,6 @@ export function TransactionRow({
         fontes={fontes}
         trips={trips}
       />
-      {tx.kind !== "transfer" ? (
-        <SplitsDialog
-          open={splitting}
-          onOpenChange={setSplitting}
-          transaction={tx}
-          categories={categories}
-        />
-      ) : null}
     </>
   );
 }
