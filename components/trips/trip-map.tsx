@@ -98,8 +98,12 @@ export function TripMap({
   return (
     <div
       ref={containerRef}
-      className="rounded-[8px] overflow-hidden border border-border"
-      style={{ height: `${height}px`, width: "100%" }}
+      className="rounded-[8px] overflow-hidden border border-border relative"
+      // isolation: isolate cria um novo stacking context — sem isso, os
+      // z-index internos do Leaflet (até 800) atravessam overlays/sheets
+      // do app (z-50). z-index:0 garante que o container fique abaixo de
+      // qualquer overlay com z >= 1.
+      style={{ height: `${height}px`, width: "100%", isolation: "isolate", zIndex: 0 }}
     />
   );
 }
