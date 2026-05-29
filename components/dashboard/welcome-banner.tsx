@@ -6,6 +6,7 @@ import { Sparkles, X, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { skipOnboarding } from "@/services/onboarding.actions";
 
 /**
@@ -72,16 +73,17 @@ export function WelcomeBanner({ firstName }: { firstName?: string }) {
             </Button>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleSkip}
-          disabled={pending}
-          className="text-faint-foreground hover:text-foreground transition-colors p-1 -m-1 shrink-0"
-          aria-label="Fechar (não mostrar mais)"
-          title="Não mostrar mais"
-        >
-          <X className="w-4 h-4" strokeWidth={1.8} />
-        </button>
+        <Tooltip content="Não mostrar mais">
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={pending}
+            className="text-faint-foreground hover:text-foreground transition-colors p-1 -m-1 shrink-0"
+            aria-label="Fechar (não mostrar mais)"
+          >
+            <X className="w-4 h-4" strokeWidth={1.8} />
+          </button>
+        </Tooltip>
       </div>
     </Panel>
   );

@@ -12,6 +12,7 @@ import { deleteMovement } from "@/services/movements.actions";
 import type { MovementKind, Tables } from "@/types/database";
 import { MovementDialog } from "./movement-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { IconButton } from "@/components/ui/icon-button";
 
 type Investment = Tables<"investments">;
 type Movement = Tables<"investment_movements">;
@@ -165,26 +166,22 @@ export function MovementsSheet({
                     <td className="text-right pl-2 whitespace-nowrap">
                       <div className="inline-flex items-center gap-0.5">
                         {m.kind === "buy" || m.kind === "sell" ? (
-                          <button
-                            type="button"
+                          <IconButton
+                            tooltip="Editar (corrigir valor pago, quantidade…)"
                             disabled={pending}
                             onClick={() => setEditing(m)}
-                            className="p-1 rounded text-faint-foreground hover:text-foreground"
-                            aria-label="Editar movimento"
-                            title="Editar (corrigir valor pago, quantidade…)"
                           >
                             <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-                          </button>
+                          </IconButton>
                         ) : null}
-                        <button
-                          type="button"
+                        <IconButton
+                          tooltip="Excluir movimento"
+                          tone="danger"
                           disabled={pending}
                           onClick={() => handleDelete(m.id)}
-                          className="p-1 rounded text-faint-foreground hover:text-rust-600"
-                          aria-label="Excluir movimento"
                         >
                           <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                        </button>
+                        </IconButton>
                       </div>
                     </td>
                   </tr>

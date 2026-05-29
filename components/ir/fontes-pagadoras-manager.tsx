@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   createFontePagadora,
   updateFontePagadora,
@@ -124,24 +125,28 @@ export function FontesPagadorasManager({ fontes }: { fontes: Fonte[] }) {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEditClick(f)}
-                    aria-label="Editar"
-                  >
-                    <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(f.id, f.name)}
-                    disabled={delPending}
-                    aria-label="Remover"
-                    className="text-rust-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  </Button>
+                  <Tooltip content="Editar fonte pagadora">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEditClick(f)}
+                      aria-label="Editar"
+                    >
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Remover fonte pagadora">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(f.id, f.name)}
+                      disabled={delPending}
+                      aria-label="Remover"
+                      className="text-rust-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                    </Button>
+                  </Tooltip>
                 </div>
               </li>
             );

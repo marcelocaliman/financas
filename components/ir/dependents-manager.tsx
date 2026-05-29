@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { createDependent, deleteDependent, type IRFormState } from "@/services/ir/actions";
 import { formatDateNumeric } from "@/lib/utils/format";
 import type { Tables } from "@/types/database";
@@ -90,16 +91,18 @@ export function DependentsManager({
                   {d.birth_date ? formatDateNumeric(d.birth_date) : "—"}
                 </td>
                 <td className="py-2 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(d.id, d.name)}
-                    disabled={delPending}
-                    aria-label="Remover"
-                    className="text-rust-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  </Button>
+                  <Tooltip content="Remover dependente">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(d.id, d.name)}
+                      disabled={delPending}
+                      aria-label="Remover"
+                      className="text-rust-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                    </Button>
+                  </Tooltip>
                 </td>
               </tr>
             ))}

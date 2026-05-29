@@ -27,6 +27,7 @@ import { GoalSheet } from "./goal-sheet";
 import { ContributeDialog } from "./contribute-dialog";
 import { ReminderDatePill } from "./reminder-date-pill";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useMoneyContext } from "@/components/ui/money-provider";
 import { convertOrSame, CURRENCY_SYMBOLS } from "@/lib/financial/currency";
 import { GOAL_TYPE_ICONS, GOAL_TYPE_LABELS } from "./goal-icons";
@@ -205,29 +206,35 @@ export function GoalCard({
                 Retirar
               </Button>
             ) : null}
-            <Button size="icon" variant="ghost" onClick={() => setEditing(true)} aria-label="Editar">
-              <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={pending}
-              onClick={handleArchive}
-              aria-label="Arquivar"
-              className="text-rust-600"
-            >
-              <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              disabled={pending}
-              onClick={handleDelete}
-              aria-label="Excluir definitivamente"
-              className="text-rust-600"
-            >
-              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-            </Button>
+            <Tooltip content="Editar">
+              <Button size="icon" variant="ghost" onClick={() => setEditing(true)} aria-label="Editar">
+                <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Arquivar">
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={pending}
+                onClick={handleArchive}
+                aria-label="Arquivar"
+                className="text-rust-600"
+              >
+                <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Excluir definitivamente">
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={pending}
+                onClick={handleDelete}
+                aria-label="Excluir definitivamente"
+                className="text-rust-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </Button>
+            </Tooltip>
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import type { Currency, RecurrenceFrequency, Tables } from "@/types/database";
 import { RecurrenceSheet } from "./recurrence-sheet";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { toggleSubscriptionTag } from "@/services/subscriptions.actions";
+import { TooltipRoot, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
 type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -195,6 +196,8 @@ export function RecurrenceRow({
 
  {/* Próxima data — popover com as próximas 3 */}
  <Popover.Root>
+ <TooltipRoot delayDuration={150}>
+ <TooltipTrigger asChild>
  <Popover.Trigger asChild>
  <button
  type="button"
@@ -205,6 +208,9 @@ export function RecurrenceRow({
  {nextText}
  </button>
  </Popover.Trigger>
+ </TooltipTrigger>
+ <TooltipContent>Ver próximas datas</TooltipContent>
+ </TooltipRoot>
  <Popover.Portal>
  <Popover.Content
  side="top"

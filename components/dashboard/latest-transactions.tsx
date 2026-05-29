@@ -6,6 +6,7 @@ import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Transaction } from "@/services/transactions";
@@ -157,27 +158,31 @@ export function LatestTransactionsPanel({
               {query ? ` (filtrado de ${allItems.length})` : ""}
             </div>
             <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={safePage === 0}
-                className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                aria-label="Página anterior"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
-              </button>
+              <Tooltip content="Página anterior">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={safePage === 0}
+                  className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Página anterior"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.8} />
+                </button>
+              </Tooltip>
               <span className="text-[11.5px] font-mono text-muted-foreground tabular-nums px-2 min-w-[50px] text-center">
                 {safePage + 1} / {totalPages}
               </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={safePage >= totalPages - 1}
-                className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                aria-label="Próxima página"
-              >
-                <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.8} />
-              </button>
+              <Tooltip content="Próxima página">
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={safePage >= totalPages - 1}
+                  className="p-1.5 rounded-[6px] text-muted-foreground hover:text-foreground hover:bg-surface-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  aria-label="Próxima página"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.8} />
+                </button>
+              </Tooltip>
             </div>
           </div>
         ) : null}

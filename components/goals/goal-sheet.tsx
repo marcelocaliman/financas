@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -640,14 +641,16 @@ export function GoalSheet({
                     key={s.id}
                     className="rounded-[8px] bg-surface border border-border p-3 relative"
                   >
-                    <button
-                      type="button"
-                      onClick={() => removeSource(s.id)}
-                      className="absolute top-2 right-2 text-faint-foreground hover:text-rust-600 transition-colors"
-                      aria-label="Remover fonte"
-                    >
-                      <X className="w-3.5 h-3.5" strokeWidth={1.8} />
-                    </button>
+                    <Tooltip content="Remover fonte vinculada">
+                      <button
+                        type="button"
+                        onClick={() => removeSource(s.id)}
+                        className="absolute top-2 right-2 text-faint-foreground hover:text-rust-600 transition-colors"
+                        aria-label="Remover fonte"
+                      >
+                        <X className="w-3.5 h-3.5" strokeWidth={1.8} />
+                      </button>
+                    </Tooltip>
                     <div className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium mb-2">
                       Fonte #{idx + 1} · {labelOfSourceType(s.sourceType)}
                     </div>

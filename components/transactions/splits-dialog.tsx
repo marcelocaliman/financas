@@ -20,6 +20,7 @@ import {
   deleteTransactionSplits,
 } from "@/services/transaction-splits.actions";
 import { createClient } from "@/lib/supabase/client";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Transaction } from "@/services/transactions";
 
 type Cat = { id: string; name: string; kind: "income" | "expense" | "transfer" };
@@ -182,15 +183,17 @@ export function SplitsDialog({
                 defaultValue={s.amount}
                 onValueChange={(v) => updateSplit(i, { amount: v })}
               />
-              <button
-                type="button"
-                onClick={() => removeSplit(i)}
-                disabled={splits.length <= 2}
-                className="p-2 rounded text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30 disabled:opacity-30 self-center"
-                aria-label="Remover split"
-              >
-                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-              </button>
+              <Tooltip content="Remover split">
+                <button
+                  type="button"
+                  onClick={() => removeSplit(i)}
+                  disabled={splits.length <= 2}
+                  className="p-2 rounded text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30 disabled:opacity-30 self-center"
+                  aria-label="Remover split"
+                >
+                  <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </button>
+              </Tooltip>
             </div>
           ))}
 

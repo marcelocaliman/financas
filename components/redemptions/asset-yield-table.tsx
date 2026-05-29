@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowDownToLine } from "lucide-react";
 import { Money } from "@/components/ui/money";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import { WithdrawYieldDialog } from "@/components/investments/withdraw-yield-dialog";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
@@ -215,13 +216,8 @@ export function AssetYieldTable({
                   )}
                 </td>
                 <td className="text-right pl-2">
-                  <button
-                    type="button"
-                    onClick={() => setWithdrawing(r)}
-                    disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
-                    className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    aria-label="Sacar rendimento"
-                    title={
+                  <Tooltip
+                    content={
                       r.accumulatedYield <= 0
                         ? "Sem rendimento acumulado pra sacar"
                         : destinationAccounts.length === 0
@@ -229,9 +225,17 @@ export function AssetYieldTable({
                           : "Sacar rendimento"
                     }
                   >
-                    <ArrowDownToLine className="w-3 h-3" strokeWidth={1.8} />
-                    Sacar
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawing(r)}
+                      disabled={r.accumulatedYield <= 0 || destinationAccounts.length === 0}
+                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-[6px] text-[11.5px] text-navy-700 dark:text-navy-300 hover:bg-navy-50 dark:hover:bg-navy-700/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="Sacar rendimento"
+                    >
+                      <ArrowDownToLine className="w-3 h-3" strokeWidth={1.8} />
+                      Sacar
+                    </button>
+                  </Tooltip>
                 </td>
               </tr>
             ))}

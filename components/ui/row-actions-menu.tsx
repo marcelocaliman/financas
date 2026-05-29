@@ -3,6 +3,7 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { TooltipRoot, TooltipTrigger, TooltipContent } from "./tooltip";
 
 export type RowAction = {
  label: string;
@@ -27,20 +28,21 @@ export function RowActionsMenu({
 }) {
  return (
  <DropdownMenu.Root>
- <DropdownMenu.Trigger asChild>
- <button
- type="button"
+ <TooltipRoot delayDuration={150}>
+ <TooltipTrigger asChild>
+ <DropdownMenu.Trigger
  className={cn(
  "p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted",
  "data-[state=open]:opacity-100 data-[state=open]:text-foreground data-[state=open]:bg-surface-muted",
- "",
  "focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-500",
  )}
  aria-label={label}
  >
  <MoreHorizontal className="w-4 h-4" strokeWidth={1.7} />
- </button>
  </DropdownMenu.Trigger>
+ </TooltipTrigger>
+ <TooltipContent>{label}</TooltipContent>
+ </TooltipRoot>
 
  <DropdownMenu.Portal>
  <DropdownMenu.Content

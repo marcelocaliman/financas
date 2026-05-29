@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { toggleSubscriptionTag } from "@/services/subscriptions.actions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 /**
  * Botão "desmarcar como assinatura" — remove a tag mas mantém a regra
@@ -37,6 +38,7 @@ export function SubscriptionRowActions({
  };
 
  return (
+ <Tooltip content="Desmarcar como assinatura">
  <Button
  size="icon"
  variant="ghost"
@@ -47,5 +49,6 @@ export function SubscriptionRowActions({
  >
  <X className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  );
 }

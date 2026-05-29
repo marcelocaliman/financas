@@ -17,6 +17,7 @@ import type { AccountType, MarriageRegime, Tables } from "@/types/database";
 import { AccountSheet } from "./account-sheet";
 import { BalanceAdjustDialog } from "./balance-adjust-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Account = Tables<"accounts">;
 
@@ -170,16 +171,18 @@ export function AccountCard({
                 <RotateCcw className="w-3 h-3" strokeWidth={1.7} />
                 Restaurar
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleDelete}
-                disabled={pending}
-                aria-label="Excluir definitivamente"
-                className="text-rust-600"
-              >
-                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-              </Button>
+              <Tooltip content="Excluir definitivamente">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handleDelete}
+                  disabled={pending}
+                  aria-label="Excluir definitivamente"
+                  className="text-rust-600"
+                >
+                  <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                </Button>
+              </Tooltip>
             </div>
           )}
         </div>

@@ -9,6 +9,7 @@ import { MoneyInput } from "@/components/ui/money-input";
 import { upsertBudget } from "@/services/budgets.actions";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Currency } from "@/types/database";
 
 /**
@@ -61,27 +62,31 @@ export function BudgetInlineEditor({
             autoFocus
           />
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={handleSave}
-          disabled={pending}
-          aria-label="Salvar"
-        >
-          <Check className="w-3.5 h-3.5 text-olive-700" strokeWidth={1.8} />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => {
-            setEditing(false);
-            setAmount(currentAmount);
-          }}
-          disabled={pending}
-          aria-label="Cancelar"
-        >
-          <X className="w-3.5 h-3.5 text-faint-foreground" strokeWidth={1.8} />
-        </Button>
+        <Tooltip content="Salvar orçamento">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleSave}
+            disabled={pending}
+            aria-label="Salvar"
+          >
+            <Check className="w-3.5 h-3.5 text-olive-700" strokeWidth={1.8} />
+          </Button>
+        </Tooltip>
+        <Tooltip content="Cancelar edição">
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => {
+              setEditing(false);
+              setAmount(currentAmount);
+            }}
+            disabled={pending}
+            aria-label="Cancelar"
+          >
+            <X className="w-3.5 h-3.5 text-faint-foreground" strokeWidth={1.8} />
+          </Button>
+        </Tooltip>
       </div>
     );
   }

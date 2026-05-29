@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Download, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export function ExportActions({
   year,
@@ -60,26 +61,28 @@ export function ExportActions({
 
   return (
     <div className="flex gap-2">
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={() => handleExport("txt")}
-        disabled={pending}
-        title="Relatório completo formatado pra você copiar seção por seção no programa IRPF da Receita"
-      >
-        <FileText className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
-        Relatório IRPF (TXT)
-      </Button>
-      <Button
-        variant="secondary"
-        size="sm"
-        onClick={() => handleExport("dec")}
-        disabled={pending}
-        title="Estrutura técnica pipe-delimited pra contador conferir — NÃO importa direto no programa oficial"
-      >
-        <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
-        Estrutura técnica
-      </Button>
+      <Tooltip content="Relatório completo formatado pra você copiar seção por seção no programa IRPF da Receita">
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => handleExport("txt")}
+          disabled={pending}
+        >
+          <FileText className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
+          Relatório IRPF (TXT)
+        </Button>
+      </Tooltip>
+      <Tooltip content="Estrutura técnica pipe-delimited pra contador conferir — NÃO importa direto no programa oficial">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => handleExport("dec")}
+          disabled={pending}
+        >
+          <Download className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.7} />
+          Estrutura técnica
+        </Button>
+      </Tooltip>
     </div>
   );
 }

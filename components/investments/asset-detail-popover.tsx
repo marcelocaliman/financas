@@ -6,6 +6,7 @@ import type { AssetSnapshot } from "@/services/quotes";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
+import { TooltipRoot, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 /**
  * Popover com detalhes financeiros do ativo: aplicado, qty, preço médio,
@@ -15,15 +16,20 @@ import { cn } from "@/lib/utils/cn";
 export function AssetDetailPopover({ asset }: { asset: AssetSnapshot }) {
   return (
     <Popover.Root>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          className="p-1 rounded text-faint-foreground hover:text-foreground hover:bg-surface-muted transition-colors opacity-50 group-hover:opacity-100 data-[state=open]:opacity-100"
-          aria-label="Detalhes do ativo"
-        >
-          <Info className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </button>
-      </Popover.Trigger>
+      <TooltipRoot delayDuration={150}>
+        <TooltipTrigger asChild>
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              className="p-1 rounded text-faint-foreground hover:text-foreground hover:bg-surface-muted transition-colors opacity-50 group-hover:opacity-100 data-[state=open]:opacity-100"
+              aria-label="Detalhes do ativo"
+            >
+              <Info className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </button>
+          </Popover.Trigger>
+        </TooltipTrigger>
+        <TooltipContent>Detalhes do ativo</TooltipContent>
+      </TooltipRoot>
       <Popover.Portal>
         <Popover.Content
           side="left"

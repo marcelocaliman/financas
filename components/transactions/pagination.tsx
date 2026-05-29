@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 
 export function Pagination({
   page,
@@ -36,27 +37,31 @@ export function Pagination({
         Mostrando {start}–{end} de {total}
       </div>
       <div className="flex items-center gap-1">
-        <Button
-          size="icon"
-          variant="ghost"
-          disabled={page === 0}
-          onClick={() => goTo(page - 1)}
-          aria-label="Anterior"
-        >
-          <ChevronLeft className="w-4 h-4" strokeWidth={1.7} />
-        </Button>
+        <Tooltip content="Página anterior">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={page === 0}
+            onClick={() => goTo(page - 1)}
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="w-4 h-4" strokeWidth={1.7} />
+          </Button>
+        </Tooltip>
         <span className="font-mono text-[12.5px] mx-2 text-foreground">
           {page + 1} / {lastPage + 1}
         </span>
-        <Button
-          size="icon"
-          variant="ghost"
-          disabled={page >= lastPage}
-          onClick={() => goTo(page + 1)}
-          aria-label="Próxima"
-        >
-          <ChevronRight className="w-4 h-4" strokeWidth={1.7} />
-        </Button>
+        <Tooltip content="Próxima página">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={page >= lastPage}
+            onClick={() => goTo(page + 1)}
+            aria-label="Próxima"
+          >
+            <ChevronRight className="w-4 h-4" strokeWidth={1.7} />
+          </Button>
+        </Tooltip>
       </div>
     </div>
   );

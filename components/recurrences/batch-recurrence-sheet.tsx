@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createRecurringRulesBatch } from "@/services/recurrences.actions";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Currency, RecurrenceFrequency, TransactionKind } from "@/types/database";
 import { cn } from "@/lib/utils/cn";
 
@@ -339,14 +340,16 @@ function DraftRow({
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
           #{index + 1}
         </span>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/40 transition-colors"
-          aria-label="Remover"
-        >
-          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </button>
+        <Tooltip content="Remover essa regra do lote">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/40 transition-colors"
+            aria-label="Remover"
+          >
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+          </button>
+        </Tooltip>
       </div>
 
       <PillGroup

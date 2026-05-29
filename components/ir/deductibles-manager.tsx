@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoneyInput } from "@/components/ui/money-input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { ReceiptUploader } from "@/components/ir/receipt-uploader";
 import { DeductibleEditSheet } from "@/components/ir/deductible-edit-sheet";
 import {
@@ -147,26 +148,29 @@ export function DeductiblesManager({
                           hasReceipt={!!p.receipt_storage_path}
                           mimeType={p.receipt_mime_type}
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditing(p)}
-                          aria-label="Editar"
-                          className={missingCnpj ? "text-rust-600" : undefined}
-                          title={missingCnpj ? "Corrigir CNPJ/CPF ausente" : "Editar"}
-                        >
-                          <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(p.id, p.description)}
-                          disabled={delPending}
-                          aria-label="Remover"
-                          className="text-rust-600"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                        </Button>
+                        <Tooltip content={missingCnpj ? "Corrigir CNPJ/CPF ausente" : "Editar"}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditing(p)}
+                            aria-label="Editar"
+                            className={missingCnpj ? "text-rust-600" : undefined}
+                          >
+                            <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Remover dedutível">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(p.id, p.description)}
+                            disabled={delPending}
+                            aria-label="Remover"
+                            className="text-rust-600"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                          </Button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

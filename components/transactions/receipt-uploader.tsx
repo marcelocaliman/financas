@@ -8,6 +8,7 @@ import {
   deleteTransactionReceipt,
   getTransactionReceiptUrl,
 } from "@/services/transaction-receipts.actions";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const ACCEPT = "application/pdf,image/jpeg,image/png,image/webp,image/heic";
 
@@ -86,15 +87,17 @@ export function ReceiptUploader({
             </span>
             <Download className="w-3.5 h-3.5 shrink-0" strokeWidth={1.7} />
           </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={pending}
-            className="p-1.5 rounded text-faint-foreground hover:text-rust-600"
-            aria-label="Remover"
-          >
-            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-          </button>
+          <Tooltip content="Remover comprovante">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              className="p-1.5 rounded text-faint-foreground hover:text-rust-600"
+              aria-label="Remover"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </button>
+          </Tooltip>
         </div>
       ) : (
         <>

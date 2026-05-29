@@ -6,6 +6,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { Bell, X, Check } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
+import { TooltipRoot, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import type { SystemAlertRow } from "@/services/system-alerts";
 import { acknowledgeUserAlertAction } from "@/app/(app)/_actions/system-alerts";
 
@@ -36,28 +37,35 @@ export function NotificationBellClient({
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          aria-label={`Notificações ${hasUnack ? `(${count} pendentes)` : ""}`}
-          className={cn(
-            "relative inline-flex items-center justify-center w-7 h-7 rounded-[6px] transition-colors",
-            tone === "dark"
-              ? "text-ink-400 hover:text-white hover:bg-ink-800"
-              : "text-muted-foreground hover:text-foreground hover:bg-surface-muted",
-          )}
-        >
-          <Bell className="w-[15px] h-[15px]" strokeWidth={1.8} />
-          {hasUnack ? (
-            <span
-              className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rust-600 text-white text-[9px] font-mono font-semibold flex items-center justify-center tabular-nums"
-              aria-hidden
+      <TooltipRoot delayDuration={150}>
+        <TooltipTrigger asChild>
+          <Popover.Trigger asChild>
+            <button
+              type="button"
+              aria-label={`Notificações ${hasUnack ? `(${count} pendentes)` : ""}`}
+              className={cn(
+                "relative inline-flex items-center justify-center w-7 h-7 rounded-[6px] transition-colors",
+                tone === "dark"
+                  ? "text-ink-400 hover:text-white hover:bg-ink-800"
+                  : "text-muted-foreground hover:text-foreground hover:bg-surface-muted",
+              )}
             >
-              {count > 9 ? "9+" : count}
-            </span>
-          ) : null}
-        </button>
-      </Popover.Trigger>
+              <Bell className="w-[15px] h-[15px]" strokeWidth={1.8} />
+              {hasUnack ? (
+                <span
+                  className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rust-600 text-white text-[9px] font-mono font-semibold flex items-center justify-center tabular-nums"
+                  aria-hidden
+                >
+                  {count > 9 ? "9+" : count}
+                </span>
+              ) : null}
+            </button>
+          </Popover.Trigger>
+        </TooltipTrigger>
+        <TooltipContent>
+          {hasUnack ? `${count} notificaç${count === 1 ? "ão" : "ões"} pendente${count === 1 ? "" : "s"}` : "Notificações"}
+        </TooltipContent>
+      </TooltipRoot>
 
       <Popover.Portal>
         <Popover.Content

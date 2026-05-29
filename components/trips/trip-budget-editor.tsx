@@ -16,6 +16,7 @@ import {
 import { upsertBudgetItem, deleteBudgetItem } from "@/services/trips.actions";
 import { formatCurrency } from "@/lib/financial/currency";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { DEFAULT_TRIP_CATEGORIES } from "@/types/trips";
 import type { Currency } from "@/types/database";
 
@@ -146,47 +147,55 @@ export function TripBudgetEditor({
                   <td className="text-right">
                     {isEditing ? (
                       <div className="flex justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleSave(r.category, draft)}
-                          disabled={pending}
-                          className="p-1 rounded text-olive-700 hover:bg-olive-100/40"
-                          aria-label="Salvar"
-                        >
-                          <Check className="w-3.5 h-3.5" strokeWidth={2} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditing(null)}
-                          className="p-1 rounded text-faint-foreground hover:bg-surface-muted"
-                          aria-label="Cancelar"
-                        >
-                          <X className="w-3.5 h-3.5" strokeWidth={2} />
-                        </button>
+                        <Tooltip content="Salvar">
+                          <button
+                            type="button"
+                            onClick={() => handleSave(r.category, draft)}
+                            disabled={pending}
+                            className="p-1 rounded text-olive-700 hover:bg-olive-100/40"
+                            aria-label="Salvar"
+                          >
+                            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip content="Cancelar">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(null)}
+                            className="p-1 rounded text-faint-foreground hover:bg-surface-muted"
+                            aria-label="Cancelar"
+                          >
+                            <X className="w-3.5 h-3.5" strokeWidth={2} />
+                          </button>
+                        </Tooltip>
                       </div>
                     ) : (
                       <div className="flex justify-end gap-1 opacity-60 hover:opacity-100">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditing(r.category);
-                            setDraft(r.planned);
-                          }}
-                          className="p-1 rounded hover:bg-surface-muted"
-                          aria-label="Editar"
-                        >
-                          <Pencil className="w-3 h-3" strokeWidth={2} />
-                        </button>
-                        {budgetItemIds[r.category] ? (
+                        <Tooltip content="Editar orçamento">
                           <button
                             type="button"
-                            onClick={() => handleDelete(r.category)}
-                            disabled={pending}
-                            className="p-1 rounded text-rust-600 hover:bg-rust-100/40"
-                            aria-label="Remover"
+                            onClick={() => {
+                              setEditing(r.category);
+                              setDraft(r.planned);
+                            }}
+                            className="p-1 rounded hover:bg-surface-muted"
+                            aria-label="Editar"
                           >
-                            <Trash2 className="w-3 h-3" strokeWidth={2} />
+                            <Pencil className="w-3 h-3" strokeWidth={2} />
                           </button>
+                        </Tooltip>
+                        {budgetItemIds[r.category] ? (
+                          <Tooltip content="Remover categoria">
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(r.category)}
+                              disabled={pending}
+                              className="p-1 rounded text-rust-600 hover:bg-rust-100/40"
+                              aria-label="Remover"
+                            >
+                              <Trash2 className="w-3 h-3" strokeWidth={2} />
+                            </button>
+                          </Tooltip>
                         ) : null}
                       </div>
                     )}

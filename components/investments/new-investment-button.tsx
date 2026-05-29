@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, TrendingUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { InvestmentSheet } from "./investment-sheet";
 import { OptionDialog } from "./option-dialog";
 import type { MarriageRegime, Tables } from "@/types/database";
@@ -31,14 +32,16 @@ export function NewInvestmentButton({
           <Plus className="w-3.5 h-3.5" strokeWidth={2} />
           Novo ativo
         </Button>
-        <Button
-          variant="primary"
-          onClick={() => setMenuOpen((m) => !m)}
-          className="rounded-l-none px-2"
-          aria-label="Mais opções"
-        >
-          <ChevronDown className="w-3.5 h-3.5" strokeWidth={2} />
-        </Button>
+        <Tooltip content="Mais opções (opções, calls/puts…)">
+          <Button
+            variant="primary"
+            onClick={() => setMenuOpen((m) => !m)}
+            className="rounded-l-none px-2"
+            aria-label="Mais opções"
+          >
+            <ChevronDown className="w-3.5 h-3.5" strokeWidth={2} />
+          </Button>
+        </Tooltip>
         {menuOpen ? (
           <>
             <div

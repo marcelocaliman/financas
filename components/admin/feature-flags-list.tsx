@@ -8,6 +8,7 @@ import { Panel } from "@/components/ui/panel";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   deleteFlag,
   toggleFlag,
@@ -113,27 +114,31 @@ function FlagRow({ flag }: { flag: FeatureFlag }) {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Toggle enabled={flag.enabled} onClick={handleToggle} disabled={pending} />
-          <button
-            type="button"
-            onClick={() => setExpanded((e) => !e)}
-            className="p-1.5 rounded-[6px] hover:bg-surface-muted"
-            aria-label="Expandir"
-          >
-            <ChevronDown
-              className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
-              strokeWidth={1.8}
-            />
-          </button>
-          <Button
-            size="icon"
-            variant="ghost"
-            disabled={pending}
-            onClick={handleDelete}
-            className="text-rust-600"
-            aria-label="Apagar"
-          >
-            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-          </Button>
+          <Tooltip content={expanded ? "Recolher detalhes" : "Expandir detalhes"}>
+            <button
+              type="button"
+              onClick={() => setExpanded((e) => !e)}
+              className="p-1.5 rounded-[6px] hover:bg-surface-muted"
+              aria-label="Expandir"
+            >
+              <ChevronDown
+                className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+                strokeWidth={1.8}
+              />
+            </button>
+          </Tooltip>
+          <Tooltip content="Apagar feature flag">
+            <Button
+              size="icon"
+              variant="ghost"
+              disabled={pending}
+              onClick={handleDelete}
+              className="text-rust-600"
+              aria-label="Apagar"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </Button>
+          </Tooltip>
         </div>
       </div>
 

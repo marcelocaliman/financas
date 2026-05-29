@@ -13,6 +13,7 @@ import {
 import type { Tables } from "@/types/database";
 import { CategorySheet } from "./category-sheet";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Sparkline } from "@/components/ui/sparkline";
 import { Money } from "@/components/ui/money";
 import type { CategoryStats } from "@/services/categories";
@@ -200,6 +201,7 @@ export function CategoryRow({
  <RotateCcw className="w-3 h-3" strokeWidth={1.7} />
  Restaurar
  </Button>
+ <Tooltip content="Excluir definitivamente">
  <Button
  size="icon"
  variant="ghost"
@@ -210,10 +212,12 @@ export function CategoryRow({
  >
  <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  </>
  ) : (
  <>
  {onMoveUp ? (
+ <Tooltip content="Mover pra cima">
  <Button
  size="icon"
  variant="ghost"
@@ -224,8 +228,10 @@ export function CategoryRow({
  >
  <ArrowUp className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  ) : null}
  {onMoveDown ? (
+ <Tooltip content="Mover pra baixo">
  <Button
  size="icon"
  variant="ghost"
@@ -236,8 +242,10 @@ export function CategoryRow({
  >
  <ArrowDown className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  ) : null}
  {onMerge ? (
+ <Tooltip content="Consolidar com outra categoria">
  <Button
  size="icon"
  variant="ghost"
@@ -248,7 +256,9 @@ export function CategoryRow({
  >
  <Merge className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  ) : null}
+ <Tooltip content="Editar">
  <Button
  size="icon"
  variant="ghost"
@@ -258,6 +268,8 @@ export function CategoryRow({
  >
  <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
+ <Tooltip content="Arquivar">
  <Button
  size="icon"
  variant="ghost"
@@ -268,6 +280,8 @@ export function CategoryRow({
  >
  <Archive className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
+ <Tooltip content="Excluir definitivamente">
  <Button
  size="icon"
  variant="ghost"
@@ -278,6 +292,7 @@ export function CategoryRow({
  >
  <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
  </Button>
+ </Tooltip>
  </>
  )}
  </div>

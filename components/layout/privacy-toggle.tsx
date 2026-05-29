@@ -2,6 +2,7 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import { usePrivacy } from "@/components/ui/privacy-provider";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -15,20 +16,22 @@ export function PrivacyToggle({ tone = "dark" }: { tone?: "dark" | "light" }) {
   const { hidden, toggle } = usePrivacy();
   const Icon = hidden ? EyeOff : Eye;
 
+  const label = hidden ? "Mostrar valores" : "Esconder valores";
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={hidden ? "Mostrar valores" : "Esconder valores"}
-      title={hidden ? "Mostrar valores" : "Esconder valores"}
-      className={cn(
-        "p-1.5 rounded-[6px] transition-colors",
-        tone === "dark"
-          ? "text-navy-200 hover:bg-ink-800 hover:text-white"
-          : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
-      )}
-    >
-      <Icon className="w-[15px] h-[15px]" strokeWidth={1.6} />
-    </button>
+    <Tooltip content={label}>
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label={label}
+        className={cn(
+          "p-1.5 rounded-[6px] transition-colors",
+          tone === "dark"
+            ? "text-navy-200 hover:bg-ink-800 hover:text-white"
+            : "text-muted-foreground hover:bg-surface-muted hover:text-foreground",
+        )}
+      >
+        <Icon className="w-[15px] h-[15px]" strokeWidth={1.6} />
+      </button>
+    </Tooltip>
   );
 }

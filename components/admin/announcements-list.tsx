@@ -6,6 +6,7 @@ import { Trash2, ExternalLink } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { deleteAnnouncement } from "@/services/announcements.actions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import type { Announcement } from "@/services/announcements";
@@ -108,16 +109,18 @@ function AnnRow({ announcement: a }: { announcement: Announcement }) {
               : ""}
           </div>
         </div>
-        <Button
-          size="icon"
-          variant="ghost"
-          disabled={pending}
-          onClick={handleDelete}
-          className="text-rust-600"
-          aria-label="Apagar"
-        >
-          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </Button>
+        <Tooltip content="Apagar anúncio">
+          <Button
+            size="icon"
+            variant="ghost"
+            disabled={pending}
+            onClick={handleDelete}
+            className="text-rust-600"
+            aria-label="Apagar"
+          >
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+          </Button>
+        </Tooltip>
       </div>
     </Panel>
   );

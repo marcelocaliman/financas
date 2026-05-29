@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   importTransactionsCSV,
   type ImportRow,
@@ -218,14 +219,16 @@ function BulkRow({
             size="sm"
           />
         </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/40 transition-colors"
-          aria-label="Remover"
-        >
-          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </button>
+        <Tooltip content="Remover linha do lote">
+          <button
+            type="button"
+            onClick={onRemove}
+            className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/40 transition-colors"
+            aria-label="Remover"
+          >
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="grid grid-cols-[110px_1fr_130px_80px] gap-2">

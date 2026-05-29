@@ -18,6 +18,7 @@ import {
   applyRulesToUncategorized,
 } from "@/services/category-rules.actions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { CategoryRule } from "@/services/category-rules";
 import type { Tables } from "@/types/database";
 
@@ -256,14 +257,16 @@ export function CategoryRulesManager({
                     {r.hits}
                   </td>
                   <td className="py-2.5 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(r)}
-                      className="p-1.5 rounded text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30"
-                      aria-label="Apagar"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                    </button>
+                    <Tooltip content="Apagar regra">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(r)}
+                        className="p-1.5 rounded text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30"
+                        aria-label="Apagar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                      </button>
+                    </Tooltip>
                   </td>
                 </tr>
               ))}

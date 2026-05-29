@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { Paperclip, FileCheck2, Trash2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   uploadReceipt,
   deleteReceipt,
@@ -85,26 +86,29 @@ export function ReceiptUploader({
       />
       {localHasReceipt ? (
         <>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleView}
-            disabled={pending}
-            title={mimeType ?? ""}
-          >
-            <FileCheck2 className="w-3.5 h-3.5 mr-1 text-olive-700 dark:text-olive-200" strokeWidth={1.7} />
-            <Download className="w-3 h-3" strokeWidth={1.7} />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={pending}
-            className="text-rust-600"
-            aria-label="Remover recibo"
-          >
-            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-          </Button>
+          <Tooltip content={`Baixar recibo${mimeType ? ` (${mimeType})` : ""}`}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleView}
+              disabled={pending}
+            >
+              <FileCheck2 className="w-3.5 h-3.5 mr-1 text-olive-700 dark:text-olive-200" strokeWidth={1.7} />
+              <Download className="w-3 h-3" strokeWidth={1.7} />
+            </Button>
+          </Tooltip>
+          <Tooltip content="Remover recibo">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={pending}
+              className="text-rust-600"
+              aria-label="Remover recibo"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+            </Button>
+          </Tooltip>
         </>
       ) : (
         <Button

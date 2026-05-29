@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MoneyInput } from "@/components/ui/money-input";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   createOtherIncome,
   deleteOtherIncome,
@@ -117,16 +118,18 @@ export function OtherIncomesManager({
                 <td className="py-2 text-right font-mono tabular-nums text-faint-foreground">R$ {fmtBRL(Number(i.inss_amount))}</td>
                 <td className="py-2 text-right font-mono tabular-nums text-faint-foreground">R$ {fmtBRL(Number(i.thirteenth_amount))}</td>
                 <td className="py-2 text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(i.id, i.description)}
-                    disabled={delPending}
-                    aria-label="Remover"
-                    className="text-rust-600"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  </Button>
+                  <Tooltip content="Remover rendimento">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(i.id, i.description)}
+                      disabled={delPending}
+                      aria-label="Remover"
+                      className="text-rust-600"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+                    </Button>
+                  </Tooltip>
                 </td>
               </tr>
             ))}

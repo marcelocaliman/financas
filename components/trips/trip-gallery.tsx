@@ -5,6 +5,7 @@ import { Trash2, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import { deleteTripPhoto, setTripCoverPhoto } from "@/services/trips.actions";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 type Photo = {
   id: string;
@@ -90,27 +91,29 @@ export function TripGallery({
             ) : null}
             <div className="absolute inset-x-0 bottom-0 p-1.5 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent">
               {coverPhotoId !== p.id ? (
+                <Tooltip content="Definir como capa">
+                  <button
+                    type="button"
+                    onClick={() => handleSetCover(p.id)}
+                    disabled={pending}
+                    className="p-1.5 rounded-[4px] bg-white/90 text-foreground hover:bg-white"
+                    aria-label="Definir como capa"
+                  >
+                    <Star className="w-3 h-3" strokeWidth={2} />
+                  </button>
+                </Tooltip>
+              ) : null}
+              <Tooltip content="Apagar foto">
                 <button
                   type="button"
-                  onClick={() => handleSetCover(p.id)}
+                  onClick={() => handleDelete(p.id, idx)}
                   disabled={pending}
-                  className="p-1.5 rounded-[4px] bg-white/90 text-foreground hover:bg-white"
-                  aria-label="Definir como capa"
-                  title="Definir como capa"
+                  className="p-1.5 rounded-[4px] bg-white/90 text-rust-700 hover:bg-white"
+                  aria-label="Apagar"
                 >
-                  <Star className="w-3 h-3" strokeWidth={2} />
+                  <Trash2 className="w-3 h-3" strokeWidth={2} />
                 </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => handleDelete(p.id, idx)}
-                disabled={pending}
-                className="p-1.5 rounded-[4px] bg-white/90 text-rust-700 hover:bg-white"
-                aria-label="Apagar"
-                title="Apagar foto"
-              >
-                <Trash2 className="w-3 h-3" strokeWidth={2} />
-              </button>
+              </Tooltip>
             </div>
           </div>
         ))}

@@ -5,6 +5,7 @@ import { Save, Trash2, Info } from "lucide-react";
 import { toast } from "sonner";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   upsertPriorYearBalance,
   deletePriorYearBalance,
@@ -164,26 +165,30 @@ function BalanceRow({
       </td>
       <td className="px-2 py-2">
         <div className="flex gap-1 justify-end">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={handleSave}
-            disabled={pending}
-            aria-label="Salvar"
-          >
-            <Save className="w-3.5 h-3.5" strokeWidth={1.7} />
-          </Button>
-          {existing ? (
+          <Tooltip content="Salvar saldo">
             <Button
               size="icon"
               variant="ghost"
-              onClick={handleDelete}
-              disabled={delPending}
-              aria-label="Remover"
-              className="text-rust-600"
+              onClick={handleSave}
+              disabled={pending}
+              aria-label="Salvar"
             >
-              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+              <Save className="w-3.5 h-3.5" strokeWidth={1.7} />
             </Button>
+          </Tooltip>
+          {existing ? (
+            <Tooltip content="Remover saldo registrado">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleDelete}
+                disabled={delPending}
+                aria-label="Remover"
+                className="text-rust-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+              </Button>
+            </Tooltip>
           ) : null}
         </div>
       </td>

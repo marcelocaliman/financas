@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { upsertBudget } from "@/services/budgets.actions";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { BudgetVsActual } from "@/services/budgets";
 
 type CatLite = { id: string; name: string; color: string | null };
@@ -100,25 +101,29 @@ export function BudgetManager({
                     }}
                     size="md"
                   />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleSave(r.categoryId, (window as unknown as { __budget?: number }).__budget ?? r.budgetAmount)
-                    }
-                    disabled={pending}
-                    className="p-1.5 text-olive-700 hover:bg-olive-100"
-                    aria-label="Salvar"
-                  >
-                    <Check className="w-3.5 h-3.5" strokeWidth={2} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditing(null)}
-                    className="p-1.5 text-faint-foreground hover:text-foreground"
-                    aria-label="Cancelar"
-                  >
-                    <X className="w-3.5 h-3.5" strokeWidth={2} />
-                  </button>
+                  <Tooltip content="Salvar orçamento">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSave(r.categoryId, (window as unknown as { __budget?: number }).__budget ?? r.budgetAmount)
+                      }
+                      disabled={pending}
+                      className="p-1.5 text-olive-700 hover:bg-olive-100"
+                      aria-label="Salvar"
+                    >
+                      <Check className="w-3.5 h-3.5" strokeWidth={2} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip content="Cancelar">
+                    <button
+                      type="button"
+                      onClick={() => setEditing(null)}
+                      className="p-1.5 text-faint-foreground hover:text-foreground"
+                      aria-label="Cancelar"
+                    >
+                      <X className="w-3.5 h-3.5" strokeWidth={2} />
+                    </button>
+                  </Tooltip>
                 </div>
               ) : (
                 <button

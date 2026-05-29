@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { AssetTemplate } from "@/lib/financial/asset-catalog";
 
 const ASSET_TYPE_BADGE: Record<AssetTemplate["asset_type"], string> = {
@@ -89,14 +90,16 @@ export function AssetPicker({
             {summarize(value)}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onClear}
-          className="p-1.5 text-faint-foreground hover:text-foreground"
-          aria-label="Trocar ativo"
-        >
-          <X className="w-3.5 h-3.5" strokeWidth={1.7} />
-        </button>
+        <Tooltip content="Trocar ativo">
+          <button
+            type="button"
+            onClick={onClear}
+            className="p-1.5 text-faint-foreground hover:text-foreground"
+            aria-label="Trocar ativo"
+          >
+            <X className="w-3.5 h-3.5" strokeWidth={1.7} />
+          </button>
+        </Tooltip>
       </div>
     );
   }

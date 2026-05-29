@@ -13,6 +13,7 @@ import { MoneyMask } from "@/components/ui/privacy-provider";
 import { cn } from "@/lib/utils/cn";
 import { EditTransactionDialog } from "./edit-transaction-dialog";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { IconButton } from "@/components/ui/icon-button";
 import { TransactionTagsEditor } from "./transaction-tags-editor";
 import type { Tables } from "@/types/database";
 
@@ -198,46 +199,34 @@ export function TransactionRow({
                 só conta pro relatório de IR. Transfers não podem virar
                 históricas (mexem no saldo de 2 contas). */}
             {tx.kind !== "transfer" ? (
-              <button
-                type="button"
+              <IconButton
+                tooltip={
+                  tx.is_historical_ir_only
+                    ? "Voltar a ser operacional"
+                    : "Marcar como já paga (só conta pro IR)"
+                }
+                tone={tx.is_historical_ir_only ? "active" : "neutral"}
                 onClick={handleToggleHistorical}
                 disabled={pending}
-                className={cn(
-                  "p-1.5 rounded-[6px]",
-                  tx.is_historical_ir_only
-                    ? "text-navy-700 dark:text-navy-300 bg-navy-100/40 dark:bg-navy-900/20 hover:bg-navy-100/60 dark:hover:bg-navy-700/30"
-                    : "text-faint-foreground hover:text-navy-700 dark:hover:text-navy-300 hover:bg-surface-muted",
-                )}
-                title={
-                  tx.is_historical_ir_only
-                    ? "Voltar a ser lançamento operacional"
-                    : "Marcar como já paga (só pra IR — não afeta saldo nem dashboards)"
-                }
-                aria-label={
-                  tx.is_historical_ir_only ? "Desmarcar histórica" : "Marcar como já paga (histórica IR)"
-                }
               >
                 <History className="w-3.5 h-3.5" strokeWidth={1.7} />
-              </button>
+              </IconButton>
             ) : null}
-            <button
-              type="button"
+            <IconButton
+              tooltip="Editar lançamento"
               onClick={() => setEditing(true)}
               disabled={pending}
-              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-foreground hover:bg-surface-muted"
-              aria-label="Editar"
             >
               <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-            </button>
-            <button
-              type="button"
+            </IconButton>
+            <IconButton
+              tooltip={tx.transfer_pair_id ? "Apagar transferência" : "Apagar lançamento"}
+              tone="danger"
               onClick={handleDelete}
               disabled={pending}
-              className="p-1.5 rounded-[6px] text-faint-foreground hover:text-rust-600 hover:bg-rust-100/50 dark:hover:bg-rust-700/30"
-              aria-label="Apagar"
             >
               <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
-            </button>
+            </IconButton>
           </div>
         </td>
       </tr>

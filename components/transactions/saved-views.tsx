@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 
 /**
  * Saved Views — persiste combinações de filtros (kind + q) em localStorage,
@@ -134,14 +135,16 @@ export function SavedViews() {
             >
               {v.name}
             </button>
-            <button
-              type="button"
-              onClick={() => handleDelete(v)}
-              className="inline-flex items-center px-1.5 py-1 rounded-r-[7px] border border-l-0 border-border bg-surface-muted text-faint-foreground hover:text-rust-600 transition-colors"
-              aria-label={`Apagar view ${v.name}`}
-            >
-              <Trash2 className="w-3 h-3" strokeWidth={1.7} />
-            </button>
+            <Tooltip content={`Apagar view "${v.name}"`}>
+              <button
+                type="button"
+                onClick={() => handleDelete(v)}
+                className="inline-flex items-center px-1.5 py-1 rounded-r-[7px] border border-l-0 border-border bg-surface-muted text-faint-foreground hover:text-rust-600 transition-colors"
+                aria-label={`Apagar view ${v.name}`}
+              >
+                <Trash2 className="w-3 h-3" strokeWidth={1.7} />
+              </button>
+            </Tooltip>
           </div>
         );
       })}

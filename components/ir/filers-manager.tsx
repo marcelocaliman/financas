@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   createShadowFiler,
   updateFiler,
@@ -103,23 +104,27 @@ function FilerCard({ filer, onEdit }: { filer: Filer; onEdit: () => void }) {
           {filer.occupation ? ` · ${filer.occupation}` : ""}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-faint-foreground hover:text-foreground p-1.5 rounded hover:bg-bone-100 dark:hover:bg-ink-800"
-        aria-label="Editar"
-      >
-        <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
-      </button>
-      {!isPrimary ? (
+      <Tooltip content="Editar declarante">
         <button
           type="button"
-          onClick={handleArchive}
-          className="text-faint-foreground hover:text-rust-600 p-1.5 rounded hover:bg-bone-100 dark:hover:bg-ink-800"
-          aria-label="Arquivar"
+          onClick={onEdit}
+          className="text-faint-foreground hover:text-foreground p-1.5 rounded hover:bg-bone-100 dark:hover:bg-ink-800"
+          aria-label="Editar"
         >
-          <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+          <Pencil className="w-3.5 h-3.5" strokeWidth={1.7} />
         </button>
+      </Tooltip>
+      {!isPrimary ? (
+        <Tooltip content="Arquivar declarante">
+          <button
+            type="button"
+            onClick={handleArchive}
+            className="text-faint-foreground hover:text-rust-600 p-1.5 rounded hover:bg-bone-100 dark:hover:bg-ink-800"
+            aria-label="Arquivar"
+          >
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.7} />
+          </button>
+        </Tooltip>
       ) : null}
     </div>
   );
