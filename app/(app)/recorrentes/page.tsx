@@ -7,12 +7,17 @@ import { NewRecurrenceButton } from "@/components/recurrences/new-recurrence-but
 import { BatchRecurrenceButton } from "@/components/recurrences/batch-recurrence-button";
 import { PauseAllButton } from "@/components/recurrences/pause-all-button";
 import { RecurrenceKeyboardNav } from "@/components/recurrences/keyboard-nav";
+import { ViewPills, VALID_VIEWS, type RecurrenceView } from "@/components/recurrences/view-pills";
+import { SubscriptionsView } from "@/components/recurrences/subscriptions-view";
+import { NewSubscriptionButton } from "@/components/subscriptions/new-subscription-button";
+import { AiDetectorPanel } from "@/components/subscriptions/ai-detector-panel";
 import {
   computeNextOccurrences,
   listRecurringRules,
   toMonthlyEquivalent,
   type RecurrenceRule,
 } from "@/services/recurrences";
+import { listSubscriptions } from "@/services/subscriptions";
 import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
 import { createClient } from "@/lib/supabase/server";
@@ -35,9 +40,27 @@ function aggregateMonthly(rules: RecurrenceRule[]): number {
   );
 }
 
-export default async function RecorrentesPage() {
+function parseView(raw: string | undefined): RecurrenceView {
+  if (!raw) return "all";
+  return VALID_VIEWS.includes(raw as RecurrenceView)
+    ? (raw as RecurrenceView)
+    : "all";
+}
+
+function isSubscription(r: RecurrenceRule): boolean {
+  return (r.tags ?? []).includes("subscription");
+}
+
+export default async function RecorrentesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
+  const params = await searchParams;
+  const view = parseView(params.view);
+
   const supabase = await createClient();
-  const [rules, accounts, categories, { data: fontes }] = await Promise.all([
+  const [rules, accounts, categories, { data: fontes }, subs] = await Promise.all([
     listRecurringRules({ includeInactive: true }),
     listAccounts(),
     listCategories(),
@@ -46,45 +69,48 @@ export default async function RecorrentesPage() {
       .select("id, type, name, cnpj, cpf")
       .eq("is_active", true)
       .order("name"),
+    // Só carrega lista enriquecida de assinaturas quando vai renderizar
+    view === "subscriptions" ? listSubscriptions() : Promise.resolve([]),
   ]);
   const fontesList = fontes ?? [];
 
-  // Pre-computa: pra cada regra que é auto-sync de fatura, calcula o valor
-  // REAL da fatura na próxima ocorrência (em vez de mostrar o placeholder
-  // estático da regra). Detecção: transfer cujo destino é credit_card e
-  // origem é a payment_account configurada do cartão.
+  // Pre-computa auto-sync de fatura. Só pra views que mostram regras de
+  // transfer (all/transfer) — receitas/despesas/assinaturas não usam.
+  const needsAutoSync = view === "all" || view === "transfer";
   const cards = accounts.filter(
     (a) => a.type === "credit_card" && a.bill_close_day != null,
   );
   const autoSyncMap = new Map<string, { liveAmount: number; cardName: string }>();
-  await Promise.all(
-    rules
-      .filter((r) => {
-        if (r.kind !== "transfer" || !r.to_account || !r.from_account) return false;
-        const card = cards.find((c) => c.id === r.to_account_id);
-        return card != null && card.payment_account_id === r.from_account_id;
-      })
-      .map(async (r) => {
-        const next = computeNextOccurrences(r, todayISO(), 1)[0];
-        if (!next) return;
-        // Cast: credit_card_bill_amount foi adicionada na migration 20260525120000
-        // mas os tipos auto-gerados ainda não foram regerados.
-        const { data } = await (supabase.rpc as unknown as (
-          fn: string,
-          args: Record<string, unknown>,
-        ) => Promise<{ data: number | null }>)("credit_card_bill_amount", {
-          p_card_id: r.to_account_id!,
-          p_due_date: next,
-        });
-        const card = cards.find((c) => c.id === r.to_account_id);
-        if (data != null && card) {
-          autoSyncMap.set(r.id, {
-            liveAmount: Number(data),
-            cardName: card.name,
+  if (needsAutoSync) {
+    await Promise.all(
+      rules
+        .filter((r) => {
+          if (r.kind !== "transfer" || !r.to_account || !r.from_account) return false;
+          const card = cards.find((c) => c.id === r.to_account_id);
+          return card != null && card.payment_account_id === r.from_account_id;
+        })
+        .map(async (r) => {
+          const next = computeNextOccurrences(r, todayISO(), 1)[0];
+          if (!next) return;
+          const { data } = await (
+            supabase.rpc as unknown as (
+              fn: string,
+              args: Record<string, unknown>,
+            ) => Promise<{ data: number | null }>
+          )("credit_card_bill_amount", {
+            p_card_id: r.to_account_id!,
+            p_due_date: next,
           });
-        }
-      }),
-  );
+          const card = cards.find((c) => c.id === r.to_account_id);
+          if (data != null && card) {
+            autoSyncMap.set(r.id, {
+              liveAmount: Number(data),
+              cardName: card.name,
+            });
+          }
+        }),
+    );
+  }
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -100,11 +126,8 @@ export default async function RecorrentesPage() {
   }));
 
   const today = todayISO();
-  const isEnded = (r: typeof rules[number]) =>
-    !!r.end_date && r.end_date < today;
+  const isEnded = (r: RecurrenceRule) => !!r.end_date && r.end_date < today;
 
-  // Pausadas (is_active=false) + Encerradas (end_date < hoje) saem do bloco
-  // principal — não geram mais transações, então poluem KPIs e calendário.
   const ended = rules.filter((r) => r.is_active && isEnded(r));
   const paused = rules.filter((r) => !r.is_active);
   const active = rules.filter((r) => r.is_active && !isEnded(r));
@@ -112,56 +135,113 @@ export default async function RecorrentesPage() {
   const incomes = active.filter((r) => r.kind === "income");
   const expenses = active.filter((r) => r.kind === "expense");
   const transfers = active.filter((r) => r.kind === "transfer");
+  const subscriptionRules = active.filter(isSubscription);
 
-  // Resumo macro
+  // Contadores pras pills (sempre baseados em ativas, não pausadas/encerradas)
+  const counts = {
+    all: active.length,
+    income: incomes.length,
+    expense: expenses.length,
+    transfer: transfers.length,
+    subscriptions: subscriptionRules.length,
+  };
+
+  // KPIs gerais (usados em todas views exceto subscriptions)
   const monthlyIncome = aggregateMonthly(incomes);
   const monthlyExpense = aggregateMonthly(expenses);
   const monthlyNet = monthlyIncome - monthlyExpense;
 
-  // Distribuição pelo dia do mês (calendar heatmap simples)
+  // Calendário (só em view=all)
   const calendarBuckets = new Map<number, { kind: "in" | "out" | "mix"; count: number }>();
-  for (const r of active) {
-    const day = r.day_of_month ?? null;
-    if (!day) continue;
-    const prev = calendarBuckets.get(day);
-    const incomingKind = r.kind === "income" ? "in" : r.kind === "expense" ? "out" : "mix";
-    if (!prev) {
-      calendarBuckets.set(day, { kind: incomingKind, count: 1 });
-    } else {
-      calendarBuckets.set(day, {
-        kind: prev.kind === incomingKind ? prev.kind : "mix",
-        count: prev.count + 1,
-      });
+  if (view === "all") {
+    for (const r of active) {
+      const day = r.day_of_month ?? null;
+      if (!day) continue;
+      const prev = calendarBuckets.get(day);
+      const incomingKind = r.kind === "income" ? "in" : r.kind === "expense" ? "out" : "mix";
+      if (!prev) {
+        calendarBuckets.set(day, { kind: incomingKind, count: 1 });
+      } else {
+        calendarBuckets.set(day, {
+          kind: prev.kind === incomingKind ? prev.kind : "mix",
+          count: prev.count + 1,
+        });
+      }
     }
   }
+
+  const eyebrowText =
+    view === "subscriptions"
+      ? `Cotidiano · ${counts.subscriptions} assinatura${counts.subscriptions !== 1 ? "s" : ""}`
+      : `Cotidiano · ${counts.all} ativa${counts.all !== 1 ? "s" : ""}`;
+
+  const subtitleText =
+    view === "subscriptions"
+      ? "Streamings, academia, plano de software — o gotejamento silencioso. Cada uma parece pouco; o total anual nem tanto."
+      : "Aluguel, salário, assinaturas, aporte mensal — defina uma vez e o app cria as transações nas datas certas.";
+
+  // Header actions reagem ao view
+  const headerActions =
+    view === "subscriptions" ? (
+      <div className="flex items-center gap-2">
+        <AiDetectorPanel
+          accounts={accountsLite.map((a) => ({
+            id: a.id,
+            name: a.name,
+            type: a.type,
+          }))}
+        />
+        <NewSubscriptionButton accounts={accountsLite} categories={categoriesLite} />
+      </div>
+    ) : (
+      <div className="flex gap-2">
+        <PauseAllButton
+          activeIds={active.map((r) => r.id)}
+          pausedIds={paused.map((r) => r.id)}
+        />
+        <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
+        <NewRecurrenceButton
+          accounts={accountsLite}
+          categories={categoriesLite}
+          fontes={fontesList}
+        />
+      </div>
+    );
 
   return (
     <>
       <PageHeader
-        eyebrow={`Cotidiano · ${active.length} ativa${active.length !== 1 ? "s" : ""}`}
+        eyebrow={eyebrowText}
         title={
-          <>
-            Lançamentos <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">recorrentes</em>
-          </>
+          view === "subscriptions" ? (
+            <>
+              Suas{" "}
+              <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">
+                assinaturas.
+              </em>
+            </>
+          ) : (
+            <>
+              Lançamentos{" "}
+              <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">
+                recorrentes
+              </em>
+            </>
+          )
         }
-        subtitle="Aluguel, salário, assinaturas, aporte mensal — defina uma vez e o app cria as transações nas datas certas."
-        actions={
-          <div className="flex gap-2">
-            <PauseAllButton
-              activeIds={active.map((r) => r.id)}
-              pausedIds={paused.map((r) => r.id)}
-            />
-            <BatchRecurrenceButton accounts={accountsLite} categories={categoriesLite} />
-            <NewRecurrenceButton accounts={accountsLite} categories={categoriesLite} fontes={fontesList} />
-          </div>
-        }
+        subtitle={subtitleText}
+        actions={headerActions}
       />
+
+      <ViewPills view={view} counts={counts} />
 
       {rules.length === 0 ? (
         <Empty />
+      ) : view === "subscriptions" ? (
+        <SubscriptionsView subs={subs} />
       ) : (
         <>
-          {/* TIER 1 — Resumo macro */}
+          {/* KPIs gerais — em "all" mostra tudo; em filtros por tipo destaca o relevante */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <KpiCard
               label="Entrada mensal"
@@ -189,14 +269,15 @@ export default async function RecorrentesPage() {
             />
           </div>
 
-          {/* TIER 2 — Calendário simples */}
-          {calendarBuckets.size > 0 ? (
+          {/* Calendário — só em view=all (com filtros fica redundante) */}
+          {view === "all" && calendarBuckets.size > 0 ? (
             <Panel className="mb-6">
               <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
                 Calendário do mês
               </div>
               <p className="text-[12.5px] text-muted-foreground mb-4">
-                Quando cada recorrência cai. Verde = entrada, vermelho = saída, navy = transferência.
+                Quando cada recorrência cai. Verde = entrada, vermelho = saída,
+                navy = transferência.
               </p>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(34px,1fr))] gap-1.5">
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
@@ -214,7 +295,11 @@ export default async function RecorrentesPage() {
                               : "border-navy-700/40 bg-navy-700/10 text-navy-700 dark:text-navy-300"
                           : "border-border text-faint-foreground")
                       }
-                      title={bucket ? `${bucket.count} recorrência${bucket.count === 1 ? "" : "s"} dia ${day}` : `Dia ${day}`}
+                      title={
+                        bucket
+                          ? `${bucket.count} recorrência${bucket.count === 1 ? "" : "s"} dia ${day}`
+                          : `Dia ${day}`
+                      }
                     >
                       <span className="text-[10px] leading-none">{day}</span>
                       {bucket ? (
@@ -230,70 +315,78 @@ export default async function RecorrentesPage() {
           ) : null}
 
           <div className="space-y-3">
-            <RecurrenceSection
-              keyboardId="receitas"
-              label="Receitas"
-              ruleIds={incomes.map((r) => r.id)}
-              monthlyTotal={aggregateMonthly(incomes)}
-              tone="income"
-              emoji="↙"
-            >
-              {incomes.map((r) => (
-                <RecurrenceRow
-                  key={r.id}
-                  rule={r}
-                  nextOccurrences={computeNextOccurrences(r, today, 3)}
-                  accounts={accountsLite}
-                  categories={categoriesLite}
-                  fontes={fontesList}
-                  autoSync={autoSyncMap.get(r.id)}
-                />
-              ))}
-            </RecurrenceSection>
+            {/* Seções: em "all" mostra todas; em outras views só a relevante */}
+            {(view === "all" || view === "income") && incomes.length > 0 ? (
+              <RecurrenceSection
+                keyboardId="receitas"
+                label="Receitas"
+                ruleIds={incomes.map((r) => r.id)}
+                monthlyTotal={aggregateMonthly(incomes)}
+                tone="income"
+                emoji="↙"
+              >
+                {incomes.map((r) => (
+                  <RecurrenceRow
+                    key={r.id}
+                    rule={r}
+                    nextOccurrences={computeNextOccurrences(r, today, 3)}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                    fontes={fontesList}
+                    autoSync={autoSyncMap.get(r.id)}
+                  />
+                ))}
+              </RecurrenceSection>
+            ) : null}
 
-            <RecurrenceSection
-              keyboardId="despesas"
-              label="Despesas"
-              ruleIds={expenses.map((r) => r.id)}
-              monthlyTotal={aggregateMonthly(expenses)}
-              tone="expense"
-              emoji="↗"
-            >
-              {expenses.map((r) => (
-                <RecurrenceRow
-                  key={r.id}
-                  rule={r}
-                  nextOccurrences={computeNextOccurrences(r, today, 3)}
-                  accounts={accountsLite}
-                  categories={categoriesLite}
-                  fontes={fontesList}
-                  autoSync={autoSyncMap.get(r.id)}
-                />
-              ))}
-            </RecurrenceSection>
+            {(view === "all" || view === "expense") && expenses.length > 0 ? (
+              <RecurrenceSection
+                keyboardId="despesas"
+                label="Despesas"
+                ruleIds={expenses.map((r) => r.id)}
+                monthlyTotal={aggregateMonthly(expenses)}
+                tone="expense"
+                emoji="↗"
+              >
+                {expenses.map((r) => (
+                  <RecurrenceRow
+                    key={r.id}
+                    rule={r}
+                    nextOccurrences={computeNextOccurrences(r, today, 3)}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                    fontes={fontesList}
+                    autoSync={autoSyncMap.get(r.id)}
+                  />
+                ))}
+              </RecurrenceSection>
+            ) : null}
 
-            <RecurrenceSection
-              keyboardId="transferencias"
-              label="Transferências"
-              ruleIds={transfers.map((r) => r.id)}
-              monthlyTotal={aggregateMonthly(transfers)}
-              tone="transfer"
-              emoji="↔"
-            >
-              {transfers.map((r) => (
-                <RecurrenceRow
-                  key={r.id}
-                  rule={r}
-                  nextOccurrences={computeNextOccurrences(r, today, 3)}
-                  accounts={accountsLite}
-                  categories={categoriesLite}
-                  fontes={fontesList}
-                  autoSync={autoSyncMap.get(r.id)}
-                />
-              ))}
-            </RecurrenceSection>
+            {(view === "all" || view === "transfer") && transfers.length > 0 ? (
+              <RecurrenceSection
+                keyboardId="transferencias"
+                label="Transferências"
+                ruleIds={transfers.map((r) => r.id)}
+                monthlyTotal={aggregateMonthly(transfers)}
+                tone="transfer"
+                emoji="↔"
+              >
+                {transfers.map((r) => (
+                  <RecurrenceRow
+                    key={r.id}
+                    rule={r}
+                    nextOccurrences={computeNextOccurrences(r, today, 3)}
+                    accounts={accountsLite}
+                    categories={categoriesLite}
+                    fontes={fontesList}
+                    autoSync={autoSyncMap.get(r.id)}
+                  />
+                ))}
+              </RecurrenceSection>
+            ) : null}
 
-            {paused.length > 0 ? (
+            {/* Pausadas e Encerradas: só em view=all (filtros viewam ativas) */}
+            {view === "all" && paused.length > 0 ? (
               <RecurrenceSection
                 keyboardId="pausadas"
                 label="Pausadas"
@@ -316,7 +409,7 @@ export default async function RecorrentesPage() {
               </RecurrenceSection>
             ) : null}
 
-            {ended.length > 0 ? (
+            {view === "all" && ended.length > 0 ? (
               <RecurrenceSection
                 keyboardId="encerradas"
                 label="Encerradas"
@@ -339,15 +432,17 @@ export default async function RecorrentesPage() {
             ) : null}
           </div>
 
-          <RecurrenceKeyboardNav
-            available={{
-              receitas: incomes.length > 0,
-              despesas: expenses.length > 0,
-              transferencias: transfers.length > 0,
-              pausadas: paused.length > 0,
-              encerradas: ended.length > 0,
-            }}
-          />
+          {view === "all" ? (
+            <RecurrenceKeyboardNav
+              available={{
+                receitas: incomes.length > 0,
+                despesas: expenses.length > 0,
+                transferencias: transfers.length > 0,
+                pausadas: paused.length > 0,
+                encerradas: ended.length > 0,
+              }}
+            />
+          ) : null}
         </>
       )}
     </>
@@ -362,11 +457,13 @@ function Empty() {
           Nenhuma recorrência ainda
         </div>
         <h2 className="font-display text-[26px] tracking-[-0.02em] mt-2">
-          Coloque tudo que repete <em className="italic">no piloto automático</em>.
+          Coloque tudo que repete{" "}
+          <em className="italic">no piloto automático</em>.
         </h2>
         <p className="text-[14px] text-muted-foreground mt-2.5 leading-relaxed">
-          Salário todo dia 5, aluguel todo dia 10, Netflix dia 15, aporte mensal — você
-          define o ritmo e o app gera os lançamentos nas datas certas. Sem precisar lembrar.
+          Salário todo dia 5, aluguel todo dia 10, Netflix dia 15, aporte mensal
+          — você define o ritmo e o app gera os lançamentos nas datas certas. Sem
+          precisar lembrar.
         </p>
       </div>
     </Panel>
