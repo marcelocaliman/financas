@@ -13,6 +13,7 @@ import { listAccounts } from "@/services/accounts";
 import { listFilers } from "@/services/ir/filers";
 import { getCurrentUserContext } from "@/services/auth";
 import { InboxReviewPanel } from "@/components/inbox/inbox-review-panel";
+import { CsvPreview } from "@/components/inbox/csv-preview";
 
 export const dynamic = "force-dynamic";
 
@@ -77,6 +78,10 @@ export default async function InboxDocumentPage({
                 alt="Preview"
                 className="w-full rounded-[8px] border border-border"
               />
+            ) : doc.mime_type === "text/csv" ||
+              doc.mime_type === "text/plain" ||
+              doc.original_filename.toLowerCase().endsWith(".csv") ? (
+              <CsvPreview url={previewUrl} filename={doc.original_filename} />
             ) : (
               <div className="bg-surface-muted rounded-[8px] p-4 max-h-[600px] overflow-auto">
                 <p className="text-[12.5px] text-muted-foreground italic">

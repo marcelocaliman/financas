@@ -221,6 +221,9 @@ Extraia os dados estruturados deste documento conforme o schema.`;
     return { error: "Falha desconhecida na extração." };
   }
 
+  // ─── 4. Post-processing: cobre buracos comuns sem precisar de retry ─────
+  const postProcessed = postProcess(detectedType, validated.data, args.file.name);
+
   // ─── 5. Métricas ────────────────────────────────────────────────────────
   const inputTokens =
     (classifyResp.usage?.prompt_tokens ?? 0) + (extractResp.usage?.prompt_tokens ?? 0);
@@ -230,7 +233,7 @@ Extraia os dados estruturados deste documento conforme o schema.`;
 
   return {
     detected_type: detectedType,
-    data: validated.data as ExtractedData["data"],
+    data: postProcessed as ExtractedData["data"],
     usage: {
       inputTokens,
       outputTokens,
@@ -242,6 +245,70 @@ Extraia os dados estruturados deste documento conforme o schema.`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Pós-processa o resultado da IA pra cobrir buracos comuns:
+ *   - Fatura de cartão: se total=0 ou null, soma os itens não-pagamento
+ *   - Fatura de cartão: se due_date é null, tenta extrair do nome do arquivo
+ *     (padrões "Fatura2026-07-05", "fatura_05_07_2026", etc.)
+ *
+ * Determinístico, sem custo extra de IA.
+ */
+function postProcess(
+  type: DocumentType,
+  data: unknown,
+  filename: string,
+): unknown {
+  if (type === "fatura_cartao" && data && typeof data === "object") {
+    const d = data as Record<string, unknown>;
+
+    // Total: se zero/null, soma items não-pagamento
+    if ((d.total == null || Number(d.total) === 0) && Array.isArray(d.items)) {
+      const sum = d.items
+        .filter((i) => i && typeof i === "object" && !(i as { is_payment?: boolean }).is_payment)
+        .reduce(
+          (s, i) => s + Number((i as { amount?: number }).amount ?? 0),
+          0,
+        );
+      if (Math.abs(sum) > 0.01) d.total = Math.round(sum * 100) / 100;
+    }
+
+    // Vencimento: extrai do filename se a IA não pegou
+    if (!d.due_date) {
+      const inferred = inferDateFromFilename(filename);
+      if (inferred) d.due_date = inferred;
+    }
+  }
+  return data;
+}
+
+/**
+ * Procura YYYY-MM-DD, DD-MM-YYYY, DDMMYYYY etc. no nome do arquivo.
+ * Retorna string ISO ou null.
+ */
+function inferDateFromFilename(name: string): string | null {
+  // YYYY-MM-DD ou YYYY_MM_DD
+  const iso = name.match(/(\d{4})[-_](\d{2})[-_](\d{2})/);
+  if (iso) {
+    const [, y, m, d] = iso;
+    if (isValidDate(y, m, d)) return `${y}-${m}-${d}`;
+  }
+  // DD-MM-YYYY ou DD_MM_YYYY
+  const br = name.match(/(\d{2})[-_](\d{2})[-_](\d{4})/);
+  if (br) {
+    const [, d, m, y] = br;
+    if (isValidDate(y, m, d)) return `${y}-${m}-${d}`;
+  }
+  return null;
+}
+
+function isValidDate(y: string, m: string, d: string): boolean {
+  const yi = Number(y);
+  const mi = Number(m);
+  const di = Number(d);
+  return yi >= 2000 && yi <= 2100 && mi >= 1 && mi <= 12 && di >= 1 && di <= 31;
+}
+
 
 type InputContent = {
   contentParts: Array<
