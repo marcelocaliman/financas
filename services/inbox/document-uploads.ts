@@ -369,6 +369,7 @@ export async function markConfirmed(
       status: "confirmed",
       confirmed_at: new Date().toISOString(),
       applied_record_ids: appliedRecordIds as Record<string, unknown>,
+      error_message: null, // limpa erro pendurado de tentativas anteriores
     })
     .eq("id", id);
 }

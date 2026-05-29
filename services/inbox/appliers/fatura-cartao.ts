@@ -42,20 +42,28 @@ export async function applyFaturaCartao(args: {
     return { ok: false, error: "Nenhum item aplicável (todos eram pagamentos)." };
   }
 
-  // Moeda da fatura (default BRL) vs moeda da conta cartão
+  // Moeda + config da fatura da conta cartão
   const faturaCurrency = (args.data.currency ?? "BRL") as Currency;
   type AccBuilder = {
     select: (s: string) => {
       eq: (
         c: string,
         v: string,
-      ) => { maybeSingle: () => Promise<{ data: { currency: Currency } | null }> };
+      ) => {
+        maybeSingle: () => Promise<{
+          data: {
+            currency: Currency;
+            bill_close_day: number | null;
+            bill_due_day: number | null;
+          } | null;
+        }>;
+      };
     };
   };
   const { data: acc } = await (
     supabase.from as unknown as (t: string) => AccBuilder
   )("accounts")
-    .select("currency")
+    .select("currency, bill_close_day, bill_due_day")
     .eq("id", args.accountId)
     .maybeSingle();
   const accountCurrency = (acc?.currency ?? "BRL") as Currency;
@@ -66,12 +74,34 @@ export async function applyFaturaCartao(args: {
   // visíveis em breakdown por categoria/mês — marcar como histórica-IR
   // tiraria delas dessas analytics. Vide /transacoes.ts:268-273.
 
-  // Ciclo da fatura — resolve PARCELAS. period_end (fechamento) e due_date
-  // (vencimento) vêm do próprio doc. Quando setados nas tx, o cálculo de
-  // fatura usa essas datas em vez de date (que é a data da compra original
-  // pra parcelas, podendo ser meses atrás).
-  const billPeriodEnd = args.data.period_end ?? null;
+  // Ciclo da fatura — resolve PARCELAS. Quando temos due_date + bill_close_day
+  // da conta, calculamos o period_end exato via função SQL (mesma usada por
+  // credit_card_bill_amount), garantindo que o ciclo da fatura bata com o
+  // cálculo do extrato. Se faltar info, usa o que veio do doc como fallback.
   const billDueDate = args.data.due_date ?? null;
+  let billPeriodEnd: string | null = null;
+
+  if (billDueDate && acc?.bill_close_day) {
+    type RpcBuilder = {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{
+        data: Array<{ period_start: string; period_end: string }> | null;
+      }>;
+    };
+    const { data: win } = await (admin as unknown as RpcBuilder).rpc(
+      "bill_window_for_due_date",
+      {
+        p_close_day: acc.bill_close_day,
+        p_due_day: acc.bill_due_day ?? acc.bill_close_day,
+        p_due_date: billDueDate,
+      },
+    );
+    billPeriodEnd = win?.[0]?.period_end ?? args.data.period_end ?? null;
+  } else {
+    billPeriodEnd = args.data.period_end ?? null;
+  }
 
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
   type Row = { payload: Record<string, unknown>; key: string };
