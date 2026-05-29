@@ -66,10 +66,18 @@ export async function GET(req: NextRequest) {
   }
 
   const statuses = await getCronStatuses();
-  const stale = statuses.filter((s) => s.status === "stale" || s.status === "missing");
+  // Só alerta "stale" (dado existe mas é velho). "missing" significa que a
+  // tabela ainda não tem registros — normal num app recém-criado ou pra
+  // jobs que rodam só em certas horas (ex: quote_snapshots às 13h30 UTC).
+  const stale = statuses.filter((s) => s.status === "stale");
 
   if (stale.length === 0) {
-    return NextResponse.json({ ok: true, stale: 0, alerted: false });
+    return NextResponse.json({
+      ok: true,
+      stale: 0,
+      missing: statuses.filter((s) => s.status === "missing").length,
+      alerted: false,
+    });
   }
 
   const email = await findRecipientEmail();
@@ -94,7 +102,10 @@ export async function GET(req: NextRequest) {
     staleChecks: stale.map((s) => ({
       name: s.name,
       description: s.description,
-      ageHours: s.ageHours ?? 9999,
+      // Pra status="stale", ageHours nunca deveria ser null (vide
+      // getCronStatuses). Mas se for, marca explicitamente como
+      // desconhecido em vez do mágico 9999.
+      ageHours: s.ageHours ?? -1,
       staleAfterHours: s.staleAfterHours,
     })),
   });

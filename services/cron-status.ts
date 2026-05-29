@@ -49,9 +49,15 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     (supabase as unknown as {
       from: (t: string) => {
         select: (s: string) => {
-          order: (c: string, o: object) => {
-            limit: (n: number) => {
-              maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+          not: (
+            c: string,
+            op: string,
+            v: unknown,
+          ) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => {
+                maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+              };
             };
           };
         };
@@ -59,15 +65,22 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     })
       .from("indexer_history")
       .select("fetched_at")
-      .order("fetched_at", { ascending: false })
+      .not("fetched_at", "is", null)
+      .order("fetched_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
     (supabase as unknown as {
       from: (t: string) => {
         select: (s: string) => {
-          order: (c: string, o: object) => {
-            limit: (n: number) => {
-              maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+          not: (
+            c: string,
+            op: string,
+            v: unknown,
+          ) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => {
+                maybeSingle: () => Promise<{ data: { fetched_at: string } | null }>;
+              };
             };
           };
         };
@@ -75,7 +88,8 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     })
       .from("currency_rates")
       .select("fetched_at")
-      .order("fetched_at", { ascending: false })
+      .not("fetched_at", "is", null)
+      .order("fetched_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
     supabase

@@ -558,9 +558,11 @@ export function tmplCronStale(args: {
 }): { subject: string; body: string } {
   const items = args.staleChecks.map((c) => {
     const ageDisplay =
-      c.ageHours < 24
-        ? `${Math.round(c.ageHours)} horas`
-        : `${Math.round(c.ageHours / 24)} dias`;
+      c.ageHours < 0
+        ? "idade desconhecida"
+        : c.ageHours < 24
+          ? `${Math.round(c.ageHours)} horas`
+          : `${Math.round(c.ageHours / 24)} dias`;
     const limit = Math.round(c.staleAfterHours / 24) || 1;
     return {
       label: c.name,
