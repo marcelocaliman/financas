@@ -110,16 +110,23 @@ export async function applyFaturaCartao(args: {
    * Data efetiva da tx no extrato:
    *   - Item DENTRO do ciclo (compra à vista do mês): mantém data original.
    *   - Item ANTERIOR ao ciclo (parcela de compra antiga, ou compra retroativa
-   *     que só apareceu agora): usa period_end. Conceito: essa cobrança
-   *     "aconteceu" no fim do ciclo desta fatura.
+   *     que só apareceu agora): usa period_START do ciclo. Conceito: essa
+   *     parcela "começou a ser cobrada" no início do ciclo da fatura.
    *
-   * Sem isso, parcelas espalham a tx pelo mês da compra ORIGINAL, fora do
-   * mês da fatura — usuário não vê elas em /transacoes filtrado pelo mês
-   * da fatura.
+   * Por que period_start e não period_end?
+   *   - period_start é SEMPRE passado pra qualquer fatura razoável (você
+   *     não importa fatura cujo ciclo ainda nem começou)
+   *   - period_end pode ser futuro pra ciclo ATUAL (ex: hoje 29/05, ciclo
+   *     fecha 26/06) — colocar parcela em 26/06 dá data futura, confunde
+   *   - Determinístico: não depende de "hoje", então re-importar a mesma
+   *     fatura produz o mesmo date e dedup funciona corretamente
+   *   - Semanticamente: a parcela está no MÊS em que o ciclo começou,
+   *     que é como o usuário pensa ("gastos de abril dentro da fatura de
+   *     junho" → parcela em 27/04 pra fatura de junho)
    */
   const effectiveTxDate = (purchaseDate: string): string => {
     if (!billPeriodEnd || !billPeriodStart) return purchaseDate;
-    return purchaseDate < billPeriodStart ? billPeriodEnd : purchaseDate;
+    return purchaseDate < billPeriodStart ? billPeriodStart : purchaseDate;
   };
 
   // Constrói rows com chave de dedup. Trata sinais: negativo = income (estorno).
