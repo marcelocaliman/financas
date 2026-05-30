@@ -241,18 +241,36 @@ export async function updateTransaction(
 
   const supabase = await createClient();
 
-  // Recalcula amount_account igual ao create.
-  const { data: acc } = await supabase
-    .from("accounts")
-    .select("currency")
-    .eq("id", parsed.data.accountId)
-    .maybeSingle();
+  // Recalcula amount_account. IMPORTANTE: o edit dialog nem sempre reenvia
+  // currency/amountAccount; sem preservar a moeda ORIGINAL da transação, editar
+  // só a descrição de uma despesa em EUR numa conta BRL gravaria currency=BRL e
+  // amount_account=valor-em-EUR, corrompendo moeda e saldo (o trigger reverte o
+  // delta antigo e aplica o novo). Então: a moeda cai pra moeda da tx existente
+  // (não a da conta) quando o form não manda, e o amount_account é preservado
+  // quando valor+moeda não mudaram (evita drift de câmbio em edição de descrição).
+  const [{ data: acc }, { data: existing }] = await Promise.all([
+    supabase.from("accounts").select("currency").eq("id", parsed.data.accountId).maybeSingle(),
+    supabase
+      .from("transactions")
+      .select("currency, amount, amount_account")
+      .eq("id", parsed.data.id)
+      .maybeSingle(),
+  ]);
   const accountCurrency = (acc?.currency ?? "BRL") as Currency;
-  const txCurrency: Currency = parsed.data.currency ?? accountCurrency;
+  const existingCurrency = (existing?.currency ?? null) as Currency | null;
+  const txCurrency: Currency =
+    parsed.data.currency ?? existingCurrency ?? accountCurrency;
   let amountAccount = parsed.data.amountAccount;
   if (amountAccount === undefined || amountAccount === null) {
     if (txCurrency === accountCurrency) {
       amountAccount = parsed.data.amount;
+    } else if (
+      existing != null &&
+      existingCurrency === txCurrency &&
+      Number(existing.amount) === parsed.data.amount
+    ) {
+      // valor e moeda inalterados: preserva o amount_account original (sem drift)
+      amountAccount = Number(existing.amount_account);
     } else {
       const rates = await getRateMap();
       amountAccount = convertOrSame(parsed.data.amount, txCurrency, accountCurrency, rates);

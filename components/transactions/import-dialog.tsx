@@ -88,6 +88,7 @@ function normalizeCurrency(s: string): Currency {
   const v = s.toUpperCase().trim();
   if (v === "EUR" || v === "€") return "EUR";
   if (v === "USD" || v === "US$" || v === "$") return "USD";
+  if (v === "GBP" || v === "£") return "GBP";
   return "BRL";
 }
 

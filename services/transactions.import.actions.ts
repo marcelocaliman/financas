@@ -186,6 +186,9 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
   const existingTxs = (existing ?? []) as ExistingTx[];
   const skippedDuplicates: NonNullable<ImportResult["skippedDuplicates"]> = [];
   const toInsert: typeof inserts = [];
+  // Consome cada existing após casar, pra duas linhas iguais do CSV não casarem
+  // ambas com a mesma tx existente (descartaria uma transação real).
+  const consumedIds = new Set<string>();
 
   inserts.forEach((row, i) => {
     const candidate: DedupeCandidate = {
@@ -195,8 +198,9 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
       amount_account: row.amount_account,
       description: row.description,
     };
-    const match = findDuplicate(candidate, existingTxs);
+    const match = findDuplicate(candidate, existingTxs, consumedIds);
     if (match) {
+      consumedIds.add(match.id);
       skippedDuplicates.push({
         index: i,
         candidateDescription: row.description,

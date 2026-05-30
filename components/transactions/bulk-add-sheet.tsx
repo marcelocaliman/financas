@@ -265,6 +265,7 @@ function BulkRow({
               <SelectItem value="BRL">R$</SelectItem>
               <SelectItem value="EUR">€</SelectItem>
               <SelectItem value="USD">US$</SelectItem>
+              <SelectItem value="GBP">£</SelectItem>
             </SelectContent>
           </Select>
         </Field>

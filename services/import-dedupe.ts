@@ -108,12 +108,19 @@ export type DedupeCandidate = {
 /**
  * Procura por uma transação existente que provavelmente é a mesma do
  * candidate. Retorna a primeira match ou null.
+ *
+ * `consumedIds` (opcional): ids de existing já casados por candidates
+ * anteriores deste mesmo lote. Pular esses evita que duas linhas legítimas
+ * iguais do CSV (ex: dois Ubers de R$25 no mesmo dia) casem AMBAS com a mesma
+ * tx existente — o que faria uma transação real ser silenciosamente descartada.
  */
 export function findDuplicate(
   candidate: DedupeCandidate,
   existing: ExistingTx[],
+  consumedIds?: ReadonlySet<string>,
 ): ExistingTx | null {
   for (const tx of existing) {
+    if (consumedIds?.has(tx.id)) continue;
     if (tx.account_id !== candidate.account_id) continue;
     if (tx.kind !== candidate.kind) continue;
     if (!datesWithinRange(tx.date, candidate.date)) continue;

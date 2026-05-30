@@ -99,6 +99,16 @@ export function AddTransactionDialog({
     setCurrency(accountCurrency);
   }
 
+  // Transferência entre contas de moedas diferentes não é convertida pela RPC
+  // create_transfer (debita e credita o mesmo número), então avisamos o usuário.
+  const fromCurrency = accounts.find((a) => a.id === fromAccountId)?.currency;
+  const toCurrency = accounts.find((a) => a.id === toAccountId)?.currency;
+  const crossCurrencyTransfer =
+    kind === "transfer" &&
+    !!fromCurrency &&
+    !!toCurrency &&
+    fromCurrency !== toCurrency;
+
   const [state, action, pending] = useActionState<TxFormState | undefined, FormData>(
     createTransaction,
     undefined,
@@ -206,6 +216,7 @@ export function AddTransactionDialog({
                     <SelectItem value="BRL">{CURRENCY_LABELS.BRL} BRL</SelectItem>
                     <SelectItem value="EUR">{CURRENCY_LABELS.EUR} EUR</SelectItem>
                     <SelectItem value="USD">{CURRENCY_LABELS.USD} USD</SelectItem>
+                    <SelectItem value="GBP">{CURRENCY_LABELS.GBP} GBP</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -259,6 +270,14 @@ export function AddTransactionDialog({
                     ) : null}
                   </Field>
                 </div>
+                {crossCurrencyTransfer ? (
+                  <p className="text-[11.5px] text-gold-700 dark:text-gold-500 bg-gold-100/50 dark:bg-gold-700/15 border border-gold-600/30 rounded-[6px] px-2.5 py-2">
+                    ⚠ As contas têm moedas diferentes ({fromCurrency} → {toCurrency}). A
+                    transferência <b>não</b> aplica câmbio — o mesmo número será debitado
+                    e creditado. Para conversão real, registre uma despesa na origem e uma
+                    receita no destino.
+                  </p>
+                ) : null}
                 <Field htmlFor="tx-description" label="Descrição" hint="Opcional — vamos compor automático com origem/destino se vazio.">
                   <Input
                     id="tx-description"

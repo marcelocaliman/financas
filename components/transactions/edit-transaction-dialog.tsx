@@ -149,6 +149,9 @@ export function EditTransactionDialog({
         <form action={action} className="space-y-4">
           <input type="hidden" name="id" value={transaction.id} />
           <input type="hidden" name="kind" value={transaction.kind} />
+          {/* Preserva a moeda original da tx — sem isso o servidor assumiria a
+              moeda da conta e corromperia transações em moeda estrangeira. */}
+          <input type="hidden" name="currency" value={transaction.currency ?? "BRL"} />
 
           <Field htmlFor="amount" label="Valor">
             <MoneyInput
