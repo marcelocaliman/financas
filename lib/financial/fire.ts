@@ -125,6 +125,7 @@ export function computeFire(inputs: FireInputs): FireBreakdown {
     inssMonthlyEstimate,
     monthlyAddition,
     monthsToFire,
+    realAnnualReturnPct,
   });
 
   return {
@@ -392,8 +393,9 @@ function classifyFire(args: {
   inssMonthlyEstimate: number;
   monthlyAddition: number;
   monthsToFire: number | null;
+  realAnnualReturnPct: number;
 }): FireClassification {
-  const { currentNetWorth, fireTargetNetWorth, targetMonthlyIncome, currentPassiveMonthlyIncome, inssMonthlyEstimate, monthlyAddition, monthsToFire } = args;
+  const { currentNetWorth, fireTargetNetWorth, targetMonthlyIncome, currentPassiveMonthlyIncome, inssMonthlyEstimate, monthlyAddition, monthsToFire, realAnnualReturnPct } = args;
 
   const totalPassive = currentPassiveMonthlyIncome + inssMonthlyEstimate;
   const coverage = targetMonthlyIncome > 0 ? totalPassive / targetMonthlyIncome : 0;
@@ -409,7 +411,7 @@ function classifyFire(args: {
       currentNetWorth,
       targetNetWorth: fireTargetNetWorth,
       monthlyAddition: 0,
-      realAnnualReturnPct: 6, // hardcoded — recálculo conservador
+      realAnnualReturnPct, // usa o retorno configurado pelo usuário (antes era 6% fixo)
     });
     if (monthsCoast != null && monthsCoast <= 30 * 12) return "coast";
   }

@@ -193,7 +193,14 @@ export async function listGoalsEnriched(opts?: {
     const hasSources = sources.length > 0;
     const derivedCurrent = hasSources ? sumEarmarked : Number(g.current_amount);
 
-    const status = computeGoalStatus(derivedCurrent, Number(g.target_amount), g.target_date);
+    const trackingStart =
+      g.tracking_starts_at ?? (g.created_at ? g.created_at.slice(0, 10) : null);
+    const status = computeGoalStatus(
+      derivedCurrent,
+      Number(g.target_amount),
+      g.target_date,
+      trackingStart,
+    );
 
     return {
       ...g,
@@ -217,6 +224,7 @@ export function computeGoalStatus(
   current: number,
   target: number,
   targetDateISO: string | null,
+  trackingStartISO?: string | null,
 ): EnrichedGoal["status"] {
   if (target <= 0) return "neutro";
   const pace = current / target;
@@ -225,22 +233,23 @@ export function computeGoalStatus(
 
   const today = new Date();
   const target_d = new Date(targetDateISO + "T00:00:00Z");
-  // Sem `created_at` da meta como referência aqui — usamos início do mês atual
-  // como aproximação razoável (zero histórico necessário). Pra ser exato,
-  // precisaríamos passar created_at, mas pra status é overkill.
-  const monthsRemaining = Math.max(
-    0,
-    (target_d.getUTCFullYear() - today.getUTCFullYear()) * 12 +
-      (target_d.getUTCMonth() - today.getUTCMonth()),
-  );
+  const monthsBetween = (a: Date, b: Date) =>
+    (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
+
+  const monthsRemaining = Math.max(0, monthsBetween(today, target_d));
   if (monthsRemaining <= 0) {
     return pace >= 0.95 ? "no_ritmo" : "atrasada";
   }
-  // Time progress: assumimos meta de 24m (típico) como denominador "leve".
-  // Pra ser refinado: salvar `started_at` quando criar a meta.
-  const totalAssumed = monthsRemaining + 12; // assume que já está rodando há 1 ano
-  const elapsed = totalAssumed - monthsRemaining;
-  const time_progress = elapsed / totalAssumed;
+
+  // Time progress real: usa o início de tracking (tracking_starts_at ?? created_at)
+  // em vez de assumir "+12 meses rodando". Sem essa info, fica neutro pra não
+  // rotular meta recém-criada como atrasada/adiantada arbitrariamente.
+  if (!trackingStartISO) return "neutro";
+  const start_d = new Date(trackingStartISO + "T00:00:00Z");
+  const elapsed = Math.max(0, monthsBetween(start_d, today));
+  const totalSpan = elapsed + monthsRemaining;
+  if (totalSpan <= 0) return "neutro";
+  const time_progress = elapsed / totalSpan;
 
   if (pace > time_progress + 0.05) return "adiantada";
   if (pace < time_progress - 0.05) return "atrasada";
@@ -307,7 +316,9 @@ export function computeAllocationPlan(
       );
       alloc = Math.min(remaining, inDisplay);
     } else if (mode === "percentage" && g.allocation_value != null) {
-      alloc = remaining * Number(g.allocation_value);
+      // Base = sobra mensal INTEIRA (alinha com o card individual e o label
+      // "% da sobra mensal"), capada pelo que ainda resta no waterfall.
+      alloc = Math.min(remaining, monthlySavingsInDisplay * Number(g.allocation_value));
     } else if (mode === "waterfall") {
       // Não consome aqui — é o "resto". Tratado depois.
       lines.push({
@@ -340,16 +351,46 @@ export function computeAllocationPlan(
     });
   }
 
-  // Waterfall: divide o remaining igualmente entre metas em waterfall ativas
+  // Waterfall: divide o remaining entre metas em waterfall ativas, mas cada
+  // meta só recebe até o que falta pra concluir (antes dava `each` cego, podendo
+  // alocar mais do que a meta precisa). Redistribui o excedente em rodadas.
+  const remainingToTargetByGoal = new Map<string, number>();
+  for (const g of sorted) {
+    remainingToTargetByGoal.set(
+      g.id,
+      Math.max(
+        0,
+        convertOrSame(Number(g.target_amount) - g.derivedCurrent, g.currency, displayCurrency, rates),
+      ),
+    );
+  }
   const waterfallIdx = lines
     .map((l, i) => ({ l, i }))
     .filter((x) => x.l.mode === "waterfall");
   if (waterfallIdx.length > 0 && remaining > 0) {
-    const each = remaining / waterfallIdx.length;
-    for (const { i } of waterfallIdx) {
-      lines[i] = { ...lines[i], allocated: Math.round(each * 100) / 100 };
+    const cap = new Map<number, number>(); // índice da linha → capacidade restante
+    for (const { i, l } of waterfallIdx) {
+      cap.set(i, remainingToTargetByGoal.get(l.goalId) ?? Infinity);
     }
-    remaining = 0;
+    const allocated = new Map<number, number>();
+    let guard = 0;
+    while (remaining > 0.005 && guard++ < 20) {
+      const open = waterfallIdx.filter(({ i }) => (cap.get(i) ?? 0) > 0.005);
+      if (open.length === 0) break;
+      const each = remaining / open.length;
+      let consumed = 0;
+      for (const { i } of open) {
+        const give = Math.min(each, cap.get(i) ?? 0);
+        allocated.set(i, (allocated.get(i) ?? 0) + give);
+        cap.set(i, (cap.get(i) ?? 0) - give);
+        consumed += give;
+      }
+      remaining -= consumed;
+      if (consumed < 0.005) break; // nada mais a distribuir
+    }
+    for (const { i } of waterfallIdx) {
+      lines[i] = { ...lines[i], allocated: Math.round((allocated.get(i) ?? 0) * 100) / 100 };
+    }
   }
 
   return { lines, leftover: Math.round(remaining * 100) / 100 };

@@ -81,11 +81,12 @@ export default async function IndependenciaPage() {
     );
   }
 
-  // Sobra média mensal últimos 6 meses
-  const positiveNets = history6.map((h) => Math.max(0, h.net));
+  // Sobra média mensal últimos 6 meses: média do net REAL com piso 0 só no
+  // fim (meses no vermelho puxam a média pra baixo em vez de virar 0 cada um,
+  // o que inflava a taxa de poupança que dirige o FIRE).
   const monthlySavings =
-    positiveNets.length > 0
-      ? positiveNets.reduce((s, v) => s + v, 0) / positiveNets.length
+    history6.length > 0
+      ? Math.max(0, history6.reduce((s, h) => s + h.net, 0) / history6.length)
       : 0;
 
   // Renda alvo: default = despesa atual

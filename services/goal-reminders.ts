@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
+import { listGoalsEnriched } from "@/services/goals";
 
 /**
  * Calendário de aportes nas metas — quem deve receber aporte nos próximos N dias.
@@ -119,33 +119,19 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
   const [yStr, mStr] = today.split("-");
   const monthStart = `${yStr}-${mStr}-01`;
 
-  const [{ data: goals }, { data: contribsThisMonth }] = await Promise.all([
-    supabase
-      .from("goals")
-      .select(
-        "id, name, currency, contribution_day, allocation_mode, allocation_value, target_amount, current_amount, created_at, tracking_starts_at",
-      )
-      .eq("is_archived", false)
-      .not("contribution_day", "is", null),
+  const [goals, { data: contribsThisMonth }] = await Promise.all([
+    // Enriched pra ter derivedCurrent: metas com fonte vinculada não bumpam
+    // current_amount, então o snapshot pode ficar atrás do saldo real e gerar
+    // lembrete fantasma pra uma meta que já passou do alvo via earmark.
+    listGoalsEnriched(),
     supabase
       .from("goal_contributions")
-      .select("goal_id")
+      .select("goal_id, amount")
+      // Só depósitos contam como "já aportou": uma retirada (amount<0) não pode
+      // suprimir o lembrete de aporte do mês.
+      .gt("amount", 0)
       .gte("date", monthStart),
   ]);
-
-  type GoalSlim = Pick<
-    Tables<"goals">,
-    | "id"
-    | "name"
-    | "currency"
-    | "contribution_day"
-    | "allocation_mode"
-    | "allocation_value"
-    | "target_amount"
-    | "current_amount"
-    | "created_at"
-    | "tracking_starts_at"
-  >;
 
   const goalsHavingThisMonth = new Set(
     (contribsThisMonth ?? []).map((c) => c.goal_id),
@@ -153,10 +139,10 @@ export async function getGoalReminders(windowDays = 30): Promise<GoalReminder[]>
 
   const reminders: GoalReminder[] = [];
 
-  for (const g of (goals ?? []) as GoalSlim[]) {
+  for (const g of goals) {
     if (g.contribution_day == null) continue;
-    // Skip metas que já atingiram o target
-    if (Number(g.current_amount) >= Number(g.target_amount) && Number(g.target_amount) > 0) {
+    // Skip metas que já atingiram o target (pelo saldo REAL derivado das fontes)
+    if (Number(g.derivedCurrent) >= Number(g.target_amount) && Number(g.target_amount) > 0) {
       continue;
     }
     // Tracking start: explícito (tracking_starts_at) ou criação (created_at).

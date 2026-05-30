@@ -55,10 +55,11 @@ export default async function MetasPage({
     getGoalReminders(30),
   ]);
 
-  const positiveNets = history.map((h) => Math.max(0, h.net));
+  // Média do net REAL (meses no vermelho puxam pra baixo), piso 0 só no fim.
+  // Antes clampava cada mês a 0, inflando a "sobra" de quem tem meses negativos.
   const averageMonthlyAddition =
-    positiveNets.length > 0
-      ? positiveNets.reduce((s, v) => s + v, 0) / positiveNets.length
+    history.length > 0
+      ? Math.max(0, history.reduce((s, h) => s + h.net, 0) / history.length)
       : 0;
 
   const accountsLite = accounts.map((a) => ({

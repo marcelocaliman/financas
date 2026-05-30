@@ -30,24 +30,24 @@ function todayPlusISO(days: number): string {
 
 export async function getSidebarBadges(): Promise<SidebarBadges> {
   const { getGoalReminders } = await import("@/services/goal-reminders");
+  const { listGoalsEnriched } = await import("@/services/goals");
   const supabase = await createClient();
   const soonCutoff = todayPlusISO(7);
 
-  const [{ count: pendingCount }, { data: goals }, reminders] = await Promise.all([
+  const [{ count: pendingCount }, goals, reminders] = await Promise.all([
     supabase
       .from("redemption_intents")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending")
       .lte("due_date", soonCutoff),
-    supabase
-      .from("goals")
-      .select("current_amount, target_amount")
-      .eq("is_archived", false),
+    // derivedCurrent: metas que atingem o alvo via earmark (sem bumpar
+    // current_amount) também disparam o badge de vitória.
+    listGoalsEnriched(),
     getGoalReminders(7),
   ]);
 
-  const metasJustAchieved = (goals ?? []).filter(
-    (g) => Number(g.target_amount) > 0 && Number(g.current_amount) >= Number(g.target_amount),
+  const metasJustAchieved = goals.filter(
+    (g) => Number(g.target_amount) > 0 && Number(g.derivedCurrent) >= Number(g.target_amount),
   ).length;
 
   // Metas que pedem ação: vencidas ou na próxima semana

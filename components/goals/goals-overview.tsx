@@ -23,7 +23,11 @@ export function GoalsOverview({
   totalFaltaDisplay: number;
   netWorthDisplay: number;
 }) {
-  const sharePctOfNetWorth = netWorthDisplay > 0 ? totalAlocadoDisplay / netWorthDisplay : 0;
+  // Clampa em 100%: a mesma conta/investimento pode ser fonte de mais de uma
+  // meta, então o total earmarked pode exceder o patrimônio — não faz sentido
+  // exibir "120% do patrimônio".
+  const sharePctOfNetWorth =
+    netWorthDisplay > 0 ? Math.min(1, totalAlocadoDisplay / netWorthDisplay) : 0;
 
   // Próximas 3 conquistas: metas mais perto de 100%, não concluídas
   const upcoming = activeGoals
