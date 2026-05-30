@@ -249,8 +249,17 @@ export function GoalSheet({
 
   // Quando financiamento ON, o target_amount é o que precisa poupar (entrada + custos).
   // O input de "Valor da meta" fica disabled e exibe esse valor calculado.
+  // Ao DESLIGAR o financiamento de uma meta que era financiada, não herda o
+  // totalToSave antigo salvo em target_amount (senão o "Valor da meta" ficaria
+  // com o valor do financiamento anterior sem o usuário perceber) — zera pra
+  // ele definir um alvo real. Meta nunca-financiada preserva o target.
+  const wasFinanced = goal?.property_price != null;
   const effectiveTargetAmount =
-    isFinanced && financing ? financing.totalToSave : Number(goal?.target_amount ?? 0);
+    isFinanced && financing
+      ? financing.totalToSave
+      : wasFinanced
+        ? 0
+        : Number(goal?.target_amount ?? 0);
 
   const sourcesJson = JSON.stringify(
     sources.map((s) => ({

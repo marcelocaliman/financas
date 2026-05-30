@@ -20,7 +20,9 @@ export function UpcomingObligationsCard({
   days: number;
 }) {
   const net = upcoming.totalIncome - upcoming.totalExpense;
-  const top = upcoming.items.slice(0, 5);
+  // Janela curta (7 dias) raramente passa de ~15 itens; mostra todos inline com
+  // rolagem interna a partir de ~8, em vez de cortar em 5 e esconder o resto.
+  const top = upcoming.items;
 
   return (
     <Panel className="!p-0 overflow-hidden">
@@ -70,21 +72,20 @@ export function UpcomingObligationsCard({
         </div>
       ) : (
         <>
-          <ul className="divide-y divide-border">
+          {/* A partir de ~8 itens, rola dentro do card (≈ 8 linhas visíveis). */}
+          <ul className="divide-y divide-border max-h-[26rem] overflow-y-auto">
             {top.map((item, idx) => (
               <UpcomingItemRow key={`${item.ruleId}-${item.date}-${idx}`} item={item} />
             ))}
           </ul>
-          {upcoming.items.length > top.length ? (
-            <div className="px-5 py-3 border-t border-border text-right">
-              <Link
-                href="/recorrentes"
-                className="text-[12px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
-              >
-                + {upcoming.items.length - top.length} outras →
-              </Link>
-            </div>
-          ) : null}
+          <div className="px-5 py-3 border-t border-border text-right">
+            <Link
+              href="/recorrentes"
+              className="text-[12px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
+            >
+              Ver recorrentes →
+            </Link>
+          </div>
         </>
       )}
     </Panel>

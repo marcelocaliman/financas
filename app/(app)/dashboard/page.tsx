@@ -345,7 +345,17 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      {/* TIER 1 — IF + Cobertura (a estrela do dashboard pra FIRE) */}
+      {/* TIER 1 — Obrigações dos próximos 7 dias + Metas em curso.
+          O que vence/cai essa semana é mais acionável no dia a dia que a
+          projeção de FIRE (que vem logo abaixo). */}
+      {isCurrent ? (
+        <div className="grid lg:grid-cols-2 gap-5 mb-8">
+          <UpcomingObligationsCard upcoming={upcoming!} days={7} />
+          <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
+        </div>
+      ) : null}
+
+      {/* TIER 2 — IF + Cobertura (visão de longo prazo pra FIRE) */}
       {isCurrent ? (
         <div className="grid lg:grid-cols-2 gap-5 mb-8">
           <FireCard
@@ -364,14 +374,6 @@ export default async function DashboardPage({
             ratio={coverageRatioDisplay}
             hasInvestments={portfolio.total > 0}
           />
-        </div>
-      ) : null}
-
-      {/* TIER 2 — Obrigações dos próximos 7 dias + Metas em curso */}
-      {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-8">
-          <UpcomingObligationsCard upcoming={upcoming!} days={7} />
-          <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>
       ) : null}
 

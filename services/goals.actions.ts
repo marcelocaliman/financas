@@ -19,6 +19,17 @@ const GOAL_TYPES = [
 ] as const;
 const ALLOCATION_MODES = ["manual", "fixed_amount", "percentage", "waterfall"] as const;
 
+/** Data de hoje no fuso de Brasília (en-CA = YYYY-MM-DD), igual ao resto dos
+ *  services — evita carimbar a data de amanhã à noite (UTC). */
+function todaySaoPaulo(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
 const sourceSchema = z.object({
   sourceType: z.enum(["account", "investment", "manual"]) as z.ZodType<GoalSourceType>,
   sourceId: z.string().uuid().optional(),
@@ -312,7 +323,7 @@ export async function recordGoalContribution(
   if (amount <= 0) return { error: "Valor deve ser positivo." };
   const supabase = await createClient();
 
-  const date = opts?.date ?? new Date().toISOString().slice(0, 10);
+  const date = opts?.date ?? todaySaoPaulo();
   let transactionId = opts?.transactionId ?? null;
   let bumpCurrent = opts?.bumpCurrent ?? true;
   let sourceLabel = opts?.source ?? "manual";
@@ -402,7 +413,7 @@ export async function recordGoalWithdrawal(
   }
 
   const supabase = await createClient();
-  const date = opts?.date ?? new Date().toISOString().slice(0, 10);
+  const date = opts?.date ?? todaySaoPaulo();
   let transactionId: string | null = null;
   let bumpCurrent = true;
   let sourceLabel = "manual";
