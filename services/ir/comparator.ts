@@ -50,8 +50,9 @@ export async function compareDeclarationStrategies(
 
   const [primary, secondary] = filers;
 
-  // 1) Conjunta = visão household (sem filerId)
-  const jointResult = await computeImposto(year, householdId);
+  // 1) Conjunta = visão household (sem filerId) + cônjuge como dependente
+  //    (+1 dedução por dependente), conforme a declaração conjunta real.
+  const jointResult = await computeImposto(year, householdId, undefined, 1);
 
   // 2) Separadas: 1 chamada por filer
   const [primaryResult, secondaryResult] = await Promise.all([

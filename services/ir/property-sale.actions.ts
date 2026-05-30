@@ -71,13 +71,16 @@ export async function createPropertySale(
   let otherMovableSalesSameMonth = 0;
   if (assetKind === "movable") {
     const monthStart = parsed.data.saleDate.slice(0, 7) + "-01";
-    const monthEnd = parsed.data.saleDate.slice(0, 7) + "-31";
+    // Fim de mês robusto: dia 1 do mês seguinte (exclusivo). "-31" gerava data
+    // inválida em fev/abr/jun/set/nov, quebrando o filtro do limite de R$35k.
+    const [my, mm] = parsed.data.saleDate.slice(0, 7).split("-").map(Number);
+    const nextMonthStart = new Date(Date.UTC(my, mm, 1)).toISOString().slice(0, 10);
     const { data: otherSales } = await supabase
       .from("physical_asset_sales")
       .select("sale_price, physical_asset_id")
       .eq("household_id", ctx.household.id)
       .gte("sale_date", monthStart)
-      .lte("sale_date", monthEnd);
+      .lt("sale_date", nextMonthStart);
     otherMovableSalesSameMonth = (otherSales ?? [])
       .filter((s) => s.physical_asset_id !== parsed.data.physicalAssetId)
       .reduce((sum, s) => sum + Number(s.sale_price), 0);
@@ -152,8 +155,22 @@ export async function markPropertySaleDarfPaid(
 
 export async function deletePropertySale(id: string): Promise<PropertySaleFormState> {
   const supabase = await createClient();
+  // Reativa o bem que a venda havia arquivado — senão apagar a venda deixa o
+  // ativo sumido do patrimônio pra sempre.
+  const { data: sale } = await supabase
+    .from("physical_asset_sales")
+    .select("physical_asset_id")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("physical_asset_sales").delete().eq("id", id);
   if (error) return { error: error.message };
+  if (sale?.physical_asset_id) {
+    await supabase
+      .from("physical_assets")
+      .update({ is_active: true })
+      .eq("id", sale.physical_asset_id);
+    revalidatePath("/patrimonio");
+  }
   revalidatePath("/ir", "layout");
   return { ok: true };
 }

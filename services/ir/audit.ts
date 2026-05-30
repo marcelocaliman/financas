@@ -3,6 +3,9 @@ import { getBensReport } from "@/services/ir/bens";
 import { getRendimentosReport } from "@/services/ir/rendimentos";
 import { computeImposto } from "@/services/ir/imposto";
 import { createClient } from "@/lib/supabase/server";
+import { getRateMapAt } from "@/services/currency";
+import { convertOrSame } from "@/lib/financial/currency";
+import type { Currency } from "@/types/database";
 
 /**
  * Relatório de auditoria pré-fechamento — agrega o que o app calculou pra cada
@@ -46,7 +49,7 @@ export async function getAuditTotals(
 ): Promise<AuditTotals> {
   const supabase = await createClient();
 
-  const [bens, rendimentos, imposto, { data: filers }, { data: deps }, { data: deds }] =
+  const [bens, rendimentos, imposto, { data: filers }, { data: deps }, { data: deds }, rates] =
     await Promise.all([
       getBensReport(year, householdId),
       getRendimentosReport(year, householdId),
@@ -57,12 +60,15 @@ export async function getAuditTotals(
         .from("ir_deductible_payments")
         .select("kind, amount, currency")
         .eq("year", year),
+      // cotação de 31/12 do ano-base, igual ao cálculo do imposto
+      getRateMapAt(`${year}-12-31`),
     ]);
 
   const deductiblesByKind: Record<string, number> = {};
   let deductiblesTotal = 0;
   for (const d of deds ?? []) {
-    const amt = Number(d.amount);
+    // Converte pra BRL (alinha com computeImposto) — antes somava moedas cruas.
+    const amt = convertOrSame(Number(d.amount), (d.currency ?? "BRL") as Currency, "BRL", rates);
     deductiblesByKind[d.kind] = (deductiblesByKind[d.kind] ?? 0) + amt;
     deductiblesTotal += amt;
   }

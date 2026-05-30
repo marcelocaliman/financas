@@ -31,6 +31,10 @@ export type ImpostoResult = {
   inssAndOfficial: number;
   dependentsDeduction: number;
   numDependents: number;
+  /** Dedução por dependente vigente no ano-base (pra exibir hint sem hardcode) */
+  dependentDeductionPerDep: number;
+  /** Teto do desconto simplificado vigente no ano-base */
+  simplesLimit: number;
   // Modelo Completo
   completo: {
     educacao: number;
@@ -75,6 +79,9 @@ export async function computeImposto(
   year: number,
   householdId?: string,
   filerId?: string,
+  /** Dependentes EXTRAS além dos cadastrados (ex: cônjuge na declaração
+   *  conjunta, que entra como dependente e gera +1 dedução). */
+  extraDependents = 0,
 ): Promise<ImpostoResult> {
   const supabase = await createClient();
   const rates = await getRateMapAt(`${year}-12-31`);
@@ -98,7 +105,7 @@ export async function computeImposto(
 
   const baseTributavelBruta = rendimentos.tributaveis.total;
   const inssAndOfficial = rendimentos.tributaveis.totalInss;
-  const numDependents = (deps ?? []).length;
+  const numDependents = (deps ?? []).length + Math.max(0, extraDependents);
   const dependentsDeduction = numDependents * taxTable.dependentDeduction;
 
   // Categorizar pagamentos dedutíveis
@@ -209,6 +216,8 @@ export async function computeImposto(
     inssAndOfficial: round2(inssAndOfficial + inssFromPay),
     dependentsDeduction: round2(dependentsDeduction),
     numDependents,
+    dependentDeductionPerDep: round2(taxTable.dependentDeduction),
+    simplesLimit: round2(taxTable.simplesLimit),
     completo: {
       educacao: round2(educacao),
       educacaoLimitApplied: round2(educacaoLimitApplied),

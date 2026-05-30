@@ -43,7 +43,7 @@ export function ImpostoCompareCard({ imposto }: { imposto: ImpostoResult }) {
             { label: "Educação", value: imposto.completo.educacaoLimitApplied, hint: imposto.completo.educacaoLimitApplied < imposto.completo.educacao ? `limitado · digitou R$ ${fmtBRL(imposto.completo.educacao)}` : undefined },
             { label: "Saúde (sem limite)", value: imposto.completo.saude },
             { label: "PGBL/previdência", value: imposto.completo.pgblLimitApplied, hint: imposto.completo.pgblLimitApplied < imposto.completo.pgblPrev ? `limite 12% da renda · digitou R$ ${fmtBRL(imposto.completo.pgblPrev)}` : undefined },
-            { label: "Dependentes", value: imposto.dependentsDeduction, hint: `${imposto.numDependents} × R$ 2.275,08` },
+            { label: "Dependentes", value: imposto.dependentsDeduction, hint: `${imposto.numDependents} × R$ ${fmtBRL(imposto.dependentDeductionPerDep)}` },
           ]}
         />
         <ModelCard
@@ -54,7 +54,7 @@ export function ImpostoCompareCard({ imposto }: { imposto: ImpostoResult }) {
           irrf={imposto.simples.irrfRetained}
           netDue={imposto.simples.netDue}
           extras={[
-            { label: "Desconto padrão (20%)", value: imposto.simples.descontoPadrao, hint: "limite R$ 16.754,34" },
+            { label: "Desconto padrão (20%)", value: imposto.simples.descontoPadrao, hint: `limite R$ ${fmtBRL(imposto.simplesLimit)}` },
           ]}
         />
       </div>

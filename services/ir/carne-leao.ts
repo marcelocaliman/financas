@@ -128,37 +128,58 @@ export async function getCarneLeaoSummary(
   householdId?: string,
 ): Promise<CarneLeaoSummary> {
   const rows = await listCarneLeao(year, householdId);
-  const byMonth: Map<number, { gross: number; tax: number; pending: number }> = new Map();
-  for (let m = 1; m <= 12; m++) byMonth.set(m, { gross: 0, tax: 0, pending: 0 });
-  let totalGross = 0, totalTax = 0, totalPaid = 0, totalPending = 0;
 
+  // Agrega por mês. O carnê-leão é apurado MENSALMENTE: a tabela progressiva se
+  // aplica UMA vez sobre a soma dos rendimentos do mês, não por lançamento
+  // (somar tax_due por entrada subtributa — cada entrada caía sozinha na faixa
+  // isenta). Recalculamos o imposto agregado por mês aqui.
+  type MonthAgg = { gross: number; deductible: number; allPaid: boolean; hasEntries: boolean };
+  const agg = new Map<number, MonthAgg>();
+  for (let m = 1; m <= 12; m++) {
+    agg.set(m, { gross: 0, deductible: 0, allPaid: true, hasEntries: false });
+  }
   for (const r of rows) {
-    const e = byMonth.get(r.month)!;
-    const g = Number(r.gross_amount);
-    const t = Number(r.tax_due);
-    e.gross += g;
-    e.tax += t;
-    totalGross += g;
-    totalTax += t;
-    if (r.paid_at) totalPaid += t;
-    else {
-      totalPending += t;
-      e.pending += t;
-    }
+    const a = agg.get(r.month)!;
+    a.gross += Number(r.gross_amount);
+    a.deductible += Number(r.deductible_expenses ?? 0);
+    a.hasEntries = true;
+    if (!r.paid_at) a.allPaid = false;
   }
 
   const round2 = (n: number) => Math.round(n * 100) / 100;
+  let totalGross = 0, totalTax = 0, totalPaid = 0, totalPending = 0;
+  const byMonth: CarneLeaoSummary["byMonth"] = [];
+
+  for (let m = 1; m <= 12; m++) {
+    const a = agg.get(m)!;
+    let tax = 0;
+    if (a.hasEntries && a.gross > 0) {
+      const table = await getMonthlyTaxTable(year, m);
+      const detail = computeCarneLeaoMonthly({
+        grossIncome: a.gross,
+        deductibleExpenses: a.deductible,
+        numDependents: 0,
+        competenceDate: `${year}-${String(m).padStart(2, "0")}-15`,
+        brackets: table.brackets,
+        dependentDeductionPerOne: table.dependentDeduction,
+        year,
+      });
+      tax = round2(detail.taxDue);
+    }
+    const pending = a.allPaid ? 0 : tax;
+    totalGross += a.gross;
+    totalTax += tax;
+    if (a.allPaid) totalPaid += tax;
+    else totalPending += tax;
+    byMonth.push({ month: m, gross: round2(a.gross), tax, pending });
+  }
+
   return {
     totalGross: round2(totalGross),
     totalTax: round2(totalTax),
     totalPaid: round2(totalPaid),
     totalPending: round2(totalPending),
-    byMonth: Array.from(byMonth.entries()).map(([month, e]) => ({
-      month,
-      gross: round2(e.gross),
-      tax: round2(e.tax),
-      pending: round2(e.pending),
-    })),
+    byMonth,
   };
 }
 

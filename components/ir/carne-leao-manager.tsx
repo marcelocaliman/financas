@@ -77,6 +77,7 @@ export function CarneLeaoManager({
       const r = await markCarneLeaoPaid({
         id,
         paidAt: new Date().toISOString(),
+        year,
       });
       if (r.error) toast.error(r.error);
       else toast.success("Marcado como pago.");
@@ -102,6 +103,13 @@ export function CarneLeaoManager({
               negative={totalPending > 0}
             />
           </div>
+
+          <p className="text-[11.5px] text-gold-700 dark:text-gold-500 bg-gold-100/50 dark:bg-gold-700/15 border border-gold-600/30 rounded-[6px] px-2.5 py-2 mb-4">
+            ⚠ Esta aba calcula só o <b>imposto mensal (DARF 0190)</b>. Esses
+            rendimentos também precisam constar na sua declaração anual: lance-os
+            em <b>Rendimentos tributáveis recebidos de PF</b> (aba Rendimentos)
+            pra entrarem na base do ajuste. O imposto pago aqui é antecipação.
+          </p>
 
           <table className="w-full text-[12.5px] mb-4">
             <thead>

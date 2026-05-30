@@ -76,10 +76,13 @@ export async function createPropertyRevaluation(
   });
   if (error) return { error: error.message };
 
-  // Atualiza o valor atual do imóvel pra refletir
+  // Atualiza current_value E acquired_value: a valorização até aqui foi
+  // tributada a 4% no DARF de atualização (Lei 14.973), então o novo custo de
+  // aquisição passa a ser newValue. Sem isso, o GCAP de uma venda futura seria
+  // calculado sobre o custo antigo, supertributando (15% sobre ganho já taxado).
   await supabase
     .from("physical_assets")
-    .update({ current_value: parsed.data.newValue })
+    .update({ current_value: parsed.data.newValue, acquired_value: parsed.data.newValue })
     .eq("id", parsed.data.physicalAssetId);
 
   revalidatePath("/patrimonio");

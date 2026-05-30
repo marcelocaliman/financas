@@ -47,15 +47,17 @@ export const ensureExclusiveIncomeForClosures = cache(
       // o prejuízo em si vai pra apuração de Renda Variável (não aqui).
       if (!c.gross_proceeds_on_close || Number(c.gross_proceeds_on_close) <= 0) continue;
 
-      // Procura entradas existentes pra esse ticker no ano.
-      // Ancorada em description (sempre tem o ticker, pra TD e não-TD).
+      // Procura entradas existentes pra esse ticker no ano. Casa o ticker
+      // DELIMITADO por " · " (formato fixo da description abaixo) pra não casar
+      // por substring — antes "%PETR%" casava "PETR4", "%BOVA%" casava "BOVA11",
+      // podendo pular criação (subdeclaração) ou deletar entrada de outro ativo.
       const { data: existing } = await supabase
         .from("ir_other_incomes")
         .select("id, created_at")
         .eq("household_id", householdId)
         .eq("year", year)
         .eq("category", "exclusivo_fonte")
-        .like("description", `%${c.ticker}%`)
+        .like("description", `%· ${c.ticker} ·%`)
         .order("created_at", { ascending: true });
 
       const list = existing ?? [];

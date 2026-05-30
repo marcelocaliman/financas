@@ -27,6 +27,7 @@ export type RetroactiveGap = {
 
 export async function detectRetroactiveGaps(
   year: number,
+  householdId?: string,
 ): Promise<RetroactiveGap[]> {
   const supabase = await createClient();
 
@@ -40,22 +41,27 @@ export async function detectRetroactiveGaps(
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
 
-  const [{ data: rules }, { data: txs }] = await Promise.all([
-    supabase
-      .from("recurring_rules")
-      .select(
-        "id, description, kind, amount, start_date, end_date, is_active, frequency, day_of_month, is_tax_deductible, exclude_from_ir, ir_deductible_kind",
-      )
-      .eq("is_active", true)
-      .in("kind", ["income", "expense"])
-      .lte("start_date", yearEnd),
-    supabase
-      .from("transactions")
-      .select("recurring_rule_id, date")
-      .gte("date", yearStart)
-      .lte("date", yearEnd)
-      .not("recurring_rule_id", "is", null),
-  ]);
+  // Filtra explicitamente por household (além da RLS), espelhando os demais
+  // reports de IR — sem isso dependia só de RLS, divergindo do padrão.
+  let rulesQ = supabase
+    .from("recurring_rules")
+    .select(
+      "id, description, kind, amount, start_date, end_date, is_active, frequency, day_of_month, is_tax_deductible, exclude_from_ir, ir_deductible_kind",
+    )
+    .eq("is_active", true)
+    .in("kind", ["income", "expense"])
+    .lte("start_date", yearEnd);
+  let txQ = supabase
+    .from("transactions")
+    .select("recurring_rule_id, date")
+    .gte("date", yearStart)
+    .lte("date", yearEnd)
+    .not("recurring_rule_id", "is", null);
+  if (householdId) {
+    rulesQ = rulesQ.eq("household_id", householdId);
+    txQ = txQ.eq("household_id", householdId);
+  }
+  const [{ data: rules }, { data: txs }] = await Promise.all([rulesQ, txQ]);
 
   if (!rules || rules.length === 0) return [];
 
@@ -80,7 +86,11 @@ export async function detectRetroactiveGaps(
       ? (rule.end_date as string).slice(0, 7)
       : todayMonth;
     const effectiveStart = startMonth > `${year}-01` ? startMonth : `${year}-01`;
-    const effectiveEnd = endMonth < todayMonth ? endMonth : todayMonth;
+    // Cap no fim do ANO-BASE: pra ano corrente é o mês de hoje; pra anos
+    // passados é dezembro do ano-base. Sem isso, regra sem end_date gerava
+    // "meses faltando" fantasma de 2025/2026 numa declaração de 2024.
+    const cap = todayMonth < `${year}-12` ? todayMonth : `${year}-12`;
+    const effectiveEnd = endMonth < cap ? endMonth : cap;
 
     const expected: string[] = [];
     let cursor = effectiveStart;

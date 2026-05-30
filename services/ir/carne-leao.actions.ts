@@ -100,6 +100,7 @@ export async function markCarneLeaoPaid(args: {
   id: string;
   paidAt: string;
   reference?: string;
+  year?: number;
 }): Promise<IRFormState> {
   const supabase = await createClient();
   const { error } = await supabase
@@ -110,6 +111,8 @@ export async function markCarneLeaoPaid(args: {
     })
     .eq("id", args.id);
   if (error) return { error: error.message };
-  revalidatePath("/ir");
+  // O manager vive em /ir/[year] — revalidar só "/ir" não atualizava a tela.
+  if (args.year) revalidatePath(`/ir/${args.year}`);
+  revalidatePath("/ir", "layout");
   return { ok: true };
 }

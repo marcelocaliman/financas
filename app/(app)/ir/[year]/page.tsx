@@ -81,7 +81,7 @@ export default async function IRYearPage({
   const [comparator, checklist, retroactiveGaps] = await Promise.all([
     isCouple && !filerId ? compareDeclarationStrategies(year, ctx.household.id) : Promise.resolve(null),
     getChecklistReport(year, ctx.household.id),
-    detectRetroactiveGaps(year),
+    detectRetroactiveGaps(year, ctx.household.id),
   ]);
 
   const supabase = await createClient();
@@ -103,8 +103,8 @@ export default async function IRYearPage({
       getRendimentosReport(year, ctx.household.id, filerId),
       getRendaVariavelReport(year, ctx.household.id, filerId),
       computeImposto(year, ctx.household.id, filerId),
-      getExteriorReport(year),
-      getCryptoReport(year),
+      getExteriorReport(year, ctx.household.id),
+      getCryptoReport(year, ctx.household.id),
       listCarneLeao(year),
       supabase
         .from("ir_year_snapshots")
