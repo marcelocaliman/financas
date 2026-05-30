@@ -150,6 +150,54 @@ function daysBetween(fromISO: string, toISO: string): number {
   return Math.round((b - a) / 86400000);
 }
 
+type BillWindow = ReturnType<typeof computeBillWindow>;
+
+/**
+ * Total assinado de uma fatura: soma despesas e SUBTRAI estornos/créditos
+ * (kind=income), casando por bill_period_end (preciso pra parcelas) OU date no
+ * range (fallback manual/legacy). Mesma semântica da SQL credit_card_bill_amount
+ * — UI, notificações e auto-sync passam a bater.
+ */
+async function signedBillTotal(
+  supabase: SupabaseClient,
+  cardId: string,
+  w: BillWindow,
+): Promise<{ total: number; count: number }> {
+  const { data } = await supabase
+    .from("transactions")
+    .select("amount_account, kind")
+    .eq("account_id", cardId)
+    .in("kind", ["expense", "income"])
+    .or(
+      `bill_period_end.eq.${w.periodEnd},and(bill_period_end.is.null,date.gte.${w.periodStart},date.lte.${w.periodEnd})`,
+    );
+  let total = 0;
+  for (const t of data ?? []) {
+    const v = Number(t.amount_account ?? 0);
+    total += t.kind === "income" ? -v : v;
+  }
+  return { total, count: data?.length ?? 0 };
+}
+
+async function paidAmountFor(
+  supabase: SupabaseClient,
+  cardId: string,
+  w: BillWindow,
+): Promise<number> {
+  const { data } = await supabase
+    .from("transactions")
+    .select("amount_account")
+    .eq("account_id", cardId)
+    .eq("kind", "transfer")
+    .eq("transfer_direction", "in")
+    .gte("date", w.closeDate)
+    .lte("date", shiftDaysISO(w.dueDate, 30));
+  return (data ?? []).reduce((s, t) => s + Number(t.amount_account ?? 0), 0);
+}
+
+/** Quantos ciclos fechados pra trás varremos atrás de fatura não paga. */
+const MAX_PAST_BILL_CYCLES = 3;
+
 /**
  * Retorna TODAS as faturas relevantes de cada cartão:
  *  - A fatura mais recente FECHADA mas ainda não paga (closed_pending / overdue)
@@ -180,70 +228,44 @@ export async function getOpenCreditCardBills(): Promise<CreditCardBill[]> {
     const limit = card.credit_limit ? Number(card.credit_limit) : null;
     const cardId = card.id as string;
 
-    // Fatura ANTERIOR (acabou de fechar) — pode estar pendente
     const current = computeBillWindow(closeDay, dueDay, todayDate);
-    const previous = previousBillWindow(current);
 
-    // Carrega despesas do ciclo CURRENT e PREVIOUS de uma vez
-    const [{ data: curTxs }, { data: prevTxs }, { data: payments }] = await Promise.all([
-      supabase
-        .from("transactions")
-        .select("amount_account")
-        .eq("account_id", cardId)
-        .eq("kind", "expense")
-        .gte("date", current.periodStart)
-        .lte("date", current.periodEnd),
-      supabase
-        .from("transactions")
-        .select("amount_account")
-        .eq("account_id", cardId)
-        .eq("kind", "expense")
-        .gte("date", previous.periodStart)
-        .lte("date", previous.periodEnd),
-      // Transfers PRA conta-cartão entre fechamento da anterior e dueDate+30d
-      supabase
-        .from("transactions")
-        .select("amount_account")
-        .eq("account_id", cardId)
-        .eq("kind", "transfer")
-        .eq("transfer_direction", "in")
-        .gte("date", previous.closeDate)
-        .lte("date", shiftDaysISO(previous.dueDate, 30)),
-    ]);
-
-    const curTotal = (curTxs ?? []).reduce((s, t) => s + Number(t.amount_account ?? 0), 0);
-    const prevTotal = (prevTxs ?? []).reduce((s, t) => s + Number(t.amount_account ?? 0), 0);
-    const paidAmount = (payments ?? []).reduce((s, t) => s + Number(t.amount_account ?? 0), 0);
-
-    // Detecta fatura anterior pendente
-    if (prevTotal > 0.01) {
-      const paid = paidAmount >= prevTotal * 0.95;
-      const daysUntilDue = daysBetween(todayISO, previous.dueDate);
-      const status: CreditCardBillStatus = paid
-        ? "paid"
-        : daysUntilDue >= 0
-          ? "closed_pending"
-          : "overdue";
-
-      if (!paid) {
+    // Varre os ciclos FECHADOS pra trás (até MAX_PAST_BILL_CYCLES) procurando
+    // faturas não pagas — antes só o ciclo anterior era checado, então uma
+    // fatura atrasada de 2+ meses ficava invisível. Para no primeiro ciclo já
+    // pago (assume que o usuário paga em ordem cronológica).
+    let pastWindow = previousBillWindow(current);
+    for (let i = 0; i < MAX_PAST_BILL_CYCLES; i++) {
+      const { total, count } = await signedBillTotal(supabase, cardId, pastWindow);
+      if (total > 0.01) {
+        const paidAmount = await paidAmountFor(supabase, cardId, pastWindow);
+        const paid = paidAmount >= total * 0.95;
+        if (paid) break; // ciclo pago → os anteriores presumivelmente também
+        const daysUntilDue = daysBetween(todayISO, pastWindow.dueDate);
         bills.push({
           accountId: cardId,
-          closeDate: previous.closeDate,
-          dueDate: previous.dueDate,
-          periodStart: previous.periodStart,
-          periodEnd: previous.periodEnd,
-          totalOpen: Math.round(prevTotal * 100) / 100,
-          txCount: prevTxs?.length ?? 0,
-          utilizationPct: limit && limit > 0 ? prevTotal / limit : null,
-          status,
+          closeDate: pastWindow.closeDate,
+          dueDate: pastWindow.dueDate,
+          periodStart: pastWindow.periodStart,
+          periodEnd: pastWindow.periodEnd,
+          totalOpen: Math.round(total * 100) / 100,
+          txCount: count,
+          utilizationPct: limit && limit > 0 ? total / limit : null,
+          status: daysUntilDue >= 0 ? "closed_pending" : "overdue",
           daysUntilDue,
           paidAmount: Math.round(paidAmount * 100) / 100,
         });
       }
+      pastWindow = previousBillWindow(pastWindow);
     }
 
     // Ciclo atual sempre aparece (mesmo vazio — usuário precisa ver onde tá
     // formando), mas com status='current'
+    const { total: curTotal, count: curCount } = await signedBillTotal(
+      supabase,
+      cardId,
+      current,
+    );
     bills.push({
       accountId: cardId,
       closeDate: current.closeDate,
@@ -251,7 +273,7 @@ export async function getOpenCreditCardBills(): Promise<CreditCardBill[]> {
       periodStart: current.periodStart,
       periodEnd: current.periodEnd,
       totalOpen: Math.round(curTotal * 100) / 100,
-      txCount: curTxs?.length ?? 0,
+      txCount: curCount,
       utilizationPct: limit && limit > 0 ? curTotal / limit : null,
       status: "current",
       daysUntilDue: daysBetween(todayISO, current.dueDate),

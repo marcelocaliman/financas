@@ -211,13 +211,17 @@ export async function getMonthlyCardSpending(monthStr?: string): Promise<Monthly
       );
       const wRow = Array.isArray(window) ? window[0] : window;
       if (wRow) {
+        // Conta pela MESMA condição do RPC credit_card_bill_amount
+        // (bill_period_end explícito OU date no range) — antes contava só por
+        // date, divergindo do valor exibido pra parcelas.
         const { count } = await supabase
           .from("transactions")
           .select("*", { count: "exact", head: true })
           .eq("account_id", card.id)
           .eq("kind", "expense")
-          .gte("date", wRow.period_start)
-          .lte("date", wRow.period_end);
+          .or(
+            `bill_period_end.eq.${wRow.period_end},and(bill_period_end.is.null,date.gte.${wRow.period_start},date.lte.${wRow.period_end})`,
+          );
         txCountAcrossCards += count ?? 0;
       }
     }

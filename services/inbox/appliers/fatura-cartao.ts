@@ -80,7 +80,8 @@ export async function applyFaturaCartao(args: {
   // cálculo do extrato. Se faltar info, usa o que veio do doc como fallback.
   const billDueDate = args.data.due_date ?? null;
   let billPeriodEnd: string | null = null;
-  let billPeriodStart: string | null = null;
+  // Só bill_period_end é persistido (não há coluna bill_period_start). A janela
+  // SQL retorna start+end juntos, mas só usamos o end.
 
   if (billDueDate && acc?.bill_close_day) {
     type RpcBuilder = {
@@ -100,10 +101,8 @@ export async function applyFaturaCartao(args: {
       },
     );
     billPeriodEnd = win?.[0]?.period_end ?? args.data.period_end ?? null;
-    billPeriodStart = win?.[0]?.period_start ?? args.data.period_start ?? null;
   } else {
     billPeriodEnd = args.data.period_end ?? null;
-    billPeriodStart = args.data.period_start ?? null;
   }
 
   /**
@@ -218,7 +217,10 @@ export async function applyFaturaCartao(args: {
         key: transactionDedupKey({
           accountId: args.accountId,
           date: txDate,
-          amount: amountAccount,
+          // usa absAmount (= coluna `amount`) pra casar com a chave dos
+          // existentes (que lê `amount`). Antes usava amountAccount e divergia
+          // em cartão multimoeda, duplicando no reimport.
+          amount: absAmount,
           description,
         }),
       };

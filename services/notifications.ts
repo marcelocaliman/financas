@@ -436,11 +436,30 @@ async function checkCreditCardBills(
         .lte("date", shiftMonths(prevDueDate, 0).slice(0, 7) + "-31"), // generoso
     ]);
 
-    const billTotal = (expenses ?? []).reduce(
-      (s, t) => s + Number(t.amount_account),
-      0,
-    );
-    if (billTotal < 0.01) continue; // sem fatura anterior
+    // Estornos/créditos (kind=income) no mesmo ciclo abatem a fatura.
+    const { data: refunds } = await (
+      admin.from as unknown as (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: unknown) => {
+            eq: (c: string, v: unknown) => {
+              gte: (c: string, v: unknown) => {
+                lte: (c: string, v: unknown) => Promise<{ data: Tx[] | null }>;
+              };
+            };
+          };
+        };
+      }
+    )("transactions")
+      .select("amount_account")
+      .eq("account_id", card.id)
+      .eq("kind", "income")
+      .gte("date", prevPeriodStart)
+      .lte("date", prevPeriodEnd);
+
+    const billTotal =
+      (expenses ?? []).reduce((s, t) => s + Number(t.amount_account), 0) -
+      (refunds ?? []).reduce((s, t) => s + Number(t.amount_account), 0);
+    if (billTotal < 0.01) continue; // sem fatura anterior (ou estornada)
 
     const paid = (payments ?? []).reduce(
       (s, t) => s + Number(t.amount_account),
@@ -471,14 +490,19 @@ async function checkCreditCardBills(
       continue; // ainda longe pra alertar
     }
 
-    // Dedup: não cria alerta duplicado pra mesma fatura no mesmo dia
+    // Dedup: não cria alerta duplicado pra mesma fatura/CARTÃO no mesmo dia.
+    // Antes filtrava só por household+dia, então com 2+ cartões vencendo no
+    // mesmo dia só o primeiro gerava alerta — o filtro por context->>account_id
+    // garante um alerta por cartão.
     type Existing = { id: string };
     const { data: existing } = await (
       admin.from as unknown as (t: string) => {
         select: (s: string) => {
           eq: (c: string, v: unknown) => {
             eq: (c: string, v: unknown) => {
-              gte: (c: string, v: unknown) => Promise<{ data: Existing[] | null }>;
+              eq: (c: string, v: unknown) => {
+                gte: (c: string, v: unknown) => Promise<{ data: Existing[] | null }>;
+              };
             };
           };
         };
@@ -487,6 +511,7 @@ async function checkCreditCardBills(
       .select("id")
       .eq("kind", "credit_card_bill_due")
       .eq("household_id", householdId)
+      .eq("context->>account_id", card.id)
       .gte("created_at", todayISO);
 
     if (existing && existing.length > 0) continue;
