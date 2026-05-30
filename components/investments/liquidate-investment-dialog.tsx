@@ -76,6 +76,8 @@ export function LiquidateInvestmentDialog({
   // Sugestão de IR baseada no holding period (só pra renda fixa)
   const irSuggestion = useMemo(() => {
     if (!investment.purchase_date || !date) return null;
+    // LCI/LCA, debêntures incentivadas, poupança = isentos: não sugere IR.
+    if (investment.tax_regime === "exempt") return null;
     const purchase = new Date(investment.purchase_date + "T00:00:00Z");
     const sale = new Date(date + "T00:00:00Z");
     const days = Math.max(0, Math.floor((sale.getTime() - purchase.getTime()) / 86400000));
@@ -85,7 +87,7 @@ export function LiquidateInvestmentDialog({
     if (!isFixedIncome) return null;
     const rate = suggestIRRate(days);
     return { days, rate, value: Math.round(grossGain * rate * 100) / 100 };
-  }, [investment.purchase_date, investment.asset_type, date, grossGain]);
+  }, [investment.purchase_date, investment.tax_regime, investment.asset_type, date, grossGain]);
 
   const net = gross - ir;
 

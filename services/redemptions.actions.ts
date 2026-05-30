@@ -264,9 +264,13 @@ export async function withdrawYield(
   const ratio = amount / currentBalance;
   const newCurrentBalance = currentBalance - amount;
   const newInitialAmount = initialAmount * (1 - ratio);
-  // Breakdown do saque pra reporting/metadata (não afeta o cálculo)
+  // Breakdown do saque pra reporting/metadata (não afeta o cálculo).
+  // principal = amount − fromYield garante que somem exatamente `amount` em
+  // qualquer cenário, inclusive prejuízo (antes usava initialAmount/currentBalance,
+  // que em prejuízo dava principal > amount, registro incoerente). Bate com o
+  // preview do dialog (withdraw-yield-dialog).
   const fromYield = (accumulatedYield / currentBalance) * amount;
-  const principalReduction = (initialAmount / currentBalance) * amount;
+  const principalReduction = amount - fromYield;
   const exceededYield = amount > accumulatedYield;
 
   // 5. Update investimento com snapshot novo e last_yield_at = hoje

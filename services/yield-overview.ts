@@ -1,7 +1,41 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { estimateAssetTax, type TaxEstimate } from "@/lib/financial/tax";
+import { getLatestIndexer } from "@/services/investments";
 import type { Tables } from "@/types/database";
+
+/**
+ * Estima a taxa BRUTA anual de um ativo de renda fixa a partir do indexador
+ * armazenado + o benchmark mais recente (indexer_history). Espelha a lógica de
+ * computeAssetParams (investment-projection). Retorna null se não há base.
+ * Usado pra estimar o rendimento diário/mensal (antes vinha 0 hardcoded).
+ */
+function grossAnnualRate(
+  inv: { indexer: string | null; indexer_multiplier: number | null; fixed_rate: number | null },
+  idx: { selic: number | null; cdi: number | null; ipca: number | null },
+): number | null {
+  const mult = Number(inv.indexer_multiplier ?? 1);
+  if (inv.indexer === "selic" && idx.selic != null) return (idx.selic / 100) * mult;
+  if (inv.indexer === "cdi" && idx.cdi != null) return (idx.cdi / 100) * mult;
+  if (inv.indexer === "ipca" && idx.ipca != null) {
+    // idx.ipca é % do MÊS → anualiza
+    const ipcaAnnual = Math.pow(1 + idx.ipca / 100, 12) - 1;
+    return (1 + ipcaAnnual) * (1 + Number(inv.fixed_rate ?? 0) / 100) - 1;
+  }
+  if (inv.indexer === "fixed" && inv.fixed_rate != null) return Number(inv.fixed_rate) / 100;
+  return null;
+}
+
+/** Rendimento estimado por dia útil: balance × ((1+anual)^(1/252) − 1). */
+function estimateDailyYield(
+  baseBalance: number,
+  inv: { indexer: string | null; indexer_multiplier: number | null; fixed_rate: number | null },
+  idx: { selic: number | null; cdi: number | null; ipca: number | null },
+): number {
+  const annual = grossAnnualRate(inv, idx);
+  if (annual == null || annual <= 0 || baseBalance <= 0) return 0;
+  return baseBalance * (Math.pow(1 + annual, 1 / 252) - 1);
+}
 
 /**
  * Visão "viver de renda" — agrega, por ativo de renda fixa:
@@ -85,11 +119,23 @@ export async function getYieldOverview(
 ): Promise<YieldOverview> {
   const supabase = await createClient();
 
-  const { data: invs } = await supabase
-    .from("investments")
-    .select("id, ticker, name, asset_type, tax_regime, purchase_date, initial_amount, current_balance")
-    .eq("is_active", true)
-    .in("asset_type", ["fixed_income_public", "fixed_income_private"]);
+  const [{ data: invs }, selic, cdi, ipca] = await Promise.all([
+    supabase
+      .from("investments")
+      .select(
+        "id, ticker, name, asset_type, tax_regime, purchase_date, initial_amount, current_balance, indexer, indexer_multiplier, fixed_rate",
+      )
+      .eq("is_active", true)
+      .in("asset_type", ["fixed_income_public", "fixed_income_private"]),
+    getLatestIndexer("selic"),
+    getLatestIndexer("cdi"),
+    getLatestIndexer("ipca"),
+  ]);
+  const idx = {
+    selic: selic?.value ?? null,
+    cdi: cdi?.value ?? null,
+    ipca: ipca?.value ?? null,
+  };
 
   const investments = (invs ?? []) as Pick<
     Tables<"investments">,
@@ -101,6 +147,9 @@ export async function getYieldOverview(
     | "purchase_date"
     | "initial_amount"
     | "current_balance"
+    | "indexer"
+    | "indexer_multiplier"
+    | "fixed_rate"
   >[];
 
   const rows: AssetYieldRow[] = investments.map((inv) => {
@@ -108,7 +157,11 @@ export async function getYieldOverview(
     const baseBalance = live?.baseBalance ?? Number(inv.current_balance);
     const initialAmount = Number(inv.initial_amount);
     const accumulatedYield = Math.max(0, baseBalance - initialAmount);
-    const dailyYield = live?.dailyYield ?? 0;
+    // Estima rendimento diário pelo indexador quando o live não traz (hoje
+    // sempre 0). Mantém o live se algum dia voltar a calcular > 0.
+    const dailyYield = live?.dailyYield && live.dailyYield > 0
+      ? live.dailyYield
+      : estimateDailyYield(baseBalance, inv, idx);
     const monthlyYield = dailyYield * 21;
     const tax = estimateAssetTax(
       inv.tax_regime as "regressive" | "exempt",

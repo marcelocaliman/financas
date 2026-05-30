@@ -50,11 +50,11 @@ export default async function ResgatesPage() {
   ]);
 
   // Reduz pra forma esperada pelos componentes downstream (id, ticker,
-  // baseBalance, dailyYield). dailyYield = 0 sem compound.
+  // baseBalance, dailyYield). dailyYield agora é estimado pelo indexador.
   const liveByAssetId = new Map(
     Array.from(assetSnapshots.values()).map((a) => [
       a.id,
-      { id: a.id, ticker: a.ticker, baseBalance: a.baseBalance, dailyYield: 0 },
+      { id: a.id, ticker: a.ticker, baseBalance: a.baseBalance, dailyYield: a.dailyYield },
     ]),
   );
   const fromInvestmentId = nextIntent?.rule?.investment?.id ?? null;

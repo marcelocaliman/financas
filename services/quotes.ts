@@ -6,6 +6,25 @@ import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import type { Currency } from "@/types/database";
 
+/** Rendimento estimado por dia útil de um ativo de renda fixa, a partir do
+ *  indexador armazenado + benchmark mais recente. 0 se não houver base. */
+function estimateFixedIncomeDailyYield(
+  baseBalance: number,
+  inv: { indexer: string | null; indexer_multiplier: number | null; fixed_rate: number | null },
+  idx: { selic: number | null; cdi: number | null; ipca: number | null },
+): number {
+  const mult = Number(inv.indexer_multiplier ?? 1);
+  let annual: number | null = null;
+  if (inv.indexer === "selic" && idx.selic != null) annual = (idx.selic / 100) * mult;
+  else if (inv.indexer === "cdi" && idx.cdi != null) annual = (idx.cdi / 100) * mult;
+  else if (inv.indexer === "ipca" && idx.ipca != null) {
+    const ipcaAnnual = Math.pow(1 + idx.ipca / 100, 12) - 1; // idx.ipca = % do mês
+    annual = (1 + ipcaAnnual) * (1 + Number(inv.fixed_rate ?? 0) / 100) - 1;
+  } else if (inv.indexer === "fixed" && inv.fixed_rate != null) annual = Number(inv.fixed_rate) / 100;
+  if (annual == null || annual <= 0 || baseBalance <= 0) return 0;
+  return baseBalance * (Math.pow(1 + annual, 1 / 252) - 1);
+}
+
 /**
  * Cotações + valores atuais por ativo (sem compound de Selic/CDI).
  *
@@ -42,9 +61,11 @@ export type AssetSnapshot = {
   ticker: string;
   /** Saldo "base" = current_balance do banco (pra RF e similares) */
   baseBalance: number;
+  /** Custo de aquisição (initial_amount) em moeda de exibição. */
+  initialDisplay: number;
   /** Valor de mercado = quote × quantity (só pra B3 com cotação brapi) */
   marketBalance: number;
-  /** Sempre 0 — compound foi removido */
+  /** Rendimento estimado por dia útil (renda fixa, via indexador). 0 se n/a. */
   dailyYield: number;
   /** Sempre 0 — compound foi removido */
   perSecond: number;
@@ -206,8 +227,23 @@ export const getAssetSnapshotMap = cache(async (): Promise<Map<string, AssetSnap
 
   const { data: investments } = await supabase
     .from("investments")
-    .select("id, ticker, asset_type, current_balance, initial_amount, quantity, currency")
+    .select(
+      "id, ticker, asset_type, current_balance, initial_amount, quantity, currency, indexer, indexer_multiplier, fixed_rate",
+    )
     .eq("is_active", true);
+
+  // Benchmarks pra estimar rendimento diário de renda fixa (antes vinha 0).
+  // Query direta (evita import circular com services/investments).
+  const { data: idxRows } = await supabase
+    .from("indexer_history")
+    .select("indexer, value, date")
+    .in("indexer", ["selic", "cdi", "ipca"])
+    .order("date", { ascending: false });
+  const idx = { selic: null as number | null, cdi: null as number | null, ipca: null as number | null };
+  for (const r of idxRows ?? []) {
+    const code = r.indexer as "selic" | "cdi" | "ipca";
+    if (idx[code] == null) idx[code] = Number(r.value);
+  }
 
   const out = new Map<string, AssetSnapshot>();
   for (const inv of investments ?? []) {
@@ -230,12 +266,18 @@ export const getAssetSnapshotMap = cache(async (): Promise<Map<string, AssetSnap
     const averagePrice = qty != null && qty > 0 ? initialDisplay / qty : null;
 
     const baseRounded = Math.round(baseBalance * 100) / 100;
+    const isFixedIncome =
+      inv.asset_type === "fixed_income_public" || inv.asset_type === "fixed_income_private";
+    const dailyYield = isFixedIncome
+      ? estimateFixedIncomeDailyYield(baseRounded, inv, idx)
+      : 0;
     out.set(inv.id, {
       id: inv.id,
       ticker: inv.ticker,
       baseBalance: baseRounded,
+      initialDisplay: Math.round(initialDisplay * 100) / 100,
       marketBalance: Math.round(marketBalance * 100) / 100,
-      dailyYield: 0,
+      dailyYield: Math.round(dailyYield * 100) / 100,
       perSecond: 0,
       accumulatedYield: 0,
       accumulatedDividends: 0,

@@ -46,7 +46,9 @@ export function AssetDetailPopover({ asset }: { asset: AssetSnapshot }) {
             {asset.ticker}
           </div>
 
-          <div className="text-[12px] text-muted-foreground mb-3 italic">{asset.source}</div>
+          <div className="text-[12px] text-muted-foreground mb-3 italic">
+            {asset.source === "quote" ? "Cotação ao vivo (brapi)" : "Saldo manual"}
+          </div>
 
           <div className="space-y-2 text-[12.5px]">
             {asset.quantity != null && asset.quantity > 0 ? (
@@ -64,7 +66,8 @@ export function AssetDetailPopover({ asset }: { asset: AssetSnapshot }) {
             {asset.marketPrice != null ? (
               <Row label="Cotação atual" value={formatMoney(asset.marketPrice)} mask />
             ) : null}
-            <Row label="Aplicado (custo)" value={formatMoney(asset.baseBalance)} muted mask />
+            <Row label="Aplicado (custo)" value={formatMoney(asset.initialDisplay)} muted mask />
+            <Row label="Saldo atual" value={formatMoney(asset.baseBalance)} mask />
             {asset.marketBalance != null ? (
               <Row label="A mercado" value={formatMoney(asset.marketBalance)} bold mask />
             ) : null}
