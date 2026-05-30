@@ -31,12 +31,9 @@ const ITEMS: Array<{
     description:
       "Primeiros dias do mês: resumo editorial do mês anterior gerado por IA — receita, despesa, principais movimentos vs mês anterior e padrões anômalos.",
   },
-  {
-    key: "recurring_upcoming",
-    label: "Recorrências chegando",
-    description:
-      "Avisa 1 dia antes de cada recorrência materializar. Pode ser ruidoso — default OFF.",
-  },
+  // "recurring_upcoming" removido: o toggle existia mas nenhum handler disparava
+  // a notificação (setting morto). As recorrências chegando já aparecem no card
+  // "Próximos 7 dias" do dashboard. A coluna no banco fica pra uso futuro.
 ];
 
 export function NotificationPreferencesForm({

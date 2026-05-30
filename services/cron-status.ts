@@ -129,7 +129,7 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     {
       name: "Cotações de ativos (brapi)",
       description:
-        "FIIs, ações, ETFs · /api/cron/snapshot-quotes (10:30 + 18:30 BRT, dias úteis)",
+        "FIIs, ações, ETFs · /api/cron/snapshot-quotes (via evening-snapshot ~18:30 BRT, dias úteis)",
       latestAt: quote?.fetched_at ?? null,
       // Snapshot mais recente deve ter no máx ~16h de idade (cron 18:30
       // sexta + 48h fim de semana = 64h ainda OK na segunda manhã). Marca
@@ -145,9 +145,9 @@ export async function getCronStatuses(): Promise<CronStatus[]> {
     {
       name: "Avanço de saldos pendentes",
       description:
-        "Aplica deltas de tx pré-agendadas conforme a data chega · /api/cron/advance-balances",
+        "Aplica deltas de tx pré-agendadas conforme a data chega · /api/cron/advance-balances (via daily-master ~06h BRT)",
       latestAt: lastApplied?.balance_applied_at ?? null,
-      // Roda diário às 00:05 BRT. Se passar de 48h é sinal de cron quebrado.
+      // Roda via daily-master ~06h BRT. Se passar de 48h é sinal de cron quebrado.
       staleAfterHours: 48,
     },
   ];

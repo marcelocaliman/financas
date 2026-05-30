@@ -285,6 +285,15 @@ export async function confirmDocumentAction(args: ConfirmDocumentArgs): Promise<
     })
     .eq("id", args.documentId);
 
+  // Auto-categoriza as transações recém-criadas (fatura/extrato entram sem
+  // categoria) via regras do household — antes obrigava recategorizar à mão.
+  try {
+    const { applyRulesToUncategorized } = await import("@/services/category-rules.actions");
+    await applyRulesToUncategorized();
+  } catch {
+    /* best-effort; não bloqueia a confirmação */
+  }
+
   revalidatePath("/inbox");
   revalidatePath("/dashboard");
   revalidatePath("/transacoes");

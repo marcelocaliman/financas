@@ -231,6 +231,18 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
     inserted += data?.length ?? 0;
   }
 
+  // Auto-categoriza o que entrou sem categoria via regras do household — antes
+  // o import em massa não aplicava regras (só o lançamento manual), obrigando o
+  // usuário a recategorizar à mão. Best-effort: não falha o import se der erro.
+  if (inserted > 0) {
+    try {
+      const { applyRulesToUncategorized } = await import("@/services/category-rules.actions");
+      await applyRulesToUncategorized();
+    } catch {
+      /* não bloqueia o import */
+    }
+  }
+
   revalidatePath("/transacoes");
   revalidatePath("/dashboard");
   revalidatePath("/analise");

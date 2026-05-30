@@ -120,7 +120,7 @@ export async function applyRulesToUncategorized(): Promise<{
       if (haystack.includes((rule.pattern as string).toLowerCase())) {
         await supabase
           .from("transactions")
-          .update({ category_id: rule.category_id as string })
+          .update({ category_id: rule.category_id as string, category_source: "rule" })
           .eq("id", tx.id as string);
         matched++;
         break; // primeira regra que bate ganha

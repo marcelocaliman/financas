@@ -24,6 +24,8 @@ import {
   HandCoins,
   Inbox,
   Plane,
+  Landmark,
+  Users as UsersIcon,
 } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
@@ -45,7 +47,9 @@ const navItems: NavItem[] = [
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
   { label: "Viagens", href: "/viagens", icon: Plane, group: "principal" },
   { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
+  { label: "Orçamento", href: "/orcamento", icon: Target, group: "principal" },
   { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },
+  { label: "IRPF", href: "/ir", icon: Landmark, group: "principal" },
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
   { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
   { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "investir" },
@@ -54,6 +58,7 @@ const navItems: NavItem[] = [
   { label: "Independência", href: "/independencia", icon: Flame, group: "investir" },
   { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },
   { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
+  { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "config" },
   { label: "Configurações", href: "/configuracoes", icon: Settings, group: "config" },
 ];
 
@@ -92,6 +97,7 @@ export function MobileDrawer({
   const badgeByHref: Record<string, number> = {
     "/resgates": badges?.resgatesPendingSoon ?? 0,
     "/metas": metasReminders > 0 ? metasReminders : metasAchieved,
+    "/inbox": badges?.inboxReviewCount ?? 0,
   };
   const badgeIsReminderByHref: Record<string, boolean> = {
     "/metas": metasReminders > 0,

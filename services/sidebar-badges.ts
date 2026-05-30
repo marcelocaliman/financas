@@ -20,6 +20,8 @@ export type SidebarBadges = {
   metasJustAchieved: number;
   /** Metas com contribution_day atrasado ou nos próximos 7 dias */
   metasRemindersDue: number;
+  /** Documentos no inbox aguardando confirmação (status='review') */
+  inboxReviewCount: number;
 };
 
 function todayPlusISO(days: number): string {
@@ -34,7 +36,7 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
   const supabase = await createClient();
   const soonCutoff = todayPlusISO(7);
 
-  const [{ count: pendingCount }, goals, reminders] = await Promise.all([
+  const [{ count: pendingCount }, goals, reminders, { count: inboxCount }] = await Promise.all([
     supabase
       .from("redemption_intents")
       .select("*", { count: "exact", head: true })
@@ -44,6 +46,16 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
     // current_amount) também disparam o badge de vitória.
     listGoalsEnriched(),
     getGoalReminders(7),
+    // document_uploads não está nos types gerados (igual ao resto do inbox) — cast.
+    (
+      supabase.from as unknown as (t: string) => {
+        select: (s: string, o: { count: "exact"; head: true }) => {
+          eq: (c: string, v: unknown) => Promise<{ count: number | null }>;
+        };
+      }
+    )("document_uploads")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "review"),
   ]);
 
   const metasJustAchieved = goals.filter(
@@ -59,5 +71,6 @@ export async function getSidebarBadges(): Promise<SidebarBadges> {
     resgatesPendingSoon: pendingCount ?? 0,
     metasJustAchieved,
     metasRemindersDue,
+    inboxReviewCount: inboxCount ?? 0,
   };
 }

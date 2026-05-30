@@ -162,8 +162,11 @@ export async function getAportSuggestions(): Promise<AportSuggestion[]> {
       rates,
     );
 
-    // Threshold mínimo
-    if (amountInDisplay < MIN_AMOUNT_BRL) continue;
+    // Threshold mínimo (R$200), convertido pra moeda de exibição — antes
+    // comparava o valor em display contra "200" cru, virando ~€200/~$200 pra
+    // quem usa moeda estrangeira (filtro bem mais restritivo que o pretendido).
+    const minInDisplay = convertOrSame(MIN_AMOUNT_BRL, "BRL", displayCurrency, rates);
+    if (amountInDisplay < minInDisplay) continue;
 
     for (const g of accountGoals) {
       // Pula se o user já dispensou essa combinação txn+goal

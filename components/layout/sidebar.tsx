@@ -175,6 +175,7 @@ function SidebarContent({
       ? {
           "/resgates": badges?.resgatesPendingSoon ?? 0,
           "/metas": metasReminders > 0 ? metasReminders : metasAchieved,
+          "/inbox": badges?.inboxReviewCount ?? 0,
         }
       : {};
   const badgeIsReminderByHref: Record<string, boolean> = {

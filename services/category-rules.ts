@@ -59,11 +59,11 @@ export async function matchCategoryRule(
   for (const rule of data) {
     const needle = rule.pattern.toLowerCase();
     if (haystack.includes(needle)) {
-      void supabase
-        .from("category_rules")
-        .update({ hits: 0 })
-        .eq("id", rule.id)
-        .then();
+      // Incrementa o contador de aplicações (analytics). Antes setava hits:0,
+      // zerando o contador a cada match. Fire-and-forget pra não atrasar o insert.
+      void (
+        supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => Promise<unknown>
+      )("increment_category_rule_hits", { p_id: rule.id });
       return {
         categoryId: rule.category_id,
         ruleId: rule.id,

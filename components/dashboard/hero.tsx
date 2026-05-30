@@ -72,6 +72,12 @@ export function DashboardHero({
   const segmentTone =
     expenseRatio > 1 ? "rust" : expenseRatio > 0.9 ? "gold" : "olive";
 
+  // Selo de saúde alinhado com a mood strip (mesma métrica) pra os dois sinais
+  // nunca se contradizerem — antes o selo usava só projectedNet>=0 e a barra
+  // usava expenseRatio, podendo mostrar verde no selo e amarelo na barra.
+  const healthTone: "olive" | "gold" | "rust" =
+    projectedNet < 0 || expenseRatio > 1 ? "rust" : expenseRatio > 0.9 ? "gold" : "olive";
+
   // Δ patrimônio vs mês anterior (apenas mês corrente — meses passados/futuros
   // usam aproximações nos investimentos, então o delta não faria sentido).
   const patrimonioDelta =
@@ -122,13 +128,21 @@ export function DashboardHero({
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-medium",
-                  positiveTrend
+                  healthTone === "olive"
                     ? "bg-olive-600/20 text-[#3be772]"
-                    : "bg-rust-600/20 text-[#f3927c]",
+                    : healthTone === "gold"
+                      ? "bg-gold-600/20 text-gold-700 dark:text-gold-500"
+                      : "bg-rust-600/20 text-[#f3927c]",
                 )}
               >
-                <span className="font-mono text-[10px]">{positiveTrend ? "↑" : "↓"}</span>
-                {positiveTrend ? "Ritmo saudável" : "Atenção ao gasto"}
+                <span className="font-mono text-[10px]">
+                  {healthTone === "olive" ? "↑" : healthTone === "gold" ? "→" : "↓"}
+                </span>
+                {healthTone === "olive"
+                  ? "Ritmo saudável"
+                  : healthTone === "gold"
+                    ? "No limite"
+                    : "Atenção ao gasto"}
               </span>
               <span className="text-[11.5px] text-navy-400 font-mono">
                 Confiança {netConfidence === "high" ? "alta" : "preliminar"}
