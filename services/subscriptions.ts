@@ -27,6 +27,9 @@ export type Subscription = Tables<"recurring_rules"> & {
   monthlyInDisplay: number;
   /** Custo anual em displayCurrency */
   yearlyInDisplay: number;
+  /** Valor REAL que será debitado na próxima cobrança (em displayCurrency), sem
+   *  normalizar pra mensal. Pra anual de R$120/ano isso é 120, não ~10. */
+  chargeAmountInDisplay: number;
   /** Próxima cobrança ISO YYYY-MM-DD */
   nextChargeDate: string | null;
   /** Dias até próxima cobrança (negativo = atrasada) */
@@ -83,6 +86,9 @@ export async function listSubscriptions(): Promise<Subscription[]> {
       yearlyEquivalent: Math.round(yearly * 100) / 100,
       monthlyInDisplay: Math.round(monthlyInDisplay * 100) / 100,
       yearlyInDisplay: Math.round(yearlyInDisplay * 100) / 100,
+      chargeAmountInDisplay:
+        Math.round(convertOrSame(Number(r.amount), r.currency, displayCurrency, rates) * 100) /
+        100,
       nextChargeDate: next,
       daysUntilNextCharge: daysUntil,
     });
@@ -115,7 +121,8 @@ export async function getSubscriptionsSummary(): Promise<SubscriptionsSummary> {
     ? {
         date: nextSub.nextChargeDate!,
         description: nextSub.description,
-        amount: nextSub.monthlyInDisplay,
+        // valor REAL da cobrança, não o equivalente mensal
+        amount: nextSub.chargeAmountInDisplay,
       }
     : null;
 

@@ -57,17 +57,31 @@ export async function GET(req: NextRequest) {
 
   let total = 0;
   const perHousehold: Record<string, number> = {};
+  const errors: Record<string, string> = {};
+  // Não aborta no primeiro erro: um household problemático não pode impedir a
+  // materialização de TODOS os demais (até o próximo cron). Acumula e segue.
   for (const hh of households) {
     const { data, error } = await supabase.rpc("materialize_all_recurrences", {
       p_household_id: hh,
       p_until_date: today,
     });
     if (error) {
-      return NextResponse.json({ ok: false, household: hh, error: error.message }, { status: 500 });
+      errors[hh] = error.message;
+      continue;
     }
     perHousehold[hh] = data ?? 0;
     total += data ?? 0;
   }
 
-  return NextResponse.json({ ok: true, until: today, total, households: perHousehold });
+  const hasErrors = Object.keys(errors).length > 0;
+  return NextResponse.json(
+    {
+      ok: !hasErrors,
+      until: today,
+      total,
+      households: perHousehold,
+      ...(hasErrors ? { errors } : {}),
+    },
+    { status: hasErrors ? 207 : 200 },
+  );
 }

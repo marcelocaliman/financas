@@ -107,8 +107,17 @@ function nextFrom(
   from: Date,
   start: Date,
 ): Date | null {
-  if (from <= start) return start;
   const interval = Math.max(1, rule.interval_count);
+  // Semanal com day_of_week: ancora a 1ª ocorrência no primeiro dia >= start_date
+  // cuja weekday == day_of_week. Antes day_of_week era ignorado e tudo caía na
+  // weekday do start_date (a UI mostrava um dia, as ocorrências caíam em outro).
+  // Mantém SINCRONIA com a SQL next_recurrence_date.
+  let effStart = start;
+  if (rule.frequency === "weekly" && rule.day_of_week != null) {
+    const delta = (rule.day_of_week - start.getUTCDay() + 7) % 7;
+    effStart = addDays(start, delta);
+  }
+  if (from <= effStart) return effStart;
   switch (rule.frequency) {
     case "daily": {
       const diff = Math.ceil((from.getTime() - start.getTime()) / 86400000);
@@ -116,9 +125,9 @@ function nextFrom(
       return addDays(start, steps * interval);
     }
     case "weekly": {
-      const diff = Math.ceil((from.getTime() - start.getTime()) / 86400000);
+      const diff = Math.ceil((from.getTime() - effStart.getTime()) / 86400000);
       const steps = Math.ceil(diff / (7 * interval));
-      return addDays(start, steps * 7 * interval);
+      return addDays(effStart, steps * 7 * interval);
     }
     case "monthly": {
       const anchor = rule.day_of_month ?? start.getUTCDate();

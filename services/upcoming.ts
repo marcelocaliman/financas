@@ -108,7 +108,10 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
   for (const r of (rules ?? []) as RuleRow[]) {
     // Pega as próximas datas a partir de hoje. computeNextOccurrences usa
     // start_date como ancoragem, então funciona bem.
-    const occurrences = computeNextOccurrences(r, today, 10); // overshoot, filtra abaixo
+    // Overshoot dimensionado pela janela: uma regra diária gera ~`days`
+    // ocorrências dentro dela. O cap fixo de 10 cortava silenciosamente
+    // recorrências diárias em janelas >= ~10 dias.
+    const occurrences = computeNextOccurrences(r, today, days + 2); // filtra abaixo por `until`
     const amountConverted = convertOrSame(
       Number(r.amount ?? 0),
       r.currency,

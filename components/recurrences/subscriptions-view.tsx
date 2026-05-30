@@ -102,7 +102,7 @@ export function SubscriptionsView({ subs }: { subs: Subscription[] }) {
                   ) : null}
                 </div>
                 <Money
-                  value={s.monthlyInDisplay}
+                  value={s.chargeAmountInDisplay}
                   className="font-mono text-[13px] font-medium tabular-nums shrink-0 inline-flex !flex-row !items-baseline"
                 />
               </li>
