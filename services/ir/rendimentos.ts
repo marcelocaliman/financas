@@ -106,13 +106,35 @@ export async function getRendimentosReport(
   const scopedDiv = filerId ? divQuery.eq("investment.owner_filer_id", filerId) : divQuery;
   const scopedOthers = filerId ? othersQuery.eq("owner_filer_id", filerId) : othersQuery;
 
-  const [{ data: txs }, { data: yields }, { data: dividendMovements }, { data: others }] =
-    await Promise.all([
-      householdId ? scopedTx.eq("household_id", householdId) : scopedTx,
-      householdId ? scopedYields.eq("household_id", householdId) : scopedYields,
-      householdId ? scopedDiv.eq("household_id", householdId) : scopedDiv,
-      householdId ? scopedOthers.eq("household_id", householdId) : scopedOthers,
-    ]);
+  // Carnê-leão (DARF 0190): renda de PF tributável. A tabela carne_leao_mensal
+  // não tem atribuição por declarante, então só entra na visão household
+  // (filerId indefinido) — pra declaração por filer não dá pra ratear.
+  const carneLeaoQuery =
+    !filerId
+      ? (() => {
+          let q = supabase
+            .from("carne_leao_mensal")
+            .select("description, gross_amount, deductible_expenses, month")
+            .eq("year", year);
+          if (householdId) q = q.eq("household_id", householdId);
+          return q;
+        })()
+      : null;
+
+  const [
+    { data: txs },
+    { data: yields },
+    { data: dividendMovements },
+    { data: others },
+    carneLeaoRes,
+  ] = await Promise.all([
+    householdId ? scopedTx.eq("household_id", householdId) : scopedTx,
+    householdId ? scopedYields.eq("household_id", householdId) : scopedYields,
+    householdId ? scopedDiv.eq("household_id", householdId) : scopedDiv,
+    householdId ? scopedOthers.eq("household_id", householdId) : scopedOthers,
+    carneLeaoQuery ?? Promise.resolve({ data: null }),
+  ]);
+  const carneLeaoRows = (carneLeaoRes as { data: Array<{ description: string; gross_amount: number; deductible_expenses: number | null }> | null }).data;
 
   const tributaveis: RendimentoRow[] = [];
   const isentos: RendimentoRow[] = [];
@@ -343,6 +365,27 @@ export async function getRendimentosReport(
     } else if (o.category === "rendimento_acumulado") {
       tributaveis.push(row);
     }
+  }
+
+  // ---- CARNÊ-LEÃO (renda PF) ----
+  // Entra na base tributável anual já LÍQUIDA das despesas dedutíveis
+  // (condomínio/IPTU no aluguel), que é o que de fato é tributado. O imposto
+  // mensal pago (DARF 0190) é creditado como antecipação em computeImposto.
+  for (const cl of carneLeaoRows ?? []) {
+    const netTaxable =
+      Math.round((Number(cl.gross_amount) - Number(cl.deductible_expenses ?? 0)) * 100) / 100;
+    if (netTaxable <= 0) continue;
+    tributaveis.push({
+      source: "auto",
+      sourceId: null,
+      description: `Carnê-leão · ${cl.description}`,
+      payerName: "Pessoa física",
+      payerCnpjCpf: null,
+      grossAmount: netTaxable,
+      irrf: 0,
+      inss: 0,
+      thirteenth: 0,
+    });
   }
 
   const sumGross = (arr: RendimentoRow[]) =>

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
 import { getRendimentosReport } from "@/services/ir/rendimentos";
+import { getCarneLeaoSummary } from "@/services/ir/carne-leao";
 import {
   calcProgressiveTax as calcFromTable,
   getAnnualTaxTable,
@@ -199,8 +200,15 @@ export async function computeImposto(
 
   const irrfRetained = rendimentos.tributaveis.totalIrrf;
 
-  const netDueCompleto = grossTaxCompleto - irrfRetained;
-  const netDueSimples = grossTaxSimples - irrfRetained;
+  // Carnê-leão (DARF 0190) é antecipação do imposto anual — creditado igual ao
+  // IRRF. Só na visão household (filerId indefinido), alinhado com a inclusão da
+  // renda na base em getRendimentosReport (carne_leao_mensal não tem filer).
+  const carneLeaoCredit = filerId
+    ? 0
+    : (await getCarneLeaoSummary(year, householdId)).totalTax;
+
+  const netDueCompleto = grossTaxCompleto - irrfRetained - carneLeaoCredit;
+  const netDueSimples = grossTaxSimples - irrfRetained - carneLeaoCredit;
 
   const recommendation: "simples" | "completo" =
     netDueCompleto <= netDueSimples ? "completo" : "simples";

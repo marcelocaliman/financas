@@ -44,7 +44,7 @@ import {
   listTransactions,
   monthRange,
 } from "@/services/transactions";
-import { IncomeVsExpenseChart } from "@/components/dashboard/income-vs-expense-chart";
+import { MonthPulseCard } from "@/components/dashboard/month-pulse-card";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
@@ -377,10 +377,11 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      {/* TIER 2.5 — Tendência receitas vs despesas (somente mês corrente) */}
+      {/* TIER 2.5 — Pulso do mês (resumo enxuto) + link pra /análise, que é a
+          fonte canônica do recorte mês a mês (tabela completa + tendência). */}
       {isCurrent && history6.length >= 2 ? (
         <div className="mb-8">
-          <IncomeVsExpenseChart data={history6} />
+          <MonthPulseCard data={history6} />
         </div>
       ) : null}
 

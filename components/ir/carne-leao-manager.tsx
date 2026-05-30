@@ -104,11 +104,11 @@ export function CarneLeaoManager({
             />
           </div>
 
-          <p className="text-[11.5px] text-gold-700 dark:text-gold-500 bg-gold-100/50 dark:bg-gold-700/15 border border-gold-600/30 rounded-[6px] px-2.5 py-2 mb-4">
-            ⚠ Esta aba calcula só o <b>imposto mensal (DARF 0190)</b>. Esses
-            rendimentos também precisam constar na sua declaração anual: lance-os
-            em <b>Rendimentos tributáveis recebidos de PF</b> (aba Rendimentos)
-            pra entrarem na base do ajuste. O imposto pago aqui é antecipação.
+          <p className="text-[11.5px] text-navy-700 dark:text-navy-300 bg-navy-100/50 dark:bg-navy-700/15 border border-navy-600/30 rounded-[6px] px-2.5 py-2 mb-4">
+            ℹ Esta renda <b>já entra automaticamente</b> na base tributável da sua
+            declaração anual, e o imposto pago aqui (DARF 0190) é creditado como
+            antecipação. <b>Não lance a mesma renda de novo</b> em Rendimentos —
+            seria contada em dobro.
           </p>
 
           <table className="w-full text-[12.5px] mb-4">
