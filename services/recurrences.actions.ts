@@ -252,16 +252,33 @@ export async function updateRecurringRule(
   // lançamentos anteriores continuariam sem fonte — e o checklist do IR
   // continuaria reclamando indefinidamente.
   if (!isTransfer) {
-    const backfillPayload = {
-      fonte_pagadora_id: parsed.data.fontePagadoraId ?? null,
-      irrf_amount: parsed.data.irrfAmount ?? null,
-      inss_amount: parsed.data.inssAmount ?? null,
-      exclude_from_ir: parsed.data.excludeFromIr ?? false,
-    };
+    // Campos ESTRUTURAIS (fonte, exclude_from_ir): propaga a todos os
+    // lançamentos da regra — é o que faz o checklist do IR parar de reclamar.
     await supabase
       .from("transactions")
-      .update(backfillPayload as never)
+      .update({
+        fonte_pagadora_id: parsed.data.fontePagadoraId ?? null,
+        exclude_from_ir: parsed.data.excludeFromIr ?? false,
+      } as never)
       .eq("recurring_rule_id", parsed.data.id);
+
+    // IRRF/INSS variam por mês e a UI permite override por lançamento. Só
+    // sobrescreve nos lançamentos FUTUROS (date >= hoje) pra não achatar as
+    // retenções manuais de meses passados.
+    const todaySP = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    await supabase
+      .from("transactions")
+      .update({
+        irrf_amount: parsed.data.irrfAmount ?? null,
+        inss_amount: parsed.data.inssAmount ?? null,
+      } as never)
+      .eq("recurring_rule_id", parsed.data.id)
+      .gte("date", todaySP);
   }
 
   for (const p of pathsToInvalidate()) revalidatePath(p);

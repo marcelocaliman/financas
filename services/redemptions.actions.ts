@@ -228,7 +228,7 @@ export async function withdrawYield(
     supabase
       .from("investments")
       .select(
-        "id, ticker, name, current_balance, initial_amount, currency, household_id",
+        "id, ticker, name, current_balance, initial_amount, currency, household_id, last_yield_at",
       )
       .eq("id", parsed.data.investmentId)
       .maybeSingle(),
@@ -275,7 +275,13 @@ export async function withdrawYield(
 
   // 5. Update investimento com snapshot novo e last_yield_at = hoje
   //    (last_yield_at resetado pra evitar re-composição a partir de ref antiga)
-  const today = new Date().toISOString().slice(0, 10);
+  const prevLastYieldAt = inv.last_yield_at; // pra rollback restaurar
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
   const { error: invErr } = await supabase
     .from("investments")
     .update({
@@ -312,12 +318,15 @@ export async function withdrawYield(
     },
   });
   if (txErr) {
-    // Rollback completo se a transação falhou
+    // Rollback completo se a transação falhou — inclui last_yield_at, senão
+    // ficaria carimbado em "hoje" e a derivação live de rendimento (IR/patrimônio)
+    // comporia a partir de uma referência tarde-demais, subestimando os dias.
     await supabase
       .from("investments")
       .update({
         current_balance: Number(inv.current_balance),
         initial_amount: initialAmount,
+        last_yield_at: prevLastYieldAt,
       })
       .eq("id", inv.id);
     return { error: txErr.message };
