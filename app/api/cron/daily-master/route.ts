@@ -82,28 +82,35 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Vercel Hobby = 10s timeout. Paralelizamos em 3 ondas pra caber.
+  // Vercel Hobby = 10s timeout. Paralelizamos em ondas pra caber.
+  // ORDEM IMPORTA: o snapshot de patrimônio precisa rodar DEPOIS de
+  // sync-tesouro-prices/update-rates/update-indexers (que atualizam
+  // current_balance e taxas), senão congela preços/câmbio defasados em 1 dia.
   const wave1 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/advance-balances", secret),
     callEndpoint(baseUrl, "/api/cron/materialize-recurrences", secret),
     callEndpoint(baseUrl, "/api/cron/update-indexers", secret),
     callEndpoint(baseUrl, "/api/cron/update-rates", secret),
-    callEndpoint(baseUrl, "/api/cron/snapshot-patrimonio", secret),
-    callEndpoint(baseUrl, "/api/cron/year-end-snapshot", secret),
     callEndpoint(baseUrl, "/api/cron/send-pending-emails", secret),
   ]);
   const wave2 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/sync-tesouro-prices", secret),
   ]);
+  // Snapshots leem investments.current_balance e taxas já atualizados acima.
   const wave3 = await Promise.all([
+    callEndpoint(baseUrl, "/api/cron/snapshot-patrimonio", secret),
+    callEndpoint(baseUrl, "/api/cron/year-end-snapshot", secret),
+  ]);
+  const wave4 = await Promise.all([
     callEndpoint(baseUrl, "/api/cron/health-check", secret),
   ]);
 
-  const results = [...wave1, ...wave2, ...wave3];
+  const results = [...wave1, ...wave2, ...wave3, ...wave4];
   const wallMs =
     Math.max(...wave1.map((r) => r.ms)) +
     Math.max(...wave2.map((r) => r.ms)) +
-    Math.max(...wave3.map((r) => r.ms));
+    Math.max(...wave3.map((r) => r.ms)) +
+    Math.max(...wave4.map((r) => r.ms));
   const allOk = results.every((r) => r.ok);
 
   return NextResponse.json({

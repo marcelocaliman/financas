@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Currency, Database } from "@/types/database";
+import { buildRateMap, convertOrSame, type RateMap } from "@/lib/financial/currency";
 
 /**
  * Cron diário: snapshot do patrimônio de cada household marcado pelo
@@ -64,8 +65,10 @@ export async function GET(req: NextRequest) {
 
   const monthEnd = currentMonthEnd(new Date());
 
-  // Lê contas, investimentos e bens — agrupa por household
-  const [{ data: accounts }, { data: investments }, { data: physicals }] =
+  // Lê contas, investimentos, bens e TAXAS — agrupa por household.
+  // As taxas (currency_rates é global) são lidas aqui via service-role porque
+  // getRateMap() depende do client de request e não funciona no cron.
+  const [{ data: accounts }, { data: investments }, { data: physicals }, { data: rateRows }] =
     await Promise.all([
       supabase
         .from("accounts")
@@ -79,7 +82,22 @@ export async function GET(req: NextRequest) {
         .from("physical_assets")
         .select("household_id, current_value")
         .eq("is_active", true),
+      supabase
+        .from("currency_rates")
+        .select("base, quote, rate, date")
+        .order("date", { ascending: false }),
     ]);
+
+  // Monta o RateMap a partir da última taxa por par (mesma lógica do getRateMap).
+  const latestRate = new Map<string, { base: Currency; quote: Currency; rate: number }>();
+  for (const r of rateRows ?? []) {
+    const k = `${r.base}→${r.quote}`;
+    if (!latestRate.has(k)) {
+      latestRate.set(k, { base: r.base as Currency, quote: r.quote as Currency, rate: Number(r.rate) });
+    }
+  }
+  const rates: RateMap = buildRateMap(Array.from(latestRate.values()));
+  const toBRL = (v: number, cur: Currency) => convertOrSame(v, cur, "BRL", rates);
 
   type Bucket = {
     liquid: number;
@@ -106,7 +124,7 @@ export async function GET(req: NextRequest) {
 
   for (const a of (accounts ?? []) as AccountRow[]) {
     const b = ensure(a.household_id);
-    const v = Number(a.current_balance ?? 0);
+    const v = toBRL(Number(a.current_balance ?? 0), a.currency);
     if (a.type === "checking" || a.type === "savings" || a.type === "cash") {
       b.liquid += v;
     } else if (a.type === "credit_card") {
@@ -118,7 +136,7 @@ export async function GET(req: NextRequest) {
 
   for (const i of (investments ?? []) as InvestmentRow[]) {
     const b = ensure(i.household_id);
-    const v = Number(i.current_balance ?? 0);
+    const v = toBRL(Number(i.current_balance ?? 0), i.currency);
     if (
       i.asset_type === "fixed_income_public" ||
       i.asset_type === "fixed_income_private"
@@ -143,10 +161,12 @@ export async function GET(req: NextRequest) {
     variable_income: Math.round(b.variable_income * 100) / 100,
     physical: Math.round(b.physical * 100) / 100,
     credit_card_debt: Math.round(b.credit_card_debt * 100) / 100,
+    // total em base CASH (sem subtrair cartão), pra coincidir com a manchete do
+    // dashboard (portfolioState, que exclui cartão) e com o fallback do
+    // histórico. credit_card_debt continua gravado em coluna própria.
     total:
       Math.round(
-        (b.liquid + b.fixed_income + b.variable_income + b.physical - b.credit_card_debt) *
-          100,
+        (b.liquid + b.fixed_income + b.variable_income + b.physical) * 100,
       ) / 100,
     currency: "BRL" as Currency,
   }));

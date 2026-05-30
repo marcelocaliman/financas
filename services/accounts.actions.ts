@@ -185,6 +185,9 @@ export async function restoreAccount(id: string): Promise<{ ok?: boolean; error?
   const { error } = await supabase.from("accounts").update({ is_active: true }).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/contas");
+  // Espelha archiveAccount: restaurar volta a contar o saldo no patrimônio.
+  revalidatePath("/dashboard");
+  revalidatePath("/patrimonio");
   return { ok: true };
 }
 

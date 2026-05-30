@@ -182,6 +182,22 @@ export async function createTransaction(
     }
   }
 
+  // O trigger de dívida abate debts.current_balance por amount_account (moeda
+  // da CONTA). Se a dívida está em outra moeda, o abatimento sai errado pelo
+  // câmbio — bloqueamos o vínculo com mensagem clara em vez de corromper o saldo.
+  if (parsed.data.kind === "expense" && resolvedDebtId) {
+    const { data: debt } = await supabase
+      .from("debts")
+      .select("currency")
+      .eq("id", resolvedDebtId)
+      .maybeSingle();
+    if (debt && (debt.currency ?? "BRL") !== accountCurrency) {
+      return {
+        error: `A dívida está em ${debt.currency} e a conta em ${accountCurrency}. Pagamentos de dívida só são suportados quando conta e dívida usam a mesma moeda.`,
+      };
+    }
+  }
+
   // Cast: debt_id adicionado em migration 20260526060000, tipos não regerados.
   const insertPayload = {
     household_id: ctx.household.id,

@@ -101,11 +101,16 @@ export async function getAccountsTotals(): Promise<AccountsTotals> {
 export async function getAccountsTotalsAt(atDateISO: string): Promise<AccountsTotals> {
   const supabase = await createClient();
   const [accounts, { data: futureTxs }, displayCurrency, rates] = await Promise.all([
-    listAccounts(),
+    // includeArchived: conta arquivada HOJE não pode sumir retroativamente dos
+    // meses em que estava ativa (a reversão de deltas já preserva o saldo).
+    listAccounts({ includeArchived: true }),
     supabase
       .from("transactions")
       .select("account_id, kind, amount_account, transfer_direction, currency, account:accounts(currency)")
       .eq("is_historical_ir_only", false)
+      // Só reverte o que de fato entrou no current_balance: transações futuras
+      // ainda não aplicadas têm balance_applied_at NULL e não devem ser subtraídas.
+      .not("balance_applied_at", "is", null)
       .gt("date", atDateISO),
     getDisplayCurrency(),
     getRateMap(),
@@ -169,6 +174,8 @@ export async function getAccountBalancesAt(
       .from("transactions")
       .select("account_id, kind, amount_account, transfer_direction")
       .eq("is_historical_ir_only", false)
+      // Só reverte o que de fato moveu o current_balance (ver getAccountsTotalsAt).
+      .not("balance_applied_at", "is", null)
       .gt("date", atDateISO),
   ]);
 
@@ -313,6 +320,9 @@ export async function listAccountsForMonth(
     .from("transactions")
     .select("account_id, kind, amount_account, transfer_direction")
     .eq("is_historical_ir_only", false)
+    // Reverte só o que está no current_balance: tx futuras não aplicadas
+    // (balance_applied_at NULL) não foram somadas e não devem ser revertidas.
+    .not("balance_applied_at", "is", null)
     .gt("date", monthEndISO);
 
   for (const t of (futureTxs ?? []) as Array<{
