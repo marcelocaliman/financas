@@ -279,6 +279,9 @@ export async function confirmDocumentAction(args: ConfirmDocumentArgs): Promise<
       status: "confirmed",
       confirmed_at: new Date().toISOString(),
       applied_record_ids: result.createdIds as Record<string, unknown>,
+      // Limpa erro pendurado de tentativas anteriores — senão um doc aplicado
+      // com sucesso ainda exibe a mensagem vermelha da falha antiga.
+      error_message: null,
     })
     .eq("id", args.documentId);
 

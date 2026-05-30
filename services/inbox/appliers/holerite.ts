@@ -126,7 +126,11 @@ export async function applyHolerite(args: {
         kind: "income",
         date: txDate,
         description: `Salário ${args.data.employee_name}${args.data.is_thirteenth ? " (13º)" : ""}`,
-        amount: args.data.gross_salary,
+        // amount = LÍQUIDO (o que de fato entra na conta). Antes gravava o BRUTO
+        // em amount mas o líquido em amount_account, então as analytics (que usam
+        // amount_account) divergiam do valor exibido. Bruto/INSS/IRRF seguem em
+        // ir_other_incomes + metadata.
+        amount: args.data.net_salary,
         amount_account: netSalaryConverted,
         currency: docCurrency,
         irrf_amount: args.data.irrf_retained,

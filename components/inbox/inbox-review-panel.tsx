@@ -16,13 +16,22 @@ import { confirmDocumentAction } from "@/app/(app)/inbox/_actions/confirm";
 import { discardDocumentAction } from "@/app/(app)/inbox/_actions/discard";
 import { reextractAction } from "@/app/(app)/inbox/_actions/upload";
 import type { DocumentType, ExtractedData } from "@/services/inbox/document-types";
+import { CURRENCY_SYMBOLS } from "@/lib/financial/currency";
+import type { Currency } from "@/types/database";
 
 type AccountLite = { id: string; name: string; type: string; institution: string | null };
 type FilerLite = { id: string; name: string };
 
+/** Formata valor com o símbolo da moeda do DOCUMENTO (não R$ fixo). */
+function money(v: number, currency?: string | null): string {
+  const sym = CURRENCY_SYMBOLS[(currency ?? "BRL") as Currency] ?? "R$";
+  return `${sym} ${v.toFixed(2).replace(".", ",")}`;
+}
+
 /**
- * Painel de review do documento extraído. Permite editar campos críticos,
- * escolher conta/filer/categoria e confirmar a aplicação nas tabelas reais.
+ * Painel de review do documento extraído. Mostra o que a IA classificou/extraiu
+ * pra você conferir e confirmar (ou descartar/re-extrair). Não edita os dados
+ * inline — ajustes finos depois da aplicação são feitos em /transacoes.
  */
 export function InboxReviewPanel({
   documentId,
@@ -255,12 +264,19 @@ function DataSummary({
 }) {
   if (detectedType === "fatura_cartao") {
     const d = data as Extract<ExtractedData, { type: "fatura_cartao" }>["data"];
-    const newItems = d.items.filter((i) => !i.is_payment && i.amount > 0);
+    // Inclui estornos/créditos (amount<0): o applier os importa como receita,
+    // então a revisão precisa mostrá-los (antes só contava amount>0).
+    const newItems = d.items.filter((i) => !i.is_payment);
+    const purchases = newItems.filter((i) => i.amount > 0).length;
+    const refunds = newItems.filter((i) => i.amount < 0).length;
     return (
       <div className="space-y-2">
-        <Row label="Total" value={`R$ ${d.total.toFixed(2).replace(".", ",")}`} />
+        <Row label="Total" value={money(d.total, d.currency)} />
         <Row label="Vencimento" value={d.due_date ?? "—"} />
-        <Row label="Compras a importar" value={`${newItems.length} item(s)`} />
+        <Row
+          label="Itens a importar"
+          value={`${purchases} compra(s)${refunds > 0 ? ` · ${refunds} estorno(s)` : ""}`}
+        />
         {d.items.some((i) => i.is_payment) ? (
           <div className="text-[11.5px] text-muted-foreground italic mt-2">
             (Pagamento da fatura anterior será ignorado.)
@@ -275,12 +291,13 @@ function DataSummary({
               <li key={i} className="text-[11.5px] flex justify-between gap-3 py-1 border-b border-border/40">
                 <span className="text-foreground truncate">
                   {it.date} · {it.description}
+                  {it.amount < 0 ? " · estorno" : ""}
                   {it.installment_current && it.installment_total
                     ? ` · ${it.installment_current}/${it.installment_total}`
                     : ""}
                 </span>
-                <span className="font-mono tabular-nums shrink-0">
-                  R$ {it.amount.toFixed(2).replace(".", ",")}
+                <span className={`font-mono tabular-nums shrink-0 ${it.amount < 0 ? "text-olive-700 dark:text-olive-500" : ""}`}>
+                  {money(it.amount, d.currency)}
                 </span>
               </li>
             ))}
@@ -297,10 +314,10 @@ function DataSummary({
         <Row label="Empresa" value={d.payer_name} />
         <Row label="Funcionário" value={d.employee_name} />
         <Row label="Competência" value={d.competence_month} />
-        <Row label="Salário bruto" value={`R$ ${d.gross_salary.toFixed(2).replace(".", ",")}`} />
-        <Row label="INSS" value={`R$ ${d.inss_retained.toFixed(2).replace(".", ",")}`} />
-        <Row label="IRRF" value={`R$ ${d.irrf_retained.toFixed(2).replace(".", ",")}`} />
-        <Row label="Líquido" value={`R$ ${d.net_salary.toFixed(2).replace(".", ",")}`} />
+        <Row label="Salário bruto" value={money(d.gross_salary, d.currency)} />
+        <Row label="INSS" value={money(d.inss_retained, d.currency)} />
+        <Row label="IRRF" value={money(d.irrf_retained, d.currency)} />
+        <Row label="Líquido" value={money(d.net_salary, d.currency)} />
         {d.is_thirteenth ? (
           <div className="text-[11.5px] text-olive-700 dark:text-olive-500 italic mt-2">
             13º salário — vai como rendimento exclusivo de fonte.
@@ -317,7 +334,7 @@ function DataSummary({
         <Row label="Corretora" value={d.broker_name} />
         <Row label="Data" value={d.trade_date} />
         <Row label="Operações" value={`${d.operations.length}`} />
-        <Row label="Taxas totais" value={`R$ ${d.total_fees.toFixed(2).replace(".", ",")}`} />
+        <Row label="Taxas totais" value={money(d.total_fees, d.currency)} />
         <details className="mt-3">
           <summary className="text-[11.5px] font-mono text-faint-foreground cursor-pointer">
             Ver operações
@@ -326,7 +343,7 @@ function DataSummary({
             {d.operations.map((op, i) => (
               <li key={i} className="text-[11.5px] flex justify-between gap-3 py-1 border-b border-border/40">
                 <span>{op.ticker} · {op.side === "buy" ? "C" : "V"} {op.quantity}</span>
-                <span className="font-mono">R$ {op.unit_price.toFixed(2)}</span>
+                <span className="font-mono">{money(op.unit_price, d.currency)}</span>
               </li>
             ))}
           </ul>
@@ -342,7 +359,7 @@ function DataSummary({
         <Row label="Prestador" value={d.provider_name} />
         <Row label="Tipo" value={d.kind} />
         <Row label="Data" value={d.payment_date} />
-        <Row label="Valor" value={`R$ ${d.amount.toFixed(2).replace(".", ",")}`} />
+        <Row label="Valor" value={money(d.amount, d.currency)} />
         {d.patient_name ? <Row label="Paciente" value={d.patient_name} /> : null}
       </div>
     );
@@ -354,7 +371,7 @@ function DataSummary({
       <div className="space-y-2">
         <Row label="Beneficiário" value={d.payee_name} />
         <Row label="Vencimento" value={d.due_date} />
-        <Row label="Valor" value={`R$ ${d.amount.toFixed(2).replace(".", ",")}`} />
+        <Row label="Valor" value={money(d.amount, d.currency)} />
         <Row label="Descrição" value={d.description} />
       </div>
     );
@@ -367,8 +384,8 @@ function DataSummary({
         <Row label="Banco" value={d.bank_name} />
         <Row label="Período" value={`${d.period_start} a ${d.period_end}`} />
         <Row label="Movimentos" value={`${d.movements.length}`} />
-        <Row label="Saldo inicial" value={`R$ ${d.opening_balance.toFixed(2)}`} />
-        <Row label="Saldo final" value={`R$ ${d.closing_balance.toFixed(2)}`} />
+        <Row label="Saldo inicial" value={money(d.opening_balance, d.currency)} />
+        <Row label="Saldo final" value={money(d.closing_balance, d.currency)} />
       </div>
     );
   }

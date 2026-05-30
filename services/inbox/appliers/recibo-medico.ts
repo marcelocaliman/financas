@@ -32,18 +32,11 @@ export async function applyReciboMedico(args: {
   const kind = kindMap[args.data.kind];
 
   // Dedup: mesmo provider + valor + data + tipo + filer
+  type EqChain = {
+    eq: (c: string, v: unknown) => EqChain;
+  } & Promise<{ data: { id: string }[] | null }>;
   type DedupBuilder = {
-    select: (s: string) => {
-      eq: (c: string, v: unknown) => {
-        eq: (c: string, v: unknown) => {
-          eq: (c: string, v: unknown) => {
-            eq: (c: string, v: unknown) => {
-              eq: (c: string, v: unknown) => Promise<{ data: { id: string }[] | null }>;
-            };
-          };
-        };
-      };
-    };
+    select: (s: string) => EqChain;
   };
   const { data: existing } = await (
     admin.from as unknown as (t: string) => DedupBuilder
@@ -53,7 +46,11 @@ export async function applyReciboMedico(args: {
     .eq("year", year)
     .eq("kind", kind)
     .eq("amount", args.data.amount)
-    .eq("owner_filer_id", args.ownerFilerId);
+    .eq("owner_filer_id", args.ownerFilerId)
+    // Inclui prestador + data pra não pular pagamentos legítimos distintos de
+    // mesmo valor/ano/tipo/filer (ex: 2 consultas iguais de prestadores ≠).
+    .eq("recipient_cnpj_cpf", args.data.provider_cnpj_cpf ?? null)
+    .eq("payment_date", args.data.payment_date ?? null);
   if (existing && existing.length > 0) {
     return { ok: true, createdIds: [], skipped: true };
   }
@@ -78,9 +75,13 @@ export async function applyReciboMedico(args: {
         amount: args.data.amount,
         currency: args.data.currency ?? "BRL",
         description: args.data.description,
-        provider_name: args.data.provider_name,
-        provider_cnpj_cpf: args.data.provider_cnpj_cpf,
-        beneficiary_name: args.data.patient_name,
+        // Colunas reais da tabela (antes usava provider_*/beneficiary_name, que
+        // não existem — o insert estourava no PostgREST e NENHUM recibo médico
+        // era aplicável). recipient_name é NOT NULL.
+        recipient_name: args.data.provider_name || args.data.description || "Prestador",
+        recipient_cnpj_cpf: args.data.provider_cnpj_cpf ?? null,
+        beneficiary: args.data.patient_name ?? null,
+        payment_date: args.data.payment_date ?? null,
         owner_filer_id: args.ownerFilerId,
         notes: `Importado via OpenAI inbox · ${args.data.payment_date}`,
       },

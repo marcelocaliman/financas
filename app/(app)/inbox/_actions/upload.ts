@@ -118,8 +118,13 @@ export async function reextractAction(
   if (!isOpenAIConfigured()) {
     return { error: "OpenAI não configurado." };
   }
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
   const doc = await getDocumentUpload(documentId);
   if (!doc) return { error: "Documento não encontrado." };
+  // Authz: sem isso, qualquer usuário autenticado que saiba o UUID dispararia
+  // re-extração (custo OpenAI + sobrescreve dados) de doc de outro household.
+  if (doc.household_id !== ctx.household.id) return { error: "Acesso negado." };
 
   const buffer = await downloadDocumentContent(doc.storage_path);
   if (!buffer) return { error: "Falha ao baixar arquivo do storage." };

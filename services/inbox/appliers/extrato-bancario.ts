@@ -111,7 +111,10 @@ export async function applyExtratoBancario(args: {
         key: transactionDedupKey({
           accountId: args.accountId,
           date: m.date,
-          amount: amountAccount,
+          // usa absAmount (= coluna `amount`) pra casar com a chave dos
+          // existentes (que lê `amount`); antes usava amountAccount e divergia
+          // em extrato multimoeda, duplicando no reimport.
+          amount: absAmount,
           description: m.description,
         }),
       };
