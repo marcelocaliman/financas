@@ -24,7 +24,6 @@ type FonteLite = Pick<
   Tables<"fontes_pagadoras">,
   "id" | "name" | "type" | "cnpj" | "cpf"
 >;
-type TripLite = { id: string; name: string; destination: string };
 
 export function TransactionRow({
   tx,
@@ -32,14 +31,12 @@ export function TransactionRow({
   categories,
   debts = [],
   fontes = [],
-  trips = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
   debts?: DebtLite[];
   fontes?: FonteLite[];
-  trips?: TripLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -238,7 +235,6 @@ export function TransactionRow({
         categories={categories}
         debts={debts}
         fontes={fontes}
-        trips={trips}
       />
     </>
   );

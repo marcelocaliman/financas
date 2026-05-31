@@ -23,7 +23,6 @@ import { getComparisonCurrency, getDisplayCurrency, getRateMap } from "@/service
 import { getSidebarBadges } from "@/services/sidebar-badges";
 import { ensureMaterialized } from "@/services/auto-materialize";
 import { listDebts } from "@/services/debts";
-import { listTrips } from "@/services/trips";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getCurrentUserContext();
@@ -45,7 +44,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     isAdmin,
     fontes,
     debts,
-    trips,
   ] = await Promise.all([
     listAccounts(),
     listCategories(),
@@ -57,12 +55,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     isPlatformAdmin(),
     listFontesPagadoras().catch(() => []),
     listDebts().catch(() => []),
-    listTrips().catch(() => []),
   ]);
-
-  const tripsLite = trips
-    .filter((t) => t.status !== "completed" && t.status !== "cancelled")
-    .map((t) => ({ id: t.id, name: t.name, destination: t.destination }));
 
   const accountsLite = accounts.map((a) => ({
     id: a.id,
@@ -125,7 +118,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             description: d.description,
             current_balance: Number(d.current_balance),
           }))}
-          trips={tripsLite}
         />
         <QuickAddFAB />
         <CommandPalette />

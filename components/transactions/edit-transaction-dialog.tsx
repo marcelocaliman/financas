@@ -32,7 +32,6 @@ type FonteLite = Pick<
   Tables<"fontes_pagadoras">,
   "id" | "name" | "type" | "cnpj" | "cpf"
 >;
-type TripLite = { id: string; name: string; destination: string };
 
 export function EditTransactionDialog({
   open,
@@ -42,7 +41,6 @@ export function EditTransactionDialog({
   categories,
   debts = [],
   fontes = [],
-  trips = [],
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -51,7 +49,6 @@ export function EditTransactionDialog({
   categories: CategoryLite[];
   debts?: DebtLite[];
   fontes?: FonteLite[];
-  trips?: TripLite[];
 }) {
   const isTransfer = transaction.kind === "transfer";
 
@@ -67,9 +64,6 @@ export function EditTransactionDialog({
   );
   const [excludeFromIr, setExcludeFromIr] = useState<boolean>(
     transaction.exclude_from_ir ?? false,
-  );
-  const [tripId, setTripId] = useState<string>(
-    (transaction as { trip_id?: string | null }).trip_id ?? "",
   );
   const [fontePagadoraId, setFontePagadoraId] = useState<string>(
     transaction.fonte_pagadora_id ?? "",
@@ -100,7 +94,6 @@ export function EditTransactionDialog({
       setDate(transaction.date);
       setIsHistoricalIrOnly(transaction.is_historical_ir_only ?? false);
       setExcludeFromIr(transaction.exclude_from_ir ?? false);
-      setTripId((transaction as { trip_id?: string | null }).trip_id ?? "");
       setFontePagadoraId(transaction.fonte_pagadora_id ?? "");
       setIrrfAmount(Number(transaction.irrf_amount ?? 0));
       setInssAmount(Number(transaction.inss_amount ?? 0));
@@ -269,28 +262,6 @@ export function EditTransactionDialog({
             </Field>
           ) : null}
 
-          {/* Vincular a viagem — pula transfer */}
-          {!isTransfer && trips.length > 0 ? (
-            <Field label="Viagem (opcional)" htmlFor="tripId-edit" hint="Vincula a tx ao orçamento da viagem">
-              <input type="hidden" name="tripId" value={tripId} />
-              <Select
-                value={tripId || "__none"}
-                onValueChange={(v) => setTripId(v === "__none" ? "" : v)}
-              >
-                <SelectTrigger id="tripId-edit">
-                  <SelectValue placeholder="— Sem viagem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none">— Sem viagem</SelectItem>
-                  {trips.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      ✈ {t.name} — {t.destination}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          ) : null}
 
           {/* Seção IR — apenas pra receitas com fontes configuradas */}
           {transaction.kind === "income" && fontes.length > 0 ? (

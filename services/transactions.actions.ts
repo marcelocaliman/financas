@@ -32,8 +32,6 @@ const baseSchema = z.object({
   excludeFromIr: z.coerce.boolean().optional().default(false),
   // Marca como "histórica pra IR" — não afeta saldo nem entra em dashboards
   isHistoricalIrOnly: z.coerce.boolean().optional().default(false),
-  // Vincula opcionalmente a uma viagem
-  tripId: z.string().uuid().optional().nullable(),
 });
 
 const expenseOrIncomeSchema = baseSchema.extend({
@@ -116,7 +114,6 @@ export async function createTransaction(
     inssAmount: formData.get("inssAmount") || null,
     excludeFromIr: formData.get("excludeFromIr") === "1",
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
-    tripId: formData.get("tripId") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -219,7 +216,6 @@ export async function createTransaction(
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
     exclude_from_ir: parsed.data.excludeFromIr ?? false,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
-    trip_id: parsed.data.tripId ?? null,
   };
   const { error } = await supabase.from("transactions").insert(insertPayload as never);
   if (error) return { error: error.message };
@@ -251,7 +247,6 @@ export async function updateTransaction(
     inssAmount: formData.get("inssAmount") || null,
     excludeFromIr: formData.get("excludeFromIr") === "1",
     isHistoricalIrOnly: formData.get("isHistoricalIrOnly") === "1",
-    tripId: formData.get("tripId") || null,
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -310,7 +305,6 @@ export async function updateTransaction(
     inss_amount: parsed.data.kind === "income" ? (parsed.data.inssAmount ?? null) : null,
     exclude_from_ir: parsed.data.excludeFromIr ?? false,
     is_historical_ir_only: parsed.data.isHistoricalIrOnly ?? false,
-    trip_id: parsed.data.tripId ?? null,
   };
   const { error } = await supabase
     .from("transactions")

@@ -22,7 +22,6 @@ type FonteLite = Pick<
   Tables<"fontes_pagadoras">,
   "id" | "name" | "type" | "cnpj" | "cpf"
 >;
-type TripLite = { id: string; name: string; destination: string };
 
 /**
  * Versão card de TransactionRow — usada apenas no mobile.
@@ -35,13 +34,11 @@ export function TransactionCard({
   accounts,
   categories,
   fontes = [],
-  trips = [],
 }: {
   tx: Transaction;
   accounts: AccountLite[];
   categories: CategoryLite[];
   fontes?: FonteLite[];
-  trips?: TripLite[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -188,7 +185,6 @@ export function TransactionCard({
         accounts={accounts}
         categories={categories}
         fontes={fontes}
-        trips={trips}
       />
     </>
   );

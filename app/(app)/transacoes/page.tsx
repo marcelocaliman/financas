@@ -27,7 +27,6 @@ import { listAccounts } from "@/services/accounts";
 import { listCategories } from "@/services/categories";
 import { listDebts } from "@/services/debts";
 import { listFontesPagadoras } from "@/services/fontes-pagadoras";
-import { listTrips } from "@/services/trips";
 import type { Transaction } from "@/services/transactions";
 import type { TransactionKind } from "@/types/database";
 import { formatDateFull } from "@/lib/utils/format";
@@ -97,7 +96,7 @@ export default async function TransacoesPage({
   }).format(new Date());
   const isPastMonth = curFrom.slice(0, 7) < todayMonth;
 
-  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts, fontes, trips] =
+  const [{ rows, total }, summary, prevSummary, accounts, categories, portadores, cardSpending, debts, fontes] =
     await Promise.all([
       listTransactions({
         month,
@@ -120,11 +119,7 @@ export default async function TransacoesPage({
       getMonthlyCardSpending(month),
       listDebts(),
       listFontesPagadoras(),
-      listTrips(),
     ]);
-  const tripsLite = trips
-    .filter((t) => t.status !== "completed" && t.status !== "cancelled")
-    .map((t) => ({ id: t.id, name: t.name, destination: t.destination }));
   const debtsLite = debts.map((d) => ({ id: d.id, description: d.description }));
   const fontesLite = fontes.map((f) => ({
     id: f.id,
@@ -330,7 +325,6 @@ export default async function TransacoesPage({
                           categories={categoriesLite}
                           debts={debtsLite}
                           fontes={fontesLite}
-                          trips={tripsLite}
                         />
                       ))}
                     </Fragment>
@@ -357,7 +351,6 @@ export default async function TransacoesPage({
                       accounts={accountsLite}
                       categories={categoriesLite}
                       fontes={fontesLite}
-                      trips={tripsLite}
                     />
                   ))}
                 </div>

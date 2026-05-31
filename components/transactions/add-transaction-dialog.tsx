@@ -57,20 +57,16 @@ function todayISO(): string {
   return fmt.format(new Date());
 }
 
-type TripLite = { id: string; name: string; destination: string };
-
 export function AddTransactionDialog({
   accounts,
   categories,
   fontes = [],
   debts = [],
-  trips = [],
 }: {
   accounts: AccountLite[];
   categories: CategoryLite[];
   fontes?: FonteLite[];
   debts?: DebtLite[];
-  trips?: TripLite[];
 }) {
   const { open, defaultKind, hide } = useQuickAdd();
   const [kind, setKind] = useState<TxKind>(defaultKind);
@@ -88,7 +84,6 @@ export function AddTransactionDialog({
   const [inssAmount, setInssAmount] = useState<number>(0);
   const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(false);
   const [excludeFromIr, setExcludeFromIr] = useState<boolean>(false);
-  const [tripId, setTripId] = useState<string>("");
   const formRef = useRef<HTMLFormElement>(null);
 
   // Quando muda a conta, ajusta a moeda default da transação pra moeda dela.
@@ -458,29 +453,6 @@ export function AddTransactionDialog({
                   </div>
                 ) : null}
               </div>
-            ) : null}
-
-            {/* Vincular a viagem — apenas income/expense, pula transfer */}
-            {kind !== "transfer" && trips.length > 0 ? (
-              <Field label="Viagem (opcional)" htmlFor="tripId" hint="Vincula a tx ao orçamento da viagem">
-                <input type="hidden" name="tripId" value={tripId} />
-                <Select
-                  value={tripId || "__none"}
-                  onValueChange={(v) => setTripId(v === "__none" ? "" : v)}
-                >
-                  <SelectTrigger id="tripId">
-                    <SelectValue placeholder="— Sem viagem" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none">— Sem viagem</SelectItem>
-                    {trips.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        ✈ {t.name} — {t.destination}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
             ) : null}
 
             {/* Não declarar no IRPF — só pra income (receitas isentas, presentes, reembolsos, etc.) */}
