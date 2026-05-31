@@ -67,6 +67,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="min-h-screen antialiased">
+        {/* A11y: pular pra o conteúdo (visível só no foco do teclado). */}
+        <a
+          href="#conteudo"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-[8px] focus:bg-navy-700 focus:px-4 focus:py-2 focus:text-white focus:text-[13px]"
+        >
+          Pular para o conteúdo
+        </a>
         <Providers>{children}</Providers>
         <Toaster
           position="bottom-right"

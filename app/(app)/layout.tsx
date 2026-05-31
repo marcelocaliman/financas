@@ -98,7 +98,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             isPlatformAdmin={isAdmin}
           />
           <div className="flex-1 min-w-0 relative">
-            <main className="max-w-[1320px] mx-auto px-4 sm:px-10 lg:px-14 pt-16 lg:pt-8 pb-28 lg:pb-20">
+            <main id="conteudo" className="max-w-[1320px] mx-auto px-4 sm:px-10 lg:px-14 pt-16 lg:pt-8 pb-28 lg:pb-20">
               {children}
             </main>
             <MobileNav />
