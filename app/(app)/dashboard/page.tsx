@@ -3,9 +3,8 @@ import { Panel } from "@/components/ui/panel";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
-import { LatestTransactionsPanel } from "@/components/dashboard/latest-transactions";
 import { InsightCard } from "@/components/dashboard/insight-card";
-import { FireCard } from "@/components/dashboard/fire-card";
+import { CoverageStrip } from "@/components/dashboard/coverage-strip";
 import { GoalsTopCard } from "@/components/dashboard/goals-top-card";
 import { UpcomingObligationsCard } from "@/components/dashboard/upcoming-obligations-card";
 import { ApportSuggestionCard } from "@/components/dashboard/apport-suggestion-card";
@@ -41,15 +40,13 @@ import {
   getCategorySpendHistory,
   getMonthlyHistory,
   getMonthlySummary,
-  listTransactions,
   monthRange,
 } from "@/services/transactions";
-import { MonthPulseCard } from "@/components/dashboard/month-pulse-card";
 import { IrEstimateHero } from "@/components/dashboard/ir-estimate-hero";
 import { computeImposto } from "@/services/ir/imposto";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { createClient } from "@/lib/supabase/server";
-import { formatMoney, formatPercent } from "@/lib/utils/format";
+import { formatMoney } from "@/lib/utils/format";
 import { formatDateFull, formatTime, getGreeting } from "@/lib/utils/format";
 import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
 
@@ -81,7 +78,6 @@ export default async function DashboardPage({
   const [
     summary,
     breakdown,
-    latest,
     totals,
     anomalies,
     portfolio,
@@ -106,7 +102,6 @@ export default async function DashboardPage({
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
-    listTransactions({ month: monthParam, pageSize: 30 }),
     isCurrent ? getAccountsTotals() : getAccountsTotalsAt(to),
     isCurrent ? detectExpenseAnomalies() : Promise.resolve([]),
     getPortfolioStats(),
@@ -338,7 +333,7 @@ export default async function DashboardPage({
       {/* Insight de anomalias (somente mês corrente) */}
       {isCurrent && insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
 
-      {isCurrent ? <InsightCard anomalies={anomalies} /> : null}
+      {isCurrent && anomalies.length > 0 ? <InsightCard anomalies={anomalies} /> : null}
 
       {isCurrent && apportSuggestions.length > 0 ? (
         <ApportSuggestionCard suggestions={apportSuggestions} />
@@ -370,37 +365,18 @@ export default async function DashboardPage({
         </div>
       ) : null}
 
-      {/* TIER 2 — IF + Cobertura (visão de longo prazo pra FIRE) */}
+      {/* Independência financeira (FIRE) — linha compacta, é "plus". A análise
+          completa mora em /independencia. */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-8">
-          <FireCard
-            monthlyPassiveIncome={coverage.monthlyAverageYield}
-            monthlyExpense={
-              coverage.monthlyAverageExpense > 0
-                ? coverage.monthlyAverageExpense
-                : effectiveExpense
-            }
-            netWorth={netWorth}
-            monthlySavings={monthlySavings}
-          />
-          <CoveragePanel
-            monthlyYield={monthlyYieldDisplay}
-            monthlyExpense={coverage.monthlyAverageExpense}
-            ratio={coverageRatioDisplay}
-            hasInvestments={portfolio.total > 0}
-          />
-        </div>
-      ) : null}
-
-      {/* TIER 2.5 — Pulso do mês (resumo enxuto) + link pra /análise, que é a
-          fonte canônica do recorte mês a mês (tabela completa + tendência). */}
-      {isCurrent && history6.length >= 2 ? (
         <div className="mb-8">
-          <MonthPulseCard data={history6} />
+          <CoverageStrip
+            coveragePct={coverageRatioDisplay * 100}
+            monthlyYield={monthlyYieldDisplay}
+          />
         </div>
       ) : null}
 
-      {/* TIER 3 — Top categorias + Composição do patrimônio */}
+      {/* Top categorias + Composição do patrimônio */}
       <div
         className={
           isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8" : "grid grid-cols-1 mb-8"
@@ -420,89 +396,7 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      {/* TIER 4 — Últimos movimentos (10 por página + busca client-side) */}
-      <LatestTransactionsPanel
-        rows={latest.rows}
-        forecastRows={isForecastMode ? forecast.occurrences : []}
-        isForecast={isForecastMode && latest.rows.length === 0}
-      />
     </>
   );
 }
 
-function CoveragePanel({
-  monthlyYield,
-  monthlyExpense,
-  ratio,
-  hasInvestments,
-}: {
-  monthlyYield: number;
-  monthlyExpense: number;
-  ratio: number;
-  hasInvestments: boolean;
-}) {
-  const pct = Math.min(100, Math.round(ratio * 100));
-  return (
-    <Panel className="!p-7 relative overflow-hidden">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-12 -right-12 w-40 h-40"
-        style={{ background: "radial-gradient(circle, rgba(176,123,50,0.07), transparent 70%)" }}
-      />
-      <div className="relative z-10">
-        <div className="font-mono text-[10.5px] tracking-[0.16em] uppercase text-navy-700 dark:text-navy-300 mb-2.5 font-medium">
-          Renda do patrimônio
-        </div>
-        <div className="font-mono text-[28px] tracking-[-0.025em] text-foreground leading-none">
-          {formatMoney(monthlyYield)}
-          <span className="text-[14px] text-muted-foreground ml-1.5">/mês</span>
-        </div>
-        <p className="text-[12.5px] text-muted-foreground mt-1.5">
-          {!hasInvestments
-            ? "ainda sem ativos cadastrados"
-            : "média líquida · últimos 3 meses"}
-        </p>
-
-        <div className="mt-6 flex items-center gap-4">
-          <div className="relative w-[86px] h-[86px] shrink-0">
-            <svg width="86" height="86" viewBox="0 0 86 86" className="-rotate-90">
-              <circle cx="43" cy="43" r="37" fill="none" stroke="var(--color-navy-100)" strokeWidth="5" />
-              <circle
-                cx="43"
-                cy="43"
-                r="37"
-                fill="none"
-                stroke="var(--color-navy-800)"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 37}
-                strokeDashoffset={2 * Math.PI * 37 * (1 - pct / 100)}
-                className="transition-[stroke-dashoffset] duration-1000 ease-out"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center font-mono">
-              <span className="text-[19px] font-medium text-foreground">{pct}%</span>
-              <span className="text-[9px] uppercase tracking-[0.12em] text-faint-foreground font-medium">
-                cobertura
-              </span>
-            </div>
-          </div>
-          <div className="text-[12.5px] text-muted-foreground leading-[1.55]">
-            <p className="font-medium text-foreground text-[13.5px] mb-1">
-              {pct}% das despesas fixas cobertas
-            </p>
-            <p>
-              Despesa média {formatMoney(monthlyExpense)}/mês. Cobertura{" "}
-              {ratio > 0 ? formatPercent(ratio, 0) : "—"}
-              {ratio > 0 && ratio < 1
-                ? `. Falta ${formatMoney(monthlyExpense - monthlyYield)}.`
-                : ratio >= 1
-                  ? ". Já dá pra viver da renda."
-                  : ""}
-            </p>
-          </div>
-        </div>
-      </div>
-    </Panel>
-  );
-}
