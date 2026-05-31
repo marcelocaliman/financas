@@ -42,8 +42,7 @@ export default async function InboxPage() {
         eyebrow={`${monthlyCount}/${MONTHLY_LIMIT_PER_HOUSEHOLD} documentos este mês`}
         title={
           <>
-            <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">Inbox</em>{" "}
-            de documentos
+            Seus <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">documentos</em>
           </>
         }
         subtitle="Joga aqui qualquer documento (PDF, foto, CSV). A IA classifica, extrai os dados, e você confirma — vai automático pras tabelas certas."

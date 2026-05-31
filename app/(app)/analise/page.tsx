@@ -64,7 +64,7 @@ export default async function AnalisePage({
         eyebrow={`Insights · ${history.length} meses até ${monthLabel}`}
         title={
           <>
-            Análise <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">financeira</em>
+            Seu <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">histórico</em>
           </>
         }
         subtitle="Para onde o dinheiro foi, de onde veio, e como vocês mudaram nos últimos meses."

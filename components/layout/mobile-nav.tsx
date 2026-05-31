@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ArrowLeftRight, LineChart, Wallet, Plus } from "lucide-react";
+import { Home, ArrowLeftRight, Wallet, Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { useQuickAdd } from "@/components/transactions/quick-add-context";
 
+// 3 destinos fixos + FAB dominante (auditoria UX). O resto vive no drawer
+// (hambúrguer). Lançar é a ação primária — fica no centro, em destaque.
 const navItems = [
-  { label: "Home", href: "/dashboard", icon: Home },
+  { label: "Início", href: "/dashboard", icon: Home },
   { label: "Transações", href: "/transacoes", icon: ArrowLeftRight },
-  { label: "Análise", href: "/analise", icon: LineChart },
   { label: "Carteira", href: "/investimentos", icon: Wallet },
 ];
 
@@ -18,7 +19,7 @@ export function MobileNav() {
   const { show } = useQuickAdd();
   return (
     <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-surface/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-4">
         {navItems.slice(0, 2).map((it) => {
           const Icon = it.icon;
           const isActive =

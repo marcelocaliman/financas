@@ -4,78 +4,23 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import {
-  Home,
-  ArrowLeftRight,
-  LineChart,
-  Wallet,
-  Layers,
-  Target,
-  CreditCard,
-  Tag,
-  Package,
-  Repeat,
-  FileText,
-  Settings,
-  Menu,
-  X,
-  Shield,
-  Flame,
-  HandCoins,
-  Inbox,
-  Landmark,
-  Users as UsersIcon,
-} from "lucide-react";
+import { Settings, Menu, X, Shield } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { cn } from "@/lib/utils/cn";
+import {
+  mainNavItems,
+  mainGroupLabels as groupLabels,
+  type NavItem,
+} from "@/components/layout/nav-items";
 import type { SidebarBadges } from "@/services/sidebar-badges";
 
-type NavGroup = "diaadia" | "patrimonio" | "ir" | "ajustes";
-type NavItem = {
-  label: string;
-  href: string;
-  icon: typeof Home;
-  group: NavGroup;
-  /** Item secundário — renderiza indentado sob o item primário acima. */
-  sub?: boolean;
-};
-
+// Fonte única + o atalho de Configurações (que no desktop fica no rodapé).
 const navItems: NavItem[] = [
-  // Dia a dia
-  { label: "Início", href: "/dashboard", icon: Home, group: "diaadia" },
-  { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "diaadia" },
-  { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "diaadia" },
-  { label: "Análise", href: "/analise", icon: LineChart, group: "diaadia" },
-  { label: "Relatórios", href: "/relatorios", icon: FileText, group: "diaadia", sub: true },
-  { label: "Inbox", href: "/inbox", icon: Inbox, group: "diaadia" },
-
-  // Patrimônio
-  { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "patrimonio" },
-  { label: "Resgates", href: "/resgates", icon: Layers, group: "patrimonio", sub: true },
-  { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "patrimonio" },
-  { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "patrimonio" },
-  { label: "Metas", href: "/metas", icon: Target, group: "patrimonio" },
-  { label: "Independência", href: "/independencia", icon: Flame, group: "patrimonio", sub: true },
-
-  // Imposto de Renda
-  { label: "IRPF", href: "/ir", icon: Landmark, group: "ir" },
-  { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "ir", sub: true },
-
-  // Ajustes
-  { label: "Contas", href: "/contas", icon: CreditCard, group: "ajustes" },
-  { label: "Categorias", href: "/categorias", icon: Tag, group: "ajustes" },
-  { label: "Orçamento", href: "/orcamento", icon: Target, group: "ajustes", sub: true },
-  { label: "Configurações", href: "/configuracoes", icon: Settings, group: "ajustes" },
+  ...mainNavItems,
+  { label: "Configurações", href: "/configuracoes", icon: Settings, group: "ajustes", sub: true },
 ];
-
-const groupLabels: Record<NavGroup, string> = {
-  diaadia: "Dia a dia",
-  patrimonio: "Patrimônio",
-  ir: "Imposto de Renda",
-  ajustes: "Ajustes",
-};
 
 /**
  * Drawer mobile com nav completa.
