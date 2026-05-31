@@ -45,6 +45,8 @@ import {
   monthRange,
 } from "@/services/transactions";
 import { MonthPulseCard } from "@/components/dashboard/month-pulse-card";
+import { IrEstimateHero } from "@/components/dashboard/ir-estimate-hero";
+import { computeImposto } from "@/services/ir/imposto";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
@@ -100,6 +102,7 @@ export default async function DashboardPage({
     accounts,
     categorySpendHistory,
     setupStatus,
+    irEstimate,
   ] = await Promise.all([
     getMonthlySummary(monthParam),
     getCategoryBreakdown(monthParam, "expense"),
@@ -127,6 +130,11 @@ export default async function DashboardPage({
       ? getCategorySpendHistory(6)
       : Promise.resolve(new Map<string, number[]>()),
     isCurrent ? getSetupStatus() : Promise.resolve(null),
+    // Estimativa do IRPF do ano corrente (o "momento mágico" do Início).
+    // catch → null pra nunca quebrar o dashboard (ex: ano sem tabela cadastrada).
+    isCurrent
+      ? computeImposto(currentYearForState).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   // ---- Onboarding banner gating (cheap: 2 queries só quando is current) ----
@@ -309,6 +317,13 @@ export default async function DashboardPage({
         patrimonioSparkline={patrimonioSpark}
         sobraSparkline={sobraSpark}
       />
+
+      {/* Momento mágico: IRPF do ano se montando sozinho a partir dos lançamentos */}
+      {isCurrent ? (
+        <div className="mt-5">
+          <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
+        </div>
+      ) : null}
 
       {/* Ticker do portfolio (totais agregados, sem animação live) */}
       {isCurrent ? (
