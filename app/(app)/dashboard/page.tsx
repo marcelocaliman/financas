@@ -315,7 +315,7 @@ export default async function DashboardPage({
 
       {/* Snapshot do mês: IRPF estimado (o ímã) + carteira, lado a lado */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5">
+        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5 items-stretch">
           <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
           <PortfolioLiveTicker
             totalMarketBalance={currentValues.totalMarketBalance}
@@ -323,6 +323,15 @@ export default async function DashboardPage({
             displayCurrency={currentValues.displayCurrency}
             variant="compact"
           />
+        </div>
+      ) : null}
+
+      {/* Próximos 7 dias + Metas em curso — o "o que vem aí" é o mais acionável
+          do dia a dia, vem logo após o snapshot. */}
+      {isCurrent ? (
+        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-stretch">
+          <UpcomingObligationsCard upcoming={upcoming!} days={7} />
+          <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>
       ) : null}
 
@@ -335,7 +344,7 @@ export default async function DashboardPage({
         apportSuggestions.length > 0 ||
         goalReminders.length > 0 ||
         budgetRows.some((r) => r.status !== "no_budget")) ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-start [&>*]:!mb-0">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full">
           {insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
           {anomalies.length > 0 ? <InsightCard anomalies={anomalies} /> : null}
           {apportSuggestions.length > 0 ? (
@@ -351,16 +360,6 @@ export default async function DashboardPage({
           {budgetRows.some((r) => r.status !== "no_budget") ? (
             <BudgetStatusCard rows={budgetRows} />
           ) : null}
-        </div>
-      ) : null}
-
-      {/* TIER 1 — Obrigações dos próximos 7 dias + Metas em curso.
-          O que vence/cai essa semana é mais acionável no dia a dia que a
-          projeção de FIRE (que vem logo abaixo). */}
-      {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5">
-          <UpcomingObligationsCard upcoming={upcoming!} days={7} />
-          <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>
       ) : null}
 

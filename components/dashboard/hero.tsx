@@ -86,7 +86,7 @@ export function DashboardHero({
       : null;
 
   return (
-    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-5 sm:p-12 mb-6 overflow-hidden shadow-lg border border-ink-700">
+    <section className="relative rounded-[var(--radius-xl)] bg-ink-950 text-white p-5 sm:p-7 mb-5 overflow-hidden shadow-lg border border-ink-700">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-32 -right-24 w-[420px] h-[420px]"
@@ -99,7 +99,7 @@ export function DashboardHero({
       />
 
       <div className="relative z-10">
-        <div className="flex items-start justify-between gap-4 sm:gap-8 mb-6 sm:mb-9">
+        <div className="flex items-start justify-between gap-4 sm:gap-8 mb-4 sm:mb-5">
           <div className="min-w-0">
             <div className="font-mono text-[10.5px] tracking-[0.18em] uppercase text-navy-300 mb-2 sm:mb-3 font-medium flex items-center gap-2">
               {isForecast ? "Sobra prevista" : "Sobra projetada"} · {monthLabel}
@@ -109,13 +109,13 @@ export function DashboardHero({
                 </span>
               ) : null}
             </div>
-            <div className="flex items-baseline gap-2 sm:gap-3 mb-1 font-mono">
-              <span className="text-[16px] sm:text-[20px] text-navy-300 font-light">{currency}</span>
-              <span className="text-[40px] sm:text-[60px] font-light leading-none tracking-[-0.04em]">
+            <div className="flex items-baseline gap-2 sm:gap-2.5 mb-1 font-mono">
+              <span className="text-[15px] sm:text-[18px] text-navy-300 font-light">{currency}</span>
+              <span className="text-[34px] sm:text-[44px] font-light leading-none tracking-[-0.04em]">
                 {sign}
                 {maskedInteger}
               </span>
-              <span className="text-[18px] sm:text-[24px] text-navy-300 font-light">,{maskedCents}</span>
+              <span className="text-[16px] sm:text-[20px] text-navy-300 font-light">,{maskedCents}</span>
             </div>
             {projectedComparisonText ? (
               <div className="font-mono text-[12.5px] text-navy-400 tracking-[0.02em] mb-3">
@@ -149,7 +149,7 @@ export function DashboardHero({
               </span>
             </div>
 
-            <div className="flex gap-[3px] mt-5 max-w-[280px]">
+            <div className="flex gap-[3px] mt-4 max-w-[280px]">
               {Array.from({ length: 10 }).map((_, i) => {
                 const filled = i < filledSegments;
                 return (
@@ -179,7 +179,7 @@ export function DashboardHero({
           </div>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-5 sm:mb-7" />
+        <div className="h-px bg-gradient-to-r from-transparent via-ink-700 to-transparent mb-4 sm:mb-5" />
 
         {/* Mobile: Entrou + Saiu lado a lado, Patrimônio full-width abaixo.
             Desktop: 3 colunas iguais. */}

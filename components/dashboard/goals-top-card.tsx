@@ -30,7 +30,7 @@ export function GoalsTopCard({
   const top = goals.slice(0, 3);
 
   return (
-    <Panel className="!p-0 overflow-hidden">
+    <Panel className="!p-0 overflow-hidden flex flex-col h-full">
       <div className="px-7 pt-6 pb-3 border-b border-border">
         <PanelHeader
           title={
@@ -57,23 +57,33 @@ export function GoalsTopCard({
       </div>
 
       {top.length === 0 ? (
-        <div className="px-7 py-8 text-center">
+        <div className="px-7 py-8 text-center flex-1 flex flex-col items-center justify-center">
           <p className="text-[13px] text-muted-foreground italic">
             Sem metas cadastradas. Defina objetivos pra acompanhar progresso.
           </p>
           <Link
             href="/metas"
-            className="inline-block mt-2 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 dark:hover:text-navy-100 font-medium"
+            className="inline-block mt-2 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100 font-medium"
           >
             Criar primeira meta →
           </Link>
         </div>
       ) : (
-        <ul className="divide-y divide-border">
-          {top.map((g) => (
-            <GoalRow key={g.id} goal={g} monthlySavings={monthlySavings} />
-          ))}
-        </ul>
+        <>
+          <ul className="divide-y divide-border">
+            {top.map((g) => (
+              <GoalRow key={g.id} goal={g} monthlySavings={monthlySavings} />
+            ))}
+          </ul>
+          {/* CTA fixado no rodapé — ancora o fim do card (preenche o vazio de
+              forma intencional quando há poucas metas) e oferece próxima ação. */}
+          <Link
+            href="/metas"
+            className="mt-auto border-t border-border px-7 py-3.5 text-[12.5px] font-medium text-navy-700 dark:text-navy-300 hover:bg-surface-muted transition-colors text-center"
+          >
+            + Definir nova meta
+          </Link>
+        </>
       )}
     </Panel>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
@@ -31,6 +32,23 @@ export function TopCategoriesPanel({
           </span>
         }
         meta={monthLabel.toUpperCase().slice(0, 3) + " · " + monthLabel.split(" ").pop()}
+        action={
+          rows.length > 6 ? (
+            <Link
+              href="/analise"
+              className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
+            >
+              ver todas ({rows.length}) →
+            </Link>
+          ) : (
+            <Link
+              href="/analise"
+              className="text-navy-700 dark:text-navy-300 text-[12.5px] hover:text-navy-900 dark:hover:text-navy-100"
+            >
+              análise →
+            </Link>
+          )
+        }
       />
       {top.length === 0 ? (
         <p className="text-[13px] text-muted-foreground italic py-2">
