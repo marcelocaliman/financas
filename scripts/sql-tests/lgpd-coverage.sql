@@ -13,7 +13,10 @@ begin
     on c.table_schema = t.table_schema and c.table_name = t.table_name
   where t.table_schema = 'public'
     and t.table_type = 'BASE TABLE'
-    and c.column_name = 'household_id';
+    and c.column_name = 'household_id'
+    -- deletion_proofs tem household_id mas NÃO é dado pessoal do titular: é a
+    -- prova de eliminação (retenção legal, sobrevive ao delete). Excluída.
+    and t.table_name <> 'deletion_proofs';
 
   assert v_count = 43,
     'Manifesto LGPD possivelmente desatualizado: ' || v_count ||

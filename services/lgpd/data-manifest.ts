@@ -67,8 +67,9 @@ export const USER_DATA_TABLES = [
  * NÃO exportar/excluir — é agregação derivada.
  */
 export const EXCLUDED_FROM_MANIFEST = [
-  "document_uploads_current_month_count",
+  "document_uploads_current_month_count", // VIEW (agregação derivada)
   "platform_admins", // papel de plataforma, não dado pessoal do titular
+  "deletion_proofs", // prova de eliminação (retenção legal; sobrevive ao delete)
 ] as const;
 
 export type HouseholdDataTable = (typeof HOUSEHOLD_DATA_TABLES)[number];
