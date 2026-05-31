@@ -33,7 +33,9 @@ export function DebtCard({
   const confirm = useConfirm();
   const router = useRouter();
 
-  const current = Number(debt.current_balance);
+  // Saldo pode ser negativo (pagamento a mais); pra exibição, "quanto falta"
+  // é clampado em zero.
+  const current = Math.max(0, Number(debt.current_balance));
   const original = Number(debt.original_amount);
   const paidPct = original > 0 ? 1 - current / original : 0;
   const declarable = current > 5000;

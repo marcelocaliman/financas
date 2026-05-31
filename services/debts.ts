@@ -31,10 +31,14 @@ export async function getDebtsReport(householdId?: string): Promise<DebtsReport>
   const q = supabase.from("debts").select("*").eq("is_active", true);
   const { data } = householdId ? await q.eq("household_id", householdId) : await q;
   const rows = data ?? [];
+  // Saldo pode ficar negativo (pagamento a mais = crédito). Pra "quanto ainda
+  // devo", clampamos em zero — uma dívida quitada/sobrepaga conta como 0.
+  const remaining = (d: { current_balance: number | string }) =>
+    Math.max(0, Number(d.current_balance));
   return {
     rows,
     totalOriginal: rows.reduce((s, d) => s + Number(d.original_amount), 0),
-    totalCurrent: rows.reduce((s, d) => s + Number(d.current_balance), 0),
-    declarable: rows.filter((d) => Number(d.current_balance) > DECLARABLE_THRESHOLD),
+    totalCurrent: rows.reduce((s, d) => s + remaining(d), 0),
+    declarable: rows.filter((d) => remaining(d) > DECLARABLE_THRESHOLD),
   };
 }
