@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
@@ -265,7 +266,9 @@ export type MonthlySummary = {
   displayCurrency: Currency;
 };
 
-export async function getMonthlySummary(monthStr?: string): Promise<MonthlySummary> {
+// Memoizado por request (React cache): dashboard + insights chamam com o mesmo
+// monthStr e deduplicam a query pesada.
+export const getMonthlySummary = cache(async (monthStr?: string): Promise<MonthlySummary> => {
   const supabase = await createClient();
   const { from, to, label } = monthRange(monthStr);
 
@@ -338,7 +341,7 @@ export async function getMonthlySummary(monthStr?: string): Promise<MonthlySumma
     transactionCount: count ?? 0,
     displayCurrency,
   };
-}
+});
 
 export type CategoryBreakdownRow = {
   category_id: string | null;
