@@ -313,9 +313,11 @@ export default async function DashboardPage({
         sobraSparkline={sobraSpark}
       />
 
-      {/* Snapshot do mês: IRPF estimado (o ímã) + carteira, lado a lado */}
+      {/* Snapshot do mês: IRPF estimado (o ímã) + carteira, lado a lado.
+          [&>*]:!mb-0 zera margens internas (o ticker tem mb-6 baked que o deixava
+          24px mais curto); [&>*]:h-full faz ambos preencherem a célula. */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5 items-stretch">
+        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full">
           <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
           <PortfolioLiveTicker
             totalMarketBalance={currentValues.totalMarketBalance}
@@ -329,7 +331,7 @@ export default async function DashboardPage({
       {/* Próximos 7 dias + Metas em curso — o "o que vem aí" é o mais acionável
           do dia a dia, vem logo após o snapshot. */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-stretch">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full">
           <UpcomingObligationsCard upcoming={upcoming!} days={7} />
           <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>
@@ -377,7 +379,9 @@ export default async function DashboardPage({
       {/* Top categorias + Composição do patrimônio */}
       <div
         className={
-          isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-5" : "grid grid-cols-1 mb-5"
+          isCurrent
+            ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full"
+            : "grid grid-cols-1 mb-5"
         }
       >
         <TopCategoriesPanel
