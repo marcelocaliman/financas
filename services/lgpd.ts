@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { HOUSEHOLD_DATA_TABLES, USER_DATA_TABLES } from "@/services/lgpd/data-manifest";
 
 /**
  * Serviços LGPD (Lei 13.709/2018) — direitos do titular dos dados:
@@ -160,87 +161,59 @@ export async function hasAcceptedCurrentTerms(): Promise<boolean> {
 export async function exportUserData(): Promise<Record<string, unknown> | null> {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+  return buildDataExport(ctx.profile.id, ctx.household.id);
+}
+
+/**
+ * Constrói o export COMPLETO (todas as tabelas do manifesto) pra um usuário +
+ * household. Reusado pelo self-service e pelo export admin/contador. Cobertura
+ * dirigida por manifesto = nenhuma tabela fica de fora silenciosamente.
+ */
+export async function buildDataExport(
+  userId: string,
+  householdId: string,
+): Promise<Record<string, unknown>> {
   const admin = createAdminClient();
-  const userId = ctx.profile.id;
-  const householdId = ctx.household.id;
+  // Cast solto pra iterar nomes de tabela dinâmicos.
+  const db = admin as unknown as {
+    from: (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: string) => Promise<{ data: unknown[] | null }>;
+      };
+    };
+  };
 
-  // Auth
   const { data: authData } = await admin.auth.admin.getUserById(userId);
+  const data: Record<string, unknown[]> = {};
 
-  // Tudo que pertence ao household OU foi criado pelo user
-  const [
-    profile,
-    household,
-    accounts,
-    transactions,
-    categories,
-    investments,
-    investmentMovements,
-    goals,
-    goalSources,
-    goalContributions,
-    recurringRules,
-    redemptionIntents,
-    consents,
-    dataRequests,
-  ] = await Promise.all([
-    admin.from("users").select("*").eq("id", userId).maybeSingle(),
-    admin.from("households").select("*").eq("id", householdId).maybeSingle(),
-    admin.from("accounts").select("*").eq("household_id", householdId),
-    admin.from("transactions").select("*").eq("household_id", householdId),
-    admin.from("categories").select("*").eq("household_id", householdId),
-    admin.from("investments").select("*").eq("household_id", householdId),
-    admin
-      .from("investment_movements")
-      .select("*, investment:investments!inner(household_id)")
-      .eq("investment.household_id", householdId),
-    admin.from("goals").select("*").eq("household_id", householdId),
-    admin
-      .from("goal_sources")
-      .select("*, goal:goals!inner(household_id)")
-      .eq("goal.household_id", householdId),
-    admin
-      .from("goal_contributions")
-      .select("*, goal:goals!inner(household_id)")
-      .eq("goal.household_id", householdId),
-    admin.from("recurring_rules").select("*").eq("household_id", householdId),
-    admin
-      .from("redemption_intents")
-      .select("*, rule:yield_rules!inner(household_id)")
-      .eq("rule.household_id", householdId),
-    admin.from("user_consents").select("*").eq("user_id", userId),
-    admin.from("data_access_requests").select("*").eq("user_id", userId),
-  ]);
+  // Household-scoped (inclui todas as tabelas de IR, bens, dívidas, etc.).
+  for (const table of HOUSEHOLD_DATA_TABLES) {
+    const res = await db.from(table).select("*").eq("household_id", householdId);
+    data[table] = res.data ?? [];
+  }
+  // User-scoped.
+  for (const table of USER_DATA_TABLES) {
+    const res = await db.from(table).select("*").eq("user_id", userId);
+    data[table] = res.data ?? [];
+  }
 
   return {
     exported_at: new Date().toISOString(),
     lgpd_notice:
       "Dados pessoais e do household exportados conforme Lei 13.709/2018 art. 18 V. " +
       "Mantenha esse arquivo em local seguro — contém informações financeiras sensíveis.",
+    coverage: {
+      household_tables: HOUSEHOLD_DATA_TABLES.length,
+      user_tables: USER_DATA_TABLES.length,
+      note: "Cobertura dirigida por services/lgpd/data-manifest.ts (fonte única).",
+    },
     user: {
       id: userId,
       email: authData.user?.email,
       created_at: authData.user?.created_at,
       last_sign_in_at: authData.user?.last_sign_in_at,
-      profile: profile.data,
     },
-    household: household.data,
-    data: {
-      accounts: accounts.data ?? [],
-      transactions: transactions.data ?? [],
-      categories: categories.data ?? [],
-      investments: investments.data ?? [],
-      investment_movements: investmentMovements.data ?? [],
-      goals: goals.data ?? [],
-      goal_sources: goalSources.data ?? [],
-      goal_contributions: goalContributions.data ?? [],
-      recurring_rules: recurringRules.data ?? [],
-      redemption_intents: redemptionIntents.data ?? [],
-    },
-    privacy: {
-      consents: consents.data ?? [],
-      data_access_requests: dataRequests.data ?? [],
-    },
+    data,
   };
 }
 
