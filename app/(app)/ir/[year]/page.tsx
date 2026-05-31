@@ -191,6 +191,13 @@ export default async function IRYearPage({
           verificar, tabela estimada. Nunca passam despercebidos. */}
       <IrWarningsBanner warnings={imposto.warnings} />
 
+      {/* Disclaimer persistente — estimativa, não substitui o programa oficial. */}
+      <p className="mb-5 text-[11.5px] leading-relaxed text-faint-foreground">
+        Estimativa automática a partir dos seus lançamentos — não substitui o
+        programa oficial da Receita nem a orientação de um contador. Confira com
+        seus informes antes de transmitir.
+      </p>
+
       {/* Switcher de declarante (só aparece pra casal) */}
       {isCouple ? (
         <div className="mb-5">
