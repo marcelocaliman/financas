@@ -390,6 +390,60 @@ export function tmplDarfDue(args: {
 }
 
 // ============================================================================
+// BILLING templates — dunning (pagamento pendente) e suspensão
+// ============================================================================
+
+export function tmplBillingPastDue(args: {
+  daysOverdue: number;
+  graceDays: number;
+}): { subject: string; body: string } {
+  const left = Math.max(0, args.graceDays - args.daysOverdue);
+  return {
+    subject: "Pagamento pendente — regularize pra manter o acesso",
+    body: wrapEmail({
+      preheader: `Seu pagamento falhou. Você tem ${left} dia(s) pra regularizar.`,
+      eyebrow: "Assinatura · pagamento",
+      content:
+        heading("Não conseguimos processar seu pagamento") +
+        lead(
+          `Tentamos cobrar sua assinatura e o pagamento não passou. Atualize a forma de pagamento pra não perder o acesso de edição. Seus dados continuam a salvo e exportáveis.`,
+        ) +
+        infoList([
+          { label: "Dias em atraso", value: String(args.daysOverdue) },
+          { label: "Prazo pra regularizar", value: `${left} dia(s)` },
+        ]) +
+        button("Atualizar pagamento", "https://nossasfinancas.com.br/configuracoes/billing") +
+        notice(
+          `Após ${args.graceDays} dias sem pagamento, a conta entra em modo somente-leitura até a regularização.`,
+          "warning",
+        ),
+      footerNote: "Você recebe este aviso enquanto o pagamento estiver pendente.",
+    }),
+  };
+}
+
+export function tmplBillingSuspended(): { subject: string; body: string } {
+  return {
+    subject: "Assinatura suspensa — modo somente-leitura",
+    body: wrapEmail({
+      preheader: "Sua conta está em somente-leitura até regularizar o pagamento.",
+      eyebrow: "Assinatura · suspensa",
+      content:
+        heading("Sua assinatura foi suspensa") +
+        lead(
+          `Como o pagamento ficou pendente além do prazo, sua conta entrou em modo somente-leitura. Você ainda acessa e exporta tudo — só não dá pra editar até regularizar.`,
+        ) +
+        button("Regularizar agora", "https://nossasfinancas.com.br/configuracoes/billing") +
+        notice(
+          `Nada foi apagado. Assim que o pagamento for confirmado, a edição volta na hora.`,
+          "info",
+        ),
+      footerNote: "Precisa de ajuda? Responda este e-mail.",
+    }),
+  };
+}
+
+// ============================================================================
 // AUTH templates — usados pelo Send Email Hook do Supabase
 // (POST /api/auth/email-hook intercepta os emails de auth e envia via Resend
 // com estes templates, no mesmo padrão visual dos outros emails do app)
