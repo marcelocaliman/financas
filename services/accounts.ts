@@ -6,7 +6,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
-import { getDisplayCurrency, getRateMap } from "@/services/currency";
+import { getDisplayCurrency, getRateMap, getRateMapAt } from "@/services/currency";
 import { getRecurrencesForecast } from "@/services/recurrences";
 import { getCurrentValueMap } from "@/services/quotes";
 import type { AccountType, Currency, Tables } from "@/types/database";
@@ -113,7 +113,9 @@ export async function getAccountsTotalsAt(atDateISO: string): Promise<AccountsTo
       .not("balance_applied_at", "is", null)
       .gt("date", atDateISO),
     getDisplayCurrency(),
-    getRateMap(),
+    // Valora o patrimônio histórico com a cotação DAQUELA data, não a mais
+    // recente — senão a variação cambial recente distorce o passado (FIN-13).
+    getRateMapAt(atDateISO),
   ]);
 
   // Acumula delta posterior por conta (em moeda nativa da conta)

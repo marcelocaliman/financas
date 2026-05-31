@@ -91,18 +91,45 @@ export async function GET(req: NextRequest) {
     }
 
     // ─── Contas ────────────────────────────────────────────────
+    // RECONSTRÓI o saldo de 31/12 (não o saldo live de 02/01): reverte as
+    // transações JÁ APLICADAS com data depois de 31/12 (FIN-14). Sem isso, o
+    // snapshot do ano-base incluiria movimentos de 01–02/jan.
+    const yearEndIso = `${yearToSnapshot}-12-31`;
     const { data: accounts } = await admin
       .from("accounts")
       .select("id, current_balance")
       .eq("household_id", h.id)
       .eq("is_active", true);
+    const { data: postYearTxs } = await admin
+      .from("transactions")
+      .select("account_id, kind, amount_account, transfer_direction")
+      .eq("household_id", h.id)
+      .eq("is_historical_ir_only", false)
+      .not("balance_applied_at", "is", null)
+      .gt("date", yearEndIso);
+    const deltaByAccount = new Map<string, number>();
+    for (const t of (postYearTxs ?? []) as Array<{
+      account_id: string;
+      kind: "income" | "expense" | "transfer";
+      amount_account: number;
+      transfer_direction: "in" | "out" | null;
+    }>) {
+      const amt = Number(t.amount_account ?? 0);
+      let delta = 0;
+      if (t.kind === "income") delta = amt;
+      else if (t.kind === "expense") delta = -amt;
+      else if (t.kind === "transfer") delta = t.transfer_direction === "in" ? amt : t.transfer_direction === "out" ? -amt : 0;
+      deltaByAccount.set(t.account_id, (deltaByAccount.get(t.account_id) ?? 0) + delta);
+    }
     if (accounts && accounts.length > 0) {
       const rows = accounts.map((a) => ({
         household_id: h.id,
         year: yearToSnapshot,
         account_id: a.id,
-        balance: Number(a.current_balance ?? 0),
-        notes: `Snapshot automático em ${now.toISOString().slice(0, 10)}`,
+        // saldo_31/12 = saldo_atual − deltas aplicados depois de 31/12
+        balance:
+          Math.round((Number(a.current_balance ?? 0) - (deltaByAccount.get(a.id) ?? 0)) * 100) / 100,
+        notes: `Snapshot reconstruído de ${yearEndIso}`,
       }));
       const { error } = await admin
         .from("ir_prior_year_balances")
