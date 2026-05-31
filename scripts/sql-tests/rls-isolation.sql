@@ -89,6 +89,23 @@ begin
 end $$;
 reset role;
 
+-- ===========================================================================
+-- TESTE E — invariante de tenancy: transação não pode referenciar conta de
+-- outro household, mesmo que o household_id da linha seja o "certo"
+-- ===========================================================================
+do $$
+declare v_blocked boolean := false;
+begin
+  begin
+    insert into transactions (household_id, account_id, kind, amount, amount_account, currency, description, date, created_by)
+      values ('aaaa2222-2222-2222-2222-222222222222', 'bbbb3333-3333-3333-3333-333333333333',
+              'expense', 10, 10, 'BRL', 'x', current_date, 'aaaa1111-1111-1111-1111-111111111111');
+  exception when others then v_blocked := true;
+  end;
+  assert v_blocked, 'TESTE E FALHOU (VAZAMENTO): aceitou conta de outro household na transação';
+  raise notice 'TESTE E ok — trigger barra account_id de outro household';
+end $$;
+
 do $$ begin raise notice '✅ TODOS OS TESTES DE ISOLAMENTO PASSARAM'; end $$;
 
 rollback;
