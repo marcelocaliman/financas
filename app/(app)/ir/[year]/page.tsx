@@ -16,6 +16,7 @@ import { RendimentosTabs } from "@/components/ir/rendimentos-tabs";
 import { RendaVariavelTable } from "@/components/ir/renda-variavel-table";
 import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { IrWarningsBanner } from "@/components/ir/ir-warnings-banner";
+import { IrSectionNav } from "@/components/ir/ir-section-nav";
 import { ExportActions } from "@/components/ir/export-actions";
 import { RecomputeDarfsButton } from "@/components/ir/recompute-darfs-button";
 import { CloseYearButton } from "@/components/ir/close-year-button";
@@ -215,6 +216,21 @@ export default async function IRYearPage({
         seus informes antes de transmitir.
       </p>
 
+      {/* Índice de seções (navega a declaração longa como se fossem abas). */}
+      <IrSectionNav
+        sections={[
+          { id: "resumo", label: "Resumo" },
+          { id: "bens", label: "Bens" },
+          { id: "rendimentos", label: "Rendimentos" },
+          { id: "renda-variavel", label: "Renda variável" },
+          { id: "carne-leao", label: "Carnê-leão" },
+          ...(exterior.byAsset.length > 0 || crypto.monthly.some((m) => m.grossSales > 0)
+            ? [{ id: "exterior-crypto", label: "Exterior/cripto" }]
+            : []),
+          { id: "imposto", label: "Imposto" },
+        ]}
+      />
+
       {/* Switcher de declarante (só aparece pra casal) */}
       {isCouple ? (
         <div className="mb-5">
@@ -248,7 +264,7 @@ export default async function IRYearPage({
       ) : null}
 
       {/* TIER 1 — KPIs gerais */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+      <div id="resumo" className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-4 scroll-mt-20">
         <KpiCard
           label="Total de bens"
           textValue={`R$ ${fmtBRL(totalAtivos)}`}
@@ -301,7 +317,7 @@ export default async function IRYearPage({
       </div>
 
       {/* TIER 2 — Bens e Direitos */}
-      <Panel id="bens" className="mb-5">
+      <Panel id="bens" className="mb-5 scroll-mt-20">
         <PanelHeader
           title={
             <span className="inline-flex items-center gap-2">
@@ -315,13 +331,13 @@ export default async function IRYearPage({
       </Panel>
 
       {/* TIER 3 — Rendimentos (3 tabs) */}
-      <Panel id="rendimentos" className="mb-5">
+      <Panel id="rendimentos" className="mb-5 scroll-mt-20">
         <PanelHeader title="Rendimentos" meta={`ano ${year}`} />
         <RendimentosTabs rendimentos={rendimentos} year={year} />
       </Panel>
 
       {/* TIER 4 — Renda Variável + DARFs */}
-      <Panel id="renda-variavel" className="mb-5">
+      <Panel id="renda-variavel" className="mb-5 scroll-mt-20">
         <PanelHeader
           title="Renda variável — apuração mensal e DARFs"
           meta={`${rv.swing.filter((m) => m.grossSales > 0).length + rv.dayTrade.filter((m) => m.grossSales > 0).length + rv.fii.filter((m) => m.grossSales > 0).length} meses com operações`}
@@ -363,7 +379,7 @@ export default async function IRYearPage({
       </Panel>
 
       {/* TIER 4.5 — Carnê-leão mensal */}
-      <Panel id="carne-leao" className="mb-5">
+      <Panel id="carne-leao" className="mb-5 scroll-mt-20">
         <PanelHeader
           title="Carnê-leão — aluguel, freelance, exterior"
           meta="DARF 0190 mensal, vence dia útil seguinte"
@@ -373,7 +389,7 @@ export default async function IRYearPage({
 
       {/* TIER 4.6 — Exterior + cripto */}
       {(exterior.byAsset.length > 0 || crypto.monthly.some((m) => m.grossSales > 0)) ? (
-        <Panel id="exterior-crypto" className="mb-5">
+        <Panel id="exterior-crypto" className="mb-5 scroll-mt-20">
           <PanelHeader
             title="Aplicações no exterior + cripto"
             meta="Lei 14.754/2023 — 15% sobre lucro anual"
@@ -451,7 +467,7 @@ export default async function IRYearPage({
       ) : null}
 
       {/* TIER 5 — Imposto devido (compare Simples vs Completo) */}
-      <Panel id="imposto" className="mb-5">
+      <Panel id="imposto" className="mb-5 scroll-mt-20">
         <PanelHeader
           title="Imposto a pagar / restituição"
           meta={`${numDependents} dependente${numDependents === 1 ? "" : "s"} · ${numDeductibles} pagamento${numDeductibles === 1 ? "" : "s"} dedutível${numDeductibles === 1 ? "" : "is"}`}
