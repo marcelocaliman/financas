@@ -320,7 +320,7 @@ export default async function DashboardPage({
 
       {/* Momento mágico: IRPF do ano se montando sozinho a partir dos lançamentos */}
       {isCurrent ? (
-        <div className="mt-5">
+        <div className="mt-5 mb-5">
           <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
         </div>
       ) : null}
