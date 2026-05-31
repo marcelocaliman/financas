@@ -38,10 +38,11 @@ export function ConsentBanner({
 
   return (
     <>
-      {/* Overlay com blur — cobre toda a página, sem bloquear o banner */}
+      {/* Overlay modal — BLOQUEIA interação com a página até aceitar (gate real,
+          não cosmético). Os links de termos abrem em nova aba. */}
       <div
         aria-hidden
-        className="fixed inset-0 z-40 bg-ink-950/40 backdrop-blur-md pointer-events-none"
+        className="fixed inset-0 z-40 bg-ink-950/40 backdrop-blur-md pointer-events-auto"
       />
       <div className="fixed bottom-0 inset-x-0 z-50 p-3 sm:p-4 pointer-events-none">
         <div className="max-w-[760px] mx-auto rounded-[var(--radius-lg)] bg-ink-950 text-white border border-ink-700 shadow-2xl p-5 sm:p-6 pointer-events-auto">

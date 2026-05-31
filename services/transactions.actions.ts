@@ -9,6 +9,7 @@ import { matchCategoryRule } from "@/services/category-rules";
 import { getRateMap } from "@/services/currency";
 import { convertOrSame } from "@/lib/financial/currency";
 import { assertWritable, EntitlementError } from "@/services/entitlements";
+import { assertConsent, ConsentRequiredError } from "@/services/lgpd";
 import type { Currency } from "@/types/database";
 
 const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
@@ -73,12 +74,15 @@ export async function createTransaction(
   _prev: TxFormState | undefined,
   formData: FormData,
 ): Promise<TxFormState> {
-  // Enforcement de billing: assinatura suspensa → somente-leitura (no-op com
-  // billing desligado). Padrão a estender pra demais mutações.
+  // Enforcement de billing (suspenso → leitura) + LGPD (termos não aceitos →
+  // bloqueia escrita). No-ops quando billing desligado / termos aceitos.
   try {
     await assertWritable();
+    await assertConsent();
   } catch (e) {
-    if (e instanceof EntitlementError) return { error: e.message };
+    if (e instanceof EntitlementError || e instanceof ConsentRequiredError) {
+      return { error: e.message };
+    }
     throw e;
   }
 

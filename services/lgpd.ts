@@ -154,6 +154,25 @@ export async function hasAcceptedCurrentTerms(): Promise<boolean> {
   );
 }
 
+/** Erro de consentimento — capturado pelas actions de escrita. */
+export class ConsentRequiredError extends Error {
+  constructor() {
+    super("Aceite os Termos e a Política de Privacidade atualizados pra continuar.");
+    this.name = "ConsentRequiredError";
+  }
+}
+
+/**
+ * Gate server-side de consentimento (defense-in-depth além do banner modal).
+ * Bloqueia ESCRITA enquanto os termos atuais não forem aceitos — a leitura e o
+ * export continuam liberados (direito do titular).
+ */
+export async function assertConsent(): Promise<void> {
+  if (!(await hasAcceptedCurrentTerms())) {
+    throw new ConsentRequiredError();
+  }
+}
+
 // ============================================================================
 // Data export (LGPD art. 18 V — portabilidade) — gera JSON com TODOS os dados
 // ============================================================================
