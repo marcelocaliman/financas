@@ -59,13 +59,6 @@ export function FilerPicker({
   labelPrefix?: string;
   showCommonOption?: boolean;
 }) {
-  // Caso solo — não há escolha pra fazer
-  if (filers.length <= 1) {
-    return filers[0] ? (
-      <input type="hidden" name="ownerFilerId" value={filers[0].id} />
-    ) : null;
-  }
-
   const primary = filers.find((f) => f.is_primary) ?? filers[0];
   const isCommunal = COMMUNAL_REGIMES.includes(regime);
   const allowCommon = showCommonOption && isCommunal;
@@ -75,12 +68,20 @@ export function FilerPicker({
   // Pra simplicidade na UI, derivamos do owner_filer_id atual.
   const initialChoice: string =
     defaultIsParticular
-      ? defaultOwnerFilerId ?? primary.id
+      ? defaultOwnerFilerId ?? primary?.id ?? ""
       : defaultOwnerFilerId ?? "common";
 
+  // Hooks SEMPRE no topo, antes de qualquer return (rules-of-hooks).
   const [choice, setChoice] = useState<string>(initialChoice);
   const [isParticular, setIsParticular] = useState<boolean>(!!defaultIsParticular);
   const [reason, setReason] = useState<ParticularReason | "">(defaultParticularReason ?? "");
+
+  // Caso solo — não há escolha pra fazer (depois dos hooks).
+  if (filers.length <= 1) {
+    return filers[0] ? (
+      <input type="hidden" name="ownerFilerId" value={filers[0].id} />
+    ) : null;
+  }
 
   // O valor "common" é apenas UI — no submit, mandamos owner=primary + particular=false
   const isCommon = choice === "common";
