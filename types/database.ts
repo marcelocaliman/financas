@@ -204,6 +204,9 @@ export interface Database {
           trial_ends_at: string | null;
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
+          subscription_cancel_at: string | null;
+          past_due_since: string | null;
+          subscription_manual_override: boolean;
           created_by: string | null;
           suspended_reason: string | null;
           suspended_at: string | null;
@@ -230,6 +233,9 @@ export interface Database {
           trial_ends_at?: string | null;
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
+          subscription_cancel_at?: string | null;
+          past_due_since?: string | null;
+          subscription_manual_override?: boolean;
           created_by?: string | null;
           suspended_reason?: string | null;
           suspended_at?: string | null;
@@ -1745,6 +1751,22 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["ir_deductible_payments"]["Insert"]>;
+        Relationships: [];
+      };
+      stripe_webhook_events: {
+        Row: {
+          id: string;
+          type: string;
+          processed_at: string;
+          payload_summary: Json | null;
+        };
+        Insert: {
+          id: string;
+          type: string;
+          processed_at?: string;
+          payload_summary?: Json | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["stripe_webhook_events"]["Insert"]>;
         Relationships: [];
       };
       ir_income_classifications: {

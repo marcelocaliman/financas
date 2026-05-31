@@ -52,6 +52,7 @@
     "recharts": "^3.8.1",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
+    "stripe": "^22.2.0",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },
