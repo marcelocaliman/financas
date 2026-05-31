@@ -46,70 +46,136 @@ export type MonthlyTaxTable = {
 export class IRTaxTableNotFoundError extends Error {
   constructor(kind: "annual" | "monthly", year: number) {
     super(
-      `Tabela IRPF ${kind === "annual" ? "anual" : "mensal"} do ano ${year} ` +
-        `não está cadastrada. Adicione um INSERT em ir_tax_table_${kind} ` +
-        `pra esse ano-base antes de calcular o imposto.`,
+      `Nenhuma tabela IRPF ${kind === "annual" ? "anual" : "mensal"} cadastrada ` +
+        `(nem pra ${year}, nem pra rollforward). Cadastre ao menos uma em ` +
+        `ir_tax_table_${kind} antes de calcular o imposto.`,
     );
     this.name = "IRTaxTableNotFoundError";
   }
 }
 
 /**
- * Busca a tabela anual do ano-base solicitado. Throw se não existir.
- * Cacheado por request (React `cache()`).
+ * Projeta uma tabela anual existente pra um ano sem tabela própria, marcando
+ * como ESTIMATIVA (decisão D do ROADMAP — nunca calcular calado pra ano sem
+ * tabela; rollforward + is_estimate=true + aviso bem visível). Puro/testável.
+ */
+export function rollforwardAnnual(
+  base: AnnualTaxTable,
+  targetYear: number,
+): AnnualTaxTable {
+  const dir = targetYear > base.year ? "projetada de" : "retroagida de";
+  return {
+    ...base,
+    year: targetYear,
+    isEstimate: true,
+    publishedAt: null,
+    source: `Estimativa (${dir} ${base.year})`,
+    notes:
+      `Sem tabela oficial do IRPF para ${targetYear}. Valores ${dir} ${base.year} ` +
+      `(${base.source}). Sujeito a ajuste quando a tabela oficial for publicada.`,
+  };
+}
+
+/** Rollforward da tabela mensal (carnê-leão). Mesma filosofia de estimativa. */
+export function rollforwardMonthly(
+  base: MonthlyTaxTable,
+  targetYear: number,
+): MonthlyTaxTable {
+  const dir = targetYear > base.year ? "projetada de" : "retroagida de";
+  return {
+    ...base,
+    year: targetYear,
+    isEstimate: true,
+    source: `Estimativa (${dir} ${base.year})`,
+    notes: `Sem tabela mensal oficial para ${targetYear}; valores ${dir} ${base.year}.`,
+  };
+}
+
+type RawAnnualRow = {
+  year: number;
+  brackets: TaxBracket[];
+  simples_pct: number;
+  simples_limit: number;
+  dependent_deduction: number;
+  education_limit_per_person: number;
+  source: string;
+  published_at: string | null;
+  is_estimate: boolean;
+  notes: string | null;
+};
+
+const ANNUAL_COLS =
+  "year, brackets, simples_pct, simples_limit, dependent_deduction, education_limit_per_person, source, published_at, is_estimate, notes";
+
+function rawToAnnual(d: RawAnnualRow): AnnualTaxTable {
+  return {
+    year: d.year,
+    brackets: parseBrackets(d.brackets, "annual", d.year),
+    simplesPct: Number(d.simples_pct),
+    simplesLimit: Number(d.simples_limit),
+    dependentDeduction: Number(d.dependent_deduction),
+    educationLimitPerPerson: Number(d.education_limit_per_person),
+    source: d.source,
+    publishedAt: d.published_at,
+    isEstimate: d.is_estimate,
+    notes: d.notes,
+  };
+}
+
+/**
+ * Busca a tabela anual do ano-base. Se o ano exato não existir, faz ROLLFORWARD
+ * da tabela mais próxima (preferindo a mais recente <= ano; senão a mais antiga
+ * >= ano), marcando como estimativa — nunca lança por "ano sem tabela", só
+ * lança se NÃO houver nenhuma tabela cadastrada. Cacheado por request.
  */
 export const getAnnualTaxTable = cache(
   async (year: number): Promise<AnnualTaxTable> => {
     const supabase = await createClient();
-    // Cast: tabela ir_tax_table_annual criada via migration 20260527040000
-    const { data } = await (
-      supabase as unknown as {
-        from: (t: string) => {
-          select: (s: string) => {
-            eq: (
-              c: string,
-              v: number,
-            ) => {
-              maybeSingle: () => Promise<{
-                data: {
-                  year: number;
-                  brackets: TaxBracket[];
-                  simples_pct: number;
-                  simples_limit: number;
-                  dependent_deduction: number;
-                  education_limit_per_person: number;
-                  source: string;
-                  published_at: string | null;
-                  is_estimate: boolean;
-                  notes: string | null;
-                } | null;
-              }>;
+    const db = supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: number) => {
+            maybeSingle: () => Promise<{ data: RawAnnualRow | null }>;
+          };
+          lte: (c: string, v: number) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => { maybeSingle: () => Promise<{ data: RawAnnualRow | null }> };
+            };
+          };
+          gte: (c: string, v: number) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => { maybeSingle: () => Promise<{ data: RawAnnualRow | null }> };
             };
           };
         };
-      }
-    )
-      .from("ir_tax_table_annual")
-      .select(
-        "year, brackets, simples_pct, simples_limit, dependent_deduction, education_limit_per_person, source, published_at, is_estimate, notes",
-      )
-      .eq("year", year)
-      .maybeSingle();
-
-    if (!data) throw new IRTaxTableNotFoundError("annual", year);
-
-    return {
-      year: data.year,
-      brackets: parseBrackets(data.brackets, "annual", year),
-      simplesPct: Number(data.simples_pct),
-      simplesLimit: Number(data.simples_limit),
-      dependentDeduction: Number(data.dependent_deduction),
-      educationLimitPerPerson: Number(data.education_limit_per_person),
-      source: data.source,
-      publishedAt: data.published_at,
-      isEstimate: data.is_estimate,
-      notes: data.notes,
+      };
     };
+
+    // 1) Ano exato.
+    const exact = await db.from("ir_tax_table_annual").select(ANNUAL_COLS).eq("year", year).maybeSingle();
+    if (exact.data) return rawToAnnual(exact.data);
+
+    // 2) Rollforward: tabela mais recente com ano <= solicitado.
+    const below = await db
+      .from("ir_tax_table_annual")
+      .select(ANNUAL_COLS)
+      .lte("year", year)
+      .order("year", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (below.data) return rollforwardAnnual(rawToAnnual(below.data), year);
+
+    // 3) Retroação: tabela mais antiga com ano >= solicitado.
+    const above = await db
+      .from("ir_tax_table_annual")
+      .select(ANNUAL_COLS)
+      .gte("year", year)
+      .order("year", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (above.data) return rollforwardAnnual(rawToAnnual(above.data), year);
+
+    throw new IRTaxTableNotFoundError("annual", year);
   },
 );
 
@@ -137,71 +203,95 @@ function parseBrackets(
   }));
 }
 
+type RawMonthlyRow = {
+  year: number;
+  effective_from_month: number;
+  brackets: TaxBracket[];
+  dependent_deduction: number;
+  source: string;
+  is_estimate: boolean;
+  notes: string | null;
+};
+
+const MONTHLY_COLS =
+  "year, effective_from_month, brackets, dependent_deduction, source, is_estimate, notes";
+
+function rawToMonthly(d: RawMonthlyRow): MonthlyTaxTable {
+  return {
+    year: d.year,
+    effectiveFromMonth: d.effective_from_month,
+    brackets: parseBrackets(d.brackets, "monthly", d.year),
+    dependentDeduction: Number(d.dependent_deduction),
+    source: d.source,
+    isEstimate: d.is_estimate,
+    notes: d.notes,
+  };
+}
+
 /**
- * Busca a tabela mensal vigente em (year, month). Retorna a tabela com
- * maior effective_from_month <= month do mesmo ano. Throw se não existir.
- * Cacheado por (year, month).
+ * Busca a tabela mensal vigente em (year, month) — maior effective_from_month
+ * <= month do ano. Se o ANO não tiver tabela, faz rollforward do ano mais
+ * próximo (estimativa). Só lança se não houver nenhuma tabela mensal.
  */
 export const getMonthlyTaxTable = cache(
   async (year: number, month: number): Promise<MonthlyTaxTable> => {
     const supabase = await createClient();
-    const { data } = await (
-      supabase as unknown as {
-        from: (t: string) => {
-          select: (s: string) => {
-            eq: (
-              c: string,
-              v: number,
-            ) => {
-              lte: (
-                c: string,
-                v: number,
-              ) => {
-                order: (
-                  c: string,
-                  o: object,
-                ) => {
-                  limit: (n: number) => {
-                    maybeSingle: () => Promise<{
-                      data: {
-                        year: number;
-                        effective_from_month: number;
-                        brackets: TaxBracket[];
-                        dependent_deduction: number;
-                        source: string;
-                        is_estimate: boolean;
-                        notes: string | null;
-                      } | null;
-                    }>;
-                  };
-                };
+    const db = supabase as unknown as {
+      from: (t: string) => {
+        select: (s: string) => {
+          eq: (c: string, v: number) => {
+            lte: (c: string, v: number) => {
+              order: (c: string, o: object) => {
+                limit: (n: number) => { maybeSingle: () => Promise<{ data: RawMonthlyRow | null }> };
               };
             };
           };
+          lte: (c: string, v: number) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => { maybeSingle: () => Promise<{ data: RawMonthlyRow | null }> };
+            };
+          };
+          gte: (c: string, v: number) => {
+            order: (c: string, o: object) => {
+              limit: (n: number) => { maybeSingle: () => Promise<{ data: RawMonthlyRow | null }> };
+            };
+          };
         };
-      }
-    )
+      };
+    };
+
+    // 1) Ano exato — tabela vigente no mês.
+    const exact = await db
       .from("ir_tax_table_monthly")
-      .select(
-        "year, effective_from_month, brackets, dependent_deduction, source, is_estimate, notes",
-      )
+      .select(MONTHLY_COLS)
       .eq("year", year)
       .lte("effective_from_month", month)
       .order("effective_from_month", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (exact.data) return rawToMonthly(exact.data);
 
-    if (!data) throw new IRTaxTableNotFoundError("monthly", year);
+    // 2) Rollforward: ano <= solicitado (pega a competência mais recente dele).
+    const below = await db
+      .from("ir_tax_table_monthly")
+      .select(MONTHLY_COLS)
+      .lte("year", year)
+      .order("year", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (below.data) return rollforwardMonthly(rawToMonthly(below.data), year);
 
-    return {
-      year: data.year,
-      effectiveFromMonth: data.effective_from_month,
-      brackets: parseBrackets(data.brackets, "monthly", year),
-      dependentDeduction: Number(data.dependent_deduction),
-      source: data.source,
-      isEstimate: data.is_estimate,
-      notes: data.notes,
-    };
+    // 3) Retroação: ano >= solicitado.
+    const above = await db
+      .from("ir_tax_table_monthly")
+      .select(MONTHLY_COLS)
+      .gte("year", year)
+      .order("year", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (above.data) return rollforwardMonthly(rawToMonthly(above.data), year);
+
+    throw new IRTaxTableNotFoundError("monthly", year);
   },
 );
 
