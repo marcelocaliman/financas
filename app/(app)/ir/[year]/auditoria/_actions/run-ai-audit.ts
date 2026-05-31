@@ -3,6 +3,8 @@
 import { runTaxAudit, type AuditAiResult } from "@/services/ai/tax-audit";
 import { getCurrentUserContext } from "@/services/auth";
 import { recordSystemAlert } from "@/services/system-alerts";
+import { enforceAiQuota } from "@/lib/ai-quota";
+import { EntitlementError } from "@/services/entitlements";
 
 export type RunAiAuditState =
   | { ok: true; result: AuditAiResult; costCents: number }
@@ -12,6 +14,12 @@ export async function runAiAudit(year: number): Promise<RunAiAuditState> {
   const ctx = await getCurrentUserContext();
   if (!ctx) return { ok: false, error: "Sessão expirada." };
   if (!Number.isFinite(year) || year < 2000) return { ok: false, error: "Ano inválido." };
+  try {
+    await enforceAiQuota("run-ai-audit");
+  } catch (e) {
+    if (e instanceof EntitlementError) return { ok: false, error: e.message };
+    throw e;
+  }
 
   const res = await runTaxAudit(year);
   if (!res.ok) {

@@ -12,6 +12,8 @@ import {
 } from "@/services/inbox/document-uploads";
 import { extractDocument } from "@/services/inbox/extract-document";
 import { isOpenAIConfigured } from "@/lib/openai/client";
+import { enforceAiQuota } from "@/lib/ai-quota";
+import { EntitlementError } from "@/services/entitlements";
 import type { DocumentType } from "@/services/inbox/document-types";
 
 const VALID_TYPES: DocumentType[] = [
@@ -45,6 +47,12 @@ export async function uploadAndExtractAction(
 
   const ctx = await getCurrentUserContext();
   if (!ctx) return { error: "Sessão expirada." };
+  try {
+    await enforceAiQuota("inbox-upload");
+  } catch (e) {
+    if (e instanceof EntitlementError) return { error: e.message };
+    throw e;
+  }
 
   const file = formData.get("file");
   if (!(file instanceof File)) {

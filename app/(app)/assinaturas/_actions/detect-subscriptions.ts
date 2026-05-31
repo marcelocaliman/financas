@@ -9,6 +9,8 @@ import {
 } from "@/services/ai/subscription-detector";
 import { getCurrentUserContext } from "@/services/auth";
 import { recordSystemAlert } from "@/services/system-alerts";
+import { enforceAiQuota } from "@/lib/ai-quota";
+import { EntitlementError } from "@/services/entitlements";
 
 export type DetectSubscriptionsState =
   | { ok: true; result: DetectionResult; costCents: number }
@@ -21,6 +23,12 @@ export type DetectSubscriptionsState =
 export async function runDetectSubscriptions(): Promise<DetectSubscriptionsState> {
   const ctx = await getCurrentUserContext();
   if (!ctx) return { ok: false, error: "Sessão expirada." };
+  try {
+    await enforceAiQuota("detect-subscriptions");
+  } catch (e) {
+    if (e instanceof EntitlementError) return { ok: false, error: e.message };
+    throw e;
+  }
 
   const res = await detectSubscriptions();
   if (!res.ok) {
