@@ -8,6 +8,7 @@ import {
   calcProgressiveTax as calcFromTable,
   getAnnualTaxTable,
 } from "@/services/ir/ir-tax-tables";
+import { assembleImposto } from "@/services/ir/tax-math";
 import type { IrWarning } from "@/services/ir/warnings";
 import type { Currency, Tables } from "@/types/database";
 
@@ -115,7 +116,6 @@ export async function computeImposto(
   const baseTributavelBruta = rendimentos.tributaveis.total;
   const inssAndOfficial = rendimentos.tributaveis.totalInss;
   const numDependents = (deps ?? []).length + Math.max(0, extraDependents);
-  const dependentsDeduction = numDependents * taxTable.dependentDeduction;
 
   // Categorizar pagamentos dedutíveis
   let educacao = 0;
@@ -167,45 +167,6 @@ export async function computeImposto(
     }
   }
 
-  // ============================================================
-  // Modelo COMPLETO — soma deduções dedutíveis e aplica tabela
-  // ============================================================
-  const educacaoLimit = Math.max(1, eduPeople) * taxTable.educationLimitPerPerson;
-  const educacaoLimitApplied = Math.min(educacao, educacaoLimit);
-
-  // PGBL: limite 12% da renda tributável
-  const pgblLimit = baseTributavelBruta * 0.12;
-  const pgblLimitApplied = Math.min(pgblPrev, pgblLimit);
-
-  const totalDeducoes =
-    (inssAndOfficial + inssFromPay) +
-    dependentsDeduction +
-    educacaoLimitApplied +
-    saude +
-    pgblLimitApplied +
-    pensao +
-    outros;
-
-  const baseCompleto = Math.max(0, baseTributavelBruta - totalDeducoes);
-  const grossTaxCompletoBefore = calcFromTable(baseCompleto, taxTable.brackets);
-  // Doações: até 6% do imposto devido (calculado ANTES da doação)
-  const donationLimit = grossTaxCompletoBefore * 0.06;
-  const donationsApplied = Math.min(donations, donationLimit);
-  const grossTaxCompletoAfterDon = Math.max(0, grossTaxCompletoBefore - donationsApplied);
-  // Redutor da Lei 15.270/2025 (a partir de 2026): zera imposto até R$ 60k/ano
-  // anuais e decai linear até R$ 88.200/ano.
-  const redutorCompleto = computeRedutorAnual(year, baseTributavelBruta, grossTaxCompletoAfterDon);
-  const grossTaxCompleto = Math.max(0, grossTaxCompletoAfterDon - redutorCompleto);
-
-  // ============================================================
-  // Modelo SIMPLES — 20% até o limite, sem deduções
-  // ============================================================
-  const descontoPadrao = Math.min(baseTributavelBruta * taxTable.simplesPct, taxTable.simplesLimit);
-  const baseSimples = Math.max(0, baseTributavelBruta - descontoPadrao);
-  const grossTaxSimplesBefore = calcFromTable(baseSimples, taxTable.brackets);
-  const redutorSimples = computeRedutorAnual(year, baseTributavelBruta, grossTaxSimplesBefore);
-  const grossTaxSimples = Math.max(0, grossTaxSimplesBefore - redutorSimples);
-
   const irrfRetained = rendimentos.tributaveis.totalIrrf;
 
   // Carnê-leão (DARF 0190) é antecipação do imposto anual — creditado igual ao
@@ -217,12 +178,17 @@ export async function computeImposto(
     ? 0
     : (await getCarneLeaoSummary(year, householdId)).totalPaid;
 
-  const netDueCompleto = grossTaxCompleto - irrfRetained - carneLeaoCredit;
-  const netDueSimples = grossTaxSimples - irrfRetained - carneLeaoCredit;
-
-  const recommendation: "simples" | "completo" =
-    netDueCompleto <= netDueSimples ? "completo" : "simples";
-  const savings = Math.abs(netDueCompleto - netDueSimples);
+  // Núcleo PURO do cálculo (Simples vs Completo + redutor + créditos).
+  const math = assembleImposto({
+    year,
+    baseTributavelBruta,
+    inssAndOfficial,
+    numDependents,
+    deductions: { educacao, eduPeople, saude, pgblPrev, pensao, outros, donations, inssFromPay },
+    irrfRetained,
+    carneLeaoCredit,
+    taxTable,
+  });
 
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -242,71 +208,37 @@ export async function computeImposto(
     taxTableIsEstimate: taxTable.isEstimate,
     baseTributavelBruta: round2(baseTributavelBruta),
     inssAndOfficial: round2(inssAndOfficial + inssFromPay),
-    dependentsDeduction: round2(dependentsDeduction),
+    dependentsDeduction: round2(math.dependentsDeduction),
     numDependents,
     dependentDeductionPerDep: round2(taxTable.dependentDeduction),
     simplesLimit: round2(taxTable.simplesLimit),
     completo: {
       educacao: round2(educacao),
-      educacaoLimitApplied: round2(educacaoLimitApplied),
+      educacaoLimitApplied: round2(math.completo.educacaoLimitApplied),
       saude: round2(saude),
       pgblPrev: round2(pgblPrev),
-      pgblLimitApplied: round2(pgblLimitApplied),
+      pgblLimitApplied: round2(math.completo.pgblLimitApplied),
       pensaoAlimenticia: round2(pensao),
       outros: round2(outros),
       donations: round2(donations),
-      donationsLimit: round2(donationLimit),
-      donationsApplied: round2(donationsApplied),
-      totalDeducoes: round2(totalDeducoes),
-      base: round2(baseCompleto),
-      grossTax: round2(grossTaxCompleto),
+      donationsLimit: round2(math.completo.donationsLimit),
+      donationsApplied: round2(math.completo.donationsApplied),
+      totalDeducoes: round2(math.completo.totalDeducoes),
+      base: round2(math.completo.base),
+      grossTax: round2(math.completo.grossTax),
       irrfRetained: round2(irrfRetained),
-      netDue: round2(netDueCompleto),
+      netDue: round2(math.completo.netDue),
     },
     simples: {
-      descontoPadrao: round2(descontoPadrao),
-      base: round2(baseSimples),
-      grossTax: round2(grossTaxSimples),
+      descontoPadrao: round2(math.simples.descontoPadrao),
+      base: round2(math.simples.base),
+      grossTax: round2(math.simples.grossTax),
       irrfRetained: round2(irrfRetained),
-      netDue: round2(netDueSimples),
+      netDue: round2(math.simples.netDue),
     },
-    recommendation,
-    savings: round2(savings),
+    recommendation: math.recommendation,
+    savings: round2(math.savings),
     naoClassificadosTotal: round2(rendimentos.naoClassificados.total),
     warnings,
   };
-}
-
-/**
- * Redutor anual instituído pela Lei 15.270/2025 (vigor a partir de
- * ano-calendário 2026).
- *
- * Lógica:
- *   - Renda anual ≤ R$ 60.000: redutor zera o imposto (limitado ao bruto).
- *   - R$ 60.000 < renda ≤ R$ 88.200: redutor decai linearmente até zero
- *     (proporcional ao quanto a renda excede R$ 60k em relação a R$ 28,2k
- *     de zona de transição).
- *   - Renda > R$ 88.200: redutor = 0.
- *
- * Sempre limitado a 0 ≤ redutor ≤ imposto_bruto (não gera crédito).
- *
- * @param year ano-base (só aplica a partir de 2026)
- * @param rendaAnualBruta rendimento tributável anual antes das deduções
- * @param impostoBruto imposto calculado pela tabela progressiva
- */
-function computeRedutorAnual(
-  year: number,
-  rendaAnualBruta: number,
-  impostoBruto: number,
-): number {
-  if (year < 2026) return 0;
-  if (rendaAnualBruta <= 60_000) {
-    return impostoBruto; // zera tudo
-  }
-  if (rendaAnualBruta >= 88_200) return 0;
-  // Decaimento linear entre 60k e 88.200 — proporcional ao quanto sobrou
-  // da zona de transição. Limitado ao imposto bruto.
-  const fracao = (88_200 - rendaAnualBruta) / (88_200 - 60_000);
-  const redutorMax = impostoBruto * fracao;
-  return Math.max(0, Math.min(redutorMax, impostoBruto));
 }
