@@ -88,10 +88,14 @@ export async function updateSubscription(
     subscription_status?: "active" | "trialing" | "past_due" | "cancelled" | "suspended";
     subscription_renews_at?: string | null;
     trial_ends_at?: string | null;
+    subscription_manual_override?: boolean;
   };
   const update: HouseholdUpdate = {};
   if (patch.tier && tierEnum.safeParse(patch.tier).success) {
     update.subscription_tier = patch.tier;
+    // Override manual (ex.: lifetime comp): o webhook do Stripe e o cron de
+    // dunning passam a IGNORAR este household pra não sobrescrever a concessão.
+    update.subscription_manual_override = true;
   }
   if (patch.status && statusEnum.safeParse(patch.status).success) {
     update.subscription_status = patch.status;
