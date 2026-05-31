@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { signUp, type SignupState } from "./actions";
+import { TurnstileWidget } from "@/components/auth/turnstile-widget";
 
 /**
  * Form de cadastro com dois modos:
@@ -140,6 +141,7 @@ export function SignupForm({
           placeholder="Mínimo 8 caracteres"
         />
       </div>
+      <TurnstileWidget />
       {state?.error ? (
         <p className="text-[12.5px] text-rust-600">{state.error}</p>
       ) : null}

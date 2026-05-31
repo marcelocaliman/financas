@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { env } from "@/lib/env";
+import { rateLimit, ipKey } from "@/lib/rate-limit";
+import { verifyCaptcha } from "@/lib/captcha";
 
 const baseSchema = z.object({
   displayName: z.string().min(1, "Como podemos te chamar?"),
@@ -44,6 +48,20 @@ export async function signUp(
   _prev: SignupState | undefined,
   formData: FormData,
 ): Promise<SignupState> {
+  // Anti-abuso: rate-limit por IP + captcha (ambos no-op se não configurados).
+  if (env.AUTH_RATELIMIT_DISABLED !== true) {
+    const h = await headers();
+    const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "unknown";
+    const rl = await rateLimit({ key: ipKey("signup", ip), limit: 10, windowSeconds: 3600 });
+    if (!rl.allowed) {
+      return { error: "Muitas tentativas de cadastro. Tente de novo em uma hora." };
+    }
+    const captchaOk = await verifyCaptcha(formData.get("captchaToken") as string | null, ip);
+    if (!captchaOk) {
+      return { error: "Verificação de segurança falhou. Recarregue e tente de novo." };
+    }
+  }
+
   const rawMode = formData.get("mode");
   const mode =
     rawMode === "join"
