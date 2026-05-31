@@ -10,10 +10,11 @@
 begin;
 
 -- ---- Fixtures (como superuser, RLS bypassada) ----
-insert into auth.users (id) values
-  ('aaaa1111-1111-1111-1111-111111111111'),  -- userA
-  ('bbbb1111-1111-1111-1111-111111111111'),  -- userB
-  ('cccc1111-1111-1111-1111-111111111111');  -- admin
+-- signup_mode='join' faz o trigger de auto-cura PULAR (criamos os perfis à mão).
+insert into auth.users (id, raw_user_meta_data) values
+  ('aaaa1111-1111-1111-1111-111111111111', '{"signup_mode":"join"}'::jsonb),  -- userA
+  ('bbbb1111-1111-1111-1111-111111111111', '{"signup_mode":"join"}'::jsonb),  -- userB
+  ('cccc1111-1111-1111-1111-111111111111', '{"signup_mode":"join"}'::jsonb);  -- admin
 insert into households (id, name) values
   ('aaaa2222-2222-2222-2222-222222222222', 'HH_A'),
   ('bbbb2222-2222-2222-2222-222222222222', 'HH_B');

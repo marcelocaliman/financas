@@ -19,7 +19,9 @@ begin;
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
 
 -- ---- Fixtures ----
-insert into auth.users (id) values ('11111111-1111-1111-1111-111111111111');
+-- signup_mode='join' faz o trigger de auto-cura PULAR (criamos o perfil à mão).
+insert into auth.users (id, raw_user_meta_data)
+  values ('11111111-1111-1111-1111-111111111111', '{"signup_mode":"join"}'::jsonb);
 insert into households (id, name) values ('22222222-2222-2222-2222-222222222222', 'TEST_HH');
 insert into users (id, household_id, display_name)
   values ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'Tester');
