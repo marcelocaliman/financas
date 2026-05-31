@@ -10,7 +10,8 @@ import {
   getPhysicalAssetsTotals,
   listPhysicalAssets,
 } from "@/services/physical-assets";
-import { getPortfolioState } from "@/services/portfolio-state";
+import { getPatrimonioTotal } from "@/services/patrimonio-total";
+import { NetWorthHero } from "@/components/patrimonio/net-worth-hero";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import type { PhysicalAssetCategory } from "@/types/database";
 import { formatPercent } from "@/lib/utils/format";
@@ -18,11 +19,10 @@ import { formatPercent } from "@/lib/utils/format";
 export const dynamic = "force-dynamic";
 
 export default async function PatrimonioPage() {
-  const currentYear = new Date().getFullYear();
-  const [assets, totals, portfolioState, filers, regimeCtx] = await Promise.all([
+  const [assets, totals, patrimonioTotal, filers, regimeCtx] = await Promise.all([
     listPhysicalAssets({ includeArchived: true }),
     getPhysicalAssetsTotals(),
-    getPortfolioState(currentYear),
+    getPatrimonioTotal(),
     listFilers(),
     getRegimeContext(),
   ]);
@@ -31,8 +31,8 @@ export default async function PatrimonioPage() {
   const active = assets.filter((a) => a.is_active);
   const archived = assets.filter((a) => !a.is_active);
 
-  const netWorth = portfolioState.totalsNet.today;
-  const sharePct = netWorth > 0 ? totals.total / netWorth : 0;
+  // Participação dos bens no patrimônio BRUTO (fonte única).
+  const sharePct = patrimonioTotal.bruto > 0 ? totals.total / patrimonioTotal.bruto : 0;
 
   // Categorias com pelo menos 1 ativo, em ordem do total decrescente
   const categoriesOrdered = (Object.entries(totals.byCategory) as Array<
@@ -58,15 +58,22 @@ export default async function PatrimonioPage() {
   return (
     <>
       <PageHeader
-        eyebrow={`Imobilizado · ${totals.count} ${totals.count === 1 ? "bem" : "bens"}`}
+        eyebrow="Patrimônio"
         title={
           <>
-            O que você <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">possui.</em>
+            Tudo o que você <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">tem.</em>
           </>
         }
-        subtitle="Apartamento, carro, moto, computador, obras, joias. Bens que têm valor mas não rendem automaticamente — entram só no patrimônio total."
+        subtitle="Seu patrimônio líquido total e o detalhe dos bens imobilizados."
         actions={<NewPhysicalAssetButton filers={filers} regime={regime} />}
       />
+
+      {/* Fonte única do patrimônio total (contas + carteira + bens − dívidas). */}
+      <NetWorthHero total={patrimonioTotal} />
+
+      <Eyebrow className="mb-3 mt-1">
+        Bens imobilizados · {totals.count} {totals.count === 1 ? "bem" : "bens"}
+      </Eyebrow>
 
       {active.length === 0 ? (
         <EmptyState />

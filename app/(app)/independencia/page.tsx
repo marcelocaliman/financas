@@ -6,9 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Money } from "@/components/ui/money";
 import { getFirePreferences } from "@/services/fire";
 import { getCurrentUserContext } from "@/services/auth";
-import { getAccountsTotals } from "@/services/accounts";
-import { getCoverage, getPortfolioStats } from "@/services/investments";
-import { getPhysicalAssetsTotals } from "@/services/physical-assets";
+import { getCoverage } from "@/services/investments";
+import { getPatrimonioTotal } from "@/services/patrimonio-total";
 import { getMonthlyHistory } from "@/services/transactions";
 import {
   computeAge,
@@ -29,22 +28,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 export const dynamic = "force-dynamic";
 
 export default async function IndependenciaPage() {
-  const [ctx, prefs, accountsTotals, portfolio, physical, coverage, history6] =
-    await Promise.all([
-      getCurrentUserContext(),
-      getFirePreferences(),
-      getAccountsTotals(),
-      getPortfolioStats(),
-      getPhysicalAssetsTotals(),
-      getCoverage(),
-      getMonthlyHistory(6),
-    ]);
+  const [ctx, prefs, patrimonio, coverage, history6] = await Promise.all([
+    getCurrentUserContext(),
+    getFirePreferences(),
+    getPatrimonioTotal(),
+    getCoverage(),
+    getMonthlyHistory(6),
+  ]);
 
   if (!ctx || !prefs) return null;
 
-  // Patrimônio líquido
-  const netWorth =
-    accountsTotals.liquidExcludingInvestmentCash + portfolio.total + physical.total;
+  // Patrimônio líquido — fonte única (contas + carteira + bens − dívidas).
+  const netWorth = patrimonio.liquido;
 
   // Empty state: usuário novo sem dados FIRE configurados
   const isFireUnconfigured =
