@@ -27,6 +27,8 @@ export type AnnualTaxTable = {
   simplesLimit: number;
   dependentDeduction: number;
   educationLimitPerPerson: number;
+  /** Parcela mensal isenta de aposentadoria 65+ (anual = ×13). */
+  elderlyMonthlyExemption: number;
   source: string;
   publishedAt: string | null;
   isEstimate: boolean;
@@ -98,6 +100,7 @@ type RawAnnualRow = {
   simples_limit: number;
   dependent_deduction: number;
   education_limit_per_person: number;
+  elderly_monthly_exemption: number;
   source: string;
   published_at: string | null;
   is_estimate: boolean;
@@ -105,7 +108,7 @@ type RawAnnualRow = {
 };
 
 const ANNUAL_COLS =
-  "year, brackets, simples_pct, simples_limit, dependent_deduction, education_limit_per_person, source, published_at, is_estimate, notes";
+  "year, brackets, simples_pct, simples_limit, dependent_deduction, education_limit_per_person, elderly_monthly_exemption, source, published_at, is_estimate, notes";
 
 function rawToAnnual(d: RawAnnualRow): AnnualTaxTable {
   return {
@@ -115,6 +118,7 @@ function rawToAnnual(d: RawAnnualRow): AnnualTaxTable {
     simplesLimit: Number(d.simples_limit),
     dependentDeduction: Number(d.dependent_deduction),
     educationLimitPerPerson: Number(d.education_limit_per_person),
+    elderlyMonthlyExemption: Number(d.elderly_monthly_exemption ?? 1903.98),
     source: d.source,
     publishedAt: d.published_at,
     isEstimate: d.is_estimate,
@@ -329,40 +333,14 @@ export const listAnnualTaxTables = cache(async (): Promise<AnnualTaxTable[]> => 
     supabase as unknown as {
       from: (t: string) => {
         select: (s: string) => {
-          order: (c: string, o: object) => Promise<{
-            data: Array<{
-              year: number;
-              brackets: TaxBracket[];
-              simples_pct: number;
-              simples_limit: number;
-              dependent_deduction: number;
-              education_limit_per_person: number;
-              source: string;
-              published_at: string | null;
-              is_estimate: boolean;
-              notes: string | null;
-            }> | null;
-          }>;
+          order: (c: string, o: object) => Promise<{ data: RawAnnualRow[] | null }>;
         };
       };
     }
   )
     .from("ir_tax_table_annual")
-    .select(
-      "year, brackets, simples_pct, simples_limit, dependent_deduction, education_limit_per_person, source, published_at, is_estimate, notes",
-    )
+    .select(ANNUAL_COLS)
     .order("year", { ascending: false });
 
-  return (data ?? []).map((d) => ({
-    year: d.year,
-    brackets: parseBrackets(d.brackets, "annual", d.year),
-    simplesPct: Number(d.simples_pct),
-    simplesLimit: Number(d.simples_limit),
-    dependentDeduction: Number(d.dependent_deduction),
-    educationLimitPerPerson: Number(d.education_limit_per_person),
-    source: d.source,
-    publishedAt: d.published_at,
-    isEstimate: d.is_estimate,
-    notes: d.notes,
-  }));
+  return (data ?? []).map(rawToAnnual);
 });

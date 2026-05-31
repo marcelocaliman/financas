@@ -20,6 +20,7 @@ import type { Tables, IROtherIncomeCategory } from "@/types/database";
 const CATEGORIES: { value: IROtherIncomeCategory; label: string; help: string }[] = [
   { value: "tributavel_pj", label: "Tributável PJ", help: "Salário, pró-labore, aposentadoria PJ" },
   { value: "tributavel_pf", label: "Tributável PF (carnê-leão)", help: "Aluguel recebido, pensão" },
+  { value: "aposentadoria_pensao", label: "Aposentadoria/Pensão", help: "Isenção 65+ / moléstia grave aplicada automaticamente" },
   { value: "isento", label: "Isento", help: "LCI externo, dividendos, ganhos isentos" },
   { value: "exclusivo_fonte", label: "Exclusivo na fonte", help: "13º, PLR, JCP" },
   { value: "rendimento_acumulado", label: "RRA (rendimento acumulado)", help: "Ações trabalhistas, etc." },

@@ -3,6 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
 import { classifyIncomeTx } from "@/services/ir/classify-income";
+import { isAposentadoriaCategory } from "@/services/ir/income-aliases";
+import {
+  splitAposentadoriaExemption,
+  type FilerExemptionProfile,
+} from "@/services/ir/exencoes";
+import { getAnnualTaxTable } from "@/services/ir/ir-tax-tables";
 import type { IrWarning } from "@/services/ir/warnings";
 import type { Currency, Tables } from "@/types/database";
 
@@ -135,20 +141,63 @@ export async function getRendimentosReport(
         })()
       : null;
 
+  // Perfis dos declarantes (idade + moléstia grave) pra isenção de
+  // aposentadoria/pensão; e a parcela isenta vigente no ano.
+  const filersQuery = householdId
+    ? supabase
+        .from("ir_filers")
+        .select("id, birth_date, has_serious_illness")
+        .eq("household_id", householdId)
+    : supabase.from("ir_filers").select("id, birth_date, has_serious_illness");
+
   const [
     { data: txs },
     { data: yields },
     { data: dividendMovements },
     { data: others },
     carneLeaoRes,
+    { data: filers },
+    annualTable,
   ] = await Promise.all([
     householdId ? scopedTx.eq("household_id", householdId) : scopedTx,
     householdId ? scopedYields.eq("household_id", householdId) : scopedYields,
     householdId ? scopedDiv.eq("household_id", householdId) : scopedDiv,
     householdId ? scopedOthers.eq("household_id", householdId) : scopedOthers,
     carneLeaoQuery ?? Promise.resolve({ data: null }),
+    filersQuery,
+    getAnnualTaxTable(year),
   ]);
   const carneLeaoRows = (carneLeaoRes as { data: Array<{ description: string; gross_amount: number; deductible_expenses: number | null }> | null }).data;
+
+  // Mapa filerId → perfil de isenção.
+  const filerProfiles = new Map<string, FilerExemptionProfile>();
+  for (const f of (filers ?? []) as Array<{ id: string; birth_date: string | null; has_serious_illness: boolean }>) {
+    filerProfiles.set(f.id, {
+      birthDate: f.birth_date,
+      hasSeriousIllness: Boolean(f.has_serious_illness),
+    });
+  }
+  const elderlyMonthly = annualTable.elderlyMonthlyExemption;
+
+  // Aposentadoria/pensão acumulada por declarante — a isenção 65+/moléstia é
+  // por pessoa e tem teto anual, então acumulamos e aplicamos no fim.
+  const aposentadoriaByFiler = new Map<
+    string,
+    { gross: number; irrf: number; inss: number; filerId: string | null }
+  >();
+  const addAposentadoria = (
+    filerId: string | null,
+    gross: number,
+    irrf: number,
+    inss: number,
+  ) => {
+    const key = filerId ?? "__none__";
+    const e = aposentadoriaByFiler.get(key) ?? { gross: 0, irrf: 0, inss: 0, filerId };
+    e.gross += gross;
+    e.irrf += irrf;
+    e.inss += inss;
+    aposentadoriaByFiler.set(key, e);
+  };
 
   const tributaveis: RendimentoRow[] = [];
   const isentos: RendimentoRow[] = [];
@@ -165,7 +214,10 @@ export async function getRendimentosReport(
     irrf_amount: number | null;
     inss_amount: number | null;
     category: { name: string } | { name: string }[] | null;
-    account: { currency: Currency; institution: string } | { currency: Currency; institution: string }[] | null;
+    account:
+      | { currency: Currency; institution: string; owner_filer_id: string | null }
+      | { currency: Currency; institution: string; owner_filer_id: string | null }[]
+      | null;
     fonte:
       | { id: string; type: string; name: string; cnpj: string | null; cpf: string | null }
       | { id: string; type: string; name: string; cnpj: string | null; cpf: string | null }[]
@@ -187,6 +239,13 @@ export async function getRendimentosReport(
     const irrf = convertOrSame(Number(t.irrf_amount ?? 0), c, "BRL", rates);
     const inss = convertOrSame(Number(t.inss_amount ?? 0), c, "BRL", rates);
     const catName = (cat?.name ?? "").toLowerCase();
+
+    // Aposentadoria/pensão é interceptada ANTES da agregação: a isenção 65+/
+    // moléstia é por declarante e tem teto anual, processada à parte.
+    if (isAposentadoriaCategory(catName)) {
+      addAposentadoria(acc?.owner_filer_id ?? null, amt, irrf, inss);
+      continue;
+    }
 
     // Heurística: distribuição de lucros de PJ própria do usuário → isento
     // Detectado quando: fonte é pj_propria E (descrição menciona "distribui*"
@@ -364,12 +423,21 @@ export async function getRendimentosReport(
   }
 
   // ---- MANUAL (ir_other_incomes) ----
-  for (const o of (others ?? []) as Tables<"ir_other_incomes">[]) {
+  for (const o of (others ?? []) as Array<
+    Tables<"ir_other_incomes"> & { owner_filer_id: string | null }
+  >) {
     const c = o.currency as Currency;
     const gross = convertOrSame(Number(o.gross_amount), c, "BRL", rates);
     const irrf = convertOrSame(Number(o.irrf_amount ?? 0), c, "BRL", rates);
     const inss = convertOrSame(Number(o.inss_amount ?? 0), c, "BRL", rates);
     const t13 = convertOrSame(Number(o.thirteenth_amount ?? 0), c, "BRL", rates);
+
+    // Aposentadoria/pensão manual → vai pro pool de isenção por declarante.
+    if ((o.category as string) === "aposentadoria_pensao") {
+      addAposentadoria(o.owner_filer_id ?? null, gross, irrf, inss);
+      continue;
+    }
+
     const row: RendimentoRow = {
       source: "manual",
       sourceId: o.id,
@@ -403,6 +471,76 @@ export async function getRendimentosReport(
           "Uma renda lançada manualmente está sem categoria de IR válida e ficou FORA do cálculo. Defina a categoria pra não subtributar.",
         amount: row.grossAmount,
         origin: o.description,
+      });
+    }
+  }
+
+  // ---- APOSENTADORIA/PENSÃO → aplica isenção 65+/moléstia por declarante ----
+  for (const [, e] of aposentadoriaByFiler) {
+    const gross = Math.round(e.gross * 100) / 100;
+    if (gross <= 0) continue;
+    const profile: FilerExemptionProfile = (e.filerId && filerProfiles.get(e.filerId)) || {
+      birthDate: null,
+      hasSeriousIllness: false,
+    };
+    const split = splitAposentadoriaExemption(gross, profile, year, elderlyMonthly);
+    const irrf = Math.round(e.irrf * 100) / 100;
+    const inss = Math.round(e.inss * 100) / 100;
+
+    if (split.isento > 0) {
+      // código 10 = parcela isenta 65+; 11 = aposentadoria por moléstia grave.
+      const receitaCode = split.reason === "molestia_grave" ? "11" : "10";
+      isentos.push({
+        source: "auto",
+        sourceId: null,
+        description:
+          split.reason === "molestia_grave"
+            ? "Aposentadoria/pensão isenta (moléstia grave)"
+            : "Parcela isenta de aposentadoria (maiores de 65 anos)",
+        payerName: "Previdência/Fonte",
+        payerCnpjCpf: null,
+        grossAmount: split.isento,
+        irrf: 0,
+        inss: 0,
+        thirteenth: 0,
+        receitaCode,
+        confidence: "alta",
+        reason: split.reason === "molestia_grave" ? "Moléstia grave (100% isento)" : "Idade 65+",
+      });
+    }
+
+    if (split.tributavel > 0) {
+      tributaveis.push({
+        source: "auto",
+        sourceId: null,
+        description: "Aposentadoria/pensão (parcela tributável)",
+        payerName: "Previdência/Fonte",
+        payerCnpjCpf: null,
+        grossAmount: split.tributavel,
+        irrf,
+        inss,
+        thirteenth: 0,
+      });
+    } else if (irrf > 0) {
+      // Totalmente isenta mas com IRRF retido → restituível; não pode sumir.
+      tributaveis.push({
+        source: "auto",
+        sourceId: null,
+        description: "IRRF sobre aposentadoria isenta (restituível)",
+        payerName: "Previdência/Fonte",
+        payerCnpjCpf: null,
+        grossAmount: 0,
+        irrf,
+        inss: 0,
+        thirteenth: 0,
+      });
+      warnings.push({
+        code: "irrf_sobre_isento",
+        severity: "info",
+        message:
+          "Há IRRF retido sobre aposentadoria isenta — é restituível. Confira o informe da fonte.",
+        amount: irrf,
+        origin: "aposentadoria",
       });
     }
   }

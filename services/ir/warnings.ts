@@ -12,6 +12,7 @@ export type IrWarningCode =
   | "renda_nao_classificada"
   | "renda_passiva_generica"
   | "aluguel_verificar_carne_leao"
+  | "irrf_sobre_isento"
   | "tabela_estimada";
 
 export interface IrWarning {

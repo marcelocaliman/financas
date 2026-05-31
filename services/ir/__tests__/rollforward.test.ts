@@ -25,6 +25,7 @@ const annual2026: AnnualTaxTable = {
   simplesLimit: 16754.34,
   dependentDeduction: 2275.08,
   educationLimitPerPerson: 3561.5,
+  elderlyMonthlyExemption: 1903.98,
   source: "Lei 15.270/25",
   publishedAt: "2025-11-26",
   isEstimate: false,

@@ -122,6 +122,7 @@ export type RraMethod = "mensal" | "anual";
 export type IROtherIncomeCategory =
   | "tributavel_pj"
   | "tributavel_pf"
+  | "aposentadoria_pensao"
   | "isento"
   | "exclusivo_fonte"
   | "rendimento_acumulado";
@@ -1638,6 +1639,7 @@ export interface Database {
           voter_id: string | null;
           is_primary: boolean;
           is_active: boolean;
+          has_serious_illness: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1654,6 +1656,7 @@ export interface Database {
           voter_id?: string | null;
           is_primary?: boolean;
           is_active?: boolean;
+          has_serious_illness?: boolean;
           created_at?: string;
           updated_at?: string;
         };

@@ -245,6 +245,23 @@ function FilerSheet({
             />
           </Field>
 
+          {/* Moléstia grave — isenta 100% da aposentadoria/pensão (Lei 7.713/88) */}
+          <label className="flex items-start gap-2.5 cursor-pointer rounded-[8px] border border-border px-3 py-2.5 hover:bg-surface-muted">
+            <input
+              type="checkbox"
+              name="hasSeriousIllness"
+              defaultChecked={filer?.has_serious_illness ?? false}
+              className="mt-0.5 h-4 w-4 accent-navy-700"
+            />
+            <span className="text-[12.5px] leading-relaxed">
+              <span className="font-medium text-foreground">Portador de moléstia grave</span>
+              <span className="block text-faint-foreground">
+                Isenta 100% dos proventos de aposentadoria/pensão (Lei 7.713/88, art. 6º XIV).
+                Auto-declaração — guarde o laudo médico.
+              </span>
+            </span>
+          </label>
+
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>
           ) : null}

@@ -25,6 +25,7 @@ const filerSchema = z.object({
   occupationCode: z.string().optional(),
   natureOfOccupation: z.string().optional(),
   voterId: z.string().optional(),
+  hasSeriousIllness: z.boolean().optional(),
 });
 
 const regimeSchema = z.object({
@@ -61,6 +62,7 @@ export async function createShadowFiler(
     occupationCode: formData.get("occupationCode") || undefined,
     natureOfOccupation: formData.get("natureOfOccupation") || undefined,
     voterId: formData.get("voterId") || undefined,
+    hasSeriousIllness: formData.get("hasSeriousIllness") === "on",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -78,6 +80,7 @@ export async function createShadowFiler(
     occupation_code: parsed.data.occupationCode?.trim() || null,
     nature_of_occupation: parsed.data.natureOfOccupation?.trim() || null,
     voter_id: parsed.data.voterId?.trim() || null,
+    has_serious_illness: parsed.data.hasSeriousIllness ?? false,
     is_primary: false,
     is_active: true,
   });
@@ -100,6 +103,7 @@ export async function updateFiler(
     occupationCode: formData.get("occupationCode") || undefined,
     natureOfOccupation: formData.get("natureOfOccupation") || undefined,
     voterId: formData.get("voterId") || undefined,
+    hasSeriousIllness: formData.get("hasSeriousIllness") === "on",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -114,6 +118,7 @@ export async function updateFiler(
       occupation_code: parsed.data.occupationCode?.trim() || null,
       nature_of_occupation: parsed.data.natureOfOccupation?.trim() || null,
       voter_id: parsed.data.voterId?.trim() || null,
+      has_serious_illness: parsed.data.hasSeriousIllness ?? false,
     })
     .eq("id", id);
   if (error) return { error: error.message };
