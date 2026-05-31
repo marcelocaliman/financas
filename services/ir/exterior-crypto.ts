@@ -41,7 +41,78 @@ export type ExteriorReport = {
   taxDue: number;
 };
 
-const EXTERIOR_RATE = 0.15;
+export type CryptoBracket = { upTo: number; rate: number };
+export type CapitalGainsParams = {
+  year: number;
+  cryptoMonthlyExemption: number;
+  cryptoBrackets: CryptoBracket[];
+  exteriorRate: number;
+  isEstimate: boolean;
+};
+
+const DEFAULT_CRYPTO_BRACKETS: CryptoBracket[] = [
+  { upTo: 5_000_000, rate: 0.15 },
+  { upTo: 10_000_000, rate: 0.175 },
+  { upTo: 30_000_000, rate: 0.2 },
+  { upTo: Infinity, rate: 0.225 },
+];
+
+type RawCapitalRow = {
+  year: number;
+  crypto_monthly_exemption: number;
+  crypto_brackets: CryptoBracket[];
+  exterior_rate: number;
+  is_estimate: boolean;
+};
+
+function mapCapital(d: RawCapitalRow, estimate: boolean): CapitalGainsParams {
+  const raw = typeof d.crypto_brackets === "string" ? JSON.parse(d.crypto_brackets) : d.crypto_brackets;
+  return {
+    year: d.year,
+    cryptoMonthlyExemption: Number(d.crypto_monthly_exemption),
+    cryptoBrackets: (raw as CryptoBracket[]).map((b) => ({ upTo: Number(b.upTo), rate: Number(b.rate) })),
+    exteriorRate: Number(d.exterior_rate),
+    isEstimate: estimate || d.is_estimate,
+  };
+}
+
+/**
+ * Parâmetros de ganho de capital (cripto/exterior) por ano, lidos de
+ * ir_tax_table_capital com rollforward (nearest year). Nunca lança: cai pros
+ * defaults em memória se a tabela estiver vazia.
+ */
+export async function getCapitalGainsParams(year: number): Promise<CapitalGainsParams> {
+  const supabase = await createClient();
+  const db = supabase as unknown as {
+    from: (t: string) => {
+      select: (s: string) => {
+        eq: (c: string, v: number) => { maybeSingle: () => Promise<{ data: RawCapitalRow | null }> };
+        lte: (c: string, v: number) => {
+          order: (c: string, o: object) => { limit: (n: number) => { maybeSingle: () => Promise<{ data: RawCapitalRow | null }> } };
+        };
+        gte: (c: string, v: number) => {
+          order: (c: string, o: object) => { limit: (n: number) => { maybeSingle: () => Promise<{ data: RawCapitalRow | null }> } };
+        };
+      };
+    };
+  };
+  const cols = "year, crypto_monthly_exemption, crypto_brackets, exterior_rate, is_estimate";
+
+  const exact = await db.from("ir_tax_table_capital").select(cols).eq("year", year).maybeSingle();
+  if (exact.data) return mapCapital(exact.data, false);
+  const below = await db.from("ir_tax_table_capital").select(cols).lte("year", year).order("year", { ascending: false }).limit(1).maybeSingle();
+  if (below.data) return mapCapital(below.data, true);
+  const above = await db.from("ir_tax_table_capital").select(cols).gte("year", year).order("year", { ascending: true }).limit(1).maybeSingle();
+  if (above.data) return mapCapital(above.data, true);
+
+  return {
+    year,
+    cryptoMonthlyExemption: 35000,
+    cryptoBrackets: DEFAULT_CRYPTO_BRACKETS,
+    exteriorRate: 0.15,
+    isEstimate: true,
+  };
+}
 
 export async function getExteriorReport(
   year: number,
@@ -51,6 +122,8 @@ export async function getExteriorReport(
   const yearStart = `${year}-01-01`;
   const yearEnd = `${year}-12-31`;
   void yearStart;
+
+  const exteriorRate = (await getCapitalGainsParams(year)).exteriorRate;
 
   // Movimentos do ano em ativos exterior
   let movQuery = supabase
@@ -169,7 +242,7 @@ export async function getExteriorReport(
   const totalProfit = assets.reduce((s, a) => s + a.profitBRL, 0);
   const carryforwardUsed = Math.min(carryforwardAvailable, Math.max(0, totalProfit));
   const taxableBase = Math.max(0, totalProfit - carryforwardUsed);
-  const taxDue = taxableBase * EXTERIOR_RATE;
+  const taxDue = taxableBase * exteriorRate;
 
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -180,7 +253,7 @@ export async function getExteriorReport(
     totalProfitBRL: round2(totalProfit),
     carryforwardUsed: round2(carryforwardUsed),
     taxableBase: round2(taxableBase),
-    taxRate: EXTERIOR_RATE,
+    taxRate: exteriorRate,
     taxDue: round2(taxDue),
   };
 }
@@ -194,19 +267,19 @@ export async function getExteriorReport(
  *   acima de R$ 30.000.000    → 22,5%
  * (Lei 13.259/2016 c/c IN RFB 1888/2019)
  */
-const CRYPTO_TAX_BRACKETS = [
-  { upTo: 5_000_000, rate: 0.15 },
-  { upTo: 10_000_000, rate: 0.175 },
-  { upTo: 30_000_000, rate: 0.20 },
-  { upTo: Infinity, rate: 0.225 },
-];
-
-export function calcCryptoTax(profit: number): { rate: number; tax: number } {
+/**
+ * Imposto de cripto sobre o lucro, dado o conjunto de faixas (vindas do banco
+ * via getCapitalGainsParams; default em memória se ausente). Puro/testável.
+ */
+export function calcCryptoTax(
+  profit: number,
+  brackets: CryptoBracket[] = DEFAULT_CRYPTO_BRACKETS,
+): { rate: number; tax: number } {
   let remaining = profit;
   let tax = 0;
   let lastUsedRate = 0;
   let lower = 0;
-  for (const b of CRYPTO_TAX_BRACKETS) {
+  for (const b of brackets) {
     if (remaining <= 0) break;
     const slice = Math.min(remaining, b.upTo - lower);
     tax += slice * b.rate;
@@ -230,8 +303,6 @@ export type CryptoReport = {
   totalTaxDue: number;
 };
 
-const CRYPTO_EXEMPTION = 35000;
-
 export async function getCryptoReport(
   year: number,
   householdId?: string,
@@ -239,6 +310,8 @@ export async function getCryptoReport(
   const supabase = await createClient();
   const yearEnd = `${year}-12-31`;
   const rates = await getRateMapAt(yearEnd);
+  const capital = await getCapitalGainsParams(year);
+  const CRYPTO_EXEMPTION = capital.cryptoMonthlyExemption;
 
   let q = supabase
     .from("investment_movements")
@@ -305,7 +378,7 @@ export async function getCryptoReport(
     let taxDue = 0;
     if (!isExempt && d.profit > 0) {
       taxableBase = d.profit;
-      const calc = calcCryptoTax(d.profit);
+      const calc = calcCryptoTax(d.profit, capital.cryptoBrackets);
       taxRate = calc.rate;
       taxDue = calc.tax;
       totalTaxDue += taxDue;

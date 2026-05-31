@@ -108,6 +108,28 @@ begin
   raise notice 'TESTE 5 ok — trigger de dívida simétrico (sem o bug de over-crédito)';
 end $$;
 
+-- ===========================================================================
+-- TESTE 6 — credit_card_bill_amount: soma despesa e SUBTRAI income (estorno)
+--           na janela da fatura
+-- ===========================================================================
+do $$
+declare
+  v_card uuid := 'a4444444-4444-4444-4444-444444444444';
+  v_due  date := (current_date + 30);
+  v_win  record;
+  v_amt  numeric;
+begin
+  insert into accounts (id, household_id, institution, type, name, currency, bill_close_day, bill_due_day)
+    values (v_card, '22222222-2222-2222-2222-222222222222', 'Test', 'credit_card', 'Cartão', 'BRL', 20, 10);
+  select * into v_win from public.bill_window_for_due_date(20, 10, v_due);
+  insert into transactions (household_id, account_id, kind, amount, amount_account, currency, description, date, created_by)
+    values ('22222222-2222-2222-2222-222222222222', v_card, 'expense', 100, 100, 'BRL', 'compra', v_win.period_start, '11111111-1111-1111-1111-111111111111'),
+           ('22222222-2222-2222-2222-222222222222', v_card, 'income',   30,  30, 'BRL', 'estorno', v_win.period_start, '11111111-1111-1111-1111-111111111111');
+  v_amt := public.credit_card_bill_amount(v_card, v_due);
+  assert v_amt = 70, 'TESTE 6 FALHOU: fatura deveria ser 100 - 30 = 70, veio ' || coalesce(v_amt::text,'null');
+  raise notice 'TESTE 6 ok — fatura de cartão soma despesa e subtrai estorno';
+end $$;
+
 do $$ begin raise notice '✅ TODOS OS TESTES DE DINHEIRO PASSARAM'; end $$;
 
 rollback;
