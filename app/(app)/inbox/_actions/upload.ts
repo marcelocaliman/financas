@@ -31,6 +31,26 @@ function parseForceType(raw: unknown): DocumentType | undefined {
   return VALID_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : undefined;
 }
 
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB
+
+/**
+ * Detecta o mime-type REAL pelos magic bytes (não confia no file.type do
+ * client, que é falsificável). Retorna null se não for um tipo aceito.
+ */
+function sniffMimeType(buf: Buffer): string | null {
+  if (buf.length < 12) return null;
+  if (buf[0] === 0x25 && buf[1] === 0x50 && buf[2] === 0x44 && buf[3] === 0x46) return "application/pdf";
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return "image/png";
+  if (buf.subarray(0, 4).toString("ascii") === "RIFF" && buf.subarray(8, 12).toString("ascii") === "WEBP")
+    return "image/webp";
+  if (buf.subarray(4, 8).toString("ascii") === "ftyp") {
+    const brand = buf.subarray(8, 12).toString("ascii");
+    if (["heic", "heix", "mif1", "hevc", "msf1", "heim", "heis"].includes(brand)) return "image/heic";
+  }
+  return null;
+}
+
 /**
  * Server action principal: recebe um arquivo, salva no storage, dispara
  * extração via OpenAI, retorna o id pra UI redirecionar pra review.
@@ -61,16 +81,27 @@ export async function uploadAndExtractAction(
   if (file.size === 0) {
     return { error: "Arquivo vazio." };
   }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return { error: "Arquivo muito grande (máximo 15 MB)." };
+  }
 
   const forceType = parseForceType(formData.get("forceType"));
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Valida o tipo REAL pelos magic bytes (não confia no file.type do client).
+  const realMime = sniffMimeType(buffer);
+  if (!realMime) {
+    return {
+      error: "Tipo de arquivo não suportado. Envie PDF ou imagem (JPG, PNG, WEBP, HEIC).",
+    };
+  }
 
   const created = await createDocumentUpload({
     householdId: ctx.household.id,
     uploadedBy: ctx.authId,
     fileContent: buffer,
     originalFilename: file.name,
-    mimeType: file.type || "application/octet-stream",
+    mimeType: realMime,
   });
 
   if ("error" in created) {
@@ -85,7 +116,7 @@ export async function uploadAndExtractAction(
     const result = await extractDocument({
       file: {
         content: buffer,
-        mimeType: file.type || "application/octet-stream",
+        mimeType: realMime,
         name: file.name,
       },
       forceType,
