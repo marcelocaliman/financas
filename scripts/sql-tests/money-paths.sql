@@ -13,7 +13,7 @@ begin;
 
 -- Aplica o trigger de dívida novo (simétrico) DENTRO da transação — assim
 -- testamos a versão nova; o rollback desfaz (aplicamos de verdade depois).
-\i supabase/migrations/20260531220000_debt_trigger_symmetry.sql
+-- (trigger de dívida date-gate já vive em produção; testamos o trigger LIVE)
 
 -- Contexto de auth pra funções que usam current_household_id()/auth.uid().
 set local request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
