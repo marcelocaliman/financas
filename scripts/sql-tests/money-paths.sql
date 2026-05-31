@@ -130,6 +130,34 @@ begin
   raise notice 'TESTE 6 ok — fatura de cartão soma despesa e subtrai estorno';
 end $$;
 
+-- ===========================================================================
+-- TESTE 7 — materialize_recurrence: gera ocorrências e NÃO duplica (guard)
+-- ===========================================================================
+do $$
+declare
+  v_rule uuid := 'e1111111-1111-1111-1111-111111111111';
+  v_n1 int;
+  v_n2 int;
+begin
+  update households set app_start_date = '2024-01-01'
+    where id = '22222222-2222-2222-2222-222222222222';
+  insert into recurring_rules
+    (id, household_id, kind, account_id, amount, description, frequency, start_date, day_of_month, interval_count, is_active, currency)
+  values
+    (v_rule, '22222222-2222-2222-2222-222222222222', 'expense', 'a1111111-1111-1111-1111-111111111111',
+     100, 'Assinatura', 'monthly', '2024-06-01', 1, 1, true, 'BRL');
+
+  perform public.materialize_recurrence(v_rule, '2024-09-15');
+  select count(*) into v_n1 from transactions where recurring_rule_id = v_rule;
+  -- Segunda chamada não pode duplicar.
+  perform public.materialize_recurrence(v_rule, '2024-09-15');
+  select count(*) into v_n2 from transactions where recurring_rule_id = v_rule;
+
+  assert v_n1 > 0, 'TESTE 7 FALHOU: materialize deveria gerar ocorrências, gerou ' || v_n1;
+  assert v_n1 = v_n2, 'TESTE 7 FALHOU: materialize duplicou (' || v_n1 || ' → ' || v_n2 || '), o guard falhou';
+  raise notice 'TESTE 7 ok — materialize gera % ocorrências e é idempotente', v_n1;
+end $$;
+
 do $$ begin raise notice '✅ TODOS OS TESTES DE DINHEIRO PASSARAM'; end $$;
 
 rollback;
