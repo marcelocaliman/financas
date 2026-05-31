@@ -1,13 +1,18 @@
 import "server-only";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requirePlatformAdmin } from "@/services/platform-admin";
 
 export type SeriesPoint = { date: string; count: number };
 
+// As RPCs admin_* têm guard is_platform_admin() no banco (defense-in-depth).
+// Por isso usamos o client AUTENTICADO (não service-role) — pra auth.uid()
+// resolver o guard. O requirePlatformAdmin() em TS continua como 1ª barreira.
+
 export async function getHouseholdGrowth(days = 30): Promise<SeriesPoint[]> {
   await requirePlatformAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("admin_household_growth", { p_days: days });
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_household_growth", { p_days: days });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     date: typeof r.date === "string" ? r.date : String(r.date),
@@ -17,8 +22,8 @@ export async function getHouseholdGrowth(days = 30): Promise<SeriesPoint[]> {
 
 export async function getUserGrowth(days = 30): Promise<SeriesPoint[]> {
   await requirePlatformAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("admin_user_growth", { p_days: days });
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_user_growth", { p_days: days });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     date: typeof r.date === "string" ? r.date : String(r.date),
@@ -28,8 +33,8 @@ export async function getUserGrowth(days = 30): Promise<SeriesPoint[]> {
 
 export async function getActionVolume(days = 30): Promise<SeriesPoint[]> {
   await requirePlatformAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("admin_action_volume", { p_days: days });
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_action_volume", { p_days: days });
   if (error) throw error;
   return (data ?? []).map((r) => ({
     date: typeof r.date === "string" ? r.date : String(r.date),

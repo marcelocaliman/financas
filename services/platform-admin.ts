@@ -194,8 +194,9 @@ export type PlatformStats = {
 
 export async function getPlatformStats(): Promise<PlatformStats> {
   await requirePlatformAdmin();
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("admin_platform_stats");
+  // RPC com guard is_platform_admin() no banco → usa o client autenticado.
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_platform_stats");
   if (error) throw error;
   const row = data?.[0];
   return (
