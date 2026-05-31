@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
+import { classifyIncomeTx } from "@/services/ir/classify-income";
+import type { IrWarning } from "@/services/ir/warnings";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -30,6 +32,10 @@ export type RendimentoRow = {
   thirteenth: number;
   /** Código Receita da Ficha (depende da categoria) */
   receitaCode?: string;
+  /** Confiança da classificação automática (preenchido p/ não-classificados). */
+  confidence?: "alta" | "baixa";
+  /** Razão da classificação (mostrada na revisão). */
+  reason?: string;
 };
 
 export type RendimentosReport = {
@@ -58,10 +64,18 @@ export type RendimentosReport = {
     thirteenth: number;
     other: number;
   };
+  /**
+   * Rendimentos que o motor NÃO conseguiu classificar com segurança. Ficam
+   * FORA de toda base de cálculo (decisão D7, fail-loud) e sempre disparam um
+   * aviso — nunca são descartados em silêncio.
+   */
+  naoClassificados: {
+    rows: RendimentoRow[];
+    total: number;
+  };
+  /** Avisos tipados (renda não classificada, aluguel a verificar, etc.). */
+  warnings: IrWarning[];
 };
-
-const SALARY_CATEGORIES = new Set(["salário", "salario", "pró-labore", "pro labore"]);
-const RENT_CATEGORIES = new Set(["aluguel recebido", "aluguel"]);
 
 export async function getRendimentosReport(
   year: number,
@@ -139,6 +153,8 @@ export async function getRendimentosReport(
   const tributaveis: RendimentoRow[] = [];
   const isentos: RendimentoRow[] = [];
   const exclusivos: RendimentoRow[] = [];
+  const naoClassificados: RendimentoRow[] = [];
+  const warnings: IrWarning[] = [];
 
   // ---- INCOME TRANSACTIONS → tributável (salário, pró-labore, aluguel) ----
   type TxRow = {
@@ -208,45 +224,54 @@ export async function getRendimentosReport(
   }
 
   for (const [, e] of txsAgg) {
-    if (e.isDistribuicaoLucros) {
-      // Distribuição de lucros PJ própria → isento código 09
-      isentos.push({
-        source: "auto",
-        sourceId: null,
-        description: `Distribuição de lucros — ${e.payer}`,
-        payerName: e.payer,
-        payerCnpjCpf: e.cnpjCpf,
-        grossAmount: Math.round(e.gross * 100) / 100,
-        irrf: 0, inss: 0, thirteenth: 0,
-        receitaCode: "09",
-      });
-    } else if (
-      SALARY_CATEGORIES.has(e.cat) ||
-      RENT_CATEGORIES.has(e.cat) ||
-      e.cnpjCpf // se tem fonte cadastrada, vai pra tributável
-    ) {
-      tributaveis.push({
-        source: "auto",
-        sourceId: null,
-        description: e.cat || "Rendimento",
-        payerName: e.payer,
-        payerCnpjCpf: e.cnpjCpf,
-        grossAmount: Math.round(e.gross * 100) / 100,
-        irrf: Math.round(e.irrf * 100) / 100,
-        inss: Math.round(e.inss * 100) / 100,
-        thirteenth: 0,
-      });
-    } else if (e.cat.includes("renda passiva") || e.cat.includes("dividend")) {
-      isentos.push({
-        source: "auto",
-        sourceId: null,
-        description: "Lucros e dividendos (categoria " + e.cat + ")",
-        payerName: e.payer,
-        payerCnpjCpf: e.cnpjCpf,
-        grossAmount: Math.round(e.gross * 100) / 100,
-        irrf: 0, inss: 0, thirteenth: 0,
-        receitaCode: "09",
-      });
+    const gross = Math.round(e.gross * 100) / 100;
+    const cls = classifyIncomeTx({
+      cat: e.cat,
+      hasPayer: Boolean(e.cnpjCpf),
+      isDistribuicaoLucros: e.isDistribuicaoLucros,
+    });
+
+    // Descrição legível por bucket.
+    const description =
+      cls.bucket === "isento" && cls.receitaCode === "09" && e.isDistribuicaoLucros
+        ? `Distribuição de lucros — ${e.payer}`
+        : cls.bucket === "isento"
+          ? `Lucros e dividendos${e.cat ? ` (categoria ${e.cat})` : ""}`
+          : e.cat || e.payer || "Rendimento";
+
+    const row: RendimentoRow = {
+      source: "auto",
+      sourceId: null,
+      description,
+      payerName: e.payer,
+      payerCnpjCpf: e.cnpjCpf,
+      grossAmount: gross,
+      // Só o bucket tributável carrega IRRF/INSS retidos na base progressiva.
+      irrf: cls.bucket === "tributavel" ? Math.round(e.irrf * 100) / 100 : 0,
+      inss: cls.bucket === "tributavel" ? Math.round(e.inss * 100) / 100 : 0,
+      thirteenth: 0,
+      receitaCode: cls.receitaCode,
+      confidence: cls.confidence,
+      reason: cls.reason,
+    };
+
+    switch (cls.bucket) {
+      case "tributavel":
+        tributaveis.push(row);
+        break;
+      case "isento":
+        isentos.push(row);
+        break;
+      case "exclusivo":
+        exclusivos.push(row);
+        break;
+      case "naoClassificado":
+        naoClassificados.push(row);
+        break;
+    }
+
+    if (cls.warning) {
+      warnings.push({ ...cls.warning, amount: gross, origin: e.cat || e.payer });
     }
   }
 
@@ -364,6 +389,21 @@ export async function getRendimentosReport(
       exclusivos.push({ ...row, receitaCode: "99" });
     } else if (o.category === "rendimento_acumulado") {
       tributaveis.push(row);
+    } else {
+      // Categoria manual ausente/desconhecida → fail-loud, fora da base.
+      naoClassificados.push({
+        ...row,
+        confidence: "baixa",
+        reason: `Renda manual sem categoria reconhecida${o.category ? ` ('${o.category}')` : ""}`,
+      });
+      warnings.push({
+        code: "renda_nao_classificada",
+        severity: "critico",
+        message:
+          "Uma renda lançada manualmente está sem categoria de IR válida e ficou FORA do cálculo. Defina a categoria pra não subtributar.",
+        amount: row.grossAmount,
+        origin: o.description,
+      });
     }
   }
 
@@ -434,5 +474,10 @@ export async function getRendimentosReport(
       thirteenth,
       other: Math.max(0, otherExcl),
     },
+    naoClassificados: {
+      rows: naoClassificados,
+      total: sumGross(naoClassificados),
+    },
+    warnings,
   };
 }
