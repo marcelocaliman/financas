@@ -18,6 +18,7 @@ import {
 import { ResetDataSection } from "./reset-data-section";
 import { HouseholdInvitesSection } from "./household-invites-section";
 import { ChangePasswordForm } from "@/components/configuracoes/change-password-form";
+import { isBillingEnabled } from "@/lib/stripe";
 import { BackupButton } from "@/components/configuracoes/backup-button";
 import { MembersManagement } from "@/components/household/members-management";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -27,6 +28,7 @@ export const dynamic = "force-dynamic";
 export default async function ConfiguracoesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
+  const billingEnabled = isBillingEnabled();
   const admin = createAdminClient();
   const [
     displayCurrency,
@@ -101,6 +103,14 @@ export default async function ConfiguracoesPage() {
             >
               Notificações →
             </Link>
+            {billingEnabled ? (
+              <Link
+                href="/configuracoes/billing"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium border border-border bg-surface hover:bg-surface-muted text-foreground transition-colors"
+              >
+                Assinatura →
+              </Link>
+            ) : null}
           </div>
           <p className="text-[11.5px] text-faint-foreground mt-3">
             Backup gera JSON com tudo do seu lar (contas, transações,

@@ -8,6 +8,7 @@ import { suggestCategory } from "@/lib/financial/auto-categorize";
 import { matchCategoryRule } from "@/services/category-rules";
 import { getRateMap } from "@/services/currency";
 import { convertOrSame } from "@/lib/financial/currency";
+import { assertWritable, EntitlementError } from "@/services/entitlements";
 import type { Currency } from "@/types/database";
 
 const PAYMENT_METHODS = ["credit", "debit", "pix", "cash", "auto_debit", "transfer"] as const;
@@ -72,6 +73,15 @@ export async function createTransaction(
   _prev: TxFormState | undefined,
   formData: FormData,
 ): Promise<TxFormState> {
+  // Enforcement de billing: assinatura suspensa → somente-leitura (no-op com
+  // billing desligado). Padrão a estender pra demais mutações.
+  try {
+    await assertWritable();
+  } catch (e) {
+    if (e instanceof EntitlementError) return { error: e.message };
+    throw e;
+  }
+
   const kind = String(formData.get("kind") ?? "expense");
 
   if (kind === "transfer") {
