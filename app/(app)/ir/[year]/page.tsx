@@ -191,6 +191,23 @@ export default async function IRYearPage({
           verificar, tabela estimada. Nunca passam despercebidos. */}
       <IrWarningsBanner warnings={imposto.warnings} />
 
+      {/* CTA de revisão — enquanto houver renda não classificada, a estimativa
+          é provisória e o export final fica bloqueado (D8). */}
+      {imposto.naoClassificadosTotal > 0 ? (
+        <Link
+          href={`/ir/${year}/revisao`}
+          className="mb-5 flex items-center justify-between gap-3 rounded-[8px] border border-gold-600/40 bg-gold-100/40 dark:bg-gold-700/10 px-4 py-3 hover:bg-gold-100/70 dark:hover:bg-gold-700/20 transition-colors"
+        >
+          <span className="text-[12.5px] text-foreground">
+            Há <strong>R$ {fmtBRL(imposto.naoClassificadosTotal)}</strong> em renda não
+            classificada. Resolva no modo revisão pra fechar a declaração.
+          </span>
+          <span className="shrink-0 text-[12.5px] font-medium text-navy-700 dark:text-navy-300">
+            Revisar agora →
+          </span>
+        </Link>
+      ) : null}
+
       {/* Disclaimer persistente — estimativa, não substitui o programa oficial. */}
       <p className="mb-5 text-[11.5px] leading-relaxed text-faint-foreground">
         Estimativa automática a partir dos seus lançamentos — não substitui o

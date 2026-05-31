@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateDec } from "@/services/ir/dec-export";
+import { getRendimentosReport } from "@/services/ir/rendimentos";
 import { getCurrentUserContext } from "@/services/auth";
 import {
   getCurrentAccountantContext,
@@ -113,6 +114,20 @@ export async function GET(req: Request) {
     return NextResponse.json(
       { error: "Cadastre CPF do titular em Configurações antes de exportar." },
       { status: 400 },
+    );
+  }
+
+  // Gate D8: não exporta declaração com renda não classificada — evita
+  // transmitir números incompletos. O usuário resolve em /ir/[year]/revisao.
+  const rendCheck = await getRendimentosReport(year, ctx.household.id, filerIdParam ?? undefined);
+  if (rendCheck.naoClassificados.total > 0) {
+    return NextResponse.json(
+      {
+        error:
+          `Há R$ ${rendCheck.naoClassificados.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} ` +
+          `em renda não classificada. Resolva no modo revisão (/ir/${year}/revisao) antes de exportar.`,
+      },
+      { status: 409 },
     );
   }
 

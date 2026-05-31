@@ -45,7 +45,32 @@ export type RendimentoRow = {
   confidence?: "alta" | "baixa";
   /** Razão da classificação (mostrada na revisão). */
   reason?: string;
+  /** Chave estável da origem — usada no modo revisão pra persistir a decisão. */
+  originKey?: string;
 };
+
+/** Bucket que o usuário pode escolher no modo revisão. */
+export type IncomeOverrideBucket = "tributavel" | "isento" | "exclusivo";
+
+type Classification = ReturnType<typeof classifyIncomeTx>;
+
+/**
+ * Aplica a decisão do usuário (modo revisão) SOBRE uma classificação automática.
+ * Só sobrepõe quando o motor não conseguiu classificar (`naoClassificado`) — uma
+ * renda que o motor classifica com confiança não é silenciosamente sobrescrita.
+ */
+function applyOverride(
+  cls: Classification,
+  override?: { bucket: IncomeOverrideBucket; receitaCode: string | null },
+): Classification {
+  if (!override || cls.bucket !== "naoClassificado") return cls;
+  return {
+    bucket: override.bucket,
+    receitaCode: override.receitaCode ?? (override.bucket === "isento" ? "99" : undefined),
+    confidence: "alta",
+    reason: "Classificado manualmente na revisão",
+  };
+}
 
 export type RendimentosReport = {
   year: number;
@@ -172,6 +197,28 @@ export async function getRendimentosReport(
   ]);
   const carneLeaoRows = (carneLeaoRes as { data: Array<{ description: string; gross_amount: number; deductible_expenses: number | null }> | null }).data;
 
+  // Overrides do modo revisão: decisões do usuário sobre rendas que o motor
+  // não classificou. Chave = origin_key. Aplicadas só sobre `naoClassificado`.
+  const { data: overridesRows } = await (
+    householdId
+      ? supabase
+          .from("ir_income_classifications")
+          .select("origin_key, bucket, receita_code")
+          .eq("year", year)
+          .eq("household_id", householdId)
+      : supabase
+          .from("ir_income_classifications")
+          .select("origin_key, bucket, receita_code")
+          .eq("year", year)
+  );
+  const overrides = new Map<string, { bucket: IncomeOverrideBucket; receitaCode: string | null }>();
+  for (const o of overridesRows ?? []) {
+    overrides.set(o.origin_key, {
+      bucket: o.bucket as IncomeOverrideBucket,
+      receitaCode: o.receita_code,
+    });
+  }
+
   // Mapa filerId → perfil de isenção.
   const filerProfiles = new Map<string, FilerExemptionProfile>();
   for (const f of (filers ?? []) as Array<{ id: string; birth_date: string | null; has_serious_illness: boolean }>) {
@@ -286,13 +333,17 @@ export async function getRendimentosReport(
     }
   }
 
-  for (const [, e] of txsAgg) {
+  for (const [aggKey, e] of txsAgg) {
     const gross = Math.round(e.gross * 100) / 100;
-    const cls = classifyIncomeTx({
-      cat: e.cat,
-      hasPayer: Boolean(e.cnpjCpf),
-      isDistribuicaoLucros: e.isDistribuicaoLucros,
-    });
+    const originKey = `tx:${aggKey}`;
+    const cls = applyOverride(
+      classifyIncomeTx({
+        cat: e.cat,
+        hasPayer: Boolean(e.cnpjCpf),
+        isDistribuicaoLucros: e.isDistribuicaoLucros,
+      }),
+      overrides.get(originKey),
+    );
 
     // Descrição legível por bucket.
     const description =
@@ -316,6 +367,7 @@ export async function getRendimentosReport(
       receitaCode: cls.receitaCode,
       confidence: cls.confidence,
       reason: cls.reason,
+      originKey,
     };
 
     switch (cls.bucket) {
@@ -462,20 +514,37 @@ export async function getRendimentosReport(
     } else if (o.category === "rendimento_acumulado") {
       tributaveis.push(row);
     } else {
-      // Categoria manual ausente/desconhecida → fail-loud, fora da base.
-      naoClassificados.push({
-        ...row,
-        confidence: "baixa",
-        reason: `Renda manual sem categoria reconhecida${o.category ? ` ('${o.category}')` : ""}`,
-      });
-      warnings.push({
-        code: "renda_nao_classificada",
-        severity: "critico",
-        message:
-          "Uma renda lançada manualmente está sem categoria de IR válida e ficou FORA do cálculo. Defina a categoria pra não subtributar.",
-        amount: row.grossAmount,
-        origin: o.description,
-      });
+      // Categoria manual ausente/desconhecida → fail-loud, A NÃO SER que o
+      // usuário já tenha resolvido no modo revisão.
+      const originKey = `manual:${o.id}`;
+      const ov = overrides.get(originKey);
+      if (ov) {
+        const resolved: RendimentoRow = {
+          ...row,
+          receitaCode: ov.receitaCode ?? (ov.bucket === "isento" ? "99" : undefined),
+          confidence: "alta",
+          reason: "Classificado manualmente na revisão",
+          originKey,
+        };
+        if (ov.bucket === "tributavel") tributaveis.push(resolved);
+        else if (ov.bucket === "isento") isentos.push(resolved);
+        else exclusivos.push(resolved);
+      } else {
+        naoClassificados.push({
+          ...row,
+          confidence: "baixa",
+          reason: `Renda manual sem categoria reconhecida${o.category ? ` ('${o.category}')` : ""}`,
+          originKey,
+        });
+        warnings.push({
+          code: "renda_nao_classificada",
+          severity: "critico",
+          message:
+            "Uma renda lançada manualmente está sem categoria de IR válida e ficou FORA do cálculo. Defina a categoria pra não subtributar.",
+          amount: row.grossAmount,
+          origin: o.description,
+        });
+      }
     }
   }
 

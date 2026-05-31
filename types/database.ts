@@ -1747,6 +1747,32 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["ir_deductible_payments"]["Insert"]>;
         Relationships: [];
       };
+      ir_income_classifications: {
+        Row: {
+          id: string;
+          household_id: string;
+          year: number;
+          origin_key: string;
+          bucket: "tributavel" | "isento" | "exclusivo";
+          receita_code: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          household_id: string;
+          year: number;
+          origin_key: string;
+          bucket: "tributavel" | "isento" | "exclusivo";
+          receita_code?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["ir_income_classifications"]["Insert"]>;
+        Relationships: [];
+      };
       ir_other_incomes: {
         Row: {
           id: string;
