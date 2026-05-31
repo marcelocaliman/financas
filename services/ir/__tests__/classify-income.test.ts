@@ -6,6 +6,7 @@ import {
   isRentCategory,
   isDividendCategory,
   isGenericPassiveCategory,
+  isDistribuicaoLucrosCategory,
 } from "@/services/ir/income-aliases";
 
 const base: IncomeAgg = { cat: "", hasPayer: false, isDistribuicaoLucros: false };
@@ -36,6 +37,11 @@ describe("matchers de alias", () => {
   it("'renda passiva' é genérica, não dividendo", () => {
     expect(isGenericPassiveCategory("Renda passiva")).toBe(true);
     expect(isDividendCategory("Renda passiva")).toBe(false);
+  });
+  it("distribuição de lucros é sinal explícito (sem heurística de descrição)", () => {
+    expect(isDistribuicaoLucrosCategory("Distribuição de lucros")).toBe(true);
+    expect(isDistribuicaoLucrosCategory("Lucros distribuídos")).toBe(true);
+    expect(isDistribuicaoLucrosCategory("Salário")).toBe(false);
   });
 });
 

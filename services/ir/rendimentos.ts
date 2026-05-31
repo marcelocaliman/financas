@@ -3,7 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getRateMapAt } from "@/services/currency";
 import { classifyIncomeTx } from "@/services/ir/classify-income";
-import { isAposentadoriaCategory } from "@/services/ir/income-aliases";
+import {
+  isAposentadoriaCategory,
+  isDistribuicaoLucrosCategory,
+} from "@/services/ir/income-aliases";
 import {
   splitAposentadoriaExemption,
   type FilerExemptionProfile,
@@ -247,13 +250,14 @@ export async function getRendimentosReport(
       continue;
     }
 
-    // Heurística: distribuição de lucros de PJ própria do usuário → isento
-    // Detectado quando: fonte é pj_propria E (descrição menciona "distribui*"
-    // ou "lucro" sem ser salário/pró-labore)
+    // Distribuição de lucros de PJ própria → isento. Sinal EXPLÍCITO via
+    // categoria "Distribuição de lucros"; mantemos a heurística antiga (fonte
+    // pj_propria + descrição) só como fallback pra dados legados.
     const desc = (t.description ?? "").toLowerCase();
     const isDistribuicaoLucros =
-      fonte?.type === "pj_propria" &&
-      (desc.includes("distribu") || desc.includes("lucro") || desc.includes("dividendo"));
+      isDistribuicaoLucrosCategory(catName) ||
+      (fonte?.type === "pj_propria" &&
+        (desc.includes("distribu") || desc.includes("lucro") || desc.includes("dividendo")));
 
     if (fonte) {
       const key = `fonte:${fonte.id}${isDistribuicaoLucros ? ":lucros" : ""}`;

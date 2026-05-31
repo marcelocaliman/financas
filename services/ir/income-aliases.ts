@@ -60,6 +60,14 @@ const RENT_ALIASES = [
 
 const DIVIDEND_ALIASES = ["dividendo", "dividendos", "lucros e dividendos", "jcp"];
 
+const DISTRIBUICAO_LUCROS_ALIASES = [
+  "distribuicao de lucros",
+  "distribuicao de lucro",
+  "distribuicao lucros",
+  "lucros distribuidos",
+  "pro-labore lucros",
+];
+
 const RENDA_PASSIVA_GENERIC = ["renda passiva", "rendimentos", "rendimento"];
 
 function matchesAny(cat: string, aliases: string[]): boolean {
@@ -86,6 +94,14 @@ export function isRentCategory(cat: string): boolean {
 /** Dividendos/JCP — isento (ou exclusivo no caso de JCP). */
 export function isDividendCategory(cat: string): boolean {
   return matchesAny(cat, DIVIDEND_ALIASES);
+}
+
+/**
+ * Distribuição de lucros (categoria EXPLÍCITA) — isento cód. 09. Sinal explícito
+ * que substitui a heurística frágil de description.includes("distribu").
+ */
+export function isDistribuicaoLucrosCategory(cat: string): boolean {
+  return matchesAny(cat, DISTRIBUICAO_LUCROS_ALIASES);
 }
 
 /**

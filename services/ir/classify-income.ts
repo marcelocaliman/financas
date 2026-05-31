@@ -48,13 +48,20 @@ export interface IncomeClassification {
 export function classifyIncomeTx(agg: IncomeAgg): IncomeClassification {
   const cat = agg.cat ?? "";
 
-  // 1) Distribuição de lucros de PJ própria → isento (cód. 09).
+  // 1) Distribuição de lucros de PJ própria → isento (cód. 09). Pra MEI, a
+  //    isenção é limitada ao lucro presumido — avisamos pra o usuário conferir.
   if (agg.isDistribuicaoLucros) {
     return {
       bucket: "isento",
       receitaCode: "09",
       confidence: "alta",
       reason: "Distribuição de lucros de PJ própria",
+      warning: {
+        code: "distribuicao_verificar_limite",
+        severity: "info",
+        message:
+          "Distribuição de lucros tratada como isenta. Se a empresa é MEI/Simples sem contabilidade, a isenção é limitada ao lucro presumido — o excedente é tributável. Confira.",
+      },
     };
   }
 
