@@ -2443,6 +2443,19 @@ export interface Database {
     };
     Views: { [_ in never]: never };
     Functions: {
+      consume_rate_limit: {
+        Args: {
+          p_key: string;
+          p_limit: number;
+          p_window_seconds: number;
+          p_cost?: number;
+        };
+        Returns: { allowed: boolean; remaining: number; reset_at: string }[];
+      };
+      gc_rate_limit_counters: {
+        Args: { p_keep_hours?: number };
+        Returns: number;
+      };
       bootstrap_household: {
         Args: { p_household_name: string; p_display_name: string };
         Returns: string;

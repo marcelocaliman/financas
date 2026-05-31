@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -16,4 +17,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// withSentryConfig é seguro mesmo sem DSN/token: só monta o plugin de build.
+// Upload de sourcemaps só acontece quando SENTRY_AUTH_TOKEN está presente.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  // Sem token, não tenta subir sourcemap (evita warning ruidoso no build local).
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  disableLogger: true,
+  tunnelRoute: "/monitoring",
+});

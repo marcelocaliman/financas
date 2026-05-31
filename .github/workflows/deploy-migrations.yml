@@ -1,0 +1,50 @@
+name: Deploy migrations
+
+# ENGATILHADO — não roda sozinho. Aposenta o `db-push.sh` do laptop por um
+# deploy versionado e auditável. Antes de usar em produção:
+#   1. Criar projeto Supabase de STAGING (decisão D3).
+#   2. Alinhar o histórico de migrations (as 88 foram aplicadas via Management
+#      API; pode precisar de `supabase migration repair`) — fazer EM STAGING.
+#   3. Cadastrar os secrets do repo:
+#        SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF, SUPABASE_DB_PASSWORD
+#   4. Rodar este workflow apontando para `staging` e validar.
+#   5. Só então permitir `production`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente alvo
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: deploy-migrations-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: supabase db push (${{ github.event.inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+
+      - name: Push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push
