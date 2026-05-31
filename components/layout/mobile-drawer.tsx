@@ -32,38 +32,49 @@ import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { cn } from "@/lib/utils/cn";
 import type { SidebarBadges } from "@/services/sidebar-badges";
 
+type NavGroup = "diaadia" | "patrimonio" | "ir" | "ajustes";
 type NavItem = {
   label: string;
   href: string;
   icon: typeof Home;
-  group: "principal" | "investir" | "config";
+  group: NavGroup;
+  /** Item secundário — renderiza indentado sob o item primário acima. */
+  sub?: boolean;
 };
 
 const navItems: NavItem[] = [
-  { label: "Home", href: "/dashboard", icon: Home, group: "principal" },
-  { label: "Inbox", href: "/inbox", icon: Inbox, group: "principal" },
-  { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "principal" },
-  { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "principal" },
-  { label: "Análise", href: "/analise", icon: LineChart, group: "principal" },
-  { label: "Orçamento", href: "/orcamento", icon: Target, group: "principal" },
-  { label: "Relatórios", href: "/relatorios", icon: FileText, group: "principal" },
-  { label: "IRPF", href: "/ir", icon: Landmark, group: "principal" },
-  { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "investir" },
-  { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "investir" },
-  { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "investir" },
-  { label: "Resgates", href: "/resgates", icon: Layers, group: "investir" },
-  { label: "Metas", href: "/metas", icon: Target, group: "investir" },
-  { label: "Independência", href: "/independencia", icon: Flame, group: "investir" },
-  { label: "Contas", href: "/contas", icon: CreditCard, group: "config" },
-  { label: "Categorias", href: "/categorias", icon: Tag, group: "config" },
-  { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "config" },
-  { label: "Configurações", href: "/configuracoes", icon: Settings, group: "config" },
+  // Dia a dia
+  { label: "Início", href: "/dashboard", icon: Home, group: "diaadia" },
+  { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "diaadia" },
+  { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "diaadia" },
+  { label: "Análise", href: "/analise", icon: LineChart, group: "diaadia" },
+  { label: "Relatórios", href: "/relatorios", icon: FileText, group: "diaadia", sub: true },
+  { label: "Inbox", href: "/inbox", icon: Inbox, group: "diaadia" },
+
+  // Patrimônio
+  { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "patrimonio" },
+  { label: "Resgates", href: "/resgates", icon: Layers, group: "patrimonio", sub: true },
+  { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "patrimonio" },
+  { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "patrimonio" },
+  { label: "Metas", href: "/metas", icon: Target, group: "patrimonio" },
+  { label: "Independência", href: "/independencia", icon: Flame, group: "patrimonio", sub: true },
+
+  // Imposto de Renda
+  { label: "IRPF", href: "/ir", icon: Landmark, group: "ir" },
+  { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "ir", sub: true },
+
+  // Ajustes
+  { label: "Contas", href: "/contas", icon: CreditCard, group: "ajustes" },
+  { label: "Categorias", href: "/categorias", icon: Tag, group: "ajustes" },
+  { label: "Orçamento", href: "/orcamento", icon: Target, group: "ajustes", sub: true },
+  { label: "Configurações", href: "/configuracoes", icon: Settings, group: "ajustes" },
 ];
 
-const groupLabels: Record<NavItem["group"], string> = {
-  principal: "Cotidiano",
-  investir: "Patrimônio",
-  config: "Bastidores",
+const groupLabels: Record<NavGroup, string> = {
+  diaadia: "Dia a dia",
+  patrimonio: "Patrimônio",
+  ir: "Imposto de Renda",
+  ajustes: "Ajustes",
 };
 
 /**
@@ -185,10 +196,13 @@ export function MobileDrawer({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "relative flex items-center gap-3 px-3 py-3 rounded-[8px] text-[14.5px] mb-0.5 transition-colors",
+                        "relative flex items-center gap-3 py-3 rounded-[8px] mb-0.5 transition-colors",
+                        item.sub ? "pl-8 pr-3 text-[13.5px]" : "px-3 text-[14.5px]",
                         isActive
                           ? "bg-ink-800 text-white font-medium"
-                          : "text-navy-200 active:bg-ink-800/70",
+                          : item.sub
+                            ? "text-navy-300 active:bg-ink-800/70"
+                            : "text-navy-200 active:bg-ink-800/70",
                       )}
                     >
                       {isActive ? (
