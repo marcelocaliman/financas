@@ -28,6 +28,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const ctx = await getCurrentUserContext();
   if (!ctx) redirect("/login");
 
+  // Conta agendada pra exclusão (LGPD): bloqueia o app, oferece cancelar.
+  if (ctx.profile.is_active === false) redirect("/conta-excluindo");
+
   // Auto-materializa qualquer ocorrência pendente das regras recorrentes
   // antes de carregar qualquer página. Silencioso, falha graciosamente.
   // Cron diário continua rodando como fallback.

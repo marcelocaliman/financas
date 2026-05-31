@@ -1,59 +1,61 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { requestDataAccess } from "@/services/lgpd.actions";
+import { requestAccountDeletion } from "@/services/lgpd-deletion.actions";
 
+/**
+ * Exclusão de conta com REAUTH (senha) — D22. Após confirmar, a conta é
+ * desativada na hora e entra em período de arrependimento (cancelável);
+ * o hard-delete acontece pelo cron após o grace.
+ */
 export function DeleteAccountForm() {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [confirm, setConfirm] = useState("");
-  const [reason, setReason] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleRequest = () => {
     if (confirm.trim().toUpperCase() !== "APAGAR") {
       toast.error('Digite "APAGAR" pra confirmar.');
       return;
     }
-    if (!window.confirm("Confirma o pedido de eliminação da conta?")) return;
+    if (!password) {
+      toast.error("Confirme sua senha pra prosseguir.");
+      return;
+    }
+    if (!window.confirm("Tem certeza? A conta será desativada e excluída após o período de arrependimento.")) return;
 
     startTransition(async () => {
-      const r = await requestDataAccess("delete");
-      if (r.error) toast.error(r.error);
-      else {
-        toast.success(
-          "Pedido recebido. Será processado em até 15 dias úteis.",
-        );
-        setConfirm("");
-        setReason("");
+      const r = await requestAccountDeletion(password);
+      if (r.error) {
+        toast.error(r.error);
+        return;
       }
+      toast.success("Conta agendada para exclusão.");
+      router.push("/conta-excluindo");
+      router.refresh();
     });
   };
 
   return (
     <div className="space-y-3">
-      <Field
-        label="Motivo (opcional)"
-        htmlFor="deleteReason"
-        hint="Vc não é obrigado a justificar — mas se quiser deixar feedback…"
-      >
-        <Textarea
-          id="deleteReason"
-          rows={2}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Não preciso mais, mudei pra outro app, etc."
+      <Field label="Confirme sua senha" htmlFor="deletePassword" required hint="Reautenticação obrigatória.">
+        <Input
+          id="deletePassword"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="••••••••"
+          autoComplete="current-password"
         />
       </Field>
-      <Field
-        label={'Digite "APAGAR" pra confirmar'}
-        htmlFor="deleteConfirm"
-        required
-      >
+      <Field label={'Digite "APAGAR" pra confirmar'} htmlFor="deleteConfirm" required>
         <Input
           id="deleteConfirm"
           value={confirm}
@@ -61,13 +63,17 @@ export function DeleteAccountForm() {
           placeholder="APAGAR"
         />
       </Field>
+      <p className="text-[11.5px] text-muted-foreground">
+        Você terá um período de arrependimento pra cancelar. Depois disso, todos os
+        dados são apagados sem volta. A leitura/exportação seguem disponíveis até lá.
+      </p>
       <Button
         variant="danger"
-        disabled={pending || confirm.trim().toUpperCase() !== "APAGAR"}
+        disabled={pending || confirm.trim().toUpperCase() !== "APAGAR" || !password}
         onClick={handleRequest}
       >
         <Trash2 className="w-3.5 h-3.5" strokeWidth={1.8} />
-        Solicitar eliminação da conta
+        Excluir minha conta
       </Button>
     </div>
   );

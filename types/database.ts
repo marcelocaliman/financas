@@ -2503,6 +2503,10 @@ export interface Database {
         };
         Returns: { allowed: boolean; remaining: number; reset_at: string }[];
       };
+      delete_account_complete: {
+        Args: { p_household_id: string };
+        Returns: Json;
+      };
       gc_rate_limit_counters: {
         Args: { p_keep_hours?: number };
         Returns: number;
