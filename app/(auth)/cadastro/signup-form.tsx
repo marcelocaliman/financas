@@ -106,9 +106,9 @@ export function SignupForm({
             <Input
               id="inviteCode"
               name="inviteCode"
-              placeholder="ABCD1234"
+              placeholder="cole o código recebido"
               autoCapitalize="characters"
-              maxLength={8}
+              maxLength={40}
               required
               className="font-mono tracking-[0.08em] uppercase"
             />

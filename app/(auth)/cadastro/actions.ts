@@ -24,7 +24,7 @@ const joinSchema = baseSchema.extend({
   inviteCode: z
     .string()
     .min(4, "Código inválido.")
-    .max(16, "Código inválido.")
+    .max(40, "Código inválido.") // códigos novos têm 32 chars (16 bytes hex)
     .transform((v) => v.trim().toUpperCase()),
 });
 
