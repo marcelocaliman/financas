@@ -8,6 +8,7 @@ import {
   calcProgressiveTax as calcFromTable,
   getAnnualTaxTable,
 } from "@/services/ir/ir-tax-tables";
+import type { IrWarning } from "@/services/ir/warnings";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -64,6 +65,13 @@ export type ImpostoResult = {
   };
   recommendation: "simples" | "completo";
   savings: number; // diferença entre o pior e o melhor modelo
+  /**
+   * Rendimentos que o motor não classificou (ficam FORA da base). Total > 0
+   * significa que a estimativa é PROVISÓRIA até o usuário revisar.
+   */
+  naoClassificadosTotal: number;
+  /** Avisos tipados (renda não classificada, aluguel, tabela estimada). */
+  warnings: IrWarning[];
 };
 
 /**
@@ -218,6 +226,16 @@ export async function computeImposto(
 
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
+  // Avisos: os do motor de rendimentos + tabela estimada (rollforward).
+  const warnings: IrWarning[] = [...rendimentos.warnings];
+  if (taxTable.isEstimate) {
+    warnings.push({
+      code: "tabela_estimada",
+      severity: "atencao",
+      message: `A tabela do IRPF ${year} ainda é estimada (${taxTable.source}). O valor pode mudar quando a tabela oficial for publicada.`,
+    });
+  }
+
   return {
     year,
     taxTableSource: taxTable.source,
@@ -254,6 +272,8 @@ export async function computeImposto(
     },
     recommendation,
     savings: round2(savings),
+    naoClassificadosTotal: round2(rendimentos.naoClassificados.total),
+    warnings,
   };
 }
 

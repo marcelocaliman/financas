@@ -15,6 +15,7 @@ import { BensTable } from "@/components/ir/bens-table";
 import { RendimentosTabs } from "@/components/ir/rendimentos-tabs";
 import { RendaVariavelTable } from "@/components/ir/renda-variavel-table";
 import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
+import { IrWarningsBanner } from "@/components/ir/ir-warnings-banner";
 import { ExportActions } from "@/components/ir/export-actions";
 import { RecomputeDarfsButton } from "@/components/ir/recompute-darfs-button";
 import { CloseYearButton } from "@/components/ir/close-year-button";
@@ -185,6 +186,10 @@ export default async function IRYearPage({
       />
 
       <NotesRealtimeSync />
+
+      {/* Avisos do motor de IR (fail-loud): renda não classificada, aluguel a
+          verificar, tabela estimada. Nunca passam despercebidos. */}
+      <IrWarningsBanner warnings={imposto.warnings} />
 
       {/* Switcher de declarante (só aparece pra casal) */}
       {isCouple ? (

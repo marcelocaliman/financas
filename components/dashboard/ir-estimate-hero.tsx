@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Landmark, Sparkles } from "lucide-react";
+import { ArrowRight, Landmark, Sparkles, AlertTriangle } from "lucide-react";
 import { Panel } from "@/components/ui/panel";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { formatMoney } from "@/lib/utils/format";
@@ -36,6 +36,10 @@ export function IrEstimateHero({
   const isZero = !isRefund && !isDue;
 
   const modelLabel = imposto.recommendation === "completo" ? "completo" : "simplificado";
+
+  // Estimativa é PROVISÓRIA se há renda não classificada (fail-loud, D7) —
+  // o valor pode subir quando o usuário classificar as pendências.
+  const unreviewed = imposto.naoClassificadosTotal > 0;
 
   return (
     <Panel
@@ -87,6 +91,13 @@ export function IrEstimateHero({
                 recomendado
                 {imposto.taxTableIsEstimate ? " · tabela ainda estimada" : ""}
               </p>
+              {unreviewed ? (
+                <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-gold-700 dark:text-gold-500">
+                  <AlertTriangle className="w-3 h-3" strokeWidth={1.8} />
+                  Estimativa provisória — há renda a classificar (
+                  <MoneyMask>{formatMoney(imposto.naoClassificadosTotal)}</MoneyMask>)
+                </p>
+              ) : null}
             </div>
           )}
         </div>
