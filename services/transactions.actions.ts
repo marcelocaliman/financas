@@ -44,6 +44,9 @@ const transferSchema = z.object({
   toAccountId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   description: z.string().optional(),
+  // Valor recebido na conta destino (obrigatório só em transferência
+  // entre moedas diferentes — capturado pela UI).
+  amountTo: z.coerce.number().positive().optional(),
 });
 
 export type TxFormState = {
@@ -78,6 +81,7 @@ export async function createTransaction(
       toAccountId: formData.get("toAccountId"),
       date: formData.get("date"),
       description: formData.get("description") || undefined,
+      amountTo: formData.get("amountTo") || undefined,
     });
     if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -92,6 +96,7 @@ export async function createTransaction(
       p_amount: parsed.data.amount,
       p_date: parsed.data.date,
       p_description: parsed.data.description ?? null,
+      p_amount_to: parsed.data.amountTo ?? null,
     });
     if (error) return { error: error.message };
     for (const p of pathsToInvalidate()) revalidatePath(p);

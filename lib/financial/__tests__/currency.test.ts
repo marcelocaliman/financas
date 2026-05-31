@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildRateMap, convert, convertOrSame } from "@/lib/financial/currency";
+import {
+  buildRateMap,
+  convert,
+  convertOrSame,
+  convertStrict,
+  MissingRateError,
+} from "@/lib/financial/currency";
 
 /**
  * Testes da conversão de moeda — função pura sobre o RateMap.
@@ -84,5 +90,21 @@ describe("convertOrSame", () => {
   it("se conversão falha, devolve valor original (não quebra UI)", () => {
     const map = buildRateMap([]);
     expect(convertOrSame(100, "USD", "BRL", map)).toBe(100);
+  });
+});
+
+describe("convertStrict (caminho de dinheiro)", () => {
+  it("converte quando há taxa", () => {
+    const map = buildRateMap([{ base: "USD", quote: "BRL", rate: 5 }]);
+    expect(convertStrict(10, "USD", "BRL", map)).toBe(50);
+  });
+
+  it("mesma moeda é identidade", () => {
+    expect(convertStrict(10, "BRL", "BRL", buildRateMap([]))).toBe(10);
+  });
+
+  it("LANÇA MissingRateError quando não há taxa (não corrompe saldo)", () => {
+    const map = buildRateMap([]);
+    expect(() => convertStrict(100, "USD", "BRL", map)).toThrow(MissingRateError);
   });
 });

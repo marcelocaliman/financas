@@ -53,7 +53,10 @@ export function convert(
 
 /**
  * Igual a `convert`, mas se não houver taxa, retorna o valor original.
- * Usar quando preferimos "mostrar algo" a "quebrar a UI".
+ * Usar SOMENTE em DISPLAY, onde preferimos "mostrar algo" a "quebrar a UI".
+ *
+ * ⚠️ NUNCA usar em caminho que escreve saldo/`amount_account`: devolver o valor
+ * na moeda errada corrompe somatórios. Pra esses casos use `convertStrict`.
  */
 export function convertOrSame(
   value: number,
@@ -63,6 +66,36 @@ export function convertOrSame(
 ): number {
   const r = convert(value, from, to, rates);
   return r ?? value;
+}
+
+export class MissingRateError extends Error {
+  readonly from: Currency;
+  readonly to: Currency;
+  constructor(from: Currency, to: Currency) {
+    super(
+      `Sem cotação ${from}→${to} pra converter. Cadastre a taxa do dia ou ` +
+        `informe o valor já convertido — não dá pra escrever saldo sem câmbio.`,
+    );
+    this.name = "MissingRateError";
+    this.from = from;
+    this.to = to;
+  }
+}
+
+/**
+ * Conversão ESTRITA pra caminhos de dinheiro: lança `MissingRateError` quando
+ * não há taxa, em vez de devolver o valor cru na moeda errada. Use sempre que
+ * o resultado for virar saldo, base de cálculo ou `amount_account`.
+ */
+export function convertStrict(
+  value: number,
+  from: Currency,
+  to: Currency,
+  rates: RateMap,
+): number {
+  const r = convert(value, from, to, rates);
+  if (r == null) throw new MissingRateError(from, to);
+  return r;
 }
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {

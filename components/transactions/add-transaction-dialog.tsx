@@ -266,12 +266,18 @@ export function AddTransactionDialog({
                   </Field>
                 </div>
                 {crossCurrencyTransfer ? (
-                  <p className="text-[11.5px] text-gold-700 dark:text-gold-500 bg-gold-100/50 dark:bg-gold-700/15 border border-gold-600/30 rounded-[6px] px-2.5 py-2">
-                    ⚠ As contas têm moedas diferentes ({fromCurrency} → {toCurrency}). A
-                    transferência <b>não</b> aplica câmbio — o mesmo número será debitado
-                    e creditado. Para conversão real, registre uma despesa na origem e uma
-                    receita no destino.
-                  </p>
+                  <Field
+                    label={`Valor recebido no destino (${toCurrency})`}
+                    htmlFor="amountTo"
+                    hint={`As contas têm moedas diferentes (${fromCurrency} → ${toCurrency}). Informe quanto entrou na conta destino, conforme o extrato — não convertemos às cegas.`}
+                  >
+                    <MoneyInput name="amountTo" id="amountTo" />
+                    {state?.fieldErrors?.amountTo ? (
+                      <p className="text-[11.5px] text-rust-600 mt-1">
+                        {state.fieldErrors.amountTo}
+                      </p>
+                    ) : null}
+                  </Field>
                 ) : null}
                 <Field htmlFor="tx-description" label="Descrição" hint="Opcional — vamos compor automático com origem/destino se vazio.">
                   <Input

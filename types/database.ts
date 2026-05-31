@@ -2533,6 +2533,7 @@ export interface Database {
           p_amount: number;
           p_date: string;
           p_description?: string | null;
+          p_amount_to?: number | null;
         };
         Returns: string;
       };
