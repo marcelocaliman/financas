@@ -313,45 +313,44 @@ export default async function DashboardPage({
         sobraSparkline={sobraSpark}
       />
 
-      {/* Momento mágico: IRPF do ano se montando sozinho a partir dos lançamentos */}
+      {/* Snapshot do mês: IRPF estimado (o ímã) + carteira, lado a lado */}
       {isCurrent ? (
-        <div className="mt-5 mb-5">
+        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5">
           <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
-        </div>
-      ) : null}
-
-      {/* Ticker do portfolio (totais agregados, sem animação live) */}
-      {isCurrent ? (
-        <PortfolioLiveTicker
-          totalMarketBalance={currentValues.totalMarketBalance}
-          totalBaseBalance={currentValues.totalBaseBalance}
-          displayCurrency={currentValues.displayCurrency}
-          variant="compact"
-        />
-      ) : null}
-
-      {/* Insight de anomalias (somente mês corrente) */}
-      {isCurrent && insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
-
-      {isCurrent && anomalies.length > 0 ? <InsightCard anomalies={anomalies} /> : null}
-
-      {isCurrent && apportSuggestions.length > 0 ? (
-        <ApportSuggestionCard suggestions={apportSuggestions} />
-      ) : null}
-
-      {isCurrent && goalReminders.length > 0 ? (
-        <div className="mb-6">
-          <GoalRemindersCard
-            reminders={goalReminders}
-            accounts={accountsLite}
-            linkedAccountsByGoalId={linkedAccountsByGoalId}
+          <PortfolioLiveTicker
+            totalMarketBalance={currentValues.totalMarketBalance}
+            totalBaseBalance={currentValues.totalBaseBalance}
+            displayCurrency={currentValues.displayCurrency}
+            variant="compact"
           />
         </div>
       ) : null}
 
-      {isCurrent && budgetRows.some((r) => r.status !== "no_budget") ? (
-        <div className="mb-6">
-          <BudgetStatusCard rows={budgetRows} />
+      {/* Cards contextuais — só os que TÊM conteúdo, empacotados em 2 colunas.
+          [&>*]:!mb-0 zera as margens internas dos cards pra o gap cuidar do
+          espaçamento de forma uniforme. */}
+      {isCurrent &&
+      (insights.length > 0 ||
+        anomalies.length > 0 ||
+        apportSuggestions.length > 0 ||
+        goalReminders.length > 0 ||
+        budgetRows.some((r) => r.status !== "no_budget")) ? (
+        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-start [&>*]:!mb-0">
+          {insights.length > 0 ? <SmartInsightsCard insights={insights} /> : null}
+          {anomalies.length > 0 ? <InsightCard anomalies={anomalies} /> : null}
+          {apportSuggestions.length > 0 ? (
+            <ApportSuggestionCard suggestions={apportSuggestions} />
+          ) : null}
+          {goalReminders.length > 0 ? (
+            <GoalRemindersCard
+              reminders={goalReminders}
+              accounts={accountsLite}
+              linkedAccountsByGoalId={linkedAccountsByGoalId}
+            />
+          ) : null}
+          {budgetRows.some((r) => r.status !== "no_budget") ? (
+            <BudgetStatusCard rows={budgetRows} />
+          ) : null}
         </div>
       ) : null}
 
@@ -359,7 +358,7 @@ export default async function DashboardPage({
           O que vence/cai essa semana é mais acionável no dia a dia que a
           projeção de FIRE (que vem logo abaixo). */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-8">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5">
           <UpcomingObligationsCard upcoming={upcoming!} days={7} />
           <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>
@@ -368,7 +367,7 @@ export default async function DashboardPage({
       {/* Independência financeira (FIRE) — linha compacta, é "plus". A análise
           completa mora em /independencia. */}
       {isCurrent ? (
-        <div className="mb-8">
+        <div className="mb-5">
           <CoverageStrip
             coveragePct={coverageRatioDisplay * 100}
             monthlyYield={monthlyYieldDisplay}
@@ -379,7 +378,7 @@ export default async function DashboardPage({
       {/* Top categorias + Composição do patrimônio */}
       <div
         className={
-          isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-8" : "grid grid-cols-1 mb-8"
+          isCurrent ? "grid lg:grid-cols-[1.5fr_1fr] gap-5 mb-5" : "grid grid-cols-1 mb-5"
         }
       >
         <TopCategoriesPanel
