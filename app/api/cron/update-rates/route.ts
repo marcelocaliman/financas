@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { safeJson } from "@/lib/external/resilient-fetch";
 import type { Database, Currency } from "@/types/database";
 
 /**
@@ -25,12 +26,15 @@ const PAIRS: Array<[Currency, Currency]> = [
 
 async function fetchRate(from: Currency, to: Currency): Promise<{ date: string; rate: number } | null> {
   const url = `https://api.frankfurter.app/latest?from=${from}&to=${to}`;
-  const res = await fetch(url, { next: { revalidate: 0 } });
-  if (!res.ok) return null;
-  const json = (await res.json()) as { date: string; rates: Record<string, number> };
-  const rate = json.rates?.[to];
+  // resilient: timeout + retry; degrada (null) em vez de pendurar a invocação.
+  const r = await safeJson<{ date: string; rates: Record<string, number> }>(url, {
+    label: "frankfurter",
+    timeoutMs: 8000,
+  });
+  if (!r.ok) return null;
+  const rate = r.data.rates?.[to];
   if (!rate || rate <= 0) return null;
-  return { date: json.date, rate };
+  return { date: r.data.date, rate };
 }
 
 function isAuthorized(req: NextRequest): boolean {
@@ -74,7 +78,8 @@ export async function GET(req: NextRequest) {
         { onConflict: "base,quote,date" },
       );
       if (error) {
-        return NextResponse.json({ ok: false, pair: key, error: error.message }, { status: 500 });
+        // Degrada: um par com erro não aborta o batch inteiro.
+        results[key] = null;
       }
     }
   }
