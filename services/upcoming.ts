@@ -70,7 +70,7 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
       .eq("is_active", true),
     getDisplayCurrency(),
     getRateMap(),
-    getCreditCardAccountIds(supabase),
+    getCreditCardAccountIds(),
   ]);
   const cardSet = new Set(cardIds);
 

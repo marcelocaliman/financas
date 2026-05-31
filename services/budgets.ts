@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
@@ -79,7 +80,7 @@ export async function getActiveBudgetsForMonth(
  * Comparativo orçado vs gasto pra todas as categorias de despesa que
  * têm budget ativo no mês alvo. Inclui mês anterior pra delta.
  */
-export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsActual[]> {
+export const getBudgetVsActual = cache(async (monthYYYYMM?: string): Promise<BudgetVsActual[]> => {
   const supabase = await createClient();
   const targetMonth = monthYYYYMM ?? monthKeyForDate(new Date());
   const { from, to } = monthRange(targetMonth);
@@ -94,7 +95,7 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
   // no cartão (ainda não saíram do banco). Quando a fatura é paga, conta como
   // gasto da categoria do mês — mas o app não distribui automaticamente entre
   // categorias (pagamento é uma transferência única).
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
   const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
 
   let currQuery = supabase
@@ -221,7 +222,7 @@ export async function getBudgetVsActual(monthYYYYMM?: string): Promise<BudgetVsA
   });
 
   return out;
-}
+});
 
 /**
  * Conta quantas categorias estão acima do limite (status='over') no mês corrente.

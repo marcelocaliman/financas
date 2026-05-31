@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
@@ -17,16 +18,17 @@ import type { Tables } from "@/types/database";
  * feitas em cartões hoje desativados, e ainda assim devem ser excluídas dos
  * agregados de cash.
  */
-export async function getCreditCardAccountIds(
-  supabase?: SupabaseClient,
-): Promise<string[]> {
-  const sb = supabase ?? (await createClient());
+// Memoizado por request (cache): chamado por vários agregadores no mesmo render
+// — deduplica a query. Sem param de client (cria o próprio) pra a chave do
+// cache ser estável.
+export const getCreditCardAccountIds = cache(async (): Promise<string[]> => {
+  const sb = await createClient();
   const { data } = await sb
     .from("accounts")
     .select("id")
     .eq("type", "credit_card");
   return (data ?? []).map((r) => r.id as string);
-}
+});
 
 export type CreditCardBillStatus =
   | "current" // ciclo aberto, ainda acumulando compras

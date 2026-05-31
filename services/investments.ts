@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
@@ -175,12 +176,12 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
  * Retorna a cobertura da renda passiva sobre as despesas fixas médias dos
  * últimos 3 meses. Considera APENAS despesas (não transferências).
  */
-export async function getCoverage(): Promise<{
+export const getCoverage = cache(async (): Promise<{
   monthlyAverageExpense: number;
   monthlyAverageYield: number;
   ratio: number;
   displayCurrency: Currency;
-}> {
+}> => {
   const supabase = await createClient();
   const now = new Date();
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 3, 1))
@@ -192,7 +193,7 @@ export async function getCoverage(): Promise<{
 
   // Coverage FIRE usa cash basis: despesas médias excluem cartão (não saíram
   // do banco). Pagamento da fatura (transfer→cartão) entra no lugar.
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
   const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
 
   let expensesQuery = supabase
@@ -255,4 +256,4 @@ export async function getCoverage(): Promise<{
     ratio,
     displayCurrency,
   };
-}
+});

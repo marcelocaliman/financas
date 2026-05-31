@@ -133,7 +133,7 @@ export type MonthlyCardSpending = {
 export async function getMonthlyCardSpending(monthStr?: string): Promise<MonthlyCardSpending> {
   const supabase = await createClient();
   const { from } = monthRange(monthStr);
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
 
   if (cardIds.length === 0) {
     const displayCurrency = await getDisplayCurrency();
@@ -276,7 +276,7 @@ export const getMonthlySummary = cache(async (monthStr?: string): Promise<Monthl
   // pagamento da fatura. Excluímos transações cujo account é credit_card.
   // EXCEÇÃO: o pagamento da fatura (transfer IN num cartão) conta como Saiu —
   // é o cash real saindo do banco.
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
   const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
 
   let opQuery = supabase
@@ -370,11 +370,11 @@ export type MonthlyHistoryRow = {
  * `endMonth` no formato "YYYY-MM" — se omitido, usa o mês corrente.
  * Útil pra ver "últimos 6 meses terminando em março/2026".
  */
-export async function getMonthlyHistory(
+export const getMonthlyHistory = cache(async (
   months = 6,
   endMonth?: string,
   opts?: { includeForecast?: boolean },
-): Promise<MonthlyHistoryRow[]> {
+): Promise<MonthlyHistoryRow[]> => {
   const supabase = await createClient();
 
   // Calcula o mês de referência (default = mês corrente em SP)
@@ -402,7 +402,7 @@ export async function getMonthlyHistory(
 
   // Modelo cash basis (ver getMonthlySummary): exclui transações em cartão
   // dos KPIs, mas adiciona bill payments (transfer in pra cartão) como expense.
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
   const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
 
   let opQuery = supabase
@@ -513,7 +513,7 @@ export async function getMonthlyHistory(
   }
 
   return out;
-}
+});
 
 /**
  * Histórico mensal por categoria (apenas despesas).
@@ -630,7 +630,7 @@ export async function detectExpenseAnomalies(): Promise<ExpenseAnomaly[]> {
 
   // Anomalias devem refletir cash basis: compras no cartão não disparam alerta
   // (não saiu cash ainda — não distorce o "gastei muito esse mês").
-  const cardIds = await getCreditCardAccountIds(supabase);
+  const cardIds = await getCreditCardAccountIds();
   const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
 
   let currQuery = supabase
