@@ -45,11 +45,31 @@ em /privacidade). Obrigatório pra SaaS público (art. 41).
 
 ## Acesso do contador
 
-O contador tem acesso por ano concedido pelo titular (`accountant_household_access`),
+O contador tem acesso por ano concedido pelo titular (`accountant_household_access.years_allowed`),
 auditado em `accountant_audit_log`. Os dados que ele cria entram no export do
-titular (transparência, art. 18). Estreitar o RLS do contador por ano nas tabelas
-transacionais é um refinamento pendente — exige validar que não quebra a montagem
-de Bens (que precisa de saldos de anos anteriores).
+titular (transparência, art. 18).
+
+### Gap conhecido + plano seguro de correção
+
+Hoje as policies "accountant read" chamam `is_accountant_with_access(household_id)`
+SEM o ano → um contador com `years_allowed = {2024}` consegue ler dados de
+QUALQUER ano do household (2023, 2025, …). É um vazamento real frente à concessão.
+
+**Plano seguro (não aplicado ainda — exige validar o fluxo do contador + Bens):**
+1. Helper `accountant_max_year(p_household_id)` = `max(years_allowed)` da concessão.
+2. Nas 19 policies transacionais, trocar o `using` por
+   `is_accountant_with_access(household_id) AND <ano_da_linha> <= accountant_max_year(household_id)`.
+   - `<ano_da_linha>`: `extract(year from date)` (transactions), coluna `year`
+     (ir_other_incomes, carne_leao_mensal, ir_*), etc. — específico por tabela.
+3. **Por que `<= max` e não `= year`:** a montagem de Bens do ano N usa saldos de
+   anos anteriores ("situação anterior"). `<= max` permite anos anteriores (Bens
+   funciona) e BLOQUEIA anos FUTUROS (o vazamento real, sem risco pra Bens).
+4. Validar com fixture de contador + dados multi-ano que: (a) lê o ano concedido
+   e anteriores, (b) NÃO lê anos posteriores, (c) o relatório de Bens continua
+   correto. Só então aplicar.
+
+Aplicar isso sem (4) pode corromper a visão de IR do contador — por isso fica
+documentado como pendência consciente, não improvisado.
 
 ## Pendências conhecidas (pra lançamento público)
 
