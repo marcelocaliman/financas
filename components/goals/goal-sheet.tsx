@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -130,6 +130,14 @@ export function GoalSheet({
   const [loanSystem, setLoanSystem] = useState<"sac" | "price">(
     (goal?.loan_system as "sac" | "price") ?? initialDefaults.loanSystem,
   );
+  // Progressive disclosure: a config de aporte mensal (modo, prioridade, dia,
+  // waterfall) tem defaults sensatos — fica escondida até o usuário pedir.
+  // Abre automático ao editar uma meta que já tem aporte configurado.
+  const [showContribution, setShowContribution] = useState<boolean>(
+    !!(goal?.allocation_mode && goal.allocation_mode !== "manual") ||
+      !!goal?.contribution_day ||
+      Number(goal?.allocation_value ?? 0) > 0,
+  );
   const [sources, setSources] = useState<SourceDraft[]>(() =>
     enriched
       ? enriched.sources.map((s) => ({
@@ -174,6 +182,11 @@ export function GoalSheet({
           : String(d.loanAnnualRatePct),
       );
       setLoanSystem((goal?.loan_system as "sac" | "price") ?? d.loanSystem);
+      setShowContribution(
+        !!(goal?.allocation_mode && goal.allocation_mode !== "manual") ||
+          !!goal?.contribution_day ||
+          Number(goal?.allocation_value ?? 0) > 0,
+      );
       setSources(
         enriched
           ? enriched.sources.map((s) => ({
@@ -788,7 +801,20 @@ export function GoalSheet({
             </div>
           </div>
 
-          {/* ============ SEÇÃO 2: QUANTO VOU APORTAR ============ */}
+          {/* ============ SEÇÃO 2: QUANTO VOU APORTAR (opcional) ============ */}
+          <button
+            type="button"
+            onClick={() => setShowContribution((v) => !v)}
+            className="w-full flex items-center justify-between py-2 text-[12.5px] text-muted-foreground hover:text-foreground border-t border-border"
+          >
+            <span>Configurar aporte mensal · modo, prioridade, dia <span className="text-faint-foreground">(opcional)</span></span>
+            {showContribution ? (
+              <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+            )}
+          </button>
+          <div className={showContribution ? "" : "hidden"}>
           <div className="rounded-[10px] border border-border bg-surface-muted/40 p-4">
             <h4 className="font-mono text-[11px] uppercase tracking-[0.14em] text-foreground font-medium mb-2">
               Quanto vou aportar
@@ -916,6 +942,8 @@ export function GoalSheet({
               </div>
             ) : null}
           </div>
+          </div>
+          {/* ── fim aporte mensal ── */}
 
           {state?.error ? (
             <p className="text-[12.5px] text-rust-600">{state.error}</p>

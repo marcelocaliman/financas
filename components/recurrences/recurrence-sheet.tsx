@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { HealthPlanScenarioHelper } from "@/components/ir/health-plan-scenario-helper";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,11 @@ export function RecurrenceSheet({
   const [excludeFromIr, setExcludeFromIr] = useState<boolean>(
     rule?.exclude_from_ir ?? false,
   );
+  // Progressive disclosure: forma de pagamento, notas e tudo de IR ficam
+  // escondidos até o usuário pedir (abre automático ao editar algo já preenchido).
+  const [showMore, setShowMore] = useState<boolean>(
+    !!(rule?.payment_method || rule?.notes || rule?.fonte_pagadora_id || rule?.is_tax_deductible),
+  );
 
   const [state, action, pending] = useActionState<RecurrenceFormState | undefined, FormData>(
     isEdit ? updateRecurringRule : createRecurringRule,
@@ -154,6 +160,10 @@ export function RecurrenceSheet({
       setIsTaxDeductible(rule?.is_tax_deductible ?? false);
       setIsSubscription(
         rule?.tags?.includes("subscription") ?? defaultIsSubscription,
+      );
+      setExcludeFromIr(rule?.exclude_from_ir ?? false);
+      setShowMore(
+        !!(rule?.payment_method || rule?.notes || rule?.fonte_pagadora_id || rule?.is_tax_deductible),
       );
     }
   }
@@ -347,27 +357,6 @@ export function RecurrenceSheet({
             </label>
           ) : null}
 
-          {kind !== "transfer" ? (
-            <Field label="Forma de pagamento" htmlFor="paymentMethod" hint="Opcional">
-              <Select
-                value={paymentMethod}
-                onValueChange={setPaymentMethod}
-                name="paymentMethod"
-              >
-                <SelectTrigger id="paymentMethod">
-                  <SelectValue placeholder="—" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">Pix</SelectItem>
-                  <SelectItem value="debit">Débito</SelectItem>
-                  <SelectItem value="credit">Crédito</SelectItem>
-                  <SelectItem value="cash">Dinheiro</SelectItem>
-                  <SelectItem value="auto_debit">Débito automático</SelectItem>
-                </SelectContent>
-              </Select>
-            </Field>
-          ) : null}
-
           <div className="pt-3 border-t border-border">
             <Field label="Frequência" required>
               <PillGroup
@@ -459,6 +448,46 @@ export function RecurrenceSheet({
             </Field>
           </div>
 
+          {/* ── Mais opções — forma de pagamento, notas e IR ficam escondidos
+              até o usuário pedir. ── */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowMore((v) => !v)}
+              className="w-full flex items-center justify-between py-2 text-[12.5px] text-muted-foreground hover:text-foreground border-t border-border"
+            >
+              <span>Mais opções · forma de pagamento, notas, IR</span>
+              {showMore ? (
+                <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+              )}
+            </button>
+          </div>
+
+          {/* Montado sempre (pros campos submeterem), escondido quando fechado. */}
+          <div className={showMore ? "space-y-5" : "hidden"}>
+            {kind !== "transfer" ? (
+              <Field label="Forma de pagamento" htmlFor="paymentMethod" hint="Opcional">
+                <Select
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  name="paymentMethod"
+                >
+                  <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="debit">Débito</SelectItem>
+                    <SelectItem value="credit">Crédito</SelectItem>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="auto_debit">Débito automático</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : null}
+
           <Field label="Notas" htmlFor="notes" hint="Opcional — só pra você">
             <Textarea
               id="notes"
@@ -468,28 +497,6 @@ export function RecurrenceSheet({
               placeholder="Vencimento todo dia 5, débito automático…"
             />
           </Field>
-
-          {/* Toggle "é uma assinatura" — só aparece pra despesa mensal/anual */}
-          {kind === "expense" && (frequency === "monthly" || frequency === "yearly") ? (
-            <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-surface-muted/50 cursor-pointer">
-              <input
-                type="checkbox"
-                name="isSubscription"
-                value="1"
-                defaultChecked={
-                  (rule?.tags ?? []).includes("subscription") || defaultIsSubscription
-                }
-                className="mt-0.5 accent-navy-700"
-              />
-              <div>
-                <div className="text-[13px] text-foreground font-medium">É uma assinatura</div>
-                <div className="text-[11.5px] text-muted-foreground mt-0.5 leading-relaxed">
-                  Aparece em <code className="text-faint-foreground">/assinaturas</code> com totalizador anual.
-                  Marca automaticamente se o nome contém Netflix, Spotify, Claude, etc.
-                </div>
-              </div>
-            </label>
-          ) : null}
 
           {/* Fonte pagadora + retenções — apenas pra receita */}
           {kind === "income" ? (
@@ -635,6 +642,8 @@ export function RecurrenceSheet({
               ) : null}
             </div>
           ) : null}
+          </div>
+          {/* ── fim Mais opções ── */}
 
           {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}
 
