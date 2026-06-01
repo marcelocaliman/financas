@@ -226,7 +226,8 @@ export function PropertySaleDialog({
               </span>
             </div>
             <div className="text-[11px] text-muted-foreground font-sans">
-              DARF vence em {formatDateNumeric(gcapPreview.darfDueDate)}
+              DARF <span className="font-mono">cód. 4600</span> (ganho de capital) vence em{" "}
+              {formatDateNumeric(gcapPreview.darfDueDate)}
             </div>
           </div>
 

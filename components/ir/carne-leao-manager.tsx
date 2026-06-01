@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MoneyInput } from "@/components/ui/money-input";
 import { Badge } from "@/components/ui/badge";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { computeLateFee } from "@/lib/financial/irpf-monthly-table";
 import {
   createCarneLeao,
   deleteCarneLeao,
@@ -126,6 +127,14 @@ export function CarneLeaoManager({
             <tbody>
               {entries.map((e) => {
                 const isOverdue = e.due_date && !e.paid_at && new Date(e.due_date) < new Date();
+                // Multa de mora estimada (0,33%/dia, teto 20%) — juros SELIC
+                // ficam por conta da emissão oficial (precisa da série).
+                const daysLate = isOverdue && e.due_date
+                  ? Math.floor((Date.now() - new Date(e.due_date + "T00:00:00").getTime()) / 86400000)
+                  : 0;
+                const lateFee = daysLate > 0
+                  ? computeLateFee({ principal: Number(e.tax_due), daysLate })
+                  : null;
                 return (
                   <tr key={e.id} className="border-t border-border">
                     <td className="py-2 font-mono text-foreground">
@@ -152,7 +161,7 @@ export function CarneLeaoManager({
                           {isOverdue ? (
                             <Badge tone="rust">
                               <AlertCircle className="w-3 h-3 inline mr-0.5" strokeWidth={2} />
-                              atrasado
+                              atrasado{lateFee && lateFee.multa > 0 ? ` · +R$ ${fmtBRL(lateFee.multa)} multa` : ""}
                             </Badge>
                           ) : null}
                           <Button
