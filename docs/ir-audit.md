@@ -496,3 +496,50 @@ LEGAL BASIS MOSTLY CORRECT. IN RFB 1.585/2015 art. 65 §6º is the right anchor:
 
 REAL BUT BOUNDED DIVERGENCE → SEVERITY LOWERED TO LOW. The gap is genuine and legally grounded: the engine loses a legitimate compensable IRRF credit and consequently over-states future taxDue. However materiality is limited: (1) the engine already models day-trade IRRF as monthly grossProfit * 1%, NOT the legally-correct per-settlement-day positive result — it has no per-day data, so in a loss month the 'missing' credit (sum of winning-day results * 1%) is not even computable with the current data model; a correct fix requires per-day modeling that does not exist here. (2) The day-trade 1% is the deliberately tiny 'dedo-duro' withholding (a cross-check/reporting mechanism), so the lost credit is usually small, becoming non-trivial only on very high-volume day-trade months. Given the bounded financial impact and that the whole IRRF computation is already an approximation, this is a real defect but closer to low than medium.
 
+
+---
+
+## 9. Status das correções (pós-auditoria)
+
+Todos os **bugs confirmados** (que produziam número de imposto errado) foram
+corrigidos com teste — ver o histórico de commits `fix(ir): …`:
+
+| # | Correção | Severidade origem |
+|---|----------|---|
+| 1 | FR1/FR2 + redução Lei 7.713/88 do ganho de capital de imóveis | critical |
+| 2 | Renda variável: day-trade de opção 20%, roteamento por modalidade, IRRF por dia | high/medium |
+| 3 | Vencimento de DARF recua feriados (carnê-leão, mensal, GCAP, renda variável) | medium |
+| 4 | Export .DEC: CNPJ, R73 opções/sinal, R72 IRRF, R99, dívidas, gate D8 do contador | high/medium |
+| 5 | Grupos de Bens do leiaute 2024+ (03/04/05/07/99) + labels 10/11 | high/medium |
+| 6 | Redutor anual Lei 15.270/25 como valor fixo em reais (não fração do imposto) | high |
+| 7 | Comparador separado inclui carnê-leão por filer | high |
+| 8 | 13º e JCP exclusivos; dividendos com aviso 2026; isenção 65+ por mês | high/medium |
+| 9 | Câmbio de ativos no exterior (cron→BRL) + cripto por data da operação | high/medium |
+| — | Multa/juros de mora de DARF (`computeLateFee`) | medium (M3) |
+
+⚠️ Marcados no código como **CONFERIR com contador/MIR** (fonte secundária): os
+coeficientes do redutor anual (8.429,73 / 0,095575) e os números de grupo de
+Bens (poupança 04 vs 06, ETF 04 vs 07, PGBL→Pagamentos).
+
+### 9.1 Gaps de FEATURE pendentes (precisam de migration + UI — não são bugs)
+
+Estes itens da auditoria/crítico de cobertura **não são cálculos errados** — são
+recursos ausentes. Ficam como roadmap priorizado:
+
+| Prioridade | Item | O que falta | Origem |
+|---|---|---|---|
+| Alta | **JCP em investimentos** | enum `investment_movements.kind` ganhar `jcp` + UI + roteamento pra exclusivo cód.10 (o caminho de categoria manual já trata) | M1 / crítico #3 |
+| Alta | **Composição de custo de imóvel** | colunas pra benfeitorias/ITBI/corretagem de compra e despesas de venda + UI; hoje custo é número único | M6 |
+| Alta | **Trava de 5 anos + natureza residencial** na reaplicação 180d | checar `physical_asset_sales` (última isenção <5 anos) e exigir residencial | M5/M7/M19 |
+| Média | **ETF de renda fixa / BDR / ouro** | subtipo no schema de `investments` pra separar do ETF de ações (regime distinto) | RV-03/RV-05 |
+| Média | **RRA** (rendimentos recebidos acumuladamente) | campo nº de meses + regime próprio (tabela /N ou exclusivo) | crítico #2 |
+| Média | **Dependente 21–24 estudante** | flag `is_student` + validação de idade no checklist | crítico #6 |
+| Média | **Obrigatoriedade de declarar / multi-fonte** | checks no checklist (limites de renda/bens, 2+ fontes com IRRF) | crítico #7 |
+| Média | **DARF 4600 de ganho de capital** | gerar DARF + prazo pra venda de bens (hoje só renda variável tem) | crítico #8 |
+| Baixa | **VGBL na ficha de pagamentos** | bloquear VGBL como dedutível (não deduz) | crítico #5 |
+| Baixa | **Pensão alimentícia recebida** | bucket próprio (tributável carnê-leão) separado de aposentadoria | crítico #4 |
+| Baixa | **Distribuição de lucros > presumido** | cálculo do teto presumido (MEI/Simples) + split isento/tributável | crítico #9 |
+| Baixa | **Multa/juros na UI** | `computeLateFee` existe (puro+testado); falta exibir no carnê-leão em atraso + série SELIC | M3 |
+
+Wire-up de cada um exige migration aplicada + UI + teste — fora do escopo das
+correções de bug desta rodada.

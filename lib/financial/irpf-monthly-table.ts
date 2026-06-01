@@ -131,3 +131,31 @@ export function computeRedutorMensal(
   if (rendaBrutaMensal >= 7_350) return 0;
   return Math.max(0, 978.62 - 0.133145 * rendaBrutaMensal);
 }
+
+/**
+ * Multa e juros de mora de DARF pago em atraso (Lei 9.430/96 art. 61):
+ *  - Multa de mora: 0,33% por dia de atraso, limitada a 20%.
+ *  - Juros de mora: SELIC acumulada do mês seguinte ao vencimento até o mês
+ *    anterior ao pagamento + 1% no mês do pagamento.
+ *
+ * `selicAccumulated` é a SELIC acumulada do período (fração, ex.: 0,025 = 2,5%);
+ * o app passa quando tem a série — senão fica só a multa (juros 0). Função PURA.
+ */
+export function computeLateFee(args: {
+  principal: number;
+  daysLate: number;
+  /** SELIC acumulada do período como fração (default 0 = sem dado de juros). */
+  selicAccumulated?: number;
+}): { multa: number; juros: number; total: number } {
+  const principal = Math.max(0, args.principal);
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  if (principal === 0 || args.daysLate <= 0) {
+    return { multa: 0, juros: 0, total: principal };
+  }
+  const multaRate = Math.min(0.2, 0.0033 * args.daysLate); // teto 20%
+  const multa = round2(principal * multaRate);
+  // Juros SELIC do período + 1% no mês do pagamento (quando há dado de SELIC).
+  const jurosRate = (args.selicAccumulated ?? 0) > 0 ? (args.selicAccumulated ?? 0) + 0.01 : 0;
+  const juros = round2(principal * jurosRate);
+  return { multa, juros, total: round2(principal + multa + juros) };
+}

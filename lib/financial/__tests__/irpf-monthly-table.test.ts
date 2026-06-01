@@ -2,7 +2,28 @@ import { describe, it, expect } from "vitest";
 import {
   computeCarneLeaoMonthly,
   computeRedutorMensal,
+  computeLateFee,
 } from "@/lib/financial/irpf-monthly-table";
+
+describe("computeLateFee — multa e juros de mora (Lei 9.430/96 art. 61)", () => {
+  it("em dia (daysLate ≤ 0) → sem multa/juros", () => {
+    expect(computeLateFee({ principal: 1000, daysLate: 0 })).toEqual({ multa: 0, juros: 0, total: 1000 });
+  });
+  it("multa 0,33%/dia: 10 dias → 3,3% de 1000 = 33", () => {
+    const r = computeLateFee({ principal: 1000, daysLate: 10 });
+    expect(r.multa).toBeCloseTo(33, 2);
+    expect(r.juros).toBe(0); // sem SELIC informada
+    expect(r.total).toBeCloseTo(1033, 2);
+  });
+  it("multa tem teto de 20% (atraso longo)", () => {
+    const r = computeLateFee({ principal: 1000, daysLate: 200 });
+    expect(r.multa).toBe(200); // 0,33%×200 = 66% → capado em 20%
+  });
+  it("juros = SELIC acumulada + 1% no mês do pagamento", () => {
+    const r = computeLateFee({ principal: 1000, daysLate: 40, selicAccumulated: 0.025 });
+    expect(r.juros).toBeCloseTo(35, 2); // (2,5% + 1%) × 1000
+  });
+});
 
 describe("computeCarneLeaoMonthly — vencimento recua feriado", () => {
   it("competência abr/2018 → DARF de mai/2018 recua Corpus Christi (31/05) pra 30/05", () => {
