@@ -268,6 +268,11 @@ export async function adjustAccountBalance(
     account_id: accountId,
     kind,
     amount,
+    // amount_account é o que o trigger de saldo usa pra mover o current_balance.
+    // O default da coluna é 0 — se não setar aqui, o ajuste cria a transação mas
+    // NÃO mexe no saldo (bug: "ajustei e não atualizou"). Ajuste é na moeda da
+    // conta, então amount_account = amount.
+    amount_account: amount,
     description: notes || `Ajuste de saldo · ${acc.name}`,
     date: today,
     created_by: ctx.profile.id,
