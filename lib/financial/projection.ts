@@ -11,6 +11,13 @@ export function projectMonthEnd(
   totalExpense: number,
   daysElapsed: number,
   daysInMonth: number,
+  /**
+   * Gasto FIXO já conhecido que ainda vai sair este mês — a fatura do cartão que
+   * vence no mês. Entra no projetado SEM ser extrapolado (é evento único, não
+   * ritmo diário). Sem isso, a "sobra" fica otimista demais pra quem gasta no
+   * cartão (o gasto fica invisível até a fatura ser paga).
+   */
+  fixedUpcomingExpense = 0,
 ): {
   projectedExpense: number;
   projectedNet: number;
@@ -24,7 +31,8 @@ export function projectMonthEnd(
   const MIN_DAYS_FOR_RATE = 5;
   const dailyExpenseRate =
     daysElapsed >= MIN_DAYS_FOR_RATE && daysElapsed > 0 ? totalExpense / daysElapsed : 0;
-  const projectedExpense = totalExpense + dailyExpenseRate * remainingDays;
+  const projectedExpense =
+    totalExpense + dailyExpenseRate * remainingDays + Math.max(0, fixedUpcomingExpense);
   return {
     projectedExpense: Math.round(projectedExpense * 100) / 100,
     projectedNet: Math.round((totalIncome - projectedExpense) * 100) / 100,

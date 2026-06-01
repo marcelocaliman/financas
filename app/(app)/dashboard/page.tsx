@@ -18,6 +18,7 @@ import { PortfolioLiveTicker } from "@/components/investments/portfolio-live-tic
 import { getCurrentUserContext } from "@/services/auth";
 import { getAccountsTotals, getAccountsTotalsAt, listAccounts } from "@/services/accounts";
 import { getCoverage, getPortfolioStats } from "@/services/investments";
+import { getOpenCreditCardBills } from "@/services/credit-card";
 import { getCurrentValueMap } from "@/services/quotes";
 import { getPhysicalAssetsTotals } from "@/services/physical-assets";
 import { getPortfolioState } from "@/services/portfolio-state";
@@ -178,12 +179,35 @@ export default async function DashboardPage({
     if (linked.length > 0) linkedAccountsByGoalId[g.id] = linked;
   }
 
+  // Fatura(s) de cartão que VENCEM neste mês e ainda não foram pagas — entram na
+  // projeção da sobra (senão o gasto do cartão fica invisível e a sobra infla).
+  // Só no mês corrente; faturas pagas (paidAmount) já estão no fluxo de caixa.
+  let cardBillDueThisMonth = 0;
+  if (isCurrent) {
+    const bills = await getOpenCreditCardBills().catch(() => []);
+    cardBillDueThisMonth = bills
+      .filter(
+        (b) =>
+          (b.status === "closed_pending" || b.status === "overdue") &&
+          b.dueDate.slice(0, 7) === currentMonth,
+      )
+      .reduce((s, b) => s + Math.max(0, b.totalOpen - b.paidAmount), 0);
+  }
+
   // Forecast em mês futuro
   const effectiveIncome = summary.income + (forecast?.income ?? 0);
   const effectiveExpense = summary.expense + (forecast?.expense ?? 0);
-  const projection = projectMonthEnd(effectiveIncome, effectiveExpense, daysElapsed, daysInMonth);
+  const projection = projectMonthEnd(
+    effectiveIncome,
+    effectiveExpense,
+    daysElapsed,
+    daysInMonth,
+    cardBillDueThisMonth,
+  );
+  // Ritmo de gasto considera a fatura a vencer (coerente com a projeção).
+  const projectedOut = effectiveExpense + cardBillDueThisMonth;
   const expenseVsIncome =
-    effectiveIncome > 0 ? effectiveExpense / effectiveIncome : effectiveExpense > 0 ? 2 : 0;
+    effectiveIncome > 0 ? projectedOut / effectiveIncome : projectedOut > 0 ? 2 : 0;
   const isForecastMode = forecast != null && forecast.count > 0;
 
   // Sobra média mensal (últimos 6 meses) — usada em FIRE ETA, metas ETA, etc.

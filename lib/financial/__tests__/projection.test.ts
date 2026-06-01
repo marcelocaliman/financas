@@ -28,4 +28,18 @@ describe("projectMonthEnd — estável no começo do mês", () => {
     expect(r.projectedExpense).toBe(6_000);
     expect(r.remainingDays).toBe(0);
   });
+
+  it("inclui a fatura do cartão a vencer (não extrapolada) na projeção", () => {
+    // Dia 1: renda 15.185, gasto não-cartão 3.169, fatura do cartão 12.356.
+    // sobra real ≈ 15.185 − 3.169 − 12.356 = −340 (não os +12.016 sem a fatura).
+    const r = projectMonthEnd(15_185, 3_169, 1, 30, 12_356);
+    expect(r.projectedExpense).toBe(15_525);
+    expect(r.projectedNet).toBe(-340);
+  });
+
+  it("fatura é evento único: NÃO é multiplicada pelo ritmo diário", () => {
+    // dia 10: 3.000 em 10 dias → 9.000 extrapolado; + fatura 12.000 fixa = 21.000
+    const r = projectMonthEnd(30_000, 3_000, 10, 30, 12_000);
+    expect(r.projectedExpense).toBe(21_000);
+  });
 });
