@@ -53,6 +53,20 @@ export async function GET(req: Request) {
       );
     }
 
+    // Gate D8 também pro contador: não exporta declaração com renda não
+    // classificada (mesmo bloqueio do titular — evita transmitir incompleto).
+    const acctRendCheck = await getRendimentosReport(year, householdIdParam);
+    if (acctRendCheck.naoClassificados.total > 0) {
+      return NextResponse.json(
+        {
+          error:
+            `Há R$ ${acctRendCheck.naoClassificados.total.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} ` +
+            `em renda não classificada nesta declaração. O titular precisa resolver no modo revisão antes da exportação.`,
+        },
+        { status: 409 },
+      );
+    }
+
     await logAccountantAction({
       householdId: householdIdParam,
       action: url.searchParams.get("format") === "txt" ? "export_txt" : "export_dec",

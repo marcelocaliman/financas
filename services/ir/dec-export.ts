@@ -42,6 +42,12 @@ function moneyToReceita(v: number): string {
   return Math.round(Math.abs(v) * 100).toString();
 }
 
+/** Igual a moneyToReceita mas preserva o sinal (prejuízo de renda variável). */
+export function signedMoneyToReceita(v: number): string {
+  const digits = Math.round(Math.abs(v) * 100).toString();
+  return v < 0 ? `-${digits}` : digits;
+}
+
 function clean(s: string | null | undefined, max: number): string {
   if (!s) return "";
   return s
@@ -50,6 +56,12 @@ function clean(s: string | null | undefined, max: number): string {
     .replace(/[|\r\n]/g, " ")
     .trim()
     .slice(0, max);
+}
+
+/** CNPJ/CPF só com dígitos (remove pontuação ANTES de cortar — senão trunca inválido). */
+export function cleanDoc(s: string | null | undefined, max = 14): string {
+  if (!s) return "";
+  return s.replace(/\D/g, "").slice(0, max);
 }
 
 export type DecBundle = {
@@ -104,7 +116,7 @@ export async function generateDec(args: {
           pad(group.group, 2, "0", "left"),
           pad(item.code, 2, "0", "left"),
           "105", // BR (105 = Brasil)
-          clean(item.cnpj, 14),
+          cleanDoc(item.cnpj, 14),
           clean(item.discrimination, 510),
           moneyToReceita(item.previousYearValue),
           moneyToReceita(item.currentYearValue),
@@ -114,13 +126,30 @@ export async function generateDec(args: {
   }
 
   // ============================================================
+  // R28 — Dívidas e Ônus Reais (saldo em 31/12; obrigatório > R$ 5.000)
+  // ============================================================
+  for (const d of bens.dividas.items) {
+    lines.push(
+      [
+        "R28",
+        clean(d.kindLabel, 40),
+        cleanDoc(d.creditorCnpjCpf, 14),
+        clean(d.creditorName, 60),
+        clean(d.description, 510),
+        moneyToReceita(d.currentBalance),
+        d.currentBalance > 5000 ? "S" : "N", // declaração obrigatória
+      ].join("|"),
+    );
+  }
+
+  // ============================================================
   // R51 — Rendimentos Tributáveis Recebidos de PJ
   // ============================================================
   for (const r of rendimentos.tributaveis.rows) {
     lines.push(
       [
         "R51",
-        clean(r.payerCnpjCpf, 14),
+        cleanDoc(r.payerCnpjCpf, 14),
         clean(r.payerName, 60),
         moneyToReceita(r.grossAmount),
         moneyToReceita(r.thirteenth),
@@ -138,7 +167,7 @@ export async function generateDec(args: {
       [
         "R71",
         pad(r.receitaCode ?? "99", 2, "0", "left"),
-        clean(r.payerCnpjCpf, 14),
+        cleanDoc(r.payerCnpjCpf, 14),
         clean(r.payerName, 60),
         clean(r.description, 60),
         moneyToReceita(r.grossAmount),
@@ -154,10 +183,11 @@ export async function generateDec(args: {
       [
         "R72",
         pad(r.receitaCode ?? "99", 2, "0", "left"),
-        clean(r.payerCnpjCpf, 14),
+        cleanDoc(r.payerCnpjCpf, 14),
         clean(r.payerName, 60),
         clean(r.description, 60),
         moneyToReceita(r.grossAmount),
+        moneyToReceita(r.irrf), // IRRF retido — antes omitido (impedia conciliação)
       ].join("|"),
     );
   }
@@ -165,7 +195,7 @@ export async function generateDec(args: {
   // ============================================================
   // R73 — Renda Variável (resumo mensal swing/day/fii)
   // ============================================================
-  const allMonths = [...rv.swing, ...rv.dayTrade, ...rv.fii].filter(
+  const allMonths = [...rv.swing, ...rv.dayTrade, ...rv.fii, ...rv.options].filter(
     (m) => m.grossSales > 0 || m.grossProfit !== 0,
   );
   for (const m of allMonths) {
@@ -173,9 +203,9 @@ export async function generateDec(args: {
       [
         "R73",
         pad(m.month.toString(), 2, "0", "left"),
-        m.kind, // swing | day_trade | fii
+        m.kind, // swing | day_trade | fii | options
         moneyToReceita(m.grossSales),
-        moneyToReceita(m.grossProfit),
+        signedMoneyToReceita(m.grossProfit), // preserva sinal do prejuízo
         moneyToReceita(m.taxableBase),
         moneyToReceita(m.irrfRetained),
         moneyToReceita(m.taxDue),
@@ -185,9 +215,9 @@ export async function generateDec(args: {
   }
 
   // ============================================================
-  // R99 — Trailer
+  // R99 — Trailer (conta TODAS as linhas, incluindo o próprio R99)
   // ============================================================
-  lines.push(["R99", pad(lines.length.toString(), 6, "0", "left")].join("|"));
+  lines.push(["R99", pad((lines.length + 1).toString(), 6, "0", "left")].join("|"));
 
   const content = lines.join("\n") + "\n";
   const filename = `IRPF_${args.year}_${cpfDigits}.DEC`;
@@ -320,11 +350,19 @@ function generateHumanReadable(
   lines.push("\n" + sep);
   lines.push(`RENDA VARIÁVEL — APURAÇÃO MENSAL`);
   lines.push(sep);
-  for (const kind of ["swing", "day_trade", "fii"] as const) {
-    const months = kind === "swing" ? rv.swing : kind === "day_trade" ? rv.dayTrade : rv.fii;
+  for (const kind of ["swing", "day_trade", "fii", "options"] as const) {
+    const months =
+      kind === "swing" ? rv.swing
+        : kind === "day_trade" ? rv.dayTrade
+          : kind === "fii" ? rv.fii
+            : rv.options;
     const monthsWithSales = months.filter((m) => m.grossSales > 0);
     if (monthsWithSales.length === 0) continue;
-    const label = kind === "swing" ? "Swing trade (ações)" : kind === "day_trade" ? "Day trade" : "FII";
+    const label =
+      kind === "swing" ? "Swing trade (ações)"
+        : kind === "day_trade" ? "Day trade"
+          : kind === "fii" ? "FII"
+            : "Opções";
     lines.push(`\n[${label}]`);
     for (const m of monthsWithSales) {
       const monthName = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][m.month - 1];
