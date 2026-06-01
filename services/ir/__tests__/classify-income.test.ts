@@ -76,6 +76,11 @@ describe("classifyIncomeTx — 13º, JCP e dividendos 2026", () => {
     expect(r.bucket).toBe("isento");
     expect(r.warning?.code).toBe("dividendos_2026_irrf");
   });
+  it("pensão alimentícia recebida → isento cód.22 (ADI 5422), não aposentadoria", () => {
+    const r = classifyIncomeTx({ ...base, cat: "Pensão alimentícia" });
+    expect(r.bucket).toBe("isento");
+    expect(r.receitaCode).toBe("22");
+  });
 });
 
 describe("classifyIncomeTx — o catch-all fail-loud", () => {

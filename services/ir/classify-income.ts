@@ -17,6 +17,7 @@ import {
   isDividendCategory,
   isThirteenthCategory,
   isJcpCategory,
+  isPensaoAlimenticiaCategory,
   isGenericPassiveCategory,
 } from "@/services/ir/income-aliases";
 import type { IrWarning } from "@/services/ir/warnings";
@@ -83,6 +84,17 @@ export function classifyIncomeTx(agg: IncomeAgg): IncomeClassification {
         message:
           "Aluguel é tributável (carnê-leão). Confira se já não está lançado no carnê-leão pra não contar em dobro — lá você ainda deduz condomínio/IPTU.",
       },
+    };
+  }
+
+  // 2b) Pensão ALIMENTÍCIA recebida → ISENTA (ADI 5422/2022). Checa ANTES de
+  //     aposentadoria (senão "pensão" cairia no pool de aposentadoria/65+).
+  if (isPensaoAlimenticiaCategory(cat)) {
+    return {
+      bucket: "isento",
+      receitaCode: "22",
+      confidence: "alta",
+      reason: "Pensão alimentícia recebida (isenta — ADI 5422/2022)",
     };
   }
 

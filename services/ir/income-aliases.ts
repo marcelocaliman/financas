@@ -59,6 +59,15 @@ const JCP_ALIASES = [
   "juros sobre o capital",
 ];
 
+// Pensão ALIMENTÍCIA recebida — desde a ADI 5422 (2022) é ISENTA pra quem
+// recebe. Não confundir com pensão por morte/previdenciária (aposentadoria).
+const PENSAO_ALIMENTICIA_ALIASES = [
+  "pensao alimenticia",
+  "pensao de alimentos",
+  "alimentos judiciais",
+  "pensao alimenticia recebida",
+];
+
 const APOSENTADORIA_ALIASES = [
   "aposentadoria",
   "aposentadorias",
@@ -125,6 +134,11 @@ export function isThirteenthCategory(cat: string): boolean {
 /** JCP — tributação exclusiva 15% na fonte (cód. 10). */
 export function isJcpCategory(cat: string): boolean {
   return matchesAny(cat, JCP_ALIASES);
+}
+
+/** Pensão alimentícia recebida — isenta desde a ADI 5422 (2022). */
+export function isPensaoAlimenticiaCategory(cat: string): boolean {
+  return matchesAny(cat, PENSAO_ALIMENTICIA_ALIASES);
 }
 
 /**
