@@ -81,7 +81,7 @@ export function WithdrawYieldDialog({
       const fy = state.fromYield ?? 0;
       const pr = state.principalReduction ?? 0;
       toast.success(
-        `Saque registrado · R$ ${formatMoney(fy)} de rendimento + R$ ${formatMoney(pr)} de custo (proporcional).`,
+        `Saque registrado · ${formatMoney(fy)} de rendimento (tributável) + ${formatMoney(pr)} de principal.`,
       );
       onOpenChange(false);
     }
@@ -139,7 +139,7 @@ export function WithdrawYieldDialog({
             label="Valor a sacar"
             htmlFor="amount"
             required
-            hint="A posição reduz proporcionalmente. Acima do rendimento acumulado: você diminui capital além dos ganhos (alerta)."
+            hint="O dinheiro sai do montante total do ativo. A divisão rendimento/principal (abaixo) é só pra calcular o IR — só o rendimento é tributado."
           >
             <MoneyInput
               name="amount"
@@ -160,36 +160,42 @@ export function WithdrawYieldDialog({
               className={
                 "rounded-[10px] px-4 py-3 text-[12.5px] " +
                 (exceededYield
-                  ? "bg-rust-100/40 dark:bg-rust-700/15 border border-rust-600/30"
+                  ? "bg-gold-50 dark:bg-gold-700/10 border border-gold-600/30"
                   : "bg-olive-50 dark:bg-olive-700/10 border border-olive-600/25")
               }
             >
               {exceededYield ? (
-                <div className="flex items-start gap-2 text-rust-600 mb-1.5">
+                <div className="flex items-start gap-2 text-gold-700 dark:text-gold-500 mb-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.7} />
-                  <b>Saque maior que o rendimento acumulado — está reduzindo capital além dos ganhos.</b>
+                  <span>
+                    Saque maior que tudo que o ativo já rendeu ({formatMoney(accYield)}) — além
+                    dos juros, você está resgatando parte do principal. Não muda o IR; é só pra
+                    você saber que está consumindo o montante, não só os ganhos.
+                  </span>
                 </div>
               ) : null}
               <div className="font-mono space-y-0.5">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vende {(ratio * 100).toFixed(2).replace(".", ",")}% da posição</span>
-                  <span className="text-foreground tabular-nums">R$ {formatMoney(amount)}</span>
+                  <span className="text-muted-foreground">
+                    Sai do montante ({(ratio * 100).toFixed(2).replace(".", ",")}% da posição)
+                  </span>
+                  <span className="text-foreground tabular-nums">{formatMoney(amount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">→ parte que é rendimento</span>
+                  <span className="text-muted-foreground">↳ rendimento (tributável no IR)</span>
                   <span className="text-olive-700 dark:text-olive-500 tabular-nums">
-                    R$ {formatMoney(previewFromYield)}
+                    {formatMoney(previewFromYield)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">→ parte que é custo (initial reduz)</span>
+                  <span className="text-muted-foreground">↳ principal (devolução, isento)</span>
                   <span className="text-navy-700 dark:text-navy-300 tabular-nums">
-                    R$ {formatMoney(previewPrincipalReduction)}
+                    {formatMoney(previewPrincipalReduction)}
                   </span>
                 </div>
-                <div className="flex justify-between border-t border-border/40 pt-1 mt-1">
-                  <span className="text-faint-foreground">Rentabilidade % preservada</span>
-                  <span className="text-faint-foreground tabular-nums">✓</span>
+                <div className="border-t border-border/40 pt-1 mt-1 text-[11.5px] text-faint-foreground leading-snug">
+                  O saque inteiro sai do montante. A divisão acima é só pra calcular o IR —
+                  só o rendimento é tributado.
                 </div>
               </div>
             </div>
@@ -245,14 +251,10 @@ export function WithdrawYieldDialog({
             </Button>
             <Button
               type="submit"
-              variant={exceededYield ? "danger" : "primary"}
+              variant="primary"
               disabled={pending || amount <= 0}
             >
-              {pending
-                ? "Sacando…"
-                : exceededYield
-                  ? "Sacar reduzindo capital"
-                  : "Registrar saque"}
+              {pending ? "Sacando…" : "Registrar saque"}
             </Button>
           </DialogFooter>
         </form>
