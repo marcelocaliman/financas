@@ -212,6 +212,12 @@ export function AccountCard({
                 className={cn("text-[24px] tracking-[-0.02em] mt-1 items-start", balanceColor)}
                 secondaryClassName="text-[11px]"
               />
+              {account.type === "credit_card" && balanceMode === "current" ? (
+                <p className="text-[11px] text-faint-foreground mt-2 leading-snug">
+                  Soma de todas as compras lançadas e ainda não pagas (os dois
+                  ciclos abertos). O valor da fatura a pagar está em “Faturas abertas”.
+                </p>
+              ) : null}
             </>
           )}
         </div>

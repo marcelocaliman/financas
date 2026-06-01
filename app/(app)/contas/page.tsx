@@ -16,6 +16,7 @@ import { monthRange } from "@/services/transactions";
 import { monthProgress } from "@/lib/financial/projection";
 import { listFilers, getRegimeContext } from "@/services/ir/filers";
 import type { AccountType, MarriageRegime, Tables } from "@/types/database";
+import { formatMoney } from "@/lib/utils/format";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,18 @@ export default async function ContasPage({
     .filter((a) => a.type === "credit_card")
     .reduce((s, a) => s + a.displayBalance, 0);
 
+  // Fatura A PAGAR (fechada, aguardando pagamento) vs EM FORMAÇÃO (ciclo aberto).
+  // O KPI mostra o que você paga (a fatura a pagar), não o saldo do cartão — que
+  // soma compras de DOIS ciclos + inclui só o que já lançou, então nunca bate com
+  // "a fatura". A "fatura aberta" real vem de openBills.
+  const totalPayable = openBills
+    .filter((b) => b.status === "closed_pending" || b.status === "overdue")
+    .reduce((s, b) => s + Math.max(0, b.totalOpen - b.paidAmount), 0);
+  const totalForming = openBills
+    .filter((b) => b.status === "current")
+    .reduce((s, b) => s + b.totalOpen, 0);
+  const hasPayable = totalPayable > 0.005;
+
   // Δ vs mês anterior — só no mês corrente
   const liquidDeltaAbs =
     prevTotals != null ? liquidExcludingInvCash - prevTotals.liquidExcludingInvestmentCash : null;
@@ -80,7 +93,23 @@ export default async function ContasPage({
     : position === "past"
       ? `Saldo líquido · fim de ${monthLabel}`
       : `Saldo líquido · previsto pra ${monthLabel}`;
-  const creditHint = isCurrent ? "Cartão (fatura aberta)" : `Cartão · ${monthLabel}`;
+  // No mês corrente o KPI vira "fatura a pagar" (o valor real do boleto). Sem
+  // fatura fechada a pagar, mostra a que está em formação. Em meses passados/
+  // futuros, mantém o saldo do cartão daquele mês.
+  const creditLabel = isCurrent
+    ? hasPayable
+      ? "Cartão · fatura a pagar"
+      : "Cartão · em formação"
+    : `Cartão · ${monthLabel}`;
+  const creditValue = isCurrent
+    ? hasPayable
+      ? totalPayable
+      : totalForming || Math.abs(creditUsed)
+    : Math.abs(creditUsed);
+  const creditKpiHint =
+    isCurrent && hasPayable && totalForming > 0.005
+      ? `+ ${formatMoney(totalForming)} em formação`
+      : undefined;
 
   // Agrupamento por instituição (apenas info — não muda o grid)
   const byInstitution = new Map<string, { count: number; total: number }>();
@@ -130,9 +159,10 @@ export default async function ContasPage({
               deltaPct={liquidDeltaPct}
             />
             <KpiCard
-              label={creditHint}
-              value={Math.abs(creditUsed)}
+              label={creditLabel}
+              value={creditValue}
               tone={creditUsed < 0 ? "negative" : "neutral"}
+              hint={creditKpiHint}
             />
             <KpiCard
               label="Patrimônio nas contas"
