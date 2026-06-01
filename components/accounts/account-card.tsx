@@ -232,8 +232,8 @@ export function AccountCard({
               />
               {account.type === "credit_card" && balanceMode === "current" ? (
                 <p className="text-[11px] text-faint-foreground mt-2 leading-snug">
-                  Soma de todas as compras lançadas e ainda não pagas (os dois
-                  ciclos abertos). O valor da fatura a pagar está em “Faturas abertas”.
+                  Total das faturas abertas — toda compra já conta como dívida, mesmo
+                  parcela com data futura. A fatura a pagar está em “Faturas abertas”.
                 </p>
               ) : null}
             </>
@@ -274,10 +274,10 @@ function CreditCardBreakdown({
   dueDate: string | null;
   currency: "BRL" | "EUR" | "USD" | "GBP";
 }) {
-  // Saldo é negativo (dívida). |saldo| = fatura a pagar + parte já lançada do
-  // ciclo em formação. O resto da fatura em formação são parcelas futuras (ainda
-  // fora do saldo).
-  const postedForming = Math.max(0, Math.abs(balance) - payable);
+  // Saldo é negativo (dívida) e ACCRUAL: |saldo| = fatura a pagar + fatura em
+  // formação (a soma das faturas abertas). Toda compra já conta, mesmo parcela
+  // com data futura.
+  const forming = Math.max(0, Math.abs(balance) - payable);
   return (
     <div>
       <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
@@ -303,18 +303,18 @@ function CreditCardBreakdown({
         </div>
         <div className="flex items-center justify-between text-[12px]">
           <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground">
-            Próxima fatura · já lançado
+            Fatura em formação
           </span>
           <Money
-            value={postedForming}
+            value={forming}
             currency={currency}
             className="font-mono text-[12.5px] tabular-nums text-foreground inline-flex !flex-row !items-baseline"
           />
         </div>
       </div>
       <p className="text-[11px] text-faint-foreground mt-2 leading-snug">
-        As duas somam o saldo. Parcelas futuras ainda não entram — por isso o saldo
-        é menor que a soma das faturas.
+        As duas faturas abertas somam o saldo — toda compra já conta como dívida,
+        mesmo as parcelas que ainda vão cair.
       </p>
     </div>
   );

@@ -48,6 +48,35 @@ export type AccountsTotals = {
   displayCurrency: Currency;
 };
 
+/**
+ * Cartão é ACCRUAL: a compra vira dívida no momento da compra, não quando a
+ * parcela "cai". Soma os deltas das compras/estornos FUTUROS (data > hoje, ainda
+ * não aplicados no current_balance) por cartão — pro saldo refletir a dívida
+ * total (= soma das faturas abertas), não só o que já caiu.
+ */
+async function futureCreditCardDeltas(cardIds: string[]): Promise<Map<string, number>> {
+  const m = new Map<string, number>();
+  if (cardIds.length === 0) return m;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("account_id, kind, amount_account")
+    .in("account_id", cardIds)
+    .in("kind", ["expense", "income"])
+    .eq("is_historical_ir_only", false)
+    .gt("date", todayISO());
+  for (const t of (data ?? []) as Array<{
+    account_id: string;
+    kind: "income" | "expense";
+    amount_account: number;
+  }>) {
+    const amt = Number(t.amount_account ?? 0);
+    // expense aumenta a dívida (delta negativo); income (estorno) abate.
+    m.set(t.account_id, (m.get(t.account_id) ?? 0) + (t.kind === "income" ? amt : -amt));
+  }
+  return m;
+}
+
 export async function getAccountsTotals(): Promise<AccountsTotals> {
   const [accounts, displayCurrency, rates] = await Promise.all([
     listAccounts(),
@@ -61,8 +90,13 @@ export async function getAccountsTotals(): Promise<AccountsTotals> {
     investment: 0,
     cash: 0,
   } as Record<AccountType, number>;
+  const cardDeltas = await futureCreditCardDeltas(
+    accounts.filter((a) => a.type === "credit_card").map((a) => a.id),
+  );
   for (const a of accounts) {
-    const native = Number(a.current_balance ?? 0);
+    const native =
+      Number(a.current_balance ?? 0) +
+      (a.type === "credit_card" ? (cardDeltas.get(a.id) ?? 0) : 0);
     const converted = convertOrSame(native, a.currency, displayCurrency, rates);
     byType[a.type] += converted;
   }
@@ -305,9 +339,17 @@ export async function listAccountsForMonth(
   const assetsByAccount = await getAssetsBalanceByAccount(accounts);
 
   if (position === "current") {
+    // Cartão é ACCRUAL: o saldo soma também as parcelas futuras ainda não
+    // aplicadas (= soma das faturas abertas), não só o que já caiu — senão parece
+    // que você deve menos do que deve. Caixa segue date-aware (ver helper).
+    const cardDeltas = await futureCreditCardDeltas(
+      accounts.filter((a) => a.type === "credit_card").map((a) => a.id),
+    );
     return accounts.map((a) => ({
       ...a,
-      displayBalance: Number(a.current_balance ?? 0),
+      displayBalance:
+        Number(a.current_balance ?? 0) +
+        (a.type === "credit_card" ? (cardDeltas.get(a.id) ?? 0) : 0),
       balanceMode: "current" as const,
       assetsBalance: assetsByAccount.get(a.id) ?? 0,
     }));
