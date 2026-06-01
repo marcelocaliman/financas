@@ -18,7 +18,12 @@ export function projectMonthEnd(
   remainingDays: number;
 } {
   const remainingDays = Math.max(0, daysInMonth - daysElapsed);
-  const dailyExpenseRate = daysElapsed > 0 ? totalExpense / daysElapsed : 0;
+  // No COMEÇO do mês a extrapolação é instável: 1 dia de despesa × 30 explode
+  // (ex.: R$ 3k no dia 1 viraria R$ 90k projetados). Só projeta pelo ritmo
+  // quando há amostra suficiente (≥ 5 dias). Antes disso, usa o que já entrou.
+  const MIN_DAYS_FOR_RATE = 5;
+  const dailyExpenseRate =
+    daysElapsed >= MIN_DAYS_FOR_RATE && daysElapsed > 0 ? totalExpense / daysElapsed : 0;
   const projectedExpense = totalExpense + dailyExpenseRate * remainingDays;
   return {
     projectedExpense: Math.round(projectedExpense * 100) / 100,

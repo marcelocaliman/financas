@@ -63,12 +63,8 @@ export async function payCreditCardBill(input: {
   });
   if (error) return { error: error.message };
 
-  // Re-deriva os saldos (cartão + conta de origem) — barato e idempotente.
-  try {
-    await supabase.rpc("recompute_household_balances");
-  } catch {
-    /* não bloqueia */
-  }
+  // O trigger de create_transfer já abateu o cartão e debitou a conta de origem.
+  // Não recalculamos do zero (sobrescreveria saldos manuais).
 
   revalidatePath("/contas");
   revalidatePath("/dashboard");

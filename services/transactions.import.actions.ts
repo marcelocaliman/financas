@@ -241,13 +241,9 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
     } catch {
       /* não bloqueia o import */
     }
-    // Re-deriva os saldos das contas a partir dos lançamentos — import em lote
-    // podia deixar o current_balance fora de sincronia (drift). Auto-cura.
-    try {
-      await supabase.rpc("recompute_household_balances");
-    } catch {
-      /* não bloqueia o import */
-    }
+    // NB: NÃO recalculamos o saldo aqui. O trigger já aplica cada lançamento ao
+    // current_balance (respeitando is_historical_ir_only). Recalcular do zero
+    // sobrescreveria saldos manuais/de abertura de quem começa no meio do ano.
   }
 
   revalidatePath("/transacoes");
