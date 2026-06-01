@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getRateMapAt } from "@/services/currency";
+import { convertOrSame } from "@/lib/financial/currency";
 
 /**
  * Snapshot anual de saldos pra `ir_prior_year_balances`.
@@ -58,6 +60,13 @@ export async function GET(req: NextRequest) {
   const yearToSnapshot = currentYear - 1;
   const admin = createAdminClient();
 
+  // ir_prior_year_balances guarda saldo em BRL (convenção; manual e close-year já
+  // convertem). Cotação BCB de 31/12 do ano-base pra converter ativos em moeda
+  // estrangeira — antes o cron gravava em moeda nativa (USD 10k → "R$ 10k").
+  const rates = await getRateMapAt(`${yearToSnapshot}-12-31`, admin);
+  const toBRL = (value: number, currency: string) =>
+    Math.round(convertOrSame(value, currency as never, "BRL", rates) * 100) / 100;
+
   // Lista todos os households ativos
   const { data: households } = await admin.from("households").select("id");
   if (!households) {
@@ -73,7 +82,7 @@ export async function GET(req: NextRequest) {
     // ─── Investimentos ─────────────────────────────────────────
     const { data: investments } = await admin
       .from("investments")
-      .select("id, current_balance")
+      .select("id, current_balance, currency")
       .eq("household_id", h.id)
       .eq("is_active", true);
     if (investments && investments.length > 0) {
@@ -81,7 +90,7 @@ export async function GET(req: NextRequest) {
         household_id: h.id,
         year: yearToSnapshot,
         investment_id: i.id,
-        balance: Number(i.current_balance ?? 0),
+        balance: toBRL(Number(i.current_balance ?? 0), i.currency),
         notes: `Snapshot automático em ${now.toISOString().slice(0, 10)}`,
       }));
       const { error } = await admin
@@ -97,7 +106,7 @@ export async function GET(req: NextRequest) {
     const yearEndIso = `${yearToSnapshot}-12-31`;
     const { data: accounts } = await admin
       .from("accounts")
-      .select("id, current_balance")
+      .select("id, current_balance, currency")
       .eq("household_id", h.id)
       .eq("is_active", true);
     const { data: postYearTxs } = await admin
@@ -122,15 +131,18 @@ export async function GET(req: NextRequest) {
       deltaByAccount.set(t.account_id, (deltaByAccount.get(t.account_id) ?? 0) + delta);
     }
     if (accounts && accounts.length > 0) {
-      const rows = accounts.map((a) => ({
-        household_id: h.id,
-        year: yearToSnapshot,
-        account_id: a.id,
-        // saldo_31/12 = saldo_atual − deltas aplicados depois de 31/12
-        balance:
-          Math.round((Number(a.current_balance ?? 0) - (deltaByAccount.get(a.id) ?? 0)) * 100) / 100,
-        notes: `Snapshot reconstruído de ${yearEndIso}`,
-      }));
+      const rows = accounts.map((a) => {
+        // saldo_31/12 nativo = saldo_atual − deltas (amount_account, na moeda da
+        // conta) aplicados depois de 31/12; depois converte pra BRL.
+        const native = Number(a.current_balance ?? 0) - (deltaByAccount.get(a.id) ?? 0);
+        return {
+          household_id: h.id,
+          year: yearToSnapshot,
+          account_id: a.id,
+          balance: toBRL(native, a.currency),
+          notes: `Snapshot reconstruído de ${yearEndIso}`,
+        };
+      });
       const { error } = await admin
         .from("ir_prior_year_balances")
         .upsert(rows, { onConflict: "account_id,year", ignoreDuplicates: false });
@@ -140,7 +152,7 @@ export async function GET(req: NextRequest) {
     // ─── Bens físicos ──────────────────────────────────────────
     const { data: physical } = await admin
       .from("physical_assets")
-      .select("id, current_value")
+      .select("id, current_value, currency")
       .eq("household_id", h.id)
       .eq("is_active", true);
     if (physical && physical.length > 0) {
@@ -148,7 +160,7 @@ export async function GET(req: NextRequest) {
         household_id: h.id,
         year: yearToSnapshot,
         physical_asset_id: p.id,
-        balance: Number(p.current_value ?? 0),
+        balance: toBRL(Number(p.current_value ?? 0), p.currency),
         notes: `Snapshot automático em ${now.toISOString().slice(0, 10)}`,
       }));
       const { error } = await admin

@@ -377,7 +377,6 @@ export async function getBensReport(
 
   const [
     rates,
-    ratesPrev,
     { data: accounts },
     { data: investments },
     { data: physical },
@@ -389,7 +388,8 @@ export async function getBensReport(
     liveBalances,
   ] = await Promise.all([
     getRateMapAt(endOfYear),
-    getRateMapAt(endOfPrevYear),
+    // (prior_year_balances já está em BRL — convertido no cron/close-year/manual;
+    //  não precisa de cotação do ano anterior pra ler.)
     (householdId ? accountsQuery.eq("household_id", householdId) : accountsQuery).order("sort_order"),
     householdId ? investmentsQuery.eq("household_id", householdId) : investmentsQuery,
     householdId ? physicalQuery.eq("household_id", householdId) : physicalQuery,
@@ -811,8 +811,6 @@ export async function getBensReport(
   const fxNote = noteParts.length > 0
     ? `${noteParts.join(" · ")} (cotação BCB 31/12/${year})`
     : "";
-
-  void ratesPrev;
 
   // ---- Dívidas e Ônus Reais ----
   const DEBT_KIND_LABELS: Record<string, string> = {

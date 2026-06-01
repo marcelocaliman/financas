@@ -309,9 +309,16 @@ export async function getCryptoReport(
 ): Promise<CryptoReport> {
   const supabase = await createClient();
   const yearEnd = `${year}-12-31`;
-  const rates = await getRateMapAt(yearEnd);
   const capital = await getCapitalGainsParams(year);
   const CRYPTO_EXEMPTION = capital.cryptoMonthlyExemption;
+
+  // Conversão por DATA da operação (não cotação única de 31/12) — espelha
+  // getExteriorReport. Importa pra cripto comprada/vendida em moeda estrangeira.
+  const rateCache = new Map<string, Awaited<ReturnType<typeof getRateMapAt>>>();
+  async function ratesAt(date: string) {
+    if (!rateCache.has(date)) rateCache.set(date, await getRateMapAt(date));
+    return rateCache.get(date)!;
+  }
 
   let q = supabase
     .from("investment_movements")
@@ -349,6 +356,7 @@ export async function getCryptoReport(
     if (inv.is_exterior) continue; // exterior tem regime próprio
 
     const month = parseInt(m.date.slice(5, 7), 10) - 1;
+    const rates = await ratesAt(m.date);
     const totalBRL = convertOrSame(Number(m.total_amount), inv.currency, "BRL", rates);
     const feesBRL = convertOrSame(Number(m.fees ?? 0), inv.currency, "BRL", rates);
     const qty = Number(m.quantity);

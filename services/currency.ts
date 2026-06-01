@@ -37,8 +37,12 @@ export const getRateMap = cache(async (): Promise<RateMap> => {
  * anterior). Útil pro IR: a Receita exige conversão de bens em moeda
  * estrangeira pela cotação BCB de 31/12 do ano-base.
  */
-export async function getRateMapAt(date: string): Promise<RateMap> {
-  const supabase = await createClient();
+export async function getRateMapAt(
+  date: string,
+  /** Client opcional (ex.: admin no cron, sem sessão). Default: createClient(). */
+  client?: Awaited<ReturnType<typeof createClient>>,
+): Promise<RateMap> {
+  const supabase = client ?? (await createClient());
   const { data, error } = await supabase
     .from("currency_rates")
     .select("base, quote, rate, date")
