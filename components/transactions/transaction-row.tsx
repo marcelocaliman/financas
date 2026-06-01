@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { ArrowLeftRight, History, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
+import { formatMoneyParts } from "@/lib/utils/format";
 import { deleteTransaction, toggleHistoricalIrOnly } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
 import { convert, formatCurrency } from "@/lib/financial/currency";
@@ -109,11 +109,6 @@ export function TransactionRow({
           pending && "opacity-50",
         )}
       >
-        <td className="py-3.5 pr-4 align-middle whitespace-nowrap">
-          <span className="font-mono text-[11.5px] tracking-[0.04em] text-muted-foreground">
-            {formatDateShort(tx.date)}
-          </span>
-        </td>
         <td className="py-3 pr-4 align-middle min-w-0">
           <div className="flex items-center gap-x-3 gap-y-1 flex-wrap min-w-0">
             <span className="flex items-center gap-1.5 min-w-0 font-medium text-[14px] text-foreground tracking-[-0.005em]">

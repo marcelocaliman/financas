@@ -289,9 +289,6 @@ export default async function TransacoesPage({
                 <thead>
                   <tr className="border-b border-border">
                     <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
-                      Data
-                    </th>
-                    <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
                       Descrição
                     </th>
                     <th className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground text-left pb-3 pr-4 font-medium">
@@ -308,7 +305,7 @@ export default async function TransacoesPage({
                     <Fragment key={group.date}>
                       <tr className="bg-surface-muted/50">
                         <td
-                          colSpan={5}
+                          colSpan={4}
                           className="px-1 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] text-faint-foreground font-medium"
                         >
                           {formatDateFull(group.date)}

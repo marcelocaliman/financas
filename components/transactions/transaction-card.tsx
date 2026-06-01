@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { ArrowLeftRight, Pencil, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { formatDateShort, formatMoneyParts } from "@/lib/utils/format";
+import { formatMoneyParts } from "@/lib/utils/format";
 import { deleteTransaction } from "@/services/transactions.actions";
 import type { Transaction } from "@/services/transactions";
 import { convert, formatCurrency } from "@/lib/financial/currency";
@@ -111,8 +111,6 @@ export function TransactionCard({
               ) : null}
             </div>
             <div className="font-mono text-[11px] text-faint-foreground tracking-[0.02em] mt-1 truncate">
-              <span>{formatDateShort(tx.date)}</span>
-              <span className="mx-1">·</span>
               <span>{tx.account?.name ?? "—"}</span>
               {tx.payment_method ? (
                 <>
