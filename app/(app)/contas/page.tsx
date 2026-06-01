@@ -68,6 +68,12 @@ export default async function ContasPage({
     .filter((a) => a.type === "credit_card")
     .reduce((s, a) => s + a.displayBalance, 0);
 
+  // Patrimônio líquido nas contas: caixa gastável + tudo investido − dívida do
+  // cartão. É o "quanto eu tenho, líquido" que faltava — os investimentos não
+  // apareciam em KPI nenhum, só no card da corretora. (creditUsed já é negativo.)
+  const totalAssets = activeAccounts.reduce((s, a) => s + (a.assetsBalance ?? 0), 0);
+  const netWorth = liquid + totalAssets + creditUsed;
+
   // Fatura A PAGAR (fechada, aguardando pagamento) vs EM FORMAÇÃO (ciclo aberto).
   // O KPI mostra o que você paga (a fatura a pagar), não o saldo do cartão — que
   // soma compras de DOIS ciclos + inclui só o que já lançou, então nunca bate com
@@ -89,10 +95,10 @@ export default async function ContasPage({
       : null;
 
   const summaryHint = isCurrent
-    ? "Saldo líquido"
+    ? "Disponível"
     : position === "past"
-      ? `Saldo líquido · fim de ${monthLabel}`
-      : `Saldo líquido · previsto pra ${monthLabel}`;
+      ? `Disponível · fim de ${monthLabel}`
+      : `Disponível · previsto pra ${monthLabel}`;
   // No mês corrente o KPI vira "fatura a pagar" (o valor real do boleto). Sem
   // fatura fechada a pagar, mostra a que está em formação. Em meses passados/
   // futuros, mantém o saldo do cartão daquele mês.
@@ -157,6 +163,7 @@ export default async function ContasPage({
               tone="neutral"
               deltaAbs={liquidDeltaAbs}
               deltaPct={liquidDeltaPct}
+              hint="caixa em bancos + corretora"
             />
             <KpiCard
               label={creditLabel}
@@ -165,10 +172,10 @@ export default async function ContasPage({
               hint={creditKpiHint}
             />
             <KpiCard
-              label="Patrimônio nas contas"
-              value={liquidExcludingInvCash}
+              label="Patrimônio líquido"
+              value={netWorth}
               tone="neutral"
-              hint="excluindo caixa de corretora"
+              hint="caixa + investido − cartão"
             />
             <KpiCard
               label="Contas ativas"
