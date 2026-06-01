@@ -354,6 +354,45 @@ export async function getChecklistReport(
   }
 
   // ============================================================
+  // OBRIGATORIEDADE — posse de bens > R$ 800k (IN RFB anual)
+  // ============================================================
+  if (bens.totals.today > 800_000) {
+    items.push({
+      id: "obrigatoriedade_bens",
+      severity: "warning",
+      title: "Posse de bens acima de R$ 800 mil — declaração obrigatória",
+      detail:
+        "Quem tinha, em 31/12, bens e direitos somando mais de R$ 800.000 é obrigado a declarar (limite da IN do ano-base; confirme o valor vigente). Não deixe de entregar.",
+    });
+  }
+
+  // ============================================================
+  // MÚLTIPLAS FONTES com IRRF — costuma dar imposto a pagar no ajuste
+  // ============================================================
+  const { data: fontesComIrrf } = await supabase
+    .from("transactions")
+    .select("fonte_pagadora_id")
+    .eq("kind", "income")
+    .eq("exclude_from_ir", false)
+    .gt("irrf_amount", 0)
+    .not("fonte_pagadora_id", "is", null)
+    .gte("date", `${year}-01-01`)
+    .lte("date", `${year}-12-31`);
+  const numFontes = new Set(
+    (fontesComIrrf ?? []).map((t) => (t as { fonte_pagadora_id: string | null }).fonte_pagadora_id),
+  ).size;
+  if (numFontes >= 2) {
+    items.push({
+      id: "multiplas_fontes_irrf",
+      severity: "warning",
+      title: `${numFontes} fontes pagadoras com IRRF no ano`,
+      detail:
+        "Com 2+ fontes que retiveram IR, cada uma aplicou a tabela isoladamente — no ajuste anual o agregado quase sempre cai numa faixa maior e gera imposto a pagar. Reserve caixa e confira no cálculo.",
+      link: { href: `/ir/${year}`, label: "Ver cálculo" },
+    });
+  }
+
+  // ============================================================
   // CONFIG — modelo de declaração
   // ============================================================
   if (!settings) {
