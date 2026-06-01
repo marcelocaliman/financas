@@ -186,7 +186,7 @@ export function PropertySaleDialog({
             </div>
             <Row label="Ganho bruto" value={gcapPreview.grossProfit} />
             {gcapPreview.reductionApplied > 0 ? (
-              <Row label="Redução (FR2)" value={-gcapPreview.reductionApplied} />
+              <Row label="Redução (tempo de posse)" value={-gcapPreview.reductionApplied} />
             ) : null}
             <Row label="Lucro tributável" value={gcapPreview.taxableProfit} highlight />
             {gcapPreview.exemption.applied ? (
