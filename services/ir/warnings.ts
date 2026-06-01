@@ -14,6 +14,7 @@ export type IrWarningCode =
   | "aluguel_verificar_carne_leao"
   | "irrf_sobre_isento"
   | "distribuicao_verificar_limite"
+  | "dividendos_2026_irrf"
   | "tabela_estimada";
 
 export interface IrWarning {

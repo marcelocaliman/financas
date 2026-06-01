@@ -339,6 +339,7 @@ export async function getRendimentosReport(
         cat: e.cat,
         hasPayer: Boolean(e.cnpjCpf),
         isDistribuicaoLucros: e.isDistribuicaoLucros,
+        year,
       }),
       overrides.get(originKey),
     );

@@ -15,6 +15,8 @@ import {
   isAposentadoriaCategory,
   isRentCategory,
   isDividendCategory,
+  isThirteenthCategory,
+  isJcpCategory,
   isGenericPassiveCategory,
 } from "@/services/ir/income-aliases";
 import type { IrWarning } from "@/services/ir/warnings";
@@ -29,6 +31,8 @@ export interface IncomeAgg {
   hasPayer: boolean;
   /** Detectado como distribuição de lucros de PJ própria? */
   isDistribuicaoLucros: boolean;
+  /** Ano-base — gate de vigência (ex.: dividendos passam a ter IRRF em 2026). */
+  year?: number;
 }
 
 export interface IncomeClassification {
@@ -82,7 +86,28 @@ export function classifyIncomeTx(agg: IncomeAgg): IncomeClassification {
     };
   }
 
-  // 3) Salário, pró-labore, honorários, 13º, aposentadoria/pensão → tributável.
+  // 3a) 13º salário → tributação EXCLUSIVA na fonte (cód. 01), fora da base
+  //     progressiva. (Antes caía como tributável via SALARY_ALIASES.)
+  if (isThirteenthCategory(cat)) {
+    return {
+      bucket: "exclusivo",
+      receitaCode: "01",
+      confidence: "alta",
+      reason: "13º salário (tributação exclusiva na fonte)",
+    };
+  }
+
+  // 3b) JCP (Juros sobre Capital Próprio) → exclusivo 15% (cód. 10), NÃO isento.
+  if (isJcpCategory(cat)) {
+    return {
+      bucket: "exclusivo",
+      receitaCode: "10",
+      confidence: "alta",
+      reason: "Juros sobre Capital Próprio (exclusivo 15% na fonte)",
+    };
+  }
+
+  // 3) Salário, pró-labore, honorários, aposentadoria/pensão → tributável.
   if (isSalaryCategory(cat) || isAposentadoriaCategory(cat)) {
     return {
       bucket: "tributavel",
@@ -100,13 +125,25 @@ export function classifyIncomeTx(agg: IncomeAgg): IncomeClassification {
     };
   }
 
-  // 5) Dividendos explícitos → isento (cód. 09).
+  // 5) Dividendos explícitos → isento (cód. 09). A partir de 2026, a Lei
+  //    15.270/25 institui IRRF de 10% sobre dividendos PJ→PF acima de
+  //    R$ 50.000/mês por fonte — o motor não tem granularidade mensal/fonte
+  //    pra decidir o split, então avisa pra o usuário/contador conferir.
   if (isDividendCategory(cat)) {
+    const dividends2026 = (agg.year ?? 0) >= 2026;
     return {
       bucket: "isento",
       receitaCode: "09",
-      confidence: "alta",
+      confidence: dividends2026 ? "baixa" : "alta",
       reason: "Lucros e dividendos (isento)",
+      warning: dividends2026
+        ? {
+            code: "dividendos_2026_irrf",
+            severity: "atencao",
+            message:
+              "A partir de 2026 (Lei 15.270/25), dividendos acima de R$ 50.000/mês de uma mesma fonte têm IRRF de 10% e entram no imposto mínimo de altas rendas. Confira se há retenção a declarar — o app trata como isento por padrão.",
+          }
+        : undefined,
     };
   }
 
