@@ -7,8 +7,9 @@ import type { UpcomingSummary } from "@/services/upcoming";
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Card "Próximos 7 dias" — lista as recorrências que vão cair em breve.
- * Mostra resumo agregado (entradas vs saídas) + lista compacta de itens.
+ * Card "Próximos 7 dias" — lista TUDO que vai cair em breve: lançamentos com
+ * data futura (avulsos, parcelas) + recorrências projetadas. Mostra resumo
+ * agregado (entradas vs saídas) + lista compacta de itens.
  *
  * Quando vazio, mostra empty state convidando a cadastrar recorrências.
  */
@@ -61,7 +62,7 @@ export function UpcomingObligationsCard({
       {upcoming.items.length === 0 ? (
         <div className="px-6 py-8 text-center">
           <p className="text-[13px] text-muted-foreground italic">
-            Nenhuma recorrência cadastrada com data nos próximos {days} dias.
+            Nenhum lançamento previsto pros próximos {days} dias.
           </p>
           <Link
             href="/recorrentes"
