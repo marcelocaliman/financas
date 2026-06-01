@@ -61,8 +61,13 @@ describe("computeRedutorAnual (Lei 15.270/25)", () => {
   it("zera o imposto até R$ 60k em 2026", () => {
     expect(computeRedutorAnual(2026, 50000, 3000)).toBe(3000);
   });
-  it("decai linearmente na zona de transição (meio = 50%)", () => {
-    expect(computeRedutorAnual(2026, 74100, 8377.5)).toBeCloseTo(4188.75, 2);
+  it("na faixa, é valor FIXO em reais (8429,73 − 0,095575×renda), não fração do imposto", () => {
+    // y = 74.100 (meio da faixa): redução = 8429,73 − 0,095575×74100 = 1347,62
+    // — independe do imposto bruto (antes o bug devolvia 50% do imposto).
+    expect(computeRedutorAnual(2026, 74100, 8377.5)).toBeCloseTo(1347.62, 2);
+    expect(computeRedutorAnual(2026, 74100, 2000)).toBeCloseTo(1347.62, 2);
+    // só limita quando a redução passa do imposto bruto
+    expect(computeRedutorAnual(2026, 74100, 500)).toBe(500);
   });
   it("zera acima de R$ 88.200", () => {
     expect(computeRedutorAnual(2026, 90000, 8000)).toBe(0);

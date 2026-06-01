@@ -60,10 +60,21 @@ export interface ImpostoMathResult {
   savings: number;
 }
 
+// Redutor anual da Lei 15.270/2025. ⚠️ CONFERIR contra o texto publicado
+// (coeficientes de fonte secundária): a redução na faixa é um VALOR FIXO em
+// reais função da renda, R = A − B × renda, NÃO uma fração do imposto.
+const REDUTOR_ANUAL_A = 8429.73;
+const REDUTOR_ANUAL_B = 0.095575;
+const REDUTOR_FAIXA_MIN = 60_000; // 12 × R$ 5.000
+const REDUTOR_FAIXA_MAX = 88_200; // 12 × R$ 7.350
+
 /**
  * Redutor anual da Lei 15.270/2025 (a partir de 2026): zera o imposto até
- * R$ 60.000/ano e decai linearmente até R$ 88.200/ano. Limitado a
- * 0 ≤ redutor ≤ imposto_bruto.
+ * R$ 60.000/ano de renda tributável e decai até R$ 88.200/ano.
+ *
+ * Correção da auditoria (H1): antes era `impostoBruto × fração` (fração do
+ * imposto — quadrático na renda); agora é a redução em reais definida pela lei
+ * (afim na renda), limitada a 0 ≤ redutor ≤ imposto_bruto.
  */
 export function computeRedutorAnual(
   year: number,
@@ -71,11 +82,10 @@ export function computeRedutorAnual(
   impostoBruto: number,
 ): number {
   if (year < 2026) return 0;
-  if (rendaAnualBruta <= 60_000) return impostoBruto;
-  if (rendaAnualBruta >= 88_200) return 0;
-  const fracao = (88_200 - rendaAnualBruta) / (88_200 - 60_000);
-  const redutorMax = impostoBruto * fracao;
-  return Math.max(0, Math.min(redutorMax, impostoBruto));
+  if (rendaAnualBruta <= REDUTOR_FAIXA_MIN) return impostoBruto; // zera o imposto
+  if (rendaAnualBruta >= REDUTOR_FAIXA_MAX) return 0;
+  const reducao = REDUTOR_ANUAL_A - REDUTOR_ANUAL_B * rendaAnualBruta;
+  return Math.max(0, Math.min(reducao, impostoBruto));
 }
 
 export function assembleImposto(input: ImpostoMathInput): ImpostoMathResult {
