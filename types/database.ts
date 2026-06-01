@@ -1679,6 +1679,7 @@ export interface Database {
           birth_date: string | null;
           relationship: IRDependentRelationship;
           is_active: boolean;
+          is_student: boolean;
           notes: string | null;
           belongs_to_filer_id: string | null;
           created_at: string;
@@ -1692,6 +1693,7 @@ export interface Database {
           birth_date?: string | null;
           relationship: IRDependentRelationship;
           is_active?: boolean;
+          is_student?: boolean;
           notes?: string | null;
           belongs_to_filer_id?: string | null;
           created_at?: string;

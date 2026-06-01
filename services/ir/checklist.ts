@@ -182,6 +182,30 @@ export async function getChecklistReport(
         title: `Data de nascimento do dependente ausente — ${d.name}`,
         link: { href: configHref, label: "Preencher" },
       });
+    } else if (["filho", "filha", "enteado"].includes(d.relationship)) {
+      // Regra de idade (Lei 9.250/95 art. 35): filho/enteado é dependente até 21
+      // anos, ou até 24 se cursando ensino superior/técnico (flag is_student).
+      const age = year - parseInt(d.birth_date.slice(0, 4), 10);
+      const isStudent = (d as { is_student?: boolean }).is_student ?? false;
+      if (age > 24) {
+        items.push({
+          id: `dep_age_over24:${d.id}`,
+          severity: "warning",
+          title: `Dependente ${d.name} tem ${age} anos — fora da regra de idade`,
+          detail:
+            "Filho/enteado deduz como dependente só até 21 anos (ou 24 cursando ensino superior/técnico). Acima disso, a dedução pode cair na malha — confira se ainda se enquadra (ex.: incapacidade).",
+          link: { href: configHref, label: "Revisar" },
+        });
+      } else if (age > 21 && !isStudent) {
+        items.push({
+          id: `dep_age_student:${d.id}`,
+          severity: "warning",
+          title: `Dependente ${d.name} tem ${age} anos — marque "estudante"`,
+          detail:
+            "Entre 22 e 24 anos, filho/enteado só é dependente se estiver cursando ensino superior ou escola técnica. Marque a flag de estudante (ou remova a dedução).",
+          link: { href: configHref, label: "Marcar estudante" },
+        });
+      }
     }
   }
 

@@ -131,6 +131,10 @@ export function DependentsManager({
           <Field label="Nascimento" htmlFor="birth_date">
             <Input id="birth_date" name="birth_date" type="date" />
           </Field>
+          <label className="flex items-center gap-2 text-[12.5px] text-foreground pb-2 cursor-pointer">
+            <input type="checkbox" name="is_student" value="1" className="accent-navy-700" />
+            Estudante (21–24 anos)
+          </label>
           {filers.length >= 2 ? (
             <Field label="Entra na declaração de" htmlFor="ownerFilerId" required>
               <Select name="ownerFilerId" defaultValue={filers[0]?.id}>

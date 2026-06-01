@@ -87,6 +87,8 @@ const dependentSchema = z.object({
   notes: z.string().optional().nullable(),
   // Em qual declaração (filer) esse dependente entra
   belongs_to_filer_id: z.string().uuid().optional().nullable(),
+  // Cursando ensino superior/técnico — habilita a faixa 21–24 anos.
+  is_student: z.coerce.boolean().optional().default(false),
 });
 
 export async function createDependent(
@@ -100,6 +102,7 @@ export async function createDependent(
     relationship: formData.get("relationship"),
     notes: formData.get("notes") || null,
     belongs_to_filer_id: formData.get("ownerFilerId") || null,
+    is_student: formData.get("is_student") === "1" || formData.get("is_student") === "true",
   });
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
@@ -115,6 +118,7 @@ export async function createDependent(
     relationship: parsed.data.relationship,
     notes: parsed.data.notes?.trim() || null,
     belongs_to_filer_id: parsed.data.belongs_to_filer_id || null,
+    is_student: parsed.data.is_student,
   });
   if (error) return { error: error.message };
   for (const p of paths()) revalidatePath(p);
