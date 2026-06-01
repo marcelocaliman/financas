@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Money } from "@/components/ui/money";
 import { formatMoney } from "@/lib/utils/format";
+import { applyIr, daysBetween } from "@/lib/financial/tax";
 import { withdrawYield, type WithdrawYieldState } from "@/services/redemptions.actions";
 import type { Tables } from "@/types/database";
 
@@ -78,10 +79,12 @@ export function WithdrawYieldDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      const fy = state.fromYield ?? 0;
-      const pr = state.principalReduction ?? 0;
+      const ir = state.irWithheld ?? 0;
+      const net = state.netAmount ?? 0;
       toast.success(
-        `Saque registrado · ${formatMoney(fy)} de rendimento (tributável) + ${formatMoney(pr)} de principal.`,
+        ir > 0
+          ? `Saque líquido de ${formatMoney(net)} na conta · IR retido na fonte ${formatMoney(ir)}.`
+          : `Saque de ${formatMoney(net)} registrado.`,
       );
       onOpenChange(false);
     }
@@ -99,6 +102,18 @@ export function WithdrawYieldDialog({
   // Warning: saque maior que rendimento acumulado = está reduzindo capital
   // além do que ganhou
   const exceededYield = amount > accYield + 0.005;
+
+  // IR retido na fonte (renda fixa regressiva): sobre o RENDIMENTO. Isento
+  // (LCI/LCA) e renda variável → 0. Espelha a action withdrawYield.
+  const withholds =
+    (investment.asset_type === "fixed_income_public" ||
+      investment.asset_type === "fixed_income_private") &&
+    investment.tax_regime === "regressive";
+  const daysHeld = investment.purchase_date ? daysBetween(investment.purchase_date, date) : 0;
+  const { tax: previewIr, rate: previewIrRate } = withholds
+    ? applyIr(previewFromYield, daysHeld, "regressive")
+    : { tax: 0, rate: 0 };
+  const previewNet = amount - previewIr;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -193,10 +208,25 @@ export function WithdrawYieldDialog({
                     {formatMoney(previewPrincipalReduction)}
                   </span>
                 </div>
-                <div className="border-t border-border/40 pt-1 mt-1 text-[11.5px] text-faint-foreground leading-snug">
-                  O saque inteiro sai do montante. A divisão acima é só pra calcular o IR —
-                  só o rendimento é tributado.
-                </div>
+                {withholds && previewIr > 0 ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        IR retido na fonte ({(previewIrRate * 100).toFixed(1).replace(".", ",")}% sobre o rendimento)
+                      </span>
+                      <span className="text-rust-600 tabular-nums">− {formatMoney(previewIr)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-border/40 pt-1 mt-1 font-medium">
+                      <span className="text-foreground">Líquido na conta</span>
+                      <span className="text-foreground tabular-nums">{formatMoney(previewNet)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="border-t border-border/40 pt-1 mt-1 text-[11.5px] text-faint-foreground leading-snug">
+                    O saque inteiro sai do montante. A divisão acima é só pra calcular o IR —
+                    só o rendimento é tributado.
+                  </div>
+                )}
               </div>
             </div>
           ) : null}

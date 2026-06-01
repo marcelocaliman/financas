@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { applyIr, daysBetween } from "@/lib/financial/tax";
 
 const ruleSchema = z.object({
   investmentId: z.string().uuid(),
@@ -180,6 +181,10 @@ export type WithdrawYieldState = {
   principalReduction?: number;
   /** True se o saque excede o rendimento acumulado (sinal de alerta). */
   exceededYield?: boolean;
+  /** IR retido na fonte sobre o rendimento (renda fixa regressiva). 0 se isento/não-renda-fixa. */
+  irWithheld?: number;
+  /** Líquido que de fato caiu na conta = bruto − IR retido. */
+  netAmount?: number;
   /** @deprecated alias mantido pra retrocompat — use principalReduction */
   invadedPrincipal?: number;
 };
@@ -228,7 +233,7 @@ export async function withdrawYield(
     supabase
       .from("investments")
       .select(
-        "id, ticker, name, current_balance, initial_amount, currency, household_id, last_yield_at",
+        "id, ticker, name, current_balance, initial_amount, currency, household_id, last_yield_at, asset_type, tax_regime, purchase_date",
       )
       .eq("id", parsed.data.investmentId)
       .maybeSingle(),
@@ -273,6 +278,21 @@ export async function withdrawYield(
   const principalReduction = amount - fromYield;
   const exceededYield = amount > accumulatedYield;
 
+  // IR retido na fonte: renda fixa (Tesouro/CDB) com regime regressivo retém IR
+  // sobre o RENDIMENTO no resgate (22,5%→15% pelo tempo). Isento (LCI/LCA) e
+  // renda variável (ação/FII/ETF/cripto — IR via DARF, não na fonte) → 0.
+  const isFixedIncome =
+    inv.asset_type === "fixed_income_public" || inv.asset_type === "fixed_income_private";
+  const withholds = isFixedIncome && inv.tax_regime === "regressive";
+  const daysHeld = inv.purchase_date ? daysBetween(inv.purchase_date, parsed.data.date) : 0;
+  const { tax: irRaw, rate: irRate } = withholds
+    ? applyIr(fromYield, daysHeld, "regressive")
+    : { tax: 0, rate: 0 };
+  const irWithheld = Math.round(irRaw * 100) / 100;
+  // Líquido que cai na conta = bruto − IR. O ativo reduz pelo BRUTO (você
+  // resgatou o bruto); o IR foi pro governo (sai do patrimônio).
+  const netAmount = Math.round((amount - irWithheld) * 100) / 100;
+
   // 5. Update investimento com snapshot novo e last_yield_at = hoje
   //    (last_yield_at resetado pra evitar re-composição a partir de ref antiga)
   const prevLastYieldAt = inv.last_yield_at; // pra rollback restaurar
@@ -297,8 +317,9 @@ export async function withdrawYield(
     household_id: ctx.household.id,
     account_id: acc.id,
     kind: "income",
-    amount,
-    amount_account: amount,
+    // Registra o LÍQUIDO (bruto − IR retido) — é o que de fato cai na conta.
+    amount: netAmount,
+    amount_account: netAmount,
     currency: acc.currency,
     description: exceededYield
       ? `Saque · ${inv.ticker}`
@@ -311,8 +332,12 @@ export async function withdrawYield(
       investment_id: inv.id,
       investment_ticker: inv.ticker,
       sell_ratio: Math.round(ratio * 10000) / 100, // %
+      gross_amount: Math.round(amount * 100) / 100, // bruto resgatado do ativo
       from_yield: Math.round(fromYield * 100) / 100,
       principal_reduction: Math.round(principalReduction * 100) / 100,
+      ir_withheld: irWithheld, // IR retido na fonte sobre o rendimento
+      ir_rate: irRate, // alíquota aplicada (0.225..0.15)
+      days_held: daysHeld,
       exceeded_yield: exceededYield,
       notes: parsed.data.notes?.trim() ?? null,
     },
@@ -341,6 +366,8 @@ export async function withdrawYield(
     ok: true,
     fromYield: Math.round(fromYield * 100) / 100,
     principalReduction: Math.round(principalReduction * 100) / 100,
+    irWithheld,
+    netAmount,
     exceededYield,
     invadedPrincipal: Math.round(principalReduction * 100) / 100,
   };
