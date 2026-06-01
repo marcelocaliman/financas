@@ -3,6 +3,7 @@ import { CreditCard, AlertCircle, AlertTriangle, Clock } from "lucide-react";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Money } from "@/components/ui/money";
 import { Badge } from "@/components/ui/badge";
+import { BillActions } from "@/components/accounts/bill-actions";
 import type { CreditCardBill } from "@/services/credit-card";
 import type { Tables } from "@/types/database";
 
@@ -178,13 +179,20 @@ export function CreditCardBillsSection({
                   ) : null}
                 </div>
               ) : null}
+
+              <BillActions
+                cardAccountId={bill.accountId}
+                amountDue={Math.round((bill.totalOpen - bill.paidAmount) * 100) / 100}
+                dueDate={bill.dueDate}
+                isCurrent={bill.status === "current"}
+              />
             </div>
           );
         })}
       </div>
       <p className="text-[10.5px] font-mono text-faint-foreground tracking-[0.06em] mt-3">
-        Cada compra no cartão = 1 transaction. Quando pagar a fatura, crie um
-        transfer da conta de débito → conta do cartão.
+        Cada compra no cartão = 1 lançamento. Ao pagar a fatura, use “Marcar como
+        paga” — o app cria a transferência da conta → cartão e atualiza o saldo.
       </p>
     </Panel>
   );
