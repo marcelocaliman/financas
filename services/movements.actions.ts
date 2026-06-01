@@ -9,7 +9,7 @@ import type { MovementKind } from "@/types/database";
 const schema = z.object({
   investmentId: z.string().uuid(),
   kind: z.enum([
-    "buy", "sell", "dividend",
+    "buy", "sell", "dividend", "jcp",
     "exercise", "assignment", "expiration",
   ]) as z.ZodType<MovementKind>,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -54,9 +54,9 @@ export async function addMovement(
   if (!parsed.success) return { fieldErrors: parseErrors(parsed.error) };
 
   const supabase = await createClient();
-  // Pra kinds avançados (exercise/assignment/expiration), insere direto na tabela
-  // já que add_investment_movement só aceita buy/sell/dividend/split.
-  const isAdvancedKind = ["exercise", "assignment", "expiration"].includes(parsed.data.kind);
+  // Pra kinds avançados (exercise/assignment/expiration/jcp), insere direto na
+  // tabela já que add_investment_movement só aceita buy/sell/dividend/split.
+  const isAdvancedKind = ["exercise", "assignment", "expiration", "jcp"].includes(parsed.data.kind);
   if (isAdvancedKind) {
     const ctx = await getCurrentUserContext();
     if (!ctx) return { error: "Sessão expirada." };

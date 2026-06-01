@@ -138,8 +138,8 @@ export async function getRendimentosReport(
     .lte("month", yearEnd);
   const divQuery = supabase
     .from("investment_movements")
-    .select("date, total_amount, investment:investments!inner(ticker, name, asset_type, currency, cnpj, owner_filer_id)")
-    .eq("kind", "dividend")
+    .select("date, kind, total_amount, investment:investments!inner(ticker, name, asset_type, currency, cnpj, owner_filer_id)")
+    .in("kind", ["dividend", "jcp"])
     .gte("date", yearStart)
     .lte("date", yearEnd);
   const othersQuery = supabase
@@ -451,20 +451,23 @@ export async function getRendimentosReport(
       | { ticker: string; name: string; asset_type: string; currency: Currency; cnpj: string | null }[]
       | null;
   };
-  const divsByTicker = new Map<string, { gross: number; meta: { ticker: string; name: string; cnpj: string | null; type: string } }>();
-  for (const m of (dividendMovements ?? []) as MovRow[]) {
+  // Separa por tipo: dividendo → isento cód.09; JCP → exclusivo cód.10 (IRRF 15%).
+  type DivAgg = { gross: number; meta: { ticker: string; name: string; cnpj: string | null; type: string } };
+  const divsByTicker = new Map<string, DivAgg>();
+  const jcpByTicker = new Map<string, DivAgg>();
+  for (const m of (dividendMovements ?? []) as Array<MovRow & { kind?: string }>) {
     const inv = Array.isArray(m.investment) ? m.investment[0] : m.investment;
     if (!inv) continue;
     const g = convertOrSame(Number(m.total_amount ?? 0), inv.currency, "BRL", rates);
-    const e = divsByTicker.get(inv.ticker) ?? {
+    const bucket = m.kind === "jcp" ? jcpByTicker : divsByTicker;
+    const e = bucket.get(inv.ticker) ?? {
       gross: 0,
       meta: { ticker: inv.ticker, name: inv.name, cnpj: inv.cnpj, type: inv.asset_type },
     };
     e.gross += g;
-    divsByTicker.set(inv.ticker, e);
+    bucket.set(inv.ticker, e);
   }
   for (const [, e] of divsByTicker) {
-    // JCP iria pra exclusivo (cod 10) — sem flag pra distinguir, presume todos dividendos
     isentos.push({
       source: "auto",
       sourceId: null,
@@ -474,6 +477,22 @@ export async function getRendimentosReport(
       grossAmount: Math.round(e.gross * 100) / 100,
       irrf: 0, inss: 0, thirteenth: 0,
       receitaCode: "09",
+    });
+  }
+  for (const [, e] of jcpByTicker) {
+    // JCP: tributação exclusiva 15% na fonte (Lei 9.249/95 art. 9º §2º). Reporta
+    // o bruto + IRRF 15% retido em "Rendimentos sujeitos à tributação exclusiva".
+    const gross = Math.round(e.gross * 100) / 100;
+    exclusivos.push({
+      source: "auto",
+      sourceId: null,
+      description: `Juros sobre Capital Próprio ${e.meta.ticker} — ${e.meta.name}`,
+      payerName: e.meta.name,
+      payerCnpjCpf: e.meta.cnpj,
+      grossAmount: gross,
+      irrf: Math.round(gross * 0.15 * 100) / 100,
+      inss: 0, thirteenth: 0,
+      receitaCode: "10",
     });
   }
 

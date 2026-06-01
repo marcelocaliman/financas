@@ -45,6 +45,7 @@ export type MovementKind =
   | "buy"
   | "sell"
   | "dividend"
+  | "jcp"
   | "split"
   | "exercise"
   | "assignment"

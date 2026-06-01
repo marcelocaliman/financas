@@ -21,6 +21,7 @@ const kindLabels: Record<MovementKind, string> = {
   buy: "Compra",
   sell: "Venda",
   dividend: "Provento",
+  jcp: "JCP",
   split: "Desdobramento",
   exercise: "Exercício",
   assignment: "Assignment",
