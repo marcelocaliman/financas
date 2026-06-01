@@ -521,7 +521,29 @@ corrigidos com teste — ver o histórico de commits `fix(ir): …`:
 coeficientes do redutor anual (8.429,73 / 0,095575) e os números de grupo de
 Bens (poupança 04 vs 06, ETF 04 vs 07, PGBL→Pagamentos).
 
-### 9.1 Gaps de FEATURE pendentes (precisam de migration + UI — não são bugs)
+### 9.1 Gaps de FEATURE — STATUS (todos endereçados)
+
+Os gaps de feature do crítico de cobertura foram construídos (migration + UI +
+teste), exceto onde a Receita exige dado que o app não modela:
+
+| Item | Status |
+|---|---|
+| JCP em investimentos (kind 'jcp' → exclusivo cód.10) | ✅ feito |
+| Composição de custo de imóvel (benfeitorias/corretagem/despesas) | ✅ feito |
+| Trava de 5 anos da reaplicação (art. 39 §5º) | ✅ feito |
+| Dependente 21–24 estudante (is_student + checklist) | ✅ feito |
+| DARF cód. 4600 + prazo no preview de venda | ✅ feito |
+| VGBL não dedutível (rótulo na ficha de pagamentos) | ✅ feito |
+| Pensão alimentícia recebida → isenta (ADI 5422) | ✅ feito |
+| RRA — regime exclusivo (Lei 7.713/88 art. 12-A) | ✅ feito |
+| Multi-fonte com IRRF + obrigatoriedade (bens > R$800k) no checklist | ✅ feito |
+| Multa de mora no carnê-leão (computeLateFee na UI) | ✅ feito |
+| ETF de renda fixa / BDR / ouro (subtipo de investimento) | ⏳ precisa de subtipo no schema; documentado em renda-variavel.ts |
+| Distribuição de lucros > lucro presumido (MEI/Simples) | ⚠️ só aviso — exige receita/atividade da empresa, que o app não modela |
+
+### 9.1-orig Gaps originais (referência)
+
+#### 9.1 Gaps de FEATURE pendentes (precisam de migration + UI — não são bugs)
 
 Estes itens da auditoria/crítico de cobertura **não são cálculos errados** — são
 recursos ausentes. Ficam como roadmap priorizado:
