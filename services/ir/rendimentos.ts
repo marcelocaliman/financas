@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { convertOrSame } from "@/lib/financial/currency";
+import { computeRRAExclusiveTax } from "@/lib/financial/irpf-monthly-table";
 import { getRateMapAt } from "@/services/currency";
 import { classifyIncomeTx } from "@/services/ir/classify-income";
 import {
@@ -530,7 +531,40 @@ export async function getRendimentosReport(
     } else if (o.category === "exclusivo_fonte") {
       exclusivos.push({ ...row, receitaCode: "99" });
     } else if (o.category === "rendimento_acumulado") {
-      tributaveis.push(row);
+      const rra = o as unknown as {
+        rra_taxable_method?: string | null;
+        rra_competence_months?: number | null;
+        rra_juros?: number | null;
+        rra_honorarios?: number | null;
+      };
+      const months = rra.rra_competence_months ?? 0;
+      const juros = convertOrSame(Number(rra.rra_juros ?? 0), c, "BRL", rates);
+      const honorarios = convertOrSame(Number(rra.rra_honorarios ?? 0), c, "BRL", rates);
+      if (rra.rra_taxable_method === "mensal" && months > 0) {
+        // Regime EXCLUSIVO (Lei 7.713/88 art. 12-A): tabela mensal sobre
+        // base/N × N. Juros acessórios são isentos; honorários, dedutíveis.
+        const taxableBase = Math.max(0, gross - juros - honorarios);
+        const rraTax = computeRRAExclusiveTax(taxableBase, months);
+        exclusivos.push({
+          ...row,
+          description: `RRA (exclusivo, ${months} meses) — ${o.description}`,
+          grossAmount: Math.round(taxableBase * 100) / 100,
+          irrf: rraTax, // imposto definitivo do RRA
+          receitaCode: "12",
+        });
+        if (juros > 0) {
+          isentos.push({
+            ...row,
+            description: `Juros de mora (RRA) — ${o.description}`,
+            grossAmount: Math.round(juros * 100) / 100,
+            irrf: 0,
+            receitaCode: "22",
+          });
+        }
+      } else {
+        // Método "anual" → ajuste anual (entra na base progressiva).
+        tributaveis.push(row);
+      }
     } else {
       // Categoria manual ausente/desconhecida → fail-loud, A NÃO SER que o
       // usuário já tenha resolvido no modo revisão.

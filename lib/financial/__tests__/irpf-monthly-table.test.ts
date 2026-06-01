@@ -3,7 +3,25 @@ import {
   computeCarneLeaoMonthly,
   computeRedutorMensal,
   computeLateFee,
+  computeRRAExclusiveTax,
 } from "@/lib/financial/irpf-monthly-table";
+
+describe("computeRRAExclusiveTax — regime exclusivo do RRA (Lei 7.713/88 art. 12-A)", () => {
+  it("divide pela competência: aplica tabela mensal ao quociente × nº meses", () => {
+    // R$ 60.000 acumulados em 12 meses → R$ 5.000/mês. Tabela MP1206 (default):
+    // faixa 27,5%: 5000×0,275 − 896 = 479 por mês × 12 = 5.748
+    const r = computeRRAExclusiveTax(60_000, 12);
+    expect(r).toBeCloseTo(5748, 0);
+  });
+  it("mesmo bruto em 1 mês paga MUITO mais que diluído em 12", () => {
+    const concentrado = computeRRAExclusiveTax(60_000, 1);
+    const diluido = computeRRAExclusiveTax(60_000, 12);
+    expect(concentrado).toBeGreaterThan(diluido);
+  });
+  it("base zero → imposto zero", () => {
+    expect(computeRRAExclusiveTax(0, 6)).toBe(0);
+  });
+});
 
 describe("computeLateFee — multa e juros de mora (Lei 9.430/96 art. 61)", () => {
   it("em dia (daysLate ≤ 0) → sem multa/juros", () => {

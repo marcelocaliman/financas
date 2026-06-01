@@ -133,6 +133,33 @@ export function computeRedutorMensal(
 }
 
 /**
+ * Imposto do RRA (Rendimentos Recebidos Acumuladamente) no regime EXCLUSIVO
+ * (Lei 7.713/88 art. 12-A): aplica a tabela MENSAL ao quociente (base ÷ nº de
+ * meses de competência) e multiplica o imposto resultante pelo nº de meses.
+ * Tributa de forma mais justa que jogar tudo num ano só. Função PURA.
+ *
+ * @param taxableBase já líquida (descontados juros isentos, honorários, etc.)
+ */
+export function computeRRAExclusiveTax(
+  taxableBase: number,
+  numMonths: number,
+  brackets?: Bracket[],
+): number {
+  const base = Math.max(0, taxableBase);
+  const n = Math.max(1, Math.floor(numMonths));
+  if (base === 0) return 0;
+  const bs = brackets ?? DEFAULT_MONTHLY_BRACKETS;
+  const perMonth = base / n;
+  let bracket = bs[0];
+  for (const b of bs) {
+    bracket = b;
+    if (perMonth <= b.upTo) break;
+  }
+  const monthlyTax = Math.max(0, perMonth * bracket.rate - bracket.deduct);
+  return Math.round(monthlyTax * n * 100) / 100;
+}
+
+/**
  * Multa e juros de mora de DARF pago em atraso (Lei 9.430/96 art. 61):
  *  - Multa de mora: 0,33% por dia de atraso, limitada a 20%.
  *  - Juros de mora: SELIC acumulada do mês seguinte ao vencimento até o mês
