@@ -1,23 +1,21 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Navegador de ano pro relatório. Default = ano corrente − 1 (ano fiscal
- * mais relevante pra IRPF na época de declaração).
+ * Navegador de ano pra visão "Ano" do Histórico. Mantém o view=ano e troca
+ * só o parâmetro `year`. Default = ano corrente − 1 (ano fiscal mais relevante
+ * pra IRPF na época da declaração).
  */
 export function YearSwitcher({ current }: { current: number }) {
   const router = useRouter();
-  const params = useSearchParams();
   const minYear = 2020;
   const maxYear = new Date().getUTCFullYear();
 
   const navigate = (year: number) => {
-    const sp = new URLSearchParams(params.toString());
-    sp.set("year", String(year));
-    router.push(`/relatorios?${sp.toString()}`);
+    router.push(`/analise?view=ano&year=${year}`);
   };
 
   return (

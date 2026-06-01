@@ -9,7 +9,6 @@ import {
   Tag,
   Package,
   Repeat,
-  FileText,
   LayoutDashboard,
   Users as UsersIcon,
   History,
@@ -47,7 +46,6 @@ export const mainNavItems: NavItem[] = [
   { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "diaadia", sub: true },
   { label: "Documentos", href: "/inbox", icon: Inbox, group: "diaadia" },
   { label: "Histórico", href: "/analise", icon: LineChart, group: "diaadia" },
-  { label: "Relatórios", href: "/relatorios", icon: FileText, group: "diaadia", sub: true },
 
   // Patrimônio
   { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "patrimonio" },
