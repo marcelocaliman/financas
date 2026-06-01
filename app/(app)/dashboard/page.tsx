@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { QuickAddTrigger } from "@/components/transactions/quick-add-trigger";
+import { QuickEntryBar } from "@/components/dashboard/quick-entry-bar";
 import { DashboardHero } from "@/components/dashboard/hero";
 import { TopCategoriesPanel } from "@/components/dashboard/top-categories";
 import { InsightCard } from "@/components/dashboard/insight-card";
@@ -296,6 +297,13 @@ export default async function DashboardPage({
 
       {showOnboardingBanner ? <WelcomeBanner firstName={firstName} /> : null}
       {!showOnboardingBanner && setupStatus ? <SetupBanner status={setupStatus} /> : null}
+
+      {/* Lançamento rápido — a ação nº 1 do dia a dia, no topo. Só no mês atual. */}
+      {isCurrent ? (
+        <div className="mb-5">
+          <QuickEntryBar />
+        </div>
+      ) : null}
 
       <DashboardHero
         projectedNet={projection.projectedNet}

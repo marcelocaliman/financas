@@ -18,6 +18,7 @@ type Size = "md" | "lg";
 export function MoneyInput({
   name,
   defaultValue,
+  value,
   onValueChange,
   autoFocus,
   className,
@@ -29,6 +30,12 @@ export function MoneyInput({
 }: {
   name: string;
   defaultValue?: number;
+  /**
+   * Override controlado: quando muda, sincroniza o valor interno. Continua
+   * editável pelo teclado (a digitação atualiza o estado interno). Use pra
+   * dirigir o campo de fora (ex.: parser de entrada rápida).
+   */
+  value?: number;
   onValueChange?: (value: number) => void;
   autoFocus?: boolean;
   className?: string;
@@ -40,9 +47,18 @@ export function MoneyInput({
   currency?: Currency;
 }) {
   const [cents, setCents] = React.useState<number>(() => {
-    if (defaultValue === undefined || defaultValue === null) return 0;
-    return Math.round(defaultValue * 100);
+    const seed = value ?? defaultValue;
+    if (seed === undefined || seed === null) return 0;
+    return Math.round(seed * 100);
   });
+
+  // Sincroniza quando o `value` controlado muda (padrão React 19: ajustar
+  // estado durante o render comparando com o valor anterior).
+  const [prevValue, setPrevValue] = React.useState(value);
+  if (value !== undefined && value !== prevValue) {
+    setPrevValue(value);
+    setCents(Math.round(value * 100));
+  }
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;

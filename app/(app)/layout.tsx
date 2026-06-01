@@ -70,6 +70,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     id: c.id,
     name: c.name,
     kind: c.kind,
+    rules: c.rules ?? null,
   }));
 
   return (

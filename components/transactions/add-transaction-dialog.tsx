@@ -22,14 +22,20 @@ import {
 } from "@/components/ui/select";
 import { createTransaction, type TxFormState } from "@/services/transactions.actions";
 import { useQuickAdd } from "./quick-add-context";
+import { parseQuickEntry } from "@/lib/financial/parse-quick-entry";
 import type { Tables } from "@/types/database";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 type TxKind = "expense" | "income" | "transfer";
 type Currency = "BRL" | "EUR" | "USD" | "GBP";
 
 type AccountLite = { id: string; name: string; institution: string; currency?: Currency };
-type CategoryLite = { id: string; name: string; kind: "income" | "expense" | "transfer" };
+type CategoryLite = {
+  id: string;
+  name: string;
+  kind: "income" | "expense" | "transfer";
+  rules?: unknown;
+};
 type FonteLite = Pick<Tables<"fontes_pagadoras">, "id" | "name" | "type" | "cnpj" | "cpf" | "default_irrf_rate" | "default_inss_rate">;
 type DebtLite = { id: string; description: string; current_balance: number };
 
@@ -68,7 +74,7 @@ export function AddTransactionDialog({
   fontes?: FonteLite[];
   debts?: DebtLite[];
 }) {
-  const { open, defaultKind, hide } = useQuickAdd();
+  const { open, defaultKind, prefillText, hide } = useQuickAdd();
   const [kind, setKind] = useState<TxKind>(defaultKind);
   const [accountId, setAccountId] = useState<string>("");
   const [fromAccountId, setFromAccountId] = useState<string>("");
@@ -78,6 +84,11 @@ export function AddTransactionDialog({
   const [paymentMethod, setPaymentMethod] = useState<string>("");
   const [date, setDate] = useState<string>(todayISO());
   const [currency, setCurrency] = useState<Currency>("BRL");
+  // Entrada rápida: barra de texto livre ("30 mercado") que dirige os campos.
+  const [smartText, setSmartText] = useState<string>("");
+  const [amountValue, setAmountValue] = useState<number>(0);
+  const [description, setDescription] = useState<string>("");
+  const [showMore, setShowMore] = useState(false);
   const [showIR, setShowIR] = useState(false);
   const [fontePagadoraId, setFontePagadoraId] = useState<string>("");
   const [irrfAmount, setIrrfAmount] = useState<number>(0);
@@ -109,6 +120,19 @@ export function AddTransactionDialog({
     undefined,
   );
 
+  // Aplica o parser de entrada rápida ao texto e preenche os campos.
+  // Roda a cada tecla na barra inteligente (e no prefill ao abrir).
+  function applySmart(text: string, currentKind: TxKind) {
+    setSmartText(text);
+    if (currentKind === "transfer") return; // barra inteligente não cobre transfer
+    const hint = currentKind === "income" ? "income" : "expense";
+    const parsed = parseQuickEntry(text, categories, hint);
+    if (parsed.amount !== null) setAmountValue(parsed.amount);
+    setDescription(parsed.description);
+    if (parsed.kindExplicit) setKind(parsed.kind);
+    if (parsed.categoryId) setCategoryId(parsed.categoryId);
+  }
+
   // Padrão React 19: ajustar estado em resposta a mudança de prop sem useEffect.
   // Resetamos campos ao abrir (open passa de false → true).
   const [prevOpen, setPrevOpen] = useState(open);
@@ -120,10 +144,23 @@ export function AddTransactionDialog({
       setCategoryId("");
       setDebtId("");
       setPaymentMethod("");
+      setShowMore(false);
       setShowIR(false);
       setFontePagadoraId("");
       setIrrfAmount(0);
       setInssAmount(0);
+      // Semeia a barra inteligente com o texto de prefill (ex.: vindo da home).
+      setSmartText(prefillText);
+      setAmountValue(0);
+      setDescription("");
+      if (prefillText && defaultKind !== "transfer") {
+        const hint = defaultKind === "income" ? "income" : "expense";
+        const parsed = parseQuickEntry(prefillText, categories, hint);
+        if (parsed.amount !== null) setAmountValue(parsed.amount);
+        setDescription(parsed.description);
+        if (parsed.kindExplicit) setKind(parsed.kind);
+        if (parsed.categoryId) setCategoryId(parsed.categoryId);
+      }
       let lastAccount: string | null = null;
       try {
         lastAccount = localStorage.getItem("financas:lastAccountId");
@@ -187,13 +224,47 @@ export function AddTransactionDialog({
             <PillGroup
               options={KIND_OPTIONS}
               value={kind}
-              onChange={(v) => setKind(v)}
+              onChange={(v) => {
+                setKind(v);
+                if (smartText) applySmart(smartText, v);
+              }}
               name="kind"
             />
 
+            {/* Barra de entrada rápida — "30 mercado" preenche valor +
+                descrição + categoria. O resto fica editável abaixo. */}
+            {kind !== "transfer" ? (
+              <div className="relative">
+                <Sparkles
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-navy-600 dark:text-navy-300 pointer-events-none"
+                  strokeWidth={1.7}
+                />
+                <input
+                  type="text"
+                  autoFocus
+                  value={smartText}
+                  onChange={(e) => applySmart(e.target.value, kind)}
+                  placeholder={
+                    kind === "income" ? "Ex.: 5000 salário" : "Ex.: 30 mercado, uber 27,90…"
+                  }
+                  autoComplete="off"
+                  className="w-full h-11 pl-9 pr-3 rounded-[8px] border border-border-strong bg-surface text-[14px] outline-none transition-[border-color,box-shadow] duration-150 focus:border-navy-500 focus:shadow-[0_0_0_3px_var(--color-navy-100)] placeholder:text-faint-foreground"
+                />
+                <p className="mt-1 text-[11px] text-faint-foreground">
+                  Digite valor + descrição de uma vez — a gente separa e sugere a categoria.
+                </p>
+              </div>
+            ) : null}
+
             <div className="grid grid-cols-[1fr_92px] gap-2 items-end">
               <Field htmlFor="amount" label="Valor">
-                <MoneyInput name="amount" id="amount" autoFocus size="lg" />
+                <MoneyInput
+                  name="amount"
+                  id="amount"
+                  size="lg"
+                  value={amountValue}
+                  onValueChange={setAmountValue}
+                />
                 {state?.fieldErrors?.amount ? (
                   <p className="text-[11.5px] text-rust-600 mt-1">{state.fieldErrors.amount}</p>
                 ) : null}
@@ -294,6 +365,8 @@ export function AddTransactionDialog({
                     id="tx-description"
                     name="description"
                     autoComplete="off"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
                     placeholder={kind === "expense" ? "Mercado da semana" : "Salário, freelance…"}
                   />
                   {state?.fieldErrors?.description ? (
@@ -340,65 +413,84 @@ export function AddTransactionDialog({
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Data" htmlFor="date">
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                />
+            <Field label="Data" htmlFor="date">
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </Field>
+
+            {/* ── Mais opções — tudo que não é o caminho rápido fica escondido
+                até o usuário pedir. Só existe pra income/expense. ── */}
+            {kind !== "transfer" ? (
+              <div className="border-t border-border pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowMore((v) => !v)}
+                  className="w-full flex items-center justify-between py-2 text-[12.5px] text-muted-foreground hover:text-foreground"
+                >
+                  <span>Mais opções · forma de pagamento, dívida, IR</span>
+                  {showMore ? (
+                    <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
+                  )}
+                </button>
+              </div>
+            ) : null}
+
+            {/* Conteúdo avançado — montado sempre (pros campos submeterem),
+                escondido visualmente quando fechado. */}
+            <div className={kind !== "transfer" && showMore ? "space-y-5" : "hidden"}>
+              <Field label="Forma de pagamento" htmlFor="paymentMethod">
+                <Select
+                  value={paymentMethod}
+                  onValueChange={setPaymentMethod}
+                  name="paymentMethod"
+                >
+                  <SelectTrigger id="paymentMethod">
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="debit">Débito</SelectItem>
+                    <SelectItem value="credit">Crédito</SelectItem>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="auto_debit">Débito automático</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
-              {kind !== "transfer" ? (
-                <Field label="Forma" htmlFor="paymentMethod">
+
+              {/* Vincular a dívida — só pra expense, quando há dívidas ativas */}
+              {kind === "expense" && debts.length > 0 ? (
+                <Field
+                  label="Vincular a dívida"
+                  htmlFor="debtId"
+                  hint="Reduz o saldo da dívida automaticamente quando paga"
+                >
+                  {/* Submete string vazia quando "__none" — action trata como null */}
+                  <input type="hidden" name="debtId" value={debtId === "__none" ? "" : debtId} />
                   <Select
-                    value={paymentMethod}
-                    onValueChange={setPaymentMethod}
-                    name="paymentMethod"
+                    value={debtId || "__none"}
+                    onValueChange={(v) => setDebtId(v === "__none" ? "" : v)}
                   >
-                    <SelectTrigger id="paymentMethod">
-                      <SelectValue placeholder="—" />
+                    <SelectTrigger id="debtId">
+                      <SelectValue placeholder="— Não vincula" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pix">Pix</SelectItem>
-                      <SelectItem value="debit">Débito</SelectItem>
-                      <SelectItem value="credit">Crédito</SelectItem>
-                      <SelectItem value="cash">Dinheiro</SelectItem>
-                      <SelectItem value="auto_debit">Débito automático</SelectItem>
+                      <SelectItem value="__none">— Não vincula</SelectItem>
+                      {debts.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          ↓ {d.description}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </Field>
               ) : null}
-            </div>
-
-            {/* Vincular a dívida — só pra expense, quando há dívidas ativas */}
-            {kind === "expense" && debts.length > 0 ? (
-              <Field
-                label="Vincular a dívida"
-                htmlFor="debtId"
-                hint="Reduz o saldo da dívida automaticamente quando paga"
-              >
-                {/* Submete string vazia quando "__none" — action trata como null */}
-                <input type="hidden" name="debtId" value={debtId === "__none" ? "" : debtId} />
-                <Select
-                  value={debtId || "__none"}
-                  onValueChange={(v) => setDebtId(v === "__none" ? "" : v)}
-                >
-                  <SelectTrigger id="debtId">
-                    <SelectValue placeholder="— Não vincula" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none">— Não vincula</SelectItem>
-                    {debts.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        ↓ {d.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-            ) : null}
 
             {/* Seção IR — apenas pra receitas com fontes configuradas */}
             {kind === "income" && fontes.length > 0 ? (
@@ -516,6 +608,8 @@ export function AddTransactionDialog({
                 </div>
               </label>
             ) : null}
+            </div>
+            {/* ── fim Mais opções ── */}
 
             {state?.error ? (
               <p className="text-[12.5px] text-rust-600">{state.error}</p>

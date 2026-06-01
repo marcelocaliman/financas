@@ -12,7 +12,9 @@ import {
 type Ctx = {
   open: boolean;
   defaultKind: "expense" | "income" | "transfer";
-  show: (kind?: "expense" | "income" | "transfer") => void;
+  /** Texto pré-preenchido pra barra de entrada rápida (parser). */
+  prefillText: string;
+  show: (kind?: "expense" | "income" | "transfer", prefillText?: string) => void;
   hide: () => void;
 };
 
@@ -21,9 +23,11 @@ const QuickAddCtx = createContext<Ctx | null>(null);
 export function QuickAddProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [defaultKind, setDefaultKind] = useState<Ctx["defaultKind"]>("expense");
+  const [prefillText, setPrefillText] = useState("");
 
-  const show: Ctx["show"] = useCallback((kind = "expense") => {
+  const show: Ctx["show"] = useCallback((kind = "expense", text = "") => {
     setDefaultKind(kind);
+    setPrefillText(text);
     setOpen(true);
   }, []);
 
@@ -56,7 +60,7 @@ export function QuickAddProvider({ children }: { children: ReactNode }) {
   }, [show]);
 
   return (
-    <QuickAddCtx.Provider value={{ open, defaultKind, show, hide }}>
+    <QuickAddCtx.Provider value={{ open, defaultKind, prefillText, show, hide }}>
       {children}
     </QuickAddCtx.Provider>
   );
