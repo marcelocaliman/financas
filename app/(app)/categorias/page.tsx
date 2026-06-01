@@ -104,6 +104,26 @@ export default async function CategoriasPage({
               <b className="text-foreground">Vocabulário</b> e volte aqui pra definir os tetos.
             </p>
           </Panel>
+        ) : budgetRows.length === 0 ? (
+          <>
+            <Panel className="mb-5 border-navy-700/30">
+              <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-navy-700 dark:text-navy-300 font-medium mb-2">
+                Comece a orçar
+              </div>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
+                Você ainda não definiu nenhum teto. Escolha uma categoria de despesa abaixo e
+                diga quanto quer gastar nela — o app passa a comparar com o gasto real do mês e
+                te avisa quando passar do limite.
+              </p>
+            </Panel>
+            <Panel>
+              <PanelHeader title="Categorias de despesa" meta="Defina um teto pra começar" />
+              <BudgetManager
+                rows={budgetRows}
+                allCategories={expense.map((c) => ({ id: c.id, name: c.name, color: c.color }))}
+              />
+            </Panel>
+          </>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-7">

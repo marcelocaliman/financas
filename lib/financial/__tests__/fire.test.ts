@@ -178,6 +178,29 @@ describe("computeFire — coverageRatio + classification", () => {
     expect(r.classification).toBe("building");
   });
 
+  it("renda alvo = 0 (não configurado) → 'building', NÃO 'fat' (regressão usuário novo)", () => {
+    // Usuário novo sem renda alvo nem despesa: target=0. Sem a guarda,
+    // 0 >= 0*1.3 retornava "fat" e mostrava um trofeu falso no dia 1.
+    const zero = computeFire({
+      currentNetWorth: 0,
+      monthlyAddition: 0,
+      targetMonthlyIncome: 0,
+      realAnnualReturnPct: 6,
+      swrPct: 4,
+    });
+    expect(zero.classification).toBe("building");
+
+    // Mesmo com patrimônio > 0, sem renda alvo não há meta atingida.
+    const withMoney = computeFire({
+      currentNetWorth: 500_000,
+      monthlyAddition: 0,
+      targetMonthlyIncome: 0,
+      realAnnualReturnPct: 6,
+      swrPct: 4,
+    });
+    expect(withMoney.classification).toBe("building");
+  });
+
   it("idade ao chegar = currentAge + yearsToFire", () => {
     const r = computeFire({
       currentNetWorth: 100_000,

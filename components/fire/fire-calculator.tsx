@@ -53,7 +53,7 @@ export function FireCalculator({ base }: { base: FireInputs }) {
           label="Renda passiva alvo"
           value={targetIncome}
           onChange={setTargetIncome}
-          min={1000}
+          min={0}
           max={Math.max(50000, base.targetMonthlyIncome * 2)}
           step={100}
           format={(v) => `${formatMoney(v)}/mês`}

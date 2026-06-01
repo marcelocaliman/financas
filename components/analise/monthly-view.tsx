@@ -14,6 +14,7 @@ import {
 } from "@/services/transactions";
 import { formatMoney, formatPercent } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils/cn";
 
 function currentMonthISO(): string {
@@ -45,7 +46,10 @@ export async function MonthlyView({ month }: { month?: string }) {
 
   const incomeDelta = prev && prev.income > 0 ? current.income / prev.income - 1 : null;
   const expenseDelta = prev && prev.expense > 0 ? current.expense / prev.expense - 1 : null;
-  const netDelta = prev ? current.net - prev.net : null;
+  // Mesma guarda dos irmãos: getMonthlyHistory sempre devolve linhas (zeradas),
+  // então `prev` é truthy mesmo sem dados — sem checar prev.income/expense, a
+  // "Sobra" mostrava "+R$ 0,00 vs mês anterior" comparando com um mês vazio.
+  const netDelta = prev && (prev.income > 0 || prev.expense > 0) ? current.net - prev.net : null;
 
   const incomeSpark = history.map((r) => r.income);
   const expenseSpark = history.map((r) => r.expense);
@@ -53,6 +57,48 @@ export async function MonthlyView({ month }: { month?: string }) {
 
   const movedUp = movers.filter((m) => m.delta > 0).slice(0, 3);
   const movedDown = movers.filter((m) => m.delta < 0).slice(0, 3);
+
+  const headerActions = (
+    <div className="flex items-center gap-2.5">
+      <ViewSwitcher view="meses" />
+      <MonthSwitcher
+        currentMonth={monthISO}
+        isCurrent={isCurrent}
+        label={monthLabel.split(" ")[0]}
+      />
+    </div>
+  );
+
+  // Empty state: nenhuma transação nos últimos meses (usuário novo). Espelha a
+  // AnnualView — getMonthlyHistory pré-popula 6 linhas zeradas, então sem essa
+  // guarda a página renderia inteira em R$ 0,00 (KPIs, gráfico reto, tabela).
+  const hasAnyData = history.some((r) => r.income > 0 || r.expense > 0);
+  if (!hasAnyData) {
+    return (
+      <>
+        <PageHeader
+          eyebrow={`Insights · ${history.length} meses até ${monthLabel}`}
+          title={
+            <>
+              Seu <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">histórico</em>
+            </>
+          }
+          subtitle="Para onde o dinheiro foi, de onde veio, e como vocês mudaram nos últimos meses."
+          actions={headerActions}
+        />
+        <EmptyState
+          eyebrow="Sem dados ainda"
+          title={
+            <>
+              Nada pra <em className="italic">analisar</em> ainda
+            </>
+          }
+          description="Você ainda não tem transações registradas nos últimos meses. Adicione lançamentos ou importe um extrato pra ver tendências, top categorias e variações aqui."
+          cta={{ href: "/transacoes", label: "Adicionar transações" }}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -64,16 +110,7 @@ export async function MonthlyView({ month }: { month?: string }) {
           </>
         }
         subtitle="Para onde o dinheiro foi, de onde veio, e como vocês mudaram nos últimos meses."
-        actions={
-          <div className="flex items-center gap-2.5">
-            <ViewSwitcher view="meses" />
-            <MonthSwitcher
-              currentMonth={monthISO}
-              isCurrent={isCurrent}
-              label={monthLabel.split(" ")[0]}
-            />
-          </div>
-        }
+        actions={headerActions}
       />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">

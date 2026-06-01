@@ -397,6 +397,10 @@ function classifyFire(args: {
 }): FireClassification {
   const { currentNetWorth, fireTargetNetWorth, targetMonthlyIncome, currentPassiveMonthlyIncome, inssMonthlyEstimate, monthlyAddition, monthsToFire, realAnnualReturnPct } = args;
 
+  // Sem renda alvo (target = 0), NÃO existe meta — não dá pra ter "atingido" nada.
+  // Sem essa guarda, 0 >= 0*1.3 retornava "fat" e o usuário novo via um trofeu falso.
+  if (fireTargetNetWorth <= 0) return "building";
+
   const totalPassive = currentPassiveMonthlyIncome + inssMonthlyEstimate;
   const coverage = targetMonthlyIncome > 0 ? totalPassive / targetMonthlyIncome : 0;
 

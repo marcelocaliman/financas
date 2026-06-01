@@ -41,11 +41,27 @@ export default async function IndependenciaPage() {
   // Patrimônio líquido — fonte única (contas + carteira + bens − dívidas).
   const netWorth = patrimonio.liquido;
 
-  // Empty state: usuário novo sem dados FIRE configurados
-  const isFireUnconfigured =
-    netWorth === 0 &&
-    prefs.targetMonthlyIncome == null &&
-    prefs.birthDate == null;
+  // Sobra média mensal últimos 6 meses (piso 0 só no fim).
+  const monthlySavings =
+    history6.length > 0
+      ? Math.max(0, history6.reduce((s, h) => s + h.net, 0) / history6.length)
+      : 0;
+
+  // Renda alvo: preferência do usuário, ou despesa atual como default.
+  const targetMonthlyIncome =
+    prefs.targetMonthlyIncome != null && prefs.targetMonthlyIncome > 0
+      ? prefs.targetMonthlyIncome
+      : coverage.monthlyAverageExpense;
+
+  // Empty state: sem patrimônio E sem renda alvo (nem por preferência nem por
+  // despesa real) → não há meta pra calcular. Checa o targetMonthlyIncome de
+  // fato, não os 3 campos nulos — senão quem salva só a data de nascimento
+  // burlava o guard e caía num "Fat FIRE" falso (target 0 ⇒ 0 ≥ 0).
+  const isFireUnconfigured = netWorth === 0 && targetMonthlyIncome <= 0;
+
+  // Tem com o que desenhar trajetória? Sem patrimônio nem aporte, a curva é uma
+  // linha reta no zero — melhor mostrar os parâmetros + CTA do que um gráfico flat.
+  const hasFinancialData = netWorth > 0 || monthlySavings > 0;
 
   if (isFireUnconfigured) {
     return (
@@ -75,20 +91,6 @@ export default async function IndependenciaPage() {
       </>
     );
   }
-
-  // Sobra média mensal últimos 6 meses: média do net REAL com piso 0 só no
-  // fim (meses no vermelho puxam a média pra baixo em vez de virar 0 cada um,
-  // o que inflava a taxa de poupança que dirige o FIRE).
-  const monthlySavings =
-    history6.length > 0
-      ? Math.max(0, history6.reduce((s, h) => s + h.net, 0) / history6.length)
-      : 0;
-
-  // Renda alvo: default = despesa atual
-  const targetMonthlyIncome =
-    prefs.targetMonthlyIncome != null && prefs.targetMonthlyIncome > 0
-      ? prefs.targetMonthlyIncome
-      : coverage.monthlyAverageExpense;
 
   const currentAge = prefs.birthDate ? computeAge(prefs.birthDate) : undefined;
 
@@ -288,33 +290,56 @@ export default async function IndependenciaPage() {
       </div>
 
       {/* GRÁFICO TRAJETÓRIA */}
-      <Panel className="mb-6">
-        <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
-          Trajetória até FIRE
-        </div>
-        <p className="text-[12.5px] text-muted-foreground mb-4">
-          Patrimônio crescendo no ritmo atual ({formatMoney(monthlySavings)}/mês de aporte, retorno real {prefs.expectedReturnPct}% a.a.).
-          Linha pontilhada = target.
-        </p>
-        <FireTrajectoryChart
-          points={trajectory}
-          targetNetWorth={fire.fireTargetNetWorth}
-          currentAge={currentAge}
-        />
-      </Panel>
+      {hasFinancialData ? (
+        <>
+          <Panel className="mb-6">
+            <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+              Trajetória até FIRE
+            </div>
+            <p className="text-[12.5px] text-muted-foreground mb-4">
+              Patrimônio crescendo no ritmo atual ({formatMoney(monthlySavings)}/mês de aporte, retorno real {prefs.expectedReturnPct}% a.a.).
+              Linha pontilhada = target.
+            </p>
+            <FireTrajectoryChart
+              points={trajectory}
+              targetNetWorth={fire.fireTargetNetWorth}
+              currentAge={currentAge}
+            />
+          </Panel>
 
-      {/* CONE MONTE CARLO */}
-      <Panel className="mb-6">
-        <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
-          Cone de cenários · 500 simulações
-        </div>
-        <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
-          Mercados são voláteis. Esta projeção simula 500 trajetórias possíveis assumindo
-          retorno real médio {prefs.expectedReturnPct}% a.a. com volatilidade típica de 12% a.a.
-          Mostra o intervalo de 80% (10º–90º percentil) ao longo do tempo.
-        </p>
-        <FireMonteCarloChart points={monteCarlo} targetNetWorth={fire.fireTargetNetWorth} />
-      </Panel>
+          {/* CONE MONTE CARLO */}
+          <Panel className="mb-6">
+            <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+              Cone de cenários · 500 simulações
+            </div>
+            <p className="text-[12.5px] text-muted-foreground mb-4 leading-relaxed">
+              Mercados são voláteis. Esta projeção simula 500 trajetórias possíveis assumindo
+              retorno real médio {prefs.expectedReturnPct}% a.a. com volatilidade típica de 12% a.a.
+              Mostra o intervalo de 80% (10º–90º percentil) ao longo do tempo.
+            </p>
+            <FireMonteCarloChart points={monteCarlo} targetNetWorth={fire.fireTargetNetWorth} />
+          </Panel>
+        </>
+      ) : (
+        <Panel className="mb-6 border-navy-700/30">
+          <div className="font-display text-[17px] font-medium tracking-[-0.01em] text-foreground mb-1">
+            Trajetória até FIRE
+          </div>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
+            Seu plano está definido (renda alvo <b className="text-foreground"><MoneyMask>{formatMoney(targetMonthlyIncome)}</MoneyMask>/mês</b>),
+            mas ainda não há patrimônio nem aporte registrado pra projetar a curva. Assim que
+            você adicionar contas/investimentos e tiver alguma sobra mensal, a trajetória e o
+            cone de cenários aparecem aqui.
+          </p>
+          <Link
+            href="/contas"
+            className="inline-flex items-center gap-1.5 mt-3 text-[12.5px] text-navy-700 dark:text-navy-300 hover:text-navy-900 dark:hover:text-navy-100"
+          >
+            <TrendingUp className="w-3.5 h-3.5" strokeWidth={1.7} />
+            Adicionar contas e investimentos
+          </Link>
+        </Panel>
+      )}
 
       {/* CALCULATOR INTERATIVO */}
       <Panel className="mb-6">

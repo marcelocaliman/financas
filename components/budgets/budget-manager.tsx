@@ -69,9 +69,15 @@ export function BudgetManager({
   return (
     <div className="space-y-1">
       {rows.length === 0 ? (
-        <div className="text-center py-6 text-[13px] text-muted-foreground italic">
-          Sem categorias de despesa. Cadastre em /categorias primeiro.
-        </div>
+        // Sem NENHUMA categoria de despesa → orienta cadastrar. Mas se há
+        // categorias (só não têm orçamento), o seletor "Adicionar orçamento"
+        // abaixo é o próprio CTA — não mostra mensagem (era factualmente errada:
+        // dizia "sem categorias" enquanto o seletor listava as categorias).
+        withoutBudget.length === 0 ? (
+          <div className="text-center py-6 text-[13px] text-muted-foreground italic">
+            Sem categorias de despesa. Cadastre na aba Vocabulário primeiro.
+          </div>
+        ) : null
       ) : (
         rows.map((r) => {
           const colors = STATUS_COLOR[r.status];

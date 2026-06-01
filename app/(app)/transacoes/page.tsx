@@ -153,7 +153,12 @@ export default async function TransacoesPage({
     prevSummary.income > 0 ? summary.income / prevSummary.income - 1 : null;
   const expenseDelta =
     prevSummary.expense > 0 ? summary.expense / prevSummary.expense - 1 : null;
-  const netDelta = summary.net - prevSummary.net;
+  // Mesma guarda dos irmãos: sem dados no mês anterior, não mostra "+R$ 0,00 vs
+  // mês anterior" (comparação enganosa com um mês vazio).
+  const netDelta =
+    prevSummary.income > 0 || prevSummary.expense > 0
+      ? summary.net - prevSummary.net
+      : null;
 
   // Agrupa transações por dia
   const grouped: Array<{ date: string; rows: Transaction[]; total: number }> = [];

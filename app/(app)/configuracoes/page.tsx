@@ -47,7 +47,9 @@ export default async function ConfiguracoesPage() {
   ]);
   const ownerUserId = householdData.data?.created_by ?? null;
   const comparisonValue = comparisonCurrency ?? "off";
-  const staleCount = cronStatuses.filter((c) => c.status !== "ok").length;
+  // Só "stale" (cron de fato atrasado) é problema. "missing" = ausência NATURAL
+  // de histórico (usuário novo, sem snapshot/tx ainda) — não é falha, não alarma.
+  const staleCount = cronStatuses.filter((c) => c.status === "stale").length;
   const isAdmin = ctx.profile.role === "admin";
 
   return (
@@ -262,18 +264,18 @@ function CronStatusRow({ status }: { status: CronStatus }) {
     ) : status.status === "stale" ? (
       <AlertCircle className="w-4 h-4 text-gold-700 dark:text-gold-500" strokeWidth={1.7} />
     ) : (
-      <MinusCircle className="w-4 h-4 text-rust-600" strokeWidth={1.7} />
+      <MinusCircle className="w-4 h-4 text-faint-foreground" strokeWidth={1.7} />
     );
   const ageLabel =
     status.status === "missing"
-      ? "sem dados"
+      ? "aguardando 1º registro"
       : `há ${formatAge(status.ageHours)}`;
   const ageClass =
     status.status === "ok"
       ? "text-muted-foreground"
       : status.status === "stale"
         ? "text-gold-700 dark:text-gold-500"
-        : "text-rust-600";
+        : "text-faint-foreground";
 
   return (
     <li className="flex items-center justify-between gap-3 py-3">
