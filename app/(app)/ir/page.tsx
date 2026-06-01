@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, CalendarCheck } from "lucide-react";
+import { AlertCircle, CalendarCheck, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel } from "@/components/ui/panel";
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -153,6 +153,15 @@ export default async function IRPage() {
           </>
         }
         subtitle="Prepara os dados pra declaração anual. Gera relatório nas seções do programa IRPF + arquivo .DEC pra importar. NÃO substitui a transmissão oficial — ainda é via Programa IRPF."
+        actions={
+          <Link
+            href="/declarantes"
+            className="inline-flex items-center gap-1.5 rounded-[8px] border border-border px-3 py-2 text-[13px] text-foreground hover:bg-bone-100/60 dark:hover:bg-ink-800/60 transition-colors"
+          >
+            <Users className="w-3.5 h-3.5" strokeWidth={1.7} />
+            Declarantes
+          </Link>
+        }
       />
 
       {pendingDarfs.length > 0 ? (

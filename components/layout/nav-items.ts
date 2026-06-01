@@ -23,7 +23,6 @@ import {
   HandCoins,
   AlertTriangle,
   Inbox,
-  PiggyBank,
 } from "lucide-react";
 
 /**
@@ -42,7 +41,14 @@ export type NavItem = {
 };
 
 export type HubTab = { label: string; href: string; icon: typeof Home };
-export type Hub = { key: string; label: string; tabs: HubTab[] };
+export type Hub = {
+  key: string;
+  label: string;
+  tabs: HubTab[];
+  /** Rotas que pertencem ao hub mas NÃO viram aba (ex.: /declarantes no IR). Só
+   * pra detecção do hub (highlight no menu), não aparecem como tab nem no sidebar. */
+  extraPaths?: string[];
+};
 
 /** Os 6 hubs. A 1ª aba é a "porta" do hub (o que o item primário abre). */
 export const HUBS: Hub[] = [
@@ -52,18 +58,25 @@ export const HUBS: Hub[] = [
     tabs: [{ label: "Início", href: "/dashboard", icon: Home }],
   },
   {
+    // Recorrentes mora aqui (não em Planejamento): recorrente é "o lançamento que
+    // se repete" — pertence ao mundo operacional de Transações.
     key: "transacoes",
     label: "Transações",
     tabs: [
       { label: "Lançamentos", href: "/transacoes", icon: ArrowLeftRight },
       { label: "Documentos", href: "/inbox", icon: Inbox },
+      { label: "Recorrentes", href: "/recorrentes", icon: Repeat },
       { label: "Histórico", href: "/analise", icon: LineChart },
     ],
   },
   {
+    // Contas abre o hub (porta): consultar saldo/fatura é pergunta diária de
+    // Carteira, não de "Ajustes". Conta → Investimentos → Bens → Dívidas conta a
+    // narrativa do patrimônio (líquido → aplicado → imobilizado → passivo).
     key: "carteira",
     label: "Carteira",
     tabs: [
+      { label: "Contas", href: "/contas", icon: CreditCard },
       { label: "Investimentos", href: "/investimentos", icon: Wallet },
       { label: "Resgates", href: "/resgates", icon: Layers },
       { label: "Bens", href: "/patrimonio", icon: Package },
@@ -71,31 +84,29 @@ export const HUBS: Hub[] = [
     ],
   },
   {
+    // Só futuro/objetivos — Recorrentes saiu (é operacional, foi pra Transações).
     key: "planejamento",
     label: "Planejamento",
     tabs: [
-      { label: "Recorrentes", href: "/recorrentes", icon: Repeat },
       { label: "Metas", href: "/metas", icon: Target },
       { label: "Independência", href: "/independencia", icon: Flame },
-      { label: "Orçamento", href: "/orcamento", icon: PiggyBank },
     ],
   },
   {
+    // Declarantes (titular/cônjuge/dependentes) não tem assento próprio — é
+    // "configura uma vez". Mora dentro do IR (link na landing + /ir/[ano]/
+    // configuracoes). extraPaths mantém o hub destacado quando se está em /declarantes.
     key: "imposto",
     label: "Imposto de Renda",
-    tabs: [
-      { label: "IRPF", href: "/ir", icon: Landmark },
-      { label: "Declarantes", href: "/declarantes", icon: UsersIcon },
-    ],
+    tabs: [{ label: "IRPF", href: "/ir", icon: Landmark }],
+    extraPaths: ["/declarantes"],
   },
   {
+    // Categorias absorve Orçamento (mesma entidade: categoria + seu teto) via pill
+    // interno. Configurações saiu da lista — acesso só pelo perfil no rodapé.
     key: "ajustes",
     label: "Ajustes",
-    tabs: [
-      { label: "Contas", href: "/contas", icon: CreditCard },
-      { label: "Categorias", href: "/categorias", icon: Tag },
-      { label: "Configurações", href: "/configuracoes", icon: Settings },
-    ],
+    tabs: [{ label: "Categorias", href: "/categorias", icon: Tag }],
   },
 ];
 
@@ -122,8 +133,9 @@ export const mainGroupLabels: Record<string, string> = {
 
 /** Acha o hub a que uma rota pertence (pra renderizar as abas do hub). */
 export function hubForPath(pathname: string): Hub | undefined {
-  return HUBS.find((h) =>
-    h.tabs.some((t) => pathname === t.href || pathname.startsWith(t.href + "/")),
+  const matches = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  return HUBS.find(
+    (h) => h.tabs.some((t) => matches(t.href)) || (h.extraPaths ?? []).some(matches),
   );
 }
 
