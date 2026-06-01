@@ -337,9 +337,10 @@ export default async function DashboardPage({
       ) : null}
 
       {/* Próximos 7 dias + Metas em curso — o "o que vem aí" é o mais acionável
-          do dia a dia, vem logo após o snapshot. */}
+          do dia a dia, vem logo após o snapshot. items-start: cada card tem a
+          própria altura (Metas com poucas metas não estica deixando buraco). */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full">
+        <div className="grid lg:grid-cols-2 gap-5 mb-5 items-start [&>*]:!mb-0">
           <UpcomingObligationsCard upcoming={upcoming!} days={7} />
           <GoalsTopCard goals={goals} monthlySavings={monthlySavings} />
         </div>

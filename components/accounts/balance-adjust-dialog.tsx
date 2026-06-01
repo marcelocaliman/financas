@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { MoneyInput } from "@/components/ui/money-input";
-import { adjustAccountBalance } from "@/services/accounts.actions";
+import { adjustAccountBalance, setOpeningBalance } from "@/services/accounts.actions";
 import { formatMoney } from "@/lib/utils/format";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import type { Tables } from "@/types/database";
@@ -30,25 +30,33 @@ export function BalanceAdjustDialog({
 }) {
   const currentBalance = Number(account.current_balance);
   const [target, setTarget] = useState<number>(currentBalance);
+  const [opening, setOpening] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const [prevOpen, setPrevOpen] = useState(open);
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setTarget(currentBalance);
+    if (open) {
+      setTarget(currentBalance);
+      setOpening(false);
+    }
   }
 
   const delta = Math.round((target - currentBalance) * 100) / 100;
 
   const handleSubmit = (formData: FormData) => {
     startTransition(async () => {
-      const r = await adjustAccountBalance(formData);
+      const r = opening
+        ? await setOpeningBalance({ accountId: account.id, balance: target })
+        : await adjustAccountBalance(formData);
       if (r.error) toast.error(r.error);
       else {
         toast.success(
-          delta === 0
-            ? "Nada para ajustar."
-            : `Ajuste de ${formatMoney(Math.abs(delta))} registrado.`,
+          opening
+            ? "Saldo de abertura definido."
+            : delta === 0
+              ? "Nada para ajustar."
+              : `Ajuste de ${formatMoney(Math.abs(delta))} registrado.`,
         );
         onOpenChange(false);
       }
@@ -73,7 +81,7 @@ export function BalanceAdjustDialog({
             </div>
           </div>
 
-          <Field label="Saldo desejado" htmlFor="targetBalance" required>
+          <Field label={opening ? "Saldo real de hoje (abertura)" : "Saldo desejado"} htmlFor="targetBalance" required>
             <MoneyInput
               name="targetBalance"
               id="targetBalance"
@@ -84,7 +92,24 @@ export function BalanceAdjustDialog({
             />
           </Field>
 
-          {delta !== 0 ? (
+          <label className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border cursor-pointer">
+            <input
+              type="checkbox"
+              checked={opening}
+              onChange={(e) => setOpening(e.target.checked)}
+              className="mt-0.5 accent-navy-700"
+            />
+            <span className="text-[12px] leading-relaxed">
+              <span className="font-medium text-foreground">É o saldo de abertura</span>
+              <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                Pra quem começou no meio do ano: define o saldo REAL de hoje sem
+                virar receita/despesa do mês (não polui o fluxo). Use isto pra dar
+                o dinheiro real às contas.
+              </span>
+            </span>
+          </label>
+
+          {!opening && delta !== 0 ? (
             <div className="rounded-[10px] border border-border bg-surface px-4 py-3 text-[12.5px] font-mono space-y-1.5">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Será criada uma transação</span>
@@ -117,8 +142,14 @@ export function BalanceAdjustDialog({
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" variant="primary" disabled={pending || delta === 0}>
-              {pending ? "Salvando…" : delta === 0 ? "Sem alteração" : "Registrar ajuste"}
+            <Button type="submit" variant="primary" disabled={pending || (!opening && delta === 0)}>
+              {pending
+                ? "Salvando…"
+                : opening
+                  ? "Definir abertura"
+                  : delta === 0
+                    ? "Sem alteração"
+                    : "Registrar ajuste"}
             </Button>
           </DialogFooter>
         </form>

@@ -195,6 +195,36 @@ export async function restoreAccount(id: string): Promise<{ ok?: boolean; error?
  * Ajusta o saldo criando uma transação de reconciliação (income/expense).
  * Mantém auditoria — não sobrescreve current_balance direto.
  */
+/**
+ * Define o SALDO DE ABERTURA real de uma conta (ponto de partida de quem começa
+ * no meio do ano). Seta o current_balance direto, SEM criar transação — então
+ * NÃO conta como receita/despesa do mês (diferente de adjustAccountBalance).
+ * Os lançamentos seguintes ajustam a partir daqui.
+ */
+export async function setOpeningBalance(input: {
+  accountId: string;
+  balance: number;
+}): Promise<{ ok?: boolean; error?: string }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+  if (!z.string().uuid().safeParse(input.accountId).success) {
+    return { error: "Conta inválida." };
+  }
+  if (!Number.isFinite(input.balance)) {
+    return { error: "Saldo informado inválido." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("accounts")
+    .update({ current_balance: Math.round(input.balance * 100) / 100 })
+    .eq("id", input.accountId);
+  if (error) return { error: error.message };
+  revalidatePath("/contas");
+  revalidatePath("/dashboard");
+  revalidatePath("/patrimonio");
+  return { ok: true };
+}
+
 export async function adjustAccountBalance(
   formData: FormData,
 ): Promise<{ ok?: boolean; error?: string }> {
