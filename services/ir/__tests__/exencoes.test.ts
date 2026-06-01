@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   ageAtYearEnd,
   elderlyAnnualExemption,
+  elderlyMonthsFactor,
   splitAposentadoriaExemption,
 } from "@/services/ir/exencoes";
 
@@ -22,6 +23,27 @@ describe("ageAtYearEnd", () => {
 describe("elderlyAnnualExemption", () => {
   it("é a parcela mensal × 13 (12 meses + 13º)", () => {
     expect(elderlyAnnualExemption(MONTHLY)).toBe(ANNUAL);
+  });
+  it("aceita fator parcial (ano do aniversário)", () => {
+    expect(elderlyAnnualExemption(MONTHLY, 3)).toBe(Math.round(MONTHLY * 3 * 100) / 100);
+  });
+});
+
+describe("elderlyMonthsFactor — conta do mês do aniversário (IN 1500/14)", () => {
+  it("ainda não fez 65 → 0", () => {
+    expect(elderlyMonthsFactor("1980-05-01", 2026)).toBe(0);
+  });
+  it("anos após os 65 → ano cheio (13)", () => {
+    expect(elderlyMonthsFactor("1955-05-01", 2026)).toBe(13);
+  });
+  it("ano em que completa 65: nasceu em janeiro → 13 (ano cheio)", () => {
+    expect(elderlyMonthsFactor("1961-01-10", 2026)).toBe(13);
+  });
+  it("ano em que completa 65: nasceu em novembro → 3 (nov+dez+13º)", () => {
+    expect(elderlyMonthsFactor("1961-11-10", 2026)).toBe(3);
+  });
+  it("ano em que completa 65: nasceu em dezembro → 2 (dez+13º)", () => {
+    expect(elderlyMonthsFactor("1961-12-10", 2026)).toBe(2);
   });
 });
 
@@ -46,6 +68,13 @@ describe("splitAposentadoriaExemption", () => {
     const r = splitAposentadoriaExemption(20000, elder, 2026, MONTHLY);
     expect(r.isento).toBe(20000);
     expect(r.tributavel).toBe(0);
+  });
+
+  it("ano do aniversário (nasceu em novembro): teto parcial = mensal × 3", () => {
+    const novElder = { birthDate: "1961-11-10", hasSeriousIllness: false };
+    const r = splitAposentadoriaExemption(50000, novElder, 2026, MONTHLY);
+    expect(r.isento).toBe(Math.round(MONTHLY * 3 * 100) / 100); // não o ANNUAL cheio
+    expect(r.reason).toBe("idade_65");
   });
 
   it("moléstia grave: 100% isento e prevalece sobre idade", () => {

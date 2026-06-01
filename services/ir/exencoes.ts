@@ -7,8 +7,9 @@
  *    O excedente é tributável normalmente. (Lei 7.713/88 art. 6º XV.)
  *  - Moléstia grave: proventos de aposentadoria/reforma/pensão 100% isentos.
  *    (Lei 7.713/88 art. 6º XIV.) Prevalece sobre a isenção de idade.
- *  - A elegibilidade por idade é aferida a partir do mês do aniversário de 65,
- *    mas pra simplicidade anual usamos "completou 65 até 31/12 do ano-base".
+ *  - A elegibilidade por idade vale A PARTIR DO MÊS do aniversário de 65 (IN RFB
+ *    1.500/14): no ano em que completa 65, a isenção conta do mês do aniversário
+ *    até dezembro + 13º; nos anos seguintes, o ano cheio (×13).
  */
 
 export interface FilerExemptionProfile {
@@ -28,9 +29,23 @@ export function ageAtYearEnd(birthDate: string | null, year: number): number | n
   return year - by;
 }
 
-/** Isenção anual de aposentadoria 65+ = parcela mensal × 13 (12 + 13º). */
-export function elderlyAnnualExemption(monthlyExemption: number): number {
-  return Math.round(monthlyExemption * 13 * 100) / 100;
+/**
+ * Nº de competências isentas no ano para 65+ (×13 = 12 meses + 13º no ano cheio).
+ * No ANO em que completa 65, conta do mês do aniversário até dezembro (+ 13º):
+ * fator = 14 − mês_nascimento (jan = 13/cheio; dez = 2). 0 se ainda não fez 65.
+ */
+export function elderlyMonthsFactor(birthDate: string | null, year: number): number {
+  const age = ageAtYearEnd(birthDate, year);
+  if (age == null || age < 65) return 0;
+  if (age > 65) return 13; // ano cheio
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate ?? "");
+  const birthMonth = m ? Number(m[2]) : 1;
+  return Math.max(0, Math.min(13, 14 - birthMonth));
+}
+
+/** Isenção anual de aposentadoria 65+ = parcela mensal × fator (default 13). */
+export function elderlyAnnualExemption(monthlyExemption: number, factor = 13): number {
+  return Math.round(monthlyExemption * factor * 100) / 100;
 }
 
 export interface ExemptionSplit {
@@ -60,9 +75,9 @@ export function splitAposentadoriaExemption(
     return { isento: gross, tributavel: 0, reason: "molestia_grave" };
   }
 
-  const age = ageAtYearEnd(profile.birthDate, year);
-  if (age != null && age >= 65) {
-    const limit = elderlyAnnualExemption(monthlyExemption);
+  const factor = elderlyMonthsFactor(profile.birthDate, year);
+  if (factor > 0) {
+    const limit = elderlyAnnualExemption(monthlyExemption, factor);
     const isento = Math.min(gross, limit);
     return {
       isento: Math.round(isento * 100) / 100,
