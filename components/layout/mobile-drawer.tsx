@@ -4,23 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { Settings, Menu, X, Shield } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { PrivacyToggle } from "@/components/layout/privacy-toggle";
 import { cn } from "@/lib/utils/cn";
 import {
-  mainNavItems,
+  mainNavItems as navItems,
   mainGroupLabels as groupLabels,
   type NavItem,
 } from "@/components/layout/nav-items";
 import type { SidebarBadges } from "@/services/sidebar-badges";
-
-// Fonte única + o atalho de Configurações (que no desktop fica no rodapé).
-const navItems: NavItem[] = [
-  ...mainNavItems,
-  { label: "Configurações", href: "/configuracoes", icon: Settings, group: "ajustes", sub: true },
-];
 
 /**
  * Drawer mobile com nav completa.

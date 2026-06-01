@@ -23,54 +23,109 @@ import {
   HandCoins,
   AlertTriangle,
   Inbox,
+  PiggyBank,
 } from "lucide-react";
 
 /**
- * Fonte ÚNICA da navegação (antes duplicada em sidebar + mobile-drawer).
- * IA enxugada (auditoria UX): 4 pilares, com itens secundários indentados sob
- * o pai natural pra reduzir densidade sem esconder nada.
+ * Fonte ÚNICA da navegação. Rearquitetura em 6 HUBS (decisão do dono): o app
+ * responde às PERGUNTAS do usuário, não ao tipo de dado. Cada hub agrupa páginas
+ * relacionadas; dentro do hub, as páginas viram ABAS (ver components/layout/
+ * hub-tabs.tsx). Nada de feature some — só reorganiza navegação/layout.
  */
 export type NavItem = {
   label: string;
   href: string;
   icon: typeof Home;
   group: string;
-  /** Item secundário — renderiza indentado sob o item primário acima dele. */
+  /** Item secundário — renderiza indentado sob o item primário do hub. */
   sub?: boolean;
 };
 
-export const mainNavItems: NavItem[] = [
-  // Dia a dia (operacional, alta frequência)
-  { label: "Início", href: "/dashboard", icon: Home, group: "diaadia" },
-  { label: "Transações", href: "/transacoes", icon: ArrowLeftRight, group: "diaadia" },
-  { label: "Recorrentes", href: "/recorrentes", icon: Repeat, group: "diaadia", sub: true },
-  { label: "Documentos", href: "/inbox", icon: Inbox, group: "diaadia" },
-  { label: "Histórico", href: "/analise", icon: LineChart, group: "diaadia" },
+export type HubTab = { label: string; href: string; icon: typeof Home };
+export type Hub = { key: string; label: string; tabs: HubTab[] };
 
-  // Patrimônio
-  { label: "Investimentos", href: "/investimentos", icon: Wallet, group: "patrimonio" },
-  { label: "Resgates", href: "/resgates", icon: Layers, group: "patrimonio", sub: true },
-  { label: "Patrimônio", href: "/patrimonio", icon: Package, group: "patrimonio" },
-  { label: "Dívidas", href: "/dividas", icon: HandCoins, group: "patrimonio", sub: true },
-  { label: "Metas", href: "/metas", icon: Target, group: "patrimonio" },
-  { label: "Independência", href: "/independencia", icon: Flame, group: "patrimonio", sub: true },
-
-  // Imposto de Renda (o diferencial)
-  { label: "IRPF", href: "/ir", icon: Landmark, group: "ir" },
-  { label: "Declarantes", href: "/declarantes", icon: UsersIcon, group: "ir", sub: true },
-
-  // Ajustes
-  { label: "Contas", href: "/contas", icon: CreditCard, group: "ajustes" },
-  { label: "Categorias", href: "/categorias", icon: Tag, group: "ajustes" },
-  { label: "Orçamento", href: "/orcamento", icon: Target, group: "ajustes", sub: true },
+/** Os 6 hubs. A 1ª aba é a "porta" do hub (o que o item primário abre). */
+export const HUBS: Hub[] = [
+  {
+    key: "inicio",
+    label: "Início",
+    tabs: [{ label: "Início", href: "/dashboard", icon: Home }],
+  },
+  {
+    key: "transacoes",
+    label: "Transações",
+    tabs: [
+      { label: "Lançamentos", href: "/transacoes", icon: ArrowLeftRight },
+      { label: "Documentos", href: "/inbox", icon: Inbox },
+      { label: "Histórico", href: "/analise", icon: LineChart },
+    ],
+  },
+  {
+    key: "carteira",
+    label: "Carteira",
+    tabs: [
+      { label: "Investimentos", href: "/investimentos", icon: Wallet },
+      { label: "Resgates", href: "/resgates", icon: Layers },
+      { label: "Bens", href: "/patrimonio", icon: Package },
+      { label: "Dívidas", href: "/dividas", icon: HandCoins },
+    ],
+  },
+  {
+    key: "planejamento",
+    label: "Planejamento",
+    tabs: [
+      { label: "Recorrentes", href: "/recorrentes", icon: Repeat },
+      { label: "Metas", href: "/metas", icon: Target },
+      { label: "Independência", href: "/independencia", icon: Flame },
+      { label: "Orçamento", href: "/orcamento", icon: PiggyBank },
+    ],
+  },
+  {
+    key: "imposto",
+    label: "Imposto de Renda",
+    tabs: [
+      { label: "IRPF", href: "/ir", icon: Landmark },
+      { label: "Declarantes", href: "/declarantes", icon: UsersIcon },
+    ],
+  },
+  {
+    key: "ajustes",
+    label: "Ajustes",
+    tabs: [
+      { label: "Contas", href: "/contas", icon: CreditCard },
+      { label: "Categorias", href: "/categorias", icon: Tag },
+      { label: "Configurações", href: "/configuracoes", icon: Settings },
+    ],
+  },
 ];
 
+/** Sidebar: cada hub vira um grupo (label = nome do hub); abas viram itens. */
+export const mainNavItems: NavItem[] = HUBS.flatMap((h) =>
+  h.tabs.map((t, i) => ({
+    label: t.label,
+    href: t.href,
+    icon: t.icon,
+    group: h.key,
+    sub: i > 0,
+  })),
+);
+
 export const mainGroupLabels: Record<string, string> = {
-  diaadia: "Dia a dia",
-  patrimonio: "Patrimônio",
-  ir: "Imposto de Renda",
+  // Início é auto-explicativo — sem header redundante.
+  inicio: "",
+  transacoes: "Transações",
+  carteira: "Carteira",
+  planejamento: "Planejamento",
+  imposto: "Imposto de Renda",
   ajustes: "Ajustes",
 };
+
+/** Acha o hub a que uma rota pertence (pra renderizar as abas do hub). */
+export function hubForPath(pathname: string): Hub | undefined {
+  return HUBS.find((h) =>
+    h.tabs.some((t) => pathname === t.href || pathname.startsWith(t.href + "/")),
+  );
+}
 
 export const adminNavItems: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, group: "geral" },

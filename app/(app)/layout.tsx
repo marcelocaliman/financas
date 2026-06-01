@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
+import { HubTabs } from "@/components/layout/hub-tabs";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { MobileDrawer } from "@/components/layout/mobile-drawer";
@@ -100,6 +101,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           />
           <div className="flex-1 min-w-0 relative">
             <main id="conteudo" className="max-w-[1320px] mx-auto px-4 sm:px-10 lg:px-14 pt-16 lg:pt-8 pb-28 lg:pb-20">
+              <HubTabs />
               {children}
             </main>
             <MobileNav />
