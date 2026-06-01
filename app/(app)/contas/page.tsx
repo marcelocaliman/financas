@@ -8,6 +8,7 @@ import {
 } from "@/services/accounts";
 import { AccountCard } from "@/components/accounts/account-card";
 import { NewAccountButton } from "./new-account-button";
+import { RecomputeBalancesButton } from "./recompute-balances-button";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { KpiCard } from "@/components/ui/kpi-card";
 import { StaggeredGrid, StaggeredItem } from "@/components/layout/staggered-grid";
@@ -113,6 +114,7 @@ export default async function ContasPage({
               isCurrent={isCurrent}
               label={monthLabel.split(" ")[0]}
             />
+            <RecomputeBalancesButton />
             <NewAccountButton filers={filers} regime={regime} />
           </>
         }

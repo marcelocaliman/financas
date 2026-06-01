@@ -2692,6 +2692,14 @@ export interface Database {
         Args: Record<string, never>;
         Returns: number;
       };
+      recompute_account_balance: {
+        Args: { p_account_id: string };
+        Returns: number;
+      };
+      recompute_household_balances: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       reorder_goals: {
         Args: { p_ids: string[] };
         Returns: void;

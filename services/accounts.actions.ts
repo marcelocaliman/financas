@@ -195,6 +195,24 @@ export async function restoreAccount(id: string): Promise<{ ok?: boolean; error?
  * Ajusta o saldo criando uma transação de reconciliação (income/expense).
  * Mantém auditoria — não sobrescreve current_balance direto.
  */
+/**
+ * Re-deriva os saldos de TODAS as contas a partir dos lançamentos (fonte da
+ * verdade). Conserta drift do current_balance — útil depois de importações ou
+ * edições em massa. Idempotente.
+ */
+export async function recomputeBalances(): Promise<{ ok?: boolean; error?: string; count?: number }> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return { error: "Sessão expirada." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("recompute_household_balances");
+  if (error) return { error: error.message };
+  revalidatePath("/contas");
+  revalidatePath("/dashboard");
+  revalidatePath("/patrimonio");
+  revalidatePath("/transacoes");
+  return { ok: true, count: data ?? undefined };
+}
+
 export async function adjustAccountBalance(
   formData: FormData,
 ): Promise<{ ok?: boolean; error?: string }> {

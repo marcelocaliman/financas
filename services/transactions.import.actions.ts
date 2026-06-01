@@ -241,6 +241,13 @@ export async function importTransactionsCSV(rows: ImportRow[]): Promise<ImportRe
     } catch {
       /* não bloqueia o import */
     }
+    // Re-deriva os saldos das contas a partir dos lançamentos — import em lote
+    // podia deixar o current_balance fora de sincronia (drift). Auto-cura.
+    try {
+      await supabase.rpc("recompute_household_balances");
+    } catch {
+      /* não bloqueia o import */
+    }
   }
 
   revalidatePath("/transacoes");

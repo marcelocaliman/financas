@@ -295,6 +295,15 @@ export async function applyFaturaCartao(args: {
     return { ok: false, error: error?.message ?? "Falha ao inserir transações." };
   }
 
+  // Re-deriva o saldo do cartão a partir dos lançamentos — inserção em lote da
+  // fatura (com parcelas/datas futuras) podia deixar o current_balance fora de
+  // sincronia. Auto-cura; best-effort.
+  try {
+    await admin.rpc("recompute_account_balance", { p_account_id: args.accountId });
+  } catch {
+    /* não bloqueia a aplicação da fatura */
+  }
+
   void normalizeDescription;
   return { ok: true, createdIds: inserted.map((r) => r.id), skippedCount };
 }
