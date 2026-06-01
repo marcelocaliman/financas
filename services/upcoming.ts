@@ -231,6 +231,27 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
       if (d <= matCutoff) continue; // já foi materializada
       if (materializedKeys.has(`${r.id}:${d}`)) continue; // já existe como lançamento real
 
+      // Pagamento de fatura: projeta o valor REAL da fatura que vence em `d`
+      // (mesma função que a materialização usa pra criar o pagamento), não o
+      // valor fixo da regra — senão a projeção mente em todo mês cuja fatura difere.
+      let occAmount = amountConverted;
+      if (isBillPayment && r.to_account_id) {
+        const { data: realBill } = await (
+          supabase.rpc as unknown as (
+            fn: string,
+            args: Record<string, unknown>,
+          ) => Promise<{ data: number | null }>
+        )("credit_card_bill_amount", {
+          p_card_id: r.to_account_id,
+          p_due_date: d,
+        });
+        if (realBill != null) {
+          const realNum = Number(realBill);
+          if (realNum <= 0) continue; // fatura zerada — materialização também pula
+          occAmount = convertOrSame(realNum, r.currency, displayCurrency, rates);
+        }
+      }
+
       const acc = flatten(r.account);
       const fromAcc = flatten(r.from_account);
       const toAcc = flatten(r.to_account);
@@ -240,7 +261,7 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
         date: d,
         description: r.description,
         kind: r.kind,
-        amount: amountConverted,
+        amount: occAmount,
         ruleId: r.id,
         accountName: acc?.name ?? null,
         categoryName: cat?.name ?? null,
@@ -249,15 +270,15 @@ export async function getUpcomingObligations(days = 7): Promise<UpcomingSummary>
       });
 
       if (r.kind === "income") {
-        totalIncome += amountConverted;
+        totalIncome += occAmount;
       } else if (r.kind === "expense") {
-        if (!isCardExpense) totalExpense += amountConverted;
+        if (!isCardExpense) totalExpense += occAmount;
       } else if (r.kind === "transfer") {
         if (isBillPayment) {
-          totalExpense += amountConverted; // pagamento de fatura = cash real saindo
+          totalExpense += occAmount; // pagamento de fatura = cash real saindo
         } else {
-          totalTransferIn += amountConverted;
-          totalTransferOut += amountConverted;
+          totalTransferIn += occAmount;
+          totalTransferOut += occAmount;
         }
       }
     }
