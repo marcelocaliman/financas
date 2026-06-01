@@ -261,6 +261,44 @@ export async function updateInvestment(
     parsed.data.cnpj?.replace(/\D/g, "") ||
     lookupAssetCNPJ(parsed.data.ticker)?.replace(/\D/g, "") ||
     null;
+
+  const newBalance = parsed.data.currentBalance ?? parsed.data.initialAmount;
+
+  // "Espertezas" do antigo botão Sincronizar broker, fundidas aqui: quando o
+  // SALDO de um ativo de renda fixa muda, (1) reseta a referência de rendimento
+  // (last_yield_at = hoje) pra Selic do dia não contar em dobro em cima do valor
+  // novo, e (2) pra Tesouro público sem quantity, deriva a quantity do PU oficial
+  // → liga o auto-sync diário. Assim o Editar ativo já faz o que o sync fazia.
+  const { data: existing } = await supabase
+    .from("investments")
+    .select("current_balance, quantity")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  const balanceChanged =
+    Math.abs(newBalance - Number(existing?.current_balance ?? 0)) > 0.005;
+  const isFixedIncome =
+    parsed.data.assetType === "fixed_income_public" ||
+    parsed.data.assetType === "fixed_income_private";
+
+  const syncExtras: { last_yield_at?: string; quantity?: number } = {};
+  if (isFixedIncome && balanceChanged) {
+    syncExtras.last_yield_at = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    if (parsed.data.assetType === "fixed_income_public" && Number(existing?.quantity ?? 0) <= 0) {
+      const params = inferTesouroTitle(parsed.data.ticker, parsed.data.name);
+      if (params) {
+        const pu = await fetchLatestPu(supabase, params.title_type, params.maturity_date);
+        if (pu && pu.pu_base > 0) {
+          syncExtras.quantity = Math.round((newBalance / pu.pu_base) * 10000) / 10000;
+        }
+      }
+    }
+  }
+
   const { error } = await supabase
     .from("investments")
     .update({
@@ -273,7 +311,7 @@ export async function updateInvestment(
       fixed_rate: parsed.data.fixedRate ?? null,
       purchase_date: parsed.data.purchaseDate,
       initial_amount: parsed.data.initialAmount,
-      current_balance: parsed.data.currentBalance ?? parsed.data.initialAmount,
+      current_balance: newBalance,
       tax_regime: parsed.data.taxRegime,
       cnpj: cnpjResolved,
       is_exterior: parsed.data.isExterior ?? false,
@@ -286,101 +324,10 @@ export async function updateInvestment(
       is_particular: parsed.data.isParticular ?? false,
       particular_reason: parsed.data.particularReason ?? null,
       ownership_percent: parsed.data.ownershipPercent ?? null,
+      ...syncExtras,
     })
     .eq("id", parsed.data.id);
   if (error) return { error: error.message };
-  revalidatePath("/investimentos");
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
-/**
- * Sincroniza o saldo de um ativo de RF com o valor real vindo do broker
- * (Tesouro Direto, app do banco, etc). Override direto pra eliminar drift
- * acumulado por cálculo automático.
- *
- *   - current_balance = valor informado (truth-source = broker)
- *   - last_yield_at = hoje (sem yield futuro em cima imediatamente)
- *   - purchase_date opcionalmente atualizado pra data REAL de compra
- *
- * A partir daí, o cron diário aplica Selic em cima desse baseline.
- */
-const syncBrokerSchema = z.object({
-  id: z.string().uuid(),
-  currentBalance: z.coerce.number().nonnegative(),
-  purchaseDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional()
-    .nullable(),
-});
-
-export async function syncBrokerBalance(
-  _prev: { ok?: boolean; error?: string } | undefined,
-  formData: FormData,
-): Promise<{ ok?: boolean; error?: string }> {
-  const parsed = syncBrokerSchema.safeParse({
-    id: formData.get("id"),
-    currentBalance: formData.get("currentBalance"),
-    purchaseDate: formData.get("purchaseDate") || null,
-  });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
-  }
-
-  const ctx = await getCurrentUserContext();
-  if (!ctx) return { error: "Auth required" };
-
-  const supabase = await createClient();
-  const todayIso = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-
-  // Carrega o investimento pra inferir quantity automaticamente (se for Tesouro)
-  const { data: inv } = await supabase
-    .from("investments")
-    .select("id, ticker, name, asset_type, quantity")
-    .eq("id", parsed.data.id)
-    .eq("household_id", ctx.household.id)
-    .maybeSingle();
-  if (!inv) return { error: "Ativo não encontrado" };
-
-  const balanceRounded = Math.round(parsed.data.currentBalance * 100) / 100;
-
-  const update: {
-    current_balance: number;
-    last_yield_at: string;
-    purchase_date?: string;
-    quantity?: number;
-  } = {
-    current_balance: balanceRounded,
-    last_yield_at: todayIso,
-  };
-  if (parsed.data.purchaseDate) update.purchase_date = parsed.data.purchaseDate;
-
-  // Auto-deriva quantity pra Tesouro Direto se ainda não tiver — assim o cron
-  // sync-tesouro-prices cuida da atualização diária automaticamente daqui pra frente
-  const currentQty = Number(inv.quantity ?? 0);
-  if (inv.asset_type === "fixed_income_public" && currentQty <= 0) {
-    const params = inferTesouroTitle(inv.ticker, inv.name);
-    if (params) {
-      const pu = await fetchLatestPu(supabase, params.title_type, params.maturity_date);
-      if (pu && pu.pu_base > 0) {
-        update.quantity = Math.round((balanceRounded / pu.pu_base) * 10000) / 10000;
-      }
-    }
-  }
-
-  const { error } = await supabase
-    .from("investments")
-    .update(update)
-    .eq("id", parsed.data.id)
-    .eq("household_id", ctx.household.id);
-  if (error) return { error: error.message };
-
   revalidatePath("/investimentos");
   revalidatePath("/dashboard");
   return { ok: true };
