@@ -146,6 +146,8 @@ export function AddTransactionDialog({
       setPaymentMethod("");
       setShowMore(false);
       setShowIR(false);
+      setExcludeFromIr(false);
+      setIsHistoricalIrOnly(false);
       setFontePagadoraId("");
       setIrrfAmount(0);
       setInssAmount(0);
@@ -423,6 +425,60 @@ export function AddTransactionDialog({
               />
             </Field>
 
+            {/* Marcadores de IR — visíveis (não escondidos em "Mais opções"):
+                são decisões frequentes pra quem controla o IR. */}
+            {kind === "income" ? (
+              <label
+                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+                htmlFor="excludeFromIr"
+              >
+                <input
+                  type="checkbox"
+                  id="excludeFromIr"
+                  name="excludeFromIr"
+                  value="1"
+                  checked={excludeFromIr}
+                  onChange={(e) => setExcludeFromIr(e.target.checked)}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div className="text-[12.5px] leading-relaxed">
+                  <span className="font-medium text-foreground">Não declarar no IRPF</span>
+                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                    Receita fica no app pra controle pessoal mas é ignorada nos
+                    relatórios e no arquivo .DEC. Use pra presentes, reembolsos,
+                    transferências entre contas próprias, etc.
+                  </span>
+                </div>
+              </label>
+            ) : null}
+
+            {kind !== "transfer" ? (
+              <label
+                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
+                htmlFor="isHistoricalIrOnly"
+              >
+                <input
+                  type="checkbox"
+                  id="isHistoricalIrOnly"
+                  name="isHistoricalIrOnly"
+                  value="1"
+                  checked={isHistoricalIrOnly}
+                  onChange={(e) => setIsHistoricalIrOnly(e.target.checked)}
+                  className="mt-0.5 accent-navy-700"
+                />
+                <div className="text-[12.5px] leading-relaxed">
+                  <span className="font-medium text-foreground">
+                    Histórica — só pra declaração IR
+                  </span>
+                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
+                    Marca esta {kind === "income" ? "receita" : "despesa"} como já ocorrida na vida real
+                    (saldo da conta já reflete). Aparece nos relatórios do IR mas{" "}
+                    <b>não</b> mexe no saldo nem entra em gráficos/sobra mensal.
+                  </span>
+                </div>
+              </label>
+            ) : null}
+
             {/* ── Mais opções — tudo que não é o caminho rápido fica escondido
                 até o usuário pedir. Só existe pra income/expense. ── */}
             {kind !== "transfer" ? (
@@ -553,61 +609,6 @@ export function AddTransactionDialog({
               </div>
             ) : null}
 
-            {/* Não declarar no IRPF — só pra income (receitas isentas, presentes, reembolsos, etc.) */}
-            {kind === "income" ? (
-              <label
-                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
-                htmlFor="excludeFromIr"
-              >
-                <input
-                  type="checkbox"
-                  id="excludeFromIr"
-                  name="excludeFromIr"
-                  value="1"
-                  checked={excludeFromIr}
-                  onChange={(e) => setExcludeFromIr(e.target.checked)}
-                  className="mt-0.5 accent-navy-700"
-                />
-                <div className="text-[12.5px] leading-relaxed">
-                  <span className="font-medium text-foreground">
-                    Não declarar no IRPF
-                  </span>
-                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
-                    Receita fica no app pra controle pessoal mas é ignorada nos
-                    relatórios e no arquivo .DEC. Use pra presentes, reembolsos,
-                    transferências entre contas próprias, etc.
-                  </span>
-                </div>
-              </label>
-            ) : null}
-
-            {/* Histórica IR — só pra income/expense; pula em transfer */}
-            {kind !== "transfer" ? (
-              <label
-                className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
-                htmlFor="isHistoricalIrOnly"
-              >
-                <input
-                  type="checkbox"
-                  id="isHistoricalIrOnly"
-                  name="isHistoricalIrOnly"
-                  value="1"
-                  checked={isHistoricalIrOnly}
-                  onChange={(e) => setIsHistoricalIrOnly(e.target.checked)}
-                  className="mt-0.5 accent-navy-700"
-                />
-                <div className="text-[12.5px] leading-relaxed">
-                  <span className="font-medium text-foreground">
-                    Histórica — só pra declaração IR
-                  </span>
-                  <span className="block text-faint-foreground text-[11.5px] mt-0.5">
-                    Marca esta {kind === "income" ? "receita" : "despesa"} como já ocorrida na vida real
-                    (saldo da conta já reflete). Aparece nos relatórios do IR mas{" "}
-                    <b>não</b> mexe no saldo nem entra em gráficos/sobra mensal.
-                  </span>
-                </div>
-              </label>
-            ) : null}
             </div>
             {/* ── fim Mais opções ── */}
 
