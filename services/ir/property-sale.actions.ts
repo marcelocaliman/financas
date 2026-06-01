@@ -13,6 +13,9 @@ const saleSchema = z.object({
   saleDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   salePrice: z.coerce.number().positive("Preço de venda obrigatório."),
   acquisitionCost: z.coerce.number().nonnegative(),
+  improvements: z.coerce.number().nonnegative().optional().default(0),
+  acquisitionBrokerage: z.coerce.number().nonnegative().optional().default(0),
+  sellingExpenses: z.coerce.number().nonnegative().optional().default(0),
   acquiredAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   buyerName: z.string().optional().nullable(),
   buyerCpfCnpj: z.string().optional().nullable(),
@@ -40,6 +43,9 @@ export async function createPropertySale(
     saleDate: formData.get("saleDate"),
     salePrice: formData.get("salePrice"),
     acquisitionCost: formData.get("acquisitionCost"),
+    improvements: formData.get("improvements") || 0,
+    acquisitionBrokerage: formData.get("acquisitionBrokerage") || 0,
+    sellingExpenses: formData.get("sellingExpenses") || 0,
     acquiredAt: formData.get("acquiredAt"),
     buyerName: formData.get("buyerName") || null,
     buyerCpfCnpj: formData.get("buyerCpfCnpj") || null,
@@ -86,16 +92,38 @@ export async function createPropertySale(
       .reduce((sum, s) => sum + Number(s.sale_price), 0);
   }
 
+  // Trava de 5 anos da reaplicação (Lei 11.196/05 art. 39 §5º): a isenção só
+  // pode ser usada UMA vez a cada 5 anos. Procura venda anterior com essa
+  // isenção nos 5 anos antes desta venda.
+  let reinvestBlockedBy5yr = false;
+  if (assetKind === "real_estate" && parsed.data.willReinvestIn180Days) {
+    const fiveYearsBefore = new Date(parsed.data.saleDate + "T00:00:00Z");
+    fiveYearsBefore.setUTCFullYear(fiveYearsBefore.getUTCFullYear() - 5);
+    const { data: priorReinvest } = await supabase
+      .from("physical_asset_sales")
+      .select("id")
+      .eq("household_id", ctx.household.id)
+      .eq("exemption_kind", "reaplicacao_residencial")
+      .gte("sale_date", fiveYearsBefore.toISOString().slice(0, 10))
+      .lt("sale_date", parsed.data.saleDate)
+      .limit(1);
+    reinvestBlockedBy5yr = (priorReinvest ?? []).length > 0;
+  }
+
   // Calcula GCAP usando o helper
   const gcap = computeGcap({
     salePrice: parsed.data.salePrice,
     acquisitionCost: parsed.data.acquisitionCost,
+    improvements: parsed.data.improvements,
+    acquisitionExtras: parsed.data.acquisitionBrokerage,
+    sellingExpenses: parsed.data.sellingExpenses,
     acquiredAt: parsed.data.acquiredAt,
     saleDate: parsed.data.saleDate,
     assetKind,
     isUniqueResidencialUnder440k: parsed.data.isUniqueResidencialUnder440k,
     willReinvestIn180Days: parsed.data.willReinvestIn180Days,
     reinvestAmount: parsed.data.reinvestAmount,
+    reinvestBlockedBy5yr,
     otherMovableSalesSameMonth,
   });
   const { error } = await supabase.from("physical_asset_sales").insert({
@@ -104,6 +132,9 @@ export async function createPropertySale(
     sale_date: parsed.data.saleDate,
     sale_price: parsed.data.salePrice,
     acquisition_cost: parsed.data.acquisitionCost,
+    improvements: parsed.data.improvements,
+    acquisition_brokerage: parsed.data.acquisitionBrokerage,
+    selling_expenses: parsed.data.sellingExpenses,
     gross_profit: gcap.grossProfit,
     reduction_factor_pre_88: gcap.reductionFactorPre88,
     reduction_factor_96_05: gcap.reductionFactor96To05,

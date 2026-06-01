@@ -170,6 +170,42 @@ describe("computeGcap — reaplicação 180 dias", () => {
   });
 });
 
+describe("computeGcap — composição de custo (benfeitorias/corretagem/despesas)", () => {
+  it("benfeitorias + corretagem somam ao custo; despesas de venda abatem", () => {
+    const r = computeGcap({
+      salePrice: 800_000,
+      acquisitionCost: 500_000,
+      improvements: 50_000,
+      acquisitionExtras: 20_000, // ITBI/corretagem compra
+      sellingExpenses: 30_000, // corretagem venda
+      acquiredAt: "2020-01-01",
+      saleDate: "2026-01-15",
+    });
+    // ganho = (800k − 30k) − (500k + 50k + 20k) = 770k − 570k = 200k (antes do FR2)
+    // sem composição seria 300k → o lucro tributável cai bastante
+    const semComposicao = computeGcap({
+      salePrice: 800_000, acquisitionCost: 500_000, acquiredAt: "2020-01-01", saleDate: "2026-01-15",
+    });
+    expect(r.taxableProfit).toBeLessThan(semComposicao.taxableProfit);
+    expect(r.taxDue).toBeLessThan(semComposicao.taxDue);
+  });
+});
+
+describe("computeGcap — trava de 5 anos da reaplicação", () => {
+  it("reaplicação BLOQUEADA (já usou nos últimos 5 anos) → não isenta", () => {
+    const r = computeGcap({
+      salePrice: 1_000_000,
+      acquisitionCost: 500_000,
+      acquiredAt: "2018-01-01",
+      saleDate: "2026-01-15",
+      willReinvestIn180Days: true,
+      reinvestBlockedBy5yr: true,
+    });
+    expect(r.exemption.applied).toBe(false);
+    expect(r.taxDue).toBeGreaterThan(0);
+  });
+});
+
 describe("computeGcap — DARF due date (recua fim de semana e feriado)", () => {
   it("venda em janeiro → DARF até último dia útil de fevereiro", () => {
     const r = computeGcap({

@@ -146,15 +146,28 @@ export function computeGcap(args: {
   saleDate: string;
   /** Tipo do bem (afeta isenções aplicáveis). Default: real_estate */
   assetKind?: GcapAssetKind;
+  /** Benfeitorias comprovadas — somam ao custo (RIR/2018 art. 137). */
+  improvements?: number;
+  /** Corretagem/ITBI da COMPRA — soma ao custo. */
+  acquisitionExtras?: number;
+  /** Despesas da VENDA (corretagem de venda) — abatem do preço de venda. */
+  sellingExpenses?: number;
   isUniqueResidencialUnder440k?: boolean;
   willReinvestIn180Days?: boolean;
   reinvestAmount?: number;
+  /** true = já usou a isenção de reaplicação nos últimos 5 anos (Lei 11.196/05
+   *  art. 39 §5º) → a isenção NÃO se aplica de novo. */
+  reinvestBlockedBy5yr?: boolean;
   /** Soma de outras vendas de bens móveis no MESMO mês — pra checar limite 35k */
   otherMovableSalesSameMonth?: number;
 }): GcapCalculation {
   const assetKind = args.assetKind ?? "real_estate";
   const isRealEstate = assetKind === "real_estate";
-  const grossProfit = Math.max(0, args.salePrice - args.acquisitionCost);
+  // Custo efetivo = preço pago + benfeitorias + corretagem de compra.
+  // Venda efetiva = preço de venda − despesas de venda.
+  const totalCost = args.acquisitionCost + (args.improvements ?? 0) + (args.acquisitionExtras ?? 0);
+  const netSale = args.salePrice - (args.sellingExpenses ?? 0);
+  const grossProfit = Math.max(0, netSale - totalCost);
 
   // Reduções por tempo de posse — só pra IMÓVEIS.
   // Ordem (GCAP da Receita): ganho × (1 − art.18) × FR1 × FR2.
@@ -181,6 +194,12 @@ export function computeGcap(args: {
       exemptionApplied = true;
       exemptionReason = "Imóvel residencial único do contribuinte, valor de venda ≤ R$ 440k (Lei 9.250/95 art. 23).";
       taxablePostExemption = 0;
+    } else if (args.willReinvestIn180Days && args.reinvestBlockedBy5yr) {
+      // Isenção pedida mas BLOQUEADA pela trava de 5 anos (art. 39 §5º).
+      exemptionKind = "none";
+      exemptionApplied = false;
+      exemptionReason =
+        "Reaplicação não isenta: a isenção do art. 39 só pode ser usada UMA vez a cada 5 anos, e já houve uma venda com essa isenção no período.";
     } else if (args.willReinvestIn180Days) {
       const reinvestPct = args.reinvestAmount
         ? Math.min(1, args.reinvestAmount / args.salePrice)

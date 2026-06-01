@@ -41,6 +41,9 @@ export function PropertySaleDialog({
   const [saleDate, setSaleDate] = useState<string>(() =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
   );
+  const [improvements, setImprovements] = useState<number>(0);
+  const [acquisitionBrokerage, setAcquisitionBrokerage] = useState<number>(0);
+  const [sellingExpenses, setSellingExpenses] = useState<number>(0);
   const [isUniqueResidencial, setIsUniqueResidencial] = useState(false);
   const [willReinvest, setWillReinvest] = useState(false);
   const [filerId, setFilerId] = useState<string>(filers[0]?.id ?? "");
@@ -65,6 +68,9 @@ export function PropertySaleDialog({
   const gcapPreview = computeGcap({
     salePrice,
     acquisitionCost,
+    improvements,
+    acquisitionExtras: acquisitionBrokerage,
+    sellingExpenses,
     acquiredAt,
     saleDate,
     assetKind: isRealEstate ? "real_estate" : "movable",
@@ -113,6 +119,25 @@ export function PropertySaleDialog({
               />
             </Field>
           </div>
+
+          {isRealEstate ? (
+            <details className="text-[12.5px] text-muted-foreground">
+              <summary className="cursor-pointer font-medium hover:text-foreground">
+                Benfeitorias e despesas <span className="text-faint-foreground">· reduzem o ganho tributável</span>
+              </summary>
+              <div className="grid grid-cols-3 gap-3 pt-3">
+                <Field label="Benfeitorias" htmlFor="improvements" hint="reformas comprovadas">
+                  <MoneyInput id="improvements" name="improvements" defaultValue={improvements} onValueChange={setImprovements} />
+                </Field>
+                <Field label="Corretagem/ITBI (compra)" htmlFor="acquisitionBrokerage">
+                  <MoneyInput id="acquisitionBrokerage" name="acquisitionBrokerage" defaultValue={acquisitionBrokerage} onValueChange={setAcquisitionBrokerage} />
+                </Field>
+                <Field label="Despesas de venda" htmlFor="sellingExpenses" hint="corretagem da venda">
+                  <MoneyInput id="sellingExpenses" name="sellingExpenses" defaultValue={sellingExpenses} onValueChange={setSellingExpenses} />
+                </Field>
+              </div>
+            </details>
+          ) : null}
 
           {isRealEstate ? (
             <div className="space-y-2 rounded-[8px] bg-surface-muted/50 px-3 py-2.5">

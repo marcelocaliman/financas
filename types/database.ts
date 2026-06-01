@@ -2148,6 +2148,9 @@ export interface Database {
           sale_date: string;
           sale_price: number;
           acquisition_cost: number;
+          improvements: number;
+          acquisition_brokerage: number;
+          selling_expenses: number;
           gross_profit: number;
           reduction_factor_pre_88: number | null;
           reduction_factor_96_05: number | null;
@@ -2169,6 +2172,9 @@ export interface Database {
           id?: string;
           household_id: string;
           physical_asset_id: string;
+          improvements?: number;
+          acquisition_brokerage?: number;
+          selling_expenses?: number;
           sale_date: string;
           sale_price: number;
           acquisition_cost: number;
