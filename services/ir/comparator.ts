@@ -14,7 +14,19 @@ import { listFilers, getRegimeContext } from "@/services/ir/filers";
  * R$ 2.275,08). Bens são todos somados (visão única do household).
  *
  * Pra separada, chamamos computeImposto(year, household, filer) pra cada um e
- * somamos o imposto devido líquido.
+ * somamos o imposto devido líquido. O carnê-leão JÁ é rateado por filer
+ * (carne_leao_mensal.filer_id) tanto na renda quanto no crédito.
+ *
+ * ⚠️ Limitações conhecidas (ver docs/ir-audit.md), a tratar com cuidado:
+ *  - M11: renda/pagamento com owner_filer_id NULL (bem comum) NÃO entra em
+ *    nenhum filer no cenário separado (o `.eq(owner_filer_id, filerId)` não casa
+ *    NULL), embora entre na conjunta. O correto é ratear 50/50 (comunhão) via
+ *    ownership-split — exige refactor das queries por filer + orientação na UI
+ *    pra atribuir titularidade antes de declarar separado.
+ *  - M10: a conjunta soma +1 dependente (cônjuge) sem checar se o cônjuge já
+ *    foi cadastrado em ir_dependents — risco de dedução duplicada se o usuário
+ *    montar os dados assim. Detectar exige heurística de "qual dependente é o
+ *    cônjuge"; não implementada pra não arriscar falso-positivo.
  */
 
 export type ComparatorResult = {

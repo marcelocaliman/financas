@@ -34,6 +34,7 @@ function lastBusinessDayOfNextMonth(year: number, month: number): string {
 export async function listCarneLeao(
   year: number,
   householdId?: string,
+  filerId?: string,
 ): Promise<Tables<"carne_leao_mensal">[]> {
   const supabase = await createClient();
   let q = supabase
@@ -43,6 +44,7 @@ export async function listCarneLeao(
     .order("month")
     .order("created_at");
   if (householdId) q = q.eq("household_id", householdId);
+  if (filerId) q = q.eq("filer_id", filerId);
   const { data } = await q;
   return data ?? [];
 }
@@ -128,8 +130,9 @@ export type CarneLeaoSummary = {
 export async function getCarneLeaoSummary(
   year: number,
   householdId?: string,
+  filerId?: string,
 ): Promise<CarneLeaoSummary> {
-  const rows = await listCarneLeao(year, householdId);
+  const rows = await listCarneLeao(year, householdId, filerId);
 
   // Agrega por mês. O carnê-leão é apurado MENSALMENTE: a tabela progressiva se
   // aplica UMA vez sobre a soma dos rendimentos do mês, não por lançamento

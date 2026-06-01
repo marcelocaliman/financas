@@ -172,11 +172,9 @@ export async function computeImposto(
   // Carnê-leão (DARF 0190) é antecipação do imposto anual — creditado igual ao
   // IRRF. Credita só o que foi RECOLHIDO (marcado como pago), igual à declaração
   // oficial: o que está pendente continua aparecendo como imposto a pagar.
-  // Só na visão household (filerId indefinido), alinhado com a inclusão da renda
-  // na base em getRendimentosReport (carne_leao_mensal não tem filer).
-  const carneLeaoCredit = filerId
-    ? 0
-    : (await getCarneLeaoSummary(year, householdId)).totalPaid;
+  // Escopo por filer na declaração separada (carne_leao_mensal tem filer_id),
+  // alinhado com a inclusão da renda na base em getRendimentosReport.
+  const carneLeaoCredit = (await getCarneLeaoSummary(year, householdId, filerId)).totalPaid;
 
   // Núcleo PURO do cálculo (Simples vs Completo + redutor + créditos).
   const math = assembleImposto({

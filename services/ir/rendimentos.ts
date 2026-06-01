@@ -154,20 +154,18 @@ export async function getRendimentosReport(
   const scopedDiv = filerId ? divQuery.eq("investment.owner_filer_id", filerId) : divQuery;
   const scopedOthers = filerId ? othersQuery.eq("owner_filer_id", filerId) : othersQuery;
 
-  // Carnê-leão (DARF 0190): renda de PF tributável. A tabela carne_leao_mensal
-  // não tem atribuição por declarante, então só entra na visão household
-  // (filerId indefinido) — pra declaração por filer não dá pra ratear.
-  const carneLeaoQuery =
-    !filerId
-      ? (() => {
-          let q = supabase
-            .from("carne_leao_mensal")
-            .select("description, gross_amount, deductible_expenses, month")
-            .eq("year", year);
-          if (householdId) q = q.eq("household_id", householdId);
-          return q;
-        })()
-      : null;
+  // Carnê-leão (DARF 0190): renda de PF tributável. carne_leao_mensal TEM
+  // filer_id (migration 20260524130000) — então na declaração separada entra
+  // só a renda do filer; na conjunta (sem filerId), tudo do household.
+  const carneLeaoQuery = (() => {
+    let q = supabase
+      .from("carne_leao_mensal")
+      .select("description, gross_amount, deductible_expenses, month")
+      .eq("year", year);
+    if (householdId) q = q.eq("household_id", householdId);
+    if (filerId) q = q.eq("filer_id", filerId);
+    return q;
+  })();
 
   // Perfis dos declarantes (idade + moléstia grave) pra isenção de
   // aposentadoria/pensão; e a parcela isenta vigente no ano.
