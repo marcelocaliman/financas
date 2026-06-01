@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { Settings, Download, RefreshCw, Lock, ChevronLeft } from "lucide-react";
+import { Settings, Lock, ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { KpiCard } from "@/components/ui/kpi-card";
-import { Button } from "@/components/ui/button";
 import { getBensReport } from "@/services/ir/bens";
 import { getRendimentosReport } from "@/services/ir/rendimentos";
 import { getRendaVariavelReport } from "@/services/ir/renda-variavel";
@@ -17,7 +16,7 @@ import { RendaVariavelTable } from "@/components/ir/renda-variavel-table";
 import { ImpostoCompareCard } from "@/components/ir/imposto-compare-card";
 import { IrWarningsBanner } from "@/components/ir/ir-warnings-banner";
 import { IrSectionNav } from "@/components/ir/ir-section-nav";
-import { ExportActions } from "@/components/ir/export-actions";
+import { ExportWizard } from "@/components/ir/export-wizard";
 import { RecomputeDarfsButton } from "@/components/ir/recompute-darfs-button";
 import { CloseYearButton } from "@/components/ir/close-year-button";
 import { CarneLeaoManager } from "@/components/ir/carne-leao-manager";
@@ -177,10 +176,26 @@ export default async function IRYearPage({
               <Settings className="w-3.5 h-3.5" strokeWidth={1.7} />
               Configurações
             </Link>
-            <ExportActions
+            <ExportWizard
               year={year}
               cpf={settings?.cpf_titular ?? ""}
-              nome={ctx.profile.display_name}
+              checklist={checklist}
+              hasUnclassified={imposto.naoClassificadosTotal > 0}
+              unclassifiedTotal={imposto.naoClassificadosTotal}
+              summary={{
+                recommendation: imposto.recommendation,
+                netDue:
+                  imposto.recommendation === "completo"
+                    ? imposto.completo.netDue
+                    : imposto.simples.netDue,
+                baseTributavel:
+                  imposto.recommendation === "completo"
+                    ? imposto.completo.base
+                    : imposto.simples.base,
+                totalBens: totalAtivos,
+                taxTableSource: imposto.taxTableSource,
+                taxTableIsEstimate: imposto.taxTableIsEstimate,
+              }}
             />
           </>
         }
