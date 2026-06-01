@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RowActionsMenu } from "@/components/ui/row-actions-menu";
 import { Money } from "@/components/ui/money";
+import { formatDateShort } from "@/lib/utils/format";
 import {
   archiveAccount,
   deleteAccount,
@@ -35,6 +36,7 @@ export function AccountCard({
   balanceMode = "current",
   balanceLabel,
   assetsBalance = 0,
+  creditBreakdown,
   filers = [],
   regime = "solteiro",
 }: {
@@ -50,6 +52,12 @@ export function AccountCard({
    * Quando > 0, o card mostra três linhas: Caixa, Ativos, Total.
    */
   assetsBalance?: number;
+  /**
+   * Cartão: fatura fechada A PAGAR + vencimento. Quando presente, o card quebra o
+   * saldo em "fatura a pagar" + "próxima fatura já lançado" (que somam o saldo) —
+   * pra deixar claro por que -X não bate com a soma das faturas (parcelas futuras).
+   */
+  creditBreakdown?: { payable: number; dueDate: string | null };
   filers?: Tables<"ir_filers">[];
   regime?: MarriageRegime;
 }) {
@@ -195,6 +203,16 @@ export function AccountCard({
               currency={account.currency}
               balanceMode={balanceMode}
             />
+          ) : account.type === "credit_card" &&
+            balanceMode === "current" &&
+            creditBreakdown &&
+            creditBreakdown.payable > 0 ? (
+            <CreditCardBreakdown
+              balance={balance}
+              payable={creditBreakdown.payable}
+              dueDate={creditBreakdown.dueDate}
+              currency={account.currency}
+            />
           ) : (
             <>
               <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium flex items-center gap-1.5">
@@ -236,6 +254,69 @@ export function AccountCard({
         </>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Breakdown pra cartão de crédito: o saldo (-X) é a soma das compras já lançadas
+ * dos dois ciclos abertos. Quebra em "fatura a pagar" (a fechada) + "próxima
+ * fatura, já lançado" — que SOMAM o saldo. Deixa explícito por que -X não bate
+ * com a soma das faturas: as parcelas futuras ainda não entraram no saldo.
+ */
+function CreditCardBreakdown({
+  balance,
+  payable,
+  dueDate,
+  currency,
+}: {
+  balance: number;
+  payable: number;
+  dueDate: string | null;
+  currency: "BRL" | "EUR" | "USD" | "GBP";
+}) {
+  // Saldo é negativo (dívida). |saldo| = fatura a pagar + parte já lançada do
+  // ciclo em formação. O resto da fatura em formação são parcelas futuras (ainda
+  // fora do saldo).
+  const postedForming = Math.max(0, Math.abs(balance) - payable);
+  return (
+    <div>
+      <div className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-faint-foreground font-medium">
+        Saldo atual
+      </div>
+      <Money
+        value={balance}
+        currency={currency}
+        showComparison
+        className="text-[24px] tracking-[-0.02em] mt-1 items-start text-rust-600"
+        secondaryClassName="text-[11px]"
+      />
+      <div className="mt-3 pt-3 border-t border-border space-y-1.5">
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground">
+            Fatura a pagar{dueDate ? ` · vence ${formatDateShort(dueDate)}` : ""}
+          </span>
+          <Money
+            value={payable}
+            currency={currency}
+            className="font-mono text-[12.5px] tabular-nums text-foreground inline-flex !flex-row !items-baseline"
+          />
+        </div>
+        <div className="flex items-center justify-between text-[12px]">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.1em] text-faint-foreground">
+            Próxima fatura · já lançado
+          </span>
+          <Money
+            value={postedForming}
+            currency={currency}
+            className="font-mono text-[12.5px] tabular-nums text-foreground inline-flex !flex-row !items-baseline"
+          />
+        </div>
+      </div>
+      <p className="text-[11px] text-faint-foreground mt-2 leading-snug">
+        As duas somam o saldo. Parcelas futuras ainda não entram — por isso o saldo
+        é menor que a soma das faturas.
+      </p>
+    </div>
   );
 }
 

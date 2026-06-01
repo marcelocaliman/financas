@@ -86,6 +86,18 @@ export default async function ContasPage({
     .reduce((s, b) => s + b.totalOpen, 0);
   const hasPayable = totalPayable > 0.005;
 
+  // Fatura A PAGAR por cartão — pro card quebrar o saldo (fatura a pagar + ciclo
+  // em formação já lançado = saldo).
+  const creditBills = new Map<string, { payable: number; dueDate: string | null }>();
+  for (const b of openBills) {
+    if (b.status === "closed_pending" || b.status === "overdue") {
+      const cur = creditBills.get(b.accountId) ?? { payable: 0, dueDate: null };
+      cur.payable += Math.max(0, b.totalOpen - b.paidAmount);
+      cur.dueDate = cur.dueDate ?? b.dueDate;
+      creditBills.set(b.accountId, cur);
+    }
+  }
+
   // Δ vs mês anterior — só no mês corrente
   const liquidDeltaAbs =
     prevTotals != null ? liquidExcludingInvCash - prevTotals.liquidExcludingInvestmentCash : null;
@@ -220,7 +232,12 @@ export default async function ContasPage({
           ) : null}
 
           {/* Grid de cartões agrupados por tipo */}
-          <AccountsByType accounts={activeAccounts} filers={filers} regime={regime} />
+          <AccountsByType
+            accounts={activeAccounts}
+            creditBills={creditBills}
+            filers={filers}
+            regime={regime}
+          />
         </section>
       ) : (
         <EmptyState filers={filers} regime={regime} />
@@ -242,12 +259,14 @@ export default async function ContasPage({
 
 function AccountsByType({
   accounts,
+  creditBills,
   filers,
   regime,
 }: {
   accounts: Array<
     Awaited<ReturnType<typeof listAccountsForMonth>>[number]
   >;
+  creditBills: Map<string, { payable: number; dueDate: string | null }>;
   filers: Tables<"ir_filers">[];
   regime: MarriageRegime;
 }) {
@@ -278,6 +297,7 @@ function AccountsByType({
                     displayBalance={a.displayBalance}
                     balanceMode={a.balanceMode}
                     assetsBalance={a.assetsBalance}
+                    creditBreakdown={creditBills.get(a.id)}
                     filers={filers}
                     regime={regime}
                   />
