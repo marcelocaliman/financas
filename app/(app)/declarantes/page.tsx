@@ -4,20 +4,21 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
 import { FilersManager } from "@/components/ir/filers-manager";
 import { DependentsManager } from "@/components/ir/dependents-manager";
+import { listHouseholdMembers } from "@/services/household";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Página dedicada pra gerenciar declarantes (titular + cônjuge) e dependentes.
- * Antes essa gestão só ficava dentro de /ir/[year]/configuracoes — agora tem
- * página própria pra cadastro rápido fora do contexto da declaração.
+ * Vive dentro do hub IR (link no header do /ir), fora do contexto de um ano —
+ * filers/dependentes são household-level, não mudam por ano.
  */
 export default async function DeclarantesPage() {
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
   const supabase = await createClient();
 
-  const [{ data: filers }, { data: dependents }] = await Promise.all([
+  const [{ data: filers }, { data: dependents }, members] = await Promise.all([
     supabase
       .from("ir_filers")
       .select("*")
@@ -28,6 +29,7 @@ export default async function DeclarantesPage() {
       .select("*")
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
+    listHouseholdMembers(),
   ]);
 
   return (
@@ -50,7 +52,7 @@ export default async function DeclarantesPage() {
           title="Declarantes (titular + cônjuge)"
           meta="Pessoas que entregam declaração própria"
         />
-        <FilersManager filers={filers ?? []} />
+        <FilersManager filers={filers ?? []} members={members} />
       </Panel>
 
       <Panel>

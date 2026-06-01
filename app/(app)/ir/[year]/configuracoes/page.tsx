@@ -16,6 +16,7 @@ import { RegimeForm } from "@/components/ir/regime-form";
 import { PriorYearBalancesManager } from "@/components/ir/prior-year-balances-manager";
 import { findDeductibleCandidates } from "@/services/ir/auto-deductibles";
 import { listFilers } from "@/services/ir/filers";
+import { listHouseholdMembers } from "@/services/household";
 
 export const dynamic = "force-dynamic";
 
@@ -80,6 +81,7 @@ export default async function IRConfigPage({
   const [
     candidates,
     filers,
+    members,
     { data: accountsForBalance },
     { data: investmentsForBalance },
     { data: physicalForBalance },
@@ -87,6 +89,7 @@ export default async function IRConfigPage({
   ] = await Promise.all([
     findDeductibleCandidates(year, ctx.household.id),
     listFilers(ctx.household.id),
+    listHouseholdMembers(),
     supabase.from("accounts").select("id, name, institution").eq("is_active", true).order("name"),
     supabase.from("investments").select("id, ticker, name").eq("is_active", true).order("ticker"),
     supabase.from("physical_assets").select("id, name").eq("is_active", true).order("name"),
@@ -130,7 +133,7 @@ export default async function IRConfigPage({
               : "Adicione cônjuge pra preparar 2 declarações"
           }
         />
-        <FilersManager filers={filers} />
+        <FilersManager filers={filers} members={members} />
       </Panel>
 
       <Panel className="mb-5">

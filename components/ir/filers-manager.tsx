@@ -18,6 +18,7 @@ import {
 import type { Tables } from "@/types/database";
 
 type Filer = Tables<"ir_filers">;
+type Member = { id: string; display_name: string | null; role: string };
 
 function fmtCPF(raw: string): string {
   const d = raw.replace(/\D/g, "");
@@ -25,9 +26,21 @@ function fmtCPF(raw: string): string {
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
 }
 
-export function FilersManager({ filers }: { filers: Filer[] }) {
+export function FilersManager({
+  filers,
+  members = [],
+}: {
+  filers: Filer[];
+  members?: Member[];
+}) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Filer | null>(null);
+
+  // Membros do household que AINDA não são declarantes — oferecidos no picker
+  // pra reaproveitar (nome + vínculo de login) em vez de redigitar.
+  const linkableMembers = members.filter(
+    (m) => !filers.some((f) => f.user_id === m.id),
+  );
 
   return (
     <div className="space-y-3">
@@ -66,6 +79,7 @@ export function FilersManager({ filers }: { filers: Filer[] }) {
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         filer={editing}
+        linkableMembers={linkableMembers}
       />
     </div>
   );
@@ -134,10 +148,12 @@ function FilerSheet({
   open,
   onOpenChange,
   filer,
+  linkableMembers = [],
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   filer: Filer | null;
+  linkableMembers?: Member[];
 }) {
   const isEdit = !!filer;
 
@@ -146,6 +162,18 @@ function FilerSheet({
     isEdit && updateAction ? updateAction : createShadowFiler,
     undefined,
   );
+
+  // Nome controlado + userId escondido pra suportar o prefill pelo picker de
+  // membro. Resetam toda vez que o sheet abre ou troca de declarante.
+  const [nameValue, setNameValue] = useState(filer?.full_name ?? "");
+  const [userId, setUserId] = useState("");
+  const resetKey = `${open}:${filer?.id ?? "new"}`;
+  const [prevKey, setPrevKey] = useState(resetKey);
+  if (resetKey !== prevKey) {
+    setPrevKey(resetKey);
+    setNameValue(filer?.full_name ?? "");
+    setUserId("");
+  }
 
   useEffect(() => {
     if (state?.ok) {
@@ -168,11 +196,41 @@ function FilerSheet({
         />
 
         <form action={action} className="space-y-4">
+          {!isEdit && linkableMembers.length > 0 ? (
+            <Field
+              label="Reaproveitar membro do household"
+              htmlFor="memberPick"
+              hint="Vincula ao login da pessoa — sem redigitar o nome"
+            >
+              <select
+                id="memberPick"
+                value={userId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setUserId(id);
+                  const m = linkableMembers.find((x) => x.id === id);
+                  if (m?.display_name) setNameValue(m.display_name);
+                }}
+                className="w-full h-10 rounded-[8px] border border-border bg-surface px-3 text-[13.5px] text-foreground"
+              >
+                <option value="">Cadastrar novo (perfil sombra)</option>
+                {linkableMembers.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.display_name ?? "Sem nome"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+
+          <input type="hidden" name="userId" value={userId} />
+
           <Field label="Nome completo" htmlFor="fullName" required>
             <Input
               id="fullName"
               name="fullName"
-              defaultValue={filer?.full_name ?? ""}
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
               placeholder="Nome completo do declarante"
               autoFocus
             />

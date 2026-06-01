@@ -70,9 +70,35 @@ export async function createShadowFiler(
   if (!ctx) return { error: "Sessão expirada." };
 
   const supabase = await createClient();
+
+  // Fonte única de família: o declarante pode ser VINCULADO a um membro do
+  // household (que tem login). Sem isso é "perfil sombra" (user_id null). Só
+  // vincula se o membro existe no household e ainda não tem um filer ativo —
+  // evita dois declarantes pra mesma pessoa.
+  const rawUserId = ((formData.get("userId") as string | null) ?? "").trim() || null;
+  let linkedUserId: string | null = null;
+  if (rawUserId) {
+    const { data: member } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", rawUserId)
+      .eq("household_id", ctx.household.id)
+      .maybeSingle();
+    if (member) {
+      const { data: existing } = await supabase
+        .from("ir_filers")
+        .select("id")
+        .eq("household_id", ctx.household.id)
+        .eq("user_id", rawUserId)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (!existing) linkedUserId = rawUserId;
+    }
+  }
+
   const { error } = await supabase.from("ir_filers").insert({
     household_id: ctx.household.id,
-    user_id: null,                  // perfil sombra
+    user_id: linkedUserId,          // vinculado a membro do household, ou sombra (null)
     full_name: parsed.data.fullName.trim(),
     cpf: parsed.data.cpf,
     birth_date: parsed.data.birthDate || null,
