@@ -9,6 +9,8 @@
  * mai/2024+) como default. Útil pra testes ou retrocompat.
  */
 
+import { isBusinessDay } from "./business-days";
+
 type Bracket = { upTo: number; rate: number; deduct: number };
 
 /** Fallback (MP 1206/24 vigente mai/2024+). Usar só em testes/retrocompat. */
@@ -37,12 +39,14 @@ export type CarneLeaoCalc = {
 };
 
 function lastBusinessDayOfNextMonth(refDate: string): string {
-  const d = new Date(refDate);
-  const lastDay = new Date(d.getFullYear(), d.getMonth() + 2, 0);
-  while (lastDay.getDay() === 0 || lastDay.getDay() === 6) {
-    lastDay.setDate(lastDay.getDate() - 1);
+  const y = parseInt(refDate.slice(0, 4), 10);
+  const mo = parseInt(refDate.slice(5, 7), 10); // 1-12
+  const d = new Date(Date.UTC(y, mo + 1, 0)); // último dia do mês seguinte
+  // Recua fim de semana E feriado nacional (Lei 8.134/90; RIR/2018 art. 118).
+  while (!isBusinessDay(d.toISOString().slice(0, 10))) {
+    d.setUTCDate(d.getUTCDate() - 1);
   }
-  return lastDay.toISOString().slice(0, 10);
+  return d.toISOString().slice(0, 10);
 }
 
 /**

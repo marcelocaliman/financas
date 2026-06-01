@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { computeCarneLeaoMonthly } from "@/lib/financial/irpf-monthly-table";
+import { isBusinessDay } from "@/lib/financial/business-days";
 import { getMonthlyTaxTable } from "@/services/ir/ir-tax-tables";
 import type { Tables } from "@/types/database";
 
@@ -23,7 +24,8 @@ function lastBusinessDayOfNextMonth(year: number, month: number): string {
   let m = month + 1;
   if (m > 12) { m = 1; y++; }
   const last = new Date(Date.UTC(y, m, 0));
-  while (last.getUTCDay() === 0 || last.getUTCDay() === 6) {
+  // Recua fim de semana E feriado nacional.
+  while (!isBusinessDay(last.toISOString().slice(0, 10))) {
     last.setUTCDate(last.getUTCDate() - 1);
   }
   return last.toISOString().slice(0, 10);

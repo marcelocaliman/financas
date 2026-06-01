@@ -4,6 +4,18 @@ import {
   computeRedutorMensal,
 } from "@/lib/financial/irpf-monthly-table";
 
+describe("computeCarneLeaoMonthly — vencimento recua feriado", () => {
+  it("competência abr/2018 → DARF de mai/2018 recua Corpus Christi (31/05) pra 30/05", () => {
+    // Corpus Christi 2018 = 31/05 (quinta). Último dia útil de maio vira 30/05.
+    const r = computeCarneLeaoMonthly({ grossIncome: 10000, competenceDate: "2018-04-20" });
+    expect(r.darfDueDate).toBe("2018-05-30");
+  });
+  it("competência jan/2026 → DARF de fev recua sábado 28/02 pra 27/02", () => {
+    const r = computeCarneLeaoMonthly({ grossIncome: 10000, competenceDate: "2026-01-10" });
+    expect(r.darfDueDate).toBe("2026-02-27");
+  });
+});
+
 describe("computeCarneLeaoMonthly", () => {
   it("renda < isenção → imposto zero", () => {
     const r = computeCarneLeaoMonthly({
