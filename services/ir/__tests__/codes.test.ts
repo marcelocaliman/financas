@@ -105,6 +105,32 @@ describe("BEM_CODES catálogo", () => {
       expect(code.group).toMatch(/^\d{2}$/);
     }
   });
+
+  it("grupos seguem o leiaute 2024+ (correção da auditoria)", () => {
+    // Participações societárias → 03 (antes 04)
+    expect(BEM_CODES["31"].group).toBe("03");
+    expect(BEM_CODES["32"].group).toBe("03");
+    expect(BEM_CODES["39"].group).toBe("03");
+    // Aplicações e investimentos → 04 (renda fixa antes em 05)
+    expect(BEM_CODES["47"].group).toBe("04");
+    expect(BEM_CODES["48"].group).toBe("04");
+    expect(BEM_CODES["49"].group).toBe("04");
+    // Fundos (FII/ETF) → 07 (antes 04)
+    expect(BEM_CODES["73"].group).toBe("07");
+    expect(BEM_CODES["74"].group).toBe("07");
+    // Créditos → 05
+    expect(BEM_CODES["97"].group).toBe("05");
+    // Cripto → 08
+    expect(BEM_CODES["81"].group).toBe("08");
+    // Catch-all é 99, não 09
+    expect(BEM_CODES["99"].group).toBe("99");
+  });
+
+  it("não usa o grupo inexistente '09'", () => {
+    for (const code of Object.values(BEM_CODES)) {
+      expect(code.group).not.toBe("09");
+    }
+  });
 });
 
 describe("PAGAMENTO_CODES catálogo", () => {

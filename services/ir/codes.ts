@@ -11,13 +11,18 @@ import type { AccountType, AssetType, PhysicalAssetCategory } from "@/types/data
 // ============================================================================
 // Bens e Direitos (Ficha "Bens e Direitos")
 // ============================================================================
-// Grupos novos do leiaute 2024+:
-//   01 Imóveis | 02 Bens móveis | 03 Veículos/aeronaves/embarcações
-//   04 Aplicações em Renda Variável | 05 Aplicações em Renda Fixa
-//   06 Depósito à vista e numerário | 07 Fundos
-//   08 Criptoativos | 09 Outros bens
-// Códigos internos vão dentro do grupo. Esquema antigo (sem grupo) ainda
-// aceito no programa pra retroatividade.
+// Grupos do leiaute 2024+ (RFB — reorganização a partir do exercício 2023):
+//   01 Bens Imóveis        | 02 Bens Móveis
+//   03 Participações Societárias | 04 Aplicações e Investimentos
+//   05 Créditos            | 06 Depósito à Vista e Numerário
+//   07 Fundos              | 08 Criptoativos
+//   99 Outros Bens e Direitos
+// (NÃO existe grupo "09" — o catch-all é 99.)
+//
+// ⚠️ CONFERIR no MIR/Perguntão do ano antes de transmitir: o pareamento
+// código↔grupo abaixo segue a melhor leitura do leiaute, mas a Receita pode
+// ajustar códigos por ano. Em especial: poupança (04 vs 06), ETF (04 vs 07) e
+// PGBL (ver nota — idealmente vai em "Pagamentos", não em Bens).
 
 export type BemCode = {
   /** Código numérico Receita (2 dígitos) */
@@ -32,7 +37,7 @@ export type BemCode = {
 
 /** Catálogo dos códigos mais comuns pra pessoa física */
 export const BEM_CODES: Record<string, BemCode> = {
-  // Grupo 01 — Imóveis
+  // Grupo 01 — Bens Imóveis
   "11": { code: "11", label: "Apartamento", group: "01",
     discriminationHint: "Endereço, matrícula, cartório, % de participação" },
   "12": { code: "12", label: "Casa", group: "01",
@@ -42,7 +47,7 @@ export const BEM_CODES: Record<string, BemCode> = {
   "15": { code: "15", label: "Sala / conjunto", group: "01" },
   "19": { code: "19", label: "Outros bens imóveis", group: "01" },
 
-  // Grupo 02 — Bens móveis
+  // Grupo 02 — Bens Móveis
   "21": { code: "21", label: "Veículo automotor terrestre (carro/moto)", group: "02",
     discriminationHint: "Marca, modelo, ano, placa, RENAVAM" },
   "22": { code: "22", label: "Aeronave", group: "02" },
@@ -51,28 +56,30 @@ export const BEM_CODES: Record<string, BemCode> = {
   "26": { code: "26", label: "Linha telefônica", group: "02" },
   "29": { code: "29", label: "Outros bens móveis", group: "02" },
 
-  // Grupo 04 — Aplicações em Renda Variável
-  "31": { code: "31", label: "Ações (inclusive listadas em bolsa)", group: "04",
+  // Grupo 03 — Participações Societárias
+  "31": { code: "31", label: "Ações (inclusive listadas em bolsa)", group: "03",
     discriminationHint: "Ticker, qtd, custo médio. CNPJ da empresa." },
-  "32": { code: "32", label: "Quotas ou quinhões de capital", group: "04" },
-  "39": { code: "39", label: "Outras participações societárias", group: "04" },
-  "73": { code: "73", label: "Fundo de Investimento Imobiliário (FII)", group: "04",
-    discriminationHint: "Ticker, qtd, custo médio. CNPJ do fundo." },
-  "74": { code: "74", label: "ETF", group: "04",
-    discriminationHint: "Ticker, qtd, custo médio. CNPJ do fundo." },
+  "32": { code: "32", label: "Quotas ou quinhões de capital", group: "03" },
+  "39": { code: "39", label: "Outras participações societárias", group: "03" },
 
-  // Grupo 05 — Aplicações em Renda Fixa
+  // Grupo 04 — Aplicações e Investimentos
+  "46": { code: "46", label: "Ouro / ativo financeiro", group: "04" },
+  "47": { code: "47", label: "Mercado financeiro (CDB, RDB, Letras)", group: "04",
+    discriminationHint: "Banco/emissor, CNPJ, descrição (CDB Itaú 110% CDI)." },
+  "48": { code: "48", label: "Aplicação em títulos públicos (Tesouro Direto)", group: "04",
+    discriminationHint: "Tipo do título (Tesouro Selic, IPCA+ etc), vencimento." },
+  "49": { code: "49", label: "Outras aplicações renda fixa (LCI/LCA/CRI/CRA)", group: "04",
+    discriminationHint: "Tipo, banco/emissor, CNPJ." },
+  // VGBL é seguro/aplicação → Bens grupo 04 (PGBL NÃO entra em Bens, ver abaixo).
+  "92": { code: "92", label: "VGBL (seguro de vida com cobertura por sobrevivência)", group: "04" },
+
+  // Grupo 05 — Créditos
+  "97": { code: "97", label: "Direitos / crédito a receber", group: "05" },
+
+  // Grupo 06 — Depósito à Vista e Numerário
+  // ⚠️ poupança (45): algumas fontes apontam grupo 04 (Aplicações). Conferir MIR.
   "45": { code: "45", label: "Caderneta de poupança", group: "06",
     discriminationHint: "Banco, agência, nº conta. CNPJ da instituição." },
-  "46": { code: "46", label: "Ouro / ativo financeiro", group: "04" },
-  "47": { code: "47", label: "Mercado financeiro (CDB, RDB, Letras)", group: "05",
-    discriminationHint: "Banco/emissor, CNPJ, descrição (CDB Itaú 110% CDI)." },
-  "48": { code: "48", label: "Aplicação em títulos públicos (Tesouro Direto)", group: "05",
-    discriminationHint: "Tipo do título (Tesouro Selic, IPCA+ etc), vencimento." },
-  "49": { code: "49", label: "Outras aplicações renda fixa (LCI/LCA/CRI/CRA)", group: "05",
-    discriminationHint: "Tipo, banco/emissor, CNPJ." },
-
-  // Grupo 06 — Depósito à vista
   "61": { code: "61", label: "Depósito em conta corrente / conta-pagamento", group: "06",
     discriminationHint: "Banco, agência, nº conta. CNPJ da instituição." },
   "62": { code: "62", label: "Conta em moeda estrangeira (no exterior)", group: "06",
@@ -80,9 +87,13 @@ export const BEM_CODES: Record<string, BemCode> = {
   "63": { code: "63", label: "Dinheiro em espécie — moeda nacional", group: "06" },
   "64": { code: "64", label: "Dinheiro em espécie — moeda estrangeira", group: "06" },
 
-  // Grupo 07 — Fundos
+  // Grupo 07 — Fundos (FII, ETF, fundos abertos)
   "71": { code: "71", label: "Fundo de Renda Fixa (longo/curto prazo)", group: "07" },
   "72": { code: "72", label: "Fundo de Ações", group: "07" },
+  "73": { code: "73", label: "Fundo de Investimento Imobiliário (FII)", group: "07",
+    discriminationHint: "Ticker, qtd, custo médio. CNPJ do fundo." },
+  "74": { code: "74", label: "ETF (fundo de índice)", group: "07",
+    discriminationHint: "Ticker, qtd, custo médio. CNPJ do fundo." },
   "75": { code: "75", label: "Fundo Multimercado", group: "07" },
   "79": { code: "79", label: "Outros fundos", group: "07" },
 
@@ -92,11 +103,12 @@ export const BEM_CODES: Record<string, BemCode> = {
   "83": { code: "83", label: "Criptoativos categoria Stablecoins (USDT, USDC…)", group: "08" },
   "89": { code: "89", label: "Outros criptoativos", group: "08" },
 
-  // Grupo 09 — Outros bens
-  "91": { code: "91", label: "Plano de previdência PGBL (tributação completa)", group: "09" },
-  "92": { code: "92", label: "VGBL", group: "09" },
-  "97": { code: "97", label: "Direitos / crédito a receber", group: "09" },
-  "99": { code: "99", label: "Outros bens e direitos", group: "09" },
+  // Grupo 99 — Outros Bens e Direitos (catch-all)
+  // ⚠️ PGBL: o SALDO de PGBL NÃO é declarado em Bens (só as contribuições, na
+  // ficha Pagamentos). Mantido aqui como fallback até a UI roteá-lo pra
+  // Pagamentos — conferir antes de transmitir.
+  "91": { code: "91", label: "Plano de previdência PGBL (declarar em Pagamentos, não em Bens)", group: "99" },
+  "99": { code: "99", label: "Outros bens e direitos", group: "99" },
 };
 
 /**
@@ -186,7 +198,10 @@ export function inferPhysicalCode(category: PhysicalAssetCategory): string {
 
 export const RENDIMENTO_ISENTO_CODES: Record<string, string> = {
   "09": "Lucros e dividendos recebidos",
-  "10": "Valor do trabalho assalariado em moeda estrangeira (servidores no exterior)",
+  // 10 e 11 são as parcelas isentas de aposentadoria/pensão (emitidas em
+  // rendimentos.ts). Labels antes trocados (L8 da auditoria).
+  "10": "Parcela isenta de aposentadoria/pensão (titular com 65 anos ou mais)",
+  "11": "Pensão/aposentadoria por moléstia grave ou acidente em serviço",
   "12": "Rendimento de caderneta de poupança e LCI/LCA/CRI/CRA",
   "13": "Capital das apólices de seguros / pecúlio",
   "14": "Transferências patrimoniais — meação e dissolução",

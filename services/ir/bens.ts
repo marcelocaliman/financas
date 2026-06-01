@@ -132,16 +132,17 @@ export type BensReport = {
   previousYearIsComplete: boolean;
 };
 
+// Leiaute 2024+ (RFB). NÃO existe grupo "09" — catch-all é 99.
 const GROUP_LABELS: Record<string, string> = {
-  "01": "Imóveis",
+  "01": "Bens imóveis",
   "02": "Bens móveis",
-  "03": "Veículos / aeronaves / embarcações",
-  "04": "Aplicações em renda variável",
-  "05": "Aplicações em renda fixa",
+  "03": "Participações societárias",
+  "04": "Aplicações e investimentos",
+  "05": "Créditos",
   "06": "Depósito à vista e numerário",
   "07": "Fundos",
   "08": "Criptoativos",
-  "09": "Outros bens e direitos",
+  "99": "Outros bens e direitos",
 };
 
 function fmtCNPJ(raw: string | null): string | null {
