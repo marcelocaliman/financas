@@ -17,7 +17,9 @@ function groupByDate(items: ActivityLogEntry[]): Array<[string, ActivityLogEntry
 }
 
 export default async function AtividadePage() {
-  const items = await getActivityLog(120);
+  // 400 cobre o backfill histórico (~220 hoje) com folga. Paginação fica pra
+  // quando o log crescer muito; por ora um teto generoso mostra tudo.
+  const items = await getActivityLog(400);
   const groups = groupByDate(items);
 
   return (
