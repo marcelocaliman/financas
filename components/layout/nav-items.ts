@@ -67,6 +67,10 @@ export const HUBS: Hub[] = [
       { label: "Documentos", href: "/inbox", icon: Inbox },
       { label: "Recorrentes", href: "/recorrentes", icon: Repeat },
       { label: "Histórico", href: "/analise", icon: LineChart },
+      // Atividade = log de TODAS as ações (qualquer tabela) com Desfazer. Distinto
+      // de "Histórico" (/analise = tendências do dinheiro). Primeira classe: o dono
+      // quer reverter erros fácil, então não pode ficar escondido em Configurações.
+      { label: "Atividade", href: "/atividade", icon: History },
     ],
   },
   {

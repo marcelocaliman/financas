@@ -23,11 +23,11 @@ export default async function AtividadePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Configurações · histórico"
+        eyebrow="Transações · histórico"
         title={
           <>
             <Activity className="inline w-6 h-6 mr-2 -mt-1 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
-            Histórico{" "}
+            Atividade{" "}
             <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">
               de tudo
             </em>

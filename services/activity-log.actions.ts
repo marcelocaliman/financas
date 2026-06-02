@@ -33,7 +33,7 @@ export async function undoActivity(
     "/metas",
     "/dividas",
     "/patrimonio",
-    "/configuracoes/atividade",
+    "/atividade",
   ]) {
     revalidatePath(p);
   }

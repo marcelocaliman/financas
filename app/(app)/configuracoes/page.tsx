@@ -94,7 +94,7 @@ export default async function ConfiguracoesPage() {
           <div className="flex flex-wrap items-center gap-3">
             <BackupButton />
             <Link
-              href="/configuracoes/atividade"
+              href="/atividade"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12.5px] font-medium border border-border bg-surface hover:bg-surface-muted text-foreground transition-colors"
             >
               Ver atividade recente →
