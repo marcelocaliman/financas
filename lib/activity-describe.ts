@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/utils/format";
+import type { Currency } from "@/types/database";
 import type { ActivityLogEntry } from "@/services/activity-log";
 
 const ACTION_VERB: Record<string, string> = {
@@ -18,16 +18,29 @@ const TABLE_NOUN: Record<string, string> = {
   ir_deductible_payments: "dedução IR",
 };
 
+export type ActivityDescription = {
+  title: string;
+  /** Valor cru pra ser exibido em destaque (não pré-formatado). */
+  amount?: number;
+  /** Direção do dinheiro — define sinal/cor do valor. */
+  direction?: "in" | "out" | "neutral";
+  currency?: Currency;
+};
+
 /**
- * Transforma uma entrada do activity_log num texto humano + detalhe (valor).
- * Lê do snapshot new_data (ou old_data, no caso de exclusão).
+ * Transforma uma entrada do activity_log num título humano + o VALOR em destaque.
+ * O valor é a informação principal pro usuário ("o que gastei e quanto"), então
+ * sai cru (number) + direção pra a UI renderizar grande, com sinal e cor.
  */
-export function describeActivity(e: ActivityLogEntry): { title: string; detail?: string } {
+export function describeActivity(e: ActivityLogEntry): ActivityDescription {
   const d = (e.new_data ?? e.old_data ?? {}) as Record<string, unknown>;
   const verb = ACTION_VERB[e.action] ?? e.action;
-  const money = (v: unknown) =>
-    v != null && v !== "" ? formatMoney(Number(v)) : undefined;
+  const num = (v: unknown) =>
+    v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : undefined;
   const str = (v: unknown) => (typeof v === "string" && v ? v : "—");
+  const dirOf = (kind: unknown): "in" | "out" | "neutral" =>
+    kind === "income" ? "in" : kind === "expense" ? "out" : "neutral";
+  const currency = (typeof d.currency === "string" ? d.currency : "BRL") as Currency;
 
   switch (e.table_name) {
     case "transactions": {
@@ -36,7 +49,9 @@ export function describeActivity(e: ActivityLogEntry): { title: string; detail?:
         kind === "income" ? "receita" : kind === "expense" ? "despesa" : "transferência";
       return {
         title: `${verb} ${noun} "${str(d.description)}"`,
-        detail: money(d.amount_account ?? d.amount),
+        amount: num(d.amount_account ?? d.amount),
+        direction: dirOf(kind),
+        currency,
       };
     }
     case "accounts":
@@ -44,12 +59,16 @@ export function describeActivity(e: ActivityLogEntry): { title: string; detail?:
     case "investments":
       return {
         title: `${verb} investimento "${str(d.ticker ?? d.name)}"`,
-        detail: money(d.current_balance),
+        amount: num(d.current_balance),
+        direction: "neutral",
+        currency,
       };
     case "debts":
       return {
         title: `${verb} dívida "${str(d.description)}"`,
-        detail: money(d.current_balance),
+        amount: num(d.current_balance),
+        direction: "neutral",
+        currency,
       };
     case "physical_assets":
       return { title: `${verb} bem "${str(d.name)}"` };
@@ -58,12 +77,16 @@ export function describeActivity(e: ActivityLogEntry): { title: string; detail?:
     case "recurring_rules":
       return {
         title: `${verb} recorrência "${str(d.description)}"`,
-        detail: money(d.amount),
+        amount: num(d.amount),
+        direction: dirOf(d.kind),
+        currency,
       };
     case "ir_deductible_payments":
       return {
         title: `${verb} dedução IR "${str(d.description)}"`,
-        detail: money(d.amount),
+        amount: num(d.amount),
+        direction: "neutral",
+        currency,
       };
     default:
       return { title: `${verb} ${TABLE_NOUN[e.table_name] ?? e.table_name}` };
