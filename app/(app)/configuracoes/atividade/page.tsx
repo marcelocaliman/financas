@@ -1,25 +1,15 @@
-import Link from "next/link";
-import { ArrowUpRight, Activity } from "lucide-react";
+import { Activity } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
-import { Panel, PanelHeader } from "@/components/ui/panel";
-import { getRecentActivity } from "@/services/user-activity";
-import { formatDateFull } from "@/lib/utils/format";
+import { Panel } from "@/components/ui/panel";
+import { getActivityLog, type ActivityLogEntry } from "@/services/activity-log";
+import { ActivityLogList } from "@/components/activity/activity-log-list";
 
 export const dynamic = "force-dynamic";
 
-function fmtDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function groupByDate(items: { timestamp: string }[]) {
-  const map = new Map<string, typeof items>();
+function groupByDate(items: ActivityLogEntry[]): Array<[string, ActivityLogEntry[]]> {
+  const map = new Map<string, ActivityLogEntry[]>();
   for (const it of items) {
-    const d = it.timestamp.slice(0, 10);
+    const d = it.created_at.slice(0, 10);
     if (!map.has(d)) map.set(d, []);
     map.get(d)!.push(it);
   }
@@ -27,75 +17,32 @@ function groupByDate(items: { timestamp: string }[]) {
 }
 
 export default async function AtividadePage() {
-  const items = await getRecentActivity(80);
-  const grouped = groupByDate(items as Parameters<typeof groupByDate>[0]);
+  const items = await getActivityLog(120);
+  const groups = groupByDate(items);
 
   return (
     <>
       <PageHeader
-        eyebrow="Configurações · atividade"
+        eyebrow="Configurações · histórico"
         title={
           <>
             <Activity className="inline w-6 h-6 mr-2 -mt-1 text-navy-700 dark:text-navy-300" strokeWidth={1.7} />
-            Mudanças{" "}
+            Histórico{" "}
             <em className="not-italic font-display italic text-navy-700 dark:text-navy-300">
-              recentes
+              de tudo
             </em>
           </>
         }
-        subtitle={`Últimas ${items.length} mudanças no app — transações, recorrências, investimentos, contas, metas, dívidas, dedutíveis IR. Útil pra revisar "o que mexi na semana".`}
+        subtitle="Toda criação, edição e exclusão que você faz no app — transações, contas, investimentos, recorrências, metas, dívidas, bens, deduções. Cada item tem o botão Desfazer pra reverter uma ação errada."
       />
 
       {items.length === 0 ? (
         <Panel className="!py-12 text-center text-[13px] text-muted-foreground">
-          Nenhuma atividade recente.
+          Nenhuma mudança registrada ainda. Assim que você criar, editar ou excluir
+          algo, aparece aqui — com a opção de <b className="text-foreground">desfazer</b>.
         </Panel>
       ) : (
-        <div className="space-y-4">
-          {grouped.map(([date, group]) => (
-            <Panel key={date}>
-              <PanelHeader
-                title={formatDateFull(date)}
-                meta={`${group.length} mudança${group.length !== 1 ? "s" : ""}`}
-              />
-              <ul className="divide-y divide-border-strong/30">
-                {(group as ReturnType<typeof getRecentActivity> extends Promise<infer T> ? T : never).map((it) => (
-                  <li key={`${it.table}-${it.id}`} className="py-2 flex items-center justify-between gap-3 group">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-faint-foreground px-1.5 py-0.5 rounded border border-border">
-                          {it.table}
-                        </span>
-                        <span
-                          className={
-                            "font-mono text-[10px] uppercase tracking-[0.1em] " +
-                            (it.action === "criado"
-                              ? "text-olive-700 dark:text-olive-500"
-                              : "text-navy-700 dark:text-navy-300")
-                          }
-                        >
-                          {it.action}
-                        </span>
-                      </div>
-                      <div className="text-[13px] text-foreground truncate mt-0.5">
-                        {it.label}
-                      </div>
-                    </div>
-                    <div className="font-mono text-[10.5px] text-muted-foreground tabular-nums shrink-0">
-                      {fmtDateTime(it.timestamp)}
-                    </div>
-                    <Link
-                      href={it.href}
-                      className="opacity-0 group-hover:opacity-100 text-faint-foreground hover:text-foreground transition-opacity shrink-0"
-                    >
-                      <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={1.8} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          ))}
-        </div>
+        <ActivityLogList groups={groups} />
       )}
     </>
   );
