@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { HealthPlanScenarioHelper } from "@/components/ir/health-plan-scenario-helper";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -448,25 +448,15 @@ export function RecurrenceSheet({
             </Field>
           </div>
 
-          {/* ── Mais opções — forma de pagamento, notas e IR ficam escondidos
-              até o usuário pedir. ── */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setShowMore((v) => !v)}
-              className="w-full flex items-center justify-between py-2 text-[12.5px] text-muted-foreground hover:text-foreground border-t border-border"
-            >
-              <span>Mais opções · forma de pagamento, notas, IR</span>
-              {showMore ? (
-                <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
-              ) : (
-                <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
-              )}
-            </button>
-          </div>
-
-          {/* Montado sempre (pros campos submeterem), escondido quando fechado. */}
-          <div className={showMore ? "space-y-5" : "hidden"}>
+          {/* ── Mais opções — card claro (CollapsibleCard). Conteúdo montado
+              (hidden) quando fechado, então os campos continuam submetendo. ── */}
+          <CollapsibleCard
+            title="Mais opções"
+            subtitle="forma de pagamento, notas, IR"
+            open={showMore}
+            onToggle={() => setShowMore((v) => !v)}
+            contentClassName="space-y-5"
+          >
             {kind !== "transfer" ? (
               <Field label="Forma de pagamento" htmlFor="paymentMethod" hint="Opcional">
                 <Select
@@ -500,11 +490,12 @@ export function RecurrenceSheet({
 
           {/* Fonte pagadora + retenções — apenas pra receita */}
           {kind === "income" ? (
-            <details className="text-[12.5px] text-muted-foreground" open={!!rule?.fonte_pagadora_id}>
-              <summary className="cursor-pointer font-medium hover:text-foreground">
-                Fonte pagadora (IRPF) <span className="text-faint-foreground">· salário, aluguel recebido…</span>
-              </summary>
-              <div className="pt-3 space-y-3 px-3 py-3 rounded-[8px] bg-surface-muted/50">
+            <CollapsibleCard
+              title="Fonte pagadora (IRPF)"
+              subtitle="salário, aluguel recebido…"
+              defaultOpen={!!rule?.fonte_pagadora_id}
+              contentClassName="space-y-3"
+            >
                 <Field label="Empresa / quem paga" htmlFor="fontePagadoraId" hint="Só liste empresas que pagam VOCÊ (salário, aluguel, dividendos). Médicos, planos de saúde e outros prestadores que você paga não entram aqui.">
                   {/* Radix Select não aceita value=""; usamos "none" como sentinel
                       e enviamos string vazia pro form quando "none". */}
@@ -543,8 +534,7 @@ export function RecurrenceSheet({
                     />
                   </Field>
                 </div>
-              </div>
-            </details>
+            </CollapsibleCard>
           ) : null}
 
           {/* Não declarar no IRPF — só pra receita */}
@@ -642,7 +632,7 @@ export function RecurrenceSheet({
               ) : null}
             </div>
           ) : null}
-          </div>
+          </CollapsibleCard>
           {/* ── fim Mais opções ── */}
 
           {state?.error ? <p className="text-[12.5px] text-rust-600">{state.error}</p> : null}

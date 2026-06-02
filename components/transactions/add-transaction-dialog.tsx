@@ -24,7 +24,8 @@ import { createTransaction, type TxFormState } from "@/services/transactions.act
 import { useQuickAdd } from "./quick-add-context";
 import { parseQuickEntry } from "@/lib/financial/parse-quick-entry";
 import type { Tables } from "@/types/database";
-import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 
 type TxKind = "expense" | "income" | "transfer";
 type Currency = "BRL" | "EUR" | "USD" | "GBP";
@@ -479,28 +480,17 @@ export function AddTransactionDialog({
               </label>
             ) : null}
 
-            {/* ── Mais opções — tudo que não é o caminho rápido fica escondido
-                até o usuário pedir. Só existe pra income/expense. ── */}
+            {/* ── Mais opções — card claro e destacado (CollapsibleCard). Só
+                pra income/expense. O conteúdo fica montado (hidden) quando
+                fechado, então os campos continuam submetendo. ── */}
             {kind !== "transfer" ? (
-              <div className="border-t border-border pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowMore((v) => !v)}
-                  className="w-full flex items-center justify-between py-2 text-[12.5px] text-muted-foreground hover:text-foreground"
-                >
-                  <span>Mais opções · forma de pagamento, dívida, IR</span>
-                  {showMore ? (
-                    <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  )}
-                </button>
-              </div>
-            ) : null}
-
-            {/* Conteúdo avançado — montado sempre (pros campos submeterem),
-                escondido visualmente quando fechado. */}
-            <div className={kind !== "transfer" && showMore ? "space-y-5" : "hidden"}>
+              <CollapsibleCard
+                title="Mais opções"
+                subtitle="forma de pagamento, dívida, IR"
+                open={showMore}
+                onToggle={() => setShowMore((v) => !v)}
+                contentClassName="space-y-5"
+              >
               <Field label="Forma de pagamento" htmlFor="paymentMethod">
                 <Select
                   value={paymentMethod}
@@ -550,66 +540,44 @@ export function AddTransactionDialog({
 
             {/* Seção IR — apenas pra receitas com fontes configuradas */}
             {kind === "income" && fontes.length > 0 ? (
-              <div className="rounded-[8px] border border-border bg-bone-100 dark:bg-ink-800 overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowIR((v) => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted"
-                >
-                  <span className="font-medium">
-                    IR · fonte pagadora + IRRF/INSS retidos
-                  </span>
-                  {showIR ? (
-                    <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.7} />
-                  )}
-                </button>
-                {showIR ? (
-                  <div className="p-3 space-y-3 border-t border-border">
-                    <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
-                    <input type="hidden" name="irrfAmount" value={irrfAmount} />
-                    <input type="hidden" name="inssAmount" value={inssAmount} />
-                    <Field label="Fonte pagadora" htmlFor="fonte" hint="Só empresas que pagam VOCÊ (salário, aluguel, dividendos). Médicos e planos de saúde não entram aqui.">
-                      <Select
-                        value={fontePagadoraId}
-                        onValueChange={setFontePagadoraId}
-                      >
-                        <SelectTrigger id="fonte"><SelectValue placeholder="— escolher" /></SelectTrigger>
-                        <SelectContent>
-                          {fontes.map((f) => (
-                            <SelectItem key={f.id} value={f.id}>
-                              {f.name} · {f.cnpj ?? f.cpf ?? f.type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="IRRF retido" htmlFor="irrf-input">
-                        <MoneyInput
-                          name="irrf-input"
-                          defaultValue={0}
-                          onValueChange={setIrrfAmount}
-                        />
-                      </Field>
-                      <Field label="INSS" htmlFor="inss-input">
-                        <MoneyInput
-                          name="inss-input"
-                          defaultValue={0}
-                          onValueChange={setInssAmount}
-                        />
-                      </Field>
-                    </div>
-                    <p className="text-[11px] text-faint-foreground">
-                      Esses valores vão direto pro quadro &quot;Rendimentos Tributáveis Recebidos de PJ&quot; no IRPF.
-                    </p>
-                  </div>
-                ) : null}
-              </div>
+              <CollapsibleCard
+                title="IR"
+                subtitle="fonte pagadora + IRRF/INSS retidos"
+                open={showIR}
+                onToggle={() => setShowIR((v) => !v)}
+                contentClassName="space-y-3"
+              >
+                <input type="hidden" name="fontePagadoraId" value={fontePagadoraId} />
+                <input type="hidden" name="irrfAmount" value={irrfAmount} />
+                <input type="hidden" name="inssAmount" value={inssAmount} />
+                <Field label="Fonte pagadora" htmlFor="fonte" hint="Só empresas que pagam VOCÊ (salário, aluguel, dividendos). Médicos e planos de saúde não entram aqui.">
+                  <Select value={fontePagadoraId} onValueChange={setFontePagadoraId}>
+                    <SelectTrigger id="fonte"><SelectValue placeholder="— escolher" /></SelectTrigger>
+                    <SelectContent>
+                      {fontes.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name} · {f.cnpj ?? f.cpf ?? f.type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="IRRF retido" htmlFor="irrf-input">
+                    <MoneyInput name="irrf-input" defaultValue={0} onValueChange={setIrrfAmount} />
+                  </Field>
+                  <Field label="INSS" htmlFor="inss-input">
+                    <MoneyInput name="inss-input" defaultValue={0} onValueChange={setInssAmount} />
+                  </Field>
+                </div>
+                <p className="text-[11px] text-faint-foreground">
+                  Esses valores vão direto pro quadro &quot;Rendimentos Tributáveis Recebidos de PJ&quot; no IRPF.
+                </p>
+              </CollapsibleCard>
             ) : null}
 
-            </div>
+              </CollapsibleCard>
+            ) : null}
             {/* ── fim Mais opções ── */}
 
             {state?.error ? (

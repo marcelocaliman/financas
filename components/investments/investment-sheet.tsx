@@ -25,6 +25,7 @@ import type { AssetType, Indexer, MarriageRegime, TaxRegime, Tables } from "@/ty
 import { type AssetTemplate, lookupAssetCNPJ } from "@/lib/financial/asset-catalog";
 import { MoneyMask } from "@/components/ui/privacy-provider";
 import { FilerPickerWithOwnership } from "@/components/ir/filer-picker";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { AssetPicker } from "./asset-picker";
 
 type Investment = Tables<"investments">;
@@ -291,67 +292,46 @@ export function InvestmentSheet({
                   <AdvancedFields template={picked} onChange={setPicked} />
                 ) : null}
 
-                {/* Bloco IR — só faz sentido pra ativos onde Receita exige CNPJ */}
+                {/* Bloco IR — só faz sentido pra ativos onde Receita exige CNPJ.
+                    O campo fica montado (hidden) quando fechado, então o CNPJ
+                    submete mesmo colapsado. */}
                 {picked.asset_type !== "fixed_income_public" && picked.asset_type !== "crypto" ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setShowIR((v) => !v)}
-                      className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground hover:text-foreground font-medium"
+                  <CollapsibleCard
+                    title="Identificação Receita (IRPF)"
+                    subtitle={cnpj ? "CNPJ preenchido" : undefined}
+                    open={showIR}
+                    onToggle={() => setShowIR((v) => !v)}
+                    contentClassName="space-y-3"
+                  >
+                    <Field
+                      label="CNPJ"
+                      htmlFor="cnpj"
+                      hint="Auto-preenchido pra tickers conhecidos. Aparece na Ficha Bens e Direitos."
                     >
-                      {showIR ? (
-                        <ChevronUp className="w-3 h-3" strokeWidth={1.7} />
-                      ) : (
-                        <ChevronDown className="w-3 h-3" strokeWidth={1.7} />
-                      )}
-                      Identificação Receita (IRPF)
-                      {cnpj ? (
-                        <span className="text-[10.5px] font-mono text-faint-foreground ml-1">
-                          · CNPJ preenchido
-                        </span>
-                      ) : null}
-                    </button>
-
-                    {showIR ? (
-                      <div className="space-y-3 border-t border-border pt-4 -mt-1">
-                        <Field
-                          label="CNPJ"
-                          htmlFor="cnpj"
-                          hint="Auto-preenchido pra tickers conhecidos. Aparece na Ficha Bens e Direitos."
-                        >
-                          <Input
-                            id="cnpj"
-                            name="cnpj"
-                            value={cnpj}
-                            onChange={(e) => setCnpj(e.target.value)}
-                            placeholder="00.000.000/0000-00"
-                            className="font-mono"
-                            maxLength={18}
-                          />
-                        </Field>
-                      </div>
-                    ) : (
-                      <input type="hidden" name="cnpj" value={cnpj} />
-                    )}
-                  </>
+                      <Input
+                        id="cnpj"
+                        name="cnpj"
+                        value={cnpj}
+                        onChange={(e) => setCnpj(e.target.value)}
+                        placeholder="00.000.000/0000-00"
+                        className="font-mono"
+                        maxLength={18}
+                      />
+                    </Field>
+                  </CollapsibleCard>
                 ) : null}
 
                 {filers.length >= 2 ? (
-                  <details className="text-[12.5px] text-muted-foreground">
-                    <summary className="cursor-pointer font-medium hover:text-foreground">
-                      Titular do ativo (IRPF) <span className="text-faint-foreground">· quem declara</span>
-                    </summary>
-                    <div className="pt-3">
-                      <FilerPickerWithOwnership
-                        filers={filers}
-                        regime={regime}
-                        defaultOwnerFilerId={investment?.owner_filer_id}
-                        defaultIsParticular={investment?.is_particular}
-                        defaultParticularReason={investment?.particular_reason}
-                        defaultOwnershipPercent={investment?.ownership_percent}
-                      />
-                    </div>
-                  </details>
+                  <CollapsibleCard title="Titular do ativo (IRPF)" subtitle="quem declara">
+                    <FilerPickerWithOwnership
+                      filers={filers}
+                      regime={regime}
+                      defaultOwnerFilerId={investment?.owner_filer_id}
+                      defaultIsParticular={investment?.is_particular}
+                      defaultParticularReason={investment?.particular_reason}
+                      defaultOwnershipPercent={investment?.ownership_percent}
+                    />
+                  </CollapsibleCard>
                 ) : null}
               </>
             ) : null}

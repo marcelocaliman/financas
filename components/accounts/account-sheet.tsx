@@ -24,6 +24,7 @@ import {
   type AccountFormState,
 } from "@/services/accounts.actions";
 import { FilerPickerWithOwnership } from "@/components/ir/filer-picker";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import type { AccountType, Currency, MarriageRegime, Tables } from "@/types/database";
 
 type Account = Tables<"accounts">;
@@ -214,11 +215,7 @@ export function AccountSheet({
           ) : null}
 
           {/* Identificação Receita Federal — usada na declaração IR */}
-          <details className="rounded-[8px] border border-border overflow-hidden">
-            <summary className="cursor-pointer px-3 py-2.5 text-[12.5px] text-foreground hover:bg-surface-muted font-medium">
-              Identificação Receita (IRPF) ▼
-            </summary>
-            <div className="p-3 space-y-3 border-t border-border bg-bone-100 dark:bg-ink-800">
+          <CollapsibleCard title="Identificação Receita (IRPF)" contentClassName="space-y-3">
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input
                   type="checkbox"
@@ -276,25 +273,19 @@ export function AccountSheet({
                   />
                 </Field>
               </div>
-            </div>
-          </details>
+          </CollapsibleCard>
 
           {filers.length >= 2 ? (
-            <details className="text-[12.5px] text-muted-foreground">
-              <summary className="cursor-pointer font-medium hover:text-foreground">
-                Titular do bem (IRPF) <span className="text-faint-foreground">· quem declara</span>
-              </summary>
-              <div className="pt-3">
-                <FilerPickerWithOwnership
-                  filers={filers}
-                  regime={regime}
-                  defaultOwnerFilerId={account?.owner_filer_id}
-                  defaultIsParticular={account?.is_particular}
-                  defaultParticularReason={account?.particular_reason}
-                  defaultOwnershipPercent={account?.ownership_percent}
-                />
-              </div>
-            </details>
+            <CollapsibleCard title="Titular do bem (IRPF)" subtitle="quem declara">
+              <FilerPickerWithOwnership
+                filers={filers}
+                regime={regime}
+                defaultOwnerFilerId={account?.owner_filer_id}
+                defaultIsParticular={account?.is_particular}
+                defaultParticularReason={account?.particular_reason}
+                defaultOwnershipPercent={account?.ownership_percent}
+              />
+            </CollapsibleCard>
           ) : null}
 
           {state?.error ? (

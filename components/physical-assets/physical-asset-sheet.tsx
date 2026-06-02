@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -202,52 +202,36 @@ export function PhysicalAssetSheet({
             </Field>
           </div>
 
-          {/* Identificação Receita — imóveis, veículos ou participação societária */}
+          {/* Identificação Receita — imóveis, veículos ou participação societária.
+              Campos ficam montados (hidden) quando fechado, então submetem mesmo
+              colapsado. */}
           {category === "real_estate" || category === "vehicle" || category === "other" ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowIR((v) => !v)}
-                className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground hover:text-foreground font-medium"
-              >
-                {showIR ? (
-                  <ChevronUp className="w-3 h-3" strokeWidth={1.7} />
-                ) : (
-                  <ChevronDown className="w-3 h-3" strokeWidth={1.7} />
-                )}
-                Identificação Receita (IRPF)
-                <span className="text-[10.5px] font-mono text-faint-foreground ml-1">
-                  · {category === "real_estate" ? "imóvel" : category === "vehicle" ? "veículo" : "outros (ex. participação societária)"}
-                </span>
-              </button>
-
-              {showIR ? (
-                category === "real_estate" ? (
-                  <RealEstateIRFields asset={asset} />
-                ) : category === "vehicle" ? (
-                  <VehicleIRFields asset={asset} />
-                ) : (
-                  <OtherIRFields asset={asset} />
-                )
-              ) : null}
-            </>
+            <CollapsibleCard
+              title="Identificação Receita (IRPF)"
+              subtitle={category === "real_estate" ? "imóvel" : category === "vehicle" ? "veículo" : "outros (ex. participação societária)"}
+              open={showIR}
+              onToggle={() => setShowIR((v) => !v)}
+            >
+              {category === "real_estate" ? (
+                <RealEstateIRFields asset={asset} />
+              ) : category === "vehicle" ? (
+                <VehicleIRFields asset={asset} />
+              ) : (
+                <OtherIRFields asset={asset} />
+              )}
+            </CollapsibleCard>
           ) : null}
 
           {filers.length >= 2 ? (
-            <details className="text-[12.5px] text-muted-foreground">
-              <summary className="cursor-pointer font-medium hover:text-foreground">
-                Titular do bem (IRPF) <span className="text-faint-foreground">· quem declara</span>
-              </summary>
-              <div className="pt-3">
-                <FilerPicker
-                  filers={filers}
-                  regime={regime}
-                  defaultOwnerFilerId={asset?.owner_filer_id}
-                  defaultIsParticular={asset?.is_particular}
-                  defaultParticularReason={asset?.particular_reason}
-                />
-              </div>
-            </details>
+            <CollapsibleCard title="Titular do bem (IRPF)" subtitle="quem declara">
+              <FilerPicker
+                filers={filers}
+                regime={regime}
+                defaultOwnerFilerId={asset?.owner_filer_id}
+                defaultIsParticular={asset?.is_particular}
+                defaultParticularReason={asset?.particular_reason}
+              />
+            </CollapsibleCard>
           ) : null}
 
           <ExcludeFromIrToggle defaultValue={asset?.exclude_from_ir ?? false} />
