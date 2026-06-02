@@ -281,7 +281,7 @@ export const getMonthlySummary = cache(async (monthStr?: string): Promise<Monthl
 
   let opQuery = supabase
     .from("transactions")
-    .select("kind, amount_account, currency, account:accounts(currency)")
+    .select("kind, amount_account, currency, metadata, account:accounts(currency)")
     .gte("date", from)
     .lte("date", to)
     .eq("is_historical_ir_only", false)
@@ -298,6 +298,10 @@ export const getMonthlySummary = cache(async (monthStr?: string): Promise<Monthl
   let income = 0;
   let expense = 0;
   for (const t of data ?? []) {
+    // Ajustes de saldo (Ajustar saldo) são correção de saldo, não fluxo de caixa
+    // real — não devem inflar Entrou/Saiu/sobra do mês. (Renda marcada "não
+    // declarar no IR" NÃO é ajuste e continua contando: é dinheiro de verdade.)
+    if ((t.metadata as { adjust?: boolean } | null)?.adjust === true) continue;
     const acc = Array.isArray(t.account) ? t.account[0] : t.account;
     const c = (acc?.currency ?? t.currency ?? "BRL") as Currency;
     const amt = convertOrSame(Number(t.amount_account ?? 0), c, displayCurrency, rates);
@@ -407,7 +411,7 @@ export const getMonthlyHistory = cache(async (
 
   let opQuery = supabase
     .from("transactions")
-    .select("kind, amount_account, currency, date, account:accounts(currency)")
+    .select("kind, amount_account, currency, date, metadata, account:accounts(currency)")
     .gte("date", startISO)
     .lte("date", endISO)
     .eq("is_historical_ir_only", false)
@@ -440,6 +444,7 @@ export const getMonthlyHistory = cache(async (
   }
 
   for (const t of data ?? []) {
+    if ((t.metadata as { adjust?: boolean } | null)?.adjust === true) continue; // ajuste ≠ fluxo
     const key = (t.date as string).slice(0, 7);
     const b = buckets.get(key);
     if (!b) continue;
