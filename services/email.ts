@@ -597,7 +597,7 @@ export function tmplMonthlyNarrative(args: {
         paragraphsHtml +
         paragraph(`<em style="color:#6a6a6a;">${escapeHtml(args.closing)}</em>`) +
         button("Abrir o app", "https://nossasfinancas.com.br/dashboard"),
-      footerNote: `Resumo gerado por IA com base nos seus dados do mês. Você pode desativar em Configurações → Notificações.`,
+      footerNote: `Os números são calculados direto dos seus dados; o texto é gerado por IA. Você pode desativar em Configurações → Notificações.`,
     }),
   };
 }

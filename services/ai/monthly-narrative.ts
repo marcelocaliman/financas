@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOpenAI, OPENAI_MODEL, estimateCostCents } from "@/lib/openai/client";
+import { formatMoney } from "@/lib/utils/format";
 
 /**
  * Resumo mensal narrativo via IA.
@@ -35,22 +36,18 @@ const NarrativeSchema = z.object({
     .describe(
       "Uma frase final reflexiva ou de ação. Evite clichês motivacionais; seja específico do mês.",
     ),
-  highlights: z
-    .array(
-      z.object({
-        label: z.string().describe("Métrica curta (ex: 'Receita', 'Maior alta')"),
-        value: z.string().describe("Valor formatado (ex: 'R$ 18.500', '+R$ 450 mercado')"),
-        tone: z
-          .enum(["positive", "negative", "neutral"])
-          .describe("Cor: positive=verde, negative=vermelho, neutral=cinza"),
-      }),
-    )
-    .min(2)
-    .max(5)
-    .describe("2-5 highlights numéricos pra cabeçalho do email"),
+  // NOTA: highlights (os cards de KPI do cabeçalho) NÃO são gerados pela IA — são
+  // montados em código por buildHighlights() a partir dos números calculados, pra
+  // não ficarem sujeitos a alucinação. A IA escreve só a prosa.
 });
 
 export type MonthlyNarrative = z.infer<typeof NarrativeSchema>;
+
+export type NarrativeHighlight = {
+  label: string;
+  value: string;
+  tone: "positive" | "negative" | "neutral";
+};
 
 const SYSTEM_PROMPT = `Você escreve um resumo mensal pro usuário de um app de
 finanças pessoais brasileiro. Tom: conciso, direto, com leve elegância
@@ -80,10 +77,40 @@ type MonthlyData = {
   subscriptionsMonthly: number;
 };
 
+/**
+ * Monta os KPIs do cabeçalho DETERMINISTICAMENTE, dos números já calculados —
+ * nunca da IA. Assim o valor exibido é, por construção, exatamente o do banco.
+ * RECEITA, DESPESAS, SALDO + as 2 maiores variações de despesa vs mês anterior.
+ */
+export function buildHighlights(data: MonthlyData): NarrativeHighlight[] {
+  const hi: NarrativeHighlight[] = [
+    { label: "RECEITA", value: formatMoney(data.income), tone: "positive" },
+    { label: "DESPESAS", value: formatMoney(data.expense), tone: "neutral" },
+    {
+      label: "SALDO DO MÊS",
+      value: formatMoney(data.net),
+      tone: data.net >= 0 ? "positive" : "negative",
+    },
+  ];
+  for (const m of data.topMovers.slice(0, 2)) {
+    hi.push({
+      label: m.name.toUpperCase(),
+      value: `${m.delta >= 0 ? "+" : "−"}${formatMoney(Math.abs(m.delta))}`,
+      // despesa subindo = ruim (vermelho); caindo = bom (verde)
+      tone: m.delta > 0 ? "negative" : "positive",
+    });
+  }
+  return hi;
+}
+
 export async function generateMonthlyNarrative(
   data: MonthlyData,
 ): Promise<
-  | { ok: true; result: MonthlyNarrative; usage: { costCents: number } }
+  | {
+      ok: true;
+      result: MonthlyNarrative & { highlights: NarrativeHighlight[] };
+      usage: { costCents: number };
+    }
   | { ok: false; error: string }
 > {
   const userPrompt = `Mês de referência: ${data.monthLabel}
@@ -154,7 +181,8 @@ Gere o resumo narrativo do mês. Lembre: específico, sem clichê, no máximo 5 
 
   return {
     ok: true,
-    result: validated.data,
+    // KPIs do cabeçalho montados em código (à prova de alucinação); IA só a prosa.
+    result: { ...validated.data, highlights: buildHighlights(data) },
     usage: { costCents: estimateCostCents(inputTokens, outputTokens) },
   };
 }
