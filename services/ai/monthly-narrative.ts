@@ -187,6 +187,7 @@ export async function collectMonthlyData(
     amount_account: number | string;
     date: string;
     category: { name: string } | null;
+    metadata: { adjust?: boolean } | null;
   };
   type RecRule = { amount: number | string; frequency: string; interval_count: number };
 
@@ -204,7 +205,7 @@ export async function collectMonthlyData(
         };
       }
     )("transactions")
-      .select("kind, amount_account, date, category:categories(name)")
+      .select("kind, amount_account, date, category:categories(name), metadata")
       .eq("household_id", householdId)
       .gte("date", from)
       .lte("date", to)
@@ -222,7 +223,7 @@ export async function collectMonthlyData(
         };
       }
     )("transactions")
-      .select("kind, amount_account, date, category:categories(name)")
+      .select("kind, amount_account, date, category:categories(name), metadata")
       .eq("household_id", householdId)
       .gte("date", prevFrom)
       .lte("date", prevTo)
@@ -244,9 +245,13 @@ export async function collectMonthlyData(
       .contains("tags", ["subscription"]),
   ]);
 
+  // Exclui ajustes de saldo (metadata.adjust): não são gasto/receita reais, são
+  // correção direta de saldo. Mesma semântica do dashboard (getMonthlySummary) —
+  // senão o recap fica inconsistente com o que o usuário vê no app.
+  const real = (r: Tx) => r.metadata?.adjust !== true;
   const sum = (rows: Tx[] | null, kind: "income" | "expense") =>
     (rows ?? [])
-      .filter((r) => r.kind === kind)
+      .filter((r) => r.kind === kind && real(r))
       .reduce((s, r) => s + Number(r.amount_account), 0);
 
   const income = sum(cur, "income");
@@ -257,7 +262,7 @@ export async function collectMonthlyData(
   // Top categorias do mês atual
   const curByCat = new Map<string, number>();
   for (const t of cur ?? []) {
-    if (t.kind !== "expense") continue;
+    if (t.kind !== "expense" || !real(t)) continue;
     const name = t.category?.name ?? "Sem categoria";
     curByCat.set(name, (curByCat.get(name) ?? 0) + Number(t.amount_account));
   }
@@ -269,7 +274,7 @@ export async function collectMonthlyData(
   // Movers vs anterior
   const prevByCat = new Map<string, number>();
   for (const t of prev ?? []) {
-    if (t.kind !== "expense") continue;
+    if (t.kind !== "expense" || !real(t)) continue;
     const name = t.category?.name ?? "Sem categoria";
     prevByCat.set(name, (prevByCat.get(name) ?? 0) + Number(t.amount_account));
   }
