@@ -37,6 +37,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Cron diário continua rodando como fallback.
   await ensureMaterialized();
 
+  // IRPF (declaração) ligado pro household? Gateia hub/menu de IR. Reversível
+  // via households.ir_enabled. ctx.household já carregado (select *), sem query extra.
+  const irEnabled = (ctx.household as { ir_enabled?: boolean | null }).ir_enabled !== false;
+
   const [
     accounts,
     categories,
@@ -92,12 +96,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             badges={badges}
             isPlatformAdmin={isAdmin}
             notificationBell={<NotificationBell tone="dark" />}
+            irEnabled={irEnabled}
           />
           <MobileDrawer
             user={{ name: ctx.profile.display_name, email: ctx.email }}
             householdName={ctx.household.name}
             badges={badges}
             isPlatformAdmin={isAdmin}
+            irEnabled={irEnabled}
           />
           <div className="flex-1 min-w-0 relative">
             <main id="conteudo" className="max-w-[1320px] mx-auto px-4 sm:px-10 lg:px-14 pt-16 lg:pt-8 pb-28 lg:pb-20">

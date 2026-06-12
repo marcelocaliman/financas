@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { Panel, PanelHeader } from "@/components/ui/panel";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUserContext } from "@/services/auth";
+import { isIrEnabled } from "@/services/ir-flag";
 import { FilersManager } from "@/components/ir/filers-manager";
 import { DependentsManager } from "@/components/ir/dependents-manager";
 import { listHouseholdMembers } from "@/services/household";
@@ -14,6 +16,7 @@ export const dynamic = "force-dynamic";
  * filers/dependentes são household-level, não mudam por ano.
  */
 export default async function DeclarantesPage() {
+  if (!(await isIrEnabled())) redirect("/dashboard");
   const ctx = await getCurrentUserContext();
   if (!ctx) return null;
   const supabase = await createClient();

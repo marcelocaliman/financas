@@ -26,11 +26,13 @@ export function MobileDrawer({
   householdName,
   badges,
   isPlatformAdmin = false,
+  irEnabled = true,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
   badges?: SidebarBadges;
   isPlatformAdmin?: boolean;
+  irEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -51,7 +53,9 @@ export function MobileDrawer({
     "/metas": metasReminders > 0,
   };
 
-  const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
+  // IRPF desligado → some o hub "imposto" do menu (reversível via households.ir_enabled).
+  const visibleNavItems = irEnabled ? navItems : navItems.filter((i) => i.group !== "imposto");
+  const grouped = visibleNavItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     acc[item.group] = acc[item.group] ?? [];
     acc[item.group].push(item);
     return acc;

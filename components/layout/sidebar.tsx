@@ -25,6 +25,7 @@ export function Sidebar({
   badges,
   isPlatformAdmin = false,
   notificationBell,
+  irEnabled = true,
 }: {
   user: { name: string; email: string | null };
   householdName: string;
@@ -32,6 +33,7 @@ export function Sidebar({
   isPlatformAdmin?: boolean;
   /** Slot pro <NotificationBell /> (server component). Renderizado no rodapé. */
   notificationBell?: ReactNode;
+  irEnabled?: boolean;
 }) {
   const pathname = usePathname();
   const isAdminContext = pathname.startsWith("/admin");
@@ -60,6 +62,7 @@ export function Sidebar({
             badges={badges}
             isPlatformAdmin={isPlatformAdmin}
             notificationBell={notificationBell}
+            irEnabled={irEnabled}
           />
         )}
       </AnimatePresence>
@@ -76,6 +79,7 @@ function SidebarContent({
   badges,
   isPlatformAdmin,
   notificationBell,
+  irEnabled = true,
 }: {
   variant: "main" | "admin";
   slideFrom: "left" | "right";
@@ -85,8 +89,11 @@ function SidebarContent({
   badges?: SidebarBadges;
   isPlatformAdmin?: boolean;
   notificationBell?: ReactNode;
+  irEnabled?: boolean;
 }) {
-  const navItems = variant === "admin" ? adminNavItems : mainNavItems;
+  const allNavItems = variant === "admin" ? adminNavItems : mainNavItems;
+  // IRPF desligado → some o hub "imposto" do menu (reversível via households.ir_enabled).
+  const navItems = irEnabled ? allNavItems : allNavItems.filter((i) => i.group !== "imposto");
   const groupLabels = variant === "admin" ? adminGroupLabels : mainGroupLabels;
 
   const metasReminders = badges?.metasRemindersDue ?? 0;
