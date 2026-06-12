@@ -5,7 +5,6 @@ import { convertOrSame } from "@/lib/financial/currency";
 import { getDisplayCurrency, getRateMap } from "@/services/currency";
 import { listCategories } from "@/services/categories";
 import { monthRange } from "@/services/transactions";
-import { getCreditCardAccountIds } from "@/services/credit-card";
 import type { Currency, Tables } from "@/types/database";
 
 /**
@@ -91,14 +90,10 @@ export const getBudgetVsActual = cache(async (monthYYYYMM?: string): Promise<Bud
   const prevMonth = monthKeyForDate(prevDate);
   const prevRange = monthRange(prevMonth);
 
-  // Orçamento reflete cash basis: consumo de uma categoria não inclui compras
-  // no cartão (ainda não saíram do banco). Quando a fatura é paga, conta como
-  // gasto da categoria do mês — mas o app não distribui automaticamente entre
-  // categorias (pagamento é uma transferência única).
-  const cardIds = await getCreditCardAccountIds();
-  const cardListExpr = cardIds.length > 0 ? `(${cardIds.join(",")})` : null;
-
-  let currQuery = supabase
+  // Orçamento POR COMPETÊNCIA: o consumo da categoria INCLUI compras no cartão
+  // (contam na data da compra). Pagamento de fatura é transferência sem
+  // categoria, então naturalmente não entra aqui.
+  const currQuery = supabase
     .from("transactions")
     .select("category_id, amount_account, currency, account:accounts(currency)")
     .eq("is_historical_ir_only", false)
@@ -106,9 +101,8 @@ export const getBudgetVsActual = cache(async (monthYYYYMM?: string): Promise<Bud
     .gte("date", from)
     .lte("date", to)
     .not("category_id", "is", null);
-  if (cardListExpr) currQuery = currQuery.not("account_id", "in", cardListExpr);
 
-  let prevQuery = supabase
+  const prevQuery = supabase
     .from("transactions")
     .select("category_id, amount_account, currency, account:accounts(currency)")
     .eq("is_historical_ir_only", false)
@@ -116,7 +110,6 @@ export const getBudgetVsActual = cache(async (monthYYYYMM?: string): Promise<Bud
     .gte("date", prevRange.from)
     .lte("date", prevRange.to)
     .not("category_id", "is", null);
-  if (cardListExpr) prevQuery = prevQuery.not("account_id", "in", cardListExpr);
 
   const [
     budgets,
