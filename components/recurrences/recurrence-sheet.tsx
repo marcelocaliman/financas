@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { useIrEnabled } from "@/components/ir/ir-enabled-context";
 import { HealthPlanScenarioHelper } from "@/components/ir/health-plan-scenario-helper";
 import { Sheet, SheetContent, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,7 @@ export function RecurrenceSheet({
   );
   const [startDate, setStartDate] = useState(rule?.start_date ?? todayISO());
   const [endDate, setEndDate] = useState(rule?.end_date ?? "");
+  const irEnabled = useIrEnabled();
   const [fontePagadoraId, setFontePagadoraId] = useState<string>(rule?.fonte_pagadora_id ?? "");
   const [irKind, setIrKind] = useState<string>(rule?.ir_deductible_kind ?? "");
   const [isTaxDeductible, setIsTaxDeductible] = useState<boolean>(rule?.is_tax_deductible ?? false);
@@ -488,8 +490,8 @@ export function RecurrenceSheet({
             />
           </Field>
 
-          {/* Fonte pagadora + retenções — apenas pra receita */}
-          {kind === "income" ? (
+          {/* Fonte pagadora + retenções — apenas pra receita (IRPF) */}
+          {irEnabled && kind === "income" ? (
             <CollapsibleCard
               title="Fonte pagadora (IRPF)"
               subtitle="salário, aluguel recebido…"
@@ -538,7 +540,7 @@ export function RecurrenceSheet({
           ) : null}
 
           {/* Não declarar no IRPF — só pra receita */}
-          {kind === "income" ? (
+          {irEnabled && kind === "income" ? (
             <label
               className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
               htmlFor="excludeFromIr"
@@ -565,8 +567,8 @@ export function RecurrenceSheet({
             </label>
           ) : null}
 
-          {/* Dedução IR — apenas pra despesa */}
-          {kind === "expense" ? (
+          {/* Dedução IR — apenas pra despesa (IRPF) */}
+          {irEnabled && kind === "expense" ? (
             <div className="px-3 py-2.5 rounded-[8px] bg-surface-muted/50 space-y-2">
               <label className="flex items-start gap-2.5 cursor-pointer">
                 <input

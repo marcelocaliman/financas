@@ -12,6 +12,7 @@ import {
   updateCategory,
   type CategoryFormState,
 } from "@/services/categories.actions";
+import { useIrEnabled } from "@/components/ir/ir-enabled-context";
 import type { CategoryKind, Tables } from "@/types/database";
 
 type Category = Tables<"categories">;
@@ -28,6 +29,7 @@ export function CategorySheet({
   defaultKind?: CategoryKind;
 }) {
   const isEdit = !!category;
+  const irEnabled = useIrEnabled();
   const [kind, setKind] = useState<CategoryKind>(category?.kind ?? defaultKind);
 
   const [state, action, pending] = useActionState<CategoryFormState | undefined, FormData>(
@@ -96,7 +98,7 @@ export function CategorySheet({
           </Field>
 
           {/* IR — Dedução automática quando lançar despesa nesta categoria */}
-          {kind === "expense" ? (
+          {irEnabled && kind === "expense" ? (
             <Field
               label="Dedutível no IRPF?"
               htmlFor="irDeductibleKind"

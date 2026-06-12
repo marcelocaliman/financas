@@ -9,6 +9,7 @@ import { hasAcceptedCurrentTerms, TERMS_VERSION, PRIVACY_VERSION } from "@/servi
 import { isPlatformAdmin } from "@/services/platform-admin";
 import { RealtimeBridge } from "@/components/layout/realtime-bridge";
 import { QuickAddProvider } from "@/components/transactions/quick-add-context";
+import { IrEnabledProvider } from "@/components/ir/ir-enabled-context";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { AddTransactionDialog } from "@/components/transactions/add-transaction-dialog";
 import { QuickAddFAB } from "@/components/transactions/quick-add-fab";
@@ -88,6 +89,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <ConfirmProvider>
       <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       <QuickAddProvider>
+      <IrEnabledProvider value={irEnabled}>
         <RealtimeBridge />
         <div className="min-h-screen flex">
           <Sidebar
@@ -139,6 +141,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             privacyVersion={PRIVACY_VERSION}
           />
         ) : null}
+      </IrEnabledProvider>
       </QuickAddProvider>
       </TooltipProvider>
       </ConfirmProvider>

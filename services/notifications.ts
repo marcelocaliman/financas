@@ -33,9 +33,12 @@ export async function runDailyNotifications(): Promise<NotificationResult[]> {
   const admin = createAdminClient();
   const results: NotificationResult[] = [];
 
-  const { data: households } = await admin
-    .from("households")
-    .select("id, name");
+  // ir_enabled ainda não está nos tipos gerados → cast no select.
+  const { data: households } = (await (
+    admin.from("households").select("id, name, ir_enabled") as unknown as Promise<{
+      data: Array<{ id: string; name: string; ir_enabled: boolean | null }> | null;
+    }>
+  ));
 
   if (!households) return results;
 
@@ -81,7 +84,8 @@ export async function runDailyNotifications(): Promise<NotificationResult[]> {
     }
 
     // 2. Lacunas IR retroativas (1×/mês)
-    if (effectivePrefs.ir_retroactive_gaps) {
+    // Só checa lacunas de IR se o IRPF estiver ligado pro household.
+    if (effectivePrefs.ir_retroactive_gaps && h.ir_enabled !== false) {
       const lastSent = effectivePrefs.ir_retroactive_gaps_last_sent;
       const daysSince = lastSent
         ? (Date.now() - new Date(lastSent).getTime()) / 86400000

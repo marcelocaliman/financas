@@ -46,11 +46,13 @@ import {
 } from "@/services/transactions";
 import { IrEstimateHero } from "@/components/dashboard/ir-estimate-hero";
 import { computeImposto } from "@/services/ir/imposto";
+import { isIrEnabled } from "@/services/ir-flag";
 import { WelcomeBanner } from "@/components/dashboard/welcome-banner";
 import { createClient } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/utils/format";
 import { formatDateFull, formatTime, getGreeting } from "@/lib/utils/format";
 import { monthProgress, projectMonthEnd } from "@/lib/financial/projection";
+import { cn } from "@/lib/utils/cn";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +135,9 @@ export default async function DashboardPage({
       ? computeImposto(currentYearForState).catch(() => null)
       : Promise.resolve(null),
   ]);
+
+  // IRPF ligado? Gateia o card-herói de IRPF do Início (reversível).
+  const irEnabled = await isIrEnabled();
 
   // ---- Onboarding banner gating (cheap: 2 queries só quando is current) ----
   let showOnboardingBanner = false;
@@ -349,8 +354,13 @@ export default async function DashboardPage({
           [&>*]:!mb-0 zera margens internas (o ticker tem mb-6 baked que o deixava
           24px mais curto); [&>*]:h-full faz ambos preencherem a célula. */}
       {isCurrent ? (
-        <div className="grid lg:grid-cols-2 gap-5 mt-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full">
-          <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
+        <div className={cn(
+          "grid gap-5 mt-5 mb-5 items-stretch [&>*]:!mb-0 [&>*]:h-full",
+          irEnabled && "lg:grid-cols-2",
+        )}>
+          {irEnabled ? (
+            <IrEstimateHero imposto={irEstimate} year={currentYearForState} />
+          ) : null}
           <PortfolioLiveTicker
             totalMarketBalance={currentValues.totalMarketBalance}
             totalBaseBalance={currentValues.totalBaseBalance}

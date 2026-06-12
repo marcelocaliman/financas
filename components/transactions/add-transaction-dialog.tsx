@@ -26,6 +26,7 @@ import { parseQuickEntry } from "@/lib/financial/parse-quick-entry";
 import type { Tables } from "@/types/database";
 import { Sparkles } from "lucide-react";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { useIrEnabled } from "@/components/ir/ir-enabled-context";
 
 type TxKind = "expense" | "income" | "transfer";
 type Currency = "BRL" | "EUR" | "USD" | "GBP";
@@ -91,6 +92,7 @@ export function AddTransactionDialog({
   const [description, setDescription] = useState<string>("");
   const [showMore, setShowMore] = useState(false);
   const [showIR, setShowIR] = useState(false);
+  const irEnabled = useIrEnabled();
   const [fontePagadoraId, setFontePagadoraId] = useState<string>("");
   const [irrfAmount, setIrrfAmount] = useState<number>(0);
   const [inssAmount, setInssAmount] = useState<number>(0);
@@ -428,7 +430,7 @@ export function AddTransactionDialog({
 
             {/* Marcadores de IR — visíveis (não escondidos em "Mais opções"):
                 são decisões frequentes pra quem controla o IR. */}
-            {kind === "income" ? (
+            {irEnabled && kind === "income" ? (
               <label
                 className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
                 htmlFor="excludeFromIr"
@@ -453,7 +455,7 @@ export function AddTransactionDialog({
               </label>
             ) : null}
 
-            {kind !== "transfer" ? (
+            {irEnabled && kind !== "transfer" ? (
               <label
                 className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
                 htmlFor="isHistoricalIrOnly"
@@ -539,7 +541,7 @@ export function AddTransactionDialog({
               ) : null}
 
             {/* Seção IR — apenas pra receitas com fontes configuradas */}
-            {kind === "income" && fontes.length > 0 ? (
+            {irEnabled && kind === "income" && fontes.length > 0 ? (
               <CollapsibleCard
                 title="IR"
                 subtitle="fonte pagadora + IRRF/INSS retidos"

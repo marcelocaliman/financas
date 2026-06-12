@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { updateTransaction, type TxFormState } from "@/services/transactions.actions";
+import { useIrEnabled } from "@/components/ir/ir-enabled-context";
 import type { Transaction } from "@/services/transactions";
 import type { Tables } from "@/types/database";
 import { ReceiptUploader } from "./receipt-uploader";
@@ -62,6 +63,7 @@ export function EditTransactionDialog({
   const [isHistoricalIrOnly, setIsHistoricalIrOnly] = useState<boolean>(
     transaction.is_historical_ir_only ?? false,
   );
+  const irEnabled = useIrEnabled();
   const [excludeFromIr, setExcludeFromIr] = useState<boolean>(
     transaction.exclude_from_ir ?? false,
   );
@@ -264,7 +266,7 @@ export function EditTransactionDialog({
 
 
           {/* Seção IR — apenas pra receitas com fontes configuradas */}
-          {transaction.kind === "income" && fontes.length > 0 ? (
+          {irEnabled && transaction.kind === "income" && fontes.length > 0 ? (
             <div className="rounded-[8px] border border-border bg-bone-100 dark:bg-ink-800 overflow-hidden">
               <button
                 type="button"
@@ -323,7 +325,7 @@ export function EditTransactionDialog({
             </div>
           ) : null}
 
-          {transaction.kind === "income" ? (
+          {irEnabled && transaction.kind === "income" ? (
             <label
               className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
               htmlFor="excludeFromIr"
@@ -350,7 +352,7 @@ export function EditTransactionDialog({
             </label>
           ) : null}
 
-          {!isTransfer ? (
+          {irEnabled && !isTransfer ? (
             <label
               className="flex items-start gap-2.5 px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 cursor-pointer border border-border"
               htmlFor="isHistoricalIrOnly"

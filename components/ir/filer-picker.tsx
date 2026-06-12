@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useIrEnabled } from "@/components/ir/ir-enabled-context";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -59,9 +60,12 @@ export function FilerPicker({
   labelPrefix?: string;
   showCommonOption?: boolean;
 }) {
+  const irEnabled = useIrEnabled();
   const primary = filers.find((f) => f.is_primary) ?? filers[0];
   const isCommunal = COMMUNAL_REGIMES.includes(regime);
   const allowCommon = showCommonOption && isCommunal;
+  // IRPF desligado: não mostra o seletor de declarante (atribuição é só IRPF).
+  if (!irEnabled) return null;
 
   // Estado inicial: se default é "comum" (no schema isso não existe direto —
   // representamos como "owner = primary + ownership_percent ~ não-100").
@@ -180,6 +184,9 @@ export function FilerPickerWithOwnership({
   defaultOwnershipPercent?: number | null;
   labelPrefix?: string;
 }) {
+  const irEnabled = useIrEnabled();
+  // IRPF desligado: esconde seletor de declarante + campo de % de propriedade.
+  if (!irEnabled) return null;
   return (
     <>
       <FilerPicker
