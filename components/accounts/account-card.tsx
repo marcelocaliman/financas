@@ -236,6 +236,21 @@ export function AccountCard({
                   parcela com data futura. A fatura a pagar está em “Faturas abertas”.
                 </p>
               ) : null}
+              {/* Reconciliação-primeiro: pra contas tipo caixa, "este é o saldo
+                  hoje" é a forma principal de manter a conta certa — sem precisar
+                  registrar transferências. Botão visível (não escondido no menu). */}
+              {["checking", "savings", "cash"].includes(account.type) &&
+              balanceMode === "current" ? (
+                <button
+                  type="button"
+                  onClick={() => setAdjusting(true)}
+                  disabled={pending}
+                  className="mt-3 inline-flex items-center gap-1.5 text-[11.5px] text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                >
+                  <Scale className="w-3.5 h-3.5" strokeWidth={1.7} />
+                  Conferir / ajustar saldo
+                </button>
+              ) : null}
             </>
           )}
         </div>

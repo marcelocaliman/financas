@@ -300,6 +300,11 @@ export function AddTransactionDialog({
 
             {kind === "transfer" ? (
               <>
+                <p className="text-[11.5px] text-faint-foreground leading-relaxed px-3 py-2.5 rounded-[8px] bg-bone-100 dark:bg-ink-800 border border-border">
+                  Mover dinheiro entre suas contas é <b className="text-foreground">opcional</b> —
+                  não muda seu patrimônio nem seu orçamento. Registre só se quiser o histórico.
+                  Pra só acertar o saldo de uma conta, use <b className="text-foreground">Conferir / ajustar saldo</b> em Contas.
+                </p>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="De" htmlFor="fromAccountId">
                     <Select
