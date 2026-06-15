@@ -12,6 +12,18 @@ function msg(e: unknown, fallback: string): string {
   return fallback;
 }
 
+/**
+ * Só uma chave/senha REALMENTE errada faz o AES-GCM falhar a autenticação
+ * (DOMException "OperationError"). Qualquer outra coisa — cripto não carregou,
+ * rede, bundle inconsistente durante uma atualização — NÃO é senha errada e não
+ * deve assustar o usuário dizendo que é.
+ */
+function isWrongSecret(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "OperationError";
+}
+
+const RELOAD_HINT = "Recarregue a página e tente de novo.";
+
 /** Decide a tela conforme o estado do cofre. */
 export function AuthGate() {
   const status = useVault((s) => s.status);
@@ -174,8 +186,8 @@ function Unlock({ onRecovery }: { onRecovery: () => void }) {
     setLoading(true);
     try {
       await unlock(password);
-    } catch {
-      setErr("Senha incorreta.");
+    } catch (e2) {
+      setErr(isWrongSecret(e2) ? "Senha incorreta." : `Não foi possível destravar. ${RELOAD_HINT}`);
     } finally {
       setLoading(false);
     }
@@ -220,8 +232,12 @@ function Recovery({ onBack }: { onBack: () => void }) {
     setLoading(true);
     try {
       await recoverAndReset(code.trim(), password);
-    } catch {
-      setErr("Código de recuperação inválido.");
+    } catch (e2) {
+      setErr(
+        isWrongSecret(e2)
+          ? "Código de recuperação inválido."
+          : `Não foi possível recuperar. ${RELOAD_HINT}`,
+      );
     } finally {
       setLoading(false);
     }

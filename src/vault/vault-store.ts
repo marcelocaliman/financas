@@ -223,9 +223,13 @@ export const useVault = create<VaultStore>((set, get) => {
     async unlock(password) {
       const { meta } = get();
       if (!meta) throw new Error("cofre não carregado");
-      const keys = await cryptoUnlockPw(meta, password);
+      const keys = await cryptoUnlockPw(meta, password); // LANÇA OperationError se a senha não bate
       set({ status: "unlocked", keys });
-      await syncAfterUnlock(keys, meta, get().version);
+      try {
+        await syncAfterUnlock(keys, meta, get().version);
+      } catch {
+        /* senha certa — sync falhou (rede/glitch); segue destravado com os dados locais */
+      }
     },
 
     async unlockWithRecovery(code) {
@@ -233,7 +237,11 @@ export const useVault = create<VaultStore>((set, get) => {
       if (!meta) throw new Error("cofre não carregado");
       const keys = await cryptoUnlockCode(meta, code);
       set({ status: "unlocked", keys });
-      await syncAfterUnlock(keys, meta, get().version);
+      try {
+        await syncAfterUnlock(keys, meta, get().version);
+      } catch {
+        /* código certo — sync falhou; segue destravado com os dados locais */
+      }
     },
 
     async recoverAndReset(code, newPassword) {
