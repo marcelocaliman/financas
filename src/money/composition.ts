@@ -1,12 +1,25 @@
 import { convert, CURRENCIES, type Currency } from "./currency";
 
-/** Cor de cada moeda nas barras/legendas de composição. */
-export const CUR_COLOR: Record<Currency, string> = {
-  BRL: "#2C7A7B",
-  EUR: "#5B7B9A",
-  USD: "#7FB2B2",
-  GBP: "#9FB3C8",
+/**
+ * Cor de cada moeda — alinhada aos selos luminosos (chip-*) por tema, pra a
+ * fatia da aurora e o gráfico baterem com o chip da mesma moeda.
+ */
+const CUR_COLOR_DARK: Record<Currency, string> = {
+  BRL: "#2EE6A6",
+  EUR: "#5AA0FF",
+  USD: "#A894FF",
+  GBP: "#FFB05A",
 };
+const CUR_COLOR_LIGHT: Record<Currency, string> = {
+  BRL: "#0FAE7E",
+  EUR: "#2C63D6",
+  USD: "#6E4FD0",
+  GBP: "#B5791F",
+};
+
+export function currencyColors(theme: "light" | "dark"): Record<Currency, string> {
+  return theme === "dark" ? CUR_COLOR_DARK : CUR_COLOR_LIGHT;
+}
 
 export interface CurrencySlice {
   currency: Currency;

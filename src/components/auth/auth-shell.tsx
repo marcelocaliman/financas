@@ -19,11 +19,11 @@ export function AuthShell({
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-8">
       <div className="w-full max-w-sm">
-        <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="w-[34px] h-[34px] rounded-[10px] bg-teal flex items-center justify-center">
-            <ArrowLeftRight size={18} color="#fff" />
+        <div className="flex items-center justify-center gap-2.5 mb-7">
+          <div className="grid place-items-center w-[36px] h-[36px] rounded-[11px] bg-accent text-[#04140d] shadow-[0_0_20px_-4px_var(--accent)]">
+            <ArrowLeftRight size={18} />
           </div>
-          <span className="font-bold text-[18px] tracking-[-0.01em]">Finanças</span>
+          <span className="font-display font-bold text-[19px] tracking-[-0.02em]">Finanças</span>
         </div>
         <Panel className="p-6">
           <h1 className="text-[18px] font-bold tracking-[-0.01em]">{title}</h1>
@@ -68,7 +68,7 @@ export function SubmitButton({
       disabled={loading || props.disabled}
       {...props}
       className={cn(
-        "w-full h-10 rounded-[8px] bg-teal text-white font-semibold text-[14px] transition-opacity disabled:opacity-50",
+        "w-full h-10 rounded-[8px] bg-teal text-[#04140d] font-semibold text-[14px] transition-opacity disabled:opacity-50",
         className,
       )}
     >

@@ -3,60 +3,127 @@
 /* Dark mode por classe (.dark no <html>), controlado pelo store de UI. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Paleta do protótipo (docs/reference/prototipo-painel.jsx) ──
-   Tokens como CSS vars pra trocar em runtime no tema escuro. */
+/* ════════════════════════════════════════════════════════════════════
+   OBSIDIAN — design system. Nasce no escuro (obsidiana + jade); o claro é
+   "papel premium". Tokens como CSS vars → .dark sobrescreve em runtime.
+   ════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #f5f8fa;
+  /* Claro — papel premium */
+  --bg: #f4f6f8;
+  --bg-2: #fbfcfd;
   --card: #ffffff;
-  --border: #e6ecf1;
-  --text: #243b53;
-  --muted: #6b7c93;
-  --faint: #90a0b3;
-  --navy: #243b53;
-  --teal: #2c7a7b;
-  --teal-soft: #e6f2f2;
-  --eur: #5b7b9a;
-  --eur-soft: #eaf0f5;
-  --pos: #2c7a7b;
-  --neg: #b5524c;
-  --neg-soft: #f6eae9;
+  --card-2: #f7f9fb;
+  --card-hover: #f1f5f8;
+  --text: #0e1b26;
+  --muted: #566677;
+  --faint: #6b7b8b;
+  --border: #e4eaef;
+  --border-strong: #d2dbe3;
+  --accent: #0fae7e;
+  --accent-press: #0c9268;
+  --accent-2: #3d7bf0;
+  --accent-soft: rgba(15, 174, 126, 0.1);
+  --ring: rgba(15, 174, 126, 0.4);
+  --pos: #0fae7e;
+  --neg: #d8564b;
+  --neg-soft: rgba(216, 86, 75, 0.1);
+  --hero-grad-a: #0e1b26;
+  --hero-grad-b: #0c9268;
+  --hero-halo: rgba(15, 174, 126, 0);
+
+  /* Selos de moeda */
+  --chip-brl-fg: #0c9268;
+  --chip-brl-bg: #e6f6f0;
+  --chip-eur-fg: #2c63d6;
+  --chip-eur-bg: #eaf1fd;
+  --chip-usd-fg: #6e4fd0;
+  --chip-usd-bg: #efeafb;
+  --chip-gbp-fg: #b5791f;
+  --chip-gbp-bg: #fbf1e2;
+  --chip-glow: 0 0 transparent;
+
+  --shadow-card: 0 1px 3px rgba(14, 27, 38, 0.06), 0 12px 32px -18px rgba(14, 27, 38, 0.12);
+  --shadow-float: 0 24px 60px -28px rgba(14, 27, 38, 0.28);
+  --grid-line: rgba(14, 27, 38, 0.07);
 }
 
 .dark {
-  --bg: #16222e;
-  --card: #1c2b3a;
-  --border: #2a3a4c;
-  --text: #e6ecf1;
-  --muted: #9fb3c8;
-  --faint: #6b7c93;
-  --teal-soft: #1e3a3a;
-  --eur-soft: #22303f;
-  --neg: #cf7a74;
-  --neg-soft: #3a2625;
+  /* Escuro — obsidiana */
+  --bg: #0a1310;
+  --bg-2: #0c1714;
+  --card: #111a16;
+  --card-2: #16221c;
+  --card-hover: #1b2a23;
+  --text: #ecf4ef;
+  --muted: #9fb3a9;
+  --faint: #7d9389;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --accent: #2ee6a6;
+  --accent-press: #25c690;
+  --accent-2: #5aa0ff;
+  --accent-soft: rgba(46, 230, 166, 0.12);
+  --ring: rgba(46, 230, 166, 0.55);
+  --pos: #2ee6a6;
+  --neg: #ff6f61;
+  --neg-soft: rgba(255, 111, 97, 0.13);
+  --hero-grad-a: #ffffff;
+  --hero-grad-b: #2ee6a6;
+  --hero-halo: rgba(46, 230, 166, 0.22);
+
+  --chip-brl-fg: #2ee6a6;
+  --chip-brl-bg: rgba(46, 230, 166, 0.13);
+  --chip-eur-fg: #5aa0ff;
+  --chip-eur-bg: rgba(90, 160, 255, 0.14);
+  --chip-usd-fg: #a894ff;
+  --chip-usd-bg: rgba(168, 148, 255, 0.14);
+  --chip-gbp-fg: #ffb05a;
+  --chip-gbp-bg: rgba(255, 176, 90, 0.14);
+  --chip-glow: 0 0 12px -4px currentColor;
+
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4),
+    0 18px 50px -28px rgba(0, 0, 0, 0.7);
+  --shadow-float: 0 28px 70px -28px rgba(0, 0, 0, 0.75);
+  --grid-line: rgba(255, 255, 255, 0.06);
 }
 
-/* Mapeia os tokens pra utilities do Tailwind (bg-card, text-muted, border-border,
-   bg-teal, text-teal-soft, shadow-card…). `inline` faz as utilities referenciarem
-   as CSS vars, então o .dark sobrescreve tudo em runtime. */
 @theme inline {
   --color-bg: var(--bg);
+  --color-bg2: var(--bg-2);
   --color-card: var(--card);
-  --color-border: var(--border);
+  --color-card2: var(--card-2);
+  --color-card-hover: var(--card-hover);
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
-  --color-navy: var(--navy);
-  --color-teal: var(--teal);
-  --color-teal-soft: var(--teal-soft);
-  --color-eur: var(--eur);
-  --color-eur-soft: var(--eur-soft);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-press: var(--accent-press);
+  --color-accent2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
   --color-pos: var(--pos);
   --color-neg: var(--neg);
   --color-neg-soft: var(--neg-soft);
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Compat: nomes antigos → novos tokens (teal→jade, navy→text, eur→azul). */
+  --color-teal: var(--accent);
+  --color-teal-soft: var(--accent-soft);
+  --color-eur: var(--accent-2);
+  --color-eur-soft: var(--accent-soft);
+  --color-navy: var(--text);
 
-  --shadow-card: 0 1px 2px rgba(36, 59, 83, 0.04);
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+
+  --radius-card: 20px;
+  --radius-panel: 14px;
+  --radius-cell: 10px;
+  --radius-pill: 8px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
 }
 
 html,
@@ -66,9 +133,132 @@ body,
 }
 
 body {
-  background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  background: var(--bg);
+}
+
+/* Canvas de obsidiana: vinheta + halos de acento sutis (só no escuro). */
+.dark body {
+  background:
+    radial-gradient(120% 75% at 50% -12%, rgba(46, 230, 166, 0.07), transparent 58%),
+    radial-gradient(90% 60% at 100% 0%, rgba(90, 160, 255, 0.045), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+/* Números: tabulares + zero cortado (legibilidade financeira). */
+.tabular {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Vidro fosco dos cartões no escuro. */
+.glass {
+  background: var(--card);
+}
+.dark .glass {
+  background: color-mix(in oklab, var(--card) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+}
+
+/* Número-herói iluminado por dentro. */
+.hero-number {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
+  background: linear-gradient(178deg, var(--hero-grad-a) 8%, var(--hero-grad-b) 135%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 26px var(--hero-halo));
+}
+.hero-number-neg {
+  background: linear-gradient(178deg, var(--text) 8%, var(--neg) 135%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 22px rgba(216, 86, 75, 0.18));
+}
+
+/* Selos de moeda luminosos. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: var(--chip-glow);
+}
+.chip-BRL {
+  color: var(--chip-brl-fg);
+  background: var(--chip-brl-bg);
+}
+.chip-EUR {
+  color: var(--chip-eur-fg);
+  background: var(--chip-eur-bg);
+}
+.chip-USD {
+  color: var(--chip-usd-fg);
+  background: var(--chip-usd-bg);
+}
+.chip-GBP {
+  color: var(--chip-gbp-fg);
+  background: var(--chip-gbp-bg);
+}
+
+/* Aurora: gradiente que respira na barra de composição. */
+@keyframes aurora-pan {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.aurora-anim {
+  background-size: 200% 100%;
+  animation: aurora-pan 9s linear infinite;
+}
+
+/* Pulso suave (pontos da legenda, ponto vivo do gráfico). */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+.pulse {
+  animation: soft-pulse 2.4s ease-in-out infinite;
+}
+
+/* Entrada de linha do grid. */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.row-in {
+  animation: row-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+input,
+select,
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-anim,
+  .pulse,
+  .row-in {
+    animation: none;
+  }
+  .hero-number {
+    filter: none;
+  }
 }

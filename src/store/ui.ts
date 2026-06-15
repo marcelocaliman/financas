@@ -19,7 +19,7 @@ export const useUI = create<UIState>()(
     (set) => ({
       displayCurrency: "BRL",
       setDisplayCurrency: (displayCurrency) => set({ displayCurrency }),
-      theme: "light",
+      theme: "dark",
       setTheme: (theme) => set({ theme }),
       toggleTheme: () =>
         set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),

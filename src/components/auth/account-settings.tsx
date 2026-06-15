@@ -24,7 +24,7 @@ function Btn({
       className={cn(
         "h-9 px-3 rounded-[7px] text-[13px] font-medium transition-colors disabled:opacity-50",
         tone === "teal"
-          ? "bg-teal text-white"
+          ? "bg-teal text-[#04140d]"
           : tone === "danger"
             ? "border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
             : "border border-border text-muted hover:text-text",

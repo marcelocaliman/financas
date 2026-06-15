@@ -14,24 +14,30 @@ import {
 } from "recharts";
 import { useUI } from "@/store/ui";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { currencyBreakdown, CUR_COLOR } from "@/money/composition";
+import { currencyBreakdown, currencyColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { actions } from "@/data/actions";
 import { Panel } from "@/components/common/panel";
 import { StatCard } from "@/components/common/stat-card";
 import { Money } from "@/components/common/money";
 import { Button } from "@/components/common/button";
+import { HeroNumber } from "@/components/common/hero-number";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { cn } from "@/lib/utils";
 
-const CAT_COLORS = ["#2C7A7B", "#5B7B9A", "#7FB2B2", "#9FB3C8", "#C5D2DD", "#E2E8EE"];
-const TEAL = "#2C7A7B";
-
 export default function Painel() {
   const { t, i18n } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const theme = useUI((s) => s.theme);
   const { data } = useDashboardData();
+  const colors = currencyColors(theme);
+  const accent = theme === "dark" ? "#2EE6A6" : "#0FAE7E";
+  const axisColor = theme === "dark" ? "#5E7268" : "#8A9AAA";
+  const CAT_COLORS =
+    theme === "dark"
+      ? ["#2EE6A6", "#5AA0FF", "#A894FF", "#FFB05A", "#7FE6C6", "#9FB3C8"]
+      : ["#0FAE7E", "#2C63D6", "#6E4FD0", "#B5791F", "#3FB6A0", "#90A0B3"];
 
   const monthLabel = useMemo(() => {
     const m = new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date());
@@ -99,17 +105,20 @@ export default function Painel() {
   return (
     <div className="space-y-5">
       {/* Hero: patrimônio líquido + composição por moeda */}
-      <Panel className="p-6 md:p-7">
+      <Panel className="relative overflow-hidden p-6 md:p-8">
+        <div
+          className="pointer-events-none absolute -top-20 -right-10 h-56 w-56 rounded-full blur-3xl opacity-70"
+          style={{ background: "radial-gradient(circle, var(--accent-soft), transparent 70%)" }}
+        />
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="text-[13px] text-muted font-medium">{t("dashboard.netWorth")}</div>
-            <Money
+            <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">
+              {t("dashboard.netWorth")}
+            </div>
+            <HeroNumber
               value={view.netWorth}
               currency={disp}
-              className={cn(
-                "block text-[40px] font-bold tracking-[-0.02em] leading-tight mt-1",
-                view.netWorth < 0 && "text-neg",
-              )}
+              className="block text-[clamp(38px,7vw,56px)] mt-1.5"
             />
           </div>
           {view.trend.length >= 2 ? (
@@ -131,7 +140,7 @@ export default function Painel() {
               segments={view.curSegments.map((s) => ({
                 label: s.currency,
                 pct: s.pct,
-                color: CUR_COLOR[s.currency],
+                color: colors[s.currency],
               }))}
             />
           </div>
@@ -229,13 +238,13 @@ export default function Painel() {
               <AreaChart data={view.trend} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
                 <defs>
                   <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={TEAL} stopOpacity={0.25} />
-                    <stop offset="100%" stopColor={TEAL} stopOpacity={0} />
+                    <stop offset="0%" stopColor={accent} stopOpacity={0.25} />
+                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="m" tick={{ fontSize: 11, fill: "#90A0B3" }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => money(Number(v))} />
-                <Area type="monotone" dataKey="v" stroke={TEAL} strokeWidth={2.5} fill="url(#nwGrad)" />
+                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

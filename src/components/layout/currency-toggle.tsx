@@ -1,20 +1,15 @@
 import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
-import type { Currency } from "@/money/currency";
+import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
 
-const OPTIONS: { cur: Currency; label: string }[] = [
-  { cur: "BRL", label: "R$" },
-  { cur: "EUR", label: "€" },
-];
-
-/** Switch de moeda de exibição (R$ / €), igual ao protótipo. */
+/** Switch da moeda de exibição (R$ / € / US$ / £). */
 export function CurrencyToggle() {
   const displayCurrency = useUI((s) => s.displayCurrency);
   const setDisplayCurrency = useUI((s) => s.setDisplayCurrency);
 
   return (
-    <div className="flex p-1 rounded-xl bg-bg border border-border">
-      {OPTIONS.map(({ cur, label }) => {
+    <div className="flex gap-0.5 p-0.5 rounded-[12px] bg-card2 border border-border">
+      {CURRENCIES.map((cur) => {
         const active = displayCurrency === cur;
         return (
           <button
@@ -22,11 +17,13 @@ export function CurrencyToggle() {
             type="button"
             onClick={() => setDisplayCurrency(cur)}
             className={cn(
-              "px-3 py-1 rounded-lg text-[13px] font-semibold transition-colors",
-              active ? "bg-teal text-white" : "text-muted hover:text-text",
+              "px-2.5 py-1 rounded-[9px] text-[12.5px] font-semibold tabular transition-all",
+              active
+                ? "bg-accent text-[#04140d] shadow-[0_0_16px_-5px_var(--accent)]"
+                : "text-muted hover:text-text",
             )}
           >
-            {label}
+            {CURRENCY_SYMBOL[cur]}
           </button>
         );
       })}

@@ -9,7 +9,7 @@ export function BottomNav() {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 flex items-center justify-around px-2 py-2 bg-card border-t border-border"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-2 py-2 glass border-t border-border"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       {NAV_ITEMS.slice(0, 5).map(({ to, key, icon: Icon }) => (
@@ -19,13 +19,24 @@ export function BottomNav() {
           end={to === "/"}
           className={({ isActive }) =>
             cn(
-              "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px]",
-              isActive ? "text-teal font-semibold" : "text-faint font-medium",
+              "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors",
+              isActive ? "text-accent font-semibold" : "text-faint font-medium",
             )
           }
         >
-          <Icon size={20} />
-          <span>{t(`nav.${key}`)}</span>
+          {({ isActive }) => (
+            <>
+              <span
+                className={cn(
+                  "grid place-items-center w-9 h-7 rounded-[9px] transition-colors",
+                  isActive && "bg-accent-soft",
+                )}
+              >
+                <Icon size={19} />
+              </span>
+              <span>{t(`nav.${key}`)}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

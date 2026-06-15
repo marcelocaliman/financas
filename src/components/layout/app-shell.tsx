@@ -22,9 +22,13 @@ export function AppShell() {
   const email = useVault((s) => s.email);
   const { pathname } = useLocation();
 
-  // Aplica o tema na raiz do documento.
+  // Aplica o tema na raiz do documento + cor da barra do navegador.
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
+    const dark = theme === "dark";
+    document.documentElement.classList.toggle("dark", dark);
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", dark ? "#0a1310" : "#f4f6f8");
   }, [theme]);
 
   const active =

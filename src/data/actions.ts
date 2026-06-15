@@ -10,13 +10,24 @@ import type { Asset, Liability } from "@/domain/types";
  * falhar, o dado já está salvo localmente e a flag garante que o próximo
  * unlock/online re-tente subir — sem nunca sobrescrever o local com o servidor.
  */
+let pushTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Coalesce: edições rápidas (grid) viram UM push, não um por célula. */
+function schedulePush(): void {
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => {
+    pushTimer = null;
+    void useVault
+      .getState()
+      .push()
+      .catch((e) => console.warn("sync adiado (será re-tentado):", e));
+  }, 700);
+}
+
 async function withSync(write: () => Promise<void>): Promise<void> {
   await write();
-  pending.set();
-  void useVault
-    .getState()
-    .push()
-    .catch((e) => console.warn("sync adiado (será re-tentado):", e));
+  pending.set(); // durabilidade: marcado já; o push é re-tentado no unlock/online
+  schedulePush();
 }
 
 export const actions = {

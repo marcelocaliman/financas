@@ -9,12 +9,12 @@ export function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-60 px-4 py-6 bg-card border-r border-border sticky top-0 h-screen">
-      <div className="flex items-center gap-2 px-2 mb-8">
-        <div className="w-[30px] h-[30px] rounded-[9px] bg-teal flex items-center justify-center shrink-0">
-          <ArrowLeftRight size={16} color="#fff" />
+    <aside className="hidden md:flex md:flex-col md:w-[244px] px-3.5 py-6 border-r border-border sticky top-0 h-screen">
+      <div className="flex items-center gap-2.5 px-2.5 mb-9">
+        <div className="grid place-items-center w-[32px] h-[32px] rounded-[10px] bg-accent text-[#04140d] shadow-[0_0_18px_-4px_var(--accent)]">
+          <ArrowLeftRight size={17} />
         </div>
-        <span className="font-bold text-[16px] tracking-[-0.01em]">{t("app.name")}</span>
+        <span className="font-display font-bold text-[17px] tracking-[-0.02em]">{t("app.name")}</span>
       </div>
 
       <nav className="flex flex-col gap-1">
@@ -25,15 +25,22 @@ export function Sidebar() {
             end={to === "/"}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-[14px] transition-colors",
+                "relative flex items-center gap-3 px-3 py-[9px] rounded-[10px] text-[14px] transition-colors",
                 isActive
-                  ? "bg-teal-soft text-teal font-semibold"
-                  : "text-muted font-medium hover:text-text hover:bg-bg",
+                  ? "bg-accent-soft text-accent font-semibold"
+                  : "text-muted font-medium hover:text-text hover:bg-card-hover",
               )
             }
           >
-            <Icon size={18} />
-            <span>{t(`nav.${key}`)}</span>
+            {({ isActive }) => (
+              <>
+                {isActive ? (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-accent" />
+                ) : null}
+                <Icon size={18} />
+                <span>{t(`nav.${key}`)}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>

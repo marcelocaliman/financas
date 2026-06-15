@@ -140,7 +140,7 @@ function Pill({
       className={cn(
         "px-3 py-1.5 rounded-lg text-[13px] font-medium border transition-colors",
         active
-          ? "bg-teal text-white border-teal"
+          ? "bg-teal text-[#04140d] border-teal"
           : "border-border text-muted hover:text-text",
       )}
     >
