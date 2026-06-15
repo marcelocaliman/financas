@@ -22,6 +22,7 @@ import {
 } from "./sync";
 import { dumpVault, loadVault } from "./serialize";
 import { pending } from "./pending";
+import { sessionKeys } from "./session-keys";
 
 type Status = "loading" | "signedOut" | "locked" | "unlocked";
 
@@ -64,6 +65,7 @@ export const useVault = create<VaultStore>((set, get) => {
 
   /** Pós-unlock: traz o cofre do servidor (ou sobe um cofre novo, vazio). */
   async function syncAfterUnlock(keys: VaultKeys, meta: VaultMeta, version: number): Promise<void> {
+    void sessionKeys.save(meta.userId, keys); // mantém destravado entre reloads
     if (version > 0) {
       if (pending.has()) {
         // Há mutações locais possivelmente NÃO sincronizadas → não sobrescrever
@@ -117,6 +119,24 @@ export const useVault = create<VaultStore>((set, get) => {
         // novo login pra capturar a senha e criar o cofre com a senha certa.
         await supabase.auth.signOut();
         set({ status: "signedOut", userId: null, email: null });
+        return;
+      }
+      const restored = await sessionKeys.load(user.id);
+      if (restored) {
+        // Já destravado nesta sessão do navegador → pula a tela de senha no reload.
+        set({
+          status: "unlocked",
+          userId: user.id,
+          email: user.email ?? null,
+          keys: restored,
+          meta: server.meta,
+          version: server.version,
+        });
+        try {
+          await syncAfterUnlock(restored, server.meta, server.version);
+        } catch {
+          /* sync falhou (offline) — segue destravado com os dados locais */
+        }
         return;
       }
       set({
@@ -196,6 +216,7 @@ export const useVault = create<VaultStore>((set, get) => {
       // dados residuais desta. O dado durável vive cifrado no servidor.
       await clearLocalDb();
       pending.clear();
+      await sessionKeys.clear();
       set({ status: "signedOut", userId: null, email: null, keys: null, meta: null, version: 0 });
     },
 
@@ -274,6 +295,7 @@ export const useVault = create<VaultStore>((set, get) => {
       await supabase.auth.signOut();
       await clearLocalDb();
       pending.clear();
+      await sessionKeys.clear();
       set({ status: "signedOut", userId: null, email: null, keys: null, meta: null, version: 0 });
     },
 
@@ -325,6 +347,7 @@ export const useVault = create<VaultStore>((set, get) => {
     },
 
     lock() {
+      void sessionKeys.clear(); // exige a senha no próximo reload
       set({ status: "locked", keys: null });
     },
   };
