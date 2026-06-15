@@ -9,7 +9,7 @@ export function BottomNav({ active }: { active: string }) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-2 py-2 glass border-t border-border"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex items-center justify-around px-2 py-2 glass border-t border-border"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       {NAV_ITEMS.slice(0, 5).map(({ id, key, icon: Icon }) => {
