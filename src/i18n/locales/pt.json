@@ -45,6 +45,8 @@
     "netWorthTrend": "Evolução do patrimônio",
     "last6months": "Últimos 6 meses",
     "positionsTitle": "Posições",
+    "composition": "Composição",
+    "vsMonth": "vs. mês ant.",
     "empty": "Tudo pronto pra começar",
     "emptyDesc": "Adicione seu patrimônio e seu orçamento — seus números aparecem aqui, sempre cifrados no seu aparelho.",
     "emptyCta": "Começar pelo patrimônio"

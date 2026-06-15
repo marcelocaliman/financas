@@ -43,9 +43,9 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 min-w-0 pb-24 md:pb-8">
+      <main className="flex-1 min-w-0 pb-24 md:pb-10">
         <TopBar eyebrow={label} title={title} />
-        <div className="px-5 md:px-8 py-6 max-w-[1080px]">
+        <div className="px-5 md:px-8 lg:px-12 xl:px-16 py-8 lg:py-10 max-w-[1560px] mx-auto w-full">
           <Outlet />
         </div>
       </main>

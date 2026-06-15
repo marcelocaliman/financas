@@ -45,6 +45,8 @@
     "netWorthTrend": "Net worth trend",
     "last6months": "Last 6 months",
     "positionsTitle": "Positions",
+    "composition": "Composition",
+    "vsMonth": "vs. last mo.",
     "empty": "Ready to start",
     "emptyDesc": "Add your net worth and budget — your numbers show up here, always encrypted on your device.",
     "emptyCta": "Start with net worth"

@@ -350,7 +350,7 @@ export function DataGrid<T extends { id: string }>({
           style={{ gridTemplateColumns: template }}
         >
           {columns.map((c) => (
-            <div key={c.key} className={cn("px-1.5 py-0.5 min-w-0", c.align === "right" && "text-right")}>
+            <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
               {renderCell(c, row, false)}
             </div>
           ))}
@@ -373,7 +373,7 @@ export function DataGrid<T extends { id: string }>({
         style={{ gridTemplateColumns: template }}
       >
         {columns.map((c) => (
-          <div key={c.key} className={cn("px-1.5 py-0.5 min-w-0", c.align === "right" && "text-right")}>
+          <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
             {renderCell(c, ghost, true)}
           </div>
         ))}

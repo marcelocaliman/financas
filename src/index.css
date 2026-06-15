@@ -4,35 +4,31 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ════════════════════════════════════════════════════════════════════
-   OBSIDIAN — design system. Nasce no escuro (obsidiana + jade); o claro é
-   "papel premium". Tokens como CSS vars → .dark sobrescreve em runtime.
+   ATELIER — bento editorial. Nasce no ESCURO: grafite frio neutro (zero
+   verde) + acento lima cirúrgico (<5% da tela). Claro = papel premium.
    ════════════════════════════════════════════════════════════════════ */
 
 :root {
   /* Claro — papel premium */
-  --bg: #f4f6f8;
-  --bg-2: #fbfcfd;
+  --bg: #f3f4f6;
+  --bg-2: #fafbfc;
   --card: #ffffff;
-  --card-2: #f7f9fb;
-  --card-hover: #f1f5f8;
-  --text: #0e1b26;
-  --muted: #566677;
-  --faint: #6b7b8b;
-  --border: #e4eaef;
-  --border-strong: #d2dbe3;
-  --accent: #0fae7e;
-  --accent-press: #0c9268;
-  --accent-2: #3d7bf0;
-  --accent-soft: rgba(15, 174, 126, 0.1);
-  --ring: rgba(15, 174, 126, 0.4);
-  --pos: #0fae7e;
+  --card-2: #f6f7f9;
+  --card-hover: #f1f3f5;
+  --text: #14161a;
+  --muted: #565a63;
+  --faint: #80858f;
+  --border: #e6e8ec;
+  --border-strong: #d6d9df;
+  --accent: #5b7a12;
+  --accent-press: #4d680f;
+  --accent-2: #2c63d6;
+  --accent-soft: rgba(91, 122, 18, 0.1);
+  --ring: rgba(91, 122, 18, 0.35);
+  --pos: #0f9e72;
   --neg: #d8564b;
   --neg-soft: rgba(216, 86, 75, 0.1);
-  --hero-grad-a: #0e1b26;
-  --hero-grad-b: #0c9268;
-  --hero-halo: rgba(15, 174, 126, 0);
 
-  /* Selos de moeda */
   --chip-brl-fg: #0c9268;
   --chip-brl-bg: #e6f6f0;
   --chip-eur-fg: #2c63d6;
@@ -43,49 +39,48 @@
   --chip-gbp-bg: #fbf1e2;
   --chip-glow: 0 0 transparent;
 
-  --shadow-card: 0 1px 3px rgba(14, 27, 38, 0.06), 0 12px 32px -18px rgba(14, 27, 38, 0.12);
-  --shadow-float: 0 24px 60px -28px rgba(14, 27, 38, 0.28);
-  --grid-line: rgba(14, 27, 38, 0.07);
+  --shadow-card: 0 1px 2px rgba(20, 22, 26, 0.05), 0 14px 36px -22px rgba(20, 22, 26, 0.14);
+  --shadow-float: 0 24px 60px -28px rgba(20, 22, 26, 0.28);
+  --grid-line: rgba(20, 22, 26, 0.06);
 }
 
 .dark {
-  /* Escuro — obsidiana */
-  --bg: #0a1310;
-  --bg-2: #0c1714;
-  --card: #111a16;
-  --card-2: #16221c;
-  --card-hover: #1b2a23;
-  --text: #ecf4ef;
-  --muted: #9fb3a9;
-  --faint: #7d9389;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.13);
-  --accent: #2ee6a6;
-  --accent-press: #25c690;
+  /* Escuro — grafite frio NEUTRO (R≈G≈B, leve frieza azul; zero verde) */
+  --bg: #0b0c0e;
+  --bg-2: #0f1013;
+  --card: #131418;
+  --card-2: #1a1c21;
+  --card-hover: #1e2026;
+  --text: #ececed;
+  --muted: #9a9ca3;
+  --faint: #6b6e76;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.11);
+  /* Acento ÚNICO: lima-elétrico, cirúrgico */
+  --accent: #c7f94e;
+  --accent-press: #b4e83a;
   --accent-2: #5aa0ff;
-  --accent-soft: rgba(46, 230, 166, 0.12);
-  --ring: rgba(46, 230, 166, 0.55);
-  --pos: #2ee6a6;
-  --neg: #ff6f61;
-  --neg-soft: rgba(255, 111, 97, 0.13);
-  --hero-grad-a: #ffffff;
-  --hero-grad-b: #2ee6a6;
-  --hero-halo: rgba(46, 230, 166, 0.22);
+  --accent-soft: rgba(199, 249, 78, 0.1);
+  --ring: rgba(199, 249, 78, 0.45);
+  --pos: #5bd9a4;
+  --neg: #ff6b5e;
+  --neg-soft: rgba(255, 107, 94, 0.12);
 
-  --chip-brl-fg: #2ee6a6;
-  --chip-brl-bg: rgba(46, 230, 166, 0.13);
-  --chip-eur-fg: #5aa0ff;
-  --chip-eur-bg: rgba(90, 160, 255, 0.14);
+  /* Moedas como camada de dados (não competem com o acento) */
+  --chip-brl-fg: #5bd9a4;
+  --chip-brl-bg: rgba(91, 217, 164, 0.12);
+  --chip-eur-fg: #6e8fd6;
+  --chip-eur-bg: rgba(110, 143, 214, 0.13);
   --chip-usd-fg: #a894ff;
-  --chip-usd-bg: rgba(168, 148, 255, 0.14);
-  --chip-gbp-fg: #ffb05a;
-  --chip-gbp-bg: rgba(255, 176, 90, 0.14);
-  --chip-glow: 0 0 12px -4px currentColor;
+  --chip-usd-bg: rgba(168, 148, 255, 0.13);
+  --chip-gbp-fg: #e0a96d;
+  --chip-gbp-bg: rgba(224, 169, 109, 0.13);
+  --chip-glow: 0 0 transparent;
 
-  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4),
-    0 18px 50px -28px rgba(0, 0, 0, 0.7);
-  --shadow-float: 0 28px 70px -28px rgba(0, 0, 0, 0.75);
-  --grid-line: rgba(255, 255, 255, 0.06);
+  /* Elevação seca/arquitetônica: hairline + 1 step de surface, sem blur pesado */
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-float: 0 28px 70px -30px rgba(0, 0, 0, 0.8);
+  --grid-line: rgba(255, 255, 255, 0.055);
 }
 
 @theme inline {
@@ -107,7 +102,7 @@
   --color-neg: var(--neg);
   --color-neg-soft: var(--neg-soft);
 
-  /* Compat: nomes antigos → novos tokens (teal→jade, navy→text, eur→azul). */
+  /* Compat: nomes antigos → novos tokens. */
   --color-teal: var(--accent);
   --color-teal-soft: var(--accent-soft);
   --color-eur: var(--accent-2);
@@ -117,7 +112,7 @@
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
 
-  --radius-card: 20px;
+  --radius-card: 18px;
   --radius-panel: 14px;
   --radius-cell: 10px;
   --radius-pill: 8px;
@@ -140,11 +135,10 @@ body {
   background: var(--bg);
 }
 
-/* Canvas de obsidiana: vinheta + halos de acento sutis (só no escuro). */
+/* Canvas grafite NEUTRO: só um respiro de luz no topo, sem nenhuma cor. */
 .dark body {
   background:
-    radial-gradient(120% 75% at 50% -12%, rgba(46, 230, 166, 0.07), transparent 58%),
-    radial-gradient(90% 60% at 100% 0%, rgba(90, 160, 255, 0.045), transparent 55%),
+    radial-gradient(110% 60% at 50% -12%, rgba(255, 255, 255, 0.022), transparent 60%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -154,37 +148,38 @@ body {
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
-/* Vidro fosco dos cartões no escuro. */
+/* Eyebrow editorial: deck-line de revista acima de cada bloco. */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* Vidro fosco sutil (escuro). */
 .glass {
   background: var(--card);
 }
 .dark .glass {
-  background: color-mix(in oklab, var(--card) 78%, transparent);
-  backdrop-filter: blur(16px) saturate(1.1);
-  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  background: color-mix(in oklab, var(--card) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.05);
+  -webkit-backdrop-filter: blur(14px) saturate(1.05);
 }
 
-/* Número-herói iluminado por dentro. */
+/* Número-herói editorial: peso + ar, sem glow. */
 .hero-number {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums slashed-zero;
   letter-spacing: -0.03em;
-  line-height: 0.98;
-  background: linear-gradient(178deg, var(--hero-grad-a) 8%, var(--hero-grad-b) 135%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 26px var(--hero-halo));
+  line-height: 0.96;
+  color: var(--text);
 }
 .hero-number-neg {
-  background: linear-gradient(178deg, var(--text) 8%, var(--neg) 135%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 22px rgba(216, 86, 75, 0.18));
+  color: var(--neg);
 }
 
-/* Selos de moeda luminosos. */
+/* Selos de moeda (camada de dados). */
 .chip {
   display: inline-flex;
   align-items: center;
@@ -214,32 +209,12 @@ body {
   background: var(--chip-gbp-bg);
 }
 
-/* Aurora: gradiente que respira na barra de composição. */
-@keyframes aurora-pan {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
-}
-.aurora-anim {
-  background-size: 200% 100%;
-  animation: aurora-pan 9s linear infinite;
-}
-
-/* Pulso suave (pontos da legenda, ponto vivo do gráfico). */
 @keyframes soft-pulse {
   0%, 100% { opacity: 0.55; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.15); }
 }
 .pulse {
   animation: soft-pulse 2.4s ease-in-out infinite;
-}
-
-/* Entrada de linha do grid. */
-@keyframes row-in {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.row-in {
-  animation: row-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 input,
@@ -253,12 +228,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora-anim,
-  .pulse,
-  .row-in {
+  .pulse {
     animation: none;
-  }
-  .hero-number {
-    filter: none;
   }
 }

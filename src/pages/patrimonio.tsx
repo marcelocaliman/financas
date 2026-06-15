@@ -6,7 +6,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors } from "@/money/composition";
 import type { Asset, AssetType, Liability, LiabilityType } from "@/domain/types";
-import { Panel } from "@/components/common/panel";
+import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
@@ -119,42 +119,41 @@ export default function Patrimonio() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Hero: patrimônio líquido iluminado + composição aurora */}
-      <Panel className="relative overflow-hidden p-6 md:p-8">
-        <div
-          className="pointer-events-none absolute -top-20 -right-10 h-56 w-56 rounded-full blur-3xl opacity-70"
-          style={{ background: "radial-gradient(circle, var(--accent-soft), transparent 70%)" }}
-        />
-        <div className="text-[12px] font-semibold uppercase tracking-[0.08em] text-faint">
-          {t("patrimonio.netWorth")}
-        </div>
-        <HeroNumber
-          value={view.netWorth}
-          currency={disp}
-          className="block text-[clamp(38px,7vw,60px)] mt-2"
-        />
-        <div className="flex flex-wrap gap-x-7 gap-y-1 mt-3.5 text-[13.5px]">
-          <span className="text-muted">
-            {t("patrimonio.assets")}{" "}
-            <Money value={view.totalAssets} currency={disp} className="font-semibold text-text" />
-          </span>
-          <span className="text-muted">
-            {t("patrimonio.liabilities")}{" "}
-            <Money
-              value={view.totalLiab}
+    <div className="space-y-7">
+      {/* Hero editorial: líquido à esquerda, composição à direita (ocupa a largura) */}
+      <Tile className="p-7 md:p-8">
+        <div className="grid grid-cols-12 gap-x-8 gap-y-7 items-end">
+          <div className="col-span-12 lg:col-span-7">
+            <Eyebrow>{t("patrimonio.netWorth")}</Eyebrow>
+            <HeroNumber
+              value={view.netWorth}
               currency={disp}
-              className="font-semibold text-neg"
-              options={{ signDisplay: "never" }}
+              className="block text-[clamp(40px,6vw,66px)] mt-3"
             />
-          </span>
-        </div>
-        {view.segments.length > 0 ? (
-          <div className="mt-7 max-w-xl">
-            <CompositionBar segments={view.segments} />
+            <div className="flex flex-wrap gap-x-8 gap-y-1 mt-4 text-[13.5px]">
+              <span className="text-muted">
+                {t("patrimonio.assets")}{" "}
+                <Money value={view.totalAssets} currency={disp} className="font-semibold text-text" />
+              </span>
+              <span className="text-muted">
+                {t("patrimonio.liabilities")}{" "}
+                <Money
+                  value={view.totalLiab}
+                  currency={disp}
+                  className="font-semibold text-neg"
+                  options={{ signDisplay: "never" }}
+                />
+              </span>
+            </div>
           </div>
-        ) : null}
-      </Panel>
+          {view.segments.length > 0 ? (
+            <div className="col-span-12 lg:col-span-5">
+              <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>
+              <CompositionBar segments={view.segments} />
+            </div>
+          ) : null}
+        </div>
+      </Tile>
 
       {/* Ativos */}
       <section>
@@ -208,8 +207,8 @@ function SectionHead({ title, count }: { title: string; count: number }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-baseline justify-between mb-3 px-1">
-      <h2 className="text-[15px] font-semibold tracking-[-0.01em]">{title}</h2>
-      <span className="text-[12px] text-faint tabular">
+      <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">{title}</h2>
+      <span className="text-[11.5px] text-faint tabular">
         {count} {t(count === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
       </span>
     </div>
