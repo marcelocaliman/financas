@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeftRight } from "lucide-react";
 import { Panel } from "@/components/common/panel";
+import { PrivacyLink } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
 /** Casca centralizada das telas de autenticação (login, cadastro, unlock…). */
@@ -30,6 +31,9 @@ export function AuthShell({
           <div className="mt-5">{children}</div>
         </Panel>
         {footer ? <div className="text-center text-[13px] text-muted mt-4">{footer}</div> : null}
+        <div className="text-center text-[12px] text-faint mt-4">
+          <PrivacyLink />
+        </div>
       </div>
     </div>
   );

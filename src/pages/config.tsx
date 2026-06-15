@@ -3,6 +3,7 @@ import { useUI, type Theme } from "@/store/ui";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { Panel } from "@/components/common/panel";
 import { AccountSettings } from "@/components/auth/account-settings";
+import { PrivacyLink } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
 const THEMES: Theme[] = ["light", "dark"];
@@ -42,6 +43,14 @@ export default function Config() {
             ))}
           </div>
         </section>
+      </Panel>
+
+      <Panel className="p-6">
+        <div className="text-[15px] font-semibold mb-1">Privacidade</div>
+        <p className="text-[12.5px] text-muted leading-relaxed mb-2">
+          Seus dados são cifrados no seu aparelho. O servidor nunca os vê em claro.
+        </p>
+        <PrivacyLink className="text-teal font-medium hover:underline text-[13px]" />
       </Panel>
 
       <Panel className="p-6 text-[12px] text-faint">{t("common.sampleData")}</Panel>
