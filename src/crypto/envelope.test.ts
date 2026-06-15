@@ -49,8 +49,8 @@ describe("envelope E2EE — fluxo completo", () => {
 
     const byPw = await unlockWithPassword(meta(v), PW);
     const byCode = await unlockWithRecoveryCode(meta(v), v.recoveryCode);
-    expect(await isSameDek(v.dek, byPw)).toBe(true);
-    expect(await isSameDek(v.dek, byCode)).toBe(true);
+    expect(await isSameDek(v.dek, byPw.dek)).toBe(true);
+    expect(await isSameDek(v.dek, byCode.dek)).toBe(true);
   });
 
   it("senha errada e código errado → LANÇAM", async () => {
@@ -74,12 +74,12 @@ describe("envelope E2EE — fluxo completo", () => {
       wrappedDekPwIv: rw.wrappedDekPwIv,
     };
     const byNew = await unlockWithPassword(m2, NEW);
-    expect(await isSameDek(v.dek, byNew)).toBe(true); // mesma DEK (cofre não recifrado)
+    expect(await isSameDek(v.dek, byNew.dek)).toBe(true); // mesma DEK (cofre não recifrado)
     await expect(unlockWithPassword(m2, PW)).rejects.toThrow(); // senha antiga não vale mais
 
     // código de recuperação continua válido após troca de senha
     const byCode = await unlockWithRecoveryCode(m2, v.recoveryCode);
-    expect(await isSameDek(v.dek, byCode)).toBe(true);
+    expect(await isSameDek(v.dek, byCode.dek)).toBe(true);
   });
 
   it("rotação de código: novo código destrava, antigo falha", async () => {
@@ -93,7 +93,7 @@ describe("envelope E2EE — fluxo completo", () => {
       wrappedDekRecoveryIv: rot.wrappedDekRecoveryIv,
     };
     const byNew = await unlockWithRecoveryCode(m3, rot.recoveryCode);
-    expect(await isSameDek(v.dek, byNew)).toBe(true);
+    expect(await isSameDek(v.dek, byNew.dek)).toBe(true);
     await expect(unlockWithRecoveryCode(m3, v.recoveryCode)).rejects.toThrow();
   });
 

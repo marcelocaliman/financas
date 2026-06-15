@@ -1,5 +1,5 @@
 import { aeadDecrypt, aeadEncrypt, importAesKey, randomBytes } from "./aead";
-import { aad, ab } from "./bytes";
+import { aad, ab, utf8 } from "./bytes";
 import { canonicalKdf, type KdfParams } from "./kdf";
 
 /**
@@ -22,6 +22,21 @@ export function generateDek(): Uint8Array {
 /** Importa a DEK como chave de cofre NÃO-exportável (cifra/decifra o blob). */
 export function importVaultKey(dekBytes: Uint8Array): Promise<CryptoKey> {
   return importAesKey(dekBytes, false);
+}
+
+/**
+ * Tag de PROVA DE POSSE da DEK, enviada ao servidor (que guarda e compara, numa
+ * tabela sem leitura). Derivada por HKDF — não revela a DEK. Uma sessão sem a DEK
+ * não consegue recomputá-la → não consegue escrever/destruir o cofre.
+ */
+export async function deriveServerAuthTag(dekBytes: Uint8Array): Promise<Uint8Array> {
+  const base = await crypto.subtle.importKey("raw", ab(dekBytes), "HKDF", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "HKDF", hash: "SHA-256", salt: ab(new Uint8Array(0)), info: ab(utf8("server-auth-v1")) },
+    base,
+    256,
+  );
+  return new Uint8Array(bits);
 }
 
 /**

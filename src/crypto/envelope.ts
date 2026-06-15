@@ -2,6 +2,7 @@ import { ivFromCounter, randomBytes } from "./aead";
 import { wipe, timingSafeEqual } from "./bytes";
 import { DEFAULT_KDF, deriveArgon2id, type KdfParams } from "./kdf";
 import {
+  deriveServerAuthTag,
   deriveWrappingKey,
   generateDek,
   importVaultKey,
@@ -34,11 +35,15 @@ export interface VaultMeta {
   wrappedDekRecoveryIv: Uint8Array;
 }
 
-export interface NewVault extends VaultMeta {
+/** Chaves vivas da sessão: a DEK (não-exportável) + a prova de posse pro servidor. */
+export interface VaultKeys {
+  dek: CryptoKey;
+  authTag: Uint8Array;
+}
+
+export interface NewVault extends VaultMeta, VaultKeys {
   /** Mostrado UMA vez no cadastro (round-trip de confirmação obrigatório na UI). */
   recoveryCode: string;
-  /** DEK pronta pra uso (não-exportável). */
-  dek: CryptoKey;
 }
 
 /** Cadastro: gera DEK + as duas vias de embrulho (senha e código). */
@@ -68,6 +73,7 @@ export async function createVault(
       recoveryWrapAad(userId, saltRecovery),
     );
 
+    const authTag = await deriveServerAuthTag(dekBytes);
     const dek = await importVaultKey(dekBytes);
     return {
       userId,
@@ -80,22 +86,25 @@ export async function createVault(
       wrappedDekRecoveryIv: WRAP_IV,
       recoveryCode,
       dek,
+      authTag,
     };
   } finally {
     wipe(dekBytes);
   }
 }
 
-async function bytesToVaultKey(dekBytes: Uint8Array): Promise<CryptoKey> {
+async function bytesToKeys(dekBytes: Uint8Array): Promise<VaultKeys> {
   try {
-    return await importVaultKey(dekBytes);
+    const authTag = await deriveServerAuthTag(dekBytes);
+    const dek = await importVaultKey(dekBytes);
+    return { dek, authTag };
   } finally {
     wipe(dekBytes);
   }
 }
 
 /** Destrava o cofre com a senha. LANÇA se a senha estiver errada. */
-export async function unlockWithPassword(meta: VaultMeta, password: string): Promise<CryptoKey> {
+export async function unlockWithPassword(meta: VaultMeta, password: string): Promise<VaultKeys> {
   const material = await deriveArgon2id(password, meta.salt, meta.kdfParams);
   const pwk = await deriveWrappingKey(material, PWK_INFO, meta.salt);
   wipe(material);
@@ -105,11 +114,11 @@ export async function unlockWithPassword(meta: VaultMeta, password: string): Pro
     meta.wrappedDekPwIv,
     pwWrapAad(meta.userId, meta.kdfParams, meta.salt),
   );
-  return bytesToVaultKey(dekBytes);
+  return bytesToKeys(dekBytes);
 }
 
 /** Destrava o cofre com o código de recuperação. LANÇA se o código estiver errado. */
-export async function unlockWithRecoveryCode(meta: VaultMeta, code: string): Promise<CryptoKey> {
+export async function unlockWithRecoveryCode(meta: VaultMeta, code: string): Promise<VaultKeys> {
   const recBytes = parseRecoveryCode(code);
   const rwk = await deriveWrappingKey(recBytes, RWK_INFO, meta.saltRecovery);
   wipe(recBytes);
@@ -119,7 +128,7 @@ export async function unlockWithRecoveryCode(meta: VaultMeta, code: string): Pro
     meta.wrappedDekRecoveryIv,
     recoveryWrapAad(meta.userId, meta.saltRecovery),
   );
-  return bytesToVaultKey(dekBytes);
+  return bytesToKeys(dekBytes);
 }
 
 export interface PwRewrap {
