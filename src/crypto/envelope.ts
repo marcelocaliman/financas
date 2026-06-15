@@ -181,6 +181,42 @@ export async function rewrapPassword(
   }
 }
 
+/**
+ * Recuperação: desembrulha a DEK pelo CÓDIGO e re-embrulha sob uma NOVA senha.
+ * Usado quando o usuário esqueceu a senha mas tem o código. Self-test embutido.
+ */
+export async function rewrapPasswordFromRecovery(
+  meta: VaultMeta,
+  recoveryCode: string,
+  newPassword: string,
+  newKdf: KdfParams = DEFAULT_KDF,
+): Promise<PwRewrap> {
+  const recBytes = parseRecoveryCode(recoveryCode);
+  const rwk = await deriveWrappingKey(recBytes, RWK_INFO, meta.saltRecovery);
+  wipe(recBytes);
+  const dekBytes = await unwrapDek(
+    rwk,
+    meta.wrappedDekRecovery,
+    meta.wrappedDekRecoveryIv,
+    recoveryWrapAad(meta.userId, meta.saltRecovery),
+  );
+  try {
+    const salt = randomBytes(SALT_BYTES);
+    const material = await deriveArgon2id(newPassword, salt, newKdf);
+    const pwk = await deriveWrappingKey(material, PWK_INFO, salt);
+    wipe(material);
+    const wrapAad = pwWrapAad(meta.userId, newKdf, salt);
+    const wrappedDekPw = await wrapDek(pwk, dekBytes, WRAP_IV, wrapAad);
+    const check = await unwrapDek(pwk, wrappedDekPw, WRAP_IV, wrapAad);
+    const ok = timingSafeEqual(check, dekBytes);
+    wipe(check);
+    if (!ok) throw new Error("self-test da recuperação falhou");
+    return { salt, kdfParams: newKdf, wrappedDekPw, wrappedDekPwIv: WRAP_IV };
+  } finally {
+    wipe(dekBytes);
+  }
+}
+
 export interface RecoveryRewrap {
   saltRecovery: Uint8Array;
   wrappedDekRecovery: Uint8Array;

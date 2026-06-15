@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useUI, type Theme } from "@/store/ui";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { Panel } from "@/components/common/panel";
+import { AccountSettings } from "@/components/auth/account-settings";
 import { cn } from "@/lib/utils";
 
 const THEMES: Theme[] = ["light", "dark"];
@@ -13,6 +14,8 @@ export default function Config() {
 
   return (
     <div className="space-y-5 max-w-md">
+      <AccountSettings />
+
       <Panel className="p-6 space-y-5">
         <section>
           <div className="text-[15px] font-semibold mb-2">{t("common.theme")}</div>
