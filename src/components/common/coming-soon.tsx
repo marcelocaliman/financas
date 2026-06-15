@@ -1,17 +1,17 @@
 import { useTranslation } from "react-i18next";
-import { Panel } from "./panel";
+import { Tile } from "./tile";
 
-/** Placeholder de módulo ainda não construído (será feito sobre os dados locais). */
-export function ComingSoon({ titleKey }: { titleKey: string }) {
+/** Teaser "em breve" — usado nas seções de módulos ainda não construídos. */
+export function ComingSoon() {
   const { t } = useTranslation();
   return (
-    <Panel className="p-10 text-center">
-      <div className="text-[15px] font-semibold">{t(titleKey)}</div>
-      <div className="text-[13px] text-muted mt-2 max-w-md mx-auto">
-        <span className="font-medium text-teal">{t("common.comingSoon")}</span>
-        {" · "}
+    <Tile className="p-8 lg:p-10">
+      <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent">
+        {t("common.comingSoon")}
+      </span>
+      <p className="text-[15px] text-muted mt-3 max-w-lg leading-relaxed">
         {t("common.comingSoonDesc")}
-      </div>
-    </Panel>
+      </p>
+    </Tile>
   );
 }

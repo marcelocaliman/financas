@@ -3,7 +3,7 @@ import { useVault } from "@/vault/vault-store";
 import { useUI } from "@/store/ui";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
-import { AppRoutes } from "./app-routes";
+import { AppShell } from "@/components/layout/app-shell";
 
 function Splash() {
   return (
@@ -32,7 +32,7 @@ export default function App() {
 
   return (
     <>
-      <AppRoutes />
+      <AppShell />
       <RecoveryCodeDialog />
     </>
   );

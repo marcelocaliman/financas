@@ -127,6 +127,10 @@ body,
   min-height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   color: var(--text);
   font-family: var(--font-sans);
@@ -230,5 +234,8 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .pulse {
     animation: none;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }

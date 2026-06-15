@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
+import { scrollToSection } from "@/hooks/use-scroll-spy";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
@@ -280,12 +280,10 @@ function PainelEmpty() {
       <div className="text-[19px] font-display font-semibold tracking-[-0.01em]">{t("dashboard.empty")}</div>
       <p className="text-[13.5px] text-muted mt-2 max-w-sm mx-auto leading-relaxed">{t("dashboard.emptyDesc")}</p>
       <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
-        <Link to="/patrimonio">
-          <Button>
-            <Plus size={15} />
-            {t("dashboard.emptyCta")}
-          </Button>
-        </Link>
+        <Button onClick={() => scrollToSection("patrimonio")}>
+          <Plus size={15} />
+          {t("dashboard.emptyCta")}
+        </Button>
         <Button variant="secondary" onClick={() => void actions.loadSample()}>
           {t("data.loadSample")}
         </Button>
