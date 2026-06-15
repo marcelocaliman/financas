@@ -1,0 +1,45 @@
+{
+  "app": { "name": "Finanças", "tagline": "(nome da definire)" },
+  "nav": {
+    "painel": "Pannello",
+    "patrimonio": "Patrimonio",
+    "investimentos": "Investimenti",
+    "orcamento": "Budget",
+    "historico": "Storico",
+    "objetivos": "Obiettivi",
+    "projecao": "Proiezione",
+    "config": "Impostazioni"
+  },
+  "common": {
+    "hello": "Ciao, {{name}}",
+    "exchangeRate": "cambio",
+    "comingSoon": "In arrivo",
+    "comingSoonDesc": "Questo modulo sarà costruito sui dati locali nei prossimi passi.",
+    "sampleData": "Prototipo · dati di esempio",
+    "language": "Lingua",
+    "theme": "Tema",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro",
+    "sampleMonth": "Giugno"
+  },
+  "dashboard": {
+    "netWorth": "Patrimonio netto",
+    "monthChange": "{{value}}% nel mese",
+    "real": "Real (BRL)",
+    "euro": "Euro (EUR)",
+    "assets": "Attività",
+    "positionsCount_one": "{{count}} posizione",
+    "positionsCount_other": "{{count}} posizioni",
+    "invested": "Investito",
+    "fixedIncome": "Reddito fisso",
+    "monthlyIncome": "Entrate · mese",
+    "sources_one": "{{count}} fonte",
+    "sources_other": "{{count}} fonti",
+    "monthlyBalance": "Saldo · mese",
+    "budget": "Budget",
+    "byCategory": "Spese per categoria",
+    "netWorthTrend": "Andamento del patrimonio",
+    "last6months": "Ultimi 6 mesi",
+    "positionsTitle": "Posizioni"
+  }
+}

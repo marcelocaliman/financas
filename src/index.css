@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* Dark mode por classe (.dark no <html>), controlado pelo store de UI. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Paleta do protótipo (docs/reference/prototipo-painel.jsx) ──
+   Tokens como CSS vars pra trocar em runtime no tema escuro. */
+:root {
+  --bg: #f5f8fa;
+  --card: #ffffff;
+  --border: #e6ecf1;
+  --text: #243b53;
+  --muted: #6b7c93;
+  --faint: #90a0b3;
+  --navy: #243b53;
+  --teal: #2c7a7b;
+  --teal-soft: #e6f2f2;
+  --eur: #5b7b9a;
+  --eur-soft: #eaf0f5;
+  --pos: #2c7a7b;
+}
+
+.dark {
+  --bg: #16222e;
+  --card: #1c2b3a;
+  --border: #2a3a4c;
+  --text: #e6ecf1;
+  --muted: #9fb3c8;
+  --faint: #6b7c93;
+  --teal-soft: #1e3a3a;
+  --eur-soft: #22303f;
+}
+
+/* Mapeia os tokens pra utilities do Tailwind (bg-card, text-muted, border-border,
+   bg-teal, text-teal-soft, shadow-card…). `inline` faz as utilities referenciarem
+   as CSS vars, então o .dark sobrescreve tudo em runtime. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-navy: var(--navy);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-eur: var(--eur);
+  --color-eur-soft: var(--eur-soft);
+  --color-pos: var(--pos);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --shadow-card: 0 1px 2px rgba(36, 59, 83, 0.04);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

@@ -1,0 +1,45 @@
+{
+  "app": { "name": "Finanças", "tagline": "(name TBD)" },
+  "nav": {
+    "painel": "Dashboard",
+    "patrimonio": "Net worth",
+    "investimentos": "Investments",
+    "orcamento": "Budget",
+    "historico": "History",
+    "objetivos": "Goals",
+    "projecao": "Projection",
+    "config": "Settings"
+  },
+  "common": {
+    "hello": "Hi, {{name}}",
+    "exchangeRate": "rate",
+    "comingSoon": "Coming soon",
+    "comingSoonDesc": "This module will be built on top of the local data in the next steps.",
+    "sampleData": "Prototype · sample data",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "sampleMonth": "June"
+  },
+  "dashboard": {
+    "netWorth": "Net worth",
+    "monthChange": "{{value}}% this month",
+    "real": "Real (BRL)",
+    "euro": "Euro (EUR)",
+    "assets": "Assets",
+    "positionsCount_one": "{{count}} position",
+    "positionsCount_other": "{{count}} positions",
+    "invested": "Invested",
+    "fixedIncome": "Fixed income",
+    "monthlyIncome": "Income · month",
+    "sources_one": "{{count}} source",
+    "sources_other": "{{count}} sources",
+    "monthlyBalance": "Balance · month",
+    "budget": "Budget",
+    "byCategory": "Spending by category",
+    "netWorthTrend": "Net worth trend",
+    "last6months": "Last 6 months",
+    "positionsTitle": "Positions"
+  }
+}

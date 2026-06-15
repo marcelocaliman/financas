@@ -1,87 +1,62 @@
-# Finanças
+# Finanças — app multimoeda (cross-border)
 
-> Instrumento de navegação para a independência financeira do casal.
-> Atrito zero na entrada, sofisticação no motor.
+Web app de gestão patrimonial e orçamento **multimoeda**, **local-first** e privado.
+Foco inicial: quem vive entre países (jornada Brasil → Itália).
 
-Stack: **Next.js 16** (App Router, React 19) · **TypeScript** · **Tailwind v4** ·
-**Supabase** (Postgres + Auth + Realtime) · **TanStack Query** · **Motion** ·
-**Recharts** · **Lucide**.
+> **Fase atual: 0a — fundação local-first.** Roda 100% no navegador (IndexedDB):
+> sem servidor, sem login, sem nuvem. Auth + criptografia E2EE + sync entram na
+> Fase 0b, plugados atrás da **mesma** interface de repositório (`DataRepository`),
+> sem reescrever os módulos.
 
-Tipografia: **Fraunces** (display itálica) + **Geist** (sans) + **JetBrains Mono** (números).
+Constituição: [CLAUDE.md](CLAUDE.md) · detalhe: [docs/BRIEF.md](docs/BRIEF.md) ·
+referência visual: [docs/reference/prototipo-painel.jsx](docs/reference/prototipo-painel.jsx).
 
-Documentos:
-
-- [Briefing completo](docs/briefing.md)
-- [Protótipo HTML de referência](docs/reference-prototype.html)
-
-## Desenvolvimento
+## Rodar
 
 ```bash
-pnpm install
-cp .env.example .env.local   # preencher credenciais do Supabase
-pnpm dev                     # http://localhost:3000
+npm install
+npm run dev        # abre em http://localhost:5173
 ```
 
-## Banco de dados (Supabase Cloud)
+Outros scripts:
 
-Toda comunicação é com o Supabase Cloud — **nada roda local, sem Docker**. Os
-scripts em `scripts/` usam a conexão Postgres direta (`db-push.sh`, `db-diff.sh`)
-ou a Management API HTTP (`db-types.mjs`).
+| script            | o que faz                                            |
+| ----------------- | ---------------------------------------------------- |
+| `npm run build`   | typecheck (tsc) + build de produção (gera o PWA)     |
+| `npm run preview` | serve o build de produção localmente                 |
+| `npm test`        | testes dos módulos puros (câmbio, projeção)          |
 
-```bash
-pnpm db:push        # aplica migrations no remoto via conexão Postgres direta
-pnpm db:diff        # mostra o que seria aplicado (dry-run)
-pnpm db:types       # gera types/database.generated.ts via Management API
-                    # (requer SUPABASE_ACCESS_TOKEN no .env.local)
+## Stack
+
+Vite · React + TypeScript · Tailwind v4 + shadcn/ui · vite-plugin-pwa
+(instalável / offline) · Zustand · Dexie (IndexedDB) · Recharts ·
+react-i18next (PT-BR, EN, IT).
+
+## Arquitetura
+
+- **Persistência atrás de uma interface** (`src/data/repository.ts`): hoje Dexie/
+  IndexedDB; na Fase 0b, Supabase + E2EE atrás da mesma interface.
+- **Cada item guarda a própria moeda**; a conversão pra moeda de exibição vive em
+  `src/money/currency.ts` (puro e testado).
+- **Lógica financeira pura e testável**: câmbio (`src/money`) e projeção de juros
+  compostos (`src/finance`) — sem dependência de UI.
+- **Local-first**: dados em IndexedDB, semeados com exemplo no primeiro acesso.
+
+## Estrutura
+
+```
+src/
+  domain/       tipos de domínio (cada item com sua moeda)
+  money/        câmbio + formatação (puro + testes)
+  finance/      projeção de juros compostos (puro + testes)
+  data/         DataRepository (interface) + Dexie + seed
+  store/        Zustand (moeda de exibição, tema)
+  i18n/         PT-BR / EN / IT
+  components/   layout (shell) + comuns
+  pages/        Painel + 7 seções
 ```
 
-A migration inicial (`supabase/migrations/20260522000000_init_core.sql`) cria:
+## Privacidade
 
-- `households`, `users`, `accounts`, `categories`, `transactions`
-- RLS em todas as tabelas (escopo por `household_id`)
-- `bootstrap_household(p_household_name, p_display_name)` — chamada na primeira
-  entrada após cadastro/magic-link, cria household + perfil + categorias padrão
-- `seed_default_categories(household_id)` — 15 categorias default
-- Publicação realtime para `transactions` e `accounts`
-
-## Estrutura de pastas
-
-```
-app/
-  (auth)/            grupo público (login, cadastro, callback)
-  (app)/             grupo autenticado (dashboard, transações, etc.)
-  globals.css        design system (Tailwind v4 + tokens)
-  layout.tsx         fontes, providers, metadata
-components/
-  ui/                primitivas (Button, Input, Panel, Eyebrow, …)
-  layout/            sidebar, mobile-nav, page-header, brand
-  forms/             formulários reutilizáveis
-  charts/            wrappers de gráficos
-lib/
-  supabase/          clients browser/server/middleware
-  financial/         cálculos (money em centavos, IR, Selic)
-  utils/             cn, formatters de pt-BR
-services/            queries/mutations isoladas da UI
-hooks/               hooks customizados
-types/               types compartilhados (database.ts gerado/manual)
-supabase/
-  migrations/        SQL versionado
-  functions/         Edge Functions (Fase 3+)
-```
-
-## Filosofia
-
-1. **Atrito zero na entrada** — lançar uma transação não passa de 5 segundos.
-2. **Uma pergunta principal por tela** — sem dashboards genéricos.
-3. **O app pensa, o casal decide** — sugere, projeta, alerta; nunca executa
-   irreversível sem confirmação.
-
-## Status
-
-- [x] Fase 1 — esqueleto, auth, RLS, sidebar, dashboard onboarding
-- [ ] Fase 1 — CRUD de contas, categorias e transações + lista com filtros
-- [ ] Fase 2 — análise, projeções, detector de anomalia, transferências
-- [ ] Fase 3 — investimentos, Selic ao vivo, edge function diária
-- [ ] Fase 4 — resgates inteligentes, lembretes
-- [ ] Fase 5 — metas, polimento, exports
-- [ ] Fase 6 — IA pontual (categorização inteligente, OCR, chat)
+Nesta fase nada sai do navegador. O dado financeiro nunca vai a servidor em texto
+claro — princípio inegociável (ver CLAUDE.md).
