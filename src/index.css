@@ -18,6 +18,8 @@
   --eur: #5b7b9a;
   --eur-soft: #eaf0f5;
   --pos: #2c7a7b;
+  --neg: #b5524c;
+  --neg-soft: #f6eae9;
 }
 
 .dark {
@@ -29,6 +31,8 @@
   --faint: #6b7c93;
   --teal-soft: #1e3a3a;
   --eur-soft: #22303f;
+  --neg: #cf7a74;
+  --neg-soft: #3a2625;
 }
 
 /* Mapeia os tokens pra utilities do Tailwind (bg-card, text-muted, border-border,
@@ -47,6 +51,8 @@
   --color-eur: var(--eur);
   --color-eur-soft: var(--eur-soft);
   --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-neg-soft: var(--neg-soft);
 
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 

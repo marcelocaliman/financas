@@ -1,38 +1,31 @@
-import { useEffect, useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { repository } from "@/data/dexie-repository";
-import { SEED } from "@/data/seed";
-import type { Asset, Expense, Income, NetWorthSnapshot } from "@/domain/types";
+import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
 
 export interface DashboardData {
   assets: Asset[];
+  liabilities: Liability[];
   expenses: Expense[];
   incomes: Income[];
   snapshots: NetWorthSnapshot[];
 }
 
 /**
- * Carrega os dados do Painel pela INTERFACE do repositório (não conhece Dexie).
- * Semeia dados de exemplo no primeiro acesso. Local-first: instantâneo e offline.
+ * Dados do Painel pela INTERFACE do repositório (não conhece Dexie diretamente).
+ * Reativo (useLiveQuery): qualquer mutação local reflete na hora. O app começa
+ * VAZIO — sem auto-seed; os dados de exemplo são opt-in na Config.
  */
 export function useDashboardData(): { data: DashboardData | null } {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const data = useLiveQuery(async () => {
+    const [assets, liabilities, expenses, incomes, snapshots] = await Promise.all([
+      repository.listAssets(),
+      repository.listLiabilities(),
+      repository.listExpenses(),
+      repository.listIncomes(),
+      repository.listNetWorthSnapshots(),
+    ]);
+    return { assets, liabilities, expenses, incomes, snapshots };
+  });
 
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      if (await repository.isEmpty()) await repository.seed(SEED);
-      const [assets, expenses, incomes, snapshots] = await Promise.all([
-        repository.listAssets(),
-        repository.listExpenses(),
-        repository.listIncomes(),
-        repository.listNetWorthSnapshots(),
-      ]);
-      if (alive) setData({ assets, expenses, incomes, snapshots });
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return { data };
+  return { data: data ?? null };
 }

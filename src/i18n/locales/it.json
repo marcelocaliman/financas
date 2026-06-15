@@ -20,7 +20,11 @@
     "theme": "Tema",
     "themeLight": "Chiaro",
     "themeDark": "Scuro",
-    "sampleMonth": "Giugno"
+    "sampleMonth": "Giugno",
+    "save": "Salva",
+    "cancel": "Annulla",
+    "edit": "Modifica",
+    "close": "Chiudi"
   },
   "dashboard": {
     "netWorth": "Patrimonio netto",
@@ -40,6 +44,42 @@
     "byCategory": "Spese per categoria",
     "netWorthTrend": "Andamento del patrimonio",
     "last6months": "Ultimi 6 mesi",
-    "positionsTitle": "Posizioni"
+    "positionsTitle": "Posizioni",
+    "empty": "Tutto pronto per iniziare",
+    "emptyDesc": "Aggiungi il tuo patrimonio e il budget — i tuoi numeri appaiono qui, sempre cifrati sul tuo dispositivo.",
+    "emptyCta": "Inizia dal patrimonio"
+  },
+  "patrimonio": {
+    "netWorth": "Patrimonio netto",
+    "assets": "Attività",
+    "liabilities": "Passività",
+    "addAsset": "Aggiungi attività",
+    "addLiability": "Aggiungi passività",
+    "editAsset": "Modifica attività",
+    "editLiability": "Modifica passività",
+    "noAssets": "Inizia il tuo patrimonio",
+    "noAssetsDesc": "Aggiungi investimenti, immobili e conti per vedere il patrimonio netto.",
+    "noLiabilitiesDesc": "Prestiti, finanziamenti e carte vanno qui.",
+    "name": "Nome",
+    "namePlaceholder": "Es.: Titoli di Stato",
+    "type": "Tipo",
+    "currency": "Valuta",
+    "amount": "Importo",
+    "delete": "Elimina",
+    "deleteConfirm": "Eliminare \"{{name}}\"?",
+    "errName": "Dai un nome.",
+    "errAmount": "Inserisci un importo maggiore di zero.",
+    "assetType": { "investment": "Investimento", "property": "Immobile", "cash": "Liquidità" },
+    "liabilityType": { "loan": "Prestito", "card": "Carta", "mortgage": "Mutuo", "other": "Altro" }
+  },
+  "data": {
+    "title": "Dati",
+    "sample": "Dati di esempio",
+    "sampleDesc": "Riempi l'app con dati fittizi da esplorare.",
+    "loadSample": "Carica esempio",
+    "reset": "Ricomincia",
+    "resetDesc": "Cancella tutti i dati e riparti da zero.",
+    "resetBtn": "Cancella tutto",
+    "resetConfirm": "Cancellare TUTTI i dati e ricominciare da zero? Non è reversibile."
   }
 }

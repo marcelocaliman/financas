@@ -20,7 +20,11 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "sampleMonth": "June"
+    "sampleMonth": "June",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "close": "Close"
   },
   "dashboard": {
     "netWorth": "Net worth",
@@ -40,6 +44,42 @@
     "byCategory": "Spending by category",
     "netWorthTrend": "Net worth trend",
     "last6months": "Last 6 months",
-    "positionsTitle": "Positions"
+    "positionsTitle": "Positions",
+    "empty": "Ready to start",
+    "emptyDesc": "Add your net worth and budget — your numbers show up here, always encrypted on your device.",
+    "emptyCta": "Start with net worth"
+  },
+  "patrimonio": {
+    "netWorth": "Net worth",
+    "assets": "Assets",
+    "liabilities": "Liabilities",
+    "addAsset": "Add asset",
+    "addLiability": "Add liability",
+    "editAsset": "Edit asset",
+    "editLiability": "Edit liability",
+    "noAssets": "Start your net worth",
+    "noAssetsDesc": "Add your investments, properties and accounts to see your net worth.",
+    "noLiabilitiesDesc": "Loans, financing and cards go here.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Treasury bond",
+    "type": "Type",
+    "currency": "Currency",
+    "amount": "Amount",
+    "delete": "Delete",
+    "deleteConfirm": "Delete \"{{name}}\"?",
+    "errName": "Give it a name.",
+    "errAmount": "Enter an amount greater than zero.",
+    "assetType": { "investment": "Investment", "property": "Property", "cash": "Cash" },
+    "liabilityType": { "loan": "Loan", "card": "Card", "mortgage": "Mortgage", "other": "Other" }
+  },
+  "data": {
+    "title": "Data",
+    "sample": "Sample data",
+    "sampleDesc": "Fill the app with fictional data to explore.",
+    "loadSample": "Load sample",
+    "reset": "Start fresh",
+    "resetDesc": "Erase all data and start blank.",
+    "resetBtn": "Erase all",
+    "resetConfirm": "Erase ALL data and start from scratch? This cannot be undone."
   }
 }

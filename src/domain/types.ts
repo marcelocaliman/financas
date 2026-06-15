@@ -35,3 +35,13 @@ export interface NetWorthSnapshot {
   currency: Currency;
   amount: number;
 }
+
+export type LiabilityType = "loan" | "card" | "mortgage" | "other";
+
+export interface Liability {
+  id: string;
+  name: string;
+  currency: Currency;
+  amount: number; // saldo devedor (positivo)
+  type: LiabilityType;
+}

@@ -6,11 +6,20 @@ import { BottomNav } from "./bottom-nav";
 import { TopBar } from "./top-bar";
 import { NAV_ITEMS } from "./nav-items";
 import { useUI } from "@/store/ui";
+import { useVault } from "@/vault/vault-store";
+
+/** Primeiro nome derivado do e-mail (ex.: "marcelo.x@..." → "Marcelo"). */
+function nameFromEmail(email: string | null): string {
+  if (!email) return "";
+  const handle = email.split("@")[0].split(/[._-]/)[0];
+  return handle ? handle.charAt(0).toUpperCase() + handle.slice(1) : "";
+}
 
 /** Casca do app: menu lateral (desktop) + barra superior + conteúdo + nav inferior (mobile). */
 export function AppShell() {
   const { t } = useTranslation();
   const theme = useUI((s) => s.theme);
+  const email = useVault((s) => s.email);
   const { pathname } = useLocation();
 
   // Aplica o tema na raiz do documento.
@@ -24,7 +33,8 @@ export function AppShell() {
     ) ?? NAV_ITEMS[0];
   const label = t(`nav.${active.key}`);
   const isPainel = active.to === "/";
-  const title = isPainel ? t("common.hello", { name: "Marcelo" }) : label;
+  const firstName = nameFromEmail(email);
+  const title = isPainel && firstName ? t("common.hello", { name: firstName }) : label;
 
   return (
     <div className="flex min-h-screen">

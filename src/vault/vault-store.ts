@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import { db } from "@/data/db";
-import { SEED } from "@/data/seed";
 import {
   createVault as cryptoCreateVault,
   rewrapPassword,
@@ -22,8 +21,15 @@ import {
   rewrapRecoveryServer,
 } from "./sync";
 import { dumpVault, loadVault } from "./serialize";
+import { pending } from "./pending";
 
 type Status = "loading" | "signedOut" | "locked" | "unlocked";
+
+async function clearLocalDb(): Promise<void> {
+  await db.transaction("rw", db.tables, async () => {
+    for (const t of db.tables) await t.clear();
+  });
+}
 
 interface VaultStore {
   status: Status;
@@ -50,28 +56,33 @@ interface VaultStore {
   lock: () => void;
 }
 
-async function seedIfEmpty(): Promise<void> {
-  if ((await db.assets.count()) === 0) {
-    await db.transaction("rw", db.tables, async () => {
-      await db.assets.bulkPut(SEED.assets);
-      await db.expenses.bulkPut(SEED.expenses);
-      await db.incomes.bulkPut(SEED.incomes);
-      await db.netWorthSnapshots.bulkPut(SEED.snapshots);
-    });
-  }
-}
-
 export const useVault = create<VaultStore>((set, get) => {
-  /** Pós-unlock: traz o cofre do servidor (ou semeia + sobe um cofre novo). */
+  // Serializa os pushes: mutações rápidas não competem pela versão do cofre
+  // (evita version_conflict + clobber que ressuscitaria itens excluídos).
+  let pushChain: Promise<void> = Promise.resolve();
+  let onlineHooked = false;
+
+  /** Pós-unlock: traz o cofre do servidor (ou sobe um cofre novo, vazio). */
   async function syncAfterUnlock(keys: VaultKeys, meta: VaultMeta, version: number): Promise<void> {
     if (version > 0) {
-      const data = await pullVault(keys, meta.userId, version);
-      if (data) await loadVault(db, data);
-      set({ version });
+      if (pending.has()) {
+        // Há mutações locais possivelmente NÃO sincronizadas → não sobrescrever
+        // o local com o servidor; subir primeiro (CAS). Preserva o trabalho feito
+        // offline (durabilidade local-first).
+        await get().push();
+      } else {
+        const data = await pullVault(keys, meta.userId, version);
+        if (data) await loadVault(db, data);
+        set({ version });
+      }
     } else {
-      await seedIfEmpty();
+      // Cofre novo nasce VAZIO — limpa qualquer resíduo local (evita capturar
+      // dados de outra conta no mesmo navegador) e sobe um blob vazio na v1.
+      // Os dados de exemplo são opt-in pela Config.
+      await clearLocalDb();
       const data = await dumpVault(db);
       const newVersion = await pushVault(keys, meta.userId, 0, data);
+      pending.clear();
       set({ version: newVersion });
     }
   }
@@ -87,6 +98,13 @@ export const useVault = create<VaultStore>((set, get) => {
     syncing: false,
 
     async init() {
+      if (!onlineHooked && typeof window !== "undefined") {
+        onlineHooked = true;
+        // Voltou a conexão e há push pendente → re-tenta subir.
+        window.addEventListener("online", () => {
+          if (pending.has() && get().status === "unlocked") void get().push();
+        });
+      }
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
       if (!user) {
@@ -165,7 +183,19 @@ export const useVault = create<VaultStore>((set, get) => {
     },
 
     async signOut() {
+      // Tenta subir o que estiver pendente ANTES de limpar (não perder offline).
+      if (pending.has() && get().keys) {
+        try {
+          await get().push();
+        } catch {
+          /* offline/erro — segue com o logout mesmo assim */
+        }
+      }
       await supabase.auth.signOut();
+      // Limpa o Dexie local: evita que a próxima conta no mesmo navegador capture
+      // dados residuais desta. O dado durável vive cifrado no servidor.
+      await clearLocalDb();
+      pending.clear();
       set({ status: "signedOut", userId: null, email: null, keys: null, meta: null, version: 0 });
     },
 
@@ -242,39 +272,52 @@ export const useVault = create<VaultStore>((set, get) => {
     async deleteAccount() {
       await deleteAccountServer();
       await supabase.auth.signOut();
-      await db.transaction("rw", db.tables, async () => {
-        for (const t of db.tables) await t.clear();
-      });
+      await clearLocalDb();
+      pending.clear();
       set({ status: "signedOut", userId: null, email: null, keys: null, meta: null, version: 0 });
     },
 
-    async push() {
-      const { keys, userId, version } = get();
-      if (!keys || !userId) return; // cofre trancado → nunca escreve
-      set({ syncing: true });
-      try {
-        const data = await dumpVault(db);
+    push() {
+      const run = async (): Promise<void> => {
+        const { keys, userId, version } = get(); // versão fresca a cada execução
+        if (!keys || !userId) return; // cofre trancado → nunca escreve
+        set({ syncing: true });
+        let ok = false;
         try {
-          const v = await pushVault(keys, userId, version, data);
-          set({ version: v });
-        } catch (e) {
-          // conflito de versão (outro dispositivo) → puxa, reaplica, re-sobe
-          if (e instanceof Error && /version_conflict/.test(e.message)) {
-            const server = await fetchVaultMeta(userId);
-            if (server) {
-              const remote = await pullVault(keys, userId, server.version);
-              if (remote) await loadVault(db, remote);
-              const merged = await dumpVault(db);
-              const v = await pushVault(keys, userId, server.version, merged);
-              set({ version: v });
+          const data = await dumpVault(db);
+          try {
+            const v = await pushVault(keys, userId, version, data);
+            set({ version: v });
+            ok = true;
+          } catch (e) {
+            // conflito de versão (outro dispositivo) → puxa, reaplica, re-sobe
+            if (e instanceof Error && /version_conflict/.test(e.message)) {
+              const server = await fetchVaultMeta(userId);
+              if (server) {
+                const remote = await pullVault(keys, userId, server.version);
+                if (remote) await loadVault(db, remote);
+                const merged = await dumpVault(db);
+                const v = await pushVault(keys, userId, server.version, merged);
+                set({ version: v });
+                ok = true;
+              }
+            } else {
+              throw e;
             }
-          } else {
-            throw e;
           }
+        } finally {
+          set({ syncing: false });
+          if (ok) pending.clear(); // sincronizado → não há mais pendência
         }
-      } finally {
-        set({ syncing: false });
-      }
+      };
+      // Encadeia: o próximo push só roda quando o anterior terminar, já com a
+      // versão atualizada — uma mutação não atropela a outra.
+      const next = pushChain.then(run, run);
+      pushChain = next.then(
+        () => undefined,
+        () => undefined,
+      );
+      return next;
     },
 
     dismissRecoveryCode() {

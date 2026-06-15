@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -12,33 +13,40 @@ import {
   Tooltip,
 } from "recharts";
 import { useUI } from "@/store/ui";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
+import { currencyBreakdown, CUR_COLOR } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { actions } from "@/data/actions";
 import { Panel } from "@/components/common/panel";
 import { StatCard } from "@/components/common/stat-card";
 import { Money } from "@/components/common/money";
+import { Button } from "@/components/common/button";
 import { CurrencyBadge } from "@/components/common/currency-badge";
+import { CompositionBar } from "@/components/patrimonio/composition-bar";
+import { cn } from "@/lib/utils";
 
 const CAT_COLORS = ["#2C7A7B", "#5B7B9A", "#7FB2B2", "#9FB3C8", "#C5D2DD", "#E2E8EE"];
 const TEAL = "#2C7A7B";
-const EUR = "#5B7B9A";
 
 export default function Painel() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const { data } = useDashboardData();
+
+  const monthLabel = useMemo(() => {
+    const m = new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date());
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  }, [i18n.language]);
 
   const view = useMemo(() => {
     if (!data) return null;
     const conv = (amount: number, from: Currency) => convert(amount, from, disp);
 
     const assetsDisp = data.assets.map((a) => ({ ...a, disp: conv(a.amount, a.currency) }));
-    const totalNW = assetsDisp.reduce((s, a) => s + a.disp, 0);
-    const brlOrigin = data.assets
-      .filter((a) => a.currency === "BRL")
-      .reduce((s, a) => s + conv(a.amount, "BRL"), 0);
-    const brlPct = totalNW > 0 ? Math.round((brlOrigin / totalNW) * 100) : 0;
-    const eurPct = 100 - brlPct;
+    const totalAssets = assetsDisp.reduce((s, a) => s + a.disp, 0);
+    const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
+    const netWorth = totalAssets - totalLiab;
+    const curSegments = currencyBreakdown(data.assets, disp);
     const invested = data.assets
       .filter((a) => a.type === "investment")
       .reduce((s, a) => s + conv(a.amount, a.currency), 0);
@@ -49,59 +57,92 @@ export default function Painel() {
     const saldoMes = totalInc - totalExp;
 
     const trend = data.snapshots.map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
-    const last = data.snapshots.at(-1);
-    const prev = data.snapshots.at(-2);
-    const nwChange = last && prev && prev.amount !== 0
-      ? ((last.amount - prev.amount) / prev.amount) * 100
-      : 0;
+    const last = trend.at(-1);
+    const prev = trend.at(-2);
+    const nwChange = last && prev && prev.v !== 0 ? ((last.v - prev.v) / prev.v) * 100 : 0;
 
-    return { assetsDisp, totalNW, brlPct, eurPct, invested, expDisp, totalExp, totalInc, saldoMes, trend, nwChange };
+    const isEmpty =
+      data.assets.length === 0 &&
+      data.liabilities.length === 0 &&
+      data.expenses.length === 0 &&
+      data.incomes.length === 0 &&
+      data.snapshots.length === 0;
+
+    return {
+      assetsDisp,
+      totalAssets,
+      totalLiab,
+      netWorth,
+      curSegments,
+      invested,
+      expDisp,
+      totalExp,
+      totalInc,
+      incomeCount: data.incomes.length,
+      saldoMes,
+      trend,
+      nwChange,
+      isEmpty,
+    };
   }, [data, disp]);
 
   if (!view) {
     return <div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />;
   }
 
+  if (view.isEmpty) return <PainelEmpty />;
+
   const money = (v: number) => formatMoney(v, disp);
+  const up = view.nwChange >= 0;
+  const changeText = `${up ? "+" : ""}${view.nwChange.toFixed(1)}`;
 
   return (
     <div className="space-y-5">
-      {/* Hero: patrimônio líquido + split de moeda */}
+      {/* Hero: patrimônio líquido + composição por moeda */}
       <Panel className="p-6 md:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="text-[13px] text-muted font-medium">{t("dashboard.netWorth")}</div>
             <Money
-              value={view.totalNW}
+              value={view.netWorth}
               currency={disp}
-              className="block text-[40px] font-bold tracking-[-0.02em] leading-tight mt-1"
+              className={cn(
+                "block text-[40px] font-bold tracking-[-0.02em] leading-tight mt-1",
+                view.netWorth < 0 && "text-neg",
+              )}
             />
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-soft text-teal text-[13px] font-semibold">
-            <ArrowUpRight size={15} />
-            <span className="tabular-nums">
-              +{t("dashboard.monthChange", { value: view.nwChange.toFixed(1) })}
-            </span>
-          </div>
+          {view.trend.length >= 2 ? (
+            <div
+              className={cn(
+                "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-semibold",
+                up ? "bg-teal-soft text-teal" : "bg-neg-soft text-neg",
+              )}
+            >
+              {up ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+              <span className="tabular-nums">{t("dashboard.monthChange", { value: changeText })}</span>
+            </div>
+          ) : null}
         </div>
 
-        <div className="mt-6">
-          <div className="flex rounded-full overflow-hidden h-[10px] bg-border">
-            <div style={{ width: `${view.brlPct}%`, background: TEAL }} />
-            <div style={{ width: `${view.eurPct}%`, background: EUR }} />
+        {view.curSegments.length > 0 ? (
+          <div className="mt-6">
+            <CompositionBar
+              segments={view.curSegments.map((s) => ({
+                label: s.currency,
+                pct: s.pct,
+                color: CUR_COLOR[s.currency],
+              }))}
+            />
           </div>
-          <div className="flex items-center gap-5 mt-3 text-[13px]">
-            <Legend color={TEAL} label={t("dashboard.real")} pct={view.brlPct} />
-            <Legend color={EUR} label={t("dashboard.euro")} pct={view.eurPct} />
-          </div>
-        </div>
+        ) : null}
       </Panel>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label={t("dashboard.assets")}
-          value={money(view.totalNW)}
+          value={money(view.totalAssets)}
           sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })}
         />
         <StatCard
@@ -112,13 +153,13 @@ export default function Painel() {
         <StatCard
           label={t("dashboard.monthlyIncome")}
           value={money(view.totalInc)}
-          sub={t("dashboard.sources", { count: view.totalInc > 0 ? 2 : 0 })}
+          sub={t("dashboard.sources", { count: view.incomeCount })}
           positive
         />
         <StatCard
           label={t("dashboard.monthlyBalance")}
           value={money(view.saldoMes)}
-          sub={t("common.sampleMonth")}
+          sub={monthLabel}
           positive={view.saldoMes >= 0}
         />
       </div>
@@ -144,8 +185,8 @@ export default function Painel() {
                     paddingAngle={2}
                     stroke="none"
                   >
-                    {view.expDisp.map((_, i) => (
-                      <Cell key={i} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                    {view.expDisp.map((e, i) => (
+                      <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => money(Number(v))} />
@@ -154,7 +195,7 @@ export default function Painel() {
             </div>
             <div className="flex-1 space-y-1.5 min-w-0">
               {view.expDisp.map((e, i) => (
-                <div key={i} className="flex items-center justify-between text-[13px]">
+                <div key={e.name} className="flex items-center justify-between text-[13px]">
                   <span className="flex items-center gap-2 text-muted truncate">
                     <span
                       className="w-2 h-2 rounded-[2px] shrink-0"
@@ -172,12 +213,16 @@ export default function Painel() {
         <Panel className="p-6">
           <div className="flex items-center justify-between mb-1">
             <span className="font-semibold text-[15px]">{t("dashboard.netWorthTrend")}</span>
-            <span className="text-[13px] text-teal font-semibold tabular-nums">
-              +{view.nwChange.toFixed(1)}%
-            </span>
+            {view.trend.length >= 2 ? (
+              <span
+                className={cn("text-[13px] font-semibold tabular-nums", up ? "text-teal" : "text-neg")}
+              >
+                {changeText}%
+              </span>
+            ) : null}
           </div>
           <div className="text-[12px] text-faint mb-3">
-            {t("dashboard.last6months")} · {disp === "BRL" ? "R$" : "€"}
+            {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
           </div>
           <div className="w-full h-[150px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -206,8 +251,7 @@ export default function Painel() {
               key={a.id}
               className="flex items-center justify-between py-2"
               style={{
-                borderBottom:
-                  i < view.assetsDisp.length - 1 ? "1px solid var(--border)" : "none",
+                borderBottom: i < view.assetsDisp.length - 1 ? "1px solid var(--border)" : "none",
               }}
             >
               <div className="flex items-center gap-3 min-w-0">
@@ -223,12 +267,28 @@ export default function Painel() {
   );
 }
 
-function Legend({ color, label, pct }: { color: string; label: string; pct: number }) {
+function PainelEmpty() {
+  const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-[9px] h-[9px] rounded-[3px]" style={{ background: color }} />
-      <span className="text-muted">{label}</span>
-      <span className="font-semibold tabular-nums">{pct}%</span>
-    </div>
+    <Panel className="p-10 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-teal-soft text-teal flex items-center justify-center mx-auto mb-4">
+        <Sparkles size={22} />
+      </div>
+      <div className="text-[17px] font-semibold tracking-[-0.01em]">{t("dashboard.empty")}</div>
+      <p className="text-[13px] text-muted mt-1.5 max-w-sm mx-auto leading-relaxed">
+        {t("dashboard.emptyDesc")}
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
+        <Link to="/patrimonio">
+          <Button>
+            <Plus size={15} />
+            {t("dashboard.emptyCta")}
+          </Button>
+        </Link>
+        <Button variant="secondary" onClick={() => void actions.loadSample()}>
+          {t("data.loadSample")}
+        </Button>
+      </div>
+    </Panel>
   );
 }

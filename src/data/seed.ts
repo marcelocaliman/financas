@@ -1,9 +1,9 @@
 import type { SeedData } from "./repository";
 
 /**
- * Dados de exemplo que reproduzem o protótipo
- * (docs/reference/prototipo-painel.jsx). Carregados no primeiro acesso pra o
- * Painel já abrir com conteúdo. Serão substituídos pelos dados reais do usuário.
+ * Dados de exemplo que reproduzem o protótipo (docs/reference/prototipo-painel.jsx).
+ * NÃO são mais carregados automaticamente — o app começa vazio. O usuário pode
+ * carregá-los sob demanda na Config ("carregar dados de exemplo") pra explorar.
  */
 export const SEED: SeedData = {
   assets: [
@@ -13,6 +13,10 @@ export const SEED: SeedData = {
     { id: "a4", name: "Imóvel (aluguel · RJ)", currency: "BRL", amount: 850000, type: "property" },
     { id: "a5", name: "Conta corrente · Itália", currency: "EUR", amount: 12000, type: "cash" },
     { id: "a6", name: "Reserva", currency: "EUR", amount: 25000, type: "cash" },
+  ],
+  liabilities: [
+    { id: "l1", name: "Financiamento imóvel · RJ", currency: "BRL", amount: 180000, type: "mortgage" },
+    { id: "l2", name: "Cartão de crédito", currency: "EUR", amount: 1800, type: "card" },
   ],
   expenses: [
     { id: "e1", name: "Moradia", currency: "EUR", amount: 600 },

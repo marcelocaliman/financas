@@ -20,7 +20,11 @@
     "theme": "Tema",
     "themeLight": "Claro",
     "themeDark": "Escuro",
-    "sampleMonth": "Junho"
+    "sampleMonth": "Junho",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "close": "Fechar"
   },
   "dashboard": {
     "netWorth": "Patrimônio líquido",
@@ -40,6 +44,42 @@
     "byCategory": "Gastos por categoria",
     "netWorthTrend": "Evolução do patrimônio",
     "last6months": "Últimos 6 meses",
-    "positionsTitle": "Posições"
+    "positionsTitle": "Posições",
+    "empty": "Tudo pronto pra começar",
+    "emptyDesc": "Adicione seu patrimônio e seu orçamento — seus números aparecem aqui, sempre cifrados no seu aparelho.",
+    "emptyCta": "Começar pelo patrimônio"
+  },
+  "patrimonio": {
+    "netWorth": "Patrimônio líquido",
+    "assets": "Ativos",
+    "liabilities": "Passivos",
+    "addAsset": "Adicionar ativo",
+    "addLiability": "Adicionar passivo",
+    "editAsset": "Editar ativo",
+    "editLiability": "Editar passivo",
+    "noAssets": "Comece seu patrimônio",
+    "noAssetsDesc": "Adicione seus investimentos, imóveis e contas pra ver seu patrimônio líquido.",
+    "noLiabilitiesDesc": "Empréstimos, financiamentos e cartões entram aqui.",
+    "name": "Nome",
+    "namePlaceholder": "Ex.: Tesouro Direto",
+    "type": "Tipo",
+    "currency": "Moeda",
+    "amount": "Valor",
+    "delete": "Excluir",
+    "deleteConfirm": "Excluir \"{{name}}\"?",
+    "errName": "Dê um nome.",
+    "errAmount": "Informe um valor maior que zero.",
+    "assetType": { "investment": "Investimento", "property": "Imóvel", "cash": "Caixa" },
+    "liabilityType": { "loan": "Empréstimo", "card": "Cartão", "mortgage": "Financiamento", "other": "Outro" }
+  },
+  "data": {
+    "title": "Dados",
+    "sample": "Dados de exemplo",
+    "sampleDesc": "Preenche o app com dados fictícios pra você explorar.",
+    "loadSample": "Carregar exemplo",
+    "reset": "Começar do zero",
+    "resetDesc": "Apaga todos os dados e começa em branco.",
+    "resetBtn": "Apagar tudo",
+    "resetConfirm": "Apagar TODOS os dados e começar do zero? Isso não pode ser desfeito."
   }
 }

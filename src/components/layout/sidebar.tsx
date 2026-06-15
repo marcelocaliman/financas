@@ -15,7 +15,6 @@ export function Sidebar() {
           <ArrowLeftRight size={16} color="#fff" />
         </div>
         <span className="font-bold text-[16px] tracking-[-0.01em]">{t("app.name")}</span>
-        <span className="text-[10px] text-faint mt-0.5">{t("app.tagline")}</span>
       </div>
 
       <nav className="flex flex-col gap-1">
@@ -38,10 +37,6 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      <div className="mt-auto px-3 py-3 rounded-lg bg-bg text-[12px] text-faint">
-        {t("common.sampleData")}
-      </div>
     </aside>
   );
 }
