@@ -35,10 +35,9 @@ export default function Objetivos() {
   }
 
   const cols: GridColumn<Goal>[] = [
-    { key: "currency", type: "currency", header: "", width: "46px" },
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("objetivos.namePlaceholder") },
-    { key: "current", type: "money", header: t("objetivos.current"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
-    { key: "target", type: "money", header: t("objetivos.target"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
+    { key: "current", type: "money", header: t("objetivos.current"), width: "minmax(140px,1fr)", align: "right", currencyKey: "currency" },
+    { key: "target", type: "money", header: t("objetivos.target"), width: "minmax(140px,1fr)", align: "right", currencyKey: "currency" },
     { key: "deadline", type: "text", header: t("objetivos.deadline"), width: "minmax(90px,0.8fr)", placeholder: "—" },
     {
       key: "progress",

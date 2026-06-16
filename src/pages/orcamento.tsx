@@ -51,7 +51,6 @@ export default function Orcamento() {
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[]): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
-      { key: "currency", type: "currency", header: "", width: "46px" },
       {
         key: "categoryId",
         type: "select",
@@ -61,7 +60,7 @@ export default function Orcamento() {
         options: opts(categories),
       },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
-      { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
+      { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" },
     ];
     // "Em <moeda>" só aparece quando há de fato conversão (alguma linha em moeda ≠ da exibida).
     if (rows.some((r) => r.currency !== disp)) {

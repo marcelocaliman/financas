@@ -96,15 +96,18 @@ export default function Patrimonio() {
 
   // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
   const assetColsFor = (classId: string): GridColumn<Asset>[] => {
-    const cols: GridColumn<Asset>[] = [
-      { key: "currency", type: "currency", header: "", width: "46px" },
-      { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.6fr)", placeholder: t("patrimonio.namePlaceholder") },
-      { key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(140px,1.1fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) },
-    ];
+    const quotable = QUOTABLE.has(classId);
+    const cols: GridColumn<Asset>[] = [];
+    // Cotáveis não têm campo de valor (vem de qtd × cotação) → mantêm o seletor de moeda como selo.
+    if (quotable) {
+      cols.push({ key: "currency", type: "currency", header: "", width: "46px" });
+    }
+    cols.push({ key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.6fr)", placeholder: t("patrimonio.namePlaceholder") });
+    cols.push({ key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(140px,1.1fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) });
     if (classId === CLASS.rendaFixa) {
       cols.push({ key: "indexerId", type: "select", optional: true, header: t("patrimonio.indexer"), width: "minmax(104px,0.9fr)", options: opts(tax.indexers) });
     }
-    if (QUOTABLE.has(classId)) {
+    if (quotable) {
       // Visão de posição: Ticker · Qtd · Preço médio · Cotação · Rentabilidade · Valor atual.
       cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(88px,0.8fr)", placeholder: "—" });
       cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(72px,0.6fr)", align: "right" });
@@ -143,7 +146,7 @@ export default function Patrimonio() {
     }
     cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
     cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
-    cols.push({ key: "amount", type: "money", header: t("patrimonio.amount"), width: "minmax(104px,0.9fr)", align: "right", currencyKey: "currency" });
+    cols.push({ key: "amount", type: "money", header: t("patrimonio.amount"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" });
     // "Em <moeda>" só quando há conversão (algum ativo da classe em moeda ≠ da exibida).
     if (data.assets.some((a) => a.classId === classId && a.currency !== disp)) {
       cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
@@ -167,12 +170,11 @@ export default function Patrimonio() {
   const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: base, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
-    { key: "currency", type: "currency", header: "", width: "46px" },
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("patrimonio.namePlaceholderLiab") },
     { key: "typeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.3fr)", placeholder: t("patrimonio.typePlaceholder"), options: opts(tax.liabilityTypes) },
     { key: "interestRate", type: "number", header: t("patrimonio.interestRate"), width: "minmax(96px,0.8fr)", align: "right" },
     { key: "installments", type: "number", header: t("patrimonio.installments"), width: "minmax(92px,0.7fr)", align: "right" },
-    { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
+    { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" },
   ];
   if (data.liabilities.some((l) => l.currency !== disp)) {
     liabCols.push({ ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) });

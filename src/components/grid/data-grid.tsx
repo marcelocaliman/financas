@@ -103,6 +103,7 @@ function MoneyCell({
   rowId,
   colKey,
   onCommit,
+  onCurrencyCommit,
   onEnter,
 }: {
   value: number;
@@ -110,6 +111,7 @@ function MoneyCell({
   rowId: string;
   colKey: string;
   onCommit: (v: number) => void;
+  onCurrencyCommit: (c: Currency) => void;
   onEnter: () => void;
 }) {
   const hidden = useUI((s) => s.numbersHidden);
@@ -124,32 +126,38 @@ function MoneyCell({
     setV(formatAmountEdit(n ?? value, currency));
   };
   return (
-    <input
-      data-rowid={rowId}
-      data-col={colKey}
-      inputMode="decimal"
-      value={hidden && !focused ? MASK : v}
-      onFocus={(e) => {
-        setFocused(true);
-        e.currentTarget.select();
-      }}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => {
-        setFocused(false);
-        commit();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.currentTarget.blur();
-          onEnter();
-        } else if (e.key === "Escape") {
-          setV(formatAmountEdit(value, currency));
-          e.currentTarget.blur();
-        }
-      }}
-      className={cn(CELL_INPUT, "text-right tabular")}
-    />
+    // Moeda colada no valor: o usuário vê e troca a moeda exatamente onde digita.
+    <div className="flex items-center gap-1.5">
+      <CurrencyPicker value={currency} onCommit={onCurrencyCommit} className="shrink-0">
+        <CurrencyBadge currency={currency} />
+      </CurrencyPicker>
+      <input
+        data-rowid={rowId}
+        data-col={colKey}
+        inputMode="decimal"
+        value={hidden && !focused ? MASK : v}
+        onFocus={(e) => {
+          setFocused(true);
+          e.currentTarget.select();
+        }}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => {
+          setFocused(false);
+          commit();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.currentTarget.blur();
+            onEnter();
+          } else if (e.key === "Escape") {
+            setV(formatAmountEdit(value, currency));
+            e.currentTarget.blur();
+          }
+        }}
+        className={cn(CELL_INPUT, "text-right tabular flex-1 min-w-0 px-1.5")}
+      />
+    </div>
   );
 }
 
@@ -261,7 +269,18 @@ function NumberCell({
   );
 }
 
-function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Currency) => void }) {
+/** Seletor de moeda: o gatilho (badge/símbolo) abre um menu flutuante com as moedas. */
+function CurrencyPicker({
+  value,
+  onCommit,
+  className,
+  children,
+}: {
+  value: Currency;
+  onCommit: (c: Currency) => void;
+  className?: string;
+  children: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -275,15 +294,18 @@ function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Curr
     setOpen(true);
   };
   return (
-    <div>
+    <>
       <button
         ref={btnRef}
         type="button"
+        // Não roubar o foco do input de valor: senão o blur dele auto-commita a
+        // linha-fantasma ANTES da moeda ser aplicada (e a moeda escolhida se perde).
+        onMouseDown={(e) => e.preventDefault()}
         onClick={toggle}
         aria-label="Moeda"
-        className="rounded-[7px] outline-none focus:ring-2 focus:ring-[var(--ring)]"
+        className={cn("rounded-[7px] outline-none focus:ring-2 focus:ring-[var(--ring)]", className)}
       >
-        <CurrencyBadge currency={value} />
+        {children}
       </button>
       {open && pos
         ? createPortal(
@@ -297,6 +319,7 @@ function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Curr
                   <button
                     key={c}
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       onCommit(c);
                       setOpen(false);
@@ -311,7 +334,15 @@ function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Curr
             document.body,
           )
         : null}
-    </div>
+    </>
+  );
+}
+
+function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Currency) => void }) {
+  return (
+    <CurrencyPicker value={value} onCommit={onCommit}>
+      <CurrencyBadge currency={value} />
+    </CurrencyPicker>
   );
 }
 
@@ -354,6 +385,10 @@ export function DataGrid<T extends { id: string }>({
         ?.focus(),
     );
 
+  // INVARIANTE: a linha-fantasma só recebe o VALOR (money/number) no blur do input,
+  // nunca a cada tecla. É isso que deixa trocar a moeda no meio da digitação sem
+  // auto-commitar a linha na moeda antiga (ver preventDefault no CurrencyPicker).
+  // Se um dia empurrar o valor digitado pro ghost a cada onChange, o bug volta.
   const commitGhost = (key: string, value: unknown) => {
     const next = { ...ghost, [key]: value } as T;
     if (isComplete(next)) {
@@ -406,17 +441,22 @@ export function DataGrid<T extends { id: string }>({
             onEnter={onEnter}
           />
         );
-      case "money":
+      case "money": {
+        const curKey = col.currencyKey ?? "currency";
         return (
           <MoneyCell
             value={(get(row, col.key) as number) ?? 0}
-            currency={get(row, col.currencyKey ?? "currency") as Currency}
+            currency={get(row, curKey) as Currency}
             rowId={rowId}
             colKey={col.key}
             onCommit={commit}
+            onCurrencyCommit={(c) =>
+              ghostRow ? commitGhost(curKey, c) : onCommit({ ...row, [curKey]: c } as T)
+            }
             onEnter={onEnter}
           />
         );
+      }
       case "computed":
         return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
     }
