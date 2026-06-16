@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
 import { formatAmountEdit, parseAmount } from "@/money/parse";
+import { useUI } from "@/store/ui";
+
+const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 export type ColType = "currency" | "text" | "select" | "money" | "computed";
@@ -103,6 +106,7 @@ function MoneyCell({
   onCommit: (v: number) => void;
   onEnter: () => void;
 }) {
+  const hidden = useUI((s) => s.numbersHidden);
   const [v, setV] = useState(() => formatAmountEdit(value, currency));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
@@ -118,7 +122,7 @@ function MoneyCell({
       data-rowid={rowId}
       data-col={colKey}
       inputMode="decimal"
-      value={v}
+      value={hidden && !focused ? MASK : v}
       onFocus={(e) => {
         setFocused(true);
         e.currentTarget.select();
@@ -240,6 +244,7 @@ export function DataGrid<T extends { id: string }>({
 }: DataGridProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<T>(() => blank());
+  const hidden = useUI((s) => s.numbersHidden);
 
   const template = columns.map((c) => c.width).join(" ") + " 44px";
   const firstTextKey = columns.find((c) => c.type === "text")?.key ?? columns[0].key;
@@ -317,7 +322,7 @@ export function DataGrid<T extends { id: string }>({
           />
         );
       case "computed":
-        return <div className="px-2 tabular text-muted">{col.compute?.(row)}</div>;
+        return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
     }
   };
 

@@ -86,7 +86,7 @@ function usePainelView() {
 
 /** HERO do dashboard — conteúdo (sem box; o degradê full-bleed vem da OnePage). */
 export function DashboardHero() {
-  const { t, disp, name, colors, accent, axisColor, monthLabel, view } = usePainelView();
+  const { t, disp, colors, accent, axisColor, monthLabel, view } = usePainelView();
   if (!view) return <div className="h-[50vh] rounded-[18px] bg-card/40 border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
 
@@ -95,11 +95,11 @@ export function DashboardHero() {
 
   return (
     <>
-      <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
+      <Eyebrow>{t("dashboard.netWorth")}</Eyebrow>
       <HeroNumber
         value={view.netWorth}
         currency={disp}
-        className="block whitespace-nowrap text-[clamp(32px,8vw,118px)] mt-3"
+        className="block whitespace-nowrap text-[clamp(30px,5.5vw,80px)] mt-2.5"
       />
       <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
         {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
@@ -231,11 +231,12 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
 }
 
 function StatTile({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
+  const hidden = useUI((s) => s.numbersHidden);
   return (
     <div className="rounded-[16px] bg-card/55 border border-border p-5 backdrop-blur-sm">
       <Eyebrow>{label}</Eyebrow>
       <div className={cn("font-display font-semibold text-[clamp(20px,2vw,28px)] tracking-[-0.02em] tabular mt-2", positive ? "text-pos" : "text-text")}>
-        {value}
+        {hidden ? "••••" : value}
       </div>
       {sub ? <div className="text-[11.5px] text-faint mt-1">{sub}</div> : null}
     </div>

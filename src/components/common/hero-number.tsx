@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { formatMoney, type Currency } from "@/money/currency";
+import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
 /** Conta de 0 (ou do valor anterior) até o alvo, com easing — sem libs. */
@@ -45,10 +46,11 @@ export function HeroNumber({
   currency: Currency;
   className?: string;
 }) {
-  const display = useCountUp(value);
+  const hidden = useUI((s) => s.numbersHidden);
+  const display = useCountUp(hidden ? 0 : value);
   return (
-    <span className={cn("hero-number", value < 0 && "hero-number-neg", className)}>
-      {formatMoney(display, currency)}
+    <span className={cn("hero-number", value < 0 && !hidden && "hero-number-neg", className)}>
+      {hidden ? "••••••" : formatMoney(display, currency)}
     </span>
   );
 }

@@ -1,14 +1,27 @@
-import { ArrowLeftRight } from "lucide-react";
+import { useState } from "react";
+import {
+  ArrowLeftRight,
+  Eye,
+  EyeOff,
+  Settings,
+  Lock,
+  LogOut,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyToggle } from "./currency-toggle";
 import { scrollToSection, useScrolled } from "@/hooks/use-scroll-spy";
+import { useUI } from "@/store/ui";
+import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
 
 /** Header FLUTUANTE: transparente sobre o hero, vira vidro ao rolar. */
 export function TopNav({ active }: { active: string }) {
   const { t } = useTranslation();
   const scrolled = useScrolled(48);
+  const hidden = useUI((s) => s.numbersHidden);
+  const toggleNumbers = useUI((s) => s.toggleNumbers);
 
   return (
     <header
@@ -48,10 +61,104 @@ export function TopNav({ active }: { active: string }) {
           })}
         </nav>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={toggleNumbers}
+            aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
+            className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+          >
+            {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
+          </button>
           <CurrencyToggle />
+          <UserMenu />
         </div>
       </div>
     </header>
+  );
+}
+
+function UserMenu() {
+  const email = useVault((s) => s.email);
+  const lock = useVault((s) => s.lock);
+  const signOut = useVault((s) => s.signOut);
+  const [open, setOpen] = useState(false);
+
+  const handle = email ? email.split("@")[0].split(/[._-]/)[0] : "";
+  const name = handle ? handle.charAt(0).toUpperCase() + handle.slice(1) : "";
+  const initial = (name || email || "?").charAt(0).toUpperCase();
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Conta"
+        className="grid place-items-center w-9 h-9 rounded-full bg-card2 border border-border text-[13px] font-semibold text-text hover:border-border-strong transition-colors"
+      >
+        {initial}
+      </button>
+      {open ? (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-60 z-50 rounded-[14px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden">
+            <div className="px-4 py-3.5 border-b border-border">
+              <div className="text-[13.5px] font-semibold truncate">{name || "Conta"}</div>
+              {email ? <div className="text-[12px] text-muted truncate mt-0.5">{email}</div> : null}
+            </div>
+            <div className="p-1.5">
+              <MenuItem
+                icon={Settings}
+                onClick={() => {
+                  setOpen(false);
+                  scrollToSection("config");
+                }}
+              >
+                Configurações
+              </MenuItem>
+              <MenuItem
+                icon={Lock}
+                onClick={() => {
+                  setOpen(false);
+                  lock();
+                }}
+              >
+                Trancar o cofre
+              </MenuItem>
+              <MenuItem
+                icon={LogOut}
+                onClick={() => {
+                  setOpen(false);
+                  void signOut();
+                }}
+              >
+                Sair
+              </MenuItem>
+            </div>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function MenuItem({
+  icon: Icon,
+  onClick,
+  children,
+}: {
+  icon: LucideIcon;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors text-left"
+    >
+      <Icon size={15} />
+      {children}
+    </button>
   );
 }
