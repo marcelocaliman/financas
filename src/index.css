@@ -152,6 +152,15 @@ body {
   font-variant-numeric: tabular-nums slashed-zero;
 }
 
+/* Esconde a barra de scroll (abas roláveis no mobile sem barra feia). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Eyebrow editorial: deck-line de revista acima de cada bloco. */
 .eyebrow {
   font-size: 11px;

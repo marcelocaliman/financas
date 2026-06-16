@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useVault } from "@/vault/vault-store";
-import { Panel } from "@/components/common/panel";
 import { cn } from "@/lib/utils";
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-9 px-3 rounded-[7px] border border-border bg-card text-[13px] text-text outline-none focus:border-accent"
+      className="w-full h-10 px-3 rounded-[8px] border border-border bg-bg2 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
     />
   );
 }
@@ -22,32 +21,38 @@ function Btn({
       type="button"
       {...props}
       className={cn(
-        "h-9 px-3 rounded-[7px] text-[13px] font-medium transition-colors disabled:opacity-50",
+        "h-9 px-3.5 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-50",
         tone === "teal"
-          ? "bg-accent text-[#0b0c0e]"
+          ? "bg-accent text-[#0b0c0e] hover:brightness-110"
           : tone === "danger"
             ? "border border-red-400/50 text-red-400 hover:bg-red-500/10"
-            : "border border-border text-muted hover:text-text",
+            : "border border-border text-muted hover:text-text hover:bg-card-hover",
         className,
       )}
     />
   );
 }
 
-export function AccountCard() {
+function Heading({ children, danger }: { children: React.ReactNode; danger?: boolean }) {
+  return (
+    <h3 className={cn("text-[14px] font-semibold", danger ? "text-red-400" : "text-text")}>{children}</h3>
+  );
+}
+
+export function AccountSection() {
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
 
   return (
-    <Panel className="p-6">
-      <div className="text-[15px] font-semibold">Conta</div>
-      <div className="text-[12.5px] text-muted mt-0.5">{email}</div>
+    <div>
+      <Heading>Conta</Heading>
+      <div className="text-[12.5px] text-muted mt-1 break-all">{email}</div>
       <div className="flex gap-2 mt-4">
         <Btn onClick={lock}>Trancar o cofre</Btn>
         <Btn onClick={() => void signOut()}>Sair</Btn>
       </div>
-    </Panel>
+    </div>
   );
 }
 
@@ -77,8 +82,8 @@ export function ChangePassword() {
   };
 
   return (
-    <Panel className="p-6 space-y-3">
-      <div className="text-[15px] font-semibold">Trocar senha</div>
+    <div className="space-y-3">
+      <Heading>Trocar senha</Heading>
       {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
       {state === "ok" ? <p className="text-[12.5px] text-accent">Senha alterada.</p> : null}
       <Input type="password" placeholder="Senha atual" value={cur} onChange={(e) => setCur(e.target.value)} />
@@ -90,7 +95,7 @@ export function ChangePassword() {
       <p className="text-[11.5px] text-faint leading-relaxed">
         A senha re-cifra apenas a chave (o cofre não é recifrado). Seu código de recuperação continua válido.
       </p>
-    </Panel>
+    </div>
   );
 }
 
@@ -114,15 +119,15 @@ export function NewRecoveryCode() {
   };
 
   return (
-    <Panel className="p-6 space-y-3">
-      <div className="text-[15px] font-semibold">Novo código de recuperação</div>
+    <div className="space-y-3">
+      <Heading>Novo código de recuperação</Heading>
       <p className="text-[12.5px] text-muted leading-relaxed">
         Gera um código novo e invalida o anterior. Confirme com sua senha.
       </p>
       {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
       <Input type="password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} />
       <Btn disabled={loading} onClick={submit}>{loading ? "Gerando…" : "Gerar novo código"}</Btn>
-    </Panel>
+    </div>
   );
 }
 
@@ -145,8 +150,8 @@ export function DangerZone() {
   };
 
   return (
-    <Panel className="p-6 space-y-3 border-red-500/30">
-      <div className="text-[15px] font-semibold text-red-400">Excluir conta</div>
+    <div className="rounded-[12px] border border-red-500/30 bg-red-500/[0.04] p-5 space-y-3">
+      <Heading danger>Excluir conta</Heading>
       <p className="text-[12.5px] text-muted leading-relaxed">
         Apaga sua conta e o cofre cifrado <b className="text-text">para sempre</b>. Não há como desfazer.
       </p>
@@ -164,6 +169,6 @@ export function DangerZone() {
           </div>
         </>
       )}
-    </Panel>
+    </div>
   );
 }

@@ -7,7 +7,7 @@ import { Panel } from "@/components/common/panel";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import {
-  AccountCard,
+  AccountSection,
   ChangePassword,
   NewRecoveryCode,
   DangerZone,
@@ -31,16 +31,16 @@ export default function Config() {
   const [tab, setTab] = useState<TabId>("conta");
 
   return (
-    <div>
-      {/* Abas horizontais (underline) */}
-      <div className="flex gap-1 border-b border-border overflow-x-auto">
+    <Panel className="overflow-hidden max-w-5xl">
+      {/* Abas no topo do card */}
+      <div className="flex border-b border-border px-3 no-scrollbar overflow-x-auto">
         {TABS.map((tb) => (
           <button
             key={tb.id}
             type="button"
             onClick={() => setTab(tb.id)}
             className={cn(
-              "relative px-4 py-3 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
+              "relative px-4 py-3.5 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
               tab === tb.id ? "text-text" : "text-muted hover:text-text",
             )}
           >
@@ -53,37 +53,36 @@ export default function Config() {
       </div>
 
       {/* Conteúdo da aba */}
-      <div className="pt-8">
+      <div className="p-6 lg:p-8 min-h-[340px]">
         {tab === "conta" && (
-          <div className="grid lg:grid-cols-2 gap-5 items-start">
-            <AccountCard />
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+            <AccountSection />
             <DangerZone />
           </div>
         )}
         {tab === "seguranca" && (
-          <div className="grid lg:grid-cols-2 gap-5 items-start">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             <ChangePassword />
             <NewRecoveryCode />
           </div>
         )}
-        {tab === "aparencia" && (
-          <div className="max-w-2xl">
-            <Appearance />
-          </div>
-        )}
-        {tab === "dados" && (
-          <div className="max-w-2xl">
-            <DataSection />
-          </div>
-        )}
+        {tab === "aparencia" && <Appearance />}
+        {tab === "dados" && <DataSection />}
         {tab === "privacidade" && (
           <div className="max-w-3xl">
-            <PrivacySection />
+            <PrivacyPolicyContent />
+            <div className="mt-5">
+              <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
+            </div>
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   );
+}
+
+function SubHeading({ children }: { children: React.ReactNode }) {
+  return <div className="text-[14px] font-semibold mb-3">{children}</div>;
 }
 
 function Appearance() {
@@ -91,44 +90,32 @@ function Appearance() {
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
   return (
-    <Panel className="p-6">
-      <div className="grid sm:grid-cols-2 gap-6">
-        <section>
-          <div className="text-[15px] font-semibold mb-2.5">{t("common.theme")}</div>
-          <div className="flex gap-2">
-            {THEMES.map((opt) => (
-              <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
-                {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
-              </Pill>
-            ))}
-          </div>
-        </section>
-        <section>
-          <div className="text-[15px] font-semibold mb-2.5">{t("common.language")}</div>
-          <div className="flex gap-2">
-            {SUPPORTED_LANGS.map((lng) => (
-              <Pill
-                key={lng}
-                active={i18n.resolvedLanguage === lng}
-                onClick={() => void i18n.changeLanguage(lng)}
-              >
-                <span className="uppercase">{lng}</span>
-              </Pill>
-            ))}
-          </div>
-        </section>
-      </div>
-    </Panel>
-  );
-}
-
-function PrivacySection() {
-  return (
-    <Panel className="p-6 space-y-3">
-      <div className="text-[15px] font-semibold">Privacidade</div>
-      <PrivacyPolicyContent />
-      <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
-    </Panel>
+    <div className="grid sm:grid-cols-2 gap-8 max-w-2xl">
+      <section>
+        <SubHeading>{t("common.theme")}</SubHeading>
+        <div className="flex gap-2">
+          {THEMES.map((opt) => (
+            <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
+              {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
+            </Pill>
+          ))}
+        </div>
+      </section>
+      <section>
+        <SubHeading>{t("common.language")}</SubHeading>
+        <div className="flex gap-2">
+          {SUPPORTED_LANGS.map((lng) => (
+            <Pill
+              key={lng}
+              active={i18n.resolvedLanguage === lng}
+              onClick={() => void i18n.changeLanguage(lng)}
+            >
+              <span className="uppercase">{lng}</span>
+            </Pill>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -137,9 +124,7 @@ function DataSection() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <Panel className="p-6 space-y-5">
-      <div className="text-[15px] font-semibold">{t("data.title")}</div>
-
+    <div className="space-y-6 max-w-2xl">
       <DataRow title={t("data.sample")} desc={t("data.sampleDesc")}>
         <Button variant="secondary" onClick={() => void actions.loadSample()}>
           {t("data.loadSample")}
@@ -170,7 +155,7 @@ function DataSection() {
           </Button>
         </div>
       </Dialog>
-    </Panel>
+    </div>
   );
 }
 
