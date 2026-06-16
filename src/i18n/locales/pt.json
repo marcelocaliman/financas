@@ -18,6 +18,7 @@
     "historico": "Histórico",
     "objetivos": "Objetivos",
     "projecao": "Projeção",
+    "crossborder": "Internacional",
     "config": "Config"
   },
   "common": {
@@ -205,6 +206,40 @@
     "received": "Recebido",
     "add": "Adicionar provento",
     "hint": "Registre dividendos, JCP e rendimentos de FII recebidos (fonte, mês AAAA-MM e valor). O yield é a renda dos últimos 12 meses sobre o total investido."
+  },
+  "crossborder": {
+    "fxTitle": "Impacto do câmbio no patrimônio",
+    "fxHint": "Você tem patrimônio em mais de uma moeda. Quando o câmbio mexe, o seu patrimônio (na moeda principal) mexe junto. Veja a exposição e a sensibilidade.",
+    "fxEmpty": "Adicione ativos pra ver a exposição cambial.",
+    "principal": "principal",
+    "sensitivity": "Sensibilidade ao câmbio",
+    "sensitivityHint": "Se as moedas estrangeiras valorizarem ou desvalorizarem {{pct}}% frente à sua principal.",
+    "move": "Variação do câmbio",
+    "foreignExposure": "Em moeda estrangeira",
+    "foreignShare": "do patrimônio",
+    "swing": "Oscilação",
+    "range": "Faixa do patrimônio",
+    "colTitle": "Custo de vida entre países",
+    "colHint": "Quanto custaria manter o seu padrão de gastos atual em outro país (índice aproximado, Brasil = 100).",
+    "yourExpenses": "Seus gastos/mês",
+    "equivalentIn": "Equivalente em {{country}}",
+    "difference": "Diferença",
+    "colDisclaimer": "Índice estático e aproximado — direção de grandeza, não preço exato. Não considera câmbio nem aluguel especificamente.",
+    "country": {
+      "br": "Brasil", "pt": "Portugal", "it": "Itália", "es": "Espanha",
+      "fr": "França", "de": "Alemanha", "uk": "Reino Unido", "us": "Estados Unidos", "ch": "Suíça"
+    },
+    "fiscalTitle": "Obrigações fiscais cross-border",
+    "fiscalHint": "Lembretes das principais obrigações pra quem vive entre países. Informativo — confirme prazos e o seu caso com um contador.",
+    "fiscalDisclaimer": "Conteúdo informativo, não é aconselhamento fiscal ou jurídico. Regras e prazos mudam e dependem do seu caso.",
+    "fiscal": {
+      "crs": { "title": "CRS — troca de informações", "when": "Anual", "desc": "Bancos reportam contas de não residentes às autoridades fiscais, que trocam dados entre países (Common Reporting Standard). Mantenha consistência entre o que declara aqui e lá." },
+      "brExit": { "title": "Saída fiscal do Brasil", "when": "Ao mudar", "desc": "Ao virar residente fiscal no exterior: Comunicação e Declaração de Saída Definitiva do País — pra não continuar tributado como residente." },
+      "irpf": { "title": "IRPF (Brasil)", "when": "Até abril", "desc": "Enquanto residente fiscal no Brasil, a declaração anual do imposto de renda vence normalmente no fim de abril." },
+      "quadroRw": { "title": "Quadro RW (Itália)", "when": "Anual", "desc": "Residentes na Itália declaram ativos e contas no exterior (monitoraggio fiscale) — inclui investimentos e imóveis fora do país." },
+      "dichiarazione": { "title": "Dichiarazione dei redditi (Itália)", "when": "Set–Nov", "desc": "Declaração de renda italiana (Modello Redditi / 730). Os prazos costumam cair entre setembro e novembro, conforme o modelo." },
+      "forfettario": { "title": "Regime Forfettario (Itália)", "when": "Contínuo", "desc": "Regime simplificado pra autônomos, com alíquota reduzida e teto de faturamento — vale avaliar se você presta serviços na Itália." }
+    }
   },
   "data": {
     "title": "Dados",

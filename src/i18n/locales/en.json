@@ -18,6 +18,7 @@
     "historico": "History",
     "objetivos": "Goals",
     "projecao": "Projection",
+    "crossborder": "Cross-border",
     "config": "Settings"
   },
   "common": {
@@ -205,6 +206,40 @@
     "received": "Received",
     "add": "Add dividend",
     "hint": "Log dividends, interest-on-equity and REIT income received (source, month YYYY-MM and amount). Yield is the last 12 months' income over total invested."
+  },
+  "crossborder": {
+    "fxTitle": "FX impact on your wealth",
+    "fxHint": "You hold wealth in more than one currency. When exchange rates move, your net worth (in your main currency) moves with them. See your exposure and sensitivity.",
+    "fxEmpty": "Add assets to see your FX exposure.",
+    "principal": "main",
+    "sensitivity": "FX sensitivity",
+    "sensitivityHint": "If foreign currencies appreciate or depreciate {{pct}}% against your main currency.",
+    "move": "FX move",
+    "foreignExposure": "In foreign currency",
+    "foreignShare": "of net worth",
+    "swing": "Swing",
+    "range": "Net worth range",
+    "colTitle": "Cost of living across countries",
+    "colHint": "What it would cost to keep your current spending standard in another country (approximate index, Brazil = 100).",
+    "yourExpenses": "Your expenses/mo",
+    "equivalentIn": "Equivalent in {{country}}",
+    "difference": "Difference",
+    "colDisclaimer": "Static, approximate index — order of magnitude, not exact prices. Doesn't account for FX or rent specifically.",
+    "country": {
+      "br": "Brazil", "pt": "Portugal", "it": "Italy", "es": "Spain",
+      "fr": "France", "de": "Germany", "uk": "United Kingdom", "us": "United States", "ch": "Switzerland"
+    },
+    "fiscalTitle": "Cross-border tax obligations",
+    "fiscalHint": "Reminders of key obligations for living between countries. Informational — confirm deadlines and your case with an accountant.",
+    "fiscalDisclaimer": "Informational only, not tax or legal advice. Rules and deadlines change and depend on your situation.",
+    "fiscal": {
+      "crs": { "title": "CRS — information exchange", "when": "Yearly", "desc": "Banks report non-residents' accounts to tax authorities, which exchange data between countries (Common Reporting Standard). Keep what you declare here and abroad consistent." },
+      "brExit": { "title": "Brazil tax exit", "when": "On move", "desc": "When you become a tax resident abroad: file the Definitive Departure Communication and Declaration in Brazil so you're no longer taxed as a resident." },
+      "irpf": { "title": "IRPF (Brazil)", "when": "By April", "desc": "While a Brazilian tax resident, the annual income tax return is normally due end of April." },
+      "quadroRw": { "title": "Quadro RW (Italy)", "when": "Yearly", "desc": "Italian residents declare foreign assets and accounts (monitoraggio fiscale) — including investments and property held abroad." },
+      "dichiarazione": { "title": "Dichiarazione dei redditi (Italy)", "when": "Sep–Nov", "desc": "Italian income tax return (Modello Redditi / 730). Deadlines usually fall between September and November, depending on the form." },
+      "forfettario": { "title": "Regime Forfettario (Italy)", "when": "Ongoing", "desc": "Simplified flat-tax regime for the self-employed with a revenue cap — worth assessing if you provide services in Italy." }
+    }
   },
   "data": {
     "title": "Data",

@@ -18,6 +18,7 @@
     "historico": "Storico",
     "objetivos": "Obiettivi",
     "projecao": "Proiezione",
+    "crossborder": "Internazionale",
     "config": "Impostazioni"
   },
   "common": {
@@ -205,6 +206,40 @@
     "received": "Ricevuto",
     "add": "Aggiungi provento",
     "hint": "Registra dividendi, interessi e rendimenti REIT ricevuti (fonte, mese AAAA-MM e importo). Il rendimento è il reddito degli ultimi 12 mesi sul totale investito."
+  },
+  "crossborder": {
+    "fxTitle": "Impatto del cambio sul patrimonio",
+    "fxHint": "Hai patrimonio in più valute. Quando il cambio si muove, il tuo patrimonio (nella valuta principale) si muove con esso. Guarda l'esposizione e la sensibilità.",
+    "fxEmpty": "Aggiungi attività per vedere l'esposizione valutaria.",
+    "principal": "principale",
+    "sensitivity": "Sensibilità al cambio",
+    "sensitivityHint": "Se le valute estere si apprezzano o si deprezzano del {{pct}}% rispetto alla tua principale.",
+    "move": "Variazione del cambio",
+    "foreignExposure": "In valuta estera",
+    "foreignShare": "del patrimonio",
+    "swing": "Oscillazione",
+    "range": "Intervallo del patrimonio",
+    "colTitle": "Costo della vita tra paesi",
+    "colHint": "Quanto costerebbe mantenere il tuo attuale tenore di spesa in un altro paese (indice approssimativo, Brasile = 100).",
+    "yourExpenses": "Spese/mese",
+    "equivalentIn": "Equivalente in {{country}}",
+    "difference": "Differenza",
+    "colDisclaimer": "Indice statico e approssimativo — ordine di grandezza, non prezzi esatti. Non considera cambio né affitto in modo specifico.",
+    "country": {
+      "br": "Brasile", "pt": "Portogallo", "it": "Italia", "es": "Spagna",
+      "fr": "Francia", "de": "Germania", "uk": "Regno Unito", "us": "Stati Uniti", "ch": "Svizzera"
+    },
+    "fiscalTitle": "Obblighi fiscali cross-border",
+    "fiscalHint": "Promemoria dei principali obblighi per chi vive tra paesi. Informativo — verifica scadenze e il tuo caso con un commercialista.",
+    "fiscalDisclaimer": "Solo informativo, non è consulenza fiscale o legale. Regole e scadenze cambiano e dipendono dal tuo caso.",
+    "fiscal": {
+      "crs": { "title": "CRS — scambio di informazioni", "when": "Annuale", "desc": "Le banche segnalano i conti dei non residenti alle autorità fiscali, che scambiano i dati tra paesi (Common Reporting Standard). Mantieni coerenza tra ciò che dichiari qui e all'estero." },
+      "brExit": { "title": "Uscita fiscale dal Brasile", "when": "Al trasferimento", "desc": "Quando diventi residente fiscale all'estero: presenta Comunicazione e Dichiarazione di Uscita Definitiva in Brasile per non essere più tassato come residente." },
+      "irpf": { "title": "IRPF (Brasile)", "when": "Entro aprile", "desc": "Finché sei residente fiscale in Brasile, la dichiarazione annuale dei redditi scade normalmente a fine aprile." },
+      "quadroRw": { "title": "Quadro RW (Italia)", "when": "Annuale", "desc": "I residenti in Italia dichiarano attività e conti all'estero (monitoraggio fiscale) — inclusi investimenti e immobili fuori dal paese." },
+      "dichiarazione": { "title": "Dichiarazione dei redditi (Italia)", "when": "Set–Nov", "desc": "Dichiarazione dei redditi italiana (Modello Redditi / 730). Le scadenze cadono di solito tra settembre e novembre, secondo il modello." },
+      "forfettario": { "title": "Regime Forfettario (Italia)", "when": "In corso", "desc": "Regime semplificato a tassazione ridotta per autonomi con un tetto di ricavi — utile valutarlo se offri servizi in Italia." }
+    }
   },
   "data": {
     "title": "Dati",

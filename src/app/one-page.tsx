@@ -12,6 +12,7 @@ import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
 import Historico, { HistoricoSummary } from "@/pages/historico";
 import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
 import Projecao, { ProjecaoSummary } from "@/pages/projecao";
+import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
 
 /** id → { detalhe (corpo do accordion), summary (KPIs do header) }. */
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
@@ -21,6 +22,7 @@ const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
   historico: { detail: <Historico />, summary: <HistoricoSummary /> },
   objetivos: { detail: <Objetivos />, summary: <ObjetivosSummary /> },
   projecao: { detail: <Projecao />, summary: <ProjecaoSummary /> },
+  crossborder: { detail: <CrossBorder />, summary: <CrossBorderSummary /> },
 };
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
