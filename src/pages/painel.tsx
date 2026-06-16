@@ -81,7 +81,7 @@ export default function Painel() {
     };
   }, [data, disp]);
 
-  if (!view) return <div className="h-[60vh] rounded-[18px] bg-card border border-border animate-pulse" />;
+  if (!view) return <div className="h-[60vh] rounded-[24px] bg-card border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
 
   const money = (v: number) => formatMoney(v, disp);
@@ -89,89 +89,101 @@ export default function Painel() {
 
   return (
     <div>
-      {/* ── HERO full-page ─────────────────────────────────────────── */}
-      <div className="min-h-[calc(100svh-4rem)] flex flex-col justify-center py-12">
-        <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
-        <HeroNumber
-          value={view.netWorth}
-          currency={disp}
-          className="block text-[clamp(56px,11vw,148px)] mt-3"
-        />
-        {hasTrend ? (
-          <div className="mt-4">
-            <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
-          </div>
-        ) : null}
+      {/* ── HERO full-page com degradê ─────────────────────────────── */}
+      <div className="hero-bg relative overflow-hidden rounded-[24px] min-h-[calc(100svh-5.5rem)] flex items-center mt-2 border border-border">
+        <div className="relative z-10 w-full px-6 md:px-9 lg:px-12 py-12">
+          <div className="grid grid-cols-12 gap-x-10 gap-y-10 items-center">
+            {/* Número + composição */}
+            <div className="col-span-12 lg:col-span-6">
+              <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
+              <HeroNumber
+                value={view.netWorth}
+                currency={disp}
+                className="block text-[clamp(46px,7.5vw,110px)] mt-3"
+              />
+              {hasTrend ? (
+                <div className="mt-4">
+                  <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
+                </div>
+              ) : null}
+              {view.curSegments.length > 0 ? (
+                <div className="mt-8 max-w-md">
+                  <CompositionBar
+                    segments={view.curSegments.map((s) => ({
+                      label: s.currency,
+                      pct: s.pct,
+                      color: colors[s.currency],
+                    }))}
+                  />
+                </div>
+              ) : null}
+            </div>
 
-        {view.curSegments.length > 0 ? (
-          <div className="mt-9 max-w-2xl">
-            <CompositionBar
-              segments={view.curSegments.map((s) => ({
-                label: s.currency,
-                pct: s.pct,
-                color: colors[s.currency],
-              }))}
-            />
+            {/* Gráfico de evolução (dentro do hero) */}
+            <div className="col-span-12 lg:col-span-6">
+              <div className="rounded-[18px] glass border border-border p-5">
+                <div className="flex items-center justify-between">
+                  <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
+                  {hasTrend ? <Delta pct={view.nwChange} /> : null}
+                </div>
+                <div className="text-[12px] text-faint mt-1">
+                  {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
+                </div>
+                <div className="w-full h-[180px] mt-3">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
+                      <defs>
+                        <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
+                          <stop offset="100%" stopColor={accent} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        formatter={(v) => money(Number(v))}
+                        contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
+                      />
+                      <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : null}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mt-12 max-w-5xl">
-          <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
-          <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
-          <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
-          <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
+          {/* Números-chave */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
+            <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
+            <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
+            <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
+            <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
+          </div>
+
+          <div className="flex justify-center mt-10">
+            <button
+              type="button"
+              onClick={() => scrollToSection("patrimonio")}
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-faint hover:text-text transition-colors"
+            >
+              {t("dashboard.scroll")}
+              <ChevronDown size={15} className="animate-bounce" />
+            </button>
+          </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => scrollToSection("patrimonio")}
-          className="mt-12 self-start inline-flex items-center gap-1.5 text-[12px] font-medium text-faint hover:text-text transition-colors"
-        >
-          {t("dashboard.scroll")}
-          <ChevronDown size={15} className="animate-bounce" />
-        </button>
       </div>
 
-      {/* ── Detalhe ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-12 gap-5 pt-2">
-        <Tile className="col-span-12 lg:col-span-8 p-6 flex flex-col">
-          <div className="flex items-center justify-between">
-            <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
-            {hasTrend ? <Delta pct={view.nwChange} /> : null}
-          </div>
-          <div className="text-[12px] text-faint mt-1">
-            {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
-          </div>
-          <div className="w-full flex-1 min-h-[190px] mt-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
-                <defs>
-                  <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={accent} stopOpacity={0.22} />
-                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  formatter={(v) => money(Number(v))}
-                  contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
-                />
-                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </Tile>
-
-        <Tile className="col-span-12 lg:col-span-4 p-6">
+      {/* ── Detalhe: orçamento + posições ──────────────────────────── */}
+      <div className="grid grid-cols-12 gap-5 pt-7">
+        <Tile className="col-span-12 lg:col-span-5 p-6">
           <div className="flex items-center justify-between">
             <Eyebrow>{t("dashboard.budget")}</Eyebrow>
             <Money value={view.totalExp} currency={disp} className="text-[12.5px] text-muted" />
           </div>
           <div className="flex items-center gap-5 mt-4">
-            <div className="w-[110px] h-[110px] shrink-0">
+            <div className="w-[120px] h-[120px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={34} outerRadius={53} paddingAngle={2} stroke="none">
+                  <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={38} outerRadius={58} paddingAngle={2} stroke="none">
                     {view.expDisp.map((e, i) => (
                       <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                     ))}
@@ -181,7 +193,7 @@ export default function Painel() {
               </ResponsiveContainer>
             </div>
             <div className="flex-1 space-y-1.5 min-w-0">
-              {view.expDisp.slice(0, 5).map((e, i) => (
+              {view.expDisp.map((e, i) => (
                 <div key={e.name} className="flex items-center justify-between text-[12.5px]">
                   <span className="flex items-center gap-2 text-muted truncate">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
@@ -194,7 +206,7 @@ export default function Painel() {
           </div>
         </Tile>
 
-        <Tile className="col-span-12 p-6">
+        <Tile className="col-span-12 lg:col-span-7 p-6">
           <div className="flex items-center justify-between mb-1">
             <Eyebrow>{t("dashboard.positionsTitle")}</Eyebrow>
             <span className="text-[11.5px] text-faint tabular">
@@ -234,24 +246,24 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
 
 function StatTile({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
   return (
-    <Tile className="p-6">
+    <div className="rounded-[16px] bg-card/55 border border-border p-5 backdrop-blur-sm">
       <Eyebrow>{label}</Eyebrow>
-      <div className={cn("font-display font-semibold text-[clamp(22px,2.2vw,30px)] tracking-[-0.02em] tabular mt-2", positive ? "text-pos" : "text-text")}>
+      <div className={cn("font-display font-semibold text-[clamp(20px,2vw,28px)] tracking-[-0.02em] tabular mt-2", positive ? "text-pos" : "text-text")}>
         {value}
       </div>
       {sub ? <div className="text-[11.5px] text-faint mt-1">{sub}</div> : null}
-    </Tile>
+    </div>
   );
 }
 
 function PainelEmpty() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-[calc(100svh-4rem)] flex flex-col items-center justify-center text-center">
+    <div className="hero-bg rounded-[24px] border border-border min-h-[calc(100svh-5.5rem)] mt-2 flex flex-col items-center justify-center text-center px-6">
       <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mb-5">
         <Sparkles size={22} />
       </div>
-      <div className="text-[clamp(24px,4vw,40px)] font-display font-semibold tracking-[-0.02em]">{t("dashboard.empty")}</div>
+      <div className="text-[clamp(26px,4.5vw,46px)] font-display font-semibold tracking-[-0.02em]">{t("dashboard.empty")}</div>
       <p className="text-[14px] text-muted mt-3 max-w-md leading-relaxed">{t("dashboard.emptyDesc")}</p>
       <div className="flex flex-wrap items-center justify-center gap-2 mt-7">
         <Button onClick={() => scrollToSection("patrimonio")}>

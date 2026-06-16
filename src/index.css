@@ -171,16 +171,39 @@ body {
   -webkit-backdrop-filter: blur(14px) saturate(1.05);
 }
 
-/* Número-herói editorial: peso + ar, sem glow. */
+/* Número-herói: peso + ar + brilho gradiente sutil (off-white → tom do acento). */
 .hero-number {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums slashed-zero;
   letter-spacing: -0.03em;
   line-height: 0.96;
-  color: var(--text);
+  background: linear-gradient(
+    168deg,
+    var(--text) 24%,
+    color-mix(in oklab, var(--accent) 60%, var(--text)) 128%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .hero-number-neg {
-  color: var(--neg);
+  background: linear-gradient(168deg, var(--text) 24%, var(--neg) 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Degradê do HERO: graphite com glow suave do acento (destaque, sem sujar). */
+.hero-bg {
+  background:
+    radial-gradient(58% 50% at 16% 22%, rgba(91, 122, 18, 0.1), transparent 62%),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 74%);
+}
+.dark .hero-bg {
+  background:
+    radial-gradient(56% 48% at 16% 20%, rgba(199, 249, 78, 0.09), transparent 62%),
+    radial-gradient(46% 44% at 88% 84%, rgba(110, 143, 214, 0.06), transparent 60%),
+    linear-gradient(180deg, #131418 0%, var(--bg) 70%);
 }
 
 /* Selos de moeda (camada de dados). */
