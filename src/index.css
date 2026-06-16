@@ -193,18 +193,19 @@ body {
   color: transparent;
 }
 
-/* Degradê do HERO: destaque presente — graphite com profundidade + glow do acento. */
+/* Degradê do HERO: glows ancorados no topo (px) → ficam no hero mesmo a seção
+   crescendo; o linear desce pro fundo do app, integrando tudo. */
 .hero-bg {
   background:
-    radial-gradient(72% 58% at 14% 4%, rgba(91, 122, 18, 0.14), transparent 56%),
-    radial-gradient(60% 52% at 96% 98%, rgba(44, 99, 214, 0.08), transparent 60%),
-    linear-gradient(158deg, #ffffff 0%, #f0f2f5 46%, var(--bg) 100%);
+    radial-gradient(1100px 760px at 12% -130px, rgba(91, 122, 18, 0.13), transparent 70%),
+    radial-gradient(820px 620px at 98% 30px, rgba(44, 99, 214, 0.07), transparent 72%),
+    linear-gradient(180deg, #ffffff 0%, var(--bg) 58%);
 }
 .dark .hero-bg {
   background:
-    radial-gradient(78% 62% at 13% 2%, rgba(199, 249, 78, 0.16), transparent 56%),
-    radial-gradient(62% 55% at 97% 98%, rgba(110, 143, 214, 0.1), transparent 60%),
-    linear-gradient(158deg, #1c1f25 0%, #121317 48%, #0b0c0e 100%);
+    radial-gradient(1150px 800px at 11% -140px, rgba(199, 249, 78, 0.17), transparent 70%),
+    radial-gradient(860px 640px at 99% 20px, rgba(110, 143, 214, 0.1), transparent 72%),
+    linear-gradient(180deg, #1a1d23 0%, var(--bg) 56%);
 }
 
 /* Selos de moeda (camada de dados). */

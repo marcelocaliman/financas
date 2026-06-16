@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, ChevronDown } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
@@ -149,16 +149,6 @@ export function DashboardHero() {
         </div>
       </div>
 
-      <div className="flex justify-center mt-11">
-        <button
-          type="button"
-          onClick={() => scrollToSection("patrimonio")}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-faint hover:text-text transition-colors"
-        >
-          {t("dashboard.scroll")}
-          <ChevronDown size={15} className="animate-bounce" />
-        </button>
-      </div>
     </>
   );
 }

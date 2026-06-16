@@ -22,16 +22,16 @@ export function OnePage() {
 
   return (
     <div>
-      {/* HERO full-bleed — degradê edge-to-edge, header transparente por cima */}
+      {/* DASHBOARD full-bleed — hero + detalhe, tudo no mesmo degradê */}
       <section id="painel" className="hero-bg relative">
-        <div className={cn("max-w-[1560px] mx-auto min-h-[100svh] flex flex-col justify-center pt-24 pb-16", GUTTERS)}>
+        <div className={cn("max-w-[1560px] mx-auto pt-28 lg:pt-32 pb-20", GUTTERS)}>
           <DashboardHero />
+          <DashboardDetail />
         </div>
       </section>
 
-      {/* Resto no container */}
+      {/* Seções numeradas no container */}
       <div className={cn("max-w-[1560px] mx-auto", GUTTERS)}>
-        <DashboardDetail />
         {rest.map((item, i) => (
           <Section key={item.id} id={item.id} index={i + 1} title={t(`nav.${item.key}`)}>
             {CONTENT[item.id] ?? <ComingSoon />}
