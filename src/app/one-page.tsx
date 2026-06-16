@@ -48,16 +48,10 @@ export function OnePage() {
 
       {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro) */}
       <div className={cn(CONTAINER, GUTTERS)}>
-        {rest.map((item, i) => {
+        {rest.map((item) => {
           const sec = SECTIONS[item.id];
           return (
-            <Accordion
-              key={item.id}
-              id={item.id}
-              title={t(`nav.${item.key}`)}
-              summary={sec?.summary}
-              defaultOpen={i === 0}
-            >
+            <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary}>
               {sec?.detail ?? <ComingSoon />}
             </Accordion>
           );
