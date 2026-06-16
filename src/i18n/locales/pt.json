@@ -114,11 +114,7 @@
     "categoryPlaceholder": "Categoria…",
     "detail": "Detalhe",
     "detailPlaceholder": "Ex.: Aluguel do apê",
-    "uncategorized": "Sem categoria",
-    "incomePlaceholder": "Ex.: Salário",
-    "expensePlaceholder": "Ex.: Moradia",
-    "addIncome": "Adicionar receita",
-    "addExpense": "Adicionar gasto"
+    "uncategorized": "Sem categoria"
   },
   "historico": {
     "month": "Mês",

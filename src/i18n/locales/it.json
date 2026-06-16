@@ -114,11 +114,7 @@
     "categoryPlaceholder": "Categoria…",
     "detail": "Dettaglio",
     "detailPlaceholder": "Es.: Affitto casa",
-    "uncategorized": "Senza categoria",
-    "incomePlaceholder": "Es.: Stipendio",
-    "expensePlaceholder": "Es.: Casa",
-    "addIncome": "Aggiungi entrata",
-    "addExpense": "Aggiungi spesa"
+    "uncategorized": "Senza categoria"
   },
   "historico": {
     "month": "Mese",

@@ -114,11 +114,7 @@
     "categoryPlaceholder": "Category…",
     "detail": "Detail",
     "detailPlaceholder": "e.g. Apartment rent",
-    "uncategorized": "Uncategorized",
-    "incomePlaceholder": "e.g. Salary",
-    "expensePlaceholder": "e.g. Housing",
-    "addIncome": "Add income",
-    "addExpense": "Add expense"
+    "uncategorized": "Uncategorized"
   },
   "historico": {
     "month": "Month",

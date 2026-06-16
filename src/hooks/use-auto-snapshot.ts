@@ -5,9 +5,10 @@ import { useRates } from "@/store/rates";
 import { actions } from "@/data/actions";
 import { convert } from "@/money/currency";
 
-/** Mês atual em "AAAA-MM" (ordenável). */
+/** Mês atual em "AAAA-MM" no horário LOCAL (UTC erraria a virada num app cross-border). */
 function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 /**
@@ -30,12 +31,20 @@ export function useAutoSnapshot(): void {
       data.assets.reduce((s, a) => s + convert(a.amount, a.currency, "BRL", rates), 0) -
       data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, "BRL", rates), 0);
 
-    const existing = snapshots.find((s) => s.month === month);
-    if (!existing) {
+    const rows = snapshots.filter((s) => s.month === month);
+    const manual = rows.find((s) => s.auto !== true);
+    if (manual) {
+      // Usuário assumiu o mês manualmente → respeita e limpa um auto duplicado, se houver.
+      const dupAuto = rows.find((s) => s.auto === true);
+      if (dupAuto) void actions.removeSnapshot(dupAuto.id);
+      return;
+    }
+    const auto = rows.find((s) => s.auto === true);
+    if (!auto) {
       void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: "BRL", amount: nwBRL, auto: true });
-    } else if (existing.auto && Math.abs(existing.amount - nwBRL) > 0.5) {
+    } else if (Math.abs(auto.amount - nwBRL) > 0.5) {
       // Só o snapshot AUTO do mês corrente é atualizado; manual/passado fica intocado.
-      void actions.putSnapshot({ ...existing, currency: "BRL", amount: nwBRL });
+      void actions.putSnapshot({ ...auto, currency: "BRL", amount: nwBRL });
     }
   }, [data, snapshots, rates]);
 }

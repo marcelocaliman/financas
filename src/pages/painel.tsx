@@ -6,7 +6,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, type Currency } from "@/money/currency";
-import { currencyBreakdown, currencyColors } from "@/money/composition";
+import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { isInvestedClass, nameById } from "@/domain/taxonomy";
@@ -38,10 +38,7 @@ function usePainelView() {
   const colors = currencyColors(theme);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axisColor = theme === "dark" ? "#5f646c" : "#8a8f98";
-  const CAT_COLORS =
-    theme === "dark"
-      ? ["#3ECF8E", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#3A4046"]
-      : ["#15976A", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#A1A1AA"];
+  const CAT_COLORS = categoryColors(theme);
 
   const monthLabel = useMemo(() => {
     const m = new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date());
@@ -61,7 +58,7 @@ function usePainelView() {
     const byCat = new Map<string, number>();
     for (const e of data.expenses) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
     const expDisp = [...byCat.entries()]
-      .map(([id, value]) => ({ name: nameById(tax.expenseCategories, id) || "—", value }))
+      .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
     const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
@@ -94,7 +91,7 @@ function usePainelView() {
       nwChange,
       isEmpty,
     };
-  }, [data, disp, rates, tax]);
+  }, [data, disp, rates, tax, t]);
 
   return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
 }
@@ -203,7 +200,7 @@ export function DashboardDetail() {
                 <PieChart>
                   <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={36} outerRadius={56} paddingAngle={2} stroke="none">
                     {view.expDisp.map((e, i) => (
-                      <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                      <Cell key={e.id} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
@@ -212,7 +209,7 @@ export function DashboardDetail() {
             </div>
             <div className="flex-1 space-y-1.5 min-w-0">
               {view.expDisp.map((e, i) => (
-                <div key={e.name} className="flex items-center justify-between text-[12.5px]">
+                <div key={e.id} className="flex items-center justify-between text-[12.5px]">
                   <span className="flex items-center gap-2 text-muted truncate">
                     <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
                     {e.name}
