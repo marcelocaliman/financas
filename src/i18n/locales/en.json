@@ -1,5 +1,15 @@
 {
   "app": { "name": "Finanças", "tagline": "(name TBD)" },
+  "hero": {
+    "phrases": [
+      "The future is built one contribution at a time.",
+      "Plant today; harvest tomorrow.",
+      "Consistency beats the market.",
+      "Every dollar invested today is freedom down the road.",
+      "Small steps now, big leaps later.",
+      "Wealth isn't luck — it's a habit."
+    ]
+  },
   "nav": {
     "painel": "Dashboard",
     "patrimonio": "Net worth",

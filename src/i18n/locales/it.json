@@ -1,5 +1,15 @@
 {
   "app": { "name": "Finanças", "tagline": "(nome da definire)" },
+  "hero": {
+    "phrases": [
+      "Il futuro si costruisce un versamento alla volta.",
+      "Semini oggi; raccogli domani.",
+      "La costanza batte il mercato.",
+      "Ogni euro investito oggi è libertà domani.",
+      "Piccoli passi ora, grandi salti dopo.",
+      "Il patrimonio non è fortuna — è un'abitudine."
+    ]
+  },
   "nav": {
     "painel": "Pannello",
     "patrimonio": "Patrimonio",

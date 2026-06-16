@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from "recharts";
@@ -95,24 +95,35 @@ export function DashboardHero() {
 
   return (
     <>
-      <div className="text-[15px] text-muted font-medium">{t("dashboard.netWorth")}</div>
-      <HeroNumber
-        value={view.netWorth}
-        currency={disp}
-        className="block whitespace-nowrap text-[clamp(30px,5.5vw,78px)] mt-1.5"
-      />
-      {hasTrend ? (
-        <div className="mt-3.5">
-          <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
-        </div>
-      ) : null}
-      {view.curSegments.length > 0 ? (
-        <div className="mt-6 max-w-md">
-          <CompositionBar
-            segments={view.curSegments.map((s) => ({ label: s.currency, pct: s.pct, color: colors[s.currency] }))}
+      {/* Manchete inspiradora (rotaciona) */}
+      <RotatingPhrase />
+
+      {/* Patrimônio líquido (número menor) + composição AO LADO */}
+      <div className="mt-8 lg:mt-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-7">
+        <div>
+          <div className="text-[13px] uppercase tracking-[0.16em] text-muted font-semibold">
+            {t("dashboard.netWorth")}
+          </div>
+          <HeroNumber
+            value={view.netWorth}
+            currency={disp}
+            className="block whitespace-nowrap text-[clamp(28px,4.6vw,58px)] mt-1.5"
           />
+          {hasTrend ? (
+            <div className="mt-3">
+              <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
+            </div>
+          ) : null}
         </div>
-      ) : null}
+        {view.curSegments.length > 0 ? (
+          <div className="flex-1 min-w-[260px] max-w-md">
+            <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>
+            <CompositionBar
+              segments={view.curSegments.map((s) => ({ label: s.currency, pct: s.pct, color: colors[s.currency] }))}
+            />
+          </div>
+        ) : null}
+      </div>
 
       <div className="grid grid-cols-12 gap-5 mt-12">
         <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">
@@ -219,6 +230,41 @@ export function DashboardDetail() {
         </div>
       </Tile>
     </div>
+  );
+}
+
+const ROTATE_MS = 6500;
+
+/** Manchete inspiradora que rotaciona com fade — motiva a investir no futuro. */
+function RotatingPhrase() {
+  const { t } = useTranslation();
+  const phrases = t("hero.phrases", { returnObjects: true });
+  const list = Array.isArray(phrases) ? (phrases as string[]) : [];
+  const [i, setI] = useState(0);
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    if (list.length < 2) return;
+    const id = setInterval(() => {
+      setShow(false);
+      setTimeout(() => {
+        setI((p) => (p + 1) % list.length);
+        setShow(true);
+      }, 450);
+    }, ROTATE_MS);
+    return () => clearInterval(id);
+  }, [list.length]);
+
+  if (!list.length) return null;
+  return (
+    <p
+      className={cn(
+        "font-display font-semibold text-[clamp(24px,3.6vw,46px)] tracking-[-0.02em] leading-[1.08] max-w-3xl text-text transition-opacity duration-500",
+        show ? "opacity-100" : "opacity-0",
+      )}
+    >
+      {list[i]}
+    </p>
   );
 }
 

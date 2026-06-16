@@ -1,5 +1,15 @@
 {
   "app": { "name": "Finanças", "tagline": "(nome a definir)" },
+  "hero": {
+    "phrases": [
+      "O futuro se constrói um aporte de cada vez.",
+      "Hoje você planta; amanhã você colhe.",
+      "Constância vence o mercado.",
+      "Cada real investido hoje é liberdade lá na frente.",
+      "Pequenos passos agora, grandes saltos depois.",
+      "Patrimônio não é sorte — é hábito."
+    ]
+  },
   "nav": {
     "painel": "Painel",
     "patrimonio": "Patrimônio",
