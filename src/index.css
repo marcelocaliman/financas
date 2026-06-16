@@ -166,6 +166,30 @@ body {
   display: none;
 }
 
+/* Barra de rolagem discreta, integrada ao tema (sem o cinza padrão do navegador). */
+.scrollbar-subtle {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+.scrollbar-subtle::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  /* borda transparente + clip = fininha e "flutuando", sem encostar na borda. */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+  background-clip: padding-box;
+}
+
 /* Micro-label: mono uppercase discreta (eyebrows, cabeçalhos de tabela). */
 .eyebrow {
   font-family: var(--font-mono);
