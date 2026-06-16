@@ -12,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyToggle } from "./currency-toggle";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { scrollToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
@@ -23,28 +23,34 @@ function nameFromEmail(email: string | null): string {
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : "";
 }
 
-/** Header sticky, full-width, translúcido (blur) — sem pill flutuante. */
+/** Header flutuante full-width: transparente e integrado ao hero no topo; vira glass ao rolar. */
 export function TopNav({ active }: { active: string }) {
   const { t } = useTranslation();
+  const scrolled = useScrolled(24);
   const hidden = useUI((s) => s.numbersHidden);
   const toggleNumbers = useUI((s) => s.toggleNumbers);
 
   return (
-    <header className="sticky top-0 z-50 w-full glass border-b border-border">
-      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-4 h-[60px] px-5 md:px-10 lg:px-14">
-        <div className="flex items-center gap-7 min-w-0">
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
+        scrolled ? "glass border-b border-border" : "border-b border-transparent",
+      )}
+    >
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-4 h-[72px] px-5 md:px-10 lg:px-14">
+        <div className="flex items-center gap-6 min-w-0">
           <button
             type="button"
             onClick={() => scrollToSection(NAV_ITEMS[0].id)}
-            className="flex items-center gap-2 shrink-0"
+            className="flex items-center gap-2.5 shrink-0"
           >
-            <div className="grid place-items-center w-[26px] h-[26px] rounded-[7px] bg-accent text-[#0A0B0D]">
-              <ArrowLeftRight size={14} strokeWidth={2.6} />
+            <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D]">
+              <ArrowLeftRight size={15} strokeWidth={2.6} />
             </div>
-            <span className="font-semibold text-[15.5px] tracking-[-0.02em]">{t("app.name")}</span>
+            <span className="font-semibold text-[16px] tracking-[-0.02em]">{t("app.name")}</span>
           </button>
 
-          <nav className="hidden lg:flex items-center gap-5">
+          <nav className="hidden lg:flex items-center gap-0.5 ml-1">
             {NAV_ITEMS.map(({ id, key }) => {
               const on = active === id;
               return (
@@ -53,8 +59,8 @@ export function TopNav({ active }: { active: string }) {
                   type="button"
                   onClick={() => scrollToSection(id)}
                   className={cn(
-                    "text-[13px] transition-colors",
-                    on ? "text-accent font-semibold" : "text-muted hover:text-text font-medium",
+                    "px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors",
+                    on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
                   )}
                 >
                   {t(`nav.${key}`)}
@@ -64,16 +70,17 @@ export function TopNav({ active }: { active: string }) {
           </nav>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={toggleNumbers}
             aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
-            className="grid place-items-center w-9 h-9 rounded-[9px] text-faint hover:text-text hover:bg-card-hover transition-colors"
+            className="grid place-items-center w-10 h-10 rounded-[11px] text-faint hover:text-text hover:bg-card-hover transition-colors"
           >
-            {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+            {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
           <CurrencyToggle />
+          <div className="hidden sm:block w-px h-6 bg-border mx-1" />
           <UserMenu />
         </div>
       </div>

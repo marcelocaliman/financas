@@ -26,7 +26,7 @@ export function OnePage() {
       {/* PAINEL — hero (glow full-bleed, mais ar) | divisor | dashboard */}
       <section id="painel" className="scroll-mt-20">
         <div className="hero-bg w-full overflow-hidden">
-          <div className={cn(CONTAINER, GUTTERS, "pt-[72px] pb-14")}>
+          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14")}>
             <DashboardHero />
           </div>
         </div>
@@ -52,7 +52,7 @@ export function OnePage() {
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section className="scroll-mt-20 pt-20 pb-2 border-t border-border" id={id}>
+    <section className="scroll-mt-[88px] pt-20 pb-2 border-t border-border" id={id}>
       <h2 className="font-semibold text-[clamp(26px,4vw,40px)] tracking-[-0.03em] leading-[1.05] mb-8">
         {title}
       </h2>
