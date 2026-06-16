@@ -56,7 +56,13 @@ export default async function handler(req, res) {
             currency: x.currency ?? "BRL",
           }))
       : [];
-    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
+    // Só cacheia SUCESSO (preços) — um vazio transitório (cota/erro) não pode ficar
+    // preso na edge por minutos e mascarar a cotação. Vazio re-tenta na próxima.
+    if (results.length > 0) {
+      res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
+    } else {
+      res.setHeader("Cache-Control", "no-store");
+    }
     res.status(200).json({ results });
   } catch {
     res.status(200).json({ results: [] });

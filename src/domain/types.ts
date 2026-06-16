@@ -27,6 +27,9 @@ export interface Asset {
   quantity?: number;
   /** Preço médio de compra (p/ ações/cotáveis) — base do custo e da rentabilidade. */
   avgPrice?: number;
+  /** Valor aplicado/investido (custo), na moeda do ativo — p/ classes SEM ticker
+   *  (renda fixa, outros). A rentabilidade = (valor atual − aplicado) / aplicado. */
+  cost?: number;
 }
 
 export interface Expense {

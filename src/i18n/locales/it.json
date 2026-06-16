@@ -107,6 +107,7 @@
     "price": "Quotazione",
     "return": "Rend.",
     "currentValue": "Valore attuale",
+    "applied": "Importo investito",
     "tickerHint": "Inserisci Ticker, Qtà e Prezzo medio — il valore si aggiorna dalla quotazione del giorno e mostra il rendimento.",
     "classTotal": "Totale classe",
     "share": "% degli asset",

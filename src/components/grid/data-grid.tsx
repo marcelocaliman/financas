@@ -4,7 +4,7 @@ import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
-import { formatAmountEdit, formatNumberEdit, parseAmount } from "@/money/parse";
+import { formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "@/money/parse";
 import { useUI } from "@/store/ui";
 
 const MASK = "••••";
@@ -123,7 +123,7 @@ function MoneyCell({
     if (!focused) setV(formatAmountEdit(value, currency));
   }, [value, currency, focused]);
   const commit = () => {
-    const n = parseAmount(v);
+    const n = parseLocaleNumber(v, currency);
     if (n != null && n !== value) onCommit(n);
     setV(formatAmountEdit(n ?? value, currency));
   };
@@ -240,7 +240,7 @@ function NumberCell({
       if (value != null) onCommit(undefined);
       return;
     }
-    const n = parseAmount(v);
+    const n = parseLocaleNumber(v, currency);
     if (n == null) {
       setV(fmt(value));
       return;

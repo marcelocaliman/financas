@@ -9,7 +9,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, nameById } from "@/domain/taxonomy";
+import { isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Kpi } from "@/components/common/kpi";
@@ -46,14 +46,15 @@ export default function Investimentos() {
       })
       .sort((a, b) => b.value - a.value);
     const totalTarget = rows.reduce((s, r) => s + r.tgtPct, 0);
-    // Rentabilidade: só sobre posições com preço médio (custo conhecido).
+    // Rentabilidade sobre posições com CUSTO conhecido: cotáveis usam qtd × preço médio;
+    // as demais (renda fixa, outros) usam o "valor aplicado" (cost). Unifica as telas.
     let totalCost = 0;
     let totalCostValue = 0;
     const positions = invested
       .map((a) => {
         const value = conv(a.amount, a.currency);
-        const cost = (a.quantity ?? 0) * (a.avgPrice ?? 0); // moeda do ativo
-        const hasCost = cost > 0 && (a.quantity ?? 0) > 0;
+        const cost = isQuotableClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0); // moeda do ativo
+        const hasCost = cost > 0;
         if (hasCost) {
           totalCost += conv(cost, a.currency);
           totalCostValue += value;
@@ -216,8 +217,9 @@ export function InvestimentosSummary() {
     let totalCost = 0;
     let totalCostValue = 0;
     for (const a of invested) {
-      const cost = (a.quantity ?? 0) * (a.avgPrice ?? 0);
-      if (cost > 0 && (a.quantity ?? 0) > 0) {
+      // Mesmo custo unificado da página: cotável = qtd×preço médio; demais = valor aplicado.
+      const cost = isQuotableClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
+      if (cost > 0) {
         totalCost += conv(cost, a.currency);
         totalCostValue += conv(a.amount, a.currency);
       }

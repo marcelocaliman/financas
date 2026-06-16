@@ -41,8 +41,8 @@ export function buildSeed(main: Currency): SeedData {
 
   return {
     assets: [
-      { id: "a1", name: "Tesouro / Renda fixa", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(57000), indexerId: "ipca" },
-      { id: "a2", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(32000), indexerId: "cdi", institution: "Banco digital" },
+      { id: "a1", name: "Tesouro / Renda fixa", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(57000), cost: m(52000), indexerId: "ipca" },
+      { id: "a2", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(32000), cost: m(30000), indexerId: "cdi", institution: "Banco digital" },
       { id: "a3", name: "Imóvel", classId: CLASS.imoveis, subtypeId: "imoveis-4", currency: main, amount: m(150000) },
       { id: "a4", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(25000) },
       // Itens "do exterior" — demonstram o multimoeda sem dominar a tela.

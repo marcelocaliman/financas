@@ -9,7 +9,7 @@ import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { CLASS, isInvestedClass } from "@/domain/taxonomy";
+import { CLASS, isInvestedClass, isQuotableClass } from "@/domain/taxonomy";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
 import { Kpi } from "@/components/common/kpi";
@@ -17,17 +17,6 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import { cn } from "@/lib/utils";
-
-/** Classes cujos ativos têm ticker/cotação (mostram colunas Ticker + Qtd). */
-const QUOTABLE = new Set<string>([
-  CLASS.acoes,
-  CLASS.fiis,
-  CLASS.cripto,
-  CLASS.commodities,
-  CLASS.multimercado,
-  CLASS.previdencia,
-  CLASS.privateEquity,
-]);
 
 export default function Patrimonio() {
   const { t } = useTranslation();
@@ -96,7 +85,7 @@ export default function Patrimonio() {
 
   // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
   const assetColsFor = (classId: string): GridColumn<Asset>[] => {
-    const quotable = QUOTABLE.has(classId);
+    const quotable = isQuotableClass(classId);
     const cols: GridColumn<Asset>[] = [];
     // Cotáveis não têm campo de valor (vem de qtd × cotação) → mantêm o seletor de moeda como selo.
     if (quotable) {
@@ -146,7 +135,31 @@ export default function Patrimonio() {
     }
     cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
     cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
-    cols.push({ key: "amount", type: "money", header: t("patrimonio.amount"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" });
+    // Classes INVESTIDAS sem ticker (renda fixa, outros): aplicado → atual → rentabilidade.
+    const invested = isInvestedClass(classId);
+    if (invested) {
+      cols.push({ key: "cost", type: "number", decimals: 2, header: t("patrimonio.applied"), width: "minmax(120px,1fr)", align: "right", currencyKey: "currency" });
+    }
+    cols.push({ key: "amount", type: "money", header: invested ? t("patrimonio.currentValue") : t("patrimonio.amount"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" });
+    if (invested) {
+      cols.push({
+        key: "ret",
+        type: "computed",
+        header: t("patrimonio.return"),
+        width: "minmax(86px,0.7fr)",
+        align: "right",
+        compute: (r: Asset) => {
+          const cost = r.cost ?? 0;
+          if (cost <= 0) return "—";
+          const ret = ((r.amount - cost) / cost) * 100;
+          return (
+            <span className={ret >= 0 ? "text-accent" : "text-neg"}>
+              {(ret >= 0 ? "+" : "") + ret.toFixed(1)}%
+            </span>
+          );
+        },
+      });
+    }
     // "Em <moeda>" só quando há conversão (algum ativo da classe em moeda ≠ da exibida).
     if (data.assets.some((a) => a.classId === classId && a.currency !== disp)) {
       cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
@@ -161,7 +174,9 @@ export default function Patrimonio() {
     }
     if (next.classId !== CLASS.rendaFixa) next.indexerId = undefined;
     // Cotáveis: valor = quantidade × (cotação do dia, se houver; senão preço médio = custo).
-    if (QUOTABLE.has(next.classId) && next.ticker && (next.quantity ?? 0) > 0) {
+    // SEM exigir ticker — um cotável sem ticker ainda vale qtd × preço médio (custo),
+    // senão ficaria com valor 0 (rentabilidade −100% e patrimônio subestimado).
+    if (isQuotableClass(next.classId) && (next.quantity ?? 0) > 0) {
       const unit = priceOf(next.ticker)?.price ?? next.avgPrice ?? 0;
       if (unit > 0) next.amount = (next.quantity ?? 0) * unit;
     }
@@ -240,7 +255,7 @@ export default function Patrimonio() {
                   isComplete={(r) =>
                     r.name.trim().length > 0 &&
                     r.classId.length > 0 &&
-                    (QUOTABLE.has(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
+                    (isQuotableClass(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
                   }
                   onCommit={commitAsset}
                   onDelete={(id) => void actions.removeAsset(id)}
@@ -249,7 +264,7 @@ export default function Patrimonio() {
                 />
               </div>
             </div>
-            {QUOTABLE.has(activeId) ? (
+            {isQuotableClass(activeId) ? (
               <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
             ) : null}
           </>

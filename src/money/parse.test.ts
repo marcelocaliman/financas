@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { parseAmount, formatAmountEdit, formatNumberEdit } from "./parse";
+import { parseAmount, formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "./parse";
+import type { Currency } from "./currency";
 
 describe("parseAmount — milhar vs decimal", () => {
   const cases: [string, number | null][] = [
@@ -32,6 +33,30 @@ describe("formatAmountEdit — valor monetário com SEMPRE 2 casas", () => {
   it("sempre 2 casas decimais (locale pt-BR)", () => {
     expect(formatAmountEdit(320000, "BRL")).toBe("320.000,00");
     expect(formatAmountEdit(41.8, "BRL")).toBe("41,80");
+  });
+});
+
+describe("parseLocaleNumber — round-trip estrito (sem o bug do decimal de 3 dígitos)", () => {
+  const CURS: Currency[] = ["BRL", "EUR", "USD", "GBP"];
+  const VALUES = [0.005, 0.125, 1.234, 2.005, 0.001, 2800, 320000, 41.8, 1234.56];
+  for (const cur of CURS) {
+    for (const v of VALUES) {
+      it(`${cur}: format(${v}) re-parseia em ${v}`, () => {
+        expect(parseLocaleNumber(formatNumberEdit(v, cur), cur)).toBe(v);
+      });
+    }
+  }
+  it("pt-BR: 0,005 é 0.005 (não 5) e 2.800 é 2800", () => {
+    expect(parseLocaleNumber("0,005", "BRL")).toBe(0.005);
+    expect(parseLocaleNumber("2.800", "BRL")).toBe(2800);
+  });
+  it("en-US: 0.005 é 0.005 e 2,800 é 2800", () => {
+    expect(parseLocaleNumber("0.005", "USD")).toBe(0.005);
+    expect(parseLocaleNumber("2,800", "USD")).toBe(2800);
+  });
+  it("vazio/lixo → null", () => {
+    expect(parseLocaleNumber("", "BRL")).toBeNull();
+    expect(parseLocaleNumber("—", "BRL")).toBeNull();
   });
 });
 

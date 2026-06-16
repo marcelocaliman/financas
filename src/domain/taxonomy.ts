@@ -175,3 +175,20 @@ const NON_INVESTED = new Set<string>([CLASS.caixa, CLASS.imoveis]);
 export function isInvestedClass(classId: string): boolean {
   return !NON_INVESTED.has(classId);
 }
+
+/**
+ * Classes COTÁVEIS (têm ticker → valor = qtd × cotação; custo = qtd × preço médio).
+ * As demais classes investidas (renda fixa, outros) usam "valor aplicado" manual.
+ */
+const QUOTABLE_CLASSES = new Set<string>([
+  CLASS.acoes,
+  CLASS.fiis,
+  CLASS.cripto,
+  CLASS.commodities,
+  CLASS.multimercado,
+  CLASS.previdencia,
+  CLASS.privateEquity,
+]);
+export function isQuotableClass(classId: string): boolean {
+  return QUOTABLE_CLASSES.has(classId);
+}

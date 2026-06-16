@@ -77,3 +77,24 @@ export function formatNumberEdit(
     maximumFractionDigits: decimals ?? 8,
   }).format(value);
 }
+
+/**
+ * Parser ESTRITO por locale: usa os separadores REAIS do locale pra desfazer EXATAMENTE
+ * o que formatAmountEdit/formatNumberEdit produziram. Sem heurística — evita o bug do
+ * parseAmount com decimal de 3 dígitos (em pt-BR "0,005" → 0.005, e não 5). Usado nas
+ * células da grade, que formatam e editam no mesmo locale.
+ */
+export function parseLocaleNumber(input: string, currency: Currency): number | null {
+  const s = input.trim();
+  if (s === "") return null;
+  const parts = new Intl.NumberFormat(LOCALE[currency]).formatToParts(12345.6);
+  const group = parts.find((p) => p.type === "group")?.value ?? "";
+  const decimal = parts.find((p) => p.type === "decimal")?.value ?? ".";
+  let body = s;
+  if (group) body = body.split(group).join(""); // remove o separador de milhar
+  body = body.split(decimal).join("."); // decimal do locale → ponto
+  body = body.replace(/[^\d.-]/g, ""); // sobra só dígito/ponto/menos
+  if (body === "" || body === "-" || body === ".") return null;
+  const n = Number(body);
+  return Number.isFinite(n) ? n : null;
+}
