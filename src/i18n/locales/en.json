@@ -27,6 +27,8 @@
     "comingSoonDesc": "This module will be built on top of the local data in the next steps.",
     "sampleData": "Prototype · sample data",
     "language": "Language",
+    "baseCurrency": "Default currency",
+    "baseCurrencyHint": "The currency you enter your values in. Each item can still keep its own currency — and, from the top bar, you can view everything converted to another currency at the day's rate.",
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",

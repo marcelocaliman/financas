@@ -32,6 +32,7 @@ const QUOTABLE = new Set<string>([
 export default function Patrimonio() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const data = usePatrimonio();
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
@@ -160,7 +161,7 @@ export default function Patrimonio() {
     }
     void actions.putAsset(next);
   };
-  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: disp, amount: 0 });
+  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: base, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
     { key: "currency", type: "currency", header: "", width: "46px" },
@@ -171,7 +172,7 @@ export default function Patrimonio() {
     { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
     { ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) },
   ];
-  const newLiab = (): Liability => ({ id: crypto.randomUUID(), name: "", typeId: "", currency: disp, amount: 0 });
+  const newLiab = (): Liability => ({ id: crypto.randomUUID(), name: "", typeId: "", currency: base, amount: 0 });
 
   const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
 

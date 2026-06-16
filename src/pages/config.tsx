@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI, type Theme } from "@/store/ui";
+import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
 import { Button } from "@/components/common/button";
@@ -91,32 +92,50 @@ function Appearance() {
   const { t, i18n } = useTranslation();
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
+  const baseCurrency = useUI((s) => s.baseCurrency);
+  const setBaseCurrency = useUI((s) => s.setBaseCurrency);
   return (
-    <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
+    <div className="space-y-8 lg:space-y-10">
       <section>
-        <SubHeading>{t("common.theme")}</SubHeading>
-        <div className="flex gap-2">
-          {THEMES.map((opt) => (
-            <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
-              {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
+        <SubHeading>{t("common.baseCurrency")}</SubHeading>
+        <div className="flex flex-wrap gap-2">
+          {CURRENCIES.map((c) => (
+            <Pill key={c} active={baseCurrency === c} onClick={() => setBaseCurrency(c)}>
+              <span className="tabular">{CURRENCY_SYMBOL[c]}</span>
+              <span className="ml-1.5">{c}</span>
             </Pill>
           ))}
         </div>
+        <p className="text-[12px] text-muted leading-relaxed mt-2.5 max-w-md">
+          {t("common.baseCurrencyHint")}
+        </p>
       </section>
-      <section>
-        <SubHeading>{t("common.language")}</SubHeading>
-        <div className="flex gap-2">
-          {SUPPORTED_LANGS.map((lng) => (
-            <Pill
-              key={lng}
-              active={i18n.resolvedLanguage === lng}
-              onClick={() => void i18n.changeLanguage(lng)}
-            >
-              <span className="uppercase">{lng}</span>
-            </Pill>
-          ))}
-        </div>
-      </section>
+      <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
+        <section>
+          <SubHeading>{t("common.theme")}</SubHeading>
+          <div className="flex gap-2">
+            {THEMES.map((opt) => (
+              <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
+                {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
+              </Pill>
+            ))}
+          </div>
+        </section>
+        <section>
+          <SubHeading>{t("common.language")}</SubHeading>
+          <div className="flex gap-2">
+            {SUPPORTED_LANGS.map((lng) => (
+              <Pill
+                key={lng}
+                active={i18n.resolvedLanguage === lng}
+                onClick={() => void i18n.changeLanguage(lng)}
+              >
+                <span className="uppercase">{lng}</span>
+              </Pill>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

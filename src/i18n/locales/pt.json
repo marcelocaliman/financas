@@ -27,6 +27,8 @@
     "comingSoonDesc": "Este módulo será construído sobre os dados locais nas próximas etapas.",
     "sampleData": "Protótipo · dados de exemplo",
     "language": "Idioma",
+    "baseCurrency": "Moeda padrão",
+    "baseCurrencyHint": "Moeda em que você lança seus valores. Cada item ainda pode ter a sua própria moeda — e, lá no topo, você pode visualizar tudo convertido em outra moeda pela cotação do dia.",
     "theme": "Tema",
     "themeLight": "Claro",
     "themeDark": "Escuro",

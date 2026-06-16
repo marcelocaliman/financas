@@ -21,6 +21,7 @@ type BudgetRow = { id: string; categoryId: string; name: string; currency: Curre
 export default function Orcamento() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const theme = useUI((s) => s.theme);
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
@@ -70,7 +71,7 @@ export default function Orcamento() {
     },
   ];
 
-  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), categoryId: "", name: "", currency: disp, amount: 0 });
+  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), categoryId: "", name: "", currency: base, amount: 0 });
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
 
   return (

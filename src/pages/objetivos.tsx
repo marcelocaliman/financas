@@ -15,6 +15,7 @@ import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 export default function Objetivos() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const data = useObjetivos();
 
@@ -49,7 +50,7 @@ export default function Objetivos() {
     },
   ];
 
-  const newGoal = (): Goal => ({ id: crypto.randomUUID(), name: "", currency: disp, target: 0, current: 0 });
+  const newGoal = (): Goal => ({ id: crypto.randomUUID(), name: "", currency: base, target: 0, current: 0 });
 
   return (
     <div className="space-y-7">

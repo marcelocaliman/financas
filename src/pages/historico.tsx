@@ -17,6 +17,7 @@ import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 export default function Historico() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const theme = useUI((s) => s.theme);
   const rates = useRates((s) => s.rates);
   const data = useHistorico();
@@ -55,7 +56,7 @@ export default function Historico() {
     },
   ];
 
-  const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: disp, amount: 0 });
+  const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: base, amount: 0 });
 
   return (
     <div className="space-y-7">

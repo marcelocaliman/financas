@@ -27,6 +27,8 @@
     "comingSoonDesc": "Questo modulo sarà costruito sui dati locali nei prossimi passi.",
     "sampleData": "Prototipo · dati di esempio",
     "language": "Lingua",
+    "baseCurrency": "Valuta predefinita",
+    "baseCurrencyHint": "La valuta in cui inserisci i tuoi valori. Ogni voce può comunque avere la propria valuta — e, dalla barra in alto, puoi vedere tutto convertito in un'altra valuta al cambio del giorno.",
     "theme": "Tema",
     "themeLight": "Chiaro",
     "themeDark": "Scuro",
