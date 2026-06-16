@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { User, ShieldCheck, Tags, Palette, Database, Lock } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -20,12 +21,12 @@ import { cn } from "@/lib/utils";
 const THEMES: Theme[] = ["light", "dark"];
 
 const TABS = [
-  { id: "conta", label: "Conta" },
-  { id: "seguranca", label: "Segurança" },
-  { id: "categorias", label: "Categorias" },
-  { id: "aparencia", label: "Aparência" },
-  { id: "dados", label: "Dados" },
-  { id: "privacidade", label: "Privacidade" },
+  { id: "conta", label: "Conta", icon: User },
+  { id: "seguranca", label: "Segurança", icon: ShieldCheck },
+  { id: "categorias", label: "Categorias", icon: Tags },
+  { id: "aparencia", label: "Aparência", icon: Palette },
+  { id: "dados", label: "Dados", icon: Database },
+  { id: "privacidade", label: "Privacidade", icon: Lock },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -34,46 +35,54 @@ export default function Config() {
   const [tab, setTab] = useState<TabId>("conta");
 
   return (
-    <div>
-      {/* Abas (sticky no topo do drawer) */}
-      <div className="flex border-b border-border no-scrollbar overflow-x-auto -mt-1">
-        {TABS.map((tb) => (
-          <button
-            key={tb.id}
-            type="button"
-            onClick={() => setTab(tb.id)}
-            className={cn(
-              "relative px-3.5 py-3 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
-              tab === tb.id ? "text-text" : "text-muted hover:text-text",
-            )}
-          >
-            {tb.label}
-            {tab === tb.id ? (
-              <span className="absolute left-3.5 right-3.5 -bottom-px h-[2px] rounded-full bg-accent" />
-            ) : null}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col sm:flex-row h-full min-h-0">
+      {/* Nav: tabs horizontais (mobile) / sidebar vertical (desktop) */}
+      <nav className="shrink-0 flex sm:flex-col gap-1 sm:gap-0.5 overflow-x-auto no-scrollbar border-b border-border sm:border-b-0 sm:border-r px-3 py-2 sm:py-4 sm:w-[208px]">
+        {TABS.map((tb) => {
+          const Icon = tb.icon;
+          const active = tab === tb.id;
+          return (
+            <button
+              key={tb.id}
+              type="button"
+              onClick={() => setTab(tb.id)}
+              className={cn(
+                "flex items-center gap-2.5 shrink-0 rounded-[9px] px-3 py-2 text-[13.5px] font-medium whitespace-nowrap transition-colors",
+                active ? "bg-card2 text-text" : "text-muted hover:text-text hover:bg-card-hover",
+              )}
+            >
+              <Icon size={16} className={active ? "text-accent" : "text-faint"} />
+              {tb.label}
+            </button>
+          );
+        })}
+      </nav>
 
-      {/* Conteúdo da aba */}
-      <div className="pt-6 min-h-[300px]">
+      {/* Conteúdo (rola independente da sidebar) */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-7 py-6">
         {tab === "conta" && (
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-            <AccountSection />
+          <div className="max-w-xl space-y-5">
+            <Card>
+              <AccountSection />
+            </Card>
             <DangerZone />
           </div>
         )}
         {tab === "seguranca" && (
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-            <ChangePassword />
-            <NewRecoveryCode />
+          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl items-start">
+            <Card>
+              <ChangePassword />
+            </Card>
+            <Card>
+              <NewRecoveryCode />
+            </Card>
           </div>
         )}
         {tab === "categorias" && <TaxonomyEditor />}
         {tab === "aparencia" && <Appearance />}
         {tab === "dados" && <DataSection />}
         {tab === "privacidade" && (
-          <div className="max-w-3xl">
+          <div className="max-w-2xl">
             <PrivacyPolicyContent />
             <div className="mt-5">
               <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
@@ -85,8 +94,14 @@ export default function Config() {
   );
 }
 
-function SubHeading({ children }: { children: React.ReactNode }) {
-  return <div className="text-[14px] font-semibold mb-3">{children}</div>;
+function Card({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-[14px] border border-border bg-card p-5", className)}>{children}</div>
+  );
+}
+
+function SubHeading({ children }: { children: ReactNode }) {
+  return <div className="text-[13px] font-semibold mb-3">{children}</div>;
 }
 
 function Appearance() {
@@ -95,8 +110,8 @@ function Appearance() {
   const setTheme = useUI((s) => s.setTheme);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
-    <div className="space-y-8 lg:space-y-10">
-      <section>
+    <div className="max-w-2xl space-y-5">
+      <Card>
         <SubHeading>{t("common.baseCurrency")}</SubHeading>
         <div className="flex flex-wrap gap-2">
           {CURRENCIES.map((c) => (
@@ -106,12 +121,10 @@ function Appearance() {
             </Pill>
           ))}
         </div>
-        <p className="text-[12px] text-muted leading-relaxed mt-2.5 max-w-md">
-          {t("common.baseCurrencyHint")}
-        </p>
-      </section>
-      <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
-        <section>
+        <p className="text-[12px] text-muted leading-relaxed mt-3">{t("common.baseCurrencyHint")}</p>
+      </Card>
+      <div className="grid sm:grid-cols-2 gap-5">
+        <Card>
           <SubHeading>{t("common.theme")}</SubHeading>
           <div className="flex gap-2">
             {THEMES.map((opt) => (
@@ -120,8 +133,8 @@ function Appearance() {
               </Pill>
             ))}
           </div>
-        </section>
-        <section>
+        </Card>
+        <Card>
           <SubHeading>{t("common.language")}</SubHeading>
           <div className="flex gap-2">
             {SUPPORTED_LANGS.map((lng) => (
@@ -134,7 +147,7 @@ function Appearance() {
               </Pill>
             ))}
           </div>
-        </section>
+        </Card>
       </div>
     </div>
   );
@@ -145,18 +158,26 @@ function DataSection() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
-      <DataRow title={t("data.sample")} desc={t("data.sampleDesc")}>
-        <Button variant="secondary" onClick={() => void actions.loadSample()}>
+    <div className="grid sm:grid-cols-2 gap-5 max-w-3xl items-start">
+      <Card className="flex flex-col gap-4">
+        <div>
+          <div className="text-[13.5px] font-semibold">{t("data.sample")}</div>
+          <div className="text-[12px] text-muted leading-relaxed mt-1">{t("data.sampleDesc")}</div>
+        </div>
+        <Button variant="secondary" className="self-start" onClick={() => void actions.loadSample()}>
           {t("data.loadSample")}
         </Button>
-      </DataRow>
+      </Card>
 
-      <DataRow title={t("data.reset")} desc={t("data.resetDesc")}>
-        <Button variant="danger" onClick={() => setConfirmReset(true)}>
+      <Card className="flex flex-col gap-4">
+        <div>
+          <div className="text-[13.5px] font-semibold">{t("data.reset")}</div>
+          <div className="text-[12px] text-muted leading-relaxed mt-1">{t("data.resetDesc")}</div>
+        </div>
+        <Button variant="danger" className="self-start" onClick={() => setConfirmReset(true)}>
           {t("data.resetBtn")}
         </Button>
-      </DataRow>
+      </Card>
 
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} title={t("data.reset")}>
         <p className="text-[13.5px] text-muted leading-relaxed mb-4">{t("data.resetConfirm")}</p>
@@ -180,26 +201,6 @@ function DataSection() {
   );
 }
 
-function DataRow({
-  title,
-  desc,
-  children,
-}: {
-  title: string;
-  desc: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="min-w-0">
-        <div className="text-[13.5px] font-medium">{title}</div>
-        <div className="text-[12px] text-muted leading-relaxed">{desc}</div>
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
 function Pill({
   active,
   onClick,
@@ -207,7 +208,7 @@ function Pill({
 }: {
   active: boolean;
   onClick: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <button

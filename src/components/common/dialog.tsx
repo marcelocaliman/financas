@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
@@ -30,9 +31,11 @@ export function Dialog({
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+  // Portado pro body: escapa de qualquer ancestral com transform (ex.: o painel de
+  // Config), pra centrar na JANELA e o backdrop cobrir tudo. z acima do drawer (60).
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto px-4 py-8"
+      className="fixed inset-0 z-[70] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto px-4 py-8"
       onClick={onClose}
       role="presentation"
     >
@@ -55,6 +58,7 @@ export function Dialog({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

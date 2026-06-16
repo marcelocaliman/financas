@@ -46,8 +46,8 @@ export function AccountSection() {
 
   return (
     <div>
-      <Heading>Conta</Heading>
-      <div className="text-[12.5px] text-muted mt-1 break-all">{email}</div>
+      <div className="eyebrow text-faint mb-1.5">E-mail</div>
+      <div className="text-[13.5px] text-text break-all">{email}</div>
       <div className="flex gap-2 mt-4">
         <Btn onClick={lock}>Trancar o cofre</Btn>
         <Btn onClick={() => void signOut()}>Sair</Btn>
