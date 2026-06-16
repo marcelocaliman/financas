@@ -46,15 +46,18 @@ export default function Historico() {
     { key: "currency", type: "currency", header: "", width: "46px" },
     { key: "amount", type: "money", header: t("historico.networth"), width: "minmax(120px,1.2fr)", align: "right", currencyKey: "currency" },
     { key: "contribution", type: "number", header: t("historico.contribution"), width: "minmax(100px,0.9fr)", align: "right" },
-    {
+  ];
+  // "Em <moeda>" só aparece quando há de fato conversão (algum registro em moeda ≠ da exibida).
+  if (view.sorted.some((s) => s.currency !== disp)) {
+    cols.push({
       key: "conv",
       type: "computed",
       header: `${t("patrimonio.in")} ${disp === "BRL" ? "R$" : disp}`,
       width: "minmax(88px,0.8fr)",
       align: "right",
       compute: (r) => formatMoney(conv(r.amount, r.currency), disp),
-    },
-  ];
+    });
+  }
 
   const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: base, amount: 0 });
 

@@ -49,27 +49,33 @@ export default function Orcamento() {
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
-  const cols = (categories: TaxonomyItem[]): GridColumn<BudgetRow>[] => [
-    { key: "currency", type: "currency", header: "", width: "46px" },
-    {
-      key: "categoryId",
-      type: "select",
-      header: t("orcamento.category"),
-      width: "minmax(140px,1.2fr)",
-      placeholder: t("orcamento.categoryPlaceholder"),
-      options: opts(categories),
-    },
-    { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
-    { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
-    {
-      key: "conv",
-      type: "computed",
-      header: `${t("patrimonio.in")} ${disp === "BRL" ? "R$" : disp}`,
-      width: "minmax(88px,0.8fr)",
-      align: "right",
-      compute: (r) => formatMoney(conv(r.amount, r.currency), disp),
-    },
-  ];
+  const cols = (categories: TaxonomyItem[], rows: BudgetRow[]): GridColumn<BudgetRow>[] => {
+    const columns: GridColumn<BudgetRow>[] = [
+      { key: "currency", type: "currency", header: "", width: "46px" },
+      {
+        key: "categoryId",
+        type: "select",
+        header: t("orcamento.category"),
+        width: "minmax(140px,1.2fr)",
+        placeholder: t("orcamento.categoryPlaceholder"),
+        options: opts(categories),
+      },
+      { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
+      { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
+    ];
+    // "Em <moeda>" só aparece quando há de fato conversão (alguma linha em moeda ≠ da exibida).
+    if (rows.some((r) => r.currency !== disp)) {
+      columns.push({
+        key: "conv",
+        type: "computed",
+        header: `${t("patrimonio.in")} ${disp === "BRL" ? "R$" : disp}`,
+        width: "minmax(88px,0.8fr)",
+        align: "right",
+        compute: (r) => formatMoney(conv(r.amount, r.currency), disp),
+      });
+    }
+    return columns;
+  };
 
   const blank = (): BudgetRow => ({ id: crypto.randomUUID(), categoryId: "", name: "", currency: base, amount: 0 });
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
@@ -117,7 +123,7 @@ export default function Orcamento() {
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
-              columns={cols(tax.incomeCategories)}
+              columns={cols(tax.incomeCategories, data.incomes as BudgetRow[])}
               rows={data.incomes as BudgetRow[]}
               blank={blank}
               isComplete={complete}
@@ -136,7 +142,7 @@ export default function Orcamento() {
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
-              columns={cols(tax.expenseCategories)}
+              columns={cols(tax.expenseCategories, data.expenses as BudgetRow[])}
               rows={data.expenses as BudgetRow[]}
               blank={blank}
               isComplete={complete}

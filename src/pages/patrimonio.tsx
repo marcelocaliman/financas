@@ -144,7 +144,10 @@ export default function Patrimonio() {
     cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
     cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
     cols.push({ key: "amount", type: "money", header: t("patrimonio.amount"), width: "minmax(104px,0.9fr)", align: "right", currencyKey: "currency" });
-    cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
+    // "Em <moeda>" só quando há conversão (algum ativo da classe em moeda ≠ da exibida).
+    if (data.assets.some((a) => a.classId === classId && a.currency !== disp)) {
+      cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
+    }
     return cols;
   };
 
@@ -170,8 +173,10 @@ export default function Patrimonio() {
     { key: "interestRate", type: "number", header: t("patrimonio.interestRate"), width: "minmax(96px,0.8fr)", align: "right" },
     { key: "installments", type: "number", header: t("patrimonio.installments"), width: "minmax(92px,0.7fr)", align: "right" },
     { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
-    { ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) },
   ];
+  if (data.liabilities.some((l) => l.currency !== disp)) {
+    liabCols.push({ ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) });
+  }
   const newLiab = (): Liability => ({ id: crypto.randomUUID(), name: "", typeId: "", currency: base, amount: 0 });
 
   const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
