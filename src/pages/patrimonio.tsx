@@ -128,7 +128,7 @@ export default function Patrimonio() {
             <HeroNumber
               value={view.netWorth}
               currency={disp}
-              className="block text-[clamp(46px,7vw,82px)] mt-3"
+              className="block whitespace-nowrap text-[clamp(34px,4.5vw,58px)] mt-3"
             />
             <div className="flex flex-wrap gap-x-8 gap-y-1 mt-4 text-[13.5px]">
               <span className="text-muted">

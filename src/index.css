@@ -193,17 +193,18 @@ body {
   color: transparent;
 }
 
-/* Degradê do HERO: graphite com glow suave do acento (destaque, sem sujar). */
+/* Degradê do HERO: destaque presente — graphite com profundidade + glow do acento. */
 .hero-bg {
   background:
-    radial-gradient(58% 50% at 16% 22%, rgba(91, 122, 18, 0.1), transparent 62%),
-    linear-gradient(180deg, #ffffff 0%, var(--bg) 74%);
+    radial-gradient(72% 58% at 14% 4%, rgba(91, 122, 18, 0.14), transparent 56%),
+    radial-gradient(60% 52% at 96% 98%, rgba(44, 99, 214, 0.08), transparent 60%),
+    linear-gradient(158deg, #ffffff 0%, #f0f2f5 46%, var(--bg) 100%);
 }
 .dark .hero-bg {
   background:
-    radial-gradient(56% 48% at 16% 20%, rgba(199, 249, 78, 0.09), transparent 62%),
-    radial-gradient(46% 44% at 88% 84%, rgba(110, 143, 214, 0.06), transparent 60%),
-    linear-gradient(180deg, #131418 0%, var(--bg) 70%);
+    radial-gradient(78% 62% at 13% 2%, rgba(199, 249, 78, 0.16), transparent 56%),
+    radial-gradient(62% 55% at 97% 98%, rgba(110, 143, 214, 0.1), transparent 60%),
+    linear-gradient(158deg, #1c1f25 0%, #121317 48%, #0b0c0e 100%);
 }
 
 /* Selos de moeda (camada de dados). */

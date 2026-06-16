@@ -90,76 +90,69 @@ export default function Painel() {
   return (
     <div>
       {/* ── HERO full-page com degradê ─────────────────────────────── */}
-      <div className="hero-bg relative overflow-hidden rounded-[24px] min-h-[calc(100svh-5.5rem)] flex items-center mt-2 border border-border">
-        <div className="relative z-10 w-full px-6 md:px-9 lg:px-12 py-12">
-          <div className="grid grid-cols-12 gap-x-10 gap-y-10 items-center">
-            {/* Número + composição */}
-            <div className="col-span-12 lg:col-span-6">
-              <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
-              <HeroNumber
-                value={view.netWorth}
-                currency={disp}
-                className="block text-[clamp(46px,7.5vw,110px)] mt-3"
-              />
-              {hasTrend ? (
-                <div className="mt-4">
-                  <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
-                </div>
-              ) : null}
-              {view.curSegments.length > 0 ? (
-                <div className="mt-8 max-w-md">
-                  <CompositionBar
-                    segments={view.curSegments.map((s) => ({
-                      label: s.currency,
-                      pct: s.pct,
-                      color: colors[s.currency],
-                    }))}
-                  />
-                </div>
-              ) : null}
-            </div>
+      <div className="hero-bg relative overflow-hidden rounded-[24px] border border-border mt-2">
+        <div className="relative z-10 px-6 md:px-10 lg:px-14 py-14 lg:py-16 min-h-[80svh] flex flex-col justify-center">
+          {/* Número-herói em largura total (nunca clipa) */}
+          <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
+          <HeroNumber
+            value={view.netWorth}
+            currency={disp}
+            className="block whitespace-nowrap text-[clamp(32px,8vw,118px)] mt-3"
+          />
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
+            {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
+            {view.curSegments.length > 0 ? (
+              <div className="flex-1 min-w-[240px] max-w-lg">
+                <CompositionBar
+                  segments={view.curSegments.map((s) => ({
+                    label: s.currency,
+                    pct: s.pct,
+                    color: colors[s.currency],
+                  }))}
+                />
+              </div>
+            ) : null}
+          </div>
 
-            {/* Gráfico de evolução (dentro do hero) */}
-            <div className="col-span-12 lg:col-span-6">
-              <div className="rounded-[18px] glass border border-border p-5">
-                <div className="flex items-center justify-between">
-                  <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
-                  {hasTrend ? <Delta pct={view.nwChange} /> : null}
-                </div>
-                <div className="text-[12px] text-faint mt-1">
-                  {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
-                </div>
-                <div className="w-full h-[180px] mt-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
-                      <defs>
-                        <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
-                          <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
-                      <Tooltip
-                        formatter={(v) => money(Number(v))}
-                        contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
-                      />
-                      <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
+          {/* Gráfico + números-chave */}
+          <div className="grid grid-cols-12 gap-5 mt-12">
+            <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">
+              <div className="flex items-center justify-between">
+                <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
+                {hasTrend ? <Delta pct={view.nwChange} /> : null}
+              </div>
+              <div className="text-[12px] text-faint mt-1">
+                {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
+              </div>
+              <div className="w-full h-[200px] mt-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
+                    <defs>
+                      <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
+                        <stop offset="100%" stopColor={accent} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      formatter={(v) => money(Number(v))}
+                      contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
+                    />
+                    <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
+
+            <div className="col-span-12 lg:col-span-5 grid grid-cols-2 gap-4">
+              <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
+              <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
+              <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
+              <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
+            </div>
           </div>
 
-          {/* Números-chave */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-10">
-            <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
-            <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
-            <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
-            <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
-          </div>
-
-          <div className="flex justify-center mt-10">
+          <div className="flex justify-center mt-11">
             <button
               type="button"
               onClick={() => scrollToSection("patrimonio")}
