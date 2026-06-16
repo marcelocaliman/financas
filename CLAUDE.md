@@ -38,12 +38,25 @@ ponta-a-ponta — o servidor nunca vê o dado financeiro em texto claro.
 - Sem recuperação por e-mail do dado cifrado: a única via é o código de recuperação.
 - Toda lógica de cripto isolada num módulo, com testes.
 
-## Direção de design (ultra moderno + clean)
-- Mobile-first, responsivo: menu lateral no desktop, navegação inferior no mobile.
-- Muito espaço em branco. Hierarquia tipográfica clara (fonte Inter). Números tabulares.
-- Paleta enxuta: navy #243B53, teal #2C7A7B, um acento, fundos neutros.
-- Cantos arredondados, sombras sutis, zero poluição. Estados vazios/loading/erro bem desenhados.
-- Referência visual: docs/reference/prototipo-painel.jsx (copiar esse visual).
+## Direção de design (editorial · private banking — elegante e profissional)
+- One-page editorial: header flutuante transparente + HERO full-bleed + seções com
+  âncora. Mobile-first; nav inferior no mobile. Muito espaço em branco, ritmo vertical
+  consistente (~96px entre seções). Conteúdo centrado em ~1120px.
+- **Paleta (nasce no ESCURO; zero verde-neon/lima):**
+  - Fundo navy-carvão `#0E1626` (não preto). Superfícies `#16202E`. Hairlines `rgba(255,255,255,.06)`.
+  - Texto `#E8EDF2` / secundário `#8A9AAD` / fraco `#5E6E80`.
+  - Acento teal sóbrio `#3FA7A0` (escuro `#2C7A7B`). Champanhe/dourado `#C9A86A`
+    SÓ em destaques pontuais (ex.: variação positiva). Positivo `#4FB286`, negativo `#C2553B`.
+  - Claro = papel premium coerente (mesma família navy/teal).
+- **Tipografia:** display SERIF **Fraunces** (Google Fonts) no título do hero e nos títulos
+  de seção; **Inter** no restante; números financeiros em **Space Grotesk** com `tabular-nums`.
+  Patrimônio líquido é o herói visual (grande, bem espaçado). Tokens em `src/index.css` (`@theme`).
+- Cantos arredondados, sombras CONTIDAS (sem glow), hairline dividers, zero poluição.
+  Gráficos discretos: linha teal 2px + área com gradiente sutil, eixos discretos, sem grid
+  neon, tooltip elegante; donut em paleta coerente (teal/azul-aço/champanhe/neutro — sem arco-íris).
+  Estados vazios "EM BREVE" intencionais e discretos (ícone fino + 1 linha).
+- Valores VISÍVEIS por padrão; olho 👁 no header oculta (modo privacidade, não persiste).
+- Referência de lógica/UX: docs/prototipo-painel.jsx.
 
 ## Escopo — V1 COMPLETA (não é MVP), em ordem de construção
 - Fase 0a (fundação LOCAL): scaffold; design system; shell (layout, navegação, i18n, tema);

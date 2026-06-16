@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent text-[#04140d] hover:brightness-110 shadow-[0_0_18px_-6px_var(--accent)]",
+  primary: "bg-accent text-[#08131f] hover:brightness-105",
   secondary: "border border-border text-text hover:bg-card-hover",
   danger: "bg-neg text-white hover:brightness-110",
   ghost: "text-muted hover:text-text",

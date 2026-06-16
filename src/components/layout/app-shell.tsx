@@ -16,7 +16,7 @@ export function AppShell() {
     document.documentElement.classList.toggle("dark", dark);
     document
       .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", dark ? "#0b0c0e" : "#f3f4f6");
+      ?.setAttribute("content", dark ? "#0e1626" : "#f4f6f9");
   }, [theme]);
 
   return (

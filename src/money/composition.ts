@@ -5,16 +5,16 @@ import { convert, CURRENCIES, type Currency } from "./currency";
  * fatia da aurora e o gráfico baterem com o chip da mesma moeda.
  */
 const CUR_COLOR_DARK: Record<Currency, string> = {
-  BRL: "#2EE6A6",
-  EUR: "#5AA0FF",
-  USD: "#A894FF",
-  GBP: "#FFB05A",
+  BRL: "#3FA7A0",
+  EUR: "#5B82A8",
+  USD: "#C9A86A",
+  GBP: "#7E9B98",
 };
 const CUR_COLOR_LIGHT: Record<Currency, string> = {
-  BRL: "#0FAE7E",
-  EUR: "#2C63D6",
-  USD: "#6E4FD0",
-  GBP: "#B5791F",
+  BRL: "#2C7A7B",
+  EUR: "#3A6EA5",
+  USD: "#9A7B3F",
+  GBP: "#5D7184",
 };
 
 export function currencyColors(theme: "light" | "dark"): Record<Currency, string> {

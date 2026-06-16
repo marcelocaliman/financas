@@ -11,7 +11,7 @@ interface UIState {
   theme: Theme;
   setTheme: (t: Theme) => void;
   toggleTheme: () => void;
-  /** Privacidade: oculta TODOS os valores (••••). Nasce ligado a cada acesso. */
+  /** Privacidade: oculta TODOS os valores (••••). VISÍVEL por padrão; toggle opcional. */
   numbersHidden: boolean;
   toggleNumbers: () => void;
 }
@@ -25,7 +25,7 @@ export const useUI = create<UIState>()(
       theme: "dark",
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
-      numbersHidden: true,
+      numbersHidden: false,
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
     }),
     {

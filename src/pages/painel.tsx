@@ -29,12 +29,12 @@ function usePainelView() {
   const name = firstName(useVault((s) => s.email));
   const { data } = useDashboardData();
   const colors = currencyColors(theme);
-  const accent = theme === "dark" ? "#c7f94e" : "#5b7a12";
-  const axisColor = theme === "dark" ? "#6b6e76" : "#80858f";
+  const accent = theme === "dark" ? "#3fa7a0" : "#2c7a7b";
+  const axisColor = theme === "dark" ? "#5e6e80" : "#8696a8";
   const CAT_COLORS =
     theme === "dark"
-      ? ["#5bd9a4", "#6e8fd6", "#a894ff", "#e0a96d", "#9a9ca3", "#6b6e76"]
-      : ["#0f9e72", "#2c63d6", "#6e4fd0", "#b5791f", "#3fb6a0", "#80858f"];
+      ? ["#3FA7A0", "#5B82A8", "#C9A86A", "#6E8BA0", "#3E6E6A", "#9FB0BF"]
+      : ["#2C7A7B", "#3A6EA5", "#9A7B3F", "#5D7184", "#2F6E6A", "#8696A8"];
 
   const monthLabel = useMemo(() => {
     const m = new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date());
@@ -99,7 +99,7 @@ export function DashboardHero() {
       <RotatingPhrase />
 
       {/* Patrimônio líquido (número menor) + composição AO LADO */}
-      <div className="mt-8 lg:mt-10 flex flex-wrap items-end justify-between gap-x-12 gap-y-7">
+      <div className="mt-6 lg:mt-8 flex flex-wrap items-end justify-between gap-x-12 gap-y-7">
         <div>
           <div className="text-[13px] uppercase tracking-[0.16em] text-muted font-semibold">
             {t("dashboard.netWorth")}
@@ -125,8 +125,8 @@ export function DashboardHero() {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-12 gap-5 mt-12">
-        <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">
+      <div className="grid grid-cols-12 gap-5 mt-14 lg:mt-20">
+        <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-6 lg:p-7">
           <div className="flex items-center justify-between">
             <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
             {hasTrend ? <Delta pct={view.nwChange} /> : null}
@@ -139,16 +139,18 @@ export function DashboardHero() {
               <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
                 <defs>
                   <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
+                    <stop offset="0%" stopColor={accent} stopOpacity={0.16} />
                     <stop offset="100%" stopColor={accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} dy={4} />
                 <Tooltip
+                  cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }}
                   formatter={(v) => money(Number(v))}
-                  contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
+                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                  labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
                 />
-                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
+                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2} fill="url(#nwGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -188,7 +190,7 @@ export function DashboardDetail() {
                     <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }} />
+                <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -259,7 +261,7 @@ function RotatingPhrase() {
   return (
     <p
       className={cn(
-        "font-display font-semibold text-[clamp(24px,3.6vw,46px)] tracking-[-0.02em] leading-[1.08] max-w-3xl text-text transition-opacity duration-500",
+        "font-display font-semibold text-[clamp(24px,3.6vw,46px)] tracking-[-0.02em] leading-[1.12] max-w-3xl min-h-[2.4em] text-text transition-opacity duration-500",
         show ? "opacity-100" : "opacity-0",
       )}
     >
@@ -271,7 +273,7 @@ function RotatingPhrase() {
 function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
   const up = pct >= 0;
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[13px] font-semibold tabular", up ? "text-accent" : "text-neg")}>
+    <span className={cn("inline-flex items-center gap-1 text-[13px] font-semibold tabular", up ? "text-gold" : "text-neg")}>
       {up ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
       {(up ? "+" : "") + pct.toFixed(1)}%{suffix ? <span className="text-faint font-normal">{suffix}</span> : null}
     </span>
@@ -283,7 +285,7 @@ function StatTile({ label, value, sub, positive }: { label: string; value: strin
   return (
     <div className="rounded-[16px] bg-card/55 border border-border p-5 backdrop-blur-sm">
       <Eyebrow>{label}</Eyebrow>
-      <div className={cn("font-display font-semibold text-[clamp(20px,2vw,28px)] tracking-[-0.02em] tabular mt-2", positive ? "text-pos" : "text-text")}>
+      <div className={cn("font-numeric font-semibold text-[clamp(20px,2vw,28px)] tracking-[-0.02em] tabular mt-2", positive ? "text-pos" : "text-text")}>
         {hidden ? "••••" : value}
       </div>
       {sub ? <div className="text-[11.5px] text-faint mt-1">{sub}</div> : null}

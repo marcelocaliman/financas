@@ -40,10 +40,10 @@ export function TopNav({ active }: { active: string }) {
       >
         <div
           className={cn(
-            "max-w-[1560px] mx-auto flex items-center justify-between gap-4 transition-all duration-300 ease-out",
+            "max-w-[1120px] mx-auto flex items-center justify-between gap-4 transition-all duration-300 ease-out",
             scrolled
               ? "h-14 px-4 md:px-6 rounded-[16px] glass border border-border shadow-[var(--shadow-float)]"
-              : "h-16 px-5 md:px-8 lg:px-12 xl:px-16 border border-transparent",
+              : "h-16 px-5 md:px-8 lg:px-10 border border-transparent",
           )}
         >
           <button

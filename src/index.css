@@ -4,83 +4,89 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ════════════════════════════════════════════════════════════════════
-   ATELIER — bento editorial. Nasce no ESCURO: grafite frio neutro (zero
-   verde) + acento lima cirúrgico (<5% da tela). Claro = papel premium.
+   GESTÃO PATRIMONIAL — editorial / private-banking. Nasce no ESCURO:
+   navy-carvão profundo (sem preto) + teal sóbrio; toque de champanhe só
+   em destaques pontuais. Claro = papel premium coerente. Zero neon.
    ════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Claro — papel premium */
-  --bg: #f3f4f6;
+  /* Claro — papel premium, paleta navy/teal coerente */
+  --bg: #f4f6f9;
   --bg-2: #fafbfc;
   --card: #ffffff;
-  --card-2: #f6f7f9;
-  --card-hover: #f1f3f5;
-  --text: #14161a;
-  --muted: #565a63;
-  --faint: #80858f;
-  --border: #e6e8ec;
-  --border-strong: #d6d9df;
-  --accent: #5b7a12;
-  --accent-press: #4d680f;
-  --accent-2: #2c63d6;
-  --accent-soft: rgba(91, 122, 18, 0.1);
-  --ring: rgba(91, 122, 18, 0.35);
-  --pos: #0f9e72;
-  --neg: #d8564b;
-  --neg-soft: rgba(216, 86, 75, 0.1);
+  --card-2: #f5f7fa;
+  --card-hover: #eef2f6;
+  --text: #0e1626;
+  --muted: #56697d;
+  --faint: #8696a8;
+  --border: #e4e9ef;
+  --border-strong: #d3dae2;
+  --accent: #2c7a7b;
+  --accent-press: #246364;
+  --accent-2: #3a6ea5;
+  --accent-soft: rgba(44, 122, 123, 0.1);
+  --ring: rgba(44, 122, 123, 0.32);
+  --pos: #2f9e6e;
+  --neg: #bd4f37;
+  --neg-soft: rgba(189, 79, 55, 0.1);
+  --gold: #9a7b3f;
+  --gold-soft: rgba(154, 123, 63, 0.12);
 
-  --chip-brl-fg: #0c9268;
-  --chip-brl-bg: #e6f6f0;
-  --chip-eur-fg: #2c63d6;
-  --chip-eur-bg: #eaf1fd;
-  --chip-usd-fg: #6e4fd0;
-  --chip-usd-bg: #efeafb;
-  --chip-gbp-fg: #b5791f;
-  --chip-gbp-bg: #fbf1e2;
+  --chip-brl-fg: #1f8f80;
+  --chip-brl-bg: #e3f4f1;
+  --chip-eur-fg: #3a6ea5;
+  --chip-eur-bg: #e9f0f8;
+  --chip-usd-fg: #9a7b3f;
+  --chip-usd-bg: #f5efe2;
+  --chip-gbp-fg: #5d7184;
+  --chip-gbp-bg: #eef1f4;
   --chip-glow: 0 0 transparent;
 
-  --shadow-card: 0 1px 2px rgba(20, 22, 26, 0.05), 0 14px 36px -22px rgba(20, 22, 26, 0.14);
-  --shadow-float: 0 24px 60px -28px rgba(20, 22, 26, 0.28);
-  --grid-line: rgba(20, 22, 26, 0.06);
+  --shadow-card: 0 1px 2px rgba(14, 22, 38, 0.05), 0 16px 40px -26px rgba(14, 22, 38, 0.14);
+  --shadow-float: 0 24px 60px -28px rgba(14, 22, 38, 0.22);
+  --grid-line: rgba(14, 22, 38, 0.06);
 }
 
 .dark {
-  /* Escuro — grafite frio NEUTRO (R≈G≈B, leve frieza azul; zero verde) */
-  --bg: #0b0c0e;
-  --bg-2: #0f1013;
-  --card: #131418;
-  --card-2: #1a1c21;
-  --card-hover: #1e2026;
-  --text: #ececed;
-  --muted: #9a9ca3;
-  --faint: #6b6e76;
+  /* Escuro — navy-carvão profundo (NÃO preto), superfícies em navy frio */
+  --bg: #0e1626;
+  --bg-2: #111c2e;
+  --card: #16202e;
+  --card-2: #1b2738;
+  --card-hover: #213044;
+  --text: #e8edf2;
+  --muted: #8a9aad;
+  --faint: #5e6e80;
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.11);
-  /* Acento ÚNICO: lima-elétrico, cirúrgico */
-  --accent: #c7f94e;
-  --accent-press: #b4e83a;
-  --accent-2: #5aa0ff;
-  --accent-soft: rgba(199, 249, 78, 0.1);
-  --ring: rgba(199, 249, 78, 0.45);
-  --pos: #5bd9a4;
-  --neg: #ff6b5e;
-  --neg-soft: rgba(255, 107, 94, 0.12);
+  /* Acento primário: teal sóbrio. Champanhe só em destaque pontual. */
+  --accent: #3fa7a0;
+  --accent-press: #2c7a7b;
+  --accent-2: #5b82a8;
+  --accent-soft: rgba(63, 167, 160, 0.1);
+  --ring: rgba(63, 167, 160, 0.4);
+  --pos: #4fb286;
+  --neg: #c2553b;
+  --neg-soft: rgba(194, 85, 59, 0.13);
+  --gold: #c9a86a;
+  --gold-soft: rgba(201, 168, 106, 0.12);
 
-  /* Moedas como camada de dados (não competem com o acento) */
-  --chip-brl-fg: #5bd9a4;
-  --chip-brl-bg: rgba(91, 217, 164, 0.12);
-  --chip-eur-fg: #6e8fd6;
-  --chip-eur-bg: rgba(110, 143, 214, 0.13);
-  --chip-usd-fg: #a894ff;
-  --chip-usd-bg: rgba(168, 148, 255, 0.13);
-  --chip-gbp-fg: #e0a96d;
-  --chip-gbp-bg: rgba(224, 169, 109, 0.13);
+  /* Moedas como camada de dados sóbria: teal / azul-aço / champanhe / neutro */
+  --chip-brl-fg: #4ec1b9;
+  --chip-brl-bg: rgba(63, 167, 160, 0.13);
+  --chip-eur-fg: #7aa0c8;
+  --chip-eur-bg: rgba(91, 130, 168, 0.15);
+  --chip-usd-fg: #d4b87f;
+  --chip-usd-bg: rgba(201, 168, 106, 0.14);
+  --chip-gbp-fg: #9fb0bf;
+  --chip-gbp-bg: rgba(159, 176, 191, 0.13);
   --chip-glow: 0 0 transparent;
 
-  /* Elevação seca/arquitetônica: hairline + 1 step de surface, sem blur pesado */
-  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-float: 0 28px 70px -30px rgba(0, 0, 0, 0.8);
-  --grid-line: rgba(255, 255, 255, 0.055);
+  /* Elevação contida: hairline + sombra navy suave, sem brilho. */
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 1px 2px rgba(0, 0, 0, 0.35),
+    0 16px 40px -28px rgba(0, 0, 0, 0.55);
+  --shadow-float: 0 28px 70px -30px rgba(0, 0, 0, 0.7);
+  --grid-line: rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -101,6 +107,8 @@
   --color-pos: var(--pos);
   --color-neg: var(--neg);
   --color-neg-soft: var(--neg-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
 
   /* Compat: nomes antigos → novos tokens. */
   --color-teal: var(--accent);
@@ -110,7 +118,8 @@
   --color-navy: var(--text);
 
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-numeric: "Space Grotesk", "Inter", system-ui, sans-serif;
 
   --radius-card: 18px;
   --radius-panel: 14px;
@@ -139,10 +148,10 @@ body {
   background: var(--bg);
 }
 
-/* Canvas grafite NEUTRO: só um respiro de luz no topo, sem nenhuma cor. */
+/* Canvas navy: só um respiro de luz fria no topo, sem cor saturada. */
 .dark body {
   background:
-    radial-gradient(110% 60% at 50% -12%, rgba(255, 255, 255, 0.022), transparent 60%),
+    radial-gradient(120% 64% at 50% -14%, rgba(91, 130, 168, 0.05), transparent 62%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -161,7 +170,7 @@ body {
   display: none;
 }
 
-/* Eyebrow editorial: deck-line de revista acima de cada bloco. */
+/* Eyebrow editorial: deck-line discreta acima de cada bloco. */
 .eyebrow {
   font-size: 11px;
   font-weight: 600;
@@ -175,49 +184,40 @@ body {
   background: var(--card);
 }
 .dark .glass {
-  background: color-mix(in oklab, var(--card) 82%, transparent);
-  backdrop-filter: blur(14px) saturate(1.05);
-  -webkit-backdrop-filter: blur(14px) saturate(1.05);
+  background: color-mix(in oklab, var(--card) 80%, transparent);
+  backdrop-filter: blur(16px) saturate(1.05);
+  -webkit-backdrop-filter: blur(16px) saturate(1.05);
 }
 
-/* Número-herói: peso + ar + brilho gradiente sutil (off-white → tom do acento). */
+/* Número-herói: numérico tabular, peso e ar. Cor sólida (clareza > efeito). */
 .hero-number {
-  font-family: var(--font-display);
+  font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums slashed-zero;
-  letter-spacing: -0.03em;
-  line-height: 0.96;
-  background: linear-gradient(
-    168deg,
-    var(--text) 24%,
-    color-mix(in oklab, var(--accent) 60%, var(--text)) 128%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 0.98;
+  color: var(--text);
 }
 .hero-number-neg {
-  background: linear-gradient(168deg, var(--text) 24%, var(--neg) 130%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--neg);
 }
 
-/* Degradê do HERO: glows ancorados no topo (px) → ficam no hero mesmo a seção
-   crescendo; o linear desce pro fundo do app, integrando tudo. */
+/* Degradê do HERO: glows discretos ancorados no topo (px) → ficam no hero
+   mesmo a seção crescendo; o linear desce pro fundo, integrando tudo. */
 .hero-bg {
   background:
-    radial-gradient(1100px 760px at 12% -130px, rgba(91, 122, 18, 0.13), transparent 70%),
-    radial-gradient(820px 620px at 98% 30px, rgba(44, 99, 214, 0.07), transparent 72%),
+    radial-gradient(1100px 760px at 12% -130px, rgba(44, 122, 123, 0.1), transparent 70%),
+    radial-gradient(820px 620px at 98% 30px, rgba(58, 110, 165, 0.07), transparent 72%),
     linear-gradient(180deg, #ffffff 0%, var(--bg) 58%);
 }
 .dark .hero-bg {
   background:
-    radial-gradient(1150px 800px at 11% -140px, rgba(199, 249, 78, 0.17), transparent 70%),
-    radial-gradient(860px 640px at 99% 20px, rgba(110, 143, 214, 0.1), transparent 72%),
-    linear-gradient(180deg, #1a1d23 0%, var(--bg) 56%);
+    radial-gradient(1150px 800px at 11% -140px, rgba(63, 167, 160, 0.12), transparent 70%),
+    radial-gradient(880px 660px at 99% 10px, rgba(91, 130, 168, 0.1), transparent 72%),
+    linear-gradient(180deg, #14202f 0%, var(--bg) 56%);
 }
 
-/* Selos de moeda (camada de dados). */
+/* Selos de moeda (camada de dados sóbria). */
 .chip {
   display: inline-flex;
   align-items: center;

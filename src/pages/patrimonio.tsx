@@ -129,7 +129,7 @@ export default function Patrimonio() {
             <Money
               value={view.netWorth}
               currency={disp}
-              className="block font-display font-semibold text-[clamp(26px,3.2vw,42px)] mt-1.5 text-text"
+              className="block font-numeric font-semibold tabular tracking-[-0.025em] text-[clamp(26px,3.2vw,42px)] mt-1.5 text-text"
             />
             <div className="flex flex-wrap gap-x-8 gap-y-1 mt-4 text-[13.5px]">
               <span className="text-muted">

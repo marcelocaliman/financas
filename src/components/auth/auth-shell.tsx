@@ -20,7 +20,7 @@ export function AuthShell({
     <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2.5 mb-7">
-          <div className="grid place-items-center w-[36px] h-[36px] rounded-[11px] bg-accent text-[#04140d] shadow-[0_0_20px_-4px_var(--accent)]">
+          <div className="grid place-items-center w-[36px] h-[36px] rounded-[11px] bg-accent text-[#08131f]">
             <ArrowLeftRight size={18} />
           </div>
           <span className="font-display font-bold text-[19px] tracking-[-0.02em]">Finanças</span>

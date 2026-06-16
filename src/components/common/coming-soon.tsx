@@ -1,17 +1,16 @@
 import { useTranslation } from "react-i18next";
-import { Tile } from "./tile";
+import { Compass } from "lucide-react";
 
-/** Teaser "em breve" — usado nas seções de módulos ainda não construídos. */
+/** Estado vazio intencional e discreto — ícone fino + 1 linha (sem card pesado). */
 export function ComingSoon() {
   const { t } = useTranslation();
   return (
-    <Tile className="p-8 lg:p-10">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent">
-        {t("common.comingSoon")}
-      </span>
-      <p className="text-[15px] text-muted mt-3 max-w-lg leading-relaxed">
+    <div className="flex flex-col items-center text-center py-16 lg:py-20">
+      <Compass size={26} strokeWidth={1.4} className="text-faint" />
+      <span className="eyebrow mt-5">{t("common.comingSoon")}</span>
+      <p className="text-[13.5px] text-muted mt-2 max-w-sm leading-relaxed">
         {t("common.comingSoonDesc")}
       </p>
-    </Tile>
+    </div>
   );
 }
