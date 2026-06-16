@@ -137,8 +137,6 @@ export default function Patrimonio() {
           );
         },
       });
-      cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(110px,0.9fr)", options: opts(tax.regions) });
-      cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(108px,0.9fr)", placeholder: "—" });
       cols.push({ ...convertedCol, header: t("patrimonio.currentValue"), compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
       return cols;
     }
@@ -220,7 +218,7 @@ export default function Patrimonio() {
             </div>
 
             <div className="overflow-x-auto">
-              <div className={cn(QUOTABLE.has(activeId) ? "min-w-[1180px]" : "min-w-[880px]")}>
+              <div className="min-w-[860px]">
                 <DataGrid<Asset>
                   key={activeId}
                   columns={assetColsFor(activeId)}
