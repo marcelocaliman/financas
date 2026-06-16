@@ -6,7 +6,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-10 px-3 rounded-[8px] border border-border bg-bg2 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
+      className="w-full max-w-sm h-10 px-3 rounded-[8px] border border-border bg-bg2 text-[13.5px] text-text outline-none focus:border-accent transition-colors"
     />
   );
 }

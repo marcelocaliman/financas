@@ -261,6 +261,14 @@ button {
   font-family: inherit;
 }
 
+/* Tailwind v4 não põe mais cursor:pointer em botões — reativa no app todo. */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+label:has(> input[type="checkbox"]),
+summary {
+  cursor: pointer;
+}
+
 ::selection {
   background: var(--accent-soft);
 }

@@ -31,7 +31,7 @@ export default function Config() {
   const [tab, setTab] = useState<TabId>("conta");
 
   return (
-    <Panel className="overflow-hidden max-w-5xl">
+    <Panel className="overflow-hidden">
       {/* Abas no topo do card */}
       <div className="flex border-b border-border px-3 no-scrollbar overflow-x-auto">
         {TABS.map((tb) => (
@@ -90,7 +90,7 @@ function Appearance() {
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
   return (
-    <div className="grid sm:grid-cols-2 gap-8 max-w-2xl">
+    <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
       <section>
         <SubHeading>{t("common.theme")}</SubHeading>
         <div className="flex gap-2">
@@ -124,7 +124,7 @@ function DataSection() {
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="grid sm:grid-cols-2 gap-8 lg:gap-12">
       <DataRow title={t("data.sample")} desc={t("data.sampleDesc")}>
         <Button variant="secondary" onClick={() => void actions.loadSample()}>
           {t("data.loadSample")}
