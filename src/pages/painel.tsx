@@ -95,24 +95,24 @@ export function DashboardHero() {
 
   return (
     <>
-      <div className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted">
-        {t("dashboard.netWorth")}
-      </div>
+      <div className="text-[15px] text-muted font-medium">{t("dashboard.netWorth")}</div>
       <HeroNumber
         value={view.netWorth}
         currency={disp}
-        className="block whitespace-nowrap text-[clamp(30px,5.5vw,80px)] mt-2"
+        className="block whitespace-nowrap text-[clamp(30px,5.5vw,78px)] mt-1.5"
       />
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
-        {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
-        {view.curSegments.length > 0 ? (
-          <div className="flex-1 min-w-[240px] max-w-lg">
-            <CompositionBar
-              segments={view.curSegments.map((s) => ({ label: s.currency, pct: s.pct, color: colors[s.currency] }))}
-            />
-          </div>
-        ) : null}
-      </div>
+      {hasTrend ? (
+        <div className="mt-3.5">
+          <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
+        </div>
+      ) : null}
+      {view.curSegments.length > 0 ? (
+        <div className="mt-6 max-w-md">
+          <CompositionBar
+            segments={view.curSegments.map((s) => ({ label: s.currency, pct: s.pct, color: colors[s.currency] }))}
+          />
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-12 gap-5 mt-12">
         <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">

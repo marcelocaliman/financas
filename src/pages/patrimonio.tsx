@@ -8,7 +8,6 @@ import { currencyBreakdown, currencyColors } from "@/money/composition";
 import type { Asset, AssetType, Liability, LiabilityType } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
@@ -124,11 +123,13 @@ export default function Patrimonio() {
       <Tile className="p-7 md:p-8">
         <div className="grid grid-cols-12 gap-x-8 gap-y-7 items-end">
           <div className="col-span-12 lg:col-span-7">
-            <Eyebrow>{t("patrimonio.netWorth")}</Eyebrow>
-            <HeroNumber
+            <div className="text-[13px] uppercase tracking-[0.12em] text-muted font-semibold">
+              {t("patrimonio.netWorth")}
+            </div>
+            <Money
               value={view.netWorth}
               currency={disp}
-              className="block whitespace-nowrap text-[clamp(34px,4.5vw,58px)] mt-3"
+              className="block font-display font-semibold text-[clamp(26px,3.2vw,42px)] mt-1.5 text-text"
             />
             <div className="flex flex-wrap gap-x-8 gap-y-1 mt-4 text-[13.5px]">
               <span className="text-muted">
