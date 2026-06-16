@@ -1,4 +1,4 @@
-import { convert, CURRENCIES, type Currency } from "./currency";
+import { convert, CURRENCIES, getLiveRates, type Currency, type RateTable } from "./currency";
 
 /**
  * Cor de cada moeda — alinhada aos selos luminosos (chip-*) por tema, pra a
@@ -34,11 +34,12 @@ export interface CurrencySlice {
 export function currencyBreakdown(
   items: { amount: number; currency: Currency }[],
   display: Currency,
+  rates: RateTable = getLiveRates(),
 ): CurrencySlice[] {
   const totals = new Map<Currency, number>();
   let total = 0;
   for (const it of items) {
-    const v = convert(it.amount, it.currency, display);
+    const v = convert(it.amount, it.currency, display, rates);
     totals.set(it.currency, (totals.get(it.currency) ?? 0) + v);
     total += v;
   }

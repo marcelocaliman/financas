@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
+import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors } from "@/money/composition";
@@ -33,6 +34,7 @@ function usePainelView() {
   const name = firstName(useVault((s) => s.email));
   const { data } = useDashboardData();
   const tax = useTaxonomy();
+  const rates = useRates((s) => s.rates);
   const colors = currencyColors(theme);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axisColor = theme === "dark" ? "#5f646c" : "#8a8f98";
@@ -48,7 +50,7 @@ function usePainelView() {
 
   const view = useMemo(() => {
     if (!data) return null;
-    const conv = (amount: number, from: Currency) => convert(amount, from, disp);
+    const conv = (amount: number, from: Currency) => convert(amount, from, disp, rates);
     const assetsDisp = data.assets.map((a) => ({ ...a, disp: conv(a.amount, a.currency) }));
     const totalAssets = assetsDisp.reduce((s, a) => s + a.disp, 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
@@ -73,7 +75,7 @@ function usePainelView() {
       totalAssets,
       totalLiab,
       netWorth: totalAssets - totalLiab,
-      curSegments: currencyBreakdown(data.assets, disp),
+      curSegments: currencyBreakdown(data.assets, disp, rates),
       invested,
       expDisp,
       totalExp,
@@ -84,7 +86,7 @@ function usePainelView() {
       nwChange,
       isEmpty,
     };
-  }, [data, disp]);
+  }, [data, disp, rates]);
 
   return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
 }

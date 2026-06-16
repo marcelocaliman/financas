@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
+import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
@@ -16,21 +17,22 @@ export default function Patrimonio() {
   const disp = useUI((s) => s.displayCurrency);
   const data = usePatrimonio();
   const tax = useTaxonomy();
+  const rates = useRates((s) => s.rates);
 
   const view = useMemo(() => {
     if (!data) return null;
-    const conv = (a: number, c: Currency) => convert(a, c, disp);
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
     return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab };
-  }, [data, disp]);
+  }, [data, disp, rates]);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[20px] glass border border-border animate-pulse" />;
   }
 
   const sym = CURRENCY_SYMBOL[disp];
-  const conv = (a: number, c: Currency) => convert(a, c, disp);
+  const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
   const opts = (items: { id: string; name: string }[]): SelectOption[] =>
     items.map((i) => ({ value: i.id, label: i.name }));
   const convertedCol = {

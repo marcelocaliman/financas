@@ -22,6 +22,20 @@ export const DEFAULT_RATES: RateTable = {
 };
 
 /**
+ * Espelho mutável das taxas ATUAIS (atualizado pelo store de câmbio a partir da API
+ * diária, com fallback manual/cache). Mantido aqui pra que `convert`/`currencyBreakdown`
+ * usem a cotação viva por padrão SEM cada call-site precisar passar a tabela. Componentes
+ * que precisam reagir à atualização leem `useRates` e incluem nas deps do useMemo.
+ */
+let liveRates: RateTable = DEFAULT_RATES;
+export function setLiveRates(rates: RateTable): void {
+  liveRates = rates;
+}
+export function getLiveRates(): RateTable {
+  return liveRates;
+}
+
+/**
  * Converte entre duas moedas usando as duas taxas → base.
  * convert(100, "EUR", "BRL") = 100 × 5.97 / 1 = 597.
  */
@@ -29,7 +43,7 @@ export function convert(
   amount: number,
   from: Currency,
   to: Currency,
-  rates: RateTable = DEFAULT_RATES,
+  rates: RateTable = liveRates,
 ): number {
   if (from === to) return amount;
   const inBase = amount * rates[from];

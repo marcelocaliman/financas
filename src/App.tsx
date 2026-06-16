@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useVault } from "@/vault/vault-store";
 import { useUI } from "@/store/ui";
+import { useRates } from "@/store/rates";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
 import { AppShell } from "@/components/layout/app-shell";
@@ -21,6 +22,12 @@ export default function App() {
   useEffect(() => {
     void init();
   }, [init]);
+
+  // Câmbio do dia: atualiza se a cotação em cache estiver velha (≥12h). Dado público,
+  // seguro mesmo antes do unlock; falha silenciosa cai no cache/fallback manual.
+  useEffect(() => {
+    void useRates.getState().refresh();
+  }, []);
 
   // Tema aplicado em todo o app, inclusive nas telas de auth.
   useEffect(() => {

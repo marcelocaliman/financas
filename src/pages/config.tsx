@@ -13,6 +13,7 @@ import {
   DangerZone,
 } from "@/components/auth/account-settings";
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
+import { ExchangeRates } from "@/components/config/exchange-rates";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ const TABS = [
   { id: "conta", label: "Conta" },
   { id: "seguranca", label: "Segurança" },
   { id: "categorias", label: "Categorias" },
+  { id: "cambio", label: "Câmbio" },
   { id: "aparencia", label: "Aparência" },
   { id: "dados", label: "Dados" },
   { id: "privacidade", label: "Privacidade" },
@@ -69,6 +71,7 @@ export default function Config() {
           </div>
         )}
         {tab === "categorias" && <TaxonomyEditor />}
+        {tab === "cambio" && <ExchangeRates />}
         {tab === "aparencia" && <Appearance />}
         {tab === "dados" && <DataSection />}
         {tab === "privacidade" && (
