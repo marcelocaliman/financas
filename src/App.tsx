@@ -25,8 +25,19 @@ export default function App() {
 
   // Câmbio do dia: atualiza se a cotação em cache estiver velha (≥12h). Dado público,
   // seguro mesmo antes do unlock; falha silenciosa cai no cache/fallback manual.
+  // Revalida ao voltar o foco da aba — cobre sessão PWA aberta por >12h sem reload.
   useEffect(() => {
-    void useRates.getState().refresh();
+    const refresh = () => void useRates.getState().refresh();
+    refresh();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", refresh);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", refresh);
+    };
   }, []);
 
   // Tema aplicado em todo o app, inclusive nas telas de auth.

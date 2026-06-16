@@ -9,7 +9,7 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
-import { CLASS, nameById } from "@/domain/taxonomy";
+import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
 import { scrollToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
@@ -55,7 +55,7 @@ function usePainelView() {
     const totalAssets = assetsDisp.reduce((s, a) => s + a.disp, 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
     const invested = data.assets
-      .filter((a) => a.classId !== CLASS.caixa && a.classId !== CLASS.imoveis)
+      .filter((a) => isInvestedClass(a.classId))
       .reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const expDisp = data.expenses.map((e) => ({ name: e.name, value: conv(e.amount, e.currency) }));
     const totalExp = expDisp.reduce((s, e) => s + e.value, 0);

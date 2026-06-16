@@ -9,7 +9,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { nameById } from "@/domain/taxonomy";
+import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { StatBlock } from "@/components/common/stat-block";
@@ -28,8 +28,10 @@ export default function Investimentos() {
   const view = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    // "Investido" = ativos financeiros (exclui Caixa e Imóveis) — mesmo seletor do Painel.
+    const invested = data.assets.filter((a) => isInvestedClass(a.classId));
     const byClass = new Map<string, number>();
-    for (const a of data.assets) byClass.set(a.classId, (byClass.get(a.classId) ?? 0) + conv(a.amount, a.currency));
+    for (const a of invested) byClass.set(a.classId, (byClass.get(a.classId) ?? 0) + conv(a.amount, a.currency));
     const total = [...byClass.values()].reduce((s, v) => s + v, 0);
     const targets = settings.allocationTargets;
     const ids = new Set<string>([...byClass.keys(), ...Object.keys(targets).filter((k) => targets[k] > 0)]);
@@ -43,10 +45,10 @@ export default function Investimentos() {
       })
       .sort((a, b) => b.value - a.value);
     const totalTarget = rows.reduce((s, r) => s + r.tgtPct, 0);
-    const positions = data.assets
+    const positions = invested
       .map((a) => ({ ...a, disp: conv(a.amount, a.currency) }))
       .sort((a, b) => b.disp - a.disp);
-    return { rows, total, totalTarget, positions, count: data.assets.length };
+    return { rows, total, totalTarget, positions, count: invested.length };
   }, [data, disp, rates, settings, tax]);
 
   if (!data || !view) {

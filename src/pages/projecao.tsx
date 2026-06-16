@@ -30,8 +30,12 @@ export default function Projecao() {
   }, [data, disp, rates]);
 
   // Valor inicial: patrimônio atual por padrão (override só em memória, nunca persistido).
+  // Ao trocar a moeda de exibição, descarta o override (volta ao patrimônio já convertido)
+  // pra não projetar um número fixo numa moeda diferente.
   const [override, setOverride] = useState<number | null>(null);
+  useEffect(() => setOverride(null), [disp]);
   const initial = override ?? netWorth;
+  const years = Math.max(1, Math.min(60, Math.round(p.years)));
 
   const series = useMemo(
     () =>
@@ -40,13 +44,13 @@ export default function Projecao() {
         monthlyContribution: p.monthly,
         annualReturn: p.annualReturn / 100,
         annualInflation: p.annualInflation / 100,
-        years: Math.max(1, Math.min(60, Math.round(p.years))),
+        years,
       }),
-    [initial, p.monthly, p.annualReturn, p.annualInflation, p.years],
+    [initial, p.monthly, p.annualReturn, p.annualInflation, years],
   );
 
   const final = series.at(-1) ?? { year: 0, nominal: initial, real: initial };
-  const contributed = initial + p.monthly * 12 * series.length;
+  const contributed = initial + p.monthly * 12 * years;
   const fmt = (v: number) => formatMoney(v, disp);
 
   return (
@@ -66,7 +70,7 @@ export default function Projecao() {
       {/* Resultado */}
       <Tile className="p-6 md:p-7">
         <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-          <StatBlock label={t("projecao.finalNominal", { years: series.length })} tone="accent">
+          <StatBlock label={t("projecao.finalNominal", { years })} tone="accent">
             <Money value={final.nominal} currency={disp} />
           </StatBlock>
           <StatBlock label={t("projecao.finalReal")}>

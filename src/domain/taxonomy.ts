@@ -125,3 +125,12 @@ export function nameById(items: TaxonomyItem[], id?: string): string {
   if (!id) return "";
   return items.find((i) => i.id === id)?.name ?? "";
 }
+
+/**
+ * Classes que NÃO contam como "investido" (financeiro): Caixa e Imóveis. Seletor
+ * ÚNICO usado no Painel e em Investimentos pra "Investido" nunca divergir entre telas.
+ */
+const NON_INVESTED = new Set<string>([CLASS.caixa, CLASS.imoveis]);
+export function isInvestedClass(classId: string): boolean {
+  return !NON_INVESTED.has(classId);
+}

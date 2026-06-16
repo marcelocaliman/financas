@@ -117,7 +117,7 @@
     "monthPlaceholder": "YYYY-MM",
     "networth": "Net worth",
     "contribution": "Contribution",
-    "current": "Current",
+    "current": "Last snapshot",
     "totalChange": "Total change",
     "contributions": "Contributions",
     "snapshots": "Records",
