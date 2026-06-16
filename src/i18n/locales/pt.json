@@ -88,5 +88,14 @@
     "resetDesc": "Apaga todos os dados e começa em branco.",
     "resetBtn": "Apagar tudo",
     "resetConfirm": "Apagar TODOS os dados e começar do zero? Isso não pode ser desfeito."
+  },
+  "footer": {
+    "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
+    "sections": "Seções",
+    "more": "Mais",
+    "privacy": "Privacidade",
+    "noTracking": "Sem rastreamento · sem anúncios",
+    "rights": "multimoeda & privado",
+    "encrypted": "Cifrado de ponta a ponta"
   }
 }

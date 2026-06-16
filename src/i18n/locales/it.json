@@ -88,5 +88,14 @@
     "resetDesc": "Cancella tutti i dati e riparti da zero.",
     "resetBtn": "Cancella tutto",
     "resetConfirm": "Cancellare TUTTI i dati e ricominciare da zero? Non è reversibile."
+  },
+  "footer": {
+    "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
+    "sections": "Sezioni",
+    "more": "Altro",
+    "privacy": "Privacy",
+    "noTracking": "Nessun tracciamento · nessuna pubblicità",
+    "rights": "multivaluta e privato",
+    "encrypted": "Cifrato end-to-end"
   }
 }

@@ -31,45 +31,56 @@ export default function Config() {
   const [tab, setTab] = useState<TabId>("conta");
 
   return (
-    <div className="grid grid-cols-12 gap-6 lg:gap-10">
-      {/* Rail de abas */}
-      <div className="col-span-12 lg:col-span-3">
-        <div className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 lg:sticky lg:top-24">
-          {TABS.map((tb) => (
-            <button
-              key={tb.id}
-              type="button"
-              onClick={() => setTab(tb.id)}
-              className={cn(
-                "text-left px-3.5 py-2.5 rounded-[10px] text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
-                tab === tb.id
-                  ? "bg-accent-soft text-accent"
-                  : "text-muted hover:text-text hover:bg-card-hover",
-              )}
-            >
-              {tb.label}
-            </button>
-          ))}
-        </div>
+    <div>
+      {/* Abas horizontais (underline) */}
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
+        {TABS.map((tb) => (
+          <button
+            key={tb.id}
+            type="button"
+            onClick={() => setTab(tb.id)}
+            className={cn(
+              "relative px-4 py-3 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
+              tab === tb.id ? "text-text" : "text-muted hover:text-text",
+            )}
+          >
+            {tb.label}
+            {tab === tb.id ? (
+              <span className="absolute left-3 right-3 -bottom-px h-[2px] rounded-full bg-accent" />
+            ) : null}
+          </button>
+        ))}
       </div>
 
       {/* Conteúdo da aba */}
-      <div className="col-span-12 lg:col-span-9 max-w-2xl space-y-5">
+      <div className="pt-8">
         {tab === "conta" && (
-          <>
+          <div className="grid lg:grid-cols-2 gap-5 items-start">
             <AccountCard />
             <DangerZone />
-          </>
+          </div>
         )}
         {tab === "seguranca" && (
-          <>
+          <div className="grid lg:grid-cols-2 gap-5 items-start">
             <ChangePassword />
             <NewRecoveryCode />
-          </>
+          </div>
         )}
-        {tab === "aparencia" && <Appearance />}
-        {tab === "dados" && <DataSection />}
-        {tab === "privacidade" && <PrivacySection />}
+        {tab === "aparencia" && (
+          <div className="max-w-2xl">
+            <Appearance />
+          </div>
+        )}
+        {tab === "dados" && (
+          <div className="max-w-2xl">
+            <DataSection />
+          </div>
+        )}
+        {tab === "privacidade" && (
+          <div className="max-w-3xl">
+            <PrivacySection />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -80,31 +91,33 @@ function Appearance() {
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
   return (
-    <Panel className="p-6 space-y-5">
-      <section>
-        <div className="text-[15px] font-semibold mb-2.5">{t("common.theme")}</div>
-        <div className="flex gap-2">
-          {THEMES.map((opt) => (
-            <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
-              {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
-            </Pill>
-          ))}
-        </div>
-      </section>
-      <section>
-        <div className="text-[15px] font-semibold mb-2.5">{t("common.language")}</div>
-        <div className="flex gap-2">
-          {SUPPORTED_LANGS.map((lng) => (
-            <Pill
-              key={lng}
-              active={i18n.resolvedLanguage === lng}
-              onClick={() => void i18n.changeLanguage(lng)}
-            >
-              <span className="uppercase">{lng}</span>
-            </Pill>
-          ))}
-        </div>
-      </section>
+    <Panel className="p-6">
+      <div className="grid sm:grid-cols-2 gap-6">
+        <section>
+          <div className="text-[15px] font-semibold mb-2.5">{t("common.theme")}</div>
+          <div className="flex gap-2">
+            {THEMES.map((opt) => (
+              <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
+                {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
+              </Pill>
+            ))}
+          </div>
+        </section>
+        <section>
+          <div className="text-[15px] font-semibold mb-2.5">{t("common.language")}</div>
+          <div className="flex gap-2">
+            {SUPPORTED_LANGS.map((lng) => (
+              <Pill
+                key={lng}
+                active={i18n.resolvedLanguage === lng}
+                onClick={() => void i18n.changeLanguage(lng)}
+              >
+                <span className="uppercase">{lng}</span>
+              </Pill>
+            ))}
+          </div>
+        </section>
+      </div>
     </Panel>
   );
 }

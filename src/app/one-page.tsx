@@ -4,6 +4,7 @@ import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { Eyebrow } from "@/components/common/tile";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { cn } from "@/lib/utils";
+import { Footer } from "@/components/layout/footer";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import Patrimonio from "@/pages/patrimonio";
 import Config from "@/pages/config";
@@ -38,6 +39,8 @@ export function OnePage() {
           </Section>
         ))}
       </div>
+
+      <Footer />
     </div>
   );
 }

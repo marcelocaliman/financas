@@ -88,5 +88,14 @@
     "resetDesc": "Erase all data and start blank.",
     "resetBtn": "Erase all",
     "resetConfirm": "Erase ALL data and start from scratch? This cannot be undone."
+  },
+  "footer": {
+    "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
+    "sections": "Sections",
+    "more": "More",
+    "privacy": "Privacy",
+    "noTracking": "No tracking · no ads",
+    "rights": "multicurrency & private",
+    "encrypted": "End-to-end encrypted"
   }
 }
