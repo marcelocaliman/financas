@@ -61,9 +61,9 @@ export function Drawer({
       />
       <div
         className={cn(
-          "absolute inset-x-0 bottom-0 mx-auto w-full max-w-[1080px] flex flex-col",
+          "absolute inset-x-0 bottom-0 mx-auto w-full max-w-[1120px] flex flex-col",
           "bg-bg border-t border-x border-border rounded-t-[22px] shadow-[var(--shadow-float)]",
-          "max-h-[93vh] transition-transform duration-300 ease-out",
+          "h-[95vh] transition-transform duration-300 ease-out",
           show ? "translate-y-0" : "translate-y-full",
         )}
       >
@@ -84,7 +84,7 @@ export function Drawer({
             </button>
           </div>
         </div>
-        <div className="overflow-y-auto px-5 md:px-8 py-6">{children}</div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 md:px-8 py-6">{children}</div>
       </div>
     </div>,
     document.body,
