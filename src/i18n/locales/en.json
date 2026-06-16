@@ -193,6 +193,19 @@
     "base": "Base",
     "optimistic": "Optimistic"
   },
+  "proventos": {
+    "title": "Dividends",
+    "source": "Source",
+    "amount": "Amount",
+    "passive12m": "Passive income (12m)",
+    "monthlyAvg": "Monthly avg",
+    "yield": "Yield",
+    "total": "Total received",
+    "last12": "Last 12 months",
+    "received": "Received",
+    "add": "Add dividend",
+    "hint": "Log dividends, interest-on-equity and REIT income received (source, month YYYY-MM and amount). Yield is the last 12 months' income over total invested."
+  },
   "data": {
     "title": "Data",
     "sample": "Sample data",

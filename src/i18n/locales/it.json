@@ -193,6 +193,19 @@
     "base": "Base",
     "optimistic": "Ottimistico"
   },
+  "proventos": {
+    "title": "Proventi",
+    "source": "Fonte",
+    "amount": "Importo",
+    "passive12m": "Reddito passivo (12m)",
+    "monthlyAvg": "Media mensile",
+    "yield": "Rendimento",
+    "total": "Totale ricevuto",
+    "last12": "Ultimi 12 mesi",
+    "received": "Ricevuto",
+    "add": "Aggiungi provento",
+    "hint": "Registra dividendi, interessi e rendimenti REIT ricevuti (fonte, mese AAAA-MM e importo). Il rendimento è il reddito degli ultimi 12 mesi sul totale investito."
+  },
   "data": {
     "title": "Dati",
     "sample": "Dati di esempio",

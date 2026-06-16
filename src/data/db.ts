@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import type {
   AppSettings,
   Asset,
+  Dividend,
   Expense,
   Goal,
   Income,
@@ -28,6 +29,7 @@ export class FinancasDB extends Dexie {
   taxonomy!: Table<Taxonomy, string>;
   goals!: Table<Goal, string>;
   settings!: Table<AppSettings, string>;
+  dividends!: Table<Dividend, string>;
 
   constructor() {
     super("financas");
@@ -103,6 +105,10 @@ export class FinancasDB extends Dexie {
             i.categoryId = matchCategory(String(i.name ?? ""), DEFAULT_TAXONOMY.incomeCategories) ?? INCOME_OTHER;
           });
       });
+    // v6: Proventos/dividendos (renda passiva). Tabela nova.
+    this.version(6).stores({
+      dividends: "id, month, currency",
+    });
   }
 }
 

@@ -193,6 +193,19 @@
     "base": "Base",
     "optimistic": "Otimista"
   },
+  "proventos": {
+    "title": "Proventos",
+    "source": "Fonte",
+    "amount": "Valor",
+    "passive12m": "Renda passiva (12m)",
+    "monthlyAvg": "Média mensal",
+    "yield": "Yield",
+    "total": "Total recebido",
+    "last12": "Últimos 12 meses",
+    "received": "Recebido",
+    "add": "Adicionar provento",
+    "hint": "Registre dividendos, JCP e rendimentos de FII recebidos (fonte, mês AAAA-MM e valor). O yield é a renda dos últimos 12 meses sobre o total investido."
+  },
   "data": {
     "title": "Dados",
     "sample": "Dados de exemplo",

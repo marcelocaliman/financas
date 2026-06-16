@@ -66,6 +66,15 @@ export function buildSeed(main: Currency): SeedData {
       // Renda recebida no exterior — segunda metade da história cross-border.
       { id: "i2", categoryId: "aluguel", name: "Aluguel recebido (exterior)", currency: ab, amount: a(700) },
     ],
+    // Proventos recebidos (ações BBAS3, em BRL) — renda passiva dos últimos meses.
+    dividends: [
+      { id: "d1", month: pastMonth(5), source: "BBAS3", currency: "BRL", amount: 22 },
+      { id: "d2", month: pastMonth(4), source: "BBAS3", currency: "BRL", amount: 18 },
+      { id: "d3", month: pastMonth(3), source: "BBAS3", currency: "BRL", amount: 41 },
+      { id: "d4", month: pastMonth(2), source: "BBAS3", currency: "BRL", amount: 20 },
+      { id: "d5", month: pastMonth(1), source: "BBAS3", currency: "BRL", amount: 35 },
+      { id: "d6", month: pastMonth(0), source: "BBAS3", currency: "BRL", amount: 26 },
+    ],
     // Orçado mensal por categoria (na moeda principal) — um pouco acima do gasto, e
     // "lazer" abaixo de propósito pra demonstrar o estouro (vermelho).
     budgetTargets: {

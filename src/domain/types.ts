@@ -73,6 +73,18 @@ export interface Goal {
   deadline?: string; // opcional (ex.: "2030" ou "12/2030")
 }
 
+/** Provento recebido (dividendo, JCP, rendimento de FII…) — renda passiva dos investimentos. */
+export interface Dividend {
+  id: string;
+  /** Mês do recebimento, "AAAA-MM". */
+  month: string;
+  /** Fonte: ticker ou nome do ativo (ex.: "BBAS3"). */
+  source: string;
+  currency: Currency;
+  /** Valor recebido (> 0). */
+  amount: number;
+}
+
 /** Configurações sincronizadas (singleton). */
 export interface AppSettings {
   id: string;

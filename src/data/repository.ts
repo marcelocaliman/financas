@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   Asset,
+  Dividend,
   Expense,
   Goal,
   Income,
@@ -15,6 +16,7 @@ export interface SeedData {
   expenses: Expense[];
   incomes: Income[];
   snapshots: NetWorthSnapshot[];
+  dividends?: Dividend[];
   /** Orçado por categoria (moeda principal) — vai pras settings no loadSample, não é tabela. */
   budgetTargets?: Record<string, number>;
 }
@@ -62,6 +64,11 @@ export interface DataRepository {
   listGoals(): Promise<Goal[]>;
   putGoal(goal: Goal): Promise<void>;
   removeGoal(id: string): Promise<void>;
+
+  // Proventos / dividendos
+  listDividends(): Promise<Dividend[]>;
+  putDividend(dividend: Dividend): Promise<void>;
+  removeDividend(id: string): Promise<void>;
 
   // Configurações sincronizadas (alvos de alocação, etc.)
   getSettings(): Promise<AppSettings | null>;

@@ -6,6 +6,7 @@ import { pending } from "@/vault/pending";
 import type {
   AppSettings,
   Asset,
+  Dividend,
   Expense,
   Goal,
   Income,
@@ -62,6 +63,10 @@ export const actions = {
   // Objetivos
   putGoal: (goal: Goal) => withSync(() => repository.putGoal(goal)),
   removeGoal: (id: string) => withSync(() => repository.removeGoal(id)),
+
+  // Proventos / dividendos
+  putDividend: (dividend: Dividend) => withSync(() => repository.putDividend(dividend)),
+  removeDividend: (id: string) => withSync(() => repository.removeDividend(id)),
 
   // Configurações sincronizadas (singleton): SEMPRE merge sobre o estado mais fresco do
   // repositório — nunca reconstruído de um snapshot do React (que pode estar vazio/velho

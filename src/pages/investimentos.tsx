@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useSettings } from "@/hooks/use-settings";
+import { useDividends } from "@/hooks/use-dividends";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
 import { isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
+import type { Dividend } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
+import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 import { cn } from "@/lib/utils";
 
 export default function Investimentos() {
@@ -199,7 +202,112 @@ export default function Investimentos() {
           </div>
         </Tile>
       ) : null}
+
+      {/* Proventos / dividendos (renda passiva) */}
+      <Proventos invested={view.total} />
     </div>
+  );
+}
+
+/** Mês "AAAA-MM" deslocado de `back` meses a partir de hoje. */
+function monthKey(back: number): string {
+  const d = new Date();
+  const m = new Date(d.getFullYear(), d.getMonth() - back, 1);
+  return `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** Proventos recebidos: histórico, renda passiva (12m), média mensal e yield sobre o investido. */
+function Proventos({ invested }: { invested: number }) {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
+  const theme = useUI((s) => s.theme);
+  const rates = useRates((s) => s.rates);
+  const divs = useDividends();
+  const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
+  const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
+
+  const v = useMemo(() => {
+    const list = divs ?? [];
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const last12 = Array.from({ length: 12 }, (_, k) => monthKey(11 - k));
+    const cutoff = last12[0];
+    const ceil = last12[11]; // mês corrente — limita a janela (ignora datas futuras)
+    const byMonth = new Map<string, number>();
+    let total = 0;
+    let passive = 0;
+    for (const d of list) {
+      const val = conv(d.amount, d.currency);
+      total += val;
+      if (d.month >= cutoff && d.month <= ceil) {
+        passive += val;
+        byMonth.set(d.month, (byMonth.get(d.month) ?? 0) + val);
+      }
+    }
+    const monthly = last12.map((m) => ({ m: m.slice(5), value: byMonth.get(m) ?? 0 }));
+    return {
+      total,
+      passive,
+      avg: passive / 12,
+      yieldPct: invested > 0 ? (passive / invested) * 100 : 0,
+      monthly,
+      hasAny: list.length > 0,
+    };
+  }, [divs, disp, rates, invested]);
+
+  const cols: GridColumn<Dividend>[] = [
+    { key: "source", type: "text", header: t("proventos.source"), width: "minmax(120px,1.4fr)", placeholder: "BBAS3" },
+    { key: "month", type: "text", header: t("historico.month"), width: "minmax(100px,0.9fr)", placeholder: t("historico.monthPlaceholder") },
+    { key: "amount", type: "money", header: t("proventos.amount"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" },
+  ];
+
+  return (
+    <section className="space-y-4">
+      <Eyebrow>{t("proventos.title")}</Eyebrow>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Kpi label={t("proventos.passive12m")} tone="accent" value={<Money value={v.passive} currency={disp} />} />
+        <Kpi label={t("proventos.monthlyAvg")} value={<Money value={v.avg} currency={disp} />} />
+        <Kpi label={t("proventos.yield")} tone={v.yieldPct > 0 ? "accent" : "text"} value={`${v.yieldPct.toFixed(2)}%`} />
+        <Kpi label={t("proventos.total")} value={<Money value={v.total} currency={disp} />} />
+      </div>
+
+      {v.passive > 0 ? (
+        <Tile className="p-6 md:p-7">
+          <Eyebrow className="mb-4">{t("proventos.last12")}</Eyebrow>
+          <div className="w-full h-[170px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={v.monthly} margin={{ top: 4, right: 6, bottom: 0, left: 6 }}>
+                <XAxis dataKey="m" tick={{ fontSize: 10.5, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+                <Tooltip
+                  cursor={{ fill: "var(--card-2)" }}
+                  formatter={(val) => [formatMoney(Number(val), disp), t("proventos.received")]}
+                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                  labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
+                />
+                <Bar dataKey="value" fill={accent} radius={[4, 4, 0, 0]} maxBarSize={26} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Tile>
+      ) : null}
+
+      <div className="overflow-x-auto">
+        <div className="min-w-[460px]">
+          <DataGrid<Dividend>
+            columns={cols}
+            rows={[...(divs ?? [])].sort((a, b) => (a.month < b.month ? 1 : -1))}
+            blank={() => ({ id: crypto.randomUUID(), source: "", month: "", currency: base, amount: 0 })}
+            isComplete={(r) => r.source.trim().length > 0 && r.month.trim().length > 0 && r.amount > 0}
+            onCommit={(r) => void actions.putDividend(r)}
+            onDelete={(id) => void actions.removeDividend(id)}
+            addPlaceholder={t("proventos.add")}
+            total={<Money value={v.total} currency={disp} />}
+          />
+        </div>
+      </div>
+      <p className="text-[11.5px] text-faint px-1 leading-relaxed">{t("proventos.hint")}</p>
+    </section>
   );
 }
 

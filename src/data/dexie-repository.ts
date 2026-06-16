@@ -1,6 +1,7 @@
 import type {
   AppSettings,
   Asset,
+  Dividend,
   Expense,
   Goal,
   Income,
@@ -32,6 +33,7 @@ export class DexieRepository implements DataRepository {
       await this.database.expenses.bulkPut(data.expenses);
       await this.database.incomes.bulkPut(data.incomes);
       await this.database.netWorthSnapshots.bulkPut(data.snapshots);
+      if (data.dividends?.length) await this.database.dividends.bulkPut(data.dividends);
     });
   }
 
@@ -106,6 +108,16 @@ export class DexieRepository implements DataRepository {
   }
   async removeGoal(id: string): Promise<void> {
     await this.database.goals.delete(id);
+  }
+
+  listDividends(): Promise<Dividend[]> {
+    return this.database.dividends.toArray();
+  }
+  async putDividend(dividend: Dividend): Promise<void> {
+    await this.database.dividends.put(dividend);
+  }
+  async removeDividend(id: string): Promise<void> {
+    await this.database.dividends.delete(id);
   }
 
   async getSettings(): Promise<AppSettings | null> {
