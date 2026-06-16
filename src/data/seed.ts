@@ -66,6 +66,16 @@ export function buildSeed(main: Currency): SeedData {
       // Renda recebida no exterior — segunda metade da história cross-border.
       { id: "i2", categoryId: "aluguel", name: "Aluguel recebido (exterior)", currency: ab, amount: a(700) },
     ],
+    // Orçado mensal por categoria (na moeda principal) — um pouco acima do gasto, e
+    // "lazer" abaixo de propósito pra demonstrar o estouro (vermelho).
+    budgetTargets: {
+      moradia: m(1000),
+      alimentacao: m(550),
+      lazer: m(200),
+      "gasto-outros": m(200),
+      transporte: m(150),
+      saude: m(120),
+    },
     // SÓ meses passados — o mês corrente é COMPUTADO do patrimônio (useAutoSnapshot),
     // então Painel (herói) = última ponta da tendência = Histórico (atual), sempre.
     snapshots: [

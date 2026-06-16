@@ -132,7 +132,9 @@
     "detail": "Detalhe",
     "detailPlaceholder": "Ex.: Aluguel do apê",
     "uncategorized": "Sem categoria",
-    "byCategory": "Gastos por categoria"
+    "byCategory": "Gastos por categoria",
+    "budgetVsActual": "Orçado vs. realizado",
+    "budgetHint": "Defina um orçado mensal por categoria (na sua moeda principal) e acompanhe quanto já gastou. Estouro fica em vermelho."
   },
   "historico": {
     "month": "Mês",

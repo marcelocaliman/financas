@@ -81,6 +81,9 @@ export interface AppSettings {
   /** Moeda PRINCIPAL do usuário — fonte da verdade durável e sincronizada (cifrada).
    *  Espelhada no useUI p/ boot instantâneo; ausente = nunca escolhida (cai no default). */
   baseCurrency?: Currency;
+  /** Orçado mensal por categoria de gasto (id da categoria → valor na MOEDA PRINCIPAL),
+   *  p/ comparar com o realizado. */
+  budgetTargets?: Record<string, number>;
 }
 
 export interface Liability {

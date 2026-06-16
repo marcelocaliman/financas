@@ -80,15 +80,30 @@ export const actions = {
       else delete allocationTargets[classId];
       await repository.putSettings({ id: "settings", ...(cur ?? {}), allocationTargets });
     }),
+  /** Define/limpa o ORÇADO mensal de UMA categoria de gasto (na moeda principal), sem clobber. */
+  setBudgetTarget: (categoryId: string, amount: number) =>
+    withSync(async () => {
+      const cur = await repository.getSettings();
+      const budgetTargets = { ...(cur?.budgetTargets ?? {}) };
+      if (amount > 0) budgetTargets[categoryId] = amount;
+      else delete budgetTargets[categoryId];
+      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), budgetTargets });
+    }),
   /** Carrega os dados de exemplo (opt-in pela Config): SUBSTITUI tudo por um exemplo
    *  coerente, ancorado na moeda principal atual (não mistura com o que já existe). */
   loadSample: () =>
     withSync(async () => {
       const base = useUI.getState().baseCurrency;
+      const seed = buildSeed(base);
       await repository.clearAll();
-      await repository.seed(buildSeed(base));
-      // clearAll zera as settings — preserva a moeda principal (o exemplo nasce dela).
-      await repository.putSettings({ id: "settings", allocationTargets: {}, baseCurrency: base });
+      await repository.seed(seed);
+      // clearAll zera as settings — preserva a moeda principal + orçado de exemplo.
+      await repository.putSettings({
+        id: "settings",
+        allocationTargets: {},
+        baseCurrency: base,
+        budgetTargets: seed.budgetTargets ?? {},
+      });
     }),
   /** Apaga tudo — "começar do zero" (mantém a moeda principal como preferência). */
   resetAll: () =>
