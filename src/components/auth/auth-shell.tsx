@@ -49,7 +49,7 @@ export function Field({
       <span className="block text-[12px] text-muted font-medium mb-1">{label}</span>
       <input
         {...props}
-        className="w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] text-text outline-none transition-colors focus:border-teal"
+        className="w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] text-text outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
       {hint ? <span className="block text-[11px] text-faint mt-1">{hint}</span> : null}
     </label>

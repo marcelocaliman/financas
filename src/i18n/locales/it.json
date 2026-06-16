@@ -194,7 +194,19 @@
     "reset": "Ricomincia",
     "resetDesc": "Cancella tutti i dati e riparti da zero.",
     "resetBtn": "Cancella tutto",
-    "resetConfirm": "Cancellare TUTTI i dati e ricominciare da zero? Non è reversibile."
+    "resetConfirm": "Cancellare TUTTI i dati e ricominciare da zero? Non è reversibile.",
+    "exportJson": "Backup completo (JSON)",
+    "exportJsonDesc": "Scarica un file con TUTTI i tuoi dati da conservare o spostare su un altro dispositivo.",
+    "export": "Esporta",
+    "importJson": "Ripristina backup",
+    "importJsonDesc": "Carica un backup JSON. Sostituisce completamente i dati attuali.",
+    "import": "Importa",
+    "importConfirm": "L'importazione SOSTITUISCE tutti i dati attuali con quelli del backup. Continuare?",
+    "imported": "Backup importato con successo.",
+    "importError": "File non valido. Scegli un backup .json esportato da questa app.",
+    "exportCsv": "Esporta CSV",
+    "exportCsvDesc": "Foglio piatto (attività, spese, entrate…) da aprire in Excel/Sheets.",
+    "exportCsvBtn": "Esporta CSV"
   },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",

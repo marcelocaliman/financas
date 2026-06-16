@@ -1,0 +1,130 @@
+import { db } from "@/data/db";
+import { dumpVault, loadVault } from "@/vault/serialize";
+import { pending } from "@/vault/pending";
+import { useVault } from "@/vault/vault-store";
+import { useUI } from "@/store/ui";
+import { CURRENCIES, type Currency } from "@/money/currency";
+import type { AppSettings } from "@/domain/types";
+
+/**
+ * Portabilidade (Fase 2): o usuário é DONO dos dados.
+ * - JSON = backup/restauração completa (todas as tabelas), reaproveitando dump/loadVault.
+ * - CSV = lista achatada pra interoperar (abrir no Excel/Sheets).
+ * Tudo client-side; nada sai sem o usuário pedir.
+ */
+
+const APP_TAG = "nossasfinancas";
+const FORMAT_VERSION = 1;
+
+function downloadFile(filename: string, content: string, mime: string): void {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** Carimbo AAAA-MM-DD pro nome do arquivo (runtime, não workflow → Date é ok). */
+function stamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// ── JSON: backup completo ───────────────────────────────────────────────────
+export async function exportBackupJSON(): Promise<void> {
+  const data = await dumpVault(db);
+  const payload = { app: APP_TAG, format: FORMAT_VERSION, exportedAt: new Date().toISOString(), data };
+  downloadFile(`nossasfinancas-backup-${stamp()}.json`, JSON.stringify(payload, null, 2), "application/json");
+}
+
+/**
+ * Importa um backup JSON: SUBSTITUI tudo, marca pendência e sobe pro servidor cifrado.
+ * Como a importação é IRREVERSÍVEL (apaga as tabelas e sobrescreve o blob cifrado na
+ * nuvem), validamos a fundo ANTES de tocar nos dados — um arquivo corrompido/incompatível
+ * NUNCA pode zerar o vault em silêncio reportando "sucesso".
+ */
+export async function importBackupJSON(file: File): Promise<void> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch {
+    throw new Error("invalid-backup");
+  }
+  const p = parsed as { app?: string; format?: number; data?: Record<string, unknown> };
+  // 1) Cabeçalho: app correto + formato conhecido (rejeita versões futuras incompatíveis).
+  if (!p || typeof p !== "object" || p.app !== APP_TAG || p.format !== FORMAT_VERSION) {
+    throw new Error("invalid-backup");
+  }
+  // 2) Forma de vault: toda chave é uma tabela conhecida e todo valor é um array.
+  const data = p.data;
+  if (!data || typeof data !== "object") throw new Error("invalid-backup");
+  const tables = new Set(db.tables.map((t) => t.name));
+  const keys = Object.keys(data);
+  if (keys.length === 0 || keys.some((k) => !tables.has(k) || !Array.isArray(data[k]))) {
+    throw new Error("invalid-backup");
+  }
+  // 3) Guarda: um backup VAZIO não pode apagar um vault populado (corrupção/erro de seleção).
+  const totalRows = keys.reduce((s, k) => s + (data[k] as unknown[]).length, 0);
+  const counts = await Promise.all(db.tables.map((t) => t.count()));
+  const localEmpty = counts.every((c) => c === 0);
+  if (totalRows === 0 && !localEmpty) throw new Error("invalid-backup");
+
+  await loadVault(db, data as Record<string, unknown[]>);
+  // Reancorar a moeda principal pelo singleton de settings do backup (validando a moeda).
+  const settingsRows = (data.settings as AppSettings[] | undefined) ?? [];
+  const settings = settingsRows.find((s) => s?.id === "settings") ?? settingsRows[0];
+  const bc = settings?.baseCurrency;
+  if (bc && CURRENCIES.includes(bc as Currency)) useUI.getState().setBaseCurrency(bc as Currency);
+  pending.set();
+  await useVault
+    .getState()
+    .push()
+    .catch(() => {
+      /* offline/falha → a flag pendente re-tenta no próximo unlock/online */
+    });
+}
+
+// ── CSV: lista achatada pra interoperar ─────────────────────────────────────
+function csvCell(v: unknown): string {
+  const s = v == null ? "" : String(v);
+  // Cita se houver aspas, vírgula, ; ou QUEBRA (\n ou \r isolado) — evita partir linha no Excel.
+  return /[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+const CSV_COLS = ["tipo", "nome", "categoria", "moeda", "valor", "extra"] as const;
+
+export async function exportCSV(): Promise<void> {
+  const [assets, liabilities, expenses, incomes, snapshots, goals] = await Promise.all([
+    db.assets.toArray(),
+    db.liabilities.toArray(),
+    db.expenses.toArray(),
+    db.incomes.toArray(),
+    db.netWorthSnapshots.toArray(),
+    db.goals.toArray(),
+  ]);
+
+  const rows: Record<string, unknown>[] = [];
+  for (const a of assets)
+    rows.push({ tipo: "ativo", nome: a.name, categoria: a.classId, moeda: a.currency, valor: a.amount, extra: a.ticker ?? a.subtypeId ?? "" });
+  for (const l of liabilities)
+    rows.push({ tipo: "passivo", nome: l.name, categoria: l.typeId, moeda: l.currency, valor: l.amount, extra: l.installments ? `${l.installments}x` : "" });
+  for (const e of expenses)
+    rows.push({ tipo: "gasto", nome: e.name, categoria: e.categoryId, moeda: e.currency, valor: e.amount, extra: "" });
+  for (const i of incomes)
+    rows.push({ tipo: "receita", nome: i.name, categoria: i.categoryId, moeda: i.currency, valor: i.amount, extra: "" });
+  for (const s of snapshots)
+    rows.push({ tipo: "historico", nome: s.month, categoria: "", moeda: s.currency, valor: s.amount, extra: s.contribution ?? "" });
+  for (const g of goals)
+    rows.push({ tipo: "objetivo", nome: g.name, categoria: "", moeda: g.currency, valor: g.current, extra: `alvo:${g.target}` });
+
+  const head = CSV_COLS.join(",");
+  const body = rows.map((r) => CSV_COLS.map((c) => csvCell(r[c])).join(",")).join("\n");
+  // BOM (﻿) p/ o Excel abrir UTF-8 (acentos) corretamente.
+  downloadFile(`nossasfinancas-${stamp()}.csv`, "﻿" + head + "\n" + body, "text/csv;charset=utf-8");
+}

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { User, ShieldCheck, Tags, Palette, Database, Lock } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
@@ -6,6 +6,7 @@ import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
+import { exportBackupJSON, importBackupJSON, exportCSV } from "@/data/backup";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import {
@@ -153,31 +154,111 @@ function Appearance() {
   );
 }
 
+function DataCard({ title, desc, children }: { title: string; desc: string; children: ReactNode }) {
+  return (
+    <Card className="flex flex-col gap-4">
+      <div>
+        <div className="text-[13.5px] font-semibold">{title}</div>
+        <div className="text-[12px] text-muted leading-relaxed mt-1">{desc}</div>
+      </div>
+      <div className="self-start">{children}</div>
+    </Card>
+  );
+}
+
 function DataSection() {
   const { t } = useTranslation();
   const [confirmReset, setConfirmReset] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    e.target.value = ""; // permite re-selecionar o mesmo arquivo
+    if (f) {
+      setMsg(null);
+      setPendingFile(f);
+    }
+  };
+  const doImport = async () => {
+    const file = pendingFile;
+    setPendingFile(null);
+    if (!file) return;
+    try {
+      await importBackupJSON(file);
+      setMsg({ kind: "ok", text: t("data.imported") });
+    } catch {
+      setMsg({ kind: "err", text: t("data.importError") });
+    }
+  };
 
   return (
-    <div className="grid sm:grid-cols-2 gap-5 max-w-3xl items-start">
-      <Card className="flex flex-col gap-4">
-        <div>
-          <div className="text-[13.5px] font-semibold">{t("data.sample")}</div>
-          <div className="text-[12px] text-muted leading-relaxed mt-1">{t("data.sampleDesc")}</div>
+    <div className="space-y-5 max-w-3xl">
+      {msg ? (
+        <div
+          className={cn(
+            "rounded-[10px] border px-3.5 py-2.5 text-[12.5px]",
+            msg.kind === "ok"
+              ? "border-accent/30 bg-accent-soft text-text"
+              : "border-red-500/30 bg-red-500/[0.06] text-red-400",
+          )}
+        >
+          {msg.text}
         </div>
-        <Button variant="secondary" className="self-start" onClick={() => void actions.loadSample()}>
-          {t("data.loadSample")}
-        </Button>
-      </Card>
+      ) : null}
 
-      <Card className="flex flex-col gap-4">
-        <div>
-          <div className="text-[13.5px] font-semibold">{t("data.reset")}</div>
-          <div className="text-[12px] text-muted leading-relaxed mt-1">{t("data.resetDesc")}</div>
+      <div className="grid sm:grid-cols-2 gap-5 items-start">
+        <DataCard title={t("data.exportJson")} desc={t("data.exportJsonDesc")}>
+          <Button variant="secondary" onClick={() => void exportBackupJSON()}>
+            {t("data.export")}
+          </Button>
+        </DataCard>
+
+        <DataCard title={t("data.importJson")} desc={t("data.importJsonDesc")}>
+          <Button variant="secondary" onClick={() => fileRef.current?.click()}>
+            {t("data.import")}
+          </Button>
+        </DataCard>
+
+        <DataCard title={t("data.exportCsv")} desc={t("data.exportCsvDesc")}>
+          <Button variant="secondary" onClick={() => void exportCSV()}>
+            {t("data.exportCsvBtn")}
+          </Button>
+        </DataCard>
+
+        <DataCard title={t("data.sample")} desc={t("data.sampleDesc")}>
+          <Button variant="secondary" onClick={() => void actions.loadSample()}>
+            {t("data.loadSample")}
+          </Button>
+        </DataCard>
+
+        <DataCard title={t("data.reset")} desc={t("data.resetDesc")}>
+          <Button variant="danger" onClick={() => setConfirmReset(true)}>
+            {t("data.resetBtn")}
+          </Button>
+        </DataCard>
+      </div>
+
+      <input
+        ref={fileRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={onPickFile}
+      />
+
+      <Dialog open={!!pendingFile} onClose={() => setPendingFile(null)} title={t("data.importJson")}>
+        <p className="text-[13.5px] text-muted leading-relaxed mb-4">{t("data.importConfirm")}</p>
+        <div className="flex gap-2">
+          <Button variant="danger" className="flex-1" onClick={() => void doImport()}>
+            {t("data.import")}
+          </Button>
+          <Button variant="secondary" onClick={() => setPendingFile(null)}>
+            {t("common.cancel")}
+          </Button>
         </div>
-        <Button variant="danger" className="self-start" onClick={() => setConfirmReset(true)}>
-          {t("data.resetBtn")}
-        </Button>
-      </Card>
+      </Dialog>
 
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} title={t("data.reset")}>
         <p className="text-[13.5px] text-muted leading-relaxed mb-4">{t("data.resetConfirm")}</p>

@@ -275,7 +275,7 @@ function TargetInput({ value, onCommit }: { value: number; onCommit: (v: number)
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
         }}
-        className="w-12 h-8 px-1.5 rounded-[7px] border border-border bg-card text-[13px] tabular text-right outline-none focus:border-accent"
+        className="w-12 h-8 px-1.5 rounded-[7px] border border-border bg-card text-[13px] tabular text-right outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
       <span className="text-[12px] text-faint">%</span>
     </div>

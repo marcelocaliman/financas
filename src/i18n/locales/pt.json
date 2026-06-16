@@ -194,7 +194,19 @@
     "reset": "Começar do zero",
     "resetDesc": "Apaga todos os dados e começa em branco.",
     "resetBtn": "Apagar tudo",
-    "resetConfirm": "Apagar TODOS os dados e começar do zero? Isso não pode ser desfeito."
+    "resetConfirm": "Apagar TODOS os dados e começar do zero? Isso não pode ser desfeito.",
+    "exportJson": "Backup completo (JSON)",
+    "exportJsonDesc": "Baixa um arquivo com TODOS os seus dados pra guardar ou levar pra outro aparelho.",
+    "export": "Exportar",
+    "importJson": "Restaurar backup",
+    "importJsonDesc": "Carrega um backup JSON. Substitui os dados atuais por completo.",
+    "import": "Importar",
+    "importConfirm": "Importar SUBSTITUI todos os dados atuais pelos do backup. Continuar?",
+    "imported": "Backup importado com sucesso.",
+    "importError": "Arquivo inválido. Selecione um backup .json exportado por este app.",
+    "exportCsv": "Exportar CSV",
+    "exportCsvDesc": "Planilha achatada (ativos, gastos, receitas…) pra abrir no Excel/Sheets.",
+    "exportCsvBtn": "Exportar CSV"
   },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",

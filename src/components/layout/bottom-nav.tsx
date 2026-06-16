@@ -21,7 +21,7 @@ export function BottomNav({ active }: { active: string }) {
             onClick={() => goToSection(id)}
             className={cn(
               "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors",
-              on ? "text-accent font-semibold" : "text-faint font-medium",
+              on ? "text-accent font-semibold" : "text-muted font-medium",
             )}
           >
             <span

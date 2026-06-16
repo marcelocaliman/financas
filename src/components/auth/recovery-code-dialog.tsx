@@ -57,7 +57,7 @@ export function RecoveryCodeDialog() {
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               placeholder="XXXXX-XXXXX-…"
-              className="w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] outline-none focus:border-teal"
+              className="w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
             />
           </label>
 

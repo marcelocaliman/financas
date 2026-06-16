@@ -194,7 +194,19 @@
     "reset": "Start fresh",
     "resetDesc": "Erase all data and start blank.",
     "resetBtn": "Erase all",
-    "resetConfirm": "Erase ALL data and start from scratch? This cannot be undone."
+    "resetConfirm": "Erase ALL data and start from scratch? This cannot be undone.",
+    "exportJson": "Full backup (JSON)",
+    "exportJsonDesc": "Download a file with ALL your data to keep or move to another device.",
+    "export": "Export",
+    "importJson": "Restore backup",
+    "importJsonDesc": "Load a JSON backup. Fully replaces your current data.",
+    "import": "Import",
+    "importConfirm": "Importing REPLACES all current data with the backup. Continue?",
+    "imported": "Backup imported successfully.",
+    "importError": "Invalid file. Pick a .json backup exported by this app.",
+    "exportCsv": "Export CSV",
+    "exportCsvDesc": "Flat spreadsheet (assets, expenses, income…) to open in Excel/Sheets.",
+    "exportCsvBtn": "Export CSV"
   },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
