@@ -12,6 +12,7 @@ import { categoryColors } from "@/money/composition";
 import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
@@ -45,10 +46,33 @@ export default function Investimentos() {
       })
       .sort((a, b) => b.value - a.value);
     const totalTarget = rows.reduce((s, r) => s + r.tgtPct, 0);
+    // Rentabilidade: só sobre posições com preço médio (custo conhecido).
+    let totalCost = 0;
+    let totalCostValue = 0;
     const positions = invested
-      .map((a) => ({ ...a, disp: conv(a.amount, a.currency) }))
+      .map((a) => {
+        const value = conv(a.amount, a.currency);
+        const cost = (a.quantity ?? 0) * (a.avgPrice ?? 0); // moeda do ativo
+        const hasCost = cost > 0 && (a.quantity ?? 0) > 0;
+        if (hasCost) {
+          totalCost += conv(cost, a.currency);
+          totalCostValue += value;
+        }
+        return { ...a, disp: value, retPct: hasCost ? ((a.amount - cost) / cost) * 100 : null };
+      })
       .sort((a, b) => b.disp - a.disp);
-    return { rows, total, totalTarget, positions, count: invested.length };
+    const gain = totalCostValue - totalCost;
+    return {
+      rows,
+      total,
+      totalTarget,
+      positions,
+      count: invested.length,
+      totalCost,
+      gain,
+      returnPct: totalCost > 0 ? (gain / totalCost) * 100 : 0,
+      hasCostBasis: totalCost > 0,
+    };
   }, [data, disp, rates, settings, tax]);
 
   if (!data || !view) {
@@ -67,6 +91,21 @@ export default function Investimentos() {
 
   return (
     <div className="space-y-7">
+      {/* Rentabilidade (só posições com preço médio) */}
+      {view.hasCostBasis ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <Kpi label={t("investimentos.cost")} value={<Money value={view.totalCost} currency={disp} />} />
+          <Kpi label={t("patrimonio.currentValue")} value={<Money value={view.totalCost + view.gain} currency={disp} />} />
+          <Kpi label={t("investimentos.gain")} tone={view.gain >= 0 ? "accent" : "neg"} value={<Money value={view.gain} currency={disp} />} />
+          <Kpi
+            label={t("investimentos.profitability")}
+            tone={view.returnPct >= 0 ? "accent" : "neg"}
+            value={`${view.returnPct >= 0 ? "+" : ""}${view.returnPct.toFixed(1)}%`}
+            bar={Math.min(100, Math.abs(view.returnPct))}
+          />
+        </div>
+      ) : null}
+
       {/* Alocação × Alvo */}
       <Tile className="p-6 md:p-7">
         <div className="flex flex-col lg:flex-row items-start gap-7">
@@ -147,7 +186,14 @@ export default function Investimentos() {
                     {nameById(tax.assetClasses, a.classId)}
                   </span>
                 </span>
-                <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular shrink-0" />
+                <span className="flex items-center gap-3 shrink-0">
+                  {a.retPct != null ? (
+                    <span className={cn("text-[11.5px] tabular", a.retPct >= 0 ? "text-accent" : "text-neg")}>
+                      {(a.retPct >= 0 ? "+" : "") + a.retPct.toFixed(1)}%
+                    </span>
+                  ) : null}
+                  <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular" />
+                </span>
               </div>
             ))}
           </div>
@@ -168,15 +214,34 @@ export function InvestimentosSummary() {
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const invested = data.assets.filter((a) => isInvestedClass(a.classId));
     const total = invested.reduce((s, a) => s + conv(a.amount, a.currency), 0);
-    const classes = new Set(invested.filter((a) => conv(a.amount, a.currency) > 0).map((a) => a.classId)).size;
-    return { total, count: invested.length, classes };
+    let totalCost = 0;
+    let totalCostValue = 0;
+    for (const a of invested) {
+      const cost = (a.quantity ?? 0) * (a.avgPrice ?? 0);
+      if (cost > 0 && (a.quantity ?? 0) > 0) {
+        totalCost += conv(cost, a.currency);
+        totalCostValue += conv(a.amount, a.currency);
+      }
+    }
+    return {
+      total,
+      count: invested.length,
+      returnPct: totalCost > 0 ? ((totalCostValue - totalCost) / totalCost) * 100 : null,
+    };
   }, [data, disp, rates]);
   if (!v) return null;
   return (
     <HeaderKpis>
       <HeaderKpi label={t("investimentos.total")} value={<Money value={v.total} currency={disp} />} />
+      {v.returnPct != null ? (
+        <HeaderKpi
+          secondary
+          label={t("investimentos.profitability")}
+          tone={v.returnPct >= 0 ? "accent" : "neg"}
+          value={`${v.returnPct >= 0 ? "+" : ""}${v.returnPct.toFixed(1)}%`}
+        />
+      ) : null}
       <HeaderKpi secondary label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
-      <HeaderKpi secondary label={t("investimentos.classes")} value={<span className="tabular">{v.classes}</span>} />
     </HeaderKpis>
   );
 }
