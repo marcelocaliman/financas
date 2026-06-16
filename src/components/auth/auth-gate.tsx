@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useVault } from "@/vault/vault-store";
 import { AuthShell, Field, SubmitButton, ErrorText, LinkButton } from "./auth-shell";
+import { PrivacyLink } from "@/components/privacy-policy";
 import { supabase } from "@/lib/supabase";
 
 function msg(e: unknown, fallback: string): string {
@@ -9,6 +10,8 @@ function msg(e: unknown, fallback: string): string {
   if (/Email not confirmed/i.test(m)) return "Confirme seu e-mail antes de entrar (veja sua caixa de entrada).";
   if (/User already registered/i.test(m)) return "Já existe uma conta com esse e-mail.";
   if (/should be at least|Password/i.test(m)) return "Senha muito curta (mínimo 6 caracteres).";
+  if (/signups? not allowed|signups? are disabled|signup.*disabled/i.test(m))
+    return "O cadastro está fechado no momento. Em breve abrimos — fique de olho.";
   return fallback;
 }
 
@@ -109,6 +112,7 @@ function Signup({ onLogin }: { onLogin: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [consent, setConsent] = useState(false);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [sentConfirm, setSentConfirm] = useState(false);
@@ -118,6 +122,7 @@ function Signup({ onLogin }: { onLogin: () => void }) {
     setErr("");
     if (password.length < 8) return setErr("Use uma senha de pelo menos 8 caracteres.");
     if (password !== confirm) return setErr("As senhas não coincidem.");
+    if (!consent) return setErr("Pra criar a conta, aceite a Política de Privacidade.");
     setLoading(true);
     try {
       const { needsConfirmation } = await signUp(email.trim(), password);
@@ -156,6 +161,21 @@ function Signup({ onLogin }: { onLogin: () => void }) {
         <Field label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         <Field label="Senha" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         <Field label="Repita a senha" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+        <div className="flex items-start gap-2.5 mb-4 text-[12.5px] text-muted leading-relaxed">
+          <input
+            id="consent"
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
+          />
+          <span>
+            <label htmlFor="consent" className="cursor-pointer">
+              Li e aceito a{" "}
+            </label>
+            <PrivacyLink label="Política de Privacidade" className="text-accent hover:underline font-medium" />.
+          </span>
+        </div>
         <SubmitButton loading={loading}>Criar conta</SubmitButton>
       </form>
     </AuthShell>
