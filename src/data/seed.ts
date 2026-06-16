@@ -14,6 +14,7 @@ export const SEED: SeedData = {
     { id: "a4", name: "Imóvel de aluguel · RJ", classId: CLASS.imoveis, subtypeId: "imoveis-4", regionId: "brasil", currency: "BRL", amount: 850000 },
     { id: "a5", name: "Conta corrente · Itália", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: "EUR", amount: 12000, institution: "Intesa Sanpaolo" },
     { id: "a6", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", regionId: "italia", currency: "EUR", amount: 25000 },
+    { id: "a7", name: "Banco do Brasil", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: "brasil", currency: "BRL", amount: 2500, ticker: "BBAS3", quantity: 100, avgPrice: 25, institution: "XP Investimentos" },
   ],
   liabilities: [
     { id: "l1", name: "Financiamento imóvel · RJ", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: "BRL", amount: 180000, interestRate: 9.5, installments: 180 },

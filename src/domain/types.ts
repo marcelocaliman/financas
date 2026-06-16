@@ -25,6 +25,8 @@ export interface Asset {
   ticker?: string;
   /** Quantidade. Com ticker, o valor passa a ser quantidade × cotação do dia. */
   quantity?: number;
+  /** Preço médio de compra (p/ ações/cotáveis) — base do custo e da rentabilidade. */
+  avgPrice?: number;
 }
 
 export interface Expense {

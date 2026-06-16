@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
+import { useQuotes } from "@/store/quotes";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
@@ -34,6 +35,7 @@ export default function Patrimonio() {
   const data = usePatrimonio();
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
+  const prices = useQuotes((s) => s.prices);
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -89,19 +91,56 @@ export default function Patrimonio() {
   const activeAssets = data.assets.filter((a) => a.classId === activeId);
   const absentClasses = tax.assetClasses.filter((c) => !presentIds.includes(c.id));
 
+  const priceOf = (ticker?: string) => prices[(ticker ?? "").toUpperCase()];
+
   // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
   const assetColsFor = (classId: string): GridColumn<Asset>[] => {
     const cols: GridColumn<Asset>[] = [
       { key: "currency", type: "currency", header: "", width: "46px" },
       { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.6fr)", placeholder: t("patrimonio.namePlaceholder") },
-      { key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(150px,1.2fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) },
+      { key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(140px,1.1fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) },
     ];
     if (classId === CLASS.rendaFixa) {
       cols.push({ key: "indexerId", type: "select", optional: true, header: t("patrimonio.indexer"), width: "minmax(104px,0.9fr)", options: opts(tax.indexers) });
     }
     if (QUOTABLE.has(classId)) {
-      cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(92px,0.8fr)", placeholder: "—" });
-      cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(78px,0.7fr)", align: "right" });
+      // Visão de posição: Ticker · Qtd · Preço médio · Cotação · Rentabilidade · Valor atual.
+      cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(88px,0.8fr)", placeholder: "—" });
+      cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(72px,0.6fr)", align: "right" });
+      cols.push({ key: "avgPrice", type: "number", header: t("patrimonio.avgPrice"), width: "minmax(96px,0.8fr)", align: "right" });
+      cols.push({
+        key: "price",
+        type: "computed",
+        header: t("patrimonio.price"),
+        width: "minmax(92px,0.8fr)",
+        align: "right",
+        compute: (r: Asset) => {
+          const q = priceOf(r.ticker);
+          return q ? formatMoney(q.price, r.currency, { maximumFractionDigits: 2 }) : "—";
+        },
+      });
+      cols.push({
+        key: "ret",
+        type: "computed",
+        header: t("patrimonio.return"),
+        width: "minmax(86px,0.7fr)",
+        align: "right",
+        compute: (r: Asset) => {
+          const q = priceOf(r.ticker);
+          const cost = (r.quantity ?? 0) * (r.avgPrice ?? 0);
+          if (!q || cost <= 0) return "—";
+          const ret = (((r.quantity ?? 0) * q.price - cost) / cost) * 100;
+          return (
+            <span className={ret >= 0 ? "text-accent" : "text-neg"}>
+              {(ret >= 0 ? "+" : "") + ret.toFixed(1)}%
+            </span>
+          );
+        },
+      });
+      cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(110px,0.9fr)", options: opts(tax.regions) });
+      cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(108px,0.9fr)", placeholder: "—" });
+      cols.push({ ...convertedCol, header: t("patrimonio.currentValue"), compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
+      return cols;
     }
     cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
     cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
@@ -116,6 +155,11 @@ export default function Patrimonio() {
       next.subtypeId = undefined;
     }
     if (next.classId !== CLASS.rendaFixa) next.indexerId = undefined;
+    // Cotáveis: valor = quantidade × (cotação do dia, se houver; senão preço médio = custo).
+    if (QUOTABLE.has(next.classId) && next.ticker && (next.quantity ?? 0) > 0) {
+      const unit = priceOf(next.ticker)?.price ?? next.avgPrice ?? 0;
+      if (unit > 0) next.amount = (next.quantity ?? 0) * unit;
+    }
     void actions.putAsset(next);
   };
   const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: disp, amount: 0 });
@@ -176,13 +220,17 @@ export default function Patrimonio() {
             </div>
 
             <div className="overflow-x-auto">
-              <div className="min-w-[880px]">
+              <div className={cn(QUOTABLE.has(activeId) ? "min-w-[1180px]" : "min-w-[880px]")}>
                 <DataGrid<Asset>
                   key={activeId}
                   columns={assetColsFor(activeId)}
                   rows={activeAssets}
                   blank={newAsset}
-                  isComplete={(r) => r.name.trim().length > 0 && r.amount > 0}
+                  isComplete={(r) =>
+                    r.name.trim().length > 0 &&
+                    r.classId.length > 0 &&
+                    (QUOTABLE.has(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
+                  }
                   onCommit={commitAsset}
                   onDelete={(id) => void actions.removeAsset(id)}
                   addPlaceholder={t("patrimonio.addAsset")}
