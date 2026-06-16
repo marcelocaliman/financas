@@ -101,7 +101,7 @@
     "price": "Quotazione",
     "return": "Rend.",
     "currentValue": "Valore attuale",
-    "tickerHint": "Inserisci Ticker, Qtà e Prezzo medio — il valore si aggiorna dalla quotazione del giorno (brapi) e mostra il rendimento. Imposta il token brapi in Config → Cambio.",
+    "tickerHint": "Inserisci Ticker, Qtà e Prezzo medio — il valore si aggiorna dalla quotazione del giorno e mostra il rendimento.",
     "classTotal": "Totale classe",
     "share": "% degli asset",
     "assetCount": "Asset",

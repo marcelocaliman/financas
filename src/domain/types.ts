@@ -75,8 +75,6 @@ export interface AppSettings {
   id: string;
   /** Alvo de alocação por classe (id da classe → % inteiro), p/ rebalanceamento. */
   allocationTargets: Record<string, number>;
-  /** Token brapi do usuário p/ cotação de ativos. Vive CIFRADO no blob E2EE. */
-  brapiToken?: string;
 }
 
 export interface Liability {

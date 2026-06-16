@@ -1,22 +1,19 @@
 import { useEffect } from "react";
-import { useSettings } from "@/hooks/use-settings";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useQuotes } from "@/store/quotes";
 
 /**
- * Mantém o valor dos ativos com ticker atualizado pela brapi (navegador → brapi
- * direto, com o token cifrado do usuário). Roda no unlock, ao focar a aba e a cada
- * mudança de ativos; o store é guardado por TTL (6h), então as chamadas extras são
- * baratas (no-op quando a cotação ainda está fresca). Silencioso sem token/tickers.
+ * Mantém o valor dos ativos com ticker atualizado pela cotação do dia (via /api/quote —
+ * o proxy do servidor já tem o token do dono; o usuário não configura nada). Roda no
+ * unlock, ao focar a aba e a cada mudança de ativos; guardado por TTL (6h), então as
+ * chamadas extras são baratas. Silencioso quando não há tickers (ou sem token no servidor).
  */
 export function useQuotesSync(): void {
-  const settings = useSettings();
   const data = usePatrimonio();
-  const token = settings.brapiToken?.trim() ?? "";
 
   useEffect(() => {
-    if (!token || !data) return;
-    const run = () => void useQuotes.getState().refresh(token, data.assets);
+    if (!data) return;
+    const run = () => void useQuotes.getState().refresh(data.assets);
     run();
     const onVisible = () => {
       if (document.visibilityState === "visible") run();
@@ -27,5 +24,5 @@ export function useQuotesSync(): void {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", run);
     };
-  }, [token, data]);
+  }, [data]);
 }

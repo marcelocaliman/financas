@@ -11,10 +11,10 @@ interface QuotesState {
   updatedAt: number | null;
   status: "idle" | "loading" | "error";
   /**
-   * Busca cotações dos ativos com ticker e atualiza o valor (amount = quantidade ×
-   * cotação) só quando muda. `force` ignora o TTL. No-op sem token ou sem tickers.
+   * Busca cotações (via /api/quote) dos ativos com ticker e atualiza o valor
+   * (amount = quantidade × cotação) só quando muda. `force` ignora o TTL.
    */
-  refresh: (token: string, assets: Asset[], force?: boolean) => Promise<void>;
+  refresh: (assets: Asset[], force?: boolean) => Promise<void>;
 }
 
 export const useQuotes = create<QuotesState>()(
@@ -23,8 +23,8 @@ export const useQuotes = create<QuotesState>()(
       prices: {},
       updatedAt: null,
       status: "idle",
-      refresh: async (token, assets, force) => {
-        if (get().status === "loading" || !token.trim()) return;
+      refresh: async (assets, force) => {
+        if (get().status === "loading") return;
         const quotable = assets.filter((a) => a.ticker && (a.quantity ?? 0) > 0);
         if (quotable.length === 0) return;
         // Busca já se algum ticker ainda não tem preço em cache (ativo recém-adicionado),
@@ -33,7 +33,7 @@ export const useQuotes = create<QuotesState>()(
         if (!force && !missing && !isQuotesStale(get().updatedAt, Date.now())) return;
         set({ status: "loading" });
         try {
-          const quotes = await fetchQuotes(quotable.map((a) => a.ticker), token);
+          const quotes = await fetchQuotes(quotable.map((a) => a.ticker));
           const now = Date.now();
           const prices: QuotesState["prices"] = { ...get().prices };
           for (const [k, q] of Object.entries(quotes)) prices[k] = { ...q, at: now };

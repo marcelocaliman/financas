@@ -101,7 +101,7 @@
     "price": "Price",
     "return": "Return",
     "currentValue": "Current value",
-    "tickerHint": "Fill in Ticker, Qty and Avg. price — the value updates from the daily quote (brapi) and shows your return. Set your brapi token in Settings → Exchange.",
+    "tickerHint": "Fill in Ticker, Qty and Avg. price — the value auto-updates from the daily quote and shows your return.",
     "classTotal": "Class total",
     "share": "% of assets",
     "assetCount": "Assets",

@@ -1,7 +1,7 @@
 /**
- * Cotação de ATIVOS via brapi (brapi.dev) — chamada DIRETO do navegador com o token
- * do próprio usuário (guardado cifrado no blob E2EE). Nosso servidor nunca vê o token
- * nem os tickers. Parser PURO/testável; o fetch só monta a URL e delega.
+ * Cotação de ATIVOS — via NOSSO proxy serverless (/api/quote), que guarda o token brapi
+ * do dono como variável de ambiente do servidor. O usuário não configura nada; o app já
+ * vem com cotação funcionando. Parser PURO/testável; o fetch só monta a URL e delega.
  */
 
 export interface Quote {
@@ -9,7 +9,7 @@ export interface Quote {
   currency: string;
 }
 
-const BASE = "https://brapi.dev/api/quote";
+const ENDPOINT = "/api/quote";
 
 interface BrapiResult {
   symbol?: string;
@@ -35,14 +35,12 @@ export function normalizeTickers(tickers: (string | undefined)[]): string[] {
 
 export async function fetchQuotes(
   tickers: (string | undefined)[],
-  token: string,
   signal?: AbortSignal,
 ): Promise<Record<string, Quote>> {
   const list = normalizeTickers(tickers);
-  if (list.length === 0 || !token.trim()) return {};
-  const url = `${BASE}/${encodeURIComponent(list.join(","))}?token=${encodeURIComponent(token.trim())}`;
-  const res = await fetch(url, { signal });
-  if (!res.ok) throw new Error(`brapi HTTP ${res.status}`);
+  if (list.length === 0) return {};
+  const res = await fetch(`${ENDPOINT}?tickers=${encodeURIComponent(list.join(","))}`, { signal });
+  if (!res.ok) throw new Error(`quote HTTP ${res.status}`);
   return parseQuotes((await res.json()) as { results?: BrapiResult[] });
 }
 

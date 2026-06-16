@@ -101,7 +101,7 @@
     "price": "Cotação",
     "return": "Rent.",
     "currentValue": "Valor atual",
-    "tickerHint": "Preencha Ticker, Qtd e Preço médio — o valor atualiza pela cotação do dia (brapi) e mostra a rentabilidade. Configure o token brapi em Config → Câmbio.",
+    "tickerHint": "Preencha Ticker, Qtd e Preço médio — o valor atualiza sozinho pela cotação do dia e mostra a rentabilidade.",
     "classTotal": "Total da classe",
     "share": "% dos ativos",
     "assetCount": "Ativos",
