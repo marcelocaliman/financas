@@ -44,7 +44,7 @@ export default function Historico() {
   const cols: GridColumn<NetWorthSnapshot>[] = [
     { key: "month", type: "text", header: t("historico.month"), width: "minmax(110px,1fr)", placeholder: t("historico.monthPlaceholder") },
     { key: "amount", type: "money", header: t("historico.networth"), width: "minmax(160px,1.2fr)", align: "right", currencyKey: "currency" },
-    { key: "contribution", type: "number", header: t("historico.contribution"), width: "minmax(100px,0.9fr)", align: "right" },
+    { key: "contribution", type: "number", decimals: 2, header: t("historico.contribution"), width: "minmax(100px,0.9fr)", align: "right" },
   ];
   // "Em <moeda>" só aparece quando há de fato conversão (algum registro em moeda ≠ da exibida).
   if (view.sorted.some((s) => s.currency !== disp)) {

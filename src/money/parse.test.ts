@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseAmount, formatAmountEdit } from "./parse";
+import { parseAmount, formatAmountEdit, formatNumberEdit } from "./parse";
 
 describe("parseAmount — milhar vs decimal", () => {
   const cases: [string, number | null][] = [
@@ -24,12 +24,27 @@ describe("parseAmount — milhar vs decimal", () => {
   }
 });
 
-describe("formatAmountEdit — preserva centavos", () => {
+describe("formatAmountEdit — valor monetário com SEMPRE 2 casas", () => {
   it("não arredonda os centavos no round-trip", () => {
     const formatted = formatAmountEdit(1234.56, "BRL");
     expect(parseAmount(formatted)).toBe(1234.56);
   });
-  it("inteiro sem casas decimais penduradas", () => {
-    expect(formatAmountEdit(320000, "BRL")).toBe("320.000");
+  it("sempre 2 casas decimais (locale pt-BR)", () => {
+    expect(formatAmountEdit(320000, "BRL")).toBe("320.000,00");
+    expect(formatAmountEdit(41.8, "BRL")).toBe("41,80");
+  });
+});
+
+describe("formatNumberEdit — número genérico com casas controladas", () => {
+  it("decimals fixo aplica exatamente N casas", () => {
+    expect(formatNumberEdit(41.8, "BRL", 2)).toBe("41,80");
+    expect(formatNumberEdit(180, "BRL", 0)).toBe("180");
+  });
+  it("sem decimals = flexível com milhar (qtd)", () => {
+    expect(formatNumberEdit(2800, "BRL")).toBe("2.800");
+    expect(formatNumberEdit(100.5, "BRL")).toBe("100,5");
+  });
+  it("undefined → string vazia", () => {
+    expect(formatNumberEdit(undefined, "BRL")).toBe("");
   });
 });

@@ -111,7 +111,7 @@ export default function Patrimonio() {
       // Visão de posição: Ticker · Qtd · Preço médio · Cotação · Rentabilidade · Valor atual.
       cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(88px,0.8fr)", placeholder: "—" });
       cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(72px,0.6fr)", align: "right" });
-      cols.push({ key: "avgPrice", type: "number", header: t("patrimonio.avgPrice"), width: "minmax(96px,0.8fr)", align: "right" });
+      cols.push({ key: "avgPrice", type: "number", decimals: 2, header: t("patrimonio.avgPrice"), width: "minmax(96px,0.8fr)", align: "right" });
       cols.push({
         key: "price",
         type: "computed",
@@ -166,14 +166,19 @@ export default function Patrimonio() {
       if (unit > 0) next.amount = (next.quantity ?? 0) * unit;
     }
     void actions.putAsset(next);
+    // Ticker novo/alterado → busca a cotação NA HORA (force ignora o TTL).
+    if (next.ticker) {
+      const assets = [...data.assets.filter((x) => x.id !== next.id), next];
+      void useQuotes.getState().refresh(assets, true);
+    }
   };
   const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: base, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("patrimonio.namePlaceholderLiab") },
     { key: "typeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.3fr)", placeholder: t("patrimonio.typePlaceholder"), options: opts(tax.liabilityTypes) },
-    { key: "interestRate", type: "number", header: t("patrimonio.interestRate"), width: "minmax(96px,0.8fr)", align: "right" },
-    { key: "installments", type: "number", header: t("patrimonio.installments"), width: "minmax(92px,0.7fr)", align: "right" },
+    { key: "interestRate", type: "number", decimals: 2, header: t("patrimonio.interestRate"), width: "minmax(96px,0.8fr)", align: "right" },
+    { key: "installments", type: "number", decimals: 0, header: t("patrimonio.installments"), width: "minmax(92px,0.7fr)", align: "right" },
     { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" },
   ];
   if (data.liabilities.some((l) => l.currency !== disp)) {

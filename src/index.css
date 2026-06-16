@@ -166,26 +166,28 @@ body {
   display: none;
 }
 
-/* Barra de rolagem discreta, integrada ao tema (sem o cinza padrão do navegador). */
-.scrollbar-subtle {
+/* Barra de rolagem discreta, integrada ao tema (sem o cinza padrão do navegador) —
+   GLOBAL: vale pra todas as áreas roláveis (página, tabelas, drawer). Firefox herda
+   de :root; WebKit precisa do seletor por elemento (*). `.no-scrollbar` ainda vence. */
+:root {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
-.scrollbar-subtle::-webkit-scrollbar {
+*::-webkit-scrollbar {
   width: 11px;
   height: 11px;
 }
-.scrollbar-subtle::-webkit-scrollbar-track {
+*::-webkit-scrollbar-track {
   background: transparent;
 }
-.scrollbar-subtle::-webkit-scrollbar-thumb {
+*::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 999px;
   /* borda transparente + clip = fininha e "flutuando", sem encostar na borda. */
   border: 3px solid transparent;
   background-clip: padding-box;
 }
-.scrollbar-subtle::-webkit-scrollbar-thumb:hover {
+*::-webkit-scrollbar-thumb:hover {
   background: var(--faint);
   background-clip: padding-box;
 }

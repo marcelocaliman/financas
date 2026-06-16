@@ -53,10 +53,27 @@ export function formatAmount(value: number, currency: Currency): string {
   return new Intl.NumberFormat(LOCALE[currency], { maximumFractionDigits: 0 }).format(value);
 }
 
-/** Formato para EDIÇÃO (célula de valor): preserva até 2 casas, sem símbolo. */
+/** Formato para EDIÇÃO de VALOR monetário: locale + SEMPRE 2 casas (ex.: 320.000,00). */
 export function formatAmountEdit(value: number, currency: Currency): string {
   return new Intl.NumberFormat(LOCALE[currency], {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+  }).format(value);
+}
+
+/**
+ * Formato para EDIÇÃO de um número genérico (preço médio, qtd, taxa): locale +
+ * casas controladas. `decimals` fixo → exatamente N casas (ex.: preço médio = 2);
+ * indefinido → flexível (qtd fracionável, sem zeros à toa), sempre com milhar.
+ */
+export function formatNumberEdit(
+  value: number | undefined,
+  currency: Currency,
+  decimals?: number,
+): string {
+  if (value == null) return "";
+  return new Intl.NumberFormat(LOCALE[currency], {
+    minimumFractionDigits: decimals ?? 0,
+    maximumFractionDigits: decimals ?? 8,
   }).format(value);
 }

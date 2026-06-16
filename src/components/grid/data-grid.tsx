@@ -4,7 +4,7 @@ import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
-import { formatAmountEdit, parseAmount } from "@/money/parse";
+import { formatAmountEdit, formatNumberEdit, parseAmount } from "@/money/parse";
 import { useUI } from "@/store/ui";
 
 const MASK = "••••";
@@ -25,7 +25,9 @@ export interface GridColumn<T> {
   optionsFor?: (row: T) => SelectOption[];
   /** select opcional: inclui um "—" (vazio) e o valor pode ficar em branco. */
   optional?: boolean;
-  currencyKey?: string; // money: campo da moeda (default "currency")
+  currencyKey?: string; // money/number: campo da moeda p/ o locale (default "currency")
+  /** number: casas decimais FIXAS (ex.: preço médio = 2). Indefinido = flexível (qtd). */
+  decimals?: number;
   placeholder?: string;
   compute?: (row: T) => ReactNode;
 }
@@ -211,32 +213,40 @@ function SelectCell({
 
 function NumberCell({
   value,
+  currency,
+  decimals,
   rowId,
   colKey,
   onCommit,
   onEnter,
 }: {
   value: number | undefined;
+  currency: Currency;
+  decimals?: number;
   rowId: string;
   colKey: string;
   onCommit: (v: number | undefined) => void;
   onEnter: () => void;
 }) {
-  const fmt = (n: number | undefined) => (n == null ? "" : String(n));
+  const fmt = (n: number | undefined) => formatNumberEdit(n, currency, decimals);
   const [v, setV] = useState(() => fmt(value));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
     if (!focused) setV(fmt(value));
-  }, [value, focused]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, currency, decimals, focused]);
   const commit = () => {
-    const txt = v.trim().replace(",", ".");
-    if (txt === "") {
+    if (v.trim() === "") {
       if (value != null) onCommit(undefined);
       return;
     }
-    const n = Number(txt);
-    if (!Number.isNaN(n) && n !== value) onCommit(n);
-    else setV(fmt(value));
+    const n = parseAmount(v);
+    if (n == null) {
+      setV(fmt(value));
+      return;
+    }
+    if (n !== value) onCommit(n);
+    setV(fmt(n));
   };
   return (
     <input
@@ -451,6 +461,8 @@ export function DataGrid<T extends { id: string }>({
         return (
           <NumberCell
             value={get(row, col.key) as number | undefined}
+            currency={get(row, col.currencyKey ?? "currency") as Currency}
+            decimals={col.decimals}
             rowId={rowId}
             colKey={col.key}
             onCommit={commit}
