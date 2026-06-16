@@ -19,7 +19,7 @@ export function CurrencyToggle() {
             className={cn(
               "px-2.5 py-1 rounded-[9px] text-[12.5px] font-semibold tabular transition-all",
               active
-                ? "bg-accent text-[#08131f]"
+                ? "bg-accent text-[#0A0B0D]"
                 : "text-muted hover:text-text",
             )}
           >

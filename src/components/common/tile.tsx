@@ -6,7 +6,7 @@ export function Tile({ className, children }: { className?: string; children: Re
   return (
     <div
       className={cn(
-        "rounded-[18px] bg-card border border-border shadow-[var(--shadow-card)]",
+        "rounded-[16px] bg-card border border-border shadow-[var(--shadow-card)]",
         className,
       )}
     >

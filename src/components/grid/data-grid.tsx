@@ -340,7 +340,7 @@ export function DataGrid<T extends { id: string }>({
           <div
             key={c.key}
             className={cn(
-              "px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.06em] text-muted",
+              "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-faint",
               c.align === "right" && "text-right",
             )}
           >

@@ -194,7 +194,7 @@ function Pill({
       onClick={onClick}
       className={cn(
         "px-3.5 py-1.5 rounded-lg text-[13px] font-medium border transition-colors",
-        active ? "bg-accent text-[#0b0c0e] border-accent" : "border-border text-muted hover:text-text",
+        active ? "bg-accent text-[#0A0B0D] border-accent" : "border-border text-muted hover:text-text",
       )}
     >
       {children}

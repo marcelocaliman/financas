@@ -37,6 +37,7 @@
     "close": "Fechar"
   },
   "dashboard": {
+    "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",
     "monthChange": "{{value}}% no mês",
     "real": "Real (BRL)",

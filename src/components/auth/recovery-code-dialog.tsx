@@ -67,7 +67,7 @@ export function RecoveryCodeDialog() {
             onClick={dismiss}
             className={cn(
               "mt-4 w-full h-10 rounded-[8px] font-semibold text-[14px] transition-opacity",
-              matches ? "bg-teal text-[#04140d]" : "bg-border text-faint cursor-not-allowed",
+              matches ? "bg-accent text-[#0A0B0D]" : "bg-border text-faint cursor-not-allowed",
             )}
           >
             Salvei — continuar

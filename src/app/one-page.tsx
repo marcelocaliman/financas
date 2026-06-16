@@ -13,26 +13,30 @@ const CONTENT: Record<string, ReactNode> = {
   config: <Config />,
 };
 
-const GUTTERS = "px-5 md:px-8 lg:px-10";
-const CONTAINER = "max-w-[1120px] mx-auto";
+const GUTTERS = "px-5 md:px-10 lg:px-14";
 
-/** Página editorial única: HERO full-bleed (header flutua por cima) + seções. */
+/** Página editorial única, FULL-WIDTH: HERO com glow + divisor + dashboard + seções. */
 export function OnePage() {
   const { t } = useTranslation();
   const rest = NAV_ITEMS.slice(1);
 
   return (
     <div>
-      {/* DASHBOARD full-bleed — hero + detalhe, tudo no mesmo degradê */}
-      <section id="painel" className="hero-bg relative">
-        <div className={cn(CONTAINER, "pt-32 lg:pt-40 pb-24", GUTTERS)}>
-          <DashboardHero />
+      {/* PAINEL — hero (glow, mais ar) | divisor | dashboard */}
+      <section id="painel" className="scroll-mt-20">
+        <div className={cn("hero-bg w-full overflow-hidden", GUTTERS)}>
+          <div className="pt-[72px] pb-14">
+            <DashboardHero />
+          </div>
+        </div>
+        <div className="border-t border-border" />
+        <div className={cn("w-full pt-9 pb-9", GUTTERS)}>
           <DashboardDetail />
         </div>
       </section>
 
-      {/* Seções no container */}
-      <div className={cn(CONTAINER, GUTTERS)}>
+      {/* Demais seções (âncoras) */}
+      <div className={cn("w-full", GUTTERS)}>
         {rest.map((item) => (
           <Section key={item.id} id={item.id} title={t(`nav.${item.key}`)}>
             {CONTENT[item.id] ?? <ComingSoon />}
@@ -47,8 +51,8 @@ export function OnePage() {
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section className="scroll-mt-28 pt-24 pb-2 border-t border-border" id={id}>
-      <h2 className="font-display font-semibold text-[clamp(28px,4.4vw,46px)] tracking-[-0.02em] leading-[1.05] mb-10 lg:mb-12">
+    <section className="scroll-mt-20 pt-20 pb-2 border-t border-border" id={id}>
+      <h2 className="font-semibold text-[clamp(26px,4vw,40px)] tracking-[-0.03em] leading-[1.05] mb-8">
         {title}
       </h2>
       {children}

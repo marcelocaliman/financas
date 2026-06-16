@@ -38,25 +38,29 @@ ponta-a-ponta — o servidor nunca vê o dado financeiro em texto claro.
 - Sem recuperação por e-mail do dado cifrado: a única via é o código de recuperação.
 - Toda lógica de cripto isolada num módulo, com testes.
 
-## Direção de design (editorial · private banking — elegante e profissional)
-- One-page editorial: header flutuante transparente + HERO full-bleed + seções com
-  âncora. Mobile-first; nav inferior no mobile. Muito espaço em branco, ritmo vertical
-  consistente (~96px entre seções). Conteúdo centrado em ~1120px.
-- **Paleta (nasce no ESCURO; zero verde-neon/lima):**
-  - Fundo navy-carvão `#0E1626` (não preto). Superfícies `#16202E`. Hairlines `rgba(255,255,255,.06)`.
-  - Texto `#E8EDF2` / secundário `#8A9AAD` / fraco `#5E6E80`.
-  - Acento teal sóbrio `#3FA7A0` (escuro `#2C7A7B`). Champanhe/dourado `#C9A86A`
-    SÓ em destaques pontuais (ex.: variação positiva). Positivo `#4FB286`, negativo `#C2553B`.
-  - Claro = papel premium coerente (mesma família navy/teal).
-- **Tipografia:** display SERIF **Fraunces** (Google Fonts) no título do hero e nos títulos
-  de seção; **Inter** no restante; números financeiros em **Space Grotesk** com `tabular-nums`.
-  Patrimônio líquido é o herói visual (grande, bem espaçado). Tokens em `src/index.css` (`@theme`).
-- Cantos arredondados, sombras CONTIDAS (sem glow), hairline dividers, zero poluição.
-  Gráficos discretos: linha teal 2px + área com gradiente sutil, eixos discretos, sem grid
-  neon, tooltip elegante; donut em paleta coerente (teal/azul-aço/champanhe/neutro — sem arco-íris).
-  Estados vazios "EM BREVE" intencionais e discretos (ícone fino + 1 linha).
+## Direção de design (APROVADA — ver docs/reference/direcao-refinada-v2.jsx)
+- One-page **full-width**: header sticky translúcido + HERO com glow + divisor + dashboard +
+  seções com âncora. Mobile-first; nav inferior no mobile. Padding horizontal `px-5 / md:px-10 /
+  lg:px-14`; SEM coluna central estreita — ocupar a largura toda, grids largos.
+- **Paleta (nasce no ESCURO; quase-preto NEUTRO — proibido azul/navy; proibido verde-neon/lima):**
+  - Fundo `#0A0B0D`. Card `#131418`. Controles/hover `#191B20`. Hairline `rgba(255,255,255,.08)`.
+  - Texto `#F3F4F6` / secundário `#9CA2AC` / fraco `#5F646C`.
+  - Acento **verde refinado `#3ECF8E`** com PARCIMÔNIA (linha do gráfico, variação positiva,
+    badge BRL, item ativo do menu). Negativo `#F1746A`. Neutro/EUR `#8A8F98`.
+  - Claro = neutro premium (zinc) coerente, mesmo acento verde (escuro `#15976A`).
+- **Tipografia:** **Inter** em tudo (PROIBIDO serifada), display com tracking apertado
+  (-0.02 a -0.04em). Micro-labels (eyebrows, cabeçalho de tabela) em **JetBrains Mono**,
+  uppercase, ~10.5px, `letter-spacing 0.12em`, cor fraca. Todo número financeiro com `tabular-nums`.
+  Patrimônio líquido é o herói (gigante: clamp ~3–4.8rem, 600, tracking -0.04em). Tokens em `src/index.css`.
+- Cards: hairline + radius 16px + padding ~24px. Sombras CONTIDAS (sem glow), hairline dividers.
+  Gráficos: linha fina 2px no acento, gradiente de área sutil, tooltip escuro, eixos discretos,
+  sem grid neon; donut em paleta coesa verde→cinza (sem arco-íris). Tabelas: cabeçalho mono
+  uppercase, divisores hairline, badge de moeda mono (BRL verde-claro, EUR neutro), valores
+  tabulares à direita. Módulos não construídos: tiles COMPACTOS "em breve" (borda tracejada).
+- HERO destaca-se do resto: eyebrow mono+acento, headline grande e apertada, número-herói gigante,
+  brilho radial verde MUITO sutil atrás, variação em verde, barra de composição — mais ar que as seções.
 - Valores VISÍVEIS por padrão; olho 👁 no header oculta (modo privacidade, não persiste).
-- Referência de lógica/UX: docs/prototipo-painel.jsx.
+- Referência visual definitiva: **docs/reference/direcao-refinada-v2.jsx** (copiar essa estética).
 
 ## Escopo — V1 COMPLETA (não é MVP), em ordem de construção
 - Fase 0a (fundação LOCAL): scaffold; design system; shell (layout, navegação, i18n, tema);

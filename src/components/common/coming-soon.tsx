@@ -1,16 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { Compass } from "lucide-react";
 
-/** Estado vazio intencional e discreto — ícone fino + 1 linha (sem card pesado). */
+/** "Em breve" COMPACTO — tile de borda tracejada (nunca um vazio de tela cheia). */
 export function ComingSoon() {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center text-center py-16 lg:py-20">
-      <Compass size={26} strokeWidth={1.4} className="text-faint" />
-      <span className="eyebrow mt-5">{t("common.comingSoon")}</span>
-      <p className="text-[13.5px] text-muted mt-2 max-w-sm leading-relaxed">
-        {t("common.comingSoonDesc")}
-      </p>
+    <div className="rounded-[16px] border border-dashed border-border-strong p-5 max-w-md">
+      <div className="eyebrow">{t("common.comingSoon")}</div>
+      <p className="text-[12.5px] text-faint mt-2 leading-relaxed">{t("common.comingSoonDesc")}</p>
     </div>
   );
 }

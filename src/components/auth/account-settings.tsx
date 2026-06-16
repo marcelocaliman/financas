@@ -23,7 +23,7 @@ function Btn({
       className={cn(
         "h-9 px-3.5 rounded-[8px] text-[13px] font-medium transition-colors disabled:opacity-50",
         tone === "teal"
-          ? "bg-accent text-[#0b0c0e] hover:brightness-110"
+          ? "bg-accent text-[#0A0B0D] hover:brightness-105"
           : tone === "danger"
             ? "border border-red-400/50 text-red-400 hover:bg-red-500/10"
             : "border border-border text-muted hover:text-text hover:bg-card-hover",

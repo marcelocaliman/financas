@@ -37,6 +37,7 @@
     "close": "Close"
   },
   "dashboard": {
+    "heroEyebrow": "Net worth · updated today",
     "netWorth": "Net worth",
     "monthChange": "{{value}}% this month",
     "real": "Real (BRL)",

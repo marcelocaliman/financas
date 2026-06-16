@@ -123,9 +123,7 @@ export default function Patrimonio() {
       <Tile className="p-7 md:p-8">
         <div className="grid grid-cols-12 gap-x-8 gap-y-7 items-end">
           <div className="col-span-12 lg:col-span-7">
-            <div className="text-[13px] uppercase tracking-[0.12em] text-muted font-semibold">
-              {t("patrimonio.netWorth")}
-            </div>
+            <Eyebrow>{t("patrimonio.netWorth")}</Eyebrow>
             <Money
               value={view.netWorth}
               currency={disp}
@@ -208,7 +206,7 @@ function SectionHead({ title, count }: { title: string; count: number }) {
   const { t } = useTranslation();
   return (
     <div className="flex items-baseline justify-between mb-3 px-1">
-      <h2 className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted">{title}</h2>
+      <h2 className="eyebrow">{title}</h2>
       <span className="text-[11.5px] text-faint tabular">
         {count} {t(count === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
       </span>
