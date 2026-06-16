@@ -47,7 +47,7 @@ export function OnePage() {
       </section>
 
       {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro) */}
-      <div className={cn(CONTAINER, GUTTERS)}>
+      <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
         {rest.map((item) => {
           const sec = SECTIONS[item.id];
           return (
