@@ -29,11 +29,11 @@ export default function Projecao() {
     return assets - liab;
   }, [data, disp, rates]);
 
-  // Valor inicial: patrimônio atual por padrão (override só em memória, nunca persistido).
-  // Ao trocar a moeda de exibição, descarta o override (volta ao patrimônio já convertido)
-  // pra não projetar um número fixo numa moeda diferente.
-  const [override, setOverride] = useState<number | null>(null);
-  useEffect(() => setOverride(null), [disp]);
+  // Valor inicial: patrimônio atual por padrão; override no store (compartilhado com o
+  // KPI do header), só em memória. Ao trocar a moeda, descarta o override (volta ao
+  // patrimônio já convertido) pra não projetar um número fixo numa moeda diferente.
+  const override = p.initialOverride;
+  useEffect(() => p.setInitialOverride(null), [disp]); // eslint-disable-line react-hooks/exhaustive-deps
   const initial = override ?? netWorth;
   const years = Math.max(1, Math.min(60, Math.round(p.years)));
 
@@ -57,7 +57,7 @@ export default function Projecao() {
       <Tile className="p-6 md:p-7">
         <Eyebrow>{t("projecao.assumptions")}</Eyebrow>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-5 mt-4">
-          <Field label={`${t("projecao.initial")} (${disp})`} value={Math.round(initial)} onChange={(v) => setOverride(v)} hint={override != null ? t("projecao.custom") : t("projecao.fromNetWorth")} onReset={override != null ? () => setOverride(null) : undefined} />
+          <Field label={`${t("projecao.initial")} (${disp})`} value={Math.round(initial)} onChange={(v) => p.setInitialOverride(v)} hint={override != null ? t("projecao.custom") : t("projecao.fromNetWorth")} onReset={override != null ? () => p.setInitialOverride(null) : undefined} />
           <Field label={`${t("projecao.monthly")} (${disp})`} value={p.monthly} onChange={(v) => p.set({ monthly: v })} />
           <Field label={t("projecao.annualReturn")} value={p.annualReturn} onChange={(v) => p.set({ annualReturn: v })} suffix="%" />
           <Field label={t("projecao.inflation")} value={p.annualInflation} onChange={(v) => p.set({ annualInflation: v })} suffix="%" />
@@ -134,10 +134,11 @@ export function ProjecaoSummary() {
       ? data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0) -
         data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0)
       : 0;
+    const initial = p.initialOverride ?? netWorth;
     const years = Math.max(1, Math.min(60, Math.round(p.years)));
-    const nominal = projectBalance(netWorth, p.monthly, p.annualReturn / 100, years);
+    const nominal = projectBalance(initial, p.monthly, p.annualReturn / 100, years);
     return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years) };
-  }, [data, disp, rates, p.monthly, p.annualReturn, p.annualInflation, p.years]);
+  }, [data, disp, rates, p.initialOverride, p.monthly, p.annualReturn, p.annualInflation, p.years]);
   return (
     <HeaderKpis>
       <HeaderKpi label={t("projecao.finalNominal", { years: v.years })} tone="accent" value={<Money value={v.nominal} currency={disp} />} />

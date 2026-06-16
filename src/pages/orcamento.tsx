@@ -39,8 +39,7 @@ export default function Orcamento() {
       .sort((a, b) => b.value - a.value);
     const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
-    const saldo = totalInc - totalExp;
-    return { expByCat, totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0 };
+    return { expByCat, totalExp, totalInc, saldo: totalInc - totalExp };
   }, [data, disp, rates, tax, t]);
 
   if (!data || !view) {

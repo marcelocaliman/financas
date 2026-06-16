@@ -25,11 +25,18 @@ export function Accordion({
   const setOpen = useSections((s) => s.setOpen);
   const open = stored ?? defaultOpen;
 
-  // Só monta os detalhes (pesados: tabelas/gráficos) ao abrir pela 1ª vez; depois
-  // permanecem montados pra a animação de colapsar/expandir continuar suave.
+  // `mounted`: corpo (pesado) só entra no DOM ao abrir pela 1ª vez e fica montado.
+  // `expanded`: dispara a grid 0fr→1fr UM frame DEPOIS do corpo montar, pra a 1ª
+  // abertura animar de verdade (em vez de aparecer de estalo). Colapsar é imediato.
   const [mounted, setMounted] = useState(open);
+  const [expanded, setExpanded] = useState(open);
   useEffect(() => {
-    if (open) setMounted(true);
+    if (open) {
+      setMounted(true);
+      const raf = requestAnimationFrame(() => setExpanded(true));
+      return () => cancelAnimationFrame(raf);
+    }
+    setExpanded(false);
   }, [open]);
 
   return (
@@ -59,7 +66,7 @@ export function Accordion({
       <div
         className={cn(
           "grid transition-all duration-300 ease-out motion-reduce:transition-none",
-          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+          expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
         <div className="overflow-hidden">

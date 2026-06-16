@@ -98,7 +98,6 @@
     "ticker": "Ticker",
     "quantity": "Qtà",
     "tickerHint": "Inserisci Ticker + Qtà per aggiornare il valore dell'asset dalla quotazione del giorno (imposta il token brapi in Config → Cambio).",
-    "liabCount": "{{count}} debiti",
     "classTotal": "Totale classe",
     "share": "% degli asset",
     "assetCount": "Asset",
@@ -122,10 +121,6 @@
     "detail": "Dettaglio",
     "detailPlaceholder": "Es.: Affitto casa",
     "uncategorized": "Senza categoria",
-    "sources": "{{count}} fonti",
-    "catCount": "{{count}} categorie",
-    "savingsRate": "Tasso di risparmio",
-    "ofIncome": "delle entrate",
     "byCategory": "Spese per categoria"
   },
   "historico": {
@@ -157,9 +152,6 @@
     "target": "Obiettivo",
     "rebalance": "Riequilibra",
     "classes": "Classi",
-    "balanced": "bilanciato",
-    "adjust": "porta a 100%",
-    "setTargets": "imposta obiettivi",
     "buy": "investire",
     "sell": "disinvestire",
     "empty": "Nessun asset ancora.",
@@ -176,14 +168,10 @@
     "fromNetWorth": "Dal patrimonio attuale",
     "finalNominal": "Tra {{years}} anni",
     "finalReal": "In valore di oggi",
-    "contributed": "Totale versato",
     "nominal": "Nominale",
     "real": "Valore di oggi",
     "year": "Anno",
     "yearByYear": "Anno per anno",
-    "todayPower": "potere d'acquisto di oggi",
-    "growth": "Rendimento",
-    "fromReturns": "interessi + rivalutazione",
     "curve": "Curva della proiezione"
   },
   "data": {

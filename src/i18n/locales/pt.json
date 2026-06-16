@@ -98,7 +98,6 @@
     "ticker": "Ticker",
     "quantity": "Qtd",
     "tickerHint": "Preencha Ticker + Qtd pra o valor do ativo atualizar sozinho pela cotação do dia (configure o token brapi em Config → Câmbio).",
-    "liabCount": "{{count}} dívidas",
     "classTotal": "Total da classe",
     "share": "% dos ativos",
     "assetCount": "Ativos",
@@ -122,10 +121,6 @@
     "detail": "Detalhe",
     "detailPlaceholder": "Ex.: Aluguel do apê",
     "uncategorized": "Sem categoria",
-    "sources": "{{count}} fontes",
-    "catCount": "{{count}} categorias",
-    "savingsRate": "Taxa de poupança",
-    "ofIncome": "do que entra",
     "byCategory": "Gastos por categoria"
   },
   "historico": {
@@ -157,9 +152,6 @@
     "target": "Alvo",
     "rebalance": "Rebalancear",
     "classes": "Classes",
-    "balanced": "balanceado",
-    "adjust": "ajustar p/ 100%",
-    "setTargets": "defina alvos",
     "buy": "aportar",
     "sell": "resgatar",
     "empty": "Sem ativos ainda.",
@@ -176,14 +168,10 @@
     "fromNetWorth": "Do patrimônio atual",
     "finalNominal": "Em {{years}} anos",
     "finalReal": "Em valor de hoje",
-    "contributed": "Total aportado",
     "nominal": "Nominal",
     "real": "Valor de hoje",
     "year": "Ano",
     "yearByYear": "Ano a ano",
-    "todayPower": "poder de compra de hoje",
-    "growth": "Rendimento",
-    "fromReturns": "juros + valorização",
     "curve": "Curva da projeção"
   },
   "data": {
