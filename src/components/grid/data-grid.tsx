@@ -293,6 +293,17 @@ function CurrencyPicker({
     if (r) setPos({ top: r.bottom + 6, left: r.left });
     setOpen(true);
   };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        btnRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
   return (
     <>
       <button
@@ -303,7 +314,12 @@ function CurrencyPicker({
         onMouseDown={(e) => e.preventDefault()}
         onClick={toggle}
         aria-label="Moeda"
-        className={cn("rounded-[7px] outline-none focus:ring-2 focus:ring-[var(--ring)]", className)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={cn(
+          "grid place-items-center min-w-[32px] min-h-[32px] rounded-[7px] outline-none focus:ring-2 focus:ring-[var(--ring)]",
+          className,
+        )}
       >
         {children}
       </button>
@@ -476,7 +492,7 @@ export function DataGrid<T extends { id: string }>({
           <div
             key={c.key}
             className={cn(
-              "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-faint",
+              "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted",
               c.align === "right" && "text-right",
             )}
           >

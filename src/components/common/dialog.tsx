@@ -1,8 +1,10 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
+import { useFocusTrap } from "./use-focus-trap";
 
 /** Modal central com sobreposição (mesma linguagem da política de privacidade). */
 export function Dialog({
@@ -10,13 +12,17 @@ export function Dialog({
   onClose,
   title,
   children,
+  wide,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
+  wide?: boolean;
 }) {
   const { t } = useTranslation();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, open);
   useEffect(() => {
     if (!open) return;
     const id = pushModal();
@@ -24,9 +30,14 @@ export function Dialog({
       if (e.key === "Escape" && isTopModal(id)) onClose();
     };
     window.addEventListener("keydown", onKey);
+    // Captura/restaura o valor anterior — se este Dialog abre DENTRO do Drawer (que já
+    // travou o scroll), ao fechar mantém o "hidden" do Drawer em vez de destravar atrás.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
       popModal(id);
       window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
 
@@ -40,7 +51,12 @@ export function Dialog({
       role="presentation"
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-card p-6 my-auto"
+        ref={panelRef}
+        tabIndex={-1}
+        className={cn(
+          "w-full rounded-2xl bg-card border border-border shadow-card p-6 my-auto outline-none",
+          wide ? "max-w-lg" : "max-w-sm",
+        )}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

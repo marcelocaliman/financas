@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeftRight,
   Eye,
@@ -60,6 +60,7 @@ export function TopNav({ active }: { active: string }) {
                   onClick={() => goToSection(id)}
                   className={cn(
                     "px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors",
+                    "outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
                     on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
                   )}
                 >
@@ -75,7 +76,8 @@ export function TopNav({ active }: { active: string }) {
             type="button"
             onClick={toggleNumbers}
             aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
-            className="grid place-items-center w-10 h-10 rounded-[11px] text-faint hover:text-text hover:bg-card-hover transition-colors"
+            aria-pressed={hidden}
+            className="grid place-items-center w-10 h-10 rounded-[11px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
             {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
@@ -95,6 +97,15 @@ function UserMenu() {
   const openConfig = useUI((s) => s.setConfigOpen);
   const [open, setOpen] = useState(false);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
@@ -104,7 +115,9 @@ function UserMenu() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Conta"
-        className="flex items-center gap-2 h-9 pl-1 pr-2 rounded-[9px] bg-card2 border border-border hover:bg-card-hover transition-colors"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className="flex items-center gap-2 h-9 pl-1 pr-2 rounded-[9px] bg-card2 border border-border hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       >
         <span className="grid place-items-center w-[22px] h-[22px] rounded-full bg-accent text-[#0A0B0D] text-[11px] font-bold">
           {initial}

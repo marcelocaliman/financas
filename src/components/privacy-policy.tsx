@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { X } from "lucide-react";
-import { Panel } from "@/components/common/panel";
+import { Dialog } from "@/components/common/dialog";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -70,19 +69,9 @@ export function PrivacyLink({ className }: { className?: string }) {
       <button type="button" onClick={() => setOpen(true)} className={className ?? "text-muted hover:text-text underline"}>
         Privacidade
       </button>
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto px-4 py-8">
-          <Panel className="w-full max-w-lg p-6 my-auto">
-            <div className="flex items-start justify-between mb-3">
-              <h2 className="text-[16px] font-bold text-text">Privacidade</h2>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Fechar" className="text-muted hover:text-text">
-                <X size={18} />
-              </button>
-            </div>
-            <PrivacyPolicyContent />
-          </Panel>
-        </div>
-      ) : null}
+      <Dialog open={open} onClose={() => setOpen(false)} title="Privacidade" wide>
+        <PrivacyPolicyContent />
+      </Dialog>
     </>
   );
 }

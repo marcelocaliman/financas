@@ -270,7 +270,8 @@ function RotatingPhrase() {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
-    if (list.length < 2) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (list.length < 2 || reduce) return; // sem rotação se o usuário pediu menos movimento
     const id = setInterval(() => {
       setShow(false);
       setTimeout(() => {
@@ -283,14 +284,14 @@ function RotatingPhrase() {
 
   if (!list.length) return null;
   return (
-    <h1
+    <div
       className={cn(
-        "font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.035em] leading-[1.04] max-w-[760px] min-h-[2.1em] text-text transition-opacity duration-500",
+        "font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.035em] leading-[1.04] max-w-[760px] min-h-[2.1em] text-text transition-opacity duration-500 motion-reduce:transition-none",
         show ? "opacity-100" : "opacity-0",
       )}
     >
       {list[i]}
-    </h1>
+    </div>
   );
 }
 

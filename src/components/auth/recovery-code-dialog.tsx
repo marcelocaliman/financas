@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShieldAlert, Copy, Check } from "lucide-react";
 import { useVault } from "@/vault/vault-store";
 import { Panel } from "@/components/common/panel";
+import { useFocusTrap } from "@/components/common/use-focus-trap";
 import { cn } from "@/lib/utils";
 
 const norm = (s: string) => s.toUpperCase().replace(/[\s-]/g, "");
@@ -16,17 +17,35 @@ export function RecoveryCodeDialog() {
   const dismiss = useVault((s) => s.dismissRecoveryCode);
   const [confirm, setConfirm] = useState("");
   const [copied, setCopied] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, !!code);
+  useEffect(() => {
+    if (!code) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [code]);
 
   if (!code) return null;
   const matches = norm(confirm) === norm(code);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8">
-      <div className="w-full max-w-md">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="recovery-title"
+        className="w-full max-w-md outline-none"
+      >
         <Panel className="p-6">
           <div className="flex items-center gap-2 text-teal mb-2">
             <ShieldAlert size={20} strokeWidth={1.8} />
-            <h2 className="text-[16px] font-bold text-text">Guarde seu código de recuperação</h2>
+            <h2 id="recovery-title" className="text-[16px] font-bold text-text">
+              Guarde seu código de recuperação
+            </h2>
           </div>
           <p className="text-[13px] text-muted leading-relaxed">
             É a <b className="text-text">única</b> forma de recuperar seus dados se você esquecer a

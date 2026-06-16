@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
+import { useFocusTrap } from "./use-focus-trap";
 
 /**
  * Painel de configurações: no DESKTOP é um modal centrado e contido (sem o mar de
@@ -22,6 +23,8 @@ export function Drawer({
 }) {
   const [mounted, setMounted] = useState(open);
   const [show, setShow] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(panelRef, open);
 
   useEffect(() => {
     if (open) {
@@ -55,15 +58,17 @@ export function Drawer({
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={title}>
       <div
         className={cn(
-          "absolute inset-0 bg-black/55 backdrop-blur-md transition-opacity duration-300",
+          "absolute inset-0 bg-black/55 backdrop-blur-md transition-opacity duration-300 motion-reduce:transition-none",
           show ? "opacity-100" : "opacity-0",
         )}
         onClick={onClose}
       />
       <div
+        ref={panelRef}
+        tabIndex={-1}
         className={cn(
-          "absolute flex flex-col bg-bg border-border shadow-[var(--shadow-float)]",
-          "transition-[transform,opacity] duration-300 ease-out will-change-transform",
+          "absolute flex flex-col bg-bg border-border shadow-[var(--shadow-float)] outline-none",
+          "transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none",
           // Mobile: bottom-sheet
           "inset-x-0 bottom-0 w-full h-[92vh] rounded-t-[22px] border-t border-x",
           // Desktop: modal centrado e contido

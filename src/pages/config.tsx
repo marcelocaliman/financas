@@ -195,18 +195,20 @@ function DataSection() {
 
   return (
     <div className="space-y-5 max-w-3xl">
-      {msg ? (
-        <div
-          className={cn(
-            "rounded-[10px] border px-3.5 py-2.5 text-[12.5px]",
-            msg.kind === "ok"
-              ? "border-accent/30 bg-accent-soft text-text"
-              : "border-red-500/30 bg-red-500/[0.06] text-red-400",
-          )}
-        >
-          {msg.text}
-        </div>
-      ) : null}
+      <div role="status" aria-live="polite">
+        {msg ? (
+          <div
+            className={cn(
+              "rounded-[10px] border px-3.5 py-2.5 text-[12.5px]",
+              msg.kind === "ok"
+                ? "border-accent/30 bg-accent-soft text-text"
+                : "border-red-500/30 bg-red-500/[0.06] text-red-400",
+            )}
+          >
+            {msg.text}
+          </div>
+        ) : null}
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-5 items-start">
         <DataCard title={t("data.exportJson")} desc={t("data.exportJsonDesc")}>

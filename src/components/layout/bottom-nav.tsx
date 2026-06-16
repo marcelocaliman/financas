@@ -20,7 +20,8 @@ export function BottomNav({ active }: { active: string }) {
             type="button"
             onClick={() => goToSection(id)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors",
+              "flex flex-col items-center gap-0.5 px-2 py-1 min-h-[44px] justify-center rounded-[10px] text-[10px] transition-colors",
+              "outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
               on ? "text-accent font-semibold" : "text-muted font-medium",
             )}
           >
@@ -32,7 +33,7 @@ export function BottomNav({ active }: { active: string }) {
             >
               <Icon size={19} />
             </span>
-            <span>{t(`nav.${key}`)}</span>
+            <span className="whitespace-nowrap">{t(`nav.${key}`)}</span>
           </button>
         );
       })}

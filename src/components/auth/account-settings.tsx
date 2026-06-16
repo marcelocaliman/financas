@@ -86,9 +86,9 @@ export function ChangePassword() {
       <Heading>Trocar senha</Heading>
       {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
       {state === "ok" ? <p className="text-[12.5px] text-accent">Senha alterada.</p> : null}
-      <Input type="password" placeholder="Senha atual" value={cur} onChange={(e) => setCur(e.target.value)} />
-      <Input type="password" placeholder="Nova senha" value={next} onChange={(e) => setNext(e.target.value)} />
-      <Input type="password" placeholder="Repita a nova senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+      <Input type="password" aria-label="Senha atual" autoComplete="current-password" placeholder="Senha atual" value={cur} onChange={(e) => setCur(e.target.value)} />
+      <Input type="password" aria-label="Nova senha" autoComplete="new-password" placeholder="Nova senha" value={next} onChange={(e) => setNext(e.target.value)} />
+      <Input type="password" aria-label="Repita a nova senha" autoComplete="new-password" placeholder="Repita a nova senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
       <Btn tone="teal" disabled={state === "loading"} onClick={submit}>
         {state === "loading" ? "Salvando…" : "Trocar senha"}
       </Btn>
@@ -125,7 +125,7 @@ export function NewRecoveryCode() {
         Gera um código novo e invalida o anterior. Confirme com sua senha.
       </p>
       {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
-      <Input type="password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <Input type="password" aria-label="Sua senha" autoComplete="current-password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} />
       <Btn disabled={loading} onClick={submit}>{loading ? "Gerando…" : "Gerar novo código"}</Btn>
     </div>
   );
@@ -160,7 +160,7 @@ export function DangerZone() {
       ) : (
         <>
           {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
-          <Input placeholder="Digite EXCLUIR pra confirmar" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <Input aria-label="Digite EXCLUIR pra confirmar" placeholder="Digite EXCLUIR pra confirmar" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           <div className="flex gap-2">
             <Btn onClick={() => { setOpen(false); setConfirm(""); }}>Cancelar</Btn>
             <Btn tone="danger" disabled={confirm !== "EXCLUIR" || loading} onClick={submit}>

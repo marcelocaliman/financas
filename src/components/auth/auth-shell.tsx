@@ -79,7 +79,11 @@ export function SubmitButton({
 
 export function ErrorText({ children }: { children?: ReactNode }) {
   if (!children) return null;
-  return <p className="text-[12.5px] text-red-600 mb-3 leading-relaxed">{children}</p>;
+  return (
+    <p role="alert" className="text-[12.5px] text-neg mb-3 leading-relaxed">
+      {children}
+    </p>
+  );
 }
 
 export function LinkButton({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) {

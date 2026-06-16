@@ -45,16 +45,17 @@ export function Accordion({
         type="button"
         onClick={() => setOpen(id, !open)}
         aria-expanded={open}
-        className="group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left"
+        aria-controls={`${id}-body`}
+        className="group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]"
       >
-        <h2 className="font-semibold text-[clamp(22px,3vw,34px)] tracking-[-0.03em] leading-none truncate min-w-0">
+        <h2 id={`${id}-title`} className="font-semibold text-[clamp(22px,3vw,34px)] tracking-[-0.03em] leading-none truncate min-w-0">
           {title}
         </h2>
         <div className="flex items-center gap-5 sm:gap-7 lg:gap-9 shrink-0">
           {summary}
           <span
             className={cn(
-              "grid place-items-center w-9 h-9 rounded-full border border-border text-muted transition-all duration-300 group-hover:text-text group-hover:border-border-strong",
+              "grid place-items-center w-9 h-9 rounded-full border border-border text-muted transition-all duration-300 motion-reduce:transition-none group-hover:text-text group-hover:border-border-strong",
               open && "rotate-180",
             )}
           >
@@ -64,6 +65,9 @@ export function Accordion({
       </button>
 
       <div
+        id={`${id}-body`}
+        role="region"
+        aria-labelledby={`${id}-title`}
         className={cn(
           "grid transition-all duration-300 ease-out motion-reduce:transition-none",
           expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",

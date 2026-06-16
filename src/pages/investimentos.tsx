@@ -142,7 +142,7 @@ export default function Investimentos() {
                   </span>
                   <span className="text-right">
                     <Money value={r.value} currency={disp} className="text-[13px] tabular" />
-                    <span className="block text-[11.5px] text-faint tabular">{r.curPct.toFixed(1)}%</span>
+                    <span className="block text-[11.5px] text-muted tabular">{r.curPct.toFixed(1)}%</span>
                   </span>
                   <div className="flex justify-end">
                     <TargetInput value={r.tgtPct} onCommit={(v) => setTarget(r.id, v)} />
@@ -154,7 +154,7 @@ export default function Investimentos() {
                       <span className={r.delta > 0 ? "text-accent" : "text-neg"}>
                         {r.delta > 0 ? "+" : "−"}
                         {formatMoney(Math.abs(r.delta), disp).replace(/^[^\d]*/, "")}
-                        <span className="block text-[11px] text-faint">
+                        <span className="block text-[11px] text-muted">
                           {r.delta > 0 ? t("investimentos.buy") : t("investimentos.sell")}
                         </span>
                       </span>

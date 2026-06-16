@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Check } from "lucide-react";
 import { useUI } from "@/store/ui";
@@ -18,15 +18,26 @@ export function CurrencyMenu() {
   const [open, setOpen] = useState(false);
   const preview = cur !== base;
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Moeda de exibição"
+        aria-haspopup="true"
+        aria-expanded={open}
         title={preview ? t("common.previewHint", { cur: base }) : undefined}
         className={cn(
-          "flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[10px] border transition-colors",
+          "flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[10px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
           preview
             ? "bg-accent-soft border-accent/40 text-text"
             : "bg-card2 border-border text-muted hover:text-text hover:bg-card-hover",
