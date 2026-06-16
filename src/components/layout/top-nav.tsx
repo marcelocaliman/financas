@@ -6,6 +6,7 @@ import {
   Settings,
   Lock,
   LogOut,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +17,13 @@ import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
 
-/** Header FLUTUANTE: transparente sobre o hero, vira vidro ao rolar. */
+function nameFromEmail(email: string | null): string {
+  if (!email) return "";
+  const h = email.split("@")[0].split(/[._-]/)[0];
+  return h ? h.charAt(0).toUpperCase() + h.slice(1) : "";
+}
+
+/** Header que FLUTUA ao rolar (pill descolada do topo) e fica transparente sobre o hero. */
 export function TopNav({ active }: { active: string }) {
   const { t } = useTranslation();
   const scrolled = useScrolled(48);
@@ -24,54 +31,63 @@ export function TopNav({ active }: { active: string }) {
   const toggleNumbers = useUI((s) => s.toggleNumbers);
 
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-40 transition-colors duration-300 border-b",
-        scrolled ? "glass border-border" : "border-transparent",
-      )}
-    >
-      <div className="max-w-[1560px] mx-auto px-5 md:px-8 lg:px-12 xl:px-16 h-16 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => scrollToSection(NAV_ITEMS[0].id)}
-          className="flex items-center gap-2.5 shrink-0"
+    <header className="fixed top-0 left-0 right-0 z-40">
+      <div
+        className={cn(
+          "transition-[padding] duration-300 ease-out",
+          scrolled ? "pt-3 px-3 sm:px-5" : "pt-0 px-0",
+        )}
+      >
+        <div
+          className={cn(
+            "max-w-[1560px] mx-auto flex items-center justify-between gap-4 transition-all duration-300 ease-out",
+            scrolled
+              ? "h-14 px-4 md:px-6 rounded-[16px] glass border border-border shadow-[var(--shadow-float)]"
+              : "h-16 px-5 md:px-8 lg:px-12 xl:px-16 border border-transparent",
+          )}
         >
-          <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0b0c0e]">
-            <ArrowLeftRight size={16} />
-          </div>
-          <span className="font-display font-bold text-[16px] tracking-[-0.02em]">{t("app.name")}</span>
-        </button>
-
-        <nav className="hidden lg:flex items-center gap-0.5">
-          {NAV_ITEMS.map(({ id, key }) => {
-            const on = active === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => scrollToSection(id)}
-                className={cn(
-                  "px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                  on ? "text-accent" : "text-muted hover:text-text",
-                )}
-              >
-                {t(`nav.${key}`)}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={toggleNumbers}
-            aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
-            className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+            onClick={() => scrollToSection(NAV_ITEMS[0].id)}
+            className="flex items-center gap-2.5 shrink-0"
           >
-            {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
+            <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0b0c0e]">
+              <ArrowLeftRight size={16} />
+            </div>
+            <span className="font-display font-bold text-[16px] tracking-[-0.02em]">{t("app.name")}</span>
           </button>
-          <CurrencyToggle />
-          <UserMenu />
+
+          <nav className="hidden lg:flex items-center gap-0.5">
+            {NAV_ITEMS.map(({ id, key }) => {
+              const on = active === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => scrollToSection(id)}
+                  className={cn(
+                    "px-2.5 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                    on ? "text-accent" : "text-muted hover:text-text",
+                  )}
+                >
+                  {t(`nav.${key}`)}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleNumbers}
+              aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
+              className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+            >
+              {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+            <CurrencyToggle />
+            <UserMenu />
+          </div>
         </div>
       </div>
     </header>
@@ -84,8 +100,7 @@ function UserMenu() {
   const signOut = useVault((s) => s.signOut);
   const [open, setOpen] = useState(false);
 
-  const handle = email ? email.split("@")[0].split(/[._-]/)[0] : "";
-  const name = handle ? handle.charAt(0).toUpperCase() + handle.slice(1) : "";
+  const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
   return (
@@ -94,9 +109,13 @@ function UserMenu() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label="Conta"
-        className="grid place-items-center w-9 h-9 rounded-full bg-card2 border border-border text-[13px] font-semibold text-text hover:border-border-strong transition-colors"
+        className="flex items-center gap-2 pl-1 pr-2 h-9 rounded-full hover:bg-card-hover transition-colors"
       >
-        {initial}
+        <span className="grid place-items-center w-8 h-8 rounded-full bg-accent text-[#0b0c0e] text-[13px] font-bold">
+          {initial}
+        </span>
+        {name ? <span className="hidden md:inline text-[13.5px] font-medium">{name}</span> : null}
+        <ChevronDown size={14} className="hidden md:block text-faint" />
       </button>
       {open ? (
         <>

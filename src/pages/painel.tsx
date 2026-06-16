@@ -95,11 +95,13 @@ export function DashboardHero() {
 
   return (
     <>
-      <Eyebrow>{t("dashboard.netWorth")}</Eyebrow>
+      <div className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted">
+        {t("dashboard.netWorth")}
+      </div>
       <HeroNumber
         value={view.netWorth}
         currency={disp}
-        className="block whitespace-nowrap text-[clamp(30px,5.5vw,80px)] mt-2.5"
+        className="block whitespace-nowrap text-[clamp(30px,5.5vw,80px)] mt-2"
       />
       <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
         {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
