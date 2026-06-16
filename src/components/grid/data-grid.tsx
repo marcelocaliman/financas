@@ -327,7 +327,10 @@ export function DataGrid<T extends { id: string }>({
   };
 
   return (
-    <div ref={containerRef} className="rounded-[14px] border border-border overflow-hidden">
+    <div
+      ref={containerRef}
+      className="rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden"
+    >
       {/* Cabeçalho */}
       <div
         className="grid items-center bg-card2 border-b border-border"
