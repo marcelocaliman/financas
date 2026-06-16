@@ -14,29 +14,30 @@ const CONTENT: Record<string, ReactNode> = {
 };
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
+const CONTAINER = "max-w-[1280px] mx-auto";
 
-/** Página editorial única, FULL-WIDTH: HERO com glow + divisor + dashboard + seções. */
+/** Página editorial única: fundo do header/hero full-bleed; conteúdo capado em 1280px. */
 export function OnePage() {
   const { t } = useTranslation();
   const rest = NAV_ITEMS.slice(1);
 
   return (
     <div>
-      {/* PAINEL — hero (glow, mais ar) | divisor | dashboard */}
+      {/* PAINEL — hero (glow full-bleed, mais ar) | divisor | dashboard */}
       <section id="painel" className="scroll-mt-20">
-        <div className={cn("hero-bg w-full overflow-hidden", GUTTERS)}>
-          <div className="pt-[72px] pb-14">
+        <div className="hero-bg w-full overflow-hidden">
+          <div className={cn(CONTAINER, GUTTERS, "pt-[72px] pb-14")}>
             <DashboardHero />
           </div>
         </div>
         <div className="border-t border-border" />
-        <div className={cn("w-full pt-9 pb-9", GUTTERS)}>
+        <div className={cn(CONTAINER, GUTTERS, "pt-9 pb-9")}>
           <DashboardDetail />
         </div>
       </section>
 
       {/* Demais seções (âncoras) */}
-      <div className={cn("w-full", GUTTERS)}>
+      <div className={cn(CONTAINER, GUTTERS)}>
         {rest.map((item) => (
           <Section key={item.id} id={item.id} title={t(`nav.${item.key}`)}>
             {CONTENT[item.id] ?? <ComingSoon />}

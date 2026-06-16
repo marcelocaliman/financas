@@ -39,9 +39,10 @@ ponta-a-ponta — o servidor nunca vê o dado financeiro em texto claro.
 - Toda lógica de cripto isolada num módulo, com testes.
 
 ## Direção de design (APROVADA — ver docs/reference/direcao-refinada-v2.jsx)
-- One-page **full-width**: header sticky translúcido + HERO com glow + divisor + dashboard +
-  seções com âncora. Mobile-first; nav inferior no mobile. Padding horizontal `px-5 / md:px-10 /
-  lg:px-14`; SEM coluna central estreita — ocupar a largura toda, grids largos.
+- One-page: header sticky translúcido + HERO com glow + divisor + dashboard + seções com âncora.
+  Mobile-first; nav inferior no mobile. Padding horizontal `px-5 / md:px-10 / lg:px-14`.
+  Conteúdo centrado em **~1280px** (`max-w-[1280px] mx-auto`, padrão de dashboard premium);
+  fundo do header e glow do hero ficam **full-bleed** (borda/brilho de ponta a ponta).
 - **Paleta (nasce no ESCURO; quase-preto NEUTRO — proibido azul/navy; proibido verde-neon/lima):**
   - Fundo `#0A0B0D`. Card `#131418`. Controles/hover `#191B20`. Hairline `rgba(255,255,255,.08)`.
   - Texto `#F3F4F6` / secundário `#9CA2AC` / fraco `#5F646C`.

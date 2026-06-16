@@ -31,7 +31,7 @@ export function TopNav({ active }: { active: string }) {
 
   return (
     <header className="sticky top-0 z-50 w-full glass border-b border-border">
-      <div className="flex items-center justify-between gap-4 h-[60px] px-5 md:px-10 lg:px-14">
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between gap-4 h-[60px] px-5 md:px-10 lg:px-14">
         <div className="flex items-center gap-7 min-w-0">
           <button
             type="button"
