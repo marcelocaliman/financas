@@ -102,6 +102,63 @@
     "assetType": { "investment": "Investimento", "property": "Immobile", "cash": "Liquidità" },
     "liabilityType": { "loan": "Prestito", "card": "Carta", "mortgage": "Mutuo", "other": "Altro" }
   },
+  "orcamento": {
+    "income": "Entrate",
+    "expenses": "Spese",
+    "balance": "Saldo",
+    "monthly": "Mensile",
+    "incomePlaceholder": "Es.: Stipendio",
+    "expensePlaceholder": "Es.: Casa",
+    "addIncome": "Aggiungi entrata",
+    "addExpense": "Aggiungi spesa"
+  },
+  "historico": {
+    "month": "Mese",
+    "monthPlaceholder": "AAAA-MM",
+    "networth": "Patrimonio",
+    "contribution": "Versamento",
+    "current": "Attuale",
+    "totalChange": "Variazione totale",
+    "contributions": "Versamenti",
+    "snapshots": "Registrazioni",
+    "addSnapshot": "Aggiungi registrazione"
+  },
+  "objetivos": {
+    "namePlaceholder": "Es.: Anticipo casa",
+    "current": "Attuale",
+    "target": "Obiettivo",
+    "deadline": "Scadenza",
+    "addGoal": "Aggiungi obiettivo"
+  },
+  "investimentos": {
+    "total": "Totale investito",
+    "positions": "Posizioni",
+    "targetTotal": "Obiettivo totale",
+    "currentAlloc": "Attuale",
+    "target": "Obiettivo",
+    "rebalance": "Riequilibra",
+    "buy": "investire",
+    "sell": "disinvestire",
+    "empty": "Nessun asset ancora.",
+    "hint": "Imposta un obiettivo % per classe; il riequilibrio mostra quanto investire o disinvestire."
+  },
+  "projecao": {
+    "assumptions": "Ipotesi",
+    "initial": "Iniziale",
+    "monthly": "Versamento mensile",
+    "annualReturn": "Rendimento annuo",
+    "inflation": "Inflazione annua",
+    "years": "Anni",
+    "custom": "Personalizzato",
+    "fromNetWorth": "Dal patrimonio attuale",
+    "finalNominal": "Tra {{years}} anni",
+    "finalReal": "In valore di oggi",
+    "contributed": "Totale versato",
+    "nominal": "Nominale",
+    "real": "Valore di oggi",
+    "year": "Anno",
+    "yearByYear": "Anno per anno"
+  },
   "data": {
     "title": "Dati",
     "sample": "Dati di esempio",

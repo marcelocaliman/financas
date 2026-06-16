@@ -60,7 +60,9 @@ function usePainelView() {
     const expDisp = data.expenses.map((e) => ({ name: e.name, value: conv(e.amount, e.currency) }));
     const totalExp = expDisp.reduce((s, e) => s + e.value, 0);
     const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
-    const trend = data.snapshots.map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
+    const trend = [...data.snapshots]
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
     const last = trend.at(-1);
     const prev = trend.at(-2);
     const nwChange = last && prev && prev.v !== 0 ? ((last.v - prev.v) / prev.v) * 100 : 0;

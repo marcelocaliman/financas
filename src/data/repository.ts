@@ -1,4 +1,12 @@
-import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
+import type {
+  AppSettings,
+  Asset,
+  Expense,
+  Goal,
+  Income,
+  Liability,
+  NetWorthSnapshot,
+} from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
 
 export interface SeedData {
@@ -35,8 +43,25 @@ export interface DataRepository {
   getTaxonomy(): Promise<Taxonomy | null>;
   putTaxonomy(taxonomy: Taxonomy): Promise<void>;
 
-  // Orçamento / Histórico (leitura por enquanto)
+  // Orçamento
   listExpenses(): Promise<Expense[]>;
+  putExpense(expense: Expense): Promise<void>;
+  removeExpense(id: string): Promise<void>;
   listIncomes(): Promise<Income[]>;
+  putIncome(income: Income): Promise<void>;
+  removeIncome(id: string): Promise<void>;
+
+  // Histórico
   listNetWorthSnapshots(): Promise<NetWorthSnapshot[]>;
+  putNetWorthSnapshot(snapshot: NetWorthSnapshot): Promise<void>;
+  removeNetWorthSnapshot(id: string): Promise<void>;
+
+  // Objetivos
+  listGoals(): Promise<Goal[]>;
+  putGoal(goal: Goal): Promise<void>;
+  removeGoal(id: string): Promise<void>;
+
+  // Configurações sincronizadas (alvos de alocação, etc.)
+  getSettings(): Promise<AppSettings | null>;
+  putSettings(settings: AppSettings): Promise<void>;
 }

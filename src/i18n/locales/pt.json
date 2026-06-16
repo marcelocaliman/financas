@@ -102,6 +102,63 @@
     "assetType": { "investment": "Investimento", "property": "Imóvel", "cash": "Caixa" },
     "liabilityType": { "loan": "Empréstimo", "card": "Cartão", "mortgage": "Financiamento", "other": "Outro" }
   },
+  "orcamento": {
+    "income": "Receitas",
+    "expenses": "Gastos",
+    "balance": "Saldo",
+    "monthly": "Mensal",
+    "incomePlaceholder": "Ex.: Salário",
+    "expensePlaceholder": "Ex.: Moradia",
+    "addIncome": "Adicionar receita",
+    "addExpense": "Adicionar gasto"
+  },
+  "historico": {
+    "month": "Mês",
+    "monthPlaceholder": "AAAA-MM",
+    "networth": "Patrimônio",
+    "contribution": "Aporte",
+    "current": "Atual",
+    "totalChange": "Variação total",
+    "contributions": "Aportes",
+    "snapshots": "Registros",
+    "addSnapshot": "Adicionar registro"
+  },
+  "objetivos": {
+    "namePlaceholder": "Ex.: Entrada do apê",
+    "current": "Atual",
+    "target": "Alvo",
+    "deadline": "Prazo",
+    "addGoal": "Adicionar objetivo"
+  },
+  "investimentos": {
+    "total": "Total investido",
+    "positions": "Posições",
+    "targetTotal": "Alvo total",
+    "currentAlloc": "Atual",
+    "target": "Alvo",
+    "rebalance": "Rebalancear",
+    "buy": "aportar",
+    "sell": "resgatar",
+    "empty": "Sem ativos ainda.",
+    "hint": "Defina um alvo % por classe; o rebalanceamento mostra quanto aportar ou resgatar pra chegar lá."
+  },
+  "projecao": {
+    "assumptions": "Premissas",
+    "initial": "Inicial",
+    "monthly": "Aporte mensal",
+    "annualReturn": "Retorno a.a.",
+    "inflation": "Inflação a.a.",
+    "years": "Anos",
+    "custom": "Personalizado",
+    "fromNetWorth": "Do patrimônio atual",
+    "finalNominal": "Em {{years}} anos",
+    "finalReal": "Em valor de hoje",
+    "contributed": "Total aportado",
+    "nominal": "Nominal",
+    "real": "Valor de hoje",
+    "year": "Ano",
+    "yearByYear": "Ano a ano"
+  },
   "data": {
     "title": "Dados",
     "sample": "Dados de exemplo",

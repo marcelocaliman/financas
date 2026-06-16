@@ -42,6 +42,25 @@ export interface NetWorthSnapshot {
   month: string; // rótulo curto por enquanto (ex.: "Jun"); vira data ISO depois
   currency: Currency;
   amount: number;
+  /** Aporte do período (opcional) — separa crescimento por aporte vs. rendimento. */
+  contribution?: number;
+}
+
+/** Objetivo / meta financeira com barra de progresso (multimoeda). */
+export interface Goal {
+  id: string;
+  name: string;
+  currency: Currency;
+  target: number; // valor alvo
+  current: number; // já acumulado
+  deadline?: string; // opcional (ex.: "2030" ou "12/2030")
+}
+
+/** Configurações sincronizadas (singleton). */
+export interface AppSettings {
+  id: string;
+  /** Alvo de alocação por classe (id da classe → % inteiro), p/ rebalanceamento. */
+  allocationTargets: Record<string, number>;
 }
 
 export interface Liability {

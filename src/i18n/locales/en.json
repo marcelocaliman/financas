@@ -102,6 +102,63 @@
     "assetType": { "investment": "Investment", "property": "Property", "cash": "Cash" },
     "liabilityType": { "loan": "Loan", "card": "Card", "mortgage": "Mortgage", "other": "Other" }
   },
+  "orcamento": {
+    "income": "Income",
+    "expenses": "Expenses",
+    "balance": "Balance",
+    "monthly": "Monthly",
+    "incomePlaceholder": "e.g. Salary",
+    "expensePlaceholder": "e.g. Housing",
+    "addIncome": "Add income",
+    "addExpense": "Add expense"
+  },
+  "historico": {
+    "month": "Month",
+    "monthPlaceholder": "YYYY-MM",
+    "networth": "Net worth",
+    "contribution": "Contribution",
+    "current": "Current",
+    "totalChange": "Total change",
+    "contributions": "Contributions",
+    "snapshots": "Records",
+    "addSnapshot": "Add record"
+  },
+  "objetivos": {
+    "namePlaceholder": "e.g. House down payment",
+    "current": "Current",
+    "target": "Target",
+    "deadline": "Deadline",
+    "addGoal": "Add goal"
+  },
+  "investimentos": {
+    "total": "Total invested",
+    "positions": "Positions",
+    "targetTotal": "Total target",
+    "currentAlloc": "Current",
+    "target": "Target",
+    "rebalance": "Rebalance",
+    "buy": "buy",
+    "sell": "sell",
+    "empty": "No assets yet.",
+    "hint": "Set a target % per class; rebalancing shows how much to buy or sell to get there."
+  },
+  "projecao": {
+    "assumptions": "Assumptions",
+    "initial": "Initial",
+    "monthly": "Monthly contribution",
+    "annualReturn": "Return p.a.",
+    "inflation": "Inflation p.a.",
+    "years": "Years",
+    "custom": "Custom",
+    "fromNetWorth": "From current net worth",
+    "finalNominal": "In {{years}} years",
+    "finalReal": "In today's value",
+    "contributed": "Total contributed",
+    "nominal": "Nominal",
+    "real": "Today's value",
+    "year": "Year",
+    "yearByYear": "Year by year"
+  },
   "data": {
     "title": "Data",
     "sample": "Sample data",

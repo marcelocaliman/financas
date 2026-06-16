@@ -6,10 +6,20 @@ import { cn } from "@/lib/utils";
 import { Footer } from "@/components/layout/footer";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import Patrimonio from "@/pages/patrimonio";
+import Investimentos from "@/pages/investimentos";
+import Orcamento from "@/pages/orcamento";
+import Historico from "@/pages/historico";
+import Objetivos from "@/pages/objetivos";
+import Projecao from "@/pages/projecao";
 import Config from "@/pages/config";
 
 const CONTENT: Record<string, ReactNode> = {
   patrimonio: <Patrimonio />,
+  investimentos: <Investimentos />,
+  orcamento: <Orcamento />,
+  historico: <Historico />,
+  objetivos: <Objetivos />,
+  projecao: <Projecao />,
   config: <Config />,
 };
 

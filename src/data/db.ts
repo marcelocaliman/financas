@@ -1,5 +1,13 @@
 import Dexie, { type Table } from "dexie";
-import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
+import type {
+  AppSettings,
+  Asset,
+  Expense,
+  Goal,
+  Income,
+  Liability,
+  NetWorthSnapshot,
+} from "@/domain/types";
 import { CLASS, LIABILITY_TYPE, type Taxonomy } from "@/domain/taxonomy";
 
 /** Banco local (IndexedDB via Dexie). Cópia de trabalho local-first. */
@@ -10,6 +18,8 @@ export class FinancasDB extends Dexie {
   incomes!: Table<Income, string>;
   netWorthSnapshots!: Table<NetWorthSnapshot, string>;
   taxonomy!: Table<Taxonomy, string>;
+  goals!: Table<Goal, string>;
+  settings!: Table<AppSettings, string>;
 
   constructor() {
     super("financas");
@@ -59,6 +69,11 @@ export class FinancasDB extends Dexie {
             delete l.type;
           });
       });
+    // v4: Objetivos (goals) + Configurações sincronizadas (settings). Tabelas novas.
+    this.version(4).stores({
+      goals: "id, currency",
+      settings: "id",
+    });
   }
 }
 

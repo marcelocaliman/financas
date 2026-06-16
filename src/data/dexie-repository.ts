@@ -1,7 +1,17 @@
-import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
+import type {
+  AppSettings,
+  Asset,
+  Expense,
+  Goal,
+  Income,
+  Liability,
+  NetWorthSnapshot,
+} from "@/domain/types";
 import { TAXONOMY_ID, type Taxonomy } from "@/domain/taxonomy";
 import type { DataRepository, SeedData } from "./repository";
 import { db, type FinancasDB } from "./db";
+
+const SETTINGS_ID = "settings";
 
 /** Implementação Dexie/IndexedDB da fronteira de persistência (Fase 0a). */
 export class DexieRepository implements DataRepository {
@@ -61,11 +71,48 @@ export class DexieRepository implements DataRepository {
   listExpenses(): Promise<Expense[]> {
     return this.database.expenses.toArray();
   }
+  async putExpense(expense: Expense): Promise<void> {
+    await this.database.expenses.put(expense);
+  }
+  async removeExpense(id: string): Promise<void> {
+    await this.database.expenses.delete(id);
+  }
+
   listIncomes(): Promise<Income[]> {
     return this.database.incomes.toArray();
   }
+  async putIncome(income: Income): Promise<void> {
+    await this.database.incomes.put(income);
+  }
+  async removeIncome(id: string): Promise<void> {
+    await this.database.incomes.delete(id);
+  }
+
   listNetWorthSnapshots(): Promise<NetWorthSnapshot[]> {
     return this.database.netWorthSnapshots.toArray();
+  }
+  async putNetWorthSnapshot(snapshot: NetWorthSnapshot): Promise<void> {
+    await this.database.netWorthSnapshots.put(snapshot);
+  }
+  async removeNetWorthSnapshot(id: string): Promise<void> {
+    await this.database.netWorthSnapshots.delete(id);
+  }
+
+  listGoals(): Promise<Goal[]> {
+    return this.database.goals.toArray();
+  }
+  async putGoal(goal: Goal): Promise<void> {
+    await this.database.goals.put(goal);
+  }
+  async removeGoal(id: string): Promise<void> {
+    await this.database.goals.delete(id);
+  }
+
+  async getSettings(): Promise<AppSettings | null> {
+    return (await this.database.settings.get(SETTINGS_ID)) ?? null;
+  }
+  async putSettings(settings: AppSettings): Promise<void> {
+    await this.database.settings.put({ ...settings, id: SETTINGS_ID });
   }
 }
 

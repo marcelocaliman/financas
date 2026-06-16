@@ -32,11 +32,11 @@ export const SEED: SeedData = {
     { id: "i2", name: "Aluguel · RJ", currency: "BRL", amount: 4200 },
   ],
   snapshots: [
-    { id: "s1", month: "Jan", currency: "EUR", amount: 262000 },
-    { id: "s2", month: "Fev", currency: "EUR", amount: 268000 },
-    { id: "s3", month: "Mar", currency: "EUR", amount: 271500 },
-    { id: "s4", month: "Abr", currency: "EUR", amount: 274000 },
-    { id: "s5", month: "Mai", currency: "EUR", amount: 277200 },
-    { id: "s6", month: "Jun", currency: "EUR", amount: 279043 },
+    { id: "s1", month: "2026-01", currency: "EUR", amount: 262000, contribution: 2500 },
+    { id: "s2", month: "2026-02", currency: "EUR", amount: 268000, contribution: 2500 },
+    { id: "s3", month: "2026-03", currency: "EUR", amount: 271500, contribution: 2000 },
+    { id: "s4", month: "2026-04", currency: "EUR", amount: 274000, contribution: 2000 },
+    { id: "s5", month: "2026-05", currency: "EUR", amount: 277200, contribution: 2500 },
+    { id: "s6", month: "2026-06", currency: "EUR", amount: 279043, contribution: 2500 },
   ],
 };

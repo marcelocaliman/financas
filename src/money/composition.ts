@@ -21,6 +21,13 @@ export function currencyColors(theme: "light" | "dark"): Record<Currency, string
   return theme === "dark" ? CUR_COLOR_DARK : CUR_COLOR_LIGHT;
 }
 
+/** Rampa coesa verde→cinza pra donuts/categorias (alocação, orçamento). */
+export function categoryColors(theme: "light" | "dark"): string[] {
+  return theme === "dark"
+    ? ["#3ECF8E", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#5B6A74", "#3A4046", "#7E8A95"]
+    : ["#15976A", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#8A95A0", "#A1A1AA", "#5D7184"];
+}
+
 export interface CurrencySlice {
   currency: Currency;
   value: number; // já convertido pra moeda de exibição

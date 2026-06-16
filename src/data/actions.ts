@@ -2,7 +2,15 @@ import { repository } from "@/data/dexie-repository";
 import { SEED } from "@/data/seed";
 import { useVault } from "@/vault/vault-store";
 import { pending } from "@/vault/pending";
-import type { Asset, Liability } from "@/domain/types";
+import type {
+  AppSettings,
+  Asset,
+  Expense,
+  Goal,
+  Income,
+  Liability,
+  NetWorthSnapshot,
+} from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
 
 /**
@@ -38,6 +46,24 @@ export const actions = {
   removeLiability: (id: string) => withSync(() => repository.removeLiability(id)),
   /** Salva a taxonomia editada no Config (alimenta os dropdowns). */
   putTaxonomy: (taxonomy: Taxonomy) => withSync(() => repository.putTaxonomy(taxonomy)),
+
+  // Orçamento
+  putExpense: (expense: Expense) => withSync(() => repository.putExpense(expense)),
+  removeExpense: (id: string) => withSync(() => repository.removeExpense(id)),
+  putIncome: (income: Income) => withSync(() => repository.putIncome(income)),
+  removeIncome: (id: string) => withSync(() => repository.removeIncome(id)),
+
+  // Histórico
+  putSnapshot: (snapshot: NetWorthSnapshot) =>
+    withSync(() => repository.putNetWorthSnapshot(snapshot)),
+  removeSnapshot: (id: string) => withSync(() => repository.removeNetWorthSnapshot(id)),
+
+  // Objetivos
+  putGoal: (goal: Goal) => withSync(() => repository.putGoal(goal)),
+  removeGoal: (id: string) => withSync(() => repository.removeGoal(id)),
+
+  // Configurações sincronizadas (alvos de alocação)
+  putSettings: (settings: AppSettings) => withSync(() => repository.putSettings(settings)),
   /** Carrega os dados de exemplo (opt-in pela Config). */
   loadSample: () => withSync(() => repository.seed(SEED)),
   /** Apaga tudo — "começar do zero". */
