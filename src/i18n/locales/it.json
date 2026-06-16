@@ -185,7 +185,11 @@
     "real": "Valore di oggi",
     "year": "Anno",
     "yearByYear": "Anno per anno",
-    "curve": "Curva della proiezione"
+    "curve": "Curva della proiezione",
+    "scenarios": "Scenari",
+    "pessimistic": "Pessimistico",
+    "base": "Base",
+    "optimistic": "Ottimistico"
   },
   "data": {
     "title": "Dati",
