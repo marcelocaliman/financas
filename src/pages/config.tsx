@@ -14,6 +14,7 @@ import {
 } from "@/components/auth/account-settings";
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
 import { ExchangeRates } from "@/components/config/exchange-rates";
+import { AssetQuotes } from "@/components/config/asset-quotes";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -71,7 +72,12 @@ export default function Config() {
           </div>
         )}
         {tab === "categorias" && <TaxonomyEditor />}
-        {tab === "cambio" && <ExchangeRates />}
+        {tab === "cambio" && (
+          <>
+            <ExchangeRates />
+            <AssetQuotes />
+          </>
+        )}
         {tab === "aparencia" && <Appearance />}
         {tab === "dados" && <DataSection />}
         {tab === "privacidade" && (

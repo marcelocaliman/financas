@@ -21,6 +21,10 @@ export interface Asset {
   indexerId?: string;
   /** Instituição / corretora (opcional, texto livre). */
   institution?: string;
+  /** Ticker p/ cotação automática via brapi (ex.: PETR4, HGLG11) — opcional. */
+  ticker?: string;
+  /** Quantidade. Com ticker, o valor passa a ser quantidade × cotação do dia. */
+  quantity?: number;
 }
 
 export interface Expense {
@@ -61,6 +65,8 @@ export interface AppSettings {
   id: string;
   /** Alvo de alocação por classe (id da classe → % inteiro), p/ rebalanceamento. */
   allocationTargets: Record<string, number>;
+  /** Token brapi do usuário p/ cotação de ativos. Vive CIFRADO no blob E2EE. */
+  brapiToken?: string;
 }
 
 export interface Liability {

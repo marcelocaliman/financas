@@ -92,6 +92,20 @@ export default function Patrimonio() {
       placeholder: "—",
     },
     {
+      key: "ticker",
+      type: "text",
+      header: t("patrimonio.ticker"),
+      width: "minmax(92px,0.8fr)",
+      placeholder: "—",
+    },
+    {
+      key: "quantity",
+      type: "number",
+      header: t("patrimonio.quantity"),
+      width: "minmax(78px,0.7fr)",
+      align: "right",
+    },
+    {
       key: "amount",
       type: "money",
       header: t("patrimonio.amount"),
@@ -206,7 +220,7 @@ export default function Patrimonio() {
       <section>
         <SectionHead title={t("patrimonio.assets")} count={data.assets.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[1080px]">
+          <div className="min-w-[1280px]">
             <DataGrid<Asset>
               columns={assetCols}
               rows={data.assets}
@@ -219,6 +233,7 @@ export default function Patrimonio() {
             />
           </div>
         </div>
+        <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
       </section>
 
       {/* Passivos */}

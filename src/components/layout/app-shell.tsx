@@ -4,12 +4,14 @@ import { BottomNav } from "./bottom-nav";
 import { NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import { useScrollSpy } from "@/hooks/use-scroll-spy";
+import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useUI } from "@/store/ui";
 
 /** Casca: menu horizontal no topo + página editorial única + nav inferior (mobile). */
 export function AppShell() {
   const theme = useUI((s) => s.theme);
   const active = useScrollSpy(NAV_ITEMS.map((n) => n.id));
+  useQuotesSync();
 
   useEffect(() => {
     const dark = theme === "dark";
