@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSections } from "@/store/sections";
 
 /**
  * Seção ativa numa página de rolagem única: a última seção cujo topo já cruzou a
@@ -32,6 +33,12 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
 /** Rola suavemente até a seção (respeitando a top-bar via scroll-margin no CSS). */
 export function scrollToSection(id: string): void {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move). */
+export function goToSection(id: string): void {
+  useSections.getState().setOpen(id, true);
+  scrollToSection(id);
 }
 
 /** True quando a página foi rolada além do limite (header transparente → sólido). */

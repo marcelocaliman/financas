@@ -6,10 +6,10 @@ import { useRates } from "@/store/rates";
 import { useProjection } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { convert, formatMoney, type Currency } from "@/money/currency";
-import { projectionSeries } from "@/finance/projection";
+import { projectionSeries, projectBalance, realValue } from "@/finance/projection";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { Kpi, KpiRow } from "@/components/common/kpi";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 
 export default function Projecao() {
   const { t } = useTranslation();
@@ -49,8 +49,6 @@ export default function Projecao() {
     [initial, p.monthly, p.annualReturn, p.annualInflation, years],
   );
 
-  const final = series.at(-1) ?? { year: 0, nominal: initial, real: initial };
-  const contributed = initial + p.monthly * 12 * years;
   const fmt = (v: number) => formatMoney(v, disp);
 
   return (
@@ -66,14 +64,6 @@ export default function Projecao() {
           <Field label={t("projecao.years")} value={p.years} onChange={(v) => p.set({ years: v })} />
         </div>
       </Tile>
-
-      {/* Resultado */}
-      <KpiRow>
-        <Kpi label={t("projecao.finalNominal", { years })} tone="accent" value={<Money value={final.nominal} currency={disp} />} />
-        <Kpi label={t("projecao.finalReal")} value={<Money value={final.real} currency={disp} />} sub={t("projecao.todayPower")} />
-        <Kpi label={t("projecao.contributed")} value={<Money value={contributed} currency={disp} />} />
-        <Kpi label={t("projecao.growth")} value={<Money value={Math.max(0, final.nominal - contributed)} currency={disp} />} tone="accent" sub={t("projecao.fromReturns")} />
-      </KpiRow>
 
       {/* Curva */}
       <Tile className="p-6 md:p-7">
@@ -128,6 +118,31 @@ export default function Projecao() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** KPIs do cabeçalho do accordion de Projeção (projeção a partir do patrimônio atual). */
+export function ProjecaoSummary() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = usePatrimonio();
+  const p = useProjection();
+  const v = useMemo(() => {
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const netWorth = data
+      ? data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0) -
+        data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0)
+      : 0;
+    const years = Math.max(1, Math.min(60, Math.round(p.years)));
+    const nominal = projectBalance(netWorth, p.monthly, p.annualReturn / 100, years);
+    return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years) };
+  }, [data, disp, rates, p.monthly, p.annualReturn, p.annualInflation, p.years]);
+  return (
+    <HeaderKpis>
+      <HeaderKpi label={t("projecao.finalNominal", { years: v.years })} tone="accent" value={<Money value={v.nominal} currency={disp} />} />
+      <HeaderKpi secondary label={t("projecao.finalReal")} value={<Money value={v.real} currency={disp} />} />
+    </HeaderKpis>
   );
 }
 

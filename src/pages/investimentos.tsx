@@ -12,7 +12,7 @@ import { categoryColors } from "@/money/composition";
 import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { Kpi, KpiRow } from "@/components/common/kpi";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
 export default function Investimentos() {
@@ -65,26 +65,8 @@ export default function Investimentos() {
     void actions.putSettings({ ...settings, allocationTargets });
   };
 
-  const hasTargets = view.totalTarget > 0;
-
-  const classCount = view.rows.filter((r) => r.value > 0).length;
-
   return (
     <div className="space-y-7">
-      {/* KPIs */}
-      <KpiRow>
-        <Kpi label={t("investimentos.total")} value={<Money value={view.total} currency={disp} />} sub={t("dashboard.financial")} />
-        <Kpi label={t("investimentos.positions")} value={<span className="tabular">{view.count}</span>} />
-        <Kpi label={t("investimentos.classes")} value={<span className="tabular">{classCount}</span>} />
-        <Kpi
-          label={t("investimentos.targetTotal")}
-          tone={!hasTargets ? "text" : Math.round(view.totalTarget) === 100 ? "accent" : "neg"}
-          value={<span className="tabular">{hasTargets ? `${Math.round(view.totalTarget)}%` : "—"}</span>}
-          sub={hasTargets ? (Math.round(view.totalTarget) === 100 ? t("investimentos.balanced") : t("investimentos.adjust")) : t("investimentos.setTargets")}
-          bar={hasTargets ? view.totalTarget : undefined}
-        />
-      </KpiRow>
-
       {/* Alocação × Alvo */}
       <Tile className="p-6 md:p-7">
         <div className="flex flex-col lg:flex-row items-start gap-7">
@@ -172,6 +154,30 @@ export default function Investimentos() {
         </Tile>
       ) : null}
     </div>
+  );
+}
+
+/** KPIs do cabeçalho do accordion de Investimentos. */
+export function InvestimentosSummary() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = usePatrimonio();
+  const v = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const invested = data.assets.filter((a) => isInvestedClass(a.classId));
+    const total = invested.reduce((s, a) => s + conv(a.amount, a.currency), 0);
+    const classes = new Set(invested.filter((a) => conv(a.amount, a.currency) > 0).map((a) => a.classId)).size;
+    return { total, count: invested.length, classes };
+  }, [data, disp, rates]);
+  if (!v) return null;
+  return (
+    <HeaderKpis>
+      <HeaderKpi label={t("investimentos.total")} value={<Money value={v.total} currency={disp} />} />
+      <HeaderKpi secondary label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
+      <HeaderKpi secondary label={t("investimentos.classes")} value={<span className="tabular">{v.classes}</span>} />
+    </HeaderKpis>
   );
 }
 

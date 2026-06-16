@@ -12,7 +12,7 @@ import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import type { Expense, Income } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { Kpi, KpiRow } from "@/components/common/kpi";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
@@ -76,14 +76,6 @@ export default function Orcamento() {
 
   return (
     <div className="space-y-7">
-      {/* KPIs do mês */}
-      <KpiRow>
-        <Kpi label={t("orcamento.income")} tone="accent" value={<Money value={view.totalInc} currency={disp} />} sub={t("orcamento.sources", { count: data.incomes.length })} />
-        <Kpi label={t("orcamento.expenses")} tone="neg" value={<Money value={view.totalExp} currency={disp} options={{ signDisplay: "never" }} />} sub={t("orcamento.catCount", { count: view.expByCat.length })} />
-        <Kpi label={t("orcamento.balance")} tone={view.saldo >= 0 ? "text" : "neg"} value={<Money value={view.saldo} currency={disp} />} />
-        <Kpi label={t("orcamento.savingsRate")} value={`${view.savingsRate.toFixed(0)}%`} tone={view.savingsRate >= 0 ? "accent" : "neg"} sub={t("orcamento.ofIncome")} bar={Math.max(0, view.savingsRate)} />
-      </KpiRow>
-
       {/* Gastos por categoria */}
       {view.expByCat.length > 0 ? (
         <Tile className="p-6 md:p-7">
@@ -157,5 +149,28 @@ export default function Orcamento() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** KPIs do cabeçalho do accordion de Orçamento. */
+export function OrcamentoSummary() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = useBudget();
+  const v = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
+    return { totalExp, totalInc, saldo: totalInc - totalExp };
+  }, [data, disp, rates]);
+  if (!v) return null;
+  return (
+    <HeaderKpis>
+      <HeaderKpi label={t("orcamento.balance")} tone={v.saldo >= 0 ? "text" : "neg"} value={<Money value={v.saldo} currency={disp} />} />
+      <HeaderKpi secondary label={t("orcamento.income")} tone="accent" value={<Money value={v.totalInc} currency={disp} />} />
+      <HeaderKpi secondary label={t("orcamento.expenses")} tone="neg" value={<Money value={v.totalExp} currency={disp} options={{ signDisplay: "never" }} />} />
+    </HeaderKpis>
   );
 }

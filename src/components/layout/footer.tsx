@@ -1,7 +1,7 @@
 import { ArrowLeftRight, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { scrollToSection, goToSection } from "@/hooks/use-scroll-spy";
 import { PrivacyLink } from "@/components/privacy-policy";
 
 /** Footer editorial do app (página única). */
@@ -69,7 +69,7 @@ function FooterCol({
           <li key={id}>
             <button
               type="button"
-              onClick={() => scrollToSection(id)}
+              onClick={() => goToSection(id)}
               className="text-[13px] text-muted hover:text-text transition-colors"
             >
               {label(key)}

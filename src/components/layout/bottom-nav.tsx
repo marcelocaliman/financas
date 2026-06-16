@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { goToSection } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
 /** Navegação inferior (mobile, < md) — âncoras, primeiras 5 seções. */
@@ -18,7 +18,7 @@ export function BottomNav({ active }: { active: string }) {
           <button
             key={id}
             type="button"
-            onClick={() => scrollToSection(id)}
+            onClick={() => goToSection(id)}
             className={cn(
               "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] transition-colors",
               on ? "text-accent font-semibold" : "text-faint font-medium",

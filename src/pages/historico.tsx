@@ -10,7 +10,7 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import type { NetWorthSnapshot } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { Kpi, KpiRow } from "@/components/common/kpi";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
@@ -39,7 +39,6 @@ export default function Historico() {
   }
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-  const up = view.change >= 0;
 
   const cols: GridColumn<NetWorthSnapshot>[] = [
     { key: "month", type: "text", header: t("historico.month"), width: "minmax(110px,1fr)", placeholder: t("historico.monthPlaceholder") },
@@ -60,22 +59,6 @@ export default function Historico() {
 
   return (
     <div className="space-y-7">
-      <KpiRow>
-        <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} />
-        <Kpi
-          label={t("historico.totalChange")}
-          tone={up ? "accent" : "neg"}
-          value={
-            <span className="inline-flex items-center gap-1">
-              {up ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-              {(up ? "+" : "") + view.change.toFixed(1)}%
-            </span>
-          }
-        />
-        <Kpi label={t("historico.contributions")} value={<Money value={view.contributions} currency={disp} />} />
-        <Kpi label={t("historico.snapshots")} value={<span className="tabular">{data.length}</span>} />
-      </KpiRow>
-
       {view.hasTrend ? (
         <Tile className="p-6 md:p-7">
           <Eyebrow className="mb-4">{t("dashboard.netWorthTrend")}</Eyebrow>
@@ -118,5 +101,43 @@ export default function Historico() {
         <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("historico.autoHint")}</p>
       </section>
     </div>
+  );
+}
+
+/** KPIs do cabeçalho do accordion de Histórico. */
+export function HistoricoSummary() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = useHistorico();
+  const v = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
+    const series = sorted.map((s) => conv(s.amount, s.currency));
+    const first = series[0];
+    const last = series.at(-1) ?? 0;
+    const change = first && first !== 0 ? ((last - first) / first) * 100 : 0;
+    const contributions = sorted.reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
+    return { current: last, change, contributions };
+  }, [data, disp, rates]);
+  if (!v) return null;
+  const up = v.change >= 0;
+  return (
+    <HeaderKpis>
+      <HeaderKpi label={t("historico.current")} value={<Money value={v.current} currency={disp} />} />
+      <HeaderKpi
+        secondary
+        label={t("historico.totalChange")}
+        tone={up ? "accent" : "neg"}
+        value={
+          <span className="inline-flex items-center gap-0.5">
+            {up ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+            {(up ? "+" : "") + v.change.toFixed(1)}%
+          </span>
+        }
+      />
+      <HeaderKpi secondary label={t("historico.contributions")} value={<Money value={v.contributions} currency={disp} />} />
+    </HeaderKpis>
   );
 }

@@ -11,7 +11,7 @@ import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { goToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Button } from "@/components/common/button";
@@ -327,7 +327,7 @@ function PainelEmpty() {
       <div className="text-[clamp(26px,4.5vw,46px)] font-semibold tracking-[-0.025em]">{t("dashboard.empty")}</div>
       <p className="text-[14px] text-muted mt-3 max-w-md leading-relaxed">{t("dashboard.emptyDesc")}</p>
       <div className="flex flex-wrap items-center justify-center gap-2 mt-7">
-        <Button onClick={() => scrollToSection("patrimonio")}>
+        <Button onClick={() => goToSection("patrimonio")}>
           <Plus size={15} />
           {t("dashboard.emptyCta")}
         </Button>

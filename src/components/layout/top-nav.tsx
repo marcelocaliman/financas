@@ -12,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
-import { scrollToSection, useScrolled } from "@/hooks/use-scroll-spy";
+import { scrollToSection, goToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
@@ -57,7 +57,7 @@ export function TopNav({ active }: { active: string }) {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => scrollToSection(id)}
+                  onClick={() => goToSection(id)}
                   className={cn(
                     "px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors",
                     on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",

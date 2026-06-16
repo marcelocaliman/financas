@@ -10,7 +10,8 @@ import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/cu
 import { CLASS, isInvestedClass } from "@/domain/taxonomy";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
-import { Kpi, KpiRow } from "@/components/common/kpi";
+import { Kpi } from "@/components/common/kpi";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import { cn } from "@/lib/utils";
@@ -133,14 +134,6 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-8">
-      {/* KPIs do patrimônio */}
-      <KpiRow>
-        <Kpi label={t("patrimonio.assets")} value={<Money value={view.totalAssets} currency={disp} />} sub={t("dashboard.positionsCount", { count: data.assets.length })} />
-        <Kpi label={t("patrimonio.liabilities")} value={<Money value={view.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} tone={view.totalLiab > 0 ? "neg" : "text"} sub={t("patrimonio.liabCount", { count: data.liabilities.length })} />
-        <Kpi label={t("patrimonio.netWorth")} value={<Money value={view.netWorth} currency={disp} />} />
-        <Kpi label={t("investimentos.total")} value={<Money value={view.invested} currency={disp} />} sub={t("dashboard.financial")} bar={view.totalAssets > 0 ? (view.invested / view.totalAssets) * 100 : 0} />
-      </KpiRow>
-
       {/* Ativos por classe (abas) */}
       <section>
         <div className="flex items-center justify-between mb-4 gap-3">
@@ -230,6 +223,29 @@ export default function Patrimonio() {
         </div>
       </section>
     </div>
+  );
+}
+
+/** KPIs do cabeçalho do accordion de Patrimônio. */
+export function PatrimonioSummary() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = usePatrimonio();
+  const v = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
+    const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
+    return { totalAssets, totalLiab, net: totalAssets - totalLiab };
+  }, [data, disp, rates]);
+  if (!v) return null;
+  return (
+    <HeaderKpis>
+      <HeaderKpi label={t("patrimonio.netWorth")} value={<Money value={v.net} currency={disp} />} />
+      <HeaderKpi secondary label={t("patrimonio.assets")} value={<Money value={v.totalAssets} currency={disp} />} />
+      <HeaderKpi secondary label={t("patrimonio.liabilities")} tone={v.totalLiab > 0 ? "neg" : "text"} value={<Money value={v.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} />
+    </HeaderKpis>
   );
 }
 
