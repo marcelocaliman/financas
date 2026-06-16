@@ -7,7 +7,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full h-9 px-3 rounded-[7px] border border-border bg-card text-[13px] text-text outline-none focus:border-teal"
+      className="w-full h-9 px-3 rounded-[7px] border border-border bg-card text-[13px] text-text outline-none focus:border-accent"
     />
   );
 }
@@ -24,9 +24,9 @@ function Btn({
       className={cn(
         "h-9 px-3 rounded-[7px] text-[13px] font-medium transition-colors disabled:opacity-50",
         tone === "teal"
-          ? "bg-teal text-[#04140d]"
+          ? "bg-accent text-[#0b0c0e]"
           : tone === "danger"
-            ? "border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+            ? "border border-red-400/50 text-red-400 hover:bg-red-500/10"
             : "border border-border text-muted hover:text-text",
         className,
       )}
@@ -34,30 +34,24 @@ function Btn({
   );
 }
 
-export function AccountSettings() {
+export function AccountCard() {
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
 
   return (
-    <div className="space-y-5">
-      <Panel className="p-6">
-        <div className="text-[15px] font-semibold">Conta</div>
-        <div className="text-[12.5px] text-muted mt-0.5">{email}</div>
-        <div className="flex gap-2 mt-3">
-          <Btn onClick={lock}>Trancar o cofre</Btn>
-          <Btn onClick={() => void signOut()}>Sair</Btn>
-        </div>
-      </Panel>
-
-      <ChangePassword />
-      <NewRecoveryCode />
-      <DangerZone />
-    </div>
+    <Panel className="p-6">
+      <div className="text-[15px] font-semibold">Conta</div>
+      <div className="text-[12.5px] text-muted mt-0.5">{email}</div>
+      <div className="flex gap-2 mt-4">
+        <Btn onClick={lock}>Trancar o cofre</Btn>
+        <Btn onClick={() => void signOut()}>Sair</Btn>
+      </div>
+    </Panel>
   );
 }
 
-function ChangePassword() {
+export function ChangePassword() {
   const changePassword = useVault((s) => s.changePassword);
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
@@ -85,8 +79,8 @@ function ChangePassword() {
   return (
     <Panel className="p-6 space-y-3">
       <div className="text-[15px] font-semibold">Trocar senha</div>
-      {err ? <p className="text-[12.5px] text-red-600">{err}</p> : null}
-      {state === "ok" ? <p className="text-[12.5px] text-teal">Senha alterada.</p> : null}
+      {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
+      {state === "ok" ? <p className="text-[12.5px] text-accent">Senha alterada.</p> : null}
       <Input type="password" placeholder="Senha atual" value={cur} onChange={(e) => setCur(e.target.value)} />
       <Input type="password" placeholder="Nova senha" value={next} onChange={(e) => setNext(e.target.value)} />
       <Input type="password" placeholder="Repita a nova senha" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
@@ -100,7 +94,7 @@ function ChangePassword() {
   );
 }
 
-function NewRecoveryCode() {
+export function NewRecoveryCode() {
   const rotateRecovery = useVault((s) => s.rotateRecovery);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -110,7 +104,7 @@ function NewRecoveryCode() {
     setErr("");
     setLoading(true);
     try {
-      await rotateRecovery(password); // dispara o diálogo do novo código
+      await rotateRecovery(password);
       setPassword("");
     } catch {
       setErr("Senha incorreta.");
@@ -125,14 +119,14 @@ function NewRecoveryCode() {
       <p className="text-[12.5px] text-muted leading-relaxed">
         Gera um código novo e invalida o anterior. Confirme com sua senha.
       </p>
-      {err ? <p className="text-[12.5px] text-red-600">{err}</p> : null}
+      {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
       <Input type="password" placeholder="Sua senha" value={password} onChange={(e) => setPassword(e.target.value)} />
       <Btn disabled={loading} onClick={submit}>{loading ? "Gerando…" : "Gerar novo código"}</Btn>
     </Panel>
   );
 }
 
-function DangerZone() {
+export function DangerZone() {
   const deleteAccount = useVault((s) => s.deleteAccount);
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState("");
@@ -151,8 +145,8 @@ function DangerZone() {
   };
 
   return (
-    <Panel className="p-6 space-y-3 border-red-200 dark:border-red-900/40">
-      <div className="text-[15px] font-semibold text-red-600">Excluir conta</div>
+    <Panel className="p-6 space-y-3 border-red-500/30">
+      <div className="text-[15px] font-semibold text-red-400">Excluir conta</div>
       <p className="text-[12.5px] text-muted leading-relaxed">
         Apaga sua conta e o cofre cifrado <b className="text-text">para sempre</b>. Não há como desfazer.
       </p>
@@ -160,8 +154,8 @@ function DangerZone() {
         <Btn tone="danger" onClick={() => setOpen(true)}>Excluir minha conta</Btn>
       ) : (
         <>
-          {err ? <p className="text-[12.5px] text-red-600">{err}</p> : null}
-          <Input placeholder='Digite EXCLUIR pra confirmar' value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
+          <Input placeholder="Digite EXCLUIR pra confirmar" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           <div className="flex gap-2">
             <Btn onClick={() => { setOpen(false); setConfirm(""); }}>Cancelar</Btn>
             <Btn tone="danger" disabled={confirm !== "EXCLUIR" || loading} onClick={submit}>
