@@ -83,10 +83,9 @@ export default function Investimentos() {
   const donut = view.rows.filter((r) => r.value > 0).map((r) => ({ name: r.name, value: r.value, id: r.id }));
 
   const setTarget = (classId: string, pct: number) => {
-    const allocationTargets = { ...settings.allocationTargets };
-    if (pct > 0) allocationTargets[classId] = pct;
-    else delete allocationTargets[classId];
-    void actions.putSettings({ ...settings, allocationTargets });
+    // Lê o mapa mais fresco no repo (não o snapshot do React) — preserva os outros
+    // alvos e a moeda principal mesmo se as settings ainda não hidrataram.
+    void actions.setAllocationTarget(classId, pct);
   };
 
   return (

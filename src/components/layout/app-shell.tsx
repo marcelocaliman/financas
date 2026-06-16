@@ -7,6 +7,7 @@ import { ConfigDrawer } from "@/components/config/config-drawer";
 import { useScrollSpy } from "@/hooks/use-scroll-spy";
 import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
+import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useUI } from "@/store/ui";
 
 /** Casca: menu horizontal no topo + página editorial única + nav inferior (mobile). */
@@ -15,6 +16,7 @@ export function AppShell() {
   const active = useScrollSpy(NAV_ITEMS.map((n) => n.id));
   useQuotesSync();
   useAutoSnapshot();
+  useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
 
   useEffect(() => {
     const dark = theme === "dark";

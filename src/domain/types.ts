@@ -75,6 +75,9 @@ export interface AppSettings {
   id: string;
   /** Alvo de alocação por classe (id da classe → % inteiro), p/ rebalanceamento. */
   allocationTargets: Record<string, number>;
+  /** Moeda PRINCIPAL do usuário — fonte da verdade durável e sincronizada (cifrada).
+   *  Espelhada no useUI p/ boot instantâneo; ausente = nunca escolhida (cai no default). */
+  baseCurrency?: Currency;
 }
 
 export interface Liability {

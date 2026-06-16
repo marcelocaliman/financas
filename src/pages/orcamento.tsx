@@ -6,7 +6,7 @@ import { useRates } from "@/store/rates";
 import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import type { Expense, Income } from "@/domain/types";
@@ -67,7 +67,7 @@ export default function Orcamento() {
       columns.push({
         key: "conv",
         type: "computed",
-        header: `${t("patrimonio.in")} ${disp === "BRL" ? "R$" : disp}`,
+        header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`,
         width: "minmax(88px,0.8fr)",
         align: "right",
         compute: (r) => formatMoney(conv(r.amount, r.currency), disp),

@@ -1,5 +1,6 @@
 import { repository } from "@/data/dexie-repository";
-import { SEED } from "@/data/seed";
+import { buildSeed } from "@/data/seed";
+import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { pending } from "@/vault/pending";
 import type {
@@ -62,10 +63,38 @@ export const actions = {
   putGoal: (goal: Goal) => withSync(() => repository.putGoal(goal)),
   removeGoal: (id: string) => withSync(() => repository.removeGoal(id)),
 
-  // Configurações sincronizadas (alvos de alocação)
-  putSettings: (settings: AppSettings) => withSync(() => repository.putSettings(settings)),
-  /** Carrega os dados de exemplo (opt-in pela Config). */
-  loadSample: () => withSync(() => repository.seed(SEED)),
-  /** Apaga tudo — "começar do zero". */
-  resetAll: () => withSync(() => repository.clearAll()),
+  // Configurações sincronizadas (singleton): SEMPRE merge sobre o estado mais fresco do
+  // repositório — nunca reconstruído de um snapshot do React (que pode estar vazio/velho
+  // durante o boot) — pra um campo nunca apagar o outro (baseCurrency × allocationTargets).
+  putSettings: (patch: Partial<AppSettings>) =>
+    withSync(async () => {
+      const cur = await repository.getSettings();
+      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), ...patch });
+    }),
+  /** Define/limpa o alvo de alocação de UMA classe, lendo o mapa mais fresco (sem clobber). */
+  setAllocationTarget: (classId: string, pct: number) =>
+    withSync(async () => {
+      const cur = await repository.getSettings();
+      const allocationTargets = { ...(cur?.allocationTargets ?? {}) };
+      if (pct > 0) allocationTargets[classId] = pct;
+      else delete allocationTargets[classId];
+      await repository.putSettings({ id: "settings", ...(cur ?? {}), allocationTargets });
+    }),
+  /** Carrega os dados de exemplo (opt-in pela Config): SUBSTITUI tudo por um exemplo
+   *  coerente, ancorado na moeda principal atual (não mistura com o que já existe). */
+  loadSample: () =>
+    withSync(async () => {
+      const base = useUI.getState().baseCurrency;
+      await repository.clearAll();
+      await repository.seed(buildSeed(base));
+      // clearAll zera as settings — preserva a moeda principal (o exemplo nasce dela).
+      await repository.putSettings({ id: "settings", allocationTargets: {}, baseCurrency: base });
+    }),
+  /** Apaga tudo — "começar do zero" (mantém a moeda principal como preferência). */
+  resetAll: () =>
+    withSync(async () => {
+      const base = useUI.getState().baseCurrency;
+      await repository.clearAll();
+      await repository.putSettings({ id: "settings", allocationTargets: {}, baseCurrency: base });
+    }),
 };

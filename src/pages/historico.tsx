@@ -6,7 +6,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
 import { actions } from "@/data/actions";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import type { NetWorthSnapshot } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -51,7 +51,7 @@ export default function Historico() {
     cols.push({
       key: "conv",
       type: "computed",
-      header: `${t("patrimonio.in")} ${disp === "BRL" ? "R$" : disp}`,
+      header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`,
       width: "minmax(88px,0.8fr)",
       align: "right",
       compute: (r) => formatMoney(conv(r.amount, r.currency), disp),

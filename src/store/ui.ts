@@ -5,10 +5,12 @@ import type { Currency } from "@/money/currency";
 export type Theme = "light" | "dark";
 
 interface UIState {
-  /** Moeda padrão do usuário: nova entrada nasce nela; é também a visão inicial. */
+  /** Moeda PRINCIPAL do usuário (fonte da verdade): nova entrada nasce nela; é a âncora
+   *  de totais e da visão inicial. Configurada pelo usuário. */
   baseCurrency: Currency;
   setBaseCurrency: (c: Currency) => void;
-  /** Moeda em que os valores são EXIBIDOS (switcher do topo; só converte a visão). */
+  /** Moeda de EXIBIÇÃO — prévia temporária (switcher do topo). NÃO persiste: a cada
+   *  carregamento volta pra principal. Só converte a visão, nunca muda os dados. */
   displayCurrency: Currency;
   setDisplayCurrency: (c: Currency) => void;
   theme: Theme;
@@ -22,12 +24,12 @@ interface UIState {
   setConfigOpen: (v: boolean) => void;
 }
 
-/** Preferências de UI (displayCurrency + theme persistem; numbersHidden NÃO). */
+/** Preferências de UI. Persistem só a moeda PRINCIPAL + tema; a exibição é por-sessão. */
 export const useUI = create<UIState>()(
   persist(
     (set) => ({
       baseCurrency: "BRL",
-      // Trocar a moeda padrão também leva a visão pra ela (o topo continua livre depois).
+      // Trocar a principal leva a visão junto (o switcher do topo continua livre na sessão).
       setBaseCurrency: (baseCurrency) => set({ baseCurrency, displayCurrency: baseCurrency }),
       displayCurrency: "BRL",
       setDisplayCurrency: (displayCurrency) => set({ displayCurrency }),
@@ -41,28 +43,21 @@ export const useUI = create<UIState>()(
     }),
     {
       name: "financas-ui",
-      version: 2,
-      // Só persistir moedas + tema. numbersHidden volta a TRUE a cada acesso.
-      partialize: (s) => ({
-        baseCurrency: s.baseCurrency,
-        displayCurrency: s.displayCurrency,
-        theme: s.theme,
-      }),
-      // v0→v1: força dark (o redesign nasce no ESCURO). v1→v2: adiciona baseCurrency,
-      // herdada da displayCurrency de quem já usava o app.
+      version: 3,
+      // Persistir só a moeda PRINCIPAL + tema. A exibição é por-sessão (sempre nasce na
+      // principal) — o switcher do topo é prévia temporária, não um estado salvo.
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme }),
       migrate: (persisted, version) => {
-        const s = (persisted ?? {}) as {
-          baseCurrency?: Currency;
-          displayCurrency?: Currency;
-          theme?: Theme;
-        };
-        // Quem já usava o app herda a moeda da visão como sua moeda padrão.
-        const baseCurrency = s.baseCurrency ?? s.displayCurrency ?? "BRL";
-        return {
-          baseCurrency,
-          displayCurrency: s.displayCurrency ?? baseCurrency,
-          theme: version < 1 ? "dark" : s.theme ?? "dark",
-        };
+        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme };
+        // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
+        // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
+        const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
+        // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark" };
+      },
+      // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
+      onRehydrateStorage: () => (state) => {
+        if (state) state.displayCurrency = state.baseCurrency;
       },
     },
   ),

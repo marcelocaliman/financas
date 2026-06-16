@@ -46,8 +46,12 @@ export function convert(
   rates: RateTable = liveRates,
 ): number {
   if (from === to) return amount;
-  const inBase = amount * rates[from];
-  return inBase / rates[to];
+  const rf = rates[from];
+  const rt = rates[to];
+  // Guarda: taxa ausente/zero/inválida (cache parcial, moeda nova sem cotação) NUNCA
+  // pode virar NaN/Infinity e corromper totais — cai na identidade.
+  if (!(rf > 0) || !(rt > 0)) return amount;
+  return (amount * rf) / rt;
 }
 
 const LOCALE: Record<Currency, string> = {

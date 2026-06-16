@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useHistorico } from "@/hooks/use-historico";
 import { useRates } from "@/store/rates";
+import { useUI } from "@/store/ui";
 import { actions } from "@/data/actions";
 import { convert } from "@/money/currency";
 
@@ -13,23 +14,25 @@ function currentMonth(): string {
 
 /**
  * Histórico automático: captura/atualiza UM snapshot do mês corrente com o patrimônio
- * líquido atual (em BRL, base estável). Enquanto o mês corre ele se atualiza sozinho;
- * meses passados ficam congelados. Se o usuário editar a linha (vira `auto: false`),
- * o automático para de mexer nela. Não roda em app vazio.
+ * líquido atual, na MOEDA PRINCIPAL do usuário (mesma âncora dos lançamentos), pra a
+ * série não misturar moedas. Enquanto o mês corre ele se atualiza sozinho; meses
+ * passados ficam congelados. Se o usuário editar a linha (vira `auto: false`), o
+ * automático para de mexer nela. Não roda em app vazio.
  */
 export function useAutoSnapshot(): void {
   const data = usePatrimonio();
   const snapshots = useHistorico();
   const rates = useRates((s) => s.rates);
+  const base = useUI((s) => s.baseCurrency);
 
   useEffect(() => {
     if (!data || !snapshots) return;
     if (data.assets.length === 0 && data.liabilities.length === 0) return;
 
     const month = currentMonth();
-    const nwBRL =
-      data.assets.reduce((s, a) => s + convert(a.amount, a.currency, "BRL", rates), 0) -
-      data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, "BRL", rates), 0);
+    const nw =
+      data.assets.reduce((s, a) => s + convert(a.amount, a.currency, base, rates), 0) -
+      data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, base, rates), 0);
 
     const rows = snapshots.filter((s) => s.month === month);
     const manual = rows.find((s) => s.auto !== true);
@@ -41,10 +44,10 @@ export function useAutoSnapshot(): void {
     }
     const auto = rows.find((s) => s.auto === true);
     if (!auto) {
-      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: "BRL", amount: nwBRL, auto: true });
-    } else if (Math.abs(auto.amount - nwBRL) > 0.5) {
-      // Só o snapshot AUTO do mês corrente é atualizado; manual/passado fica intocado.
-      void actions.putSnapshot({ ...auto, currency: "BRL", amount: nwBRL });
+      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, auto: true });
+    } else if (auto.currency !== base || Math.abs(auto.amount - nw) > 0.5) {
+      // Mantém o snapshot AUTO do mês corrente alinhado ao patrimônio E à moeda principal.
+      void actions.putSnapshot({ ...auto, currency: base, amount: nw });
     }
-  }, [data, snapshots, rates]);
+  }, [data, snapshots, rates, base]);
 }

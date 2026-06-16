@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI, type Theme } from "@/store/ui";
+import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
@@ -92,15 +93,14 @@ function Appearance() {
   const { t, i18n } = useTranslation();
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
-  const baseCurrency = useUI((s) => s.baseCurrency);
-  const setBaseCurrency = useUI((s) => s.setBaseCurrency);
+  const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
     <div className="space-y-8 lg:space-y-10">
       <section>
         <SubHeading>{t("common.baseCurrency")}</SubHeading>
         <div className="flex flex-wrap gap-2">
           {CURRENCIES.map((c) => (
-            <Pill key={c} active={baseCurrency === c} onClick={() => setBaseCurrency(c)}>
+            <Pill key={c} active={baseCurrency === c} onClick={() => setMainCurrency(c)}>
               <span className="tabular">{CURRENCY_SYMBOL[c]}</span>
               <span className="ml-1.5">{c}</span>
             </Pill>
