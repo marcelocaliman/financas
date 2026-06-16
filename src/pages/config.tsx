@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { useUI, type Theme } from "@/store/ui";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
-import { Panel } from "@/components/common/panel";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import {
@@ -36,29 +35,29 @@ export default function Config() {
   const [tab, setTab] = useState<TabId>("conta");
 
   return (
-    <Panel className="overflow-hidden">
-      {/* Abas no topo do card */}
-      <div className="flex border-b border-border px-3 no-scrollbar overflow-x-auto">
+    <div>
+      {/* Abas (sticky no topo do drawer) */}
+      <div className="flex border-b border-border no-scrollbar overflow-x-auto -mt-1">
         {TABS.map((tb) => (
           <button
             key={tb.id}
             type="button"
             onClick={() => setTab(tb.id)}
             className={cn(
-              "relative px-4 py-3.5 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
+              "relative px-3.5 py-3 text-[14px] font-medium whitespace-nowrap shrink-0 transition-colors",
               tab === tb.id ? "text-text" : "text-muted hover:text-text",
             )}
           >
             {tb.label}
             {tab === tb.id ? (
-              <span className="absolute left-3 right-3 -bottom-px h-[2px] rounded-full bg-accent" />
+              <span className="absolute left-3.5 right-3.5 -bottom-px h-[2px] rounded-full bg-accent" />
             ) : null}
           </button>
         ))}
       </div>
 
       {/* Conteúdo da aba */}
-      <div className="p-6 lg:p-8 min-h-[340px]">
+      <div className="pt-6 min-h-[300px]">
         {tab === "conta" && (
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             <AccountSection />
@@ -89,7 +88,7 @@ export default function Config() {
           </div>
         )}
       </div>
-    </Panel>
+    </div>
   );
 }
 

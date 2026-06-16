@@ -10,10 +10,9 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import type { NetWorthSnapshot } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { StatBlock } from "@/components/common/stat-block";
+import { Kpi, KpiRow } from "@/components/common/kpi";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
-import { cn } from "@/lib/utils";
 
 export default function Historico() {
   const { t } = useTranslation();
@@ -61,26 +60,26 @@ export default function Historico() {
 
   return (
     <div className="space-y-7">
-      <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-6">
-          <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-            <StatBlock label={t("historico.current")}>
-              <Money value={view.current} currency={disp} />
-            </StatBlock>
-            <div>
-              <Eyebrow>{t("historico.totalChange")}</Eyebrow>
-              <div className={cn("inline-flex items-center gap-1.5 text-[clamp(20px,2.3vw,28px)] font-numeric font-semibold tabular tracking-[-0.02em] mt-1.5", up ? "text-accent" : "text-neg")}>
-                {up ? <ArrowUpRight size={22} /> : <ArrowDownRight size={22} />}
-                {(up ? "+" : "") + view.change.toFixed(1)}%
-              </div>
-            </div>
-            <StatBlock label={t("historico.contributions")}>
-              <Money value={view.contributions} currency={disp} />
-            </StatBlock>
-          </div>
-        </div>
-        {view.hasTrend ? (
-          <div className="w-full h-[200px] mt-6 pt-6 border-t border-border">
+      <KpiRow>
+        <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} />
+        <Kpi
+          label={t("historico.totalChange")}
+          tone={up ? "accent" : "neg"}
+          value={
+            <span className="inline-flex items-center gap-1">
+              {up ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+              {(up ? "+" : "") + view.change.toFixed(1)}%
+            </span>
+          }
+        />
+        <Kpi label={t("historico.contributions")} value={<Money value={view.contributions} currency={disp} />} />
+        <Kpi label={t("historico.snapshots")} value={<span className="tabular">{data.length}</span>} />
+      </KpiRow>
+
+      {view.hasTrend ? (
+        <Tile className="p-6 md:p-7">
+          <Eyebrow className="mb-4">{t("dashboard.netWorthTrend")}</Eyebrow>
+          <div className="w-full h-[210px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={view.series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
                 <defs>
@@ -98,8 +97,8 @@ export default function Historico() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        ) : null}
-      </Tile>
+        </Tile>
+      ) : null}
 
       <section>
         <SectionHead title={t("historico.snapshots")} count={data.length} />

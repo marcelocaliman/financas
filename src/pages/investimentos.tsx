@@ -12,7 +12,7 @@ import { categoryColors } from "@/money/composition";
 import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { StatBlock } from "@/components/common/stat-block";
+import { Kpi, KpiRow } from "@/components/common/kpi";
 import { cn } from "@/lib/utils";
 
 export default function Investimentos() {
@@ -67,24 +67,23 @@ export default function Investimentos() {
 
   const hasTargets = view.totalTarget > 0;
 
+  const classCount = view.rows.filter((r) => r.value > 0).length;
+
   return (
     <div className="space-y-7">
-      {/* Resumo */}
-      <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-          <StatBlock label={t("investimentos.total")}>
-            <Money value={view.total} currency={disp} />
-          </StatBlock>
-          <StatBlock label={t("investimentos.positions")}>
-            <span className="tabular">{view.count}</span>
-          </StatBlock>
-          {hasTargets ? (
-            <StatBlock label={t("investimentos.targetTotal")} tone={Math.round(view.totalTarget) === 100 ? "text" : "neg"}>
-              <span className="tabular">{Math.round(view.totalTarget)}%</span>
-            </StatBlock>
-          ) : null}
-        </div>
-      </Tile>
+      {/* KPIs */}
+      <KpiRow>
+        <Kpi label={t("investimentos.total")} value={<Money value={view.total} currency={disp} />} sub={t("dashboard.financial")} />
+        <Kpi label={t("investimentos.positions")} value={<span className="tabular">{view.count}</span>} />
+        <Kpi label={t("investimentos.classes")} value={<span className="tabular">{classCount}</span>} />
+        <Kpi
+          label={t("investimentos.targetTotal")}
+          tone={!hasTargets ? "text" : Math.round(view.totalTarget) === 100 ? "accent" : "neg"}
+          value={<span className="tabular">{hasTargets ? `${Math.round(view.totalTarget)}%` : "—"}</span>}
+          sub={hasTargets ? (Math.round(view.totalTarget) === 100 ? t("investimentos.balanced") : t("investimentos.adjust")) : t("investimentos.setTargets")}
+          bar={hasTargets ? view.totalTarget : undefined}
+        />
+      </KpiRow>
 
       {/* Alocação × Alvo */}
       <Tile className="p-6 md:p-7">

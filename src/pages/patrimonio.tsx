@@ -1,16 +1,30 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus, ChevronDown } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
+import { CLASS, isInvestedClass } from "@/domain/taxonomy";
 import type { Asset, Liability } from "@/domain/types";
-import { CLASS } from "@/domain/taxonomy";
-import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Kpi, KpiRow } from "@/components/common/kpi";
+import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
+import { cn } from "@/lib/utils";
+
+/** Classes cujos ativos têm ticker/cotação (mostram colunas Ticker + Qtd). */
+const QUOTABLE = new Set<string>([
+  CLASS.acoes,
+  CLASS.fiis,
+  CLASS.cripto,
+  CLASS.commodities,
+  CLASS.multimercado,
+  CLASS.previdencia,
+  CLASS.privateEquity,
+]);
 
 export default function Patrimonio() {
   const { t } = useTranslation();
@@ -24,17 +38,40 @@ export default function Patrimonio() {
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
-    return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab };
-  }, [data, disp, rates]);
+    const invested = data.assets
+      .filter((a) => isInvestedClass(a.classId))
+      .reduce((s, a) => s + conv(a.amount, a.currency), 0);
+    const byClass = new Map<string, Asset[]>();
+    for (const a of data.assets) {
+      const arr = byClass.get(a.classId);
+      if (arr) arr.push(a);
+      else byClass.set(a.classId, [a]);
+    }
+    const groups = tax.assetClasses
+      .filter((c) => byClass.has(c.id))
+      .map((c) => {
+        const assets = byClass.get(c.id)!;
+        return {
+          classId: c.id,
+          name: c.name,
+          count: assets.length,
+          total: assets.reduce((s, a) => s + conv(a.amount, a.currency), 0),
+        };
+      });
+    return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab, invested, groups };
+  }, [data, disp, rates, tax]);
+
+  const [tab, setTab] = useState("");
+  const [extra, setExtra] = useState<string | null>(null);
 
   if (!data || !view) {
-    return <div className="h-44 rounded-[20px] glass border border-border animate-pulse" />;
+    return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
   }
 
-  const sym = CURRENCY_SYMBOL[disp];
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
   const opts = (items: { id: string; name: string }[]): SelectOption[] =>
     items.map((i) => ({ value: i.id, label: i.name }));
+  const sym = CURRENCY_SYMBOL[disp];
   const convertedCol = {
     key: "conv",
     type: "computed" as const,
@@ -43,122 +80,34 @@ export default function Patrimonio() {
     align: "right" as const,
   };
 
-  const assetCols: GridColumn<Asset>[] = [
-    { key: "currency", type: "currency", header: "", width: "46px" },
-    {
-      key: "name",
-      type: "text",
-      header: t("patrimonio.name"),
-      width: "minmax(150px,1.6fr)",
-      placeholder: t("patrimonio.namePlaceholder"),
-    },
-    {
-      key: "classId",
-      type: "select",
-      header: t("patrimonio.class"),
-      width: "minmax(132px,1.1fr)",
-      placeholder: t("patrimonio.classPlaceholder"),
-      options: opts(tax.assetClasses),
-    },
-    {
-      key: "subtypeId",
-      type: "select",
-      optional: true,
-      header: t("patrimonio.subtype"),
-      width: "minmax(150px,1.2fr)",
-      optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)),
-    },
-    {
-      key: "regionId",
-      type: "select",
-      optional: true,
-      header: t("patrimonio.region"),
-      width: "minmax(120px,1fr)",
-      options: opts(tax.regions),
-    },
-    {
-      key: "indexerId",
-      type: "select",
-      optional: true,
-      header: t("patrimonio.indexer"),
-      width: "minmax(104px,0.8fr)",
-      optionsFor: (r) => (r.classId === CLASS.rendaFixa ? opts(tax.indexers) : []),
-    },
-    {
-      key: "institution",
-      type: "text",
-      header: t("patrimonio.institution"),
-      width: "minmax(116px,1fr)",
-      placeholder: "—",
-    },
-    {
-      key: "ticker",
-      type: "text",
-      header: t("patrimonio.ticker"),
-      width: "minmax(92px,0.8fr)",
-      placeholder: "—",
-    },
-    {
-      key: "quantity",
-      type: "number",
-      header: t("patrimonio.quantity"),
-      width: "minmax(78px,0.7fr)",
-      align: "right",
-    },
-    {
-      key: "amount",
-      type: "money",
-      header: t("patrimonio.amount"),
-      width: "minmax(104px,0.9fr)",
-      align: "right",
-      currencyKey: "currency",
-    },
-    { ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) },
-  ];
+  const presentIds = view.groups.map((g) => g.classId);
+  const tabIds = extra && !presentIds.includes(extra) ? [...presentIds, extra] : presentIds;
+  const activeId = tabIds.includes(tab) ? tab : (tabIds[0] ?? "");
+  const activeGroup = view.groups.find((g) => g.classId === activeId);
+  const activeAssets = data.assets.filter((a) => a.classId === activeId);
+  const absentClasses = tax.assetClasses.filter((c) => !presentIds.includes(c.id));
 
-  const liabCols: GridColumn<Liability>[] = [
-    { key: "currency", type: "currency", header: "", width: "46px" },
-    {
-      key: "name",
-      type: "text",
-      header: t("patrimonio.name"),
-      width: "minmax(150px,1.7fr)",
-      placeholder: t("patrimonio.namePlaceholderLiab"),
-    },
-    {
-      key: "typeId",
-      type: "select",
-      header: t("patrimonio.type"),
-      width: "minmax(160px,1.3fr)",
-      placeholder: t("patrimonio.typePlaceholder"),
-      options: opts(tax.liabilityTypes),
-    },
-    {
-      key: "interestRate",
-      type: "number",
-      header: t("patrimonio.interestRate"),
-      width: "minmax(96px,0.8fr)",
-      align: "right",
-    },
-    {
-      key: "installments",
-      type: "number",
-      header: t("patrimonio.installments"),
-      width: "minmax(92px,0.7fr)",
-      align: "right",
-    },
-    {
-      key: "amount",
-      type: "money",
-      header: t("patrimonio.saldo"),
-      width: "minmax(110px,1fr)",
-      align: "right",
-      currencyKey: "currency",
-    },
-    { ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) },
-  ];
+  // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
+  const assetColsFor = (classId: string): GridColumn<Asset>[] => {
+    const cols: GridColumn<Asset>[] = [
+      { key: "currency", type: "currency", header: "", width: "46px" },
+      { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.6fr)", placeholder: t("patrimonio.namePlaceholder") },
+      { key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(150px,1.2fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) },
+    ];
+    if (classId === CLASS.rendaFixa) {
+      cols.push({ key: "indexerId", type: "select", optional: true, header: t("patrimonio.indexer"), width: "minmax(104px,0.9fr)", options: opts(tax.indexers) });
+    }
+    if (QUOTABLE.has(classId)) {
+      cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(92px,0.8fr)", placeholder: "—" });
+      cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(78px,0.7fr)", align: "right" });
+    }
+    cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
+    cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
+    cols.push({ key: "amount", type: "money", header: t("patrimonio.amount"), width: "minmax(104px,0.9fr)", align: "right", currencyKey: "currency" });
+    cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
+    return cols;
+  };
 
-  /** Normaliza a cascata: limpa subtipo órfão e indexador fora de Renda Fixa. */
   const commitAsset = (a: Asset) => {
     const next = { ...a };
     if (next.subtypeId && !tax.subtypes.some((s) => s.id === next.subtypeId && s.classId === next.classId)) {
@@ -167,78 +116,104 @@ export default function Patrimonio() {
     if (next.classId !== CLASS.rendaFixa) next.indexerId = undefined;
     void actions.putAsset(next);
   };
+  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: disp, amount: 0 });
 
-  const newAsset = (): Asset => ({
-    id: crypto.randomUUID(),
-    name: "",
-    classId: "",
-    currency: disp,
-    amount: 0,
-  });
-  const newLiab = (): Liability => ({
-    id: crypto.randomUUID(),
-    name: "",
-    typeId: "",
-    currency: disp,
-    amount: 0,
-  });
+  const liabCols: GridColumn<Liability>[] = [
+    { key: "currency", type: "currency", header: "", width: "46px" },
+    { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("patrimonio.namePlaceholderLiab") },
+    { key: "typeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.3fr)", placeholder: t("patrimonio.typePlaceholder"), options: opts(tax.liabilityTypes) },
+    { key: "interestRate", type: "number", header: t("patrimonio.interestRate"), width: "minmax(96px,0.8fr)", align: "right" },
+    { key: "installments", type: "number", header: t("patrimonio.installments"), width: "minmax(92px,0.7fr)", align: "right" },
+    { key: "amount", type: "money", header: t("patrimonio.saldo"), width: "minmax(110px,1fr)", align: "right", currencyKey: "currency" },
+    { ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) },
+  ];
+  const newLiab = (): Liability => ({ id: crypto.randomUUID(), name: "", typeId: "", currency: disp, amount: 0 });
+
+  const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
 
   return (
-    <div className="space-y-7">
-      {/* Resumo enxuto: Ativos / Passivos / Líquido (composição já está no hero). */}
-      <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-          <div>
-            <Eyebrow>{t("patrimonio.assets")}</Eyebrow>
-            <Money
-              value={view.totalAssets}
-              currency={disp}
-              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-text"
-            />
-          </div>
-          <div>
-            <Eyebrow>{t("patrimonio.liabilities")}</Eyebrow>
-            <Money
-              value={view.totalLiab}
-              currency={disp}
-              options={{ signDisplay: "never" }}
-              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-neg"
-            />
-          </div>
-          <div>
-            <Eyebrow>{t("patrimonio.netWorth")}</Eyebrow>
-            <Money
-              value={view.netWorth}
-              currency={disp}
-              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-text"
-            />
-          </div>
-        </div>
-      </Tile>
+    <div className="space-y-8">
+      {/* KPIs do patrimônio */}
+      <KpiRow>
+        <Kpi label={t("patrimonio.assets")} value={<Money value={view.totalAssets} currency={disp} />} sub={t("dashboard.positionsCount", { count: data.assets.length })} />
+        <Kpi label={t("patrimonio.liabilities")} value={<Money value={view.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} tone={view.totalLiab > 0 ? "neg" : "text"} sub={t("patrimonio.liabCount", { count: data.liabilities.length })} />
+        <Kpi label={t("patrimonio.netWorth")} value={<Money value={view.netWorth} currency={disp} />} />
+        <Kpi label={t("investimentos.total")} value={<Money value={view.invested} currency={disp} />} sub={t("dashboard.financial")} bar={view.totalAssets > 0 ? (view.invested / view.totalAssets) * 100 : 0} />
+      </KpiRow>
 
-      {/* Ativos */}
+      {/* Ativos por classe (abas) */}
       <section>
-        <SectionHead title={t("patrimonio.assets")} count={data.assets.length} />
-        <div className="overflow-x-auto">
-          <div className="min-w-[1280px]">
-            <DataGrid<Asset>
-              columns={assetCols}
-              rows={data.assets}
-              blank={newAsset}
-              isComplete={(r) => r.name.trim().length > 0 && r.classId.length > 0 && r.amount > 0}
-              onCommit={commitAsset}
-              onDelete={(id) => void actions.removeAsset(id)}
-              addPlaceholder={t("patrimonio.addAsset")}
-              total={<Money value={view.totalAssets} currency={disp} />}
-            />
-          </div>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <h3 className="eyebrow">{t("patrimonio.assets")}</h3>
+          <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
         </div>
-        <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
+
+        {/* Barra de abas + "adicionar classe" */}
+        <div className="flex items-center gap-1.5 border-b border-border mb-5 overflow-x-auto no-scrollbar">
+          {tabIds.map((id) => {
+            const g = view.groups.find((x) => x.classId === id);
+            const name = g?.name ?? tax.assetClasses.find((c) => c.id === id)?.name ?? id;
+            const on = id === activeId;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => { setTab(id); setExtra(null); }}
+                className={cn(
+                  "relative px-3 py-2.5 text-[13.5px] font-medium whitespace-nowrap shrink-0 transition-colors",
+                  on ? "text-text" : "text-muted hover:text-text",
+                )}
+              >
+                {name} <span className="text-faint tabular text-[12px]">{g?.count ?? 0}</span>
+                {on ? <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-full bg-accent" /> : null}
+              </button>
+            );
+          })}
+          {absentClasses.length > 0 ? <AddClassMenu classes={absentClasses} onPick={(id) => { setExtra(id); setTab(id); }} /> : null}
+        </div>
+
+        {activeId ? (
+          <>
+            {/* KPIs da classe ativa */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+              <Kpi label={t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
+              <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
+              <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
+            </div>
+
+            <div className="overflow-x-auto">
+              <div className="min-w-[880px]">
+                <DataGrid<Asset>
+                  key={activeId}
+                  columns={assetColsFor(activeId)}
+                  rows={activeAssets}
+                  blank={newAsset}
+                  isComplete={(r) => r.name.trim().length > 0 && r.amount > 0}
+                  onCommit={commitAsset}
+                  onDelete={(id) => void actions.removeAsset(id)}
+                  addPlaceholder={t("patrimonio.addAsset")}
+                  total={<Money value={activeGroup?.total ?? 0} currency={disp} />}
+                />
+              </div>
+            </div>
+            {QUOTABLE.has(activeId) ? (
+              <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
+            ) : null}
+          </>
+        ) : (
+          <p className="text-[13px] text-faint py-6">{t("patrimonio.emptyAssets")}</p>
+        )}
       </section>
 
       {/* Passivos */}
       <section>
         <SectionHead title={t("patrimonio.liabilities")} count={data.liabilities.length} />
+        {data.liabilities.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+            <Kpi label={t("patrimonio.totalDebt")} value={<Money value={view.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} tone="neg" />
+            <Kpi label={t("patrimonio.liabilities")} value={<span className="tabular">{data.liabilities.length}</span>} />
+          </div>
+        ) : null}
         <div className="overflow-x-auto">
           <div className="min-w-[760px]">
             <DataGrid<Liability>
@@ -249,14 +224,7 @@ export default function Patrimonio() {
               onCommit={(r) => void actions.putLiability(r)}
               onDelete={(id) => void actions.removeLiability(id)}
               addPlaceholder={t("patrimonio.addLiability")}
-              total={
-                <Money
-                  value={view.totalLiab}
-                  currency={disp}
-                  className="text-neg"
-                  options={{ signDisplay: "never" }}
-                />
-              }
+              total={<Money value={view.totalLiab} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
             />
           </div>
         </div>
@@ -265,14 +233,38 @@ export default function Patrimonio() {
   );
 }
 
-function SectionHead({ title, count }: { title: string; count: number }) {
+/** Menu "+" pra começar uma classe ainda sem ativos. */
+function AddClassMenu({ classes, onPick }: { classes: { id: string; name: string }[]; onPick: (id: string) => void }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   return (
-    <div className="flex items-baseline justify-between mb-3 px-1">
-      <h2 className="eyebrow">{title}</h2>
-      <span className="text-[11.5px] text-faint tabular">
-        {count} {t(count === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
-      </span>
+    <div className="relative shrink-0 ml-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 px-2.5 py-2 text-[13px] text-muted hover:text-text transition-colors"
+      >
+        <Plus size={14} />
+        {t("patrimonio.addClass")}
+        <ChevronDown size={13} className="text-faint" />
+      </button>
+      {open ? (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 mt-1 w-56 max-h-[300px] overflow-y-auto z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] p-1.5">
+            {classes.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onPick(c.id); setOpen(false); }}
+                className="w-full text-left px-3 py-2 rounded-[8px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

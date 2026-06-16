@@ -98,6 +98,13 @@
     "ticker": "Ticker",
     "quantity": "Qty",
     "tickerHint": "Fill in Ticker + Qty to auto-update the asset value from the daily quote (set your brapi token in Settings → Exchange).",
+    "liabCount": "{{count}} debts",
+    "classTotal": "Class total",
+    "share": "% of assets",
+    "assetCount": "Assets",
+    "totalDebt": "Balance due",
+    "addClass": "Class",
+    "emptyAssets": "Add your first asset by choosing a class.",
     "delete": "Delete",
     "deleteConfirm": "Delete \"{{name}}\"?",
     "errName": "Give it a name.",
@@ -114,7 +121,12 @@
     "categoryPlaceholder": "Category…",
     "detail": "Detail",
     "detailPlaceholder": "e.g. Apartment rent",
-    "uncategorized": "Uncategorized"
+    "uncategorized": "Uncategorized",
+    "sources": "{{count}} sources",
+    "catCount": "{{count}} categories",
+    "savingsRate": "Savings rate",
+    "ofIncome": "of income",
+    "byCategory": "Expenses by category"
   },
   "historico": {
     "month": "Month",
@@ -142,6 +154,10 @@
     "currentAlloc": "Current",
     "target": "Target",
     "rebalance": "Rebalance",
+    "classes": "Classes",
+    "balanced": "balanced",
+    "adjust": "adjust to 100%",
+    "setTargets": "set targets",
     "buy": "buy",
     "sell": "sell",
     "empty": "No assets yet.",
@@ -162,7 +178,11 @@
     "nominal": "Nominal",
     "real": "Today's value",
     "year": "Year",
-    "yearByYear": "Year by year"
+    "yearByYear": "Year by year",
+    "todayPower": "today's purchasing power",
+    "growth": "Returns",
+    "fromReturns": "interest + appreciation",
+    "curve": "Projection curve"
   },
   "data": {
     "title": "Data",

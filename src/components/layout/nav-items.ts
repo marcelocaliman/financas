@@ -6,7 +6,6 @@ import {
   LineChart,
   Target,
   BarChart3,
-  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,5 +26,4 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "historico", key: "historico", icon: LineChart },
   { id: "objetivos", key: "objetivos", icon: Target },
   { id: "projecao", key: "projecao", icon: BarChart3 },
-  { id: "config", key: "config", icon: Settings },
 ];

@@ -9,7 +9,7 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import { projectionSeries } from "@/finance/projection";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { StatBlock } from "@/components/common/stat-block";
+import { Kpi, KpiRow } from "@/components/common/kpi";
 
 export default function Projecao() {
   const { t } = useTranslation();
@@ -68,19 +68,17 @@ export default function Projecao() {
       </Tile>
 
       {/* Resultado */}
+      <KpiRow>
+        <Kpi label={t("projecao.finalNominal", { years })} tone="accent" value={<Money value={final.nominal} currency={disp} />} />
+        <Kpi label={t("projecao.finalReal")} value={<Money value={final.real} currency={disp} />} sub={t("projecao.todayPower")} />
+        <Kpi label={t("projecao.contributed")} value={<Money value={contributed} currency={disp} />} />
+        <Kpi label={t("projecao.growth")} value={<Money value={Math.max(0, final.nominal - contributed)} currency={disp} />} tone="accent" sub={t("projecao.fromReturns")} />
+      </KpiRow>
+
+      {/* Curva */}
       <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-          <StatBlock label={t("projecao.finalNominal", { years })} tone="accent">
-            <Money value={final.nominal} currency={disp} />
-          </StatBlock>
-          <StatBlock label={t("projecao.finalReal")}>
-            <Money value={final.real} currency={disp} />
-          </StatBlock>
-          <StatBlock label={t("projecao.contributed")}>
-            <Money value={contributed} currency={disp} />
-          </StatBlock>
-        </div>
-        <div className="w-full h-[230px] mt-6 pt-6 border-t border-border">
+        <Eyebrow className="mb-4">{t("projecao.curve")}</Eyebrow>
+        <div className="w-full h-[230px]">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
               <defs>

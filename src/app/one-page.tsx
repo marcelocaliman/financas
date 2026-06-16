@@ -11,7 +11,6 @@ import Orcamento from "@/pages/orcamento";
 import Historico from "@/pages/historico";
 import Objetivos from "@/pages/objetivos";
 import Projecao from "@/pages/projecao";
-import Config from "@/pages/config";
 
 const CONTENT: Record<string, ReactNode> = {
   patrimonio: <Patrimonio />,
@@ -20,7 +19,6 @@ const CONTENT: Record<string, ReactNode> = {
   historico: <Historico />,
   objetivos: <Objetivos />,
   projecao: <Projecao />,
-  config: <Config />,
 };
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";

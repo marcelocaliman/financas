@@ -14,6 +14,9 @@ interface UIState {
   /** Privacidade: oculta TODOS os valores (••••). VISÍVEL por padrão; toggle opcional. */
   numbersHidden: boolean;
   toggleNumbers: () => void;
+  /** Drawer de Configurações aberto (não persiste). */
+  configOpen: boolean;
+  setConfigOpen: (v: boolean) => void;
 }
 
 /** Preferências de UI (displayCurrency + theme persistem; numbersHidden NÃO). */
@@ -27,6 +30,8 @@ export const useUI = create<UIState>()(
       toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
       numbersHidden: false,
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
+      configOpen: false,
+      setConfigOpen: (configOpen) => set({ configOpen }),
     }),
     {
       name: "financas-ui",

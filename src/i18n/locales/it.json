@@ -98,6 +98,13 @@
     "ticker": "Ticker",
     "quantity": "Qtà",
     "tickerHint": "Inserisci Ticker + Qtà per aggiornare il valore dell'asset dalla quotazione del giorno (imposta il token brapi in Config → Cambio).",
+    "liabCount": "{{count}} debiti",
+    "classTotal": "Totale classe",
+    "share": "% degli asset",
+    "assetCount": "Asset",
+    "totalDebt": "Saldo dovuto",
+    "addClass": "Classe",
+    "emptyAssets": "Aggiungi il primo asset scegliendo una classe.",
     "delete": "Elimina",
     "deleteConfirm": "Eliminare \"{{name}}\"?",
     "errName": "Dai un nome.",
@@ -114,7 +121,12 @@
     "categoryPlaceholder": "Categoria…",
     "detail": "Dettaglio",
     "detailPlaceholder": "Es.: Affitto casa",
-    "uncategorized": "Senza categoria"
+    "uncategorized": "Senza categoria",
+    "sources": "{{count}} fonti",
+    "catCount": "{{count}} categorie",
+    "savingsRate": "Tasso di risparmio",
+    "ofIncome": "delle entrate",
+    "byCategory": "Spese per categoria"
   },
   "historico": {
     "month": "Mese",
@@ -142,6 +154,10 @@
     "currentAlloc": "Attuale",
     "target": "Obiettivo",
     "rebalance": "Riequilibra",
+    "classes": "Classi",
+    "balanced": "bilanciato",
+    "adjust": "porta a 100%",
+    "setTargets": "imposta obiettivi",
     "buy": "investire",
     "sell": "disinvestire",
     "empty": "Nessun asset ancora.",
@@ -162,7 +178,11 @@
     "nominal": "Nominale",
     "real": "Valore di oggi",
     "year": "Anno",
-    "yearByYear": "Anno per anno"
+    "yearByYear": "Anno per anno",
+    "todayPower": "potere d'acquisto di oggi",
+    "growth": "Rendimento",
+    "fromReturns": "interessi + rivalutazione",
+    "curve": "Curva della proiezione"
   },
   "data": {
     "title": "Dati",

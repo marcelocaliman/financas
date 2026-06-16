@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
-import { CurrencyToggle } from "./currency-toggle";
+import { CurrencyMenu } from "./currency-toggle";
 import { scrollToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
@@ -79,7 +79,7 @@ export function TopNav({ active }: { active: string }) {
           >
             {hidden ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
-          <CurrencyToggle />
+          <CurrencyMenu />
           <div className="hidden sm:block w-px h-6 bg-border mx-1" />
           <UserMenu />
         </div>
@@ -92,6 +92,7 @@ function UserMenu() {
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
+  const openConfig = useUI((s) => s.setConfigOpen);
   const [open, setOpen] = useState(false);
 
   const name = nameFromEmail(email);
@@ -124,7 +125,7 @@ function UserMenu() {
                 icon={Settings}
                 onClick={() => {
                   setOpen(false);
-                  scrollToSection("config");
+                  openConfig(true);
                 }}
               >
                 Configurações

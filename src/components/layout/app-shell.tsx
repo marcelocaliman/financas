@@ -3,6 +3,7 @@ import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
 import { NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
+import { ConfigDrawer } from "@/components/config/config-drawer";
 import { useScrollSpy } from "@/hooks/use-scroll-spy";
 import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
@@ -30,6 +31,7 @@ export function AppShell() {
         <OnePage />
       </main>
       <BottomNav active={active} />
+      <ConfigDrawer />
     </div>
   );
 }

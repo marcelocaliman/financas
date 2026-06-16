@@ -10,9 +10,9 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import type { Expense, Income } from "@/domain/types";
-import { Tile } from "@/components/common/tile";
+import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { StatBlock } from "@/components/common/stat-block";
+import { Kpi, KpiRow } from "@/components/common/kpi";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
@@ -39,7 +39,8 @@ export default function Orcamento() {
       .sort((a, b) => b.value - a.value);
     const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
-    return { expByCat, totalExp, totalInc, saldo: totalInc - totalExp };
+    const saldo = totalInc - totalExp;
+    return { expByCat, totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0 };
   }, [data, disp, rates, tax, t]);
 
   if (!data || !view) {
@@ -75,21 +76,19 @@ export default function Orcamento() {
 
   return (
     <div className="space-y-7">
-      {/* Resumo do mês */}
-      <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
-          <StatBlock label={t("orcamento.income")} tone="accent">
-            <Money value={view.totalInc} currency={disp} />
-          </StatBlock>
-          <StatBlock label={t("orcamento.expenses")} tone="neg">
-            <Money value={view.totalExp} currency={disp} options={{ signDisplay: "never" }} />
-          </StatBlock>
-          <StatBlock label={t("orcamento.balance")} tone={view.saldo >= 0 ? "text" : "neg"}>
-            <Money value={view.saldo} currency={disp} />
-          </StatBlock>
-        </div>
-        {view.expByCat.length > 0 ? (
-          <div className="flex items-center gap-5 mt-7 pt-6 border-t border-border">
+      {/* KPIs do mês */}
+      <KpiRow>
+        <Kpi label={t("orcamento.income")} tone="accent" value={<Money value={view.totalInc} currency={disp} />} sub={t("orcamento.sources", { count: data.incomes.length })} />
+        <Kpi label={t("orcamento.expenses")} tone="neg" value={<Money value={view.totalExp} currency={disp} options={{ signDisplay: "never" }} />} sub={t("orcamento.catCount", { count: view.expByCat.length })} />
+        <Kpi label={t("orcamento.balance")} tone={view.saldo >= 0 ? "text" : "neg"} value={<Money value={view.saldo} currency={disp} />} />
+        <Kpi label={t("orcamento.savingsRate")} value={`${view.savingsRate.toFixed(0)}%`} tone={view.savingsRate >= 0 ? "accent" : "neg"} sub={t("orcamento.ofIncome")} bar={Math.max(0, view.savingsRate)} />
+      </KpiRow>
+
+      {/* Gastos por categoria */}
+      {view.expByCat.length > 0 ? (
+        <Tile className="p-6 md:p-7">
+          <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
+          <div className="flex items-center gap-5">
             <div className="w-[128px] h-[128px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -117,8 +116,8 @@ export default function Orcamento() {
               ))}
             </div>
           </div>
-        ) : null}
-      </Tile>
+        </Tile>
+      ) : null}
 
       {/* Receitas */}
       <section>
