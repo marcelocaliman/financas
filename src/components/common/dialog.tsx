@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
 
 /** Modal central com sobreposição (mesma linguagem da política de privacidade). */
 export function Dialog({
@@ -17,11 +18,15 @@ export function Dialog({
   const { t } = useTranslation();
   useEffect(() => {
     if (!open) return;
+    const id = pushModal();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && isTopModal(id)) onClose();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      popModal(id);
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open, onClose]);
 
   if (!open) return null;

@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
 
 /**
  * Drawer/bottom-sheet: sobe de baixo pra cima com fundo desfocado (blur). Fecha no
@@ -34,12 +35,14 @@ export function Drawer({
 
   useEffect(() => {
     if (!open) return;
+    const id = pushModal();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && isTopModal(id)) onClose();
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
+      popModal(id);
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
