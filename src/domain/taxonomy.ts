@@ -22,7 +22,13 @@ export interface Taxonomy {
   regions: TaxonomyItem[];
   indexers: TaxonomyItem[];
   liabilityTypes: TaxonomyItem[];
+  incomeCategories: TaxonomyItem[];
+  expenseCategories: TaxonomyItem[];
 }
+
+/** Categoria-padrão "Outros" de cada lado do orçamento (fallback da migração). */
+export const INCOME_OTHER = "receita-outros";
+export const EXPENSE_OTHER = "gasto-outros";
 
 export const TAXONOMY_ID = "taxonomy";
 
@@ -118,7 +124,42 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     { id: LIABILITY_TYPE.impostos, name: "Impostos a pagar" },
     { id: LIABILITY_TYPE.outrasDividas, name: "Outras dívidas" },
   ],
+  incomeCategories: [
+    { id: "salario", name: "Salário" },
+    { id: "freela", name: "Freela / PJ" },
+    { id: "aluguel", name: "Aluguel" },
+    { id: "dividendos", name: "Dividendos e juros" },
+    { id: "reembolso", name: "Reembolso" },
+    { id: INCOME_OTHER, name: "Outros" },
+  ],
+  expenseCategories: [
+    { id: "moradia", name: "Moradia" },
+    { id: "alimentacao", name: "Alimentação" },
+    { id: "transporte", name: "Transporte" },
+    { id: "saude", name: "Saúde" },
+    { id: "educacao", name: "Educação" },
+    { id: "lazer", name: "Lazer" },
+    { id: "vestuario", name: "Vestuário" },
+    { id: "servicos", name: "Serviços e assinaturas" },
+    { id: "impostos-gasto", name: "Impostos e taxas" },
+    { id: EXPENSE_OTHER, name: "Outros" },
+  ],
 };
+
+/** Normaliza pra casar nomes (minúsculo, sem acento, sem espaços extras). */
+function norm(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+/** Acha o id da categoria cujo nome casa com `name` (usado na migração v5). */
+export function matchCategory(name: string, items: TaxonomyItem[]): string | undefined {
+  const n = norm(name);
+  return items.find((i) => norm(i.name) === n)?.id;
+}
 
 /** Nome de um item por id (para exibir Classe/Região/etc. em tabelas e cards). */
 export function nameById(items: TaxonomyItem[], id?: string): string {

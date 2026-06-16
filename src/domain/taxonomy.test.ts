@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { DEFAULT_TAXONOMY, CLASS, nameById } from "./taxonomy";
+import { DEFAULT_TAXONOMY, CLASS, nameById, matchCategory } from "./taxonomy";
 import { SEED } from "@/data/seed";
 
 const tax = DEFAULT_TAXONOMY;
@@ -8,6 +8,8 @@ const subtypeById = new Map(tax.subtypes.map((s) => [s.id, s]));
 const regionIds = new Set(tax.regions.map((r) => r.id));
 const indexerIds = new Set(tax.indexers.map((i) => i.id));
 const liabTypeIds = new Set(tax.liabilityTypes.map((l) => l.id));
+const incomeCatIds = new Set(tax.incomeCategories.map((c) => c.id));
+const expenseCatIds = new Set(tax.expenseCategories.map((c) => c.id));
 
 describe("DEFAULT_TAXONOMY — integridade", () => {
   it("todo subtipo aponta pra uma classe existente", () => {
@@ -48,6 +50,23 @@ describe("SEED — referências resolvem na taxonomia", () => {
 
   it("passivos: typeId válido", () => {
     for (const l of SEED.liabilities) expect(liabTypeIds.has(l.typeId)).toBe(true);
+  });
+
+  it("orçamento: categoryId de receitas/gastos válido", () => {
+    for (const e of SEED.expenses) expect(expenseCatIds.has(e.categoryId)).toBe(true);
+    for (const i of SEED.incomes) expect(incomeCatIds.has(i.categoryId)).toBe(true);
+  });
+});
+
+describe("matchCategory — migração por nome (acento/caixa-insensível)", () => {
+  it("casa nome legado com a categoria certa", () => {
+    expect(matchCategory("Moradia", tax.expenseCategories)).toBe("moradia");
+    expect(matchCategory("alimentação", tax.expenseCategories)).toBe("alimentacao");
+    expect(matchCategory("  SAÚDE ", tax.expenseCategories)).toBe("saude");
+    expect(matchCategory("Salário", tax.incomeCategories)).toBe("salario");
+  });
+  it("devolve undefined pra nome sem correspondência", () => {
+    expect(matchCategory("Algo aleatório", tax.expenseCategories)).toBeUndefined();
   });
 });
 

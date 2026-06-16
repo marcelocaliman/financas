@@ -110,6 +110,11 @@
     "expenses": "Gastos",
     "balance": "Saldo",
     "monthly": "Mensal",
+    "category": "Categoria",
+    "categoryPlaceholder": "Categoria…",
+    "detail": "Detalhe",
+    "detailPlaceholder": "Ex.: Aluguel do apê",
+    "uncategorized": "Sem categoria",
     "incomePlaceholder": "Ex.: Salário",
     "expensePlaceholder": "Ex.: Moradia",
     "addIncome": "Adicionar receita",
@@ -124,7 +129,8 @@
     "totalChange": "Variação total",
     "contributions": "Aportes",
     "snapshots": "Registros",
-    "addSnapshot": "Adicionar registro"
+    "addSnapshot": "Adicionar registro",
+    "autoHint": "O mês atual é capturado automaticamente do seu patrimônio e se atualiza sozinho. Edite qualquer linha pra assumir o controle dela."
   },
   "objetivos": {
     "namePlaceholder": "Ex.: Entrada do apê",

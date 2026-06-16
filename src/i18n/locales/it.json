@@ -110,6 +110,11 @@
     "expenses": "Spese",
     "balance": "Saldo",
     "monthly": "Mensile",
+    "category": "Categoria",
+    "categoryPlaceholder": "Categoria…",
+    "detail": "Dettaglio",
+    "detailPlaceholder": "Es.: Affitto casa",
+    "uncategorized": "Senza categoria",
     "incomePlaceholder": "Es.: Stipendio",
     "expensePlaceholder": "Es.: Casa",
     "addIncome": "Aggiungi entrata",
@@ -124,7 +129,8 @@
     "totalChange": "Variazione totale",
     "contributions": "Versamenti",
     "snapshots": "Registrazioni",
-    "addSnapshot": "Aggiungi registrazione"
+    "addSnapshot": "Aggiungi registrazione",
+    "autoHint": "Il mese corrente è catturato automaticamente dal tuo patrimonio e si aggiorna da solo. Modifica una riga per gestirla manualmente."
   },
   "objetivos": {
     "namePlaceholder": "Es.: Anticipo casa",

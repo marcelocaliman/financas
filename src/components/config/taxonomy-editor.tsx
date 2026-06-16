@@ -44,6 +44,18 @@ export function TaxonomyEditor() {
         items={tax.liabilityTypes}
         onChange={(items) => save({ ...tax, liabilityTypes: items })}
       />
+      <ListEditor
+        title="Categorias de receita"
+        hint="Aparecem no dropdown de Receitas do Orçamento."
+        items={tax.incomeCategories}
+        onChange={(items) => save({ ...tax, incomeCategories: items })}
+      />
+      <ListEditor
+        title="Categorias de gasto"
+        hint="Aparecem no dropdown de Gastos do Orçamento."
+        items={tax.expenseCategories}
+        onChange={(items) => save({ ...tax, expenseCategories: items })}
+      />
     </div>
   );
 }

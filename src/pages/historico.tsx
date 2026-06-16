@@ -110,12 +110,13 @@ export default function Historico() {
               rows={view.sorted}
               blank={newSnap}
               isComplete={(r) => r.month.trim().length > 0 && r.amount > 0}
-              onCommit={(r) => void actions.putSnapshot(r)}
+              onCommit={(r) => void actions.putSnapshot({ ...r, auto: false })}
               onDelete={(id) => void actions.removeSnapshot(id)}
               addPlaceholder={t("historico.addSnapshot")}
             />
           </div>
         </div>
+        <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("historico.autoHint")}</p>
       </section>
     </div>
   );

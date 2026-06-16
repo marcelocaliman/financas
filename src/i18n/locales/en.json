@@ -110,6 +110,11 @@
     "expenses": "Expenses",
     "balance": "Balance",
     "monthly": "Monthly",
+    "category": "Category",
+    "categoryPlaceholder": "Category…",
+    "detail": "Detail",
+    "detailPlaceholder": "e.g. Apartment rent",
+    "uncategorized": "Uncategorized",
     "incomePlaceholder": "e.g. Salary",
     "expensePlaceholder": "e.g. Housing",
     "addIncome": "Add income",
@@ -124,7 +129,8 @@
     "totalChange": "Total change",
     "contributions": "Contributions",
     "snapshots": "Records",
-    "addSnapshot": "Add record"
+    "addSnapshot": "Add record",
+    "autoHint": "The current month is captured automatically from your net worth and keeps itself updated. Edit any row to take it over."
   },
   "objetivos": {
     "namePlaceholder": "e.g. House down payment",

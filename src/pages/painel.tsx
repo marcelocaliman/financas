@@ -57,8 +57,14 @@ function usePainelView() {
     const invested = data.assets
       .filter((a) => isInvestedClass(a.classId))
       .reduce((s, a) => s + conv(a.amount, a.currency), 0);
-    const expDisp = data.expenses.map((e) => ({ name: e.name, value: conv(e.amount, e.currency) }));
-    const totalExp = expDisp.reduce((s, e) => s + e.value, 0);
+    // Gastos agrupados por CATEGORIA (mesmo critério do módulo Orçamento → bate).
+    const byCat = new Map<string, number>();
+    for (const e of data.expenses) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    const expDisp = [...byCat.entries()]
+      .map(([id, value]) => ({ name: nameById(tax.expenseCategories, id) || "—", value }))
+      .filter((e) => e.value > 0)
+      .sort((a, b) => b.value - a.value);
+    const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const trend = [...data.snapshots]
       .sort((a, b) => a.month.localeCompare(b.month))
@@ -88,7 +94,7 @@ function usePainelView() {
       nwChange,
       isEmpty,
     };
-  }, [data, disp, rates]);
+  }, [data, disp, rates, tax]);
 
   return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
 }

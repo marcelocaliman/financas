@@ -29,6 +29,9 @@ export interface Asset {
 
 export interface Expense {
   id: string;
+  /** Categoria (obrigatória) — id na taxonomia de categorias de gasto. */
+  categoryId: string;
+  /** Detalhe livre do item (opcional) — ex.: "Aluguel do apê". */
   name: string;
   currency: Currency;
   amount: number; // valor mensal
@@ -36,6 +39,9 @@ export interface Expense {
 
 export interface Income {
   id: string;
+  /** Categoria (obrigatória) — id na taxonomia de categorias de receita. */
+  categoryId: string;
+  /** Detalhe livre do item (opcional). */
   name: string;
   currency: Currency;
   amount: number; // valor mensal
@@ -43,11 +49,13 @@ export interface Income {
 
 export interface NetWorthSnapshot {
   id: string;
-  month: string; // rótulo curto por enquanto (ex.: "Jun"); vira data ISO depois
+  month: string; // "AAAA-MM" (ordenável)
   currency: Currency;
   amount: number;
   /** Aporte do período (opcional) — separa crescimento por aporte vs. rendimento. */
   contribution?: number;
+  /** Capturado automaticamente do patrimônio. Edição manual vira `false`/ausente. */
+  auto?: boolean;
 }
 
 /** Objetivo / meta financeira com barra de progresso (multimoeda). */

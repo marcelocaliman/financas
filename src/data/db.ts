@@ -8,7 +8,15 @@ import type {
   Liability,
   NetWorthSnapshot,
 } from "@/domain/types";
-import { CLASS, LIABILITY_TYPE, type Taxonomy } from "@/domain/taxonomy";
+import {
+  CLASS,
+  DEFAULT_TAXONOMY,
+  EXPENSE_OTHER,
+  INCOME_OTHER,
+  LIABILITY_TYPE,
+  matchCategory,
+  type Taxonomy,
+} from "@/domain/taxonomy";
 
 /** Banco local (IndexedDB via Dexie). Cópia de trabalho local-first. */
 export class FinancasDB extends Dexie {
@@ -74,6 +82,27 @@ export class FinancasDB extends Dexie {
       goals: "id, currency",
       settings: "id",
     });
+    // v5: Orçamento por categoria. Migra o `name` legado → categoryId (casando com as
+    // categorias-padrão) e MANTÉM o name como detalhe livre.
+    this.version(5)
+      .stores({
+        expenses: "id, categoryId, currency",
+        incomes: "id, categoryId, currency",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("expenses")
+          .toCollection()
+          .modify((e: Record<string, unknown>) => {
+            e.categoryId = matchCategory(String(e.name ?? ""), DEFAULT_TAXONOMY.expenseCategories) ?? EXPENSE_OTHER;
+          });
+        await tx
+          .table("incomes")
+          .toCollection()
+          .modify((i: Record<string, unknown>) => {
+            i.categoryId = matchCategory(String(i.name ?? ""), DEFAULT_TAXONOMY.incomeCategories) ?? INCOME_OTHER;
+          });
+      });
   }
 }
 
