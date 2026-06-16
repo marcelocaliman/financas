@@ -2,15 +2,21 @@ import { ArrowLeftRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyToggle } from "./currency-toggle";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { scrollToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
-/** Menu horizontal no topo (estilo landing clássica) — âncoras + seção ativa. */
+/** Header FLUTUANTE: transparente sobre o hero, vira vidro ao rolar. */
 export function TopNav({ active }: { active: string }) {
   const { t } = useTranslation();
+  const scrolled = useScrolled(48);
 
   return (
-    <header className="sticky top-0 z-30 glass border-b border-border">
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-40 transition-colors duration-300 border-b",
+        scrolled ? "glass border-border" : "border-transparent",
+      )}
+    >
       <div className="max-w-[1560px] mx-auto px-5 md:px-8 lg:px-12 xl:px-16 h-16 flex items-center justify-between gap-4">
         <button
           type="button"

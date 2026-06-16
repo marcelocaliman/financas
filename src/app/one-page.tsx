@@ -4,33 +4,40 @@ import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { Eyebrow } from "@/components/common/tile";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { cn } from "@/lib/utils";
-import Painel from "@/pages/painel";
+import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import Patrimonio from "@/pages/patrimonio";
 import Config from "@/pages/config";
 
-/** Conteúdo real por seção; o resto cai no teaser "Em breve". */
 const CONTENT: Record<string, ReactNode> = {
   patrimonio: <Patrimonio />,
   config: <Config />,
 };
 
-/** Página editorial única: o Painel é o HERO full-page; o resto, seções numeradas. */
+const GUTTERS = "px-5 md:px-8 lg:px-12 xl:px-16";
+
+/** Página editorial única: HERO full-bleed (header flutua por cima) + seções numeradas. */
 export function OnePage() {
   const { t } = useTranslation();
-  const [hero, ...rest] = NAV_ITEMS;
+  const rest = NAV_ITEMS.slice(1);
 
   return (
     <div>
-      {/* HERO — dashboard full-page, sem cabeçalho numerado */}
-      <section id={hero.id} className="scroll-mt-16">
-        <Painel />
+      {/* HERO full-bleed — degradê edge-to-edge, header transparente por cima */}
+      <section id="painel" className="hero-bg relative">
+        <div className={cn("max-w-[1560px] mx-auto min-h-[100svh] flex flex-col justify-center pt-24 pb-16", GUTTERS)}>
+          <DashboardHero />
+        </div>
       </section>
 
-      {rest.map((item, i) => (
-        <Section key={item.id} id={item.id} index={i + 1} title={t(`nav.${item.key}`)}>
-          {CONTENT[item.id] ?? <ComingSoon />}
-        </Section>
-      ))}
+      {/* Resto no container */}
+      <div className={cn("max-w-[1560px] mx-auto", GUTTERS)}>
+        <DashboardDetail />
+        {rest.map((item, i) => (
+          <Section key={item.id} id={item.id} index={i + 1} title={t(`nav.${item.key}`)}>
+            {CONTENT[item.id] ?? <ComingSoon />}
+          </Section>
+        ))}
+      </div>
     </div>
   );
 }
@@ -47,7 +54,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("scroll-mt-20 pt-16 lg:pt-24 pb-4 border-t border-border")} id={id}>
+    <section className="scroll-mt-20 pt-16 lg:pt-24 pb-4 border-t border-border" id={id}>
       <header className="mb-8 lg:mb-12">
         <Eyebrow>{String(index).padStart(2, "0")}</Eyebrow>
         <h2 className="font-display font-semibold text-[clamp(30px,4.6vw,52px)] tracking-[-0.025em] mt-2.5">

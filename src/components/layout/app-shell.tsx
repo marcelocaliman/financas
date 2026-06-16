@@ -22,7 +22,7 @@ export function AppShell() {
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
       <TopNav active={active} />
-      <main className="px-5 md:px-8 lg:px-12 xl:px-16 max-w-[1560px] mx-auto w-full">
+      <main>
         <OnePage />
       </main>
       <BottomNav active={active} />

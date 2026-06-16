@@ -22,7 +22,7 @@ function firstName(email: string | null): string {
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : "";
 }
 
-export default function Painel() {
+function usePainelView() {
   const { t, i18n } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const theme = useUI((s) => s.theme);
@@ -81,148 +81,151 @@ export default function Painel() {
     };
   }, [data, disp]);
 
-  if (!view) return <div className="h-[60vh] rounded-[24px] bg-card border border-border animate-pulse" />;
+  return { t, disp, name, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
+}
+
+/** HERO do dashboard — conteúdo (sem box; o degradê full-bleed vem da OnePage). */
+export function DashboardHero() {
+  const { t, disp, name, colors, accent, axisColor, monthLabel, view } = usePainelView();
+  if (!view) return <div className="h-[50vh] rounded-[18px] bg-card/40 border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
 
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
 
   return (
-    <div>
-      {/* ── HERO full-page com degradê ─────────────────────────────── */}
-      <div className="hero-bg relative overflow-hidden rounded-[24px] border border-border mt-2">
-        <div className="relative z-10 px-6 md:px-10 lg:px-14 py-14 lg:py-16 min-h-[80svh] flex flex-col justify-center">
-          {/* Número-herói em largura total (nunca clipa) */}
-          <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
-          <HeroNumber
-            value={view.netWorth}
-            currency={disp}
-            className="block whitespace-nowrap text-[clamp(32px,8vw,118px)] mt-3"
-          />
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
-            {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
-            {view.curSegments.length > 0 ? (
-              <div className="flex-1 min-w-[240px] max-w-lg">
-                <CompositionBar
-                  segments={view.curSegments.map((s) => ({
-                    label: s.currency,
-                    pct: s.pct,
-                    color: colors[s.currency],
-                  }))}
+    <>
+      <Eyebrow>{name ? t("common.hello", { name }) : t("dashboard.netWorth")}</Eyebrow>
+      <HeroNumber
+        value={view.netWorth}
+        currency={disp}
+        className="block whitespace-nowrap text-[clamp(32px,8vw,118px)] mt-3"
+      />
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-4 mt-5">
+        {hasTrend ? <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} /> : null}
+        {view.curSegments.length > 0 ? (
+          <div className="flex-1 min-w-[240px] max-w-lg">
+            <CompositionBar
+              segments={view.curSegments.map((s) => ({ label: s.currency, pct: s.pct, color: colors[s.currency] }))}
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <div className="grid grid-cols-12 gap-5 mt-12">
+        <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">
+          <div className="flex items-center justify-between">
+            <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
+            {hasTrend ? <Delta pct={view.nwChange} /> : null}
+          </div>
+          <div className="text-[12px] text-faint mt-1">
+            {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
+          </div>
+          <div className="w-full h-[200px] mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
+                <defs>
+                  <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
+                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  formatter={(v) => money(Number(v))}
+                  contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
                 />
-              </div>
-            ) : null}
+                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
+        </div>
 
-          {/* Gráfico + números-chave */}
-          <div className="grid grid-cols-12 gap-5 mt-12">
-            <div className="col-span-12 lg:col-span-7 rounded-[18px] glass border border-border p-5">
-              <div className="flex items-center justify-between">
-                <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
-                {hasTrend ? <Delta pct={view.nwChange} /> : null}
-              </div>
-              <div className="text-[12px] text-faint mt-1">
-                {t("dashboard.last6months")} · {CURRENCY_SYMBOL[disp]}
-              </div>
-              <div className="w-full h-[200px] mt-3">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={view.trend} margin={{ top: 6, right: 4, bottom: 0, left: 4 }}>
-                    <defs>
-                      <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={accent} stopOpacity={0.26} />
-                        <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="m" tick={{ fontSize: 11, fill: axisColor }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      formatter={(v) => money(Number(v))}
-                      contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }}
-                    />
-                    <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2.5} fill="url(#nwGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="col-span-12 lg:col-span-5 grid grid-cols-2 gap-4">
-              <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
-              <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
-              <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
-              <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-11">
-            <button
-              type="button"
-              onClick={() => scrollToSection("patrimonio")}
-              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-faint hover:text-text transition-colors"
-            >
-              {t("dashboard.scroll")}
-              <ChevronDown size={15} className="animate-bounce" />
-            </button>
-          </div>
+        <div className="col-span-12 lg:col-span-5 grid grid-cols-2 gap-4">
+          <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
+          <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
+          <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
+          <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
         </div>
       </div>
 
-      {/* ── Detalhe: orçamento + posições ──────────────────────────── */}
-      <div className="grid grid-cols-12 gap-5 pt-7">
-        <Tile className="col-span-12 lg:col-span-5 p-6">
-          <div className="flex items-center justify-between">
-            <Eyebrow>{t("dashboard.budget")}</Eyebrow>
-            <Money value={view.totalExp} currency={disp} className="text-[12.5px] text-muted" />
-          </div>
-          <div className="flex items-center gap-5 mt-4">
-            <div className="w-[120px] h-[120px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={38} outerRadius={58} paddingAngle={2} stroke="none">
-                    {view.expDisp.map((e, i) => (
-                      <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex-1 space-y-1.5 min-w-0">
-              {view.expDisp.map((e, i) => (
-                <div key={e.name} className="flex items-center justify-between text-[12.5px]">
-                  <span className="flex items-center gap-2 text-muted truncate">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
-                    {e.name}
-                  </span>
-                  <Money value={e.value} currency={disp} className="font-medium" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </Tile>
+      <div className="flex justify-center mt-11">
+        <button
+          type="button"
+          onClick={() => scrollToSection("patrimonio")}
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-faint hover:text-text transition-colors"
+        >
+          {t("dashboard.scroll")}
+          <ChevronDown size={15} className="animate-bounce" />
+        </button>
+      </div>
+    </>
+  );
+}
 
-        <Tile className="col-span-12 lg:col-span-7 p-6">
-          <div className="flex items-center justify-between mb-1">
-            <Eyebrow>{t("dashboard.positionsTitle")}</Eyebrow>
-            <span className="text-[11.5px] text-faint tabular">
-              {view.assetsDisp.length} {t(view.assetsDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
-            </span>
+/** Detalhe do dashboard (logo abaixo do hero): orçamento + posições. */
+export function DashboardDetail() {
+  const { t, disp, colors, CAT_COLORS, view } = usePainelView();
+  if (!view || view.isEmpty) return null;
+  const money = (v: number) => formatMoney(v, disp);
+
+  return (
+    <div className="grid grid-cols-12 gap-5 pt-14 lg:pt-16">
+      <Tile className="col-span-12 lg:col-span-5 p-6">
+        <div className="flex items-center justify-between">
+          <Eyebrow>{t("dashboard.budget")}</Eyebrow>
+          <Money value={view.totalExp} currency={disp} className="text-[12.5px] text-muted" />
+        </div>
+        <div className="flex items-center gap-5 mt-4">
+          <div className="w-[120px] h-[120px] shrink-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={38} outerRadius={58} paddingAngle={2} stroke="none">
+                  {view.expDisp.map((e, i) => (
+                    <Cell key={e.name} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <div className="mt-2 grid sm:grid-cols-2 gap-x-8">
-            {view.assetsDisp.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between gap-3 py-2.5 pl-3 border-l-2"
-                style={{ borderColor: colors[a.currency] }}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-[10.5px] font-semibold tabular text-faint w-7 shrink-0">{a.currency}</span>
-                  <span className="text-[13.5px] truncate">{a.name}</span>
-                </div>
-                <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular" />
+          <div className="flex-1 space-y-1.5 min-w-0">
+            {view.expDisp.map((e, i) => (
+              <div key={e.name} className="flex items-center justify-between text-[12.5px]">
+                <span className="flex items-center gap-2 text-muted truncate">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
+                  {e.name}
+                </span>
+                <Money value={e.value} currency={disp} className="font-medium" />
               </div>
             ))}
           </div>
-        </Tile>
-      </div>
+        </div>
+      </Tile>
+
+      <Tile className="col-span-12 lg:col-span-7 p-6">
+        <div className="flex items-center justify-between mb-1">
+          <Eyebrow>{t("dashboard.positionsTitle")}</Eyebrow>
+          <span className="text-[11.5px] text-faint tabular">
+            {view.assetsDisp.length} {t(view.assetsDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
+          </span>
+        </div>
+        <div className="mt-2 grid sm:grid-cols-2 gap-x-8">
+          {view.assetsDisp.map((a) => (
+            <div
+              key={a.id}
+              className="flex items-center justify-between gap-3 py-2.5 pl-3 border-l-2"
+              style={{ borderColor: colors[a.currency] }}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-[10.5px] font-semibold tabular text-faint w-7 shrink-0">{a.currency}</span>
+                <span className="text-[13.5px] truncate">{a.name}</span>
+              </div>
+              <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular" />
+            </div>
+          ))}
+        </div>
+      </Tile>
     </div>
   );
 }
@@ -252,7 +255,7 @@ function StatTile({ label, value, sub, positive }: { label: string; value: strin
 function PainelEmpty() {
   const { t } = useTranslation();
   return (
-    <div className="hero-bg rounded-[24px] border border-border min-h-[calc(100svh-5.5rem)] mt-2 flex flex-col items-center justify-center text-center px-6">
+    <div className="flex flex-col items-center text-center w-full">
       <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mb-5">
         <Sparkles size={22} />
       </div>

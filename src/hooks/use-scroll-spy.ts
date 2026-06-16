@@ -33,3 +33,15 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
 export function scrollToSection(id: string): void {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+/** True quando a página foi rolada além do limite (header transparente → sólido). */
+export function useScrolled(threshold = 40): boolean {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > threshold);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [threshold]);
+  return scrolled;
+}
