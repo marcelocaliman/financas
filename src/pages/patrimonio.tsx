@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Plus, ChevronDown } from "lucide-react";
 import { useUI } from "@/store/ui";
@@ -249,38 +250,64 @@ export function PatrimonioSummary() {
   );
 }
 
-/** Menu "+" pra começar uma classe ainda sem ativos. */
+/**
+ * Menu "+" pra começar uma classe ainda sem ativos. O dropdown vai por PORTAL no body
+ * (posição calculada do botão) pra não ser recortado pelo overflow das abas/accordion.
+ */
 function AddClassMenu({ classes, onPick }: { classes: { id: string; name: string }[]; onPick: (id: string) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 6, left: r.left });
+    setOpen(true);
+  };
+
   return (
-    <div className="relative shrink-0 ml-1">
+    <div className="shrink-0 ml-1">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1 px-2.5 py-2 text-[13px] text-muted hover:text-text transition-colors"
+        onClick={toggle}
+        className="inline-flex items-center gap-1 px-2.5 py-2 text-[13px] text-muted hover:text-text transition-colors whitespace-nowrap"
       >
         <Plus size={14} />
         {t("patrimonio.addClass")}
         <ChevronDown size={13} className="text-faint" />
       </button>
-      {open ? (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 mt-1 w-56 max-h-[300px] overflow-y-auto z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] p-1.5">
-            {classes.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => { onPick(c.id); setOpen(false); }}
-                className="w-full text-left px-3 py-2 rounded-[8px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+      {open && pos
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-[55]" onClick={() => setOpen(false)} />
+              <div
+                className="fixed z-[56] w-56 max-h-[320px] overflow-y-auto rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] p-1.5"
+                style={{ top: pos.top, left: pos.left }}
               >
-                {c.name}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
+                {classes.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      onPick(c.id);
+                      setOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-[8px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+                  >
+                    {c.name}
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
