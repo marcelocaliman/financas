@@ -85,14 +85,19 @@ export const actions = {
       else delete allocationTargets[classId];
       await repository.putSettings({ id: "settings", ...(cur ?? {}), allocationTargets });
     }),
-  /** Define/limpa o ORÇADO mensal de UMA categoria de gasto (na moeda principal), sem clobber. */
-  setBudgetTarget: (categoryId: string, amount: number) =>
+  /** Copia os lançamentos (receitas + gastos) de um mês pra outro (novos ids). Recorrentes. */
+  copyBudgetMonth: (from: string, to: string) =>
     withSync(async () => {
-      const cur = await repository.getSettings();
-      const budgetTargets = { ...(cur?.budgetTargets ?? {}) };
-      if (amount > 0) budgetTargets[categoryId] = amount;
-      else delete budgetTargets[categoryId];
-      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), budgetTargets });
+      const [expenses, incomes] = await Promise.all([
+        repository.listExpenses(),
+        repository.listIncomes(),
+      ]);
+      for (const e of expenses.filter((x) => x.month === from)) {
+        await repository.putExpense({ ...e, id: crypto.randomUUID(), month: to });
+      }
+      for (const i of incomes.filter((x) => x.month === from)) {
+        await repository.putIncome({ ...i, id: crypto.randomUUID(), month: to });
+      }
     }),
   /** Carrega os dados de exemplo (opt-in pela Config): SUBSTITUI tudo por um exemplo
    *  coerente, ancorado na moeda principal atual (não mistura com o que já existe). */
@@ -102,13 +107,8 @@ export const actions = {
       const seed = buildSeed(base);
       await repository.clearAll();
       await repository.seed(seed);
-      // clearAll zera as settings — preserva a moeda principal + orçado de exemplo.
-      await repository.putSettings({
-        id: "settings",
-        allocationTargets: {},
-        baseCurrency: base,
-        budgetTargets: seed.budgetTargets ?? {},
-      });
+      // clearAll zera as settings — preserva a moeda principal.
+      await repository.putSettings({ id: "settings", allocationTargets: {}, baseCurrency: base });
     }),
   /** Apaga tudo — "começar do zero" (mantém a moeda principal como preferência). */
   resetAll: () =>

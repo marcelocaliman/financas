@@ -34,22 +34,26 @@ export interface Asset {
 
 export interface Expense {
   id: string;
+  /** Mês de competência "AAAA-MM" (visão mensal/histórica). */
+  month: string;
   /** Categoria (obrigatória) — id na taxonomia de categorias de gasto. */
   categoryId: string;
   /** Detalhe livre do item (opcional) — ex.: "Aluguel do apê". */
   name: string;
   currency: Currency;
-  amount: number; // valor mensal
+  amount: number; // valor no mês
 }
 
 export interface Income {
   id: string;
+  /** Mês de competência "AAAA-MM" (visão mensal/histórica). */
+  month: string;
   /** Categoria (obrigatória) — id na taxonomia de categorias de receita. */
   categoryId: string;
   /** Detalhe livre do item (opcional). */
   name: string;
   currency: Currency;
-  amount: number; // valor mensal
+  amount: number; // valor no mês
 }
 
 export interface NetWorthSnapshot {
@@ -93,9 +97,6 @@ export interface AppSettings {
   /** Moeda PRINCIPAL do usuário — fonte da verdade durável e sincronizada (cifrada).
    *  Espelhada no useUI p/ boot instantâneo; ausente = nunca escolhida (cai no default). */
   baseCurrency?: Currency;
-  /** Orçado mensal por categoria de gasto (id da categoria → valor na MOEDA PRINCIPAL),
-   *  p/ comparar com o realizado. */
-  budgetTargets?: Record<string, number>;
 }
 
 export interface Liability {

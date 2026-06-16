@@ -54,15 +54,20 @@ function usePainelView() {
     const invested = data.assets
       .filter((a) => isInvestedClass(a.classId))
       .reduce((s, a) => s + conv(a.amount, a.currency), 0);
+    // Orçamento do MÊS CORRENTE (entradas agora têm mês) — o dashboard é "agora".
+    const now = new Date();
+    const mo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const monthExp = data.expenses.filter((e) => e.month === mo);
+    const monthInc = data.incomes.filter((i) => i.month === mo);
     // Gastos agrupados por CATEGORIA (mesmo critério do módulo Orçamento → bate).
     const byCat = new Map<string, number>();
-    for (const e of data.expenses) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    for (const e of monthExp) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
     const expDisp = [...byCat.entries()]
       .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
-    const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
-    const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
+    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const trend = [...data.snapshots]
       .sort((a, b) => a.month.localeCompare(b.month))
       .map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
@@ -85,7 +90,7 @@ function usePainelView() {
       expDisp,
       totalExp,
       totalInc,
-      incomeCount: data.incomes.length,
+      incomeCount: monthInc.length,
       saldoMes: totalInc - totalExp,
       trend,
       nwChange,

@@ -17,8 +17,6 @@ export interface SeedData {
   incomes: Income[];
   snapshots: NetWorthSnapshot[];
   dividends?: Dividend[];
-  /** Orçado por categoria (moeda principal) — vai pras settings no loadSample, não é tabela. */
-  budgetTargets?: Record<string, number>;
 }
 
 /**

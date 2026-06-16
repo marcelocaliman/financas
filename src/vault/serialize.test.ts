@@ -22,9 +22,19 @@ function fakeDb() {
     async bulkPut(rows: unknown[]) {
       data[name] = [...rows];
     },
+    toCollection() {
+      return {
+        async modify(fn: (row: Record<string, unknown>) => void) {
+          for (const row of data[name]) fn(row as Record<string, unknown>);
+        },
+      };
+    },
   }));
   const db = {
     tables,
+    table(name: string) {
+      return tables.find((t) => t.name === name);
+    },
     async transaction(_mode: string, _tables: unknown, fn: () => Promise<void>) {
       await fn();
     },
@@ -50,5 +60,18 @@ describe("loadVault — compatibilidade com blob antigo", () => {
     expect(data.liabilities).toEqual([]); // ausente no blob → limpa, não ressuscita
     expect(data.incomes).toEqual([]);
     expect(cleared).toContain("liabilities");
+  });
+
+  it("carimba o mês corrente em lançamentos legados (sem 'month') vindos do blob", async () => {
+    const { db, data } = fakeDb();
+    await loadVault(db, {
+      expenses: [{ id: "e1", categoryId: "moradia", name: "Aluguel", currency: "BRL", amount: 100 }],
+      incomes: [{ id: "i1", categoryId: "salario", name: "Salário", currency: "BRL", amount: 500 }],
+    } as VaultData);
+
+    const e = data.expenses[0] as Record<string, unknown>;
+    const i = data.incomes[0] as Record<string, unknown>;
+    expect(e.month).toMatch(/^\d{4}-\d{2}$/);
+    expect(i.month).toMatch(/^\d{4}-\d{2}$/);
   });
 });

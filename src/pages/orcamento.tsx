@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useBudget } from "@/hooks/use-budget";
-import { useSettings } from "@/hooks/use-settings";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { formatAmountEdit, parseLocaleNumber } from "@/money/parse";
 import { categoryColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import type { Expense, Income } from "@/domain/types";
@@ -17,35 +16,73 @@ import { Money } from "@/components/common/money";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
-import { cn } from "@/lib/utils";
 
-type BudgetRow = { id: string; categoryId: string; name: string; currency: Currency; amount: number };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number };
+
+const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
+
+function currentMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function shiftMonth(month: string, delta: number): string {
+  const [y, mm] = month.split("-").map(Number);
+  const d = new Date(y, mm - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function monthLabel(month: string, lang: string, short = false): string {
+  const [y, mm] = month.split("-").map(Number);
+  return new Date(y, mm - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", short ? { month: "short" } : { month: "long", year: "numeric" });
+}
 
 export default function Orcamento() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
   const base = useUI((s) => s.baseCurrency);
   const theme = useUI((s) => s.theme);
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const data = useBudget();
-  const settings = useSettings();
   const CAT = categoryColors(theme);
+  const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
+  const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
+  const [month, setMonth] = useState(currentMonth());
 
   const view = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    // Agrupa GASTOS por categoria (pro donut e o "tudo batendo" com o card do Painel).
+    const monthExp = data.expenses.filter((e) => e.month === month);
+    const monthInc = data.incomes.filter((i) => i.month === month);
+
     const byCat = new Map<string, number>();
-    for (const e of data.expenses) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    for (const e of monthExp) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
     const expByCat = [...byCat.entries()]
       .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
-    const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
-    const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
-    return { expByCat, byCat, totalExp, totalInc, saldo: totalInc - totalExp };
-  }, [data, disp, rates, tax, t]);
+    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
+
+    // Histórico: todos os meses com lançamento, últimos 12.
+    const hist = new Map<string, { receitas: number; gastos: number }>();
+    for (const e of data.expenses) {
+      const h = hist.get(e.month) ?? { receitas: 0, gastos: 0 };
+      h.gastos += conv(e.amount, e.currency);
+      hist.set(e.month, h);
+    }
+    for (const i of data.incomes) {
+      const h = hist.get(i.month) ?? { receitas: 0, gastos: 0 };
+      h.receitas += conv(i.amount, i.currency);
+      hist.set(i.month, h);
+    }
+    const history = [...hist.entries()]
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .slice(-12)
+      .map(([mo, h]) => ({ month: mo, label: monthLabel(mo, lang, true), receitas: h.receitas, gastos: h.gastos, saldo: h.receitas - h.gastos }));
+
+    return { monthExp, monthInc, expByCat, totalExp, totalInc, saldo: totalInc - totalExp, history };
+  }, [data, disp, rates, tax, t, month, lang]);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -55,37 +92,77 @@ export default function Orcamento() {
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[]): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
-      {
-        key: "categoryId",
-        type: "select",
-        header: t("orcamento.category"),
-        width: "minmax(140px,1.2fr)",
-        placeholder: t("orcamento.categoryPlaceholder"),
-        options: opts(categories),
-      },
+      { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories) },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
       { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" },
     ];
-    // "Em <moeda>" só aparece quando há de fato conversão (alguma linha em moeda ≠ da exibida).
     if (rows.some((r) => r.currency !== disp)) {
-      columns.push({
-        key: "conv",
-        type: "computed",
-        header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`,
-        width: "minmax(88px,0.8fr)",
-        align: "right",
-        compute: (r) => formatMoney(conv(r.amount, r.currency), disp),
-      });
+      columns.push({ key: "conv", type: "computed", header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`, width: "minmax(88px,0.8fr)", align: "right", compute: (r) => formatMoney(conv(r.amount, r.currency), disp) });
     }
     return columns;
   };
 
-  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), categoryId: "", name: "", currency: base, amount: 0 });
+  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), month, categoryId: "", name: "", currency: base, amount: 0 });
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
+  const isCurrent = month === currentMonth();
+  const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
+  const prev = shiftMonth(month, -1);
 
   return (
     <div className="space-y-7">
-      {/* Gastos por categoria */}
+      {/* Navegador de mês */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setMonth(shiftMonth(month, -1))} aria-label={t("orcamento.prevMonth")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-[15px] font-semibold capitalize min-w-[150px] text-center tabular">{monthLabel(month, lang)}</span>
+          <button type="button" onClick={() => setMonth(shiftMonth(month, 1))} aria-label={t("orcamento.nextMonth")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          {empty ? (
+            <button type="button" onClick={() => void actions.copyBudgetMonth(prev, month)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] border border-border text-[12.5px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              <Copy size={14} /> {t("orcamento.copyPrev")}
+            </button>
+          ) : null}
+          {!isCurrent ? (
+            <button type="button" onClick={() => setMonth(currentMonth())} className="h-9 px-3 rounded-[9px] text-[12.5px] text-accent hover:underline">
+              {t("orcamento.thisMonth")}
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Histórico mensal */}
+      {view.history.length > 1 ? (
+        <Tile className="p-6 md:p-7">
+          <Eyebrow className="mb-4">{t("orcamento.history")}</Eyebrow>
+          <div className="w-full h-[180px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={view.history} margin={{ top: 4, right: 6, bottom: 0, left: 6 }} barGap={2}>
+                <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+                <Tooltip
+                  cursor={{ fill: "var(--card-2)" }}
+                  formatter={(val, name) => [formatMoney(Number(val), disp), t(`orcamento.${name as string}` as string)]}
+                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                  labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
+                />
+                <Bar dataKey="receitas" name="income" fill={accent} radius={[3, 3, 0, 0]} maxBarSize={18} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)} />
+                <Bar dataKey="gastos" name="expenses" fill="#f1746a" radius={[3, 3, 0, 0]} maxBarSize={18} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center gap-5 mt-3 text-[11.5px] text-muted">
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: accent }} />{t("orcamento.income")}</span>
+            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] bg-[#f1746a]" />{t("orcamento.expenses")}</span>
+            <span className="text-faint">{t("orcamento.historyHint")}</span>
+          </div>
+        </Tile>
+      ) : null}
+
+      {/* Gastos por categoria (mês selecionado) */}
       {view.expByCat.length > 0 ? (
         <Tile className="p-6 md:p-7">
           <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
@@ -120,24 +197,15 @@ export default function Orcamento() {
         </Tile>
       ) : null}
 
-      {/* Orçado vs. realizado por categoria */}
-      <BudgetVsActual
-        categories={tax.expenseCategories}
-        realByCat={view.byCat}
-        targets={settings.budgetTargets ?? {}}
-        disp={disp}
-        base={base}
-        rates={rates}
-      />
-
-      {/* Receitas */}
+      {/* Receitas (mês) */}
       <section>
-        <SectionHead title={t("orcamento.income")} count={data.incomes.length} />
+        <SectionHead title={t("orcamento.income")} count={view.monthInc.length} />
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
-              columns={cols(tax.incomeCategories, data.incomes as BudgetRow[])}
-              rows={data.incomes as BudgetRow[]}
+              key={month}
+              columns={cols(tax.incomeCategories, view.monthInc as BudgetRow[])}
+              rows={view.monthInc as BudgetRow[]}
               blank={blank}
               isComplete={complete}
               onCommit={(r) => void actions.putIncome(r as Income)}
@@ -149,14 +217,15 @@ export default function Orcamento() {
         </div>
       </section>
 
-      {/* Gastos */}
+      {/* Gastos (mês) */}
       <section>
-        <SectionHead title={t("orcamento.expenses")} count={data.expenses.length} />
+        <SectionHead title={t("orcamento.expenses")} count={view.monthExp.length} />
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
-              columns={cols(tax.expenseCategories, data.expenses as BudgetRow[])}
-              rows={data.expenses as BudgetRow[]}
+              key={month}
+              columns={cols(tax.expenseCategories, view.monthExp as BudgetRow[])}
+              rows={view.monthExp as BudgetRow[]}
               blank={blank}
               isComplete={complete}
               onCommit={(r) => void actions.putExpense(r as Expense)}
@@ -171,134 +240,7 @@ export default function Orcamento() {
   );
 }
 
-/** Orçado (na moeda principal) × realizado (gastos do mês) por categoria. */
-function BudgetVsActual({
-  categories,
-  realByCat,
-  targets,
-  disp,
-  base,
-  rates,
-}: {
-  categories: TaxonomyItem[];
-  realByCat: Map<string, number>;
-  targets: Record<string, number>;
-  disp: Currency;
-  base: Currency;
-  rates: Record<Currency, number>;
-}) {
-  const { t } = useTranslation();
-  const rows = categories
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      real: realByCat.get(c.id) ?? 0, // já em `disp`
-      orc: convert(targets[c.id] ?? 0, base, disp, rates),
-    }))
-    .filter((r) => r.real > 0 || r.orc > 0)
-    .sort((a, b) => b.real - a.real);
-  if (rows.length === 0) return null;
-
-  const totReal = rows.reduce((s, r) => s + r.real, 0);
-  const totOrc = rows.reduce((s, r) => s + r.orc, 0);
-  const setTarget = (categoryId: string, dispValue: number) =>
-    void actions.setBudgetTarget(categoryId, convert(dispValue, disp, base, rates));
-
-  return (
-    <Tile className="p-6 md:p-7">
-      <div className="flex items-center justify-between gap-3">
-        <Eyebrow>{t("orcamento.budgetVsActual")}</Eyebrow>
-        {totOrc > 0 ? (
-          <span className="flex items-center gap-1.5 text-[12px] tabular shrink-0">
-            <Money value={totReal} currency={disp} className={totReal > totOrc ? "text-neg font-medium" : "text-text font-medium"} />
-            <span className="text-faint">/</span>
-            <Money value={totOrc} currency={disp} className="text-muted" />
-            <span className={cn("ml-0.5", totReal > totOrc ? "text-neg" : "text-muted")}>{Math.round((totReal / totOrc) * 100)}%</span>
-          </span>
-        ) : null}
-      </div>
-      <p className="text-[11.5px] text-faint mt-1 mb-4 max-w-lg leading-relaxed">{t("orcamento.budgetHint")}</p>
-      <div className="space-y-3.5">
-        {rows.map((r) => {
-          const pct = r.orc > 0 ? (r.real / r.orc) * 100 : 0;
-          const over = r.orc > 0 && r.real > r.orc;
-          return (
-            <div key={r.id}>
-              <div className="flex items-center justify-between gap-3 mb-1.5">
-                <span className="text-[13px] truncate min-w-0">{r.name}</span>
-                <span className="flex items-center gap-1.5 text-[12.5px] tabular shrink-0">
-                  <Money value={r.real} currency={disp} className={over ? "text-neg font-medium" : "text-text"} />
-                  <span className="text-faint">/</span>
-                  <BudgetInput valueDisp={r.orc} currency={disp} onCommit={(v) => setTarget(r.id, v)} />
-                  <span className={cn("w-9 text-right", r.orc <= 0 ? "text-faint" : over ? "text-neg" : "text-muted")}>
-                    {r.orc > 0 ? `${Math.round(pct)}%` : "—"}
-                  </span>
-                </span>
-              </div>
-              <div className="h-[7px] rounded-full bg-card2 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
-                  style={{ width: `${Math.min(100, pct)}%`, background: over ? "var(--neg)" : "var(--accent)" }}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </Tile>
-  );
-}
-
-/** Input compacto do ORÇADO de uma categoria (edita em `disp`; o pai converte p/ base). */
-function BudgetInput({
-  valueDisp,
-  currency,
-  onCommit,
-}: {
-  valueDisp: number;
-  currency: Currency;
-  onCommit: (dispValue: number) => void;
-}) {
-  const fmt = (n: number) => (n > 0 ? formatAmountEdit(n, currency) : "");
-  const [v, setV] = useState(() => fmt(valueDisp));
-  const [focused, setFocused] = useState(false);
-  useEffect(() => {
-    if (!focused) setV(fmt(valueDisp));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [valueDisp, currency, focused]);
-  const commit = () => {
-    const n = v.trim() === "" ? 0 : (parseLocaleNumber(v, currency) ?? 0);
-    onCommit(Math.max(0, n));
-    setV(fmt(n));
-  };
-  return (
-    <input
-      inputMode="decimal"
-      value={v}
-      placeholder={`${CURRENCY_SYMBOL[currency]} —`}
-      aria-label="Orçado"
-      onFocus={(e) => {
-        setFocused(true);
-        e.currentTarget.select();
-      }}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => {
-        setFocused(false);
-        commit();
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") e.currentTarget.blur();
-        else if (e.key === "Escape") {
-          setV(fmt(valueDisp));
-          e.currentTarget.blur();
-        }
-      }}
-      className="w-[84px] text-right tabular text-muted bg-transparent rounded-[6px] px-1.5 py-0.5 outline-none focus:bg-accent-soft focus:ring-2 focus:ring-[var(--ring)] transition-colors"
-    />
-  );
-}
-
-/** KPIs do cabeçalho do accordion de Orçamento. */
+/** KPIs do cabeçalho do accordion de Orçamento — sempre o MÊS CORRENTE. */
 export function OrcamentoSummary() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
@@ -307,8 +249,9 @@ export function OrcamentoSummary() {
   const v = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const totalExp = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
-    const totalInc = data.incomes.reduce((s, i) => s + conv(i.amount, i.currency), 0);
+    const mo = currentMonth();
+    const totalExp = data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     return { totalExp, totalInc, saldo: totalInc - totalExp };
   }, [data, disp, rates]);
   if (!v) return null;

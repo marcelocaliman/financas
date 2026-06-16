@@ -312,12 +312,35 @@ export function PatrimonioSummary() {
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
-    return { totalAssets, totalLiab, net: totalAssets - totalLiab };
+    // Rentabilidade geral dos investidos (mesmo custo unificado de Investimentos).
+    let totalCost = 0;
+    let totalCostValue = 0;
+    for (const a of data.assets.filter((x) => isInvestedClass(x.classId))) {
+      const cost = isQuotableClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
+      if (cost > 0) {
+        totalCost += conv(cost, a.currency);
+        totalCostValue += conv(a.amount, a.currency);
+      }
+    }
+    return {
+      totalAssets,
+      totalLiab,
+      net: totalAssets - totalLiab,
+      returnPct: totalCost > 0 ? ((totalCostValue - totalCost) / totalCost) * 100 : null,
+    };
   }, [data, disp, rates]);
   if (!v) return null;
   return (
     <HeaderKpis>
       <HeaderKpi label={t("patrimonio.netWorth")} value={<Money value={v.net} currency={disp} />} />
+      {v.returnPct != null ? (
+        <HeaderKpi
+          secondary
+          label={t("investimentos.profitability")}
+          tone={v.returnPct >= 0 ? "accent" : "neg"}
+          value={`${v.returnPct >= 0 ? "+" : ""}${v.returnPct.toFixed(1)}%`}
+        />
+      ) : null}
       <HeaderKpi secondary label={t("patrimonio.assets")} value={<Money value={v.totalAssets} currency={disp} />} />
       <HeaderKpi secondary label={t("patrimonio.liabilities")} tone={v.totalLiab > 0 ? "neg" : "text"} value={<Money value={v.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} />
     </HeaderKpis>

@@ -116,9 +116,9 @@ export async function exportCSV(): Promise<void> {
   for (const l of liabilities)
     rows.push({ tipo: "passivo", nome: l.name, categoria: l.typeId, moeda: l.currency, valor: l.amount, extra: l.installments ? `${l.installments}x` : "" });
   for (const e of expenses)
-    rows.push({ tipo: "gasto", nome: e.name, categoria: e.categoryId, moeda: e.currency, valor: e.amount, extra: "" });
+    rows.push({ tipo: "gasto", nome: e.name, categoria: e.categoryId, moeda: e.currency, valor: e.amount, extra: e.month });
   for (const i of incomes)
-    rows.push({ tipo: "receita", nome: i.name, categoria: i.categoryId, moeda: i.currency, valor: i.amount, extra: "" });
+    rows.push({ tipo: "receita", nome: i.name, categoria: i.categoryId, moeda: i.currency, valor: i.amount, extra: i.month });
   for (const s of snapshots)
     rows.push({ tipo: "historico", nome: s.month, categoria: "", moeda: s.currency, valor: s.amount, extra: s.contribution ?? "" });
   for (const g of goals)

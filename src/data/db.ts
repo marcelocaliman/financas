@@ -109,6 +109,28 @@ export class FinancasDB extends Dexie {
     this.version(6).stores({
       dividends: "id, month, currency",
     });
+    // v7: Orçamento por MÊS (visão mensal/histórica). Carimba o que já existe no mês corrente.
+    this.version(7)
+      .stores({
+        expenses: "id, categoryId, currency, month",
+        incomes: "id, categoryId, currency, month",
+      })
+      .upgrade(async (tx) => {
+        const d = new Date();
+        const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        await tx
+          .table("expenses")
+          .toCollection()
+          .modify((e: Record<string, unknown>) => {
+            if (!e.month) e.month = month;
+          });
+        await tx
+          .table("incomes")
+          .toCollection()
+          .modify((i: Record<string, unknown>) => {
+            if (!i.month) i.month = month;
+          });
+      });
   }
 }
 

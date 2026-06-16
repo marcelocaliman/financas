@@ -134,8 +134,12 @@
     "detailPlaceholder": "Es.: Affitto casa",
     "uncategorized": "Senza categoria",
     "byCategory": "Spese per categoria",
-    "budgetVsActual": "Preventivo vs. effettivo",
-    "budgetHint": "Imposta un budget mensile per categoria (nella tua valuta principale) e monitora quanto hai speso. Lo sforamento è in rosso."
+    "prevMonth": "Mese precedente",
+    "nextMonth": "Mese successivo",
+    "thisMonth": "Mese corrente",
+    "copyPrev": "Copia dal mese precedente",
+    "history": "Storico mensile",
+    "historyHint": "Tocca una barra per aprire quel mese"
   },
   "historico": {
     "month": "Mese",

@@ -134,8 +134,12 @@
     "detailPlaceholder": "e.g. Apartment rent",
     "uncategorized": "Uncategorized",
     "byCategory": "Expenses by category",
-    "budgetVsActual": "Budget vs. actual",
-    "budgetHint": "Set a monthly budget per category (in your main currency) and track how much you've spent. Overspend shows in red."
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month",
+    "thisMonth": "This month",
+    "copyPrev": "Copy from previous month",
+    "history": "Monthly history",
+    "historyHint": "Tap a bar to open that month"
   },
   "historico": {
     "month": "Month",

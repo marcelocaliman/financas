@@ -39,6 +39,25 @@ export function buildSeed(main: Currency): SeedData {
   const m = (eurRef: number) => nice(eurRef, main); // item local (moeda principal)
   const a = (eurRef: number) => nice(eurRef, ab); // item "do exterior" (contraparte)
 
+  // Orçamento por MÊS: 3 meses (atual + 2 anteriores) com leve variação → visão histórica.
+  const months = [pastMonth(2), pastMonth(1), pastMonth(0)];
+  const vary = [0.95, 1, 1.05];
+  const EXP = [
+    { categoryId: "moradia", name: "Aluguel + condomínio", eur: 900 },
+    { categoryId: "alimentacao", name: "Mercado", eur: 500 },
+    { categoryId: "lazer", name: "Restaurantes e saídas", eur: 220 },
+    { categoryId: "gasto-outros", name: "Diversos", eur: 160 },
+    { categoryId: "transporte", name: "Transporte", eur: 130 },
+    { categoryId: "saude", name: "Plano de saúde", eur: 95 },
+  ];
+  const expenses = months.flatMap((mo, mi) =>
+    EXP.map((e, ei) => ({ id: `e${mi}-${ei}`, month: mo, categoryId: e.categoryId, name: e.name, currency: main, amount: m(Math.round(e.eur * vary[mi])) })),
+  );
+  const incomes = months.flatMap((mo, mi) => [
+    { id: `i${mi}-0`, month: mo, categoryId: "freela", name: "Salário / PJ", currency: main, amount: m(Math.round(3800 * vary[mi])) },
+    { id: `i${mi}-1`, month: mo, categoryId: "aluguel", name: "Aluguel recebido (exterior)", currency: ab, amount: a(700) },
+  ]);
+
   return {
     assets: [
       { id: "a1", name: "Tesouro / Renda fixa", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(57000), cost: m(52000), indexerId: "ipca" },
@@ -53,19 +72,8 @@ export function buildSeed(main: Currency): SeedData {
       { id: "l1", name: "Financiamento imóvel", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(32000), interestRate: 9.5, installments: 180 },
       { id: "l2", name: "Cartão de crédito", typeId: LIABILITY_TYPE.cartaoCredito, currency: main, amount: m(450) },
     ],
-    expenses: [
-      { id: "e1", categoryId: "moradia", name: "Aluguel + condomínio", currency: main, amount: m(900) },
-      { id: "e2", categoryId: "alimentacao", name: "Mercado", currency: main, amount: m(500) },
-      { id: "e3", categoryId: "lazer", name: "Restaurantes e saídas", currency: main, amount: m(220) },
-      { id: "e4", categoryId: "gasto-outros", name: "Diversos", currency: main, amount: m(160) },
-      { id: "e5", categoryId: "transporte", name: "Transporte", currency: main, amount: m(130) },
-      { id: "e6", categoryId: "saude", name: "Plano de saúde", currency: main, amount: m(95) },
-    ],
-    incomes: [
-      { id: "i1", categoryId: "freela", name: "Salário / PJ", currency: main, amount: m(3800) },
-      // Renda recebida no exterior — segunda metade da história cross-border.
-      { id: "i2", categoryId: "aluguel", name: "Aluguel recebido (exterior)", currency: ab, amount: a(700) },
-    ],
+    expenses,
+    incomes,
     // Proventos recebidos (ações BBAS3, em BRL) — renda passiva dos últimos meses.
     dividends: [
       { id: "d1", month: pastMonth(5), source: "BBAS3", currency: "BRL", amount: 22 },
@@ -75,16 +83,6 @@ export function buildSeed(main: Currency): SeedData {
       { id: "d5", month: pastMonth(1), source: "BBAS3", currency: "BRL", amount: 35 },
       { id: "d6", month: pastMonth(0), source: "BBAS3", currency: "BRL", amount: 26 },
     ],
-    // Orçado mensal por categoria (na moeda principal) — um pouco acima do gasto, e
-    // "lazer" abaixo de propósito pra demonstrar o estouro (vermelho).
-    budgetTargets: {
-      moradia: m(1000),
-      alimentacao: m(550),
-      lazer: m(200),
-      "gasto-outros": m(200),
-      transporte: m(150),
-      saude: m(120),
-    },
     // SÓ meses passados — o mês corrente é COMPUTADO do patrimônio (useAutoSnapshot),
     // então Painel (herói) = última ponta da tendência = Histórico (atual), sempre.
     snapshots: [
