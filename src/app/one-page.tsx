@@ -31,7 +31,7 @@ export function OnePage() {
           </div>
         </div>
         <div className="border-t border-border" />
-        <div className={cn(CONTAINER, GUTTERS, "pt-9 pb-9")}>
+        <div className={cn(CONTAINER, GUTTERS, "pt-9 pb-24")}>
           <DashboardDetail />
         </div>
       </section>
@@ -52,7 +52,7 @@ export function OnePage() {
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section className="scroll-mt-[88px] pt-20 pb-2 border-t border-border" id={id}>
+    <section className="scroll-mt-[88px] pt-24 pb-24 border-t border-border" id={id}>
       <h2 className="font-semibold text-[clamp(26px,4vw,40px)] tracking-[-0.03em] leading-[1.05] mb-8">
         {title}
       </h2>

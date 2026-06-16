@@ -134,6 +134,7 @@ export function DashboardDetail() {
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
+  const topAssets = [...view.assetsDisp].sort((a, b) => b.disp - a.disp).slice(0, 4);
 
   return (
     <>
@@ -212,7 +213,7 @@ export function DashboardDetail() {
 
         <div className={cn("lg:col-span-2 p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
-            <Eyebrow>{t("dashboard.positionsTitle")}</Eyebrow>
+            <Eyebrow>{t("dashboard.topPositions")}</Eyebrow>
             <Eyebrow>
               {view.assetsDisp.length} {t(view.assetsDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
             </Eyebrow>
@@ -224,12 +225,12 @@ export function DashboardDetail() {
                 <Eyebrow>{t("patrimonio.type")}</Eyebrow>
                 <Eyebrow className="text-right">{t("patrimonio.amount")}</Eyebrow>
               </div>
-              {view.assetsDisp.map((a, i) => (
+              {topAssets.map((a, i) => (
                 <div
                   key={a.id}
                   className={cn(
                     "grid grid-cols-[1.6fr_1fr_1fr] items-center py-[11px]",
-                    i < view.assetsDisp.length - 1 && "border-b border-border",
+                    i < topAssets.length - 1 && "border-b border-border",
                   )}
                 >
                   <span className="flex items-center gap-2.5 min-w-0">

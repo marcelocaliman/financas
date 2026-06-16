@@ -4,11 +4,9 @@ import { useUI } from "@/store/ui";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { currencyBreakdown, currencyColors } from "@/money/composition";
 import type { Asset, AssetType, Liability, LiabilityType } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
 const ASSET_TYPES: AssetType[] = ["investment", "property", "cash"];
@@ -17,22 +15,15 @@ const LIAB_TYPES: LiabilityType[] = ["loan", "card", "mortgage", "other"];
 export default function Patrimonio() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
-  const theme = useUI((s) => s.theme);
   const data = usePatrimonio();
 
   const view = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp);
-    const colors = currencyColors(theme);
     const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
-    const segments = currencyBreakdown(data.assets, disp).map((s) => ({
-      label: s.currency,
-      pct: s.pct,
-      color: colors[s.currency],
-    }));
-    return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab, segments };
-  }, [data, disp, theme]);
+    return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab };
+  }, [data, disp]);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[20px] glass border border-border animate-pulse" />;
@@ -119,38 +110,34 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-7">
-      {/* Hero editorial: líquido à esquerda, composição à direita (ocupa a largura) */}
-      <Tile className="p-7 md:p-8">
-        <div className="grid grid-cols-12 gap-x-8 gap-y-7 items-end">
-          <div className="col-span-12 lg:col-span-7">
+      {/* Resumo enxuto: Ativos / Passivos / Líquido (composição já está no hero). */}
+      <Tile className="p-6 md:p-7">
+        <div className="flex flex-wrap items-end gap-x-12 gap-y-6">
+          <div>
+            <Eyebrow>{t("patrimonio.assets")}</Eyebrow>
+            <Money
+              value={view.totalAssets}
+              currency={disp}
+              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-text"
+            />
+          </div>
+          <div>
+            <Eyebrow>{t("patrimonio.liabilities")}</Eyebrow>
+            <Money
+              value={view.totalLiab}
+              currency={disp}
+              options={{ signDisplay: "never" }}
+              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-neg"
+            />
+          </div>
+          <div>
             <Eyebrow>{t("patrimonio.netWorth")}</Eyebrow>
             <Money
               value={view.netWorth}
               currency={disp}
-              className="block font-numeric font-semibold tabular tracking-[-0.025em] text-[clamp(26px,3.2vw,42px)] mt-1.5 text-text"
+              className="block font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.3vw,28px)] mt-1.5 text-text"
             />
-            <div className="flex flex-wrap gap-x-8 gap-y-1 mt-4 text-[13.5px]">
-              <span className="text-muted">
-                {t("patrimonio.assets")}{" "}
-                <Money value={view.totalAssets} currency={disp} className="font-semibold text-text" />
-              </span>
-              <span className="text-muted">
-                {t("patrimonio.liabilities")}{" "}
-                <Money
-                  value={view.totalLiab}
-                  currency={disp}
-                  className="font-semibold text-neg"
-                  options={{ signDisplay: "never" }}
-                />
-              </span>
-            </div>
           </div>
-          {view.segments.length > 0 ? (
-            <div className="col-span-12 lg:col-span-5">
-              <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>
-              <CompositionBar segments={view.segments} />
-            </div>
-          ) : null}
         </div>
       </Tile>
 
