@@ -1,22 +1,23 @@
+import { CLASS, LIABILITY_TYPE } from "@/domain/taxonomy";
 import type { SeedData } from "./repository";
 
 /**
- * Dados de exemplo que reproduzem o protótipo (docs/reference/prototipo-painel.jsx).
+ * Dados de exemplo no novo modelo de categorias (classId/subtypeId/regionId…).
  * NÃO são mais carregados automaticamente — o app começa vazio. O usuário pode
  * carregá-los sob demanda na Config ("carregar dados de exemplo") pra explorar.
  */
 export const SEED: SeedData = {
   assets: [
-    { id: "a1", name: "Tesouro Direto", currency: "BRL", amount: 320000, type: "investment" },
-    { id: "a2", name: "CDB", currency: "BRL", amount: 180000, type: "investment" },
-    { id: "a3", name: "LCI/LCA", currency: "BRL", amount: 95000, type: "investment" },
-    { id: "a4", name: "Imóvel (aluguel · RJ)", currency: "BRL", amount: 850000, type: "property" },
-    { id: "a5", name: "Conta corrente · Itália", currency: "EUR", amount: 12000, type: "cash" },
-    { id: "a6", name: "Reserva", currency: "EUR", amount: 25000, type: "cash" },
+    { id: "a1", name: "Tesouro IPCA+ 2035", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: "BRL", amount: 320000, indexerId: "ipca" },
+    { id: "a2", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", regionId: "brasil", currency: "BRL", amount: 180000, indexerId: "cdi", institution: "Banco Inter" },
+    { id: "a3", name: "LCI", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-5", regionId: "brasil", currency: "BRL", amount: 95000, indexerId: "cdi" },
+    { id: "a4", name: "Imóvel de aluguel · RJ", classId: CLASS.imoveis, subtypeId: "imoveis-4", regionId: "brasil", currency: "BRL", amount: 850000 },
+    { id: "a5", name: "Conta corrente · Itália", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: "EUR", amount: 12000, institution: "Intesa Sanpaolo" },
+    { id: "a6", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", regionId: "italia", currency: "EUR", amount: 25000 },
   ],
   liabilities: [
-    { id: "l1", name: "Financiamento imóvel · RJ", currency: "BRL", amount: 180000, type: "mortgage" },
-    { id: "l2", name: "Cartão de crédito", currency: "EUR", amount: 1800, type: "card" },
+    { id: "l1", name: "Financiamento imóvel · RJ", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: "BRL", amount: 180000, interestRate: 9.5, installments: 180 },
+    { id: "l2", name: "Cartão de crédito", typeId: LIABILITY_TYPE.cartaoCredito, currency: "EUR", amount: 1800 },
   ],
   expenses: [
     { id: "e1", name: "Moradia", currency: "EUR", amount: 600 },

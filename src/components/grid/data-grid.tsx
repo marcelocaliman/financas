@@ -10,7 +10,9 @@ import { useUI } from "@/store/ui";
 const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
-export type ColType = "currency" | "text" | "select" | "money" | "computed";
+export type ColType = "currency" | "text" | "select" | "money" | "number" | "computed";
+
+export type SelectOption = { value: string; label: string };
 
 export interface GridColumn<T> {
   key: string;
@@ -18,7 +20,11 @@ export interface GridColumn<T> {
   type: ColType;
   width: string; // trilha do CSS grid
   align?: "left" | "right";
-  options?: { value: string; label: string }[];
+  options?: SelectOption[];
+  /** select em CASCATA: opções dependem da linha (ex.: Subtipo depende da Classe). */
+  optionsFor?: (row: T) => SelectOption[];
+  /** select opcional: inclui um "—" (vazio) e o valor pode ficar em branco. */
+  optional?: boolean;
   currencyKey?: string; // money: campo da moeda (default "currency")
   placeholder?: string;
   compute?: (row: T) => ReactNode;
@@ -150,30 +156,108 @@ function MoneyCell({
 function SelectCell({
   value,
   options,
+  optional,
+  placeholder,
   rowId,
   colKey,
   onCommit,
 }: {
   value: string;
-  options: { value: string; label: string }[];
+  options: SelectOption[];
+  optional?: boolean;
+  placeholder?: string;
   rowId: string;
   colKey: string;
   onCommit: (v: string) => void;
 }) {
+  // Opcional sem opções disponíveis (ex.: Indexador fora de Renda Fixa): não editável.
+  if (optional && options.length === 0) {
+    return <div className="px-2 py-1.5 text-[13px] text-faint">—</div>;
+  }
+  const hasValue = options.some((o) => o.value === value);
   return (
     <select
       data-rowid={rowId}
       data-col={colKey}
-      value={value}
+      value={hasValue ? value : ""}
       onChange={(e) => onCommit(e.target.value)}
-      className={cn(CELL_INPUT, "appearance-none cursor-pointer")}
+      className={cn(CELL_INPUT, "appearance-none cursor-pointer", !hasValue && "text-faint")}
     >
+      {optional ? (
+        <option value="" className="bg-card text-text">
+          —
+        </option>
+      ) : (
+        <option value="" disabled className="bg-card text-faint">
+          {placeholder ?? "—"}
+        </option>
+      )}
       {options.map((o) => (
         <option key={o.value} value={o.value} className="bg-card text-text">
           {o.label}
         </option>
       ))}
     </select>
+  );
+}
+
+function NumberCell({
+  value,
+  rowId,
+  colKey,
+  onCommit,
+  onEnter,
+}: {
+  value: number | undefined;
+  rowId: string;
+  colKey: string;
+  onCommit: (v: number | undefined) => void;
+  onEnter: () => void;
+}) {
+  const fmt = (n: number | undefined) => (n == null ? "" : String(n));
+  const [v, setV] = useState(() => fmt(value));
+  const [focused, setFocused] = useState(false);
+  useEffect(() => {
+    if (!focused) setV(fmt(value));
+  }, [value, focused]);
+  const commit = () => {
+    const txt = v.trim().replace(",", ".");
+    if (txt === "") {
+      if (value != null) onCommit(undefined);
+      return;
+    }
+    const n = Number(txt);
+    if (!Number.isNaN(n) && n !== value) onCommit(n);
+    else setV(fmt(value));
+  };
+  return (
+    <input
+      data-rowid={rowId}
+      data-col={colKey}
+      inputMode="decimal"
+      value={v}
+      placeholder="—"
+      onFocus={(e) => {
+        setFocused(true);
+        e.currentTarget.select();
+      }}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        commit();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+          onEnter();
+        } else if (e.key === "Escape") {
+          setV(fmt(value));
+          e.currentTarget.blur();
+        }
+      }}
+      className={cn(CELL_INPUT, "text-right tabular")}
+    />
   );
 }
 
@@ -303,11 +387,23 @@ export function DataGrid<T extends { id: string }>({
       case "select":
         return (
           <SelectCell
-            value={get(row, col.key) as string}
-            options={col.options ?? []}
+            value={(get(row, col.key) as string) ?? ""}
+            options={col.optionsFor ? col.optionsFor(row) : col.options ?? []}
+            optional={col.optional}
+            placeholder={col.placeholder}
             rowId={rowId}
             colKey={col.key}
             onCommit={commit}
+          />
+        );
+      case "number":
+        return (
+          <NumberCell
+            value={get(row, col.key) as number | undefined}
+            rowId={rowId}
+            colKey={col.key}
+            onCommit={commit}
+            onEnter={onEnter}
           />
         );
       case "money":

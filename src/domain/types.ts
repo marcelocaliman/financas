@@ -5,14 +5,22 @@ import type { Currency } from "@/money/currency";
  * moeda; a conversão pra moeda de exibição é feita por uma camada à parte.
  */
 
-export type AssetType = "investment" | "property" | "cash";
-
 export interface Asset {
   id: string;
   name: string;
+  /** Classe de alocação (obrigatória) — id na taxonomia editável. */
+  classId: string;
+  /** Subtipo (opcional) — em cascata da Classe. */
+  subtypeId?: string;
+  /** Região/País (opcional). */
+  regionId?: string;
   currency: Currency;
+  /** Valor atual, na moeda do ativo (obrigatório). */
   amount: number;
-  type: AssetType;
+  /** Indexador (opcional, só faz sentido em Renda Fixa). */
+  indexerId?: string;
+  /** Instituição / corretora (opcional, texto livre). */
+  institution?: string;
 }
 
 export interface Expense {
@@ -36,12 +44,15 @@ export interface NetWorthSnapshot {
   amount: number;
 }
 
-export type LiabilityType = "loan" | "card" | "mortgage" | "other";
-
 export interface Liability {
   id: string;
   name: string;
+  /** Tipo de passivo (obrigatório) — id na taxonomia editável. */
+  typeId: string;
   currency: Currency;
-  amount: number; // saldo devedor (positivo)
-  type: LiabilityType;
+  amount: number; // saldo devedor (positivo, obrigatório)
+  /** Taxa de juros % a.a. (opcional). */
+  interestRate?: number;
+  /** Parcelas restantes (opcional). */
+  installments?: number;
 }

@@ -1,4 +1,5 @@
 import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
+import { TAXONOMY_ID, type Taxonomy } from "@/domain/taxonomy";
 import type { DataRepository, SeedData } from "./repository";
 import { db, type FinancasDB } from "./db";
 
@@ -48,6 +49,13 @@ export class DexieRepository implements DataRepository {
   }
   async removeLiability(id: string): Promise<void> {
     await this.database.liabilities.delete(id);
+  }
+
+  async getTaxonomy(): Promise<Taxonomy | null> {
+    return (await this.database.taxonomy.get(TAXONOMY_ID)) ?? null;
+  }
+  async putTaxonomy(taxonomy: Taxonomy): Promise<void> {
+    await this.database.taxonomy.put({ ...taxonomy, id: TAXONOMY_ID });
   }
 
   listExpenses(): Promise<Expense[]> {

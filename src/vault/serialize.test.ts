@@ -38,7 +38,7 @@ describe("loadVault — compatibilidade com blob antigo", () => {
     data.liabilities = [{ id: "antigo" }]; // resíduo local a ser apagado
 
     const v1blob: VaultData = {
-      assets: [{ id: "a1", name: "Tesouro", currency: "BRL", amount: 10, type: "investment" }],
+      assets: [{ id: "a1", name: "Tesouro", classId: "renda-fixa", currency: "BRL", amount: 10 }],
       expenses: [{ id: "e1", name: "Moradia", currency: "EUR", amount: 5 }],
       // sem 'liabilities' / 'incomes' / 'netWorthSnapshots' (formato pré-v2)
     };

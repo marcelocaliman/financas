@@ -1,4 +1,5 @@
 import type { Asset, Expense, Income, Liability, NetWorthSnapshot } from "@/domain/types";
+import type { Taxonomy } from "@/domain/taxonomy";
 
 export interface SeedData {
   assets: Asset[];
@@ -29,6 +30,10 @@ export interface DataRepository {
   listLiabilities(): Promise<Liability[]>;
   putLiability(liability: Liability): Promise<void>;
   removeLiability(id: string): Promise<void>;
+
+  // Taxonomia editável (Classes, Subtipos, Regiões, Indexadores, Tipos de passivo)
+  getTaxonomy(): Promise<Taxonomy | null>;
+  putTaxonomy(taxonomy: Taxonomy): Promise<void>;
 
   // Orçamento / Histórico (leitura por enquanto)
   listExpenses(): Promise<Expense[]>;

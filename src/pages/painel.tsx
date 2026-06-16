@@ -7,6 +7,8 @@ import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useTaxonomy } from "@/hooks/use-taxonomy";
+import { CLASS, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
 import { scrollToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
@@ -30,6 +32,7 @@ function usePainelView() {
   const theme = useUI((s) => s.theme);
   const name = firstName(useVault((s) => s.email));
   const { data } = useDashboardData();
+  const tax = useTaxonomy();
   const colors = currencyColors(theme);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axisColor = theme === "dark" ? "#5f646c" : "#8a8f98";
@@ -50,7 +53,7 @@ function usePainelView() {
     const totalAssets = assetsDisp.reduce((s, a) => s + a.disp, 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
     const invested = data.assets
-      .filter((a) => a.type === "investment")
+      .filter((a) => a.classId !== CLASS.caixa && a.classId !== CLASS.imoveis)
       .reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const expDisp = data.expenses.map((e) => ({ name: e.name, value: conv(e.amount, e.currency) }));
     const totalExp = expDisp.reduce((s, e) => s + e.value, 0);
@@ -83,7 +86,7 @@ function usePainelView() {
     };
   }, [data, disp]);
 
-  return { t, disp, name, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
+  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
 }
 
 /** HERO do dashboard — eyebrow mono + manchete + número-herói + composição. */
@@ -130,7 +133,7 @@ export function DashboardHero() {
 
 /** Dashboard (abaixo do hero): gráfico + stats, depois orçamento + posições. */
 export function DashboardDetail() {
-  const { t, disp, accent, CAT_COLORS, monthLabel, view } = usePainelView();
+  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view } = usePainelView();
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
@@ -172,7 +175,7 @@ export function DashboardDetail() {
 
         <div className="grid grid-cols-2 gap-4">
           <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
-          <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.fixedIncome")} />
+          <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.financial")} />
           <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
           <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
         </div>
@@ -222,7 +225,7 @@ export function DashboardDetail() {
             <div className="min-w-[440px]">
               <div className="grid grid-cols-[1.6fr_1fr_1fr] pb-2 border-b border-border">
                 <Eyebrow>{t("patrimonio.name")}</Eyebrow>
-                <Eyebrow>{t("patrimonio.type")}</Eyebrow>
+                <Eyebrow>{t("patrimonio.class")}</Eyebrow>
                 <Eyebrow className="text-right">{t("patrimonio.amount")}</Eyebrow>
               </div>
               {topAssets.map((a, i) => (
@@ -237,7 +240,7 @@ export function DashboardDetail() {
                     <span className={cn("chip", `chip-${a.currency}`)}>{a.currency}</span>
                     <span className="text-[13.5px] truncate">{a.name}</span>
                   </span>
-                  <span className="text-[13px] text-muted truncate">{t(`patrimonio.assetType.${a.type}`)}</span>
+                  <span className="text-[13px] text-muted truncate">{nameById(tax.assetClasses, a.classId)}</span>
                   <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular text-right" />
                 </div>
               ))}

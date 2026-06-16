@@ -2,20 +2,20 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
+import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import type { Asset, AssetType, Liability, LiabilityType } from "@/domain/types";
+import type { Asset, Liability } from "@/domain/types";
+import { CLASS } from "@/domain/taxonomy";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
-
-const ASSET_TYPES: AssetType[] = ["investment", "property", "cash"];
-const LIAB_TYPES: LiabilityType[] = ["loan", "card", "mortgage", "other"];
+import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
 export default function Patrimonio() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const data = usePatrimonio();
+  const tax = useTaxonomy();
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -31,35 +31,69 @@ export default function Patrimonio() {
 
   const sym = CURRENCY_SYMBOL[disp];
   const conv = (a: number, c: Currency) => convert(a, c, disp);
+  const opts = (items: { id: string; name: string }[]): SelectOption[] =>
+    items.map((i) => ({ value: i.id, label: i.name }));
   const convertedCol = {
     key: "conv",
     type: "computed" as const,
     header: `${t("patrimonio.in")} ${sym}`,
-    width: "minmax(84px,0.9fr)",
+    width: "minmax(80px,0.8fr)",
     align: "right" as const,
   };
 
   const assetCols: GridColumn<Asset>[] = [
-    { key: "currency", type: "currency", header: "", width: "48px" },
+    { key: "currency", type: "currency", header: "", width: "46px" },
     {
       key: "name",
       type: "text",
       header: t("patrimonio.name"),
-      width: "minmax(130px,1.7fr)",
+      width: "minmax(150px,1.6fr)",
       placeholder: t("patrimonio.namePlaceholder"),
     },
     {
-      key: "type",
+      key: "classId",
       type: "select",
-      header: t("patrimonio.type"),
-      width: "minmax(108px,1fr)",
-      options: ASSET_TYPES.map((ty) => ({ value: ty, label: t(`patrimonio.assetType.${ty}`) })),
+      header: t("patrimonio.class"),
+      width: "minmax(132px,1.1fr)",
+      placeholder: t("patrimonio.classPlaceholder"),
+      options: opts(tax.assetClasses),
+    },
+    {
+      key: "subtypeId",
+      type: "select",
+      optional: true,
+      header: t("patrimonio.subtype"),
+      width: "minmax(150px,1.2fr)",
+      optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)),
+    },
+    {
+      key: "regionId",
+      type: "select",
+      optional: true,
+      header: t("patrimonio.region"),
+      width: "minmax(120px,1fr)",
+      options: opts(tax.regions),
+    },
+    {
+      key: "indexerId",
+      type: "select",
+      optional: true,
+      header: t("patrimonio.indexer"),
+      width: "minmax(104px,0.8fr)",
+      optionsFor: (r) => (r.classId === CLASS.rendaFixa ? opts(tax.indexers) : []),
+    },
+    {
+      key: "institution",
+      type: "text",
+      header: t("patrimonio.institution"),
+      width: "minmax(116px,1fr)",
+      placeholder: "—",
     },
     {
       key: "amount",
       type: "money",
       header: t("patrimonio.amount"),
-      width: "minmax(104px,1fr)",
+      width: "minmax(104px,0.9fr)",
       align: "right",
       currencyKey: "currency",
     },
@@ -67,45 +101,70 @@ export default function Patrimonio() {
   ];
 
   const liabCols: GridColumn<Liability>[] = [
-    { key: "currency", type: "currency", header: "", width: "48px" },
+    { key: "currency", type: "currency", header: "", width: "46px" },
     {
       key: "name",
       type: "text",
       header: t("patrimonio.name"),
-      width: "minmax(130px,1.7fr)",
+      width: "minmax(150px,1.7fr)",
       placeholder: t("patrimonio.namePlaceholderLiab"),
     },
     {
-      key: "type",
+      key: "typeId",
       type: "select",
       header: t("patrimonio.type"),
-      width: "minmax(108px,1fr)",
-      options: LIAB_TYPES.map((ty) => ({ value: ty, label: t(`patrimonio.liabilityType.${ty}`) })),
+      width: "minmax(160px,1.3fr)",
+      placeholder: t("patrimonio.typePlaceholder"),
+      options: opts(tax.liabilityTypes),
+    },
+    {
+      key: "interestRate",
+      type: "number",
+      header: t("patrimonio.interestRate"),
+      width: "minmax(96px,0.8fr)",
+      align: "right",
+    },
+    {
+      key: "installments",
+      type: "number",
+      header: t("patrimonio.installments"),
+      width: "minmax(92px,0.7fr)",
+      align: "right",
     },
     {
       key: "amount",
       type: "money",
-      header: t("patrimonio.amount"),
-      width: "minmax(104px,1fr)",
+      header: t("patrimonio.saldo"),
+      width: "minmax(110px,1fr)",
       align: "right",
       currencyKey: "currency",
     },
     { ...convertedCol, compute: (r: Liability) => formatMoney(conv(r.amount, r.currency), disp) },
   ];
 
+  /** Normaliza a cascata: limpa subtipo órfão e indexador fora de Renda Fixa. */
+  const commitAsset = (a: Asset) => {
+    const next = { ...a };
+    if (next.subtypeId && !tax.subtypes.some((s) => s.id === next.subtypeId && s.classId === next.classId)) {
+      next.subtypeId = undefined;
+    }
+    if (next.classId !== CLASS.rendaFixa) next.indexerId = undefined;
+    void actions.putAsset(next);
+  };
+
   const newAsset = (): Asset => ({
     id: crypto.randomUUID(),
     name: "",
+    classId: "",
     currency: disp,
     amount: 0,
-    type: "investment",
   });
   const newLiab = (): Liability => ({
     id: crypto.randomUUID(),
     name: "",
+    typeId: "",
     currency: disp,
     amount: 0,
-    type: "loan",
   });
 
   return (
@@ -145,13 +204,13 @@ export default function Patrimonio() {
       <section>
         <SectionHead title={t("patrimonio.assets")} count={data.assets.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[560px]">
+          <div className="min-w-[1080px]">
             <DataGrid<Asset>
               columns={assetCols}
               rows={data.assets}
               blank={newAsset}
-              isComplete={(r) => r.name.trim().length > 0}
-              onCommit={(r) => void actions.putAsset(r)}
+              isComplete={(r) => r.name.trim().length > 0 && r.classId.length > 0 && r.amount > 0}
+              onCommit={commitAsset}
               onDelete={(id) => void actions.removeAsset(id)}
               addPlaceholder={t("patrimonio.addAsset")}
               total={<Money value={view.totalAssets} currency={disp} />}
@@ -164,12 +223,12 @@ export default function Patrimonio() {
       <section>
         <SectionHead title={t("patrimonio.liabilities")} count={data.liabilities.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[560px]">
+          <div className="min-w-[760px]">
             <DataGrid<Liability>
               columns={liabCols}
               rows={data.liabilities}
               blank={newLiab}
-              isComplete={(r) => r.name.trim().length > 0}
+              isComplete={(r) => r.name.trim().length > 0 && r.typeId.length > 0 && r.amount > 0}
               onCommit={(r) => void actions.putLiability(r)}
               onDelete={(id) => void actions.removeLiability(id)}
               addPlaceholder={t("patrimonio.addLiability")}

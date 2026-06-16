@@ -12,6 +12,7 @@ import {
   NewRecoveryCode,
   DangerZone,
 } from "@/components/auth/account-settings";
+import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const THEMES: Theme[] = ["light", "dark"];
 const TABS = [
   { id: "conta", label: "Conta" },
   { id: "seguranca", label: "Segurança" },
+  { id: "categorias", label: "Categorias" },
   { id: "aparencia", label: "Aparência" },
   { id: "dados", label: "Dados" },
   { id: "privacidade", label: "Privacidade" },
@@ -66,6 +68,7 @@ export default function Config() {
             <NewRecoveryCode />
           </div>
         )}
+        {tab === "categorias" && <TaxonomyEditor />}
         {tab === "aparencia" && <Appearance />}
         {tab === "dados" && <DataSection />}
         {tab === "privacidade" && (
