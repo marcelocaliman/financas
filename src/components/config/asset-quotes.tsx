@@ -27,7 +27,7 @@ export function AssetQuotes() {
   useEffect(() => setToken(settings.brapiToken ?? ""), [settings.brapiToken]);
 
   const saved = (settings.brapiToken ?? "") === token.trim();
-  const quotable = data?.assets.filter((a) => a.ticker && a.quantity != null).length ?? 0;
+  const quotable = data?.assets.filter((a) => a.ticker && (a.quantity ?? 0) > 0).length ?? 0;
 
   const saveToken = () =>
     void actions.putSettings({ ...settings, brapiToken: token.trim() || undefined });
