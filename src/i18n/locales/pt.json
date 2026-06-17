@@ -272,6 +272,7 @@
     "move": "Variação do câmbio",
     "foreignExposure": "Em moeda estrangeira",
     "foreignShare": "do patrimônio",
+    "currencies": "Moedas",
     "swing": "Oscilação",
     "range": "Faixa do patrimônio",
     "colTitle": "Custo de vida por moeda",

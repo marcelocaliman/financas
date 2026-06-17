@@ -253,6 +253,8 @@ export function CrossBorderSummary() {
     <HeaderKpis>
       <HeaderKpi label={t("crossborder.foreignExposure")} value={<Money value={convert(fx.foreign, base, disp, rates)} currency={disp} />} />
       <HeaderKpi secondary label={t("crossborder.foreignShare")} value={`${Math.round(pct)}%`} />
+      {/* Diversificação cambial: útil mesmo sem exposição estrangeira (1 moeda) — evita o relance 0/0% vazio. */}
+      <HeaderKpi secondary label={t("crossborder.currencies")} value={<span className="tabular">{fx.rows.length}</span>} />
     </HeaderKpis>
   );
 }

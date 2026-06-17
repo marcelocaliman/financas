@@ -272,6 +272,7 @@
     "move": "FX move",
     "foreignExposure": "In foreign currency",
     "foreignShare": "of net worth",
+    "currencies": "Currencies",
     "swing": "Swing",
     "range": "Net worth range",
     "colTitle": "Cost of living by currency",
