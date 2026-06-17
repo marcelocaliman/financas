@@ -81,7 +81,21 @@ export default function Orcamento() {
       .slice(-12)
       .map(([mo, h]) => ({ month: mo, label: monthLabel(mo, lang, true), receitas: h.receitas, gastos: h.gastos, saldo: h.receitas - h.gastos }));
 
-    return { monthExp, monthInc, expByCat, totalExp, totalInc, saldo: totalInc - totalExp, history };
+    // Variação vs o mês anterior.
+    const pm = shiftMonth(month, -1);
+    const prevExp = data.expenses.filter((e) => e.month === pm).reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const prevInc = data.incomes.filter((i) => i.month === pm).reduce((s, i) => s + conv(i.amount, i.currency), 0);
+    return {
+      monthExp,
+      monthInc,
+      expByCat,
+      totalExp,
+      totalInc,
+      saldo: totalInc - totalExp,
+      history,
+      incDelta: prevInc > 0 ? ((totalInc - prevInc) / prevInc) * 100 : null,
+      expDelta: prevExp > 0 ? ((totalExp - prevExp) / prevExp) * 100 : null,
+    };
   }, [data, disp, rates, tax, t, month, lang]);
 
   if (!data || !view) {
@@ -134,6 +148,31 @@ export default function Orcamento() {
           ) : null}
         </div>
       </div>
+
+      {/* Variação vs o mês anterior */}
+      {view.incDelta != null || view.expDelta != null ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] -mt-4">
+          <span className="text-faint">{t("orcamento.vsPrev")}</span>
+          {view.incDelta != null ? (
+            <span className="text-muted">
+              {t("orcamento.income")}{" "}
+              <span className={`tabular ${view.incDelta >= 0 ? "text-accent" : "text-neg"}`}>
+                {view.incDelta >= 0 ? "+" : ""}
+                {Math.round(view.incDelta)}%
+              </span>
+            </span>
+          ) : null}
+          {view.expDelta != null ? (
+            <span className="text-muted">
+              {t("orcamento.expenses")}{" "}
+              <span className={`tabular ${view.expDelta <= 0 ? "text-accent" : "text-neg"}`}>
+                {view.expDelta >= 0 ? "+" : ""}
+                {Math.round(view.expDelta)}%
+              </span>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Histórico mensal */}
       {view.history.length > 1 ? (
@@ -252,12 +291,16 @@ export function OrcamentoSummary() {
     const mo = currentMonth();
     const totalExp = data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
-    return { totalExp, totalInc, saldo: totalInc - totalExp };
+    const saldo = totalInc - totalExp;
+    return { totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0 };
   }, [data, disp, rates]);
   if (!v) return null;
   return (
     <HeaderKpis>
       <HeaderKpi label={t("orcamento.balance")} tone={v.saldo >= 0 ? "text" : "neg"} value={<Money value={v.saldo} currency={disp} />} />
+      {v.totalInc > 0 ? (
+        <HeaderKpi secondary label={t("orcamento.savingsRate")} tone={v.savingsRate >= 0 ? "accent" : "neg"} value={`${Math.round(v.savingsRate)}%`} />
+      ) : null}
       <HeaderKpi secondary label={t("orcamento.income")} tone="accent" value={<Money value={v.totalInc} currency={disp} />} />
       <HeaderKpi secondary label={t("orcamento.expenses")} tone="neg" value={<Money value={v.totalExp} currency={disp} options={{ signDisplay: "never" }} />} />
     </HeaderKpis>

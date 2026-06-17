@@ -9,7 +9,7 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
-import { isInvestedClass, nameById } from "@/domain/taxonomy";
+import { CLASS, isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
 import { goToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
@@ -92,6 +92,9 @@ function usePainelView() {
       totalInc,
       incomeCount: monthInc.length,
       saldoMes: totalInc - totalExp,
+      // Saúde: taxa de poupança (do que entrou) + cobertura da reserva (caixa ÷ gasto/mês).
+      savingsRate: totalInc > 0 ? ((totalInc - totalExp) / totalInc) * 100 : 0,
+      reserveMonths: totalExp > 0 ? assetsDisp.filter((a) => a.classId === CLASS.caixa).reduce((s, a) => s + a.disp, 0) / totalExp : null,
       trend,
       nwChange,
       isEmpty,
@@ -191,6 +194,16 @@ export function DashboardDetail() {
           <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
           <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
         </div>
+      </div>
+
+      {/* Saúde financeira: taxa de poupança + cobertura da reserva */}
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        <StatTile label={t("dashboard.savingsRate")} value={`${Math.round(view.savingsRate)}%`} sub={t("dashboard.savingsRateSub")} positive={view.savingsRate >= 0} />
+        <StatTile
+          label={t("dashboard.reserve")}
+          value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
+          sub={t("dashboard.reserveSub")}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
