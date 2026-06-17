@@ -27,6 +27,9 @@ interface UIState {
   /** Posição do menu (persiste). */
   navLayout: NavLayout;
   setNavLayout: (v: NavLayout) => void;
+  /** Menu lateral recolhido (só ícones). Persiste. */
+  navCollapsed: boolean;
+  setNavCollapsed: (v: boolean) => void;
 }
 
 /** Preferências de UI. Persistem só a moeda PRINCIPAL + tema; a exibição é por-sessão. */
@@ -47,20 +50,22 @@ export const useUI = create<UIState>()(
       setConfigOpen: (configOpen) => set({ configOpen }),
       navLayout: "top",
       setNavLayout: (navLayout) => set({ navLayout }),
+      navCollapsed: false,
+      setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
     }),
     {
       name: "financas-ui",
       version: 3,
-      // Persistir a moeda PRINCIPAL + tema + posição do menu. A exibição é por-sessão (sempre
-      // nasce na principal) — o switcher do topo é prévia temporária, não um estado salvo.
-      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout }),
+      // Persistir a moeda PRINCIPAL + tema + posição/estado do menu. A exibição é por-sessão
+      // (sempre nasce na principal) — o switcher do topo é prévia temporária, não estado salvo.
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout, navCollapsed: s.navCollapsed }),
       migrate: (persisted, version) => {
-        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout };
+        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout; navCollapsed?: boolean };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
         // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
         const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
-        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "top" };
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "top", navCollapsed: s.navCollapsed ?? false };
       },
       // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
       onRehydrateStorage: () => (state) => {

@@ -344,7 +344,10 @@
     "lock": "Trancar o cofre",
     "logout": "Sair",
     "show": "Mostrar valores",
-    "hide": "Ocultar valores"
+    "hide": "Ocultar valores",
+    "collapse": "Recolher",
+    "expand": "Expandir",
+    "billsDue": "{{n}} a vencer"
   },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",

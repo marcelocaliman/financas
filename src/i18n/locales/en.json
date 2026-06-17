@@ -344,7 +344,10 @@
     "lock": "Lock the vault",
     "logout": "Log out",
     "show": "Show amounts",
-    "hide": "Hide amounts"
+    "hide": "Hide amounts",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "billsDue": "{{n}} due soon"
   },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",

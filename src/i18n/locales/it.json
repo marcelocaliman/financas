@@ -344,7 +344,10 @@
     "lock": "Blocca il caveau",
     "logout": "Esci",
     "show": "Mostra importi",
-    "hide": "Nascondi importi"
+    "hide": "Nascondi importi",
+    "collapse": "Comprimi",
+    "expand": "Espandi",
+    "billsDue": "{{n}} in scadenza"
   },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
