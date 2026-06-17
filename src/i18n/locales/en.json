@@ -334,6 +334,23 @@
     "generatedOn": "generated {{date}}",
     "footer": "Private · end-to-end encrypted"
   },
+  "v2": {
+    "logout": "Log out",
+    "backToV1": "Classic view",
+    "togglePrivacy": "Hide amounts",
+    "cashflow": "This month",
+    "transactions": "Recent transactions",
+    "payableAccounts": "Payable accounts",
+    "payableHint": "Keep your accounts up to date to avoid issues.",
+    "paidOf": "{{paid}} of {{total}} paid",
+    "noBills": "No bills due this month.",
+    "receipts": "Receipts",
+    "noTrend": "Add history records to see the trend.",
+    "uiVersion": "Interface version",
+    "v1Label": "Classic",
+    "v2Label": "New (beta)",
+    "uiVersionHint": "Experiment: a light sidebar interface. Same data; switch anytime."
+  },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
     "sections": "Sections",

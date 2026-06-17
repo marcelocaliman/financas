@@ -334,6 +334,23 @@
     "generatedOn": "generato il {{date}}",
     "footer": "Privato · cifrato end-to-end"
   },
+  "v2": {
+    "logout": "Esci",
+    "backToV1": "Vista classica",
+    "togglePrivacy": "Nascondi importi",
+    "cashflow": "Questo mese",
+    "transactions": "Transazioni recenti",
+    "payableAccounts": "Conti da pagare",
+    "payableHint": "Tieni i conti aggiornati per evitare problemi.",
+    "paidOf": "{{paid}} su {{total}} pagate",
+    "noBills": "Nessuna scadenza questo mese.",
+    "receipts": "Incassi",
+    "noTrend": "Aggiungi registri nello Storico per vedere l'andamento.",
+    "uiVersion": "Versione interfaccia",
+    "v1Label": "Classica",
+    "v2Label": "Nuova (beta)",
+    "uiVersionHint": "Esperimento: un'interfaccia chiara con sidebar. Stessi dati; cambia quando vuoi."
+  },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
     "sections": "Sezioni",

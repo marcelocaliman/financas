@@ -334,6 +334,23 @@
     "generatedOn": "gerado em {{date}}",
     "footer": "Privado · cifrado de ponta a ponta"
   },
+  "v2": {
+    "logout": "Sair",
+    "backToV1": "Versão clássica",
+    "togglePrivacy": "Ocultar valores",
+    "cashflow": "Fluxo do mês",
+    "transactions": "Transações recentes",
+    "payableAccounts": "Contas a pagar",
+    "payableHint": "Mantenha suas contas em dia para evitar problemas.",
+    "paidOf": "{{paid}} de {{total}} pagas",
+    "noBills": "Sem contas com vencimento neste mês.",
+    "receipts": "Recebimentos",
+    "noTrend": "Adicione registros no Histórico para ver a evolução.",
+    "uiVersion": "Versão da interface",
+    "v1Label": "Clássica",
+    "v2Label": "Nova (beta)",
+    "uiVersionHint": "Experimento: uma interface clara em sidebar. Mesmos dados; troque quando quiser."
+  },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
     "sections": "Seções",
