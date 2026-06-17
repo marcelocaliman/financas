@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nossas Finanças — patrimônio multimoeda, privado e cross-border</title>
+  <meta name="description" content="O painel completo pra quem vive entre países: patrimônio, orçamento, investimentos e a sua independência financeira — multimoeda e com criptografia ponta a ponta. O servidor nunca vê seus números." />
+  <meta name="theme-color" content="#0a0b0d" />
+  <meta property="og:title" content="Nossas Finanças" />
+  <meta property="og:description" content="Patrimônio multimoeda, privado de verdade. Para quem vive entre países." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0b0d; --bg-2: #0f1013; --card: #131418; --card-2: #191b20;
+      --text: #f3f4f6; --muted: #9ca2ac; --faint: #5f646c;
+      --border: rgba(255, 255, 255, 0.08); --border-strong: rgba(255, 255, 255, 0.12);
+      --accent: #3ecf8e; --accent-press: #2c9e6c; --accent-soft: rgba(62, 207, 142, 0.1);
+      --neg: #f1746a; --eur: #8a8f98;
+      --ring: rgba(62, 207, 142, 0.4);
+      --chip-brl-fg: #3ecf8e; --chip-brl-bg: rgba(62, 207, 142, 0.12);
+      --chip-eur-fg: #8a8f98; --chip-eur-bg: rgba(255, 255, 255, 0.06);
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px -24px rgba(0, 0, 0, 0.6);
+      --shadow-float: 0 24px 60px -28px rgba(0, 0, 0, 0.72);
+      --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+      --gutter: clamp(20px, 5vw, 56px);
+      --maxw: 1180px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; color: var(--text); font-family: var(--font-sans);
+      background:
+        radial-gradient(120% 60% at 50% -14%, rgba(255,255,255,0.015), transparent 60%),
+        var(--bg);
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      line-height: 1.5;
+    }
+    .tabular { font-variant-numeric: tabular-nums slashed-zero; }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding-inline: var(--gutter); }
+    .eyebrow {
+      font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint);
+    }
+    .eyebrow.accent { color: var(--accent); }
+
+    /* ───────── Header ───────── */
+    header.site {
+      position: sticky; top: 0; z-index: 50;
+      background: color-mix(in oklab, var(--bg) 82%, transparent);
+      backdrop-filter: blur(16px) saturate(1.05);
+      -webkit-backdrop-filter: blur(16px) saturate(1.05);
+      border-bottom: 1px solid transparent; transition: border-color .3s;
+    }
+    header.site.scrolled { border-bottom-color: var(--border); }
+    .nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 70px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+    .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #07140d; display: grid; place-items: center; flex: none; }
+    .mark svg { width: 16px; height: 16px; }
+    .nav-links { display: flex; gap: 30px; }
+    .nav-links a { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--text); }
+    @media (max-width: 820px) { .nav-links { display: none; } }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px;
+      padding: 0 18px; height: 42px; border-radius: 11px; border: 1px solid transparent;
+      cursor: pointer; transition: transform .15s, background .2s, border-color .2s; white-space: nowrap;
+    }
+    .btn-primary { background: var(--accent); color: #07140d; }
+    .btn-primary:hover { background: var(--accent-press); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
+    .btn-ghost:hover { background: var(--card-2); }
+    .btn-lg { height: 50px; padding: 0 24px; font-size: 15px; border-radius: 13px; }
+
+    /* ───────── Hero ───────── */
+    .hero { position: relative; overflow: hidden; }
+    .hero::before {
+      content: ""; position: absolute; top: -160px; left: 50%; transform: translateX(-50%);
+      width: 1000px; height: 560px; max-width: 110%;
+      background: radial-gradient(ellipse, rgba(62,207,142,0.14), transparent 62%);
+      pointer-events: none;
+    }
+    .hero-inner { position: relative; padding-top: clamp(64px, 9vw, 116px); padding-bottom: clamp(40px, 6vw, 72px); }
+    .hero h1 {
+      font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 600; letter-spacing: -0.04em;
+      line-height: 1.02; margin: 18px 0 0; max-width: 16ch;
+    }
+    .hero h1 .grad { color: var(--accent); }
+    .hero .sub { color: var(--muted); font-size: clamp(15px, 2vw, 19px); max-width: 56ch; margin-top: 24px; line-height: 1.55; }
+    .hero .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
+    .hero .meta { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 30px; color: var(--faint); font-size: 12.5px; }
+    .hero .meta span { display: inline-flex; align-items: center; gap: 7px; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+
+    /* App frame / mock */
+    .frame {
+      margin-top: clamp(40px, 6vw, 64px); border: 1px solid var(--border); border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent 30%), var(--bg-2);
+      box-shadow: var(--shadow-float); overflow: hidden;
+    }
+    .frame-bar { display: flex; align-items: center; gap: 7px; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+    .frame-bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--card-2); }
+    .frame-bar .addr { margin-left: 12px; font-family: var(--font-mono); font-size: 11px; color: var(--faint); }
+    .frame-body { padding: clamp(18px, 3vw, 30px); }
+
+    /* ───────── Cards / generic ───────── */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-card); }
+    .pad { padding: clamp(18px, 2.6vw, 26px); }
+    .muted { color: var(--muted); } .faint { color: var(--faint); }
+    .pos { color: var(--accent); } .negc { color: var(--neg); }
+    .chip { font-family: var(--font-mono); padding: 2px 6px; border-radius: 5px; font-size: 10px; font-weight: 600; letter-spacing: .02em; }
+    .chip-BRL { color: var(--chip-brl-fg); background: var(--chip-brl-bg); }
+    .chip-EUR { color: var(--chip-eur-fg); background: var(--chip-eur-bg); }
+
+    /* Sections */
+    section { padding-block: clamp(64px, 9vw, 120px); }
+    .section-head { max-width: 60ch; }
+    .section-head h2 { font-size: clamp(1.9rem, 4.2vw, 3rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1.05; margin: 14px 0 0; }
+    .section-head p { color: var(--muted); font-size: clamp(15px, 1.7vw, 18px); margin-top: 16px; line-height: 1.55; }
+    .divider { height: 1px; background: var(--border); }
+
+    /* Pillars */
+    .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 44px; }
+    .pillars .card { padding: 24px; }
+    .pillars h3 { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 16px 0 7px; }
+    .pillars p { color: var(--muted); font-size: 13.5px; margin: 0; line-height: 1.5; }
+    .ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+    .ic svg { width: 19px; height: 19px; }
+    @media (max-width: 920px) { .pillars { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .pillars { grid-template-columns: 1fr; } }
+
+    /* Feature rows (editorial split) */
+    .feature { display: grid; grid-template-columns: 1fr 1.08fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+    .feature.rev { grid-template-columns: 1.08fr 1fr; }
+    .feature.rev .copy { order: 2; }
+    .feature h2 { font-size: clamp(1.7rem, 3.6vw, 2.7rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1.06; margin: 14px 0 0; }
+    .feature .copy p { color: var(--muted); font-size: clamp(15px, 1.6vw, 17px); margin-top: 16px; line-height: 1.6; }
+    .feature ul { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 11px; }
+    .feature li { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--text); }
+    .feature li svg { width: 18px; height: 18px; color: var(--accent); flex: none; margin-top: 1px; }
+    @media (max-width: 860px) {
+      .feature, .feature.rev { grid-template-columns: 1fr; gap: 30px; }
+      .feature.rev .copy { order: 0; }
+    }
+    .trend-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 26px; }
+    .lib-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; margin-top: 46px; }
+    @media (max-width: 720px) { .trend-row { grid-template-columns: 1fr; } }
+    @media (max-width: 880px) { .lib-grid { grid-template-columns: 1fr; } }
+
+    /* Number styles */
+    .hero-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
+    .kpi { background: var(--card-2); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
+    .kpi .v { font-weight: 600; font-size: 17px; margin-top: 6px; }
+
+    /* Bars */
+    .bar-track { height: 8px; border-radius: 99px; background: var(--card-2); overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; background: var(--accent); }
+    .comp { display: flex; height: 12px; border-radius: 99px; overflow: hidden; gap: 2px; }
+    .comp > span { display: block; }
+
+    /* Liberdade highlight */
+    .liberdade { background: linear-gradient(180deg, rgba(62,207,142,0.05), transparent 40%); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .ring-wrap { display: grid; place-items: center; position: relative; }
+    .ring-wrap .pct { position: absolute; font-weight: 600; font-size: 30px; letter-spacing: -0.03em; }
+
+    /* Streak dots */
+    .streak { display: flex; gap: 7px; }
+    .streak i { width: 13px; height: 13px; border-radius: 50%; background: var(--accent); }
+    .streak i.off { background: var(--card-2); }
+
+    /* Contact */
+    .contact-card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: clamp(26px, 4vw, 48px); }
+    .field { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+    .field input {
+      flex: 1; min-width: 220px; height: 50px; border-radius: 13px; border: 1px solid var(--border-strong);
+      background: var(--bg-2); color: var(--text); padding: 0 16px; font-size: 15px; outline: none;
+    }
+    .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+    .legal { color: var(--faint); font-size: 12px; margin-top: 14px; }
+
+    /* Footer */
+    footer.site { border-top: 1px solid var(--border); padding-block: 54px; color: var(--muted); }
+    .foot { display: flex; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+    .foot a { color: var(--muted); } .foot a:hover { color: var(--text); }
+    .foot-links { display: flex; gap: 26px; flex-wrap: wrap; font-size: 13.5px; }
+    .langs { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; color: var(--faint); }
+
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .reveal { opacity: 1; transform: none; transition: none; } }
+  </style>
+</head>
+<body>
+  <!-- ════════ HEADER ════════ -->
+  <header class="site" id="top">
+    <div class="wrap nav">
+      <a class="brand" href="#top">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg>
+        </span>
+        Nossas Finanças
+      </a>
+      <nav class="nav-links">
+        <a href="#recursos">Recursos</a>
+        <a href="#liberdade">Liberdade</a>
+        <a href="#privacidade">Privacidade</a>
+        <a href="#multimoeda">Multimoeda</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <a class="btn btn-primary" href="#contato">Entrar na lista</a>
+    </div>
+  </header>
+
+  <!-- ════════ HERO ════════ -->
+  <div class="hero">
+    <div class="wrap hero-inner">
+      <div class="eyebrow accent">Patrimônio multimoeda · privado · cross-border</div>
+      <h1>Sua vida financeira entre países, <span class="grad">só sua.</span></h1>
+      <p class="sub">O painel completo pra quem vive entre moedas: patrimônio, orçamento, investimentos, projeção e a sua independência financeira — com criptografia ponta a ponta. O servidor nunca vê os seus números.</p>
+      <div class="ctas">
+        <a class="btn btn-primary btn-lg" href="#contato">Quero acesso antecipado</a>
+        <a class="btn btn-ghost btn-lg" href="#recursos">Ver os recursos</a>
+      </div>
+      <div class="meta">
+        <span><i class="dot"></i> Criptografia ponta a ponta (E2EE)</span>
+        <span><i class="dot"></i> Funciona offline (local-first)</span>
+        <span><i class="dot"></i> BRL · EUR · USD · GBP</span>
+        <span><i class="dot"></i> PT · EN · IT</span>
+      </div>
+
+      <!-- HERO MOCK: Painel -->
+      <div class="frame reveal">
+        <div class="frame-bar"><i></i><i></i><i></i><span class="addr">nossasfinancas.com.br</span></div>
+        <div class="frame-body">
+          <div class="eyebrow accent" style="margin-bottom:14px">Constância vira liberdade</div>
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:30px 52px">
+            <div>
+              <div class="eyebrow" style="margin-bottom:10px">Patrimônio líquido</div>
+              <div class="hero-num tabular" style="font-size:clamp(2.6rem,6vw,3.8rem)">R$&nbsp;1.284.930</div>
+              <div class="pos" style="margin-top:12px;font-size:13px;display:inline-flex;gap:5px;align-items:center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+                +2,9% <span class="faint">vs. mês anterior</span>
+              </div>
+            </div>
+            <!-- Liberdade ring -->
+            <div style="display:flex;align-items:center;gap:16px">
+              <div class="ring-wrap" style="width:78px;height:78px">
+                <svg width="78" height="78" viewBox="0 0 78 78" style="transform:rotate(-90deg)">
+                  <circle cx="39" cy="39" r="34" fill="none" stroke="var(--card-2)" stroke-width="7"/>
+                  <circle cx="39" cy="39" r="34" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="213.6" stroke-dashoffset="115.3"/>
+                </svg>
+                <span class="pct" style="font-size:17px">46%</span>
+              </div>
+              <div>
+                <div class="eyebrow">Liberdade</div>
+                <div class="muted" style="font-size:12.5px;max-width:150px;margin-top:6px">12,4 anos de liberdade cobertos</div>
+              </div>
+            </div>
+            <!-- Composition -->
+            <div style="flex:1;min-width:230px;max-width:380px">
+              <div class="eyebrow" style="margin-bottom:11px">Composição por moeda</div>
+              <div class="comp">
+                <span style="width:54%;background:var(--accent)"></span>
+                <span style="width:33%;background:var(--eur)"></span>
+                <span style="width:13%;background:#6b7280"></span>
+              </div>
+              <div style="display:flex;gap:18px;margin-top:11px;font-size:11.5px" class="faint tabular">
+                <span><span class="chip chip-BRL">BRL</span> 54%</span>
+                <span><span class="chip chip-EUR">EUR</span> 33%</span>
+                <span><span class="chip chip-EUR">USD</span> 13%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- mini trend + KPIs -->
+          <div class="trend-row">
+            <div class="card pad">
+              <div class="eyebrow" style="margin-bottom:10px">Tendência do patrimônio</div>
+              <svg viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px">
+                <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".22"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16 L400,120 L0,120 Z" fill="url(#g1)"/>
+                <path d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+              </svg>
+            </div>
+            <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
+              <div class="kpi"><div class="eyebrow">Saldo do mês</div><div class="v pos tabular">+R$ 7.392</div></div>
+              <div class="kpi"><div class="eyebrow">Rentabilidade</div><div class="v pos tabular">+11,4%</div></div>
+              <div class="kpi"><div class="eyebrow">Reserva</div><div class="v tabular">8,2 meses</div></div>
+              <div class="kpi"><div class="eyebrow">A vencer</div><div class="v tabular">3 contas</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ PILLARS ════════ -->
+  <section id="recursos" style="padding-top:clamp(40px,5vw,64px)">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="eyebrow accent">Por que existe</div>
+        <h2>Simples, mas completo. E privado de verdade.</h2>
+        <p>Finanças pessoais é um mercado lotado — mas multimoeda, cross-border e com privacidade real é mal atendido. Foi feito por quem vive a mudança Brasil&nbsp;⇄&nbsp;Itália.</p>
+      </div>
+      <div class="pillars">
+        <div class="card reveal">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>
+          <h3>Multimoeda de verdade</h3>
+          <p>Cada ativo guarda a própria moeda. Veja tudo convertido pra qualquer moeda de exibição, com câmbio ao vivo e fallback manual.</p>
+        </div>
+        <div class="card reveal">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+          <h3>Privado por criptografia</h3>
+          <p>E2EE: o dado sai do navegador já cifrado. A chave nasce da sua senha e nunca é transmitida. Nem nós conseguimos ler.</p>
+        </div>
+        <div class="card reveal">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg></span>
+          <h3>Local-first</h3>
+          <p>Instantâneo e offline; sincroniza sozinho em segundo plano. Limpar o navegador não perde nada — o cofre cifrado vive no servidor.</p>
+        </div>
+        <div class="card reveal">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2.5 9h19M2.5 15h19M12 3a13 13 0 0 1 0 18 13 13 0 0 1 0-18z"/></svg></span>
+          <h3>Feito p/ cross-border</h3>
+          <p>Pensado pra expatriados e pra quem vive entre países. Da renda em euro ao imóvel no Brasil — tudo num só lugar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FEATURE: Patrimônio & Investimentos ════════ -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="feature">
+        <div class="copy">
+          <div class="eyebrow accent">Patrimônio &amp; Investimentos</div>
+          <h2>Do imóvel ao satoshi.</h2>
+          <p>Ativos, passivos, classes e subtipos. Alocação atual vs. alvo pra rebalancear, cotações automáticas de ações e FIIs, e patrimônio líquido sempre certo — em qualquer moeda.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Composição por classe e por moeda</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Retorno, preço médio e rentabilidade</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Cronograma de dívidas e amortização</li>
+          </ul>
+        </div>
+        <div class="card pad reveal">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+            <div class="eyebrow">Alocação</div>
+            <div class="eyebrow faint">vs. alvo</div>
+          </div>
+          <div style="display:flex;gap:26px;align-items:center;margin-top:18px;flex-wrap:wrap">
+            <!-- donut -->
+            <svg width="148" height="148" viewBox="0 0 148 148" style="flex:none">
+              <g transform="rotate(-90 74 74)">
+                <circle cx="74" cy="74" r="58" fill="none" stroke="var(--card-2)" stroke-width="18"/>
+                <circle cx="74" cy="74" r="58" fill="none" stroke="#3ecf8e" stroke-width="18" stroke-dasharray="204.1 364.4" stroke-dashoffset="0"/>
+                <circle cx="74" cy="74" r="58" fill="none" stroke="#8a8f98" stroke-width="18" stroke-dasharray="102 364.4" stroke-dashoffset="-204.1"/>
+                <circle cx="74" cy="74" r="58" fill="none" stroke="#6b7280" stroke-width="18" stroke-dasharray="40.1 364.4" stroke-dashoffset="-306.1"/>
+                <circle cx="74" cy="74" r="58" fill="none" stroke="#4b5563" stroke-width="18" stroke-dasharray="18.2 364.4" stroke-dashoffset="-346.2"/>
+              </g>
+              <text x="74" y="70" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="600" font-family="var(--font-sans)" class="tabular">R$ 1,1M</text>
+              <text x="74" y="88" text-anchor="middle" fill="var(--faint)" font-size="10" font-family="var(--font-mono)" letter-spacing="1">INVESTIDO</text>
+            </svg>
+            <div style="flex:1;min-width:160px;display:grid;gap:13px">
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span>Renda fixa</span><span class="tabular muted">56%</span></div>
+                <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:56%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span>Ações &amp; ETFs</span><span class="tabular muted">28%</span></div>
+                <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:28%;background:var(--eur)"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span>FIIs / REITs</span><span class="tabular muted">11%</span></div>
+                <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:11%;background:#6b7280"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:13px"><span>Cripto</span><span class="tabular muted">5%</span></div>
+                <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:5%;background:#4b5563"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FEATURE: Orçamento ════════ -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="feature rev">
+        <div class="copy">
+          <div class="eyebrow accent">Orçamento</div>
+          <h2>Cada real — e cada euro — no lugar.</h2>
+          <p>Receitas e gastos por categoria, multimoeda, com lançamentos recorrentes que entram sozinhos e contas a pagar com vencimento. Orçado vs. realizado, mês a mês.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Recorrências e contas a pagar</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Taxa de poupança do mês</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Resumo mensal em PDF</li>
+          </ul>
+        </div>
+        <div class="card pad reveal">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <div class="eyebrow">Junho · gastos por categoria</div>
+            <div class="tabular" style="font-size:13px"><span class="faint">saldo</span> <span class="pos">+R$ 7.392</span></div>
+          </div>
+          <div style="display:grid;gap:14px;margin-top:18px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Moradia <span class="chip chip-EUR">EUR</span></span><span class="tabular muted">€ 1.180</span></div>
+              <div class="bar-track" style="margin-top:7px"><div class="bar-fill" style="width:82%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Alimentação</span><span class="tabular muted">€ 640</span></div>
+              <div class="bar-track" style="margin-top:7px"><div class="bar-fill" style="width:46%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Transporte</span><span class="tabular muted">€ 210</span></div>
+              <div class="bar-track" style="margin-top:7px"><div class="bar-fill" style="width:18%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>Lazer</span><span class="tabular muted">€ 180</span></div>
+              <div class="bar-track" style="margin-top:7px"><div class="bar-fill" style="width:14%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FEATURE: Histórico ════════ -->
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="feature">
+        <div class="copy">
+          <div class="eyebrow accent">Histórico</div>
+          <h2>Veja o dinheiro trabalhar.</h2>
+          <p>A evolução do seu patrimônio mês a mês — e quanto do crescimento veio do seu bolso (aporte) e quanto veio do rendimento. O “trabalho do dinheiro”, separado.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Aporte vs. rendimento</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Snapshot automático do patrimônio</li>
+          </ul>
+        </div>
+        <div class="card pad reveal">
+          <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+            <div class="kpi"><div class="eyebrow">Atual</div><div class="v tabular">R$ 1,28M</div></div>
+            <div class="kpi"><div class="eyebrow">Crescimento</div><div class="v pos tabular">+38%</div></div>
+            <div class="kpi"><div class="eyebrow">Aportes</div><div class="v tabular">R$ 186k</div></div>
+            <div class="kpi"><div class="eyebrow">Rendimento</div><div class="v pos tabular">R$ 152k</div></div>
+          </div>
+          <svg viewBox="0 0 420 150" preserveAspectRatio="none" style="width:100%;height:150px">
+            <defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".2"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22 L420,150 L0,150 Z" fill="url(#g2)"/>
+            <path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22" fill="none" stroke="#3ecf8e" stroke-width="2.2"/>
+            <path d="M0,134 L42,132 L84,131 L126,127 L168,126 L210,118 L252,114 L294,106 L336,103 L378,95 L420,90" fill="none" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="3 4"/>
+          </svg>
+          <div style="display:flex;gap:18px;margin-top:8px;font-size:11px" class="faint">
+            <span><span style="display:inline-block;width:10px;height:2px;background:#3ecf8e;vertical-align:middle"></span> Patrimônio</span>
+            <span><span style="display:inline-block;width:10px;height:0;border-top:1px dashed var(--faint);vertical-align:middle"></span> Só aportes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ LIBERDADE (destaque) ════════ -->
+  <section id="liberdade" class="liberdade">
+    <div class="wrap">
+      <div class="section-head" style="max-width:64ch">
+        <div class="eyebrow accent">Liberdade — o diferencial</div>
+        <h2>Quanto falta para você ser livre?</h2>
+        <p>A gamificação séria — sem badges, sem confete. Patrimônio vira progresso tangível rumo à independência financeira: a sua %, o número da independência, os anos cobertos, a data de chegada e a constância.</p>
+      </div>
+
+      <div class="lib-grid">
+        <!-- big ring card -->
+        <div class="card pad reveal" style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+          <div class="ring-wrap" style="width:160px;height:160px;flex:none">
+            <svg width="160" height="160" viewBox="0 0 160 160" style="transform:rotate(-90deg)">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--card-2)" stroke-width="11"/>
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--accent)" stroke-width="11" stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="237.5"/>
+            </svg>
+            <span class="pct" style="font-size:38px">46%</span>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:clamp(1.3rem,2.6vw,1.7rem);font-weight:600;letter-spacing:-0.03em;line-height:1.15">Você está a 46% da liberdade</div>
+            <div class="muted" style="margin-top:10px;font-size:13.5px">Número da independência: <b style="color:var(--text)" class="tabular">R$ 2.760.000</b> · ≈ 25× seu custo anual</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px">
+              <div><div class="eyebrow">Anos cobertos</div><div class="v tabular" style="font-weight:600;font-size:18px;margin-top:5px">12,4 anos</div></div>
+              <div><div class="eyebrow">Chegada estimada</div><div class="v tabular pos" style="font-weight:600;font-size:18px;margin-top:5px">mar/2034</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- streak + score -->
+        <div style="display:grid;gap:24px">
+          <div class="card pad reveal">
+            <div class="eyebrow">Constância</div>
+            <div style="display:flex;align-items:flex-end;gap:36px;margin-top:14px">
+              <div><div class="pos tabular" style="font-size:40px;font-weight:600;line-height:1">14</div><div class="eyebrow" style="margin-top:8px">sequência atual</div></div>
+              <div><div class="tabular" style="font-size:28px;font-weight:600;line-height:1">18</div><div class="eyebrow" style="margin-top:8px">recorde</div></div>
+            </div>
+            <div class="streak" style="margin-top:18px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="off"></i></div>
+            <div class="faint" style="font-size:11.5px;margin-top:12px">Meses seguidos no positivo — receitas acima dos gastos.</div>
+          </div>
+          <div class="card pad reveal">
+            <div class="eyebrow">Saúde financeira</div>
+            <div style="display:flex;align-items:flex-end;gap:10px;margin-top:12px">
+              <div class="tabular" style="font-size:40px;font-weight:600;line-height:1">82</div>
+              <div class="faint" style="font-size:12.5px;margin-bottom:6px">/ 100 · excelente</div>
+            </div>
+            <div style="display:grid;gap:9px;margin-top:16px">
+              <div><div style="display:flex;justify-content:space-between;font-size:12px"><span class="muted">Poupança</span></div><div class="bar-track" style="margin-top:5px;height:6px"><div class="bar-fill" style="width:88%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px"><span class="muted">Diversificação</span></div><div class="bar-track" style="margin-top:5px;height:6px"><div class="bar-fill" style="width:74%"></div></div></div>
+              <div><div style="display:flex;justify-content:space-between;font-size:12px"><span class="muted">Reserva</span></div><div class="bar-track" style="margin-top:5px;height:6px"><div class="bar-fill" style="width:100%"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- marcos -->
+      <div class="card pad reveal" style="margin-top:24px">
+        <div class="eyebrow" style="margin-bottom:16px">Marcos</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:9px;font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> <span class="tabular">R$ 690.000 · 25% livre</span></div>
+          <div style="display:flex;align-items:center;gap:9px;font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg> <span class="tabular">Reserva de emergência completa</span></div>
+          <div style="display:flex;align-items:center;gap:9px;font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg> <span class="muted tabular">R$ 1.380.000 · 50% livre</span> <span class="eyebrow accent">próximo</span></div>
+          <div style="display:flex;align-items:center;gap:9px;font-size:13.5px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg> <span class="faint tabular">R$ 2.070.000 · 75% livre</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FEATURE: Projeção & Objetivos ════════ -->
+  <section>
+    <div class="wrap">
+      <div class="feature">
+        <div class="copy">
+          <div class="eyebrow accent">Projeção &amp; Objetivos</div>
+          <h2>O futuro, em números.</h2>
+          <p>Juros compostos sobre patrimônio e aportes, em cenários otimista / base / pessimista, nominal e em valor de hoje. E metas com barra de progresso e data de chegada no seu ritmo.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Multi-cenário e número FIRE</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Metas com “chegada estimada”</li>
+          </ul>
+        </div>
+        <div class="card pad reveal">
+          <div class="eyebrow" style="margin-bottom:12px">Projeção · 20 anos</div>
+          <svg viewBox="0 0 420 160" preserveAspectRatio="none" style="width:100%;height:160px">
+            <path d="M0,140 C120,120 260,80 420,18" fill="none" stroke="#3ecf8e" stroke-width="2.4"/>
+            <path d="M0,140 C120,128 260,104 420,64" fill="none" stroke="#8a8f98" stroke-width="2"/>
+            <path d="M0,140 C120,134 260,122 420,98" fill="none" stroke="#f1746a" stroke-width="2" stroke-opacity=".8"/>
+          </svg>
+          <div style="display:flex;gap:16px;margin-top:8px;font-size:11px" class="faint">
+            <span><span style="display:inline-block;width:10px;height:2px;background:#3ecf8e;vertical-align:middle"></span> Otimista</span>
+            <span><span style="display:inline-block;width:10px;height:2px;background:#8a8f98;vertical-align:middle"></span> Base</span>
+            <span><span style="display:inline-block;width:10px;height:2px;background:#f1746a;vertical-align:middle"></span> Pessimista</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span>Casa na Itália</span><span class="tabular muted">72%</span></div>
+              <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:72%"></div></div>
+              <div class="faint" style="font-size:11px;margin-top:5px">≈ set/2027</div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13px"><span>Reserva 12m</span><span class="tabular muted">100%</span></div>
+              <div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:100%"></div></div>
+              <div class="pos" style="font-size:11px;margin-top:5px">atingida</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ PRIVACIDADE ════════ -->
+  <section id="privacidade" style="background:var(--bg-2);border-block:1px solid var(--border)">
+    <div class="wrap">
+      <div class="feature">
+        <div class="copy">
+          <div class="eyebrow accent">Privacidade</div>
+          <h2>O servidor nunca vê os seus números.</h2>
+          <p>Seu dado financeiro só vai pro servidor <b style="color:var(--text)">cifrado</b>. A chave é derivada da sua senha por um KDF forte (Argon2id) e <b style="color:var(--text)">nunca é transmitida</b>. No cadastro você recebe um código de recuperação — a única segunda via.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Cifra e decifra só no navegador (E2EE)</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Sem recuperação por e-mail do dado: a chave é sua</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> Export/import: você é dono dos dados (JSON e CSV)</li>
+          </ul>
+        </div>
+        <div class="card pad reveal" style="font-family:var(--font-mono);font-size:12.5px">
+          <div class="eyebrow" style="margin-bottom:14px">o que o servidor guarda</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><span class="chip chip-BRL">VOCÊ</span> <span class="muted">patrimônio: R$ 1.284.930</span></div>
+          <div style="text-align:center;color:var(--faint);margin:6px 0">↓ cifrado no seu navegador ↓</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--faint);word-break:break-all;line-height:1.7">
+            kZ9·a7F2···8Qx//Vd1n+Lp4Tg···Rb6m≈c0Y···eW3kJh···Os51d2···Ux8//4Aq···Tn0pLz·9
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span class="chip chip-EUR">SERVIDOR</span> <span class="faint">vê só ciphertext — nunca o valor</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ MULTIMOEDA / CROSS-BORDER ════════ -->
+  <section id="multimoeda">
+    <div class="wrap">
+      <div class="section-head" style="max-width:62ch">
+        <div class="eyebrow accent">Multimoeda &amp; cross-border</div>
+        <h2>Brasil, Itália — e o que vier.</h2>
+        <p>Renda em euro, investimentos no Brasil, conta nos EUA. Cada item guarda a própria moeda; você escolhe a moeda de exibição e vê tudo convertido. Com a profundidade de câmbio e estrutura tributária de quem vive a jornada.</p>
+      </div>
+      <div class="card pad reveal" style="margin-top:40px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">
+          <div><div class="eyebrow">BRL → EUR</div><div class="tabular" style="font-size:22px;font-weight:600;margin-top:8px">0,158</div><div class="pos" style="font-size:12px;margin-top:4px">+0,4%</div></div>
+          <div><div class="eyebrow">BRL → USD</div><div class="tabular" style="font-size:22px;font-weight:600;margin-top:8px">0,171</div><div class="negc" style="font-size:12px;margin-top:4px">−0,2%</div></div>
+          <div><div class="eyebrow">EUR → BRL</div><div class="tabular" style="font-size:22px;font-weight:600;margin-top:8px">6,34</div><div class="pos" style="font-size:12px;margin-top:4px">+0,3%</div></div>
+          <div><div class="eyebrow">GBP → EUR</div><div class="tabular" style="font-size:22px;font-weight:600;margin-top:8px">1,19</div><div class="faint" style="font-size:12px;margin-top:4px">0,0%</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CONTATO ════════ -->
+  <section id="contato" style="background:var(--bg-2);border-top:1px solid var(--border)">
+    <div class="wrap">
+      <div class="contact-card reveal">
+        <div class="feature" style="align-items:center">
+          <div>
+            <div class="eyebrow accent">Acesso antecipado</div>
+            <h2 style="font-size:clamp(1.8rem,4vw,2.7rem);font-weight:600;letter-spacing:-0.035em;line-height:1.06;margin:14px 0 0">Quer entrar antes de todo mundo?</h2>
+            <p class="muted" style="margin-top:16px;font-size:16px;line-height:1.55">O cadastro é fechado por enquanto, enquanto o básico legal (LGPD/GDPR) fica pronto. Deixe seu e-mail pra entrar na lista — ou fale comigo direto.</p>
+            <form id="leadForm" class="field" novalidate>
+              <input id="leadEmail" type="email" inputmode="email" placeholder="seu@email.com" aria-label="Seu e-mail" required />
+              <button class="btn btn-primary btn-lg" type="submit">Entrar na lista</button>
+            </form>
+            <div class="legal">Sem spam. Seu e-mail só pra avisar do lançamento — separado do dado financeiro, com consentimento.</div>
+          </div>
+          <div style="display:grid;gap:14px">
+            <a class="card pad" id="mailDirect" href="#" style="display:flex;align-items:center;gap:14px;transition:border-color .2s">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></span>
+              <span><span style="font-weight:600;display:block">Falar direto comigo</span><span class="muted" style="font-size:13px">Responder dúvidas, parcerias, feedback</span></span>
+            </a>
+            <a class="card pad" href="https://mcaliman.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:14px;transition:border-color .2s">
+              <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.5 9h17M3.5 15h17M12 3a13 13 0 0 1 0 18 13 13 0 0 1 0-18z"/></svg></span>
+              <span><span style="font-weight:600;display:block">mcaliman.com</span><span class="muted" style="font-size:13px">Conteúdo cross-border & consultoria</span></span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ FOOTER ════════ -->
+  <footer class="site">
+    <div class="wrap foot">
+      <div style="max-width:34ch">
+        <a class="brand" href="#top" style="margin-bottom:12px">
+          <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span>
+          Nossas Finanças
+        </a>
+        <div style="font-size:13px;line-height:1.6">Patrimônio multimoeda, privado e cross-border. Construído por quem vive a jornada Brasil&nbsp;⇄&nbsp;Itália.</div>
+        <div class="langs" style="margin-top:16px">PT · EN · IT</div>
+      </div>
+      <div class="foot-links">
+        <a href="#recursos">Recursos</a>
+        <a href="#liberdade">Liberdade</a>
+        <a href="#privacidade">Privacidade</a>
+        <a href="#contato">Contato</a>
+        <a href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a>
+      </div>
+    </div>
+    <div class="wrap" style="margin-top:32px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--faint)">
+      <span>© <span id="year">2026</span> Nossas Finanças</span>
+      <span>Privacidade por criptografia ponta a ponta · LGPD/GDPR</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      // e-mail montado em runtime (anti-scraping leve)
+      var owner = ["marcelo.salgado.caliman", "gmail.com"].join("@");
+      var direct = document.getElementById("mailDirect");
+      if (direct) direct.href = "mailto:" + owner + "?subject=" + encodeURIComponent("Nossas Finanças — contato");
+
+      var form = document.getElementById("leadForm");
+      if (form) form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var email = (document.getElementById("leadEmail").value || "").trim();
+        var subject = "Lista de espera — Nossas Finanças";
+        var body = "Quero entrar na lista de acesso antecipado." + (email ? "\nMeu e-mail: " + email : "");
+        window.location.href = "mailto:" + owner + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      });
+
+      // header sólido ao rolar
+      var header = document.querySelector("header.site");
+      var onScroll = function () { header.classList.toggle("scrolled", window.scrollY > 20); };
+      onScroll(); window.addEventListener("scroll", onScroll, { passive: true });
+
+      // reveal on scroll
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+      }, { threshold: 0.12 });
+      document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+      var y = document.getElementById("year");
+      if (y) y.textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
