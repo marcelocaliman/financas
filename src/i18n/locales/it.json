@@ -182,6 +182,12 @@
     "current": "Ultima registrazione",
     "totalChange": "Variazione totale",
     "contributions": "Versamenti",
+    "growth": "Crescita totale",
+    "return": "Rendimento",
+    "returnSub": "il denaro al lavoro",
+    "contributionsSub": "di tasca tua",
+    "period": "Periodo",
+    "monthsValue": "{{n}} mesi",
     "snapshots": "Registrazioni",
     "addSnapshot": "Aggiungi registrazione",
     "autoHint": "Il mese corrente è catturato automaticamente dal tuo patrimonio e si aggiorna da solo. Modifica una riga per gestirla manualmente."
@@ -193,7 +199,8 @@
     "deadline": "Scadenza",
     "addGoal": "Aggiungi obiettivo",
     "saved": "Accantonato",
-    "avgProgress": "Progresso medio"
+    "avgProgress": "Progresso medio",
+    "remaining": "Mancano"
   },
   "investimentos": {
     "total": "Totale investito",

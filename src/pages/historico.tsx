@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
+import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
@@ -10,12 +10,23 @@ import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/cu
 import type { NetWorthSnapshot } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
+import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
+const LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
+/** "AAAA-MM" → "mmm/aa" no idioma corrente (rótulos discretos do eixo). */
+function shortMonth(ym: string, lang: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return ym;
+  return new Date(y, m - 1, 1).toLocaleDateString(LOCALE[lang] ?? "pt-BR", { month: "short", year: "2-digit" });
+}
+
 export default function Historico() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
   const base = useUI((s) => s.baseCurrency);
   const theme = useUI((s) => s.theme);
@@ -27,13 +38,17 @@ export default function Historico() {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
-    const series = sorted.map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
+    const series = sorted.map((s) => ({ m: s.month, v: conv(s.amount, s.currency), label: shortMonth(s.month, lang) }));
     const first = series[0];
     const last = series.at(-1);
-    const change = first && last && first.v !== 0 ? ((last.v - first.v) / first.v) * 100 : 0;
+    const current = last?.v ?? 0;
+    const growth = first && last ? last.v - first.v : 0;
+    const change = first && last && first.v !== 0 ? (growth / first.v) * 100 : 0;
     const contributions = sorted.reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
-    return { sorted, series, current: last?.v ?? 0, change, contributions, hasTrend: series.length >= 2 };
-  }, [data, disp, rates]);
+    // Rendimento = crescimento que NÃO veio de aporte (o "trabalho do dinheiro").
+    const yieldGain = growth - contributions;
+    return { sorted, series, current, growth, change, contributions, yieldGain, months: series.length, first, last, hasTrend: series.length >= 2 };
+  }, [data, disp, rates, lang]);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -60,12 +75,33 @@ export default function Historico() {
 
   const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: base, amount: 0 });
 
+  const up = view.change >= 0;
+  const yieldUp = view.yieldGain >= 0;
   return (
     <div className="space-y-7">
+      {/* Indicadores da evolução: atual · crescimento · aporte vs rendimento · período */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} />
+        <Kpi
+          label={t("historico.growth")}
+          value={<Money value={view.growth} currency={disp} options={{ signDisplay: "always" }} />}
+          tone={up ? "accent" : "neg"}
+          sub={view.hasTrend ? <Hidden>{`${up ? "+" : ""}${view.change.toFixed(1)}%`}</Hidden> : "—"}
+        />
+        <Kpi label={t("historico.contributions")} value={<Money value={view.contributions} currency={disp} />} sub={t("historico.contributionsSub")} />
+        <Kpi
+          label={t("historico.return")}
+          value={<Money value={view.yieldGain} currency={disp} options={{ signDisplay: "always" }} />}
+          tone={yieldUp ? "accent" : "neg"}
+          sub={t("historico.returnSub")}
+        />
+        <Kpi label={t("historico.period")} raw value={t("historico.monthsValue", { n: view.months })} sub={view.first && view.last ? `${view.first.label} → ${view.last.label}` : "—"} />
+      </div>
+
       {view.hasTrend ? (
         <Tile className="p-6 md:p-7">
           <Eyebrow className="mb-4">{t("dashboard.netWorthTrend")}</Eyebrow>
-          <div className="w-full h-[210px]">
+          <div className="w-full h-[230px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={view.series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
                 <defs>
@@ -74,8 +110,17 @@ export default function Historico() {
                     <stop offset="100%" stopColor={accent} stopOpacity={0} />
                   </linearGradient>
                 </defs>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10.5, fill: "var(--faint)" }}
+                  axisLine={false}
+                  tickLine={false}
+                  minTickGap={28}
+                  interval="preserveStartEnd"
+                />
                 <Tooltip
                   formatter={(v) => formatMoney(Number(v), disp)}
+                  labelFormatter={(_l, p) => (p && p[0] ? p[0].payload.label : "")}
                   contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
                   labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
                 />

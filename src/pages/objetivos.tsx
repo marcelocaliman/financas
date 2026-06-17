@@ -9,9 +9,10 @@ import { convert, type Currency } from "@/money/currency";
 import { realReturn, yearsToFI } from "@/finance/fire";
 import { addMonthsLabel } from "@/finance/liberdade";
 import type { Goal } from "@/domain/types";
-import { Tile } from "@/components/common/tile";
+import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
+import { ProgressRing } from "@/components/common/progress-ring";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
@@ -33,24 +34,34 @@ export default function Objetivos() {
   const baseScenario = useProjection((s) => s.scenarios.base);
   const inflation = useProjection((s) => s.annualInflation);
 
-  const cards = useMemo(() => {
+  const view = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const realRet = realReturn(baseScenario.annualReturn, inflation);
-    return data.map((g) => {
-      const target = conv(g.target, g.currency);
-      const current = conv(g.current, g.currency);
-      const pct = target > 0 ? Math.min(100, Math.max(0, (current / target) * 100)) : 0;
-      const done = target > 0 && current >= target;
-      const years = target > 0 ? yearsToFI({ portfolio: current, monthlyContribution: baseScenario.monthly, realAnnualReturn: realRet, target }) : null;
-      const arrival = done ? "done" : years == null ? null : monthLabel(addMonthsLabel(new Date(), Math.round(years * 12)), lang);
-      return { ...g, target, current, pct, arrival };
-    });
+    const cards = data
+      .map((g) => {
+        const target = conv(g.target, g.currency);
+        const current = conv(g.current, g.currency);
+        const pct = target > 0 ? Math.min(100, Math.max(0, (current / target) * 100)) : 0;
+        const remaining = Math.max(0, target - current);
+        const done = target > 0 && current >= target;
+        const years = target > 0 ? yearsToFI({ portfolio: current, monthlyContribution: baseScenario.monthly, realAnnualReturn: realRet, target }) : null;
+        const arrival = done ? "done" : years == null ? null : monthLabel(addMonthsLabel(new Date(), Math.round(years * 12)), lang);
+        return { ...g, target, current, pct, remaining, done, arrival };
+      })
+      .sort((a, b) => b.pct - a.pct); // mais perto da conclusão primeiro (momentum)
+    const totalSaved = cards.reduce((s, g) => s + g.current, 0);
+    const totalTarget = cards.reduce((s, g) => s + g.target, 0);
+    const totalRemaining = cards.reduce((s, g) => s + g.remaining, 0);
+    const totalPct = totalTarget > 0 ? Math.min(100, (totalSaved / totalTarget) * 100) : 0;
+    const doneCount = cards.filter((g) => g.done).length;
+    return { cards, totalSaved, totalTarget, totalRemaining, totalPct, doneCount };
   }, [data, disp, rates, baseScenario, inflation, lang]);
 
-  if (!data || !cards) {
+  if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
   }
+  const { cards } = view;
 
   const cols: GridColumn<Goal>[] = [
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("objetivos.namePlaceholder") },
@@ -72,36 +83,71 @@ export default function Objetivos() {
   return (
     <div className="space-y-7">
       {cards.length > 0 ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {cards.map((g) => (
-            <Tile key={g.id} className="p-5">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-[14px] font-medium truncate">{g.name}</span>
-                {g.deadline ? <span className="eyebrow shrink-0">{g.deadline}</span> : null}
-              </div>
-              <div className="flex items-baseline justify-between gap-2 mt-3">
-                <Money value={g.current} currency={disp} className="font-numeric font-semibold tabular text-[18px]" />
-                <span className="text-[12.5px] text-faint tabular">
-                  / <Money value={g.target} currency={disp} />
+        <>
+          {/* Resumo agregado de todas as metas */}
+          <Tile className="p-6 md:p-7">
+            <div className="flex flex-wrap items-center gap-x-9 gap-y-5">
+              <ProgressRing pct={view.totalPct} size={104} stroke={9}>
+                <span className="text-[clamp(1.1rem,3vw,1.45rem)] font-semibold tabular leading-none">
+                  <Hidden>{Math.round(view.totalPct)}%</Hidden>
                 </span>
+              </ProgressRing>
+              <div className="min-w-0">
+                <Eyebrow>{t("objetivos.saved")}</Eyebrow>
+                <div className="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
+                  <Money value={view.totalSaved} currency={disp} className="text-[clamp(1.2rem,3vw,1.6rem)] font-semibold tabular" />
+                  <span className="text-faint text-[13px]">/ <Money value={view.totalTarget} currency={disp} /></span>
+                </div>
               </div>
-              <div className="mt-3 h-[8px] rounded-full bg-card2 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-accent transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                  style={{ width: `${g.pct}%` }}
-                />
+              <div className="flex items-start gap-x-9 gap-y-4">
+                <div>
+                  <Eyebrow>{t("objetivos.remaining")}</Eyebrow>
+                  <div className="mt-1.5 text-[15px] font-semibold tabular"><Money value={view.totalRemaining} currency={disp} /></div>
+                </div>
+                <div>
+                  <Eyebrow>{t("nav.objetivos")}</Eyebrow>
+                  <div className="mt-1.5 text-[15px] font-semibold tabular">{view.doneCount}/{cards.length}</div>
+                </div>
               </div>
-              <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px]">
-                <span className="text-muted tabular"><Hidden>{Math.round(g.pct) + "%"}</Hidden></span>
-                {g.arrival === "done" ? (
-                  <span className="text-accent font-medium">{t("liberdade.goalReached")}</span>
-                ) : g.arrival ? (
-                  <span className="text-faint tabular capitalize">{t("liberdade.goalArrival", { date: g.arrival })}</span>
+            </div>
+          </Tile>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {cards.map((g) => (
+              <Tile key={g.id} className="p-5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[14px] font-medium truncate">{g.name}</span>
+                  {g.deadline ? <span className="eyebrow shrink-0">{g.deadline}</span> : null}
+                </div>
+                <div className="flex items-baseline justify-between gap-2 mt-3">
+                  <Money value={g.current} currency={disp} className="font-numeric font-semibold tabular text-[18px]" />
+                  <span className="text-[12.5px] text-faint tabular">
+                    / <Money value={g.target} currency={disp} />
+                  </span>
+                </div>
+                <div className="mt-3 h-[8px] rounded-full bg-card2 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-accent transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                    style={{ width: `${g.pct}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px]">
+                  <span className="text-muted tabular"><Hidden>{Math.round(g.pct) + "%"}</Hidden></span>
+                  {g.done ? (
+                    <span className="text-accent font-medium">{t("liberdade.goalReached")}</span>
+                  ) : (
+                    <span className="text-faint tabular">{t("objetivos.remaining")} <Money value={g.remaining} currency={disp} /></span>
+                  )}
+                </div>
+                {g.arrival && g.arrival !== "done" ? (
+                  <div className="mt-1.5 pt-2 border-t border-border text-[11px] text-faint tabular capitalize">
+                    {t("liberdade.goalArrival", { date: g.arrival })}
+                  </div>
                 ) : null}
-              </div>
-            </Tile>
-          ))}
-        </div>
+              </Tile>
+            ))}
+          </div>
+        </>
       ) : null}
 
       <section>

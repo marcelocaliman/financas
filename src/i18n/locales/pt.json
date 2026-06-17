@@ -182,6 +182,12 @@
     "current": "Último registro",
     "totalChange": "Variação total",
     "contributions": "Aportes",
+    "growth": "Crescimento total",
+    "return": "Rendimento",
+    "returnSub": "trabalho do dinheiro",
+    "contributionsSub": "do seu bolso",
+    "period": "Período",
+    "monthsValue": "{{n}} meses",
     "snapshots": "Registros",
     "addSnapshot": "Adicionar registro",
     "autoHint": "O mês atual é capturado automaticamente do seu patrimônio e se atualiza sozinho. Edite qualquer linha pra assumir o controle dela."
@@ -193,7 +199,8 @@
     "deadline": "Prazo",
     "addGoal": "Adicionar objetivo",
     "saved": "Guardado",
-    "avgProgress": "Progresso médio"
+    "avgProgress": "Progresso médio",
+    "remaining": "Faltam"
   },
   "investimentos": {
     "total": "Total investido",

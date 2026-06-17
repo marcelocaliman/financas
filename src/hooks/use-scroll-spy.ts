@@ -40,9 +40,22 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
   return active;
 }
 
-/** Rola suavemente até a seção (respeitando a top-bar via scroll-margin no CSS). */
+/** Altura da barra fixa que cobre o topo, conforme o layout — pra a seção encostar no topo
+ *  (com uma folga pequena) em vez de ficar atrás da barra ou com um vão grande. */
+function topBarOffset(): number {
+  if (typeof window === "undefined") return 24;
+  const side = useUI.getState().navLayout === "side";
+  const desktop = window.innerWidth >= 1024;
+  if (side) return desktop ? 20 : 72; // lateral: desktop sem barra (só folga); mobile MobileBar(60)+folga
+  return 88; // TopNav (72) + folga
+}
+
+/** Rola suavemente até a seção, parando logo abaixo da barra fixa (ancora no topo, sem vão). */
 export function scrollToSection(id: string): void {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const el = document.getElementById(id);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - topBarOffset();
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 
 /** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move).

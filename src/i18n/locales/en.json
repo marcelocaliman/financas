@@ -182,6 +182,12 @@
     "current": "Last snapshot",
     "totalChange": "Total change",
     "contributions": "Contributions",
+    "growth": "Total growth",
+    "return": "Return",
+    "returnSub": "money at work",
+    "contributionsSub": "out of pocket",
+    "period": "Period",
+    "monthsValue": "{{n}} months",
     "snapshots": "Records",
     "addSnapshot": "Add record",
     "autoHint": "The current month is captured automatically from your net worth and keeps itself updated. Edit any row to take it over."
@@ -193,7 +199,8 @@
     "deadline": "Deadline",
     "addGoal": "Add goal",
     "saved": "Saved",
-    "avgProgress": "Avg. progress"
+    "avgProgress": "Avg. progress",
+    "remaining": "To go"
   },
   "investimentos": {
     "total": "Total invested",
