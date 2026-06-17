@@ -1,18 +1,23 @@
 import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ArrowDownRight, Receipt, CalendarClock, Wallet } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Receipt, CalendarClock, Wallet, Flame, Target } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useObjetivos } from "@/hooks/use-objetivos";
+import { useProjection } from "@/store/projection";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { convert, formatMoney, type Currency } from "@/money/currency";
-import { categoryColors } from "@/money/composition";
-import { nameById } from "@/domain/taxonomy";
+import { categoryColors, currencyColors, currencyBreakdown } from "@/money/composition";
+import { nameById, isInvestedClass } from "@/domain/taxonomy";
+import { fireNumber } from "@/finance/fire";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
+import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { cn } from "@/lib/utils";
+import { Card, CardHead, Masonry } from "./ui";
 
 const ACCENT = "#15976a";
 
@@ -25,26 +30,13 @@ function todayISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
-function monthLabel(m: string, lang: string, opts: Intl.DateTimeFormatOptions = { month: "short" }): string {
-  const [y, mm] = m.split("-").map(Number);
-  return new Date(y, mm - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", opts).replace(".", "");
-}
 function dateLabel(iso: string, lang: string): string {
   const [y, m, d] = iso.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { day: "2-digit", month: "short" }).replace(".", "");
 }
-
-const cardCls = "rounded-[22px] bg-card border border-border shadow-[var(--shadow-card)]";
-function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn(cardCls, className)}>{children}</div>;
-}
-function Title({ children, right }: { children: ReactNode; right?: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 mb-4">
-      <h3 className="text-[14px] font-semibold tracking-[-0.01em]">{children}</h3>
-      {right}
-    </div>
-  );
+function monthLabel(m: string, lang: string): string {
+  const [y, mm] = m.split("-").map(Number);
+  return new Date(y, mm - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "short", year: "2-digit" }).replace(".", "");
 }
 
 export function DashboardV2() {
@@ -55,7 +47,11 @@ export function DashboardV2() {
   const email = useVault((s) => s.email);
   const tax = useTaxonomy();
   const { data } = useDashboardData();
+  const goals = useObjetivos();
+  const withdrawalRate = useProjection((s) => s.withdrawalRate);
+  const annualExpensesOverride = useProjection((s) => s.annualExpensesOverride);
   const CAT = categoryColors("light");
+  const curColors = currencyColors("light");
 
   const v = useMemo(() => {
     if (!data) return null;
@@ -63,6 +59,7 @@ export function DashboardV2() {
     const totalAssets = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const totalLiab = data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
     const netWorth = totalAssets - totalLiab;
+    const invested = data.assets.filter((a) => isInvestedClass(a.classId)).reduce((s, a) => s + conv(a.amount, a.currency), 0);
 
     const mo = currentMonth();
     const monthExp = data.expenses.filter((e) => e.month === mo);
@@ -85,9 +82,7 @@ export function DashboardV2() {
       .sort((a, b) => b.value - a.value)
       .slice(0, 4);
 
-    const trend = [...data.snapshots]
-      .sort((a, b) => a.month.localeCompare(b.month))
-      .map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
+    const trend = [...data.snapshots].sort((a, b) => a.month.localeCompare(b.month)).map((s) => ({ m: s.month, v: conv(s.amount, s.currency) }));
     const last = trend.at(-1);
     const prev = trend.at(-2);
     const nwChange = last && prev && prev.v !== 0 ? ((last.v - prev.v) / prev.v) * 100 : null;
@@ -101,18 +96,30 @@ export function DashboardV2() {
     const monthBills = monthExp.filter((e) => e.dueDay != null);
     const paid = monthBills.filter((e) => e.paid).length;
 
-    // Transações recentes: gastos + receitas dos meses mais recentes.
     const tx = [
       ...data.expenses.map((e) => ({ id: e.id, kind: "out" as const, name: e.name || nameById(tax.expenseCategories, e.categoryId) || t("orcamento.uncategorized"), month: e.month, value: conv(e.amount, e.currency) })),
       ...data.incomes.map((i) => ({ id: i.id, kind: "in" as const, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), month: i.month, value: conv(i.amount, i.currency) })),
     ]
       .sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0))
-      .slice(0, 7);
+      .slice(0, 8);
+
+    // FIRE
+    const expMonths = new Set(data.expenses.map((e) => e.month));
+    const annualExp = expMonths.size ? (annualExpensesOverride ?? (data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0) / expMonths.size) * 12) : 0;
+    const fireTarget = fireNumber(annualExp, withdrawalRate);
+    const fireProgress = annualExp > 0 && Number.isFinite(fireTarget) && fireTarget > 0 ? (netWorth / fireTarget) * 100 : null;
+
+    // Objetivos
+    const goalsSaved = goals ? goals.reduce((s, g) => s + conv(g.current, g.currency), 0) : 0;
+    const goalsAvg = goals && goals.length ? goals.reduce((s, g) => { const tt = conv(g.target, g.currency); return s + (tt > 0 ? Math.min(100, (conv(g.current, g.currency) / tt) * 100) : 0); }, 0) / goals.length : null;
+    const goalsCount = goals?.length ?? 0;
+
+    const segments = currencyBreakdown(data.assets, disp, rates);
 
     const isEmpty = data.assets.length === 0 && data.liabilities.length === 0 && data.expenses.length === 0 && data.incomes.length === 0 && data.snapshots.length === 0;
 
-    return { netWorth, totalAssets, totalLiab, totalExp, totalInc, saldo: totalInc - totalExp, expByCat, receipts, trend, nwChange, bills, billsTotal: monthBills.length, paid, tx, isEmpty };
-  }, [data, disp, rates, tax, t, lang]);
+    return { netWorth, totalAssets, totalLiab, invested, totalExp, totalInc, saldo: totalInc - totalExp, expByCat, receipts, trend, nwChange, bills, billsTotal: monthBills.length, paid, tx, fireProgress, goalsSaved, goalsAvg, goalsCount, segments, isEmpty };
+  }, [data, disp, rates, tax, t, lang, goals, withdrawalRate, annualExpensesOverride]);
 
   if (!v) return <div className="h-[60vh] rounded-[22px] bg-card/50 border border-border animate-pulse" />;
   if (v.isEmpty) return <EmptyV2 />;
@@ -121,188 +128,218 @@ export function DashboardV2() {
   const donutTotal = v.expByCat.reduce((s, e) => s + e.value, 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {/* Coluna 1 */}
-      <div className="space-y-4 lg:col-span-1">
-        {/* Cartão herói — patrimônio líquido */}
-        <Card className="relative overflow-hidden p-6 text-white" >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1f2440] via-[#222a52] to-[#15976a] opacity-95" />
-          <div className="relative">
-            <div className="flex items-center justify-between">
-              <span className="text-[12px] font-medium text-white/70">{t("dashboard.netWorth")}</span>
-              <Wallet size={18} className="text-white/70" />
-            </div>
-            <div className="mt-3 text-[clamp(1.9rem,4vw,2.5rem)] font-semibold tracking-[-0.03em] tabular">
-              <Money value={v.netWorth} currency={disp} />
-            </div>
-            {v.nwChange != null ? (
-              <div className={cn("mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium", v.nwChange >= 0 ? "text-[#7ef0bd]" : "text-[#ffb4bd]")}>
-                {v.nwChange >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                {(v.nwChange >= 0 ? "+" : "") + v.nwChange.toFixed(1)}% <span className="text-white/50">{t("dashboard.vsMonth")}</span>
-              </div>
-            ) : null}
-            <div className="mt-7 text-[13px] tracking-[0.18em] text-white/80 font-medium uppercase truncate">{(email ?? "").split("@")[0]}</div>
+    <Masonry>
+      {/* Cartão herói — patrimônio líquido */}
+      <Card className="relative overflow-hidden p-6 text-white">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1f2440] via-[#222a52] to-[#15976a] opacity-95" />
+        <div className="relative">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-medium text-white/70">{t("dashboard.netWorth")}</span>
+            <Wallet size={18} className="text-white/70" />
           </div>
-        </Card>
+          <div className="mt-3 text-[clamp(1.9rem,3.4vw,2.5rem)] font-semibold tracking-[-0.03em] tabular">
+            <Money value={v.netWorth} currency={disp} />
+          </div>
+          {v.nwChange != null ? (
+            <div className={cn("mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium", v.nwChange >= 0 ? "text-[#7ef0bd]" : "text-[#ffb4bd]")}>
+              {v.nwChange >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+              {(v.nwChange >= 0 ? "+" : "") + v.nwChange.toFixed(1)}% <span className="text-white/50">{t("dashboard.vsMonth")}</span>
+            </div>
+          ) : null}
+          <div className="mt-7 text-[13px] tracking-[0.18em] text-white/80 font-medium uppercase truncate">{(email ?? "").split("@")[0]}</div>
+        </div>
+      </Card>
 
-        {/* Fluxo do mês */}
+      {/* Fluxo do mês */}
+      <Card className="p-6">
+        <CardHead>{t("v2.cashflow")}</CardHead>
+        <div className="grid grid-cols-2 gap-3">
+          <FlowStat kind="in" label={t("orcamento.income")} value={<Money value={v.totalInc} currency={disp} />} />
+          <FlowStat kind="out" label={t("orcamento.expenses")} value={<Money value={v.totalExp} currency={disp} options={{ signDisplay: "never" }} />} />
+        </div>
+        <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+          <span className="text-[12.5px] text-muted">{t("orcamento.balance")}</span>
+          <Money value={v.saldo} currency={disp} className={cn("text-[16px] font-semibold tabular", v.saldo >= 0 ? "text-accent" : "text-neg")} />
+        </div>
+      </Card>
+
+      {/* Evolução do patrimônio */}
+      <Card className="p-6">
+        <CardHead right={v.nwChange != null ? <span className={cn("text-[13px] font-semibold tabular", v.nwChange >= 0 ? "text-accent" : "text-neg")}>{(v.nwChange >= 0 ? "+" : "") + v.nwChange.toFixed(1)}%</span> : undefined}>
+          {t("dashboard.netWorthTrend")}
+        </CardHead>
+        {v.trend.length >= 2 ? (
+          <div className="w-full h-[190px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={v.trend} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+                <defs>
+                  <linearGradient id="v2nw" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={ACCENT} stopOpacity={0.22} />
+                    <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Tooltip formatter={(val) => money(Number(val))} labelFormatter={(m) => monthLabel(String(m), lang)} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-float)" }} />
+                <Area type="monotone" dataKey="v" stroke={ACCENT} strokeWidth={2.5} fill="url(#v2nw)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="h-[190px] grid place-items-center text-[12.5px] text-faint">{t("v2.noTrend")}</div>
+        )}
+      </Card>
+
+      {/* Donut de gastos por categoria */}
+      {v.expByCat.length > 0 ? (
         <Card className="p-6">
-          <Title>{t("v2.cashflow")}</Title>
-          <div className="grid grid-cols-2 gap-3">
-            <FlowStat kind="in" label={t("orcamento.income")} value={<Money value={v.totalInc} currency={disp} />} />
-            <FlowStat kind="out" label={t("orcamento.expenses")} value={<Money value={v.totalExp} currency={disp} options={{ signDisplay: "never" }} />} />
-          </div>
-          <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-            <span className="text-[12.5px] text-muted">{t("orcamento.balance")}</span>
-            <Money value={v.saldo} currency={disp} className={cn("text-[16px] font-semibold tabular", v.saldo >= 0 ? "text-accent" : "text-neg")} />
-          </div>
-        </Card>
-
-        {/* Donut de gastos por categoria */}
-        {v.expByCat.length > 0 ? (
-          <Card className="p-6">
-            <Title>{t("dashboard.byCategory")}</Title>
-            <div className="flex items-center gap-4">
-              <div className="relative w-[120px] h-[120px] shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={v.expByCat} dataKey="value" nameKey="name" innerRadius={42} outerRadius={58} paddingAngle={2} stroke="none">
-                      {v.expByCat.map((e, i) => (
-                        <Cell key={e.id} fill={CAT[i % CAT.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(val) => money(Number(val))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-float)" }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                  <Money value={donutTotal} currency={disp} className="text-[13px] font-semibold tabular" options={{ notation: "compact" }} />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0 space-y-1.5">
-                {v.expByCat.slice(0, 5).map((e, i) => (
-                  <div key={e.id} className="flex items-center justify-between text-[12.5px] gap-3">
-                    <span className="flex items-center gap-2 text-muted truncate">
-                      <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
-                      {e.name}
-                    </span>
-                    <Money value={e.value} currency={disp} className="font-medium tabular" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        ) : null}
-      </div>
-
-      {/* Coluna 2 */}
-      <div className="space-y-4 lg:col-span-1">
-        {/* Evolução do patrimônio */}
-        <Card className="p-6">
-          <Title right={v.nwChange != null ? <span className={cn("text-[13px] font-semibold tabular", v.nwChange >= 0 ? "text-accent" : "text-neg")}>{(v.nwChange >= 0 ? "+" : "") + v.nwChange.toFixed(1)}%</span> : undefined}>
-            {t("dashboard.netWorthTrend")}
-          </Title>
-          {v.trend.length >= 2 ? (
-            <div className="w-full h-[200px]">
+          <CardHead>{t("dashboard.byCategory")}</CardHead>
+          <div className="flex items-center gap-4">
+            <div className="relative w-[116px] h-[116px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={v.trend} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
-                  <defs>
-                    <linearGradient id="v2nw" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={ACCENT} stopOpacity={0.22} />
-                      <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Tooltip formatter={(val) => money(Number(val))} labelFormatter={(m) => monthLabel(String(m), lang, { month: "short", year: "2-digit" })} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-float)" }} />
-                  <Area type="monotone" dataKey="v" stroke={ACCENT} strokeWidth={2.5} fill="url(#v2nw)" />
-                </AreaChart>
+                <PieChart>
+                  <Pie data={v.expByCat} dataKey="value" nameKey="name" innerRadius={40} outerRadius={56} paddingAngle={2} stroke="none">
+                    {v.expByCat.map((e, i) => (
+                      <Cell key={e.id} fill={CAT[i % CAT.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(val) => money(Number(val))} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 10, fontSize: 12, boxShadow: "var(--shadow-float)" }} />
+                </PieChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                <Money value={donutTotal} currency={disp} className="text-[12.5px] font-semibold tabular" options={{ notation: "compact" }} />
+              </div>
             </div>
-          ) : (
-            <div className="h-[200px] grid place-items-center text-[12.5px] text-faint">{t("v2.noTrend")}</div>
-          )}
+            <div className="flex-1 min-w-0 space-y-1.5">
+              {v.expByCat.slice(0, 5).map((e, i) => (
+                <div key={e.id} className="flex items-center justify-between text-[12.5px] gap-3">
+                  <span className="flex items-center gap-2 text-muted truncate">
+                    <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
+                    {e.name}
+                  </span>
+                  <Money value={e.value} currency={disp} className="font-medium tabular" />
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
+      ) : null}
 
-        {/* Transações recentes */}
+      {/* FIRE */}
+      {v.fireProgress != null ? (
         <Card className="p-6">
-          <Title>{t("v2.transactions")}</Title>
-          <div className="divide-y divide-[var(--grid-line)]">
-            {v.tx.map((tx) => (
-              <div key={tx.kind + tx.id} className="flex items-center gap-3 py-2.5">
-                <span className={cn("grid place-items-center w-8 h-8 rounded-[10px] shrink-0", tx.kind === "in" ? "bg-accent-soft text-accent" : "bg-[var(--neg-soft)] text-neg")}>
-                  {tx.kind === "in" ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+          <CardHead right={<Flame size={16} className="text-accent" />}>{t("fire.title")}</CardHead>
+          <div className="text-[clamp(1.5rem,2.4vw,1.9rem)] font-semibold tabular text-accent leading-none">{Math.round(v.fireProgress)}%</div>
+          <div className="text-[11.5px] text-faint mt-1.5 mb-3">{t("fire.progress")}</div>
+          <Bar pct={v.fireProgress} />
+        </Card>
+      ) : null}
+
+      {/* Objetivos */}
+      {v.goalsCount > 0 ? (
+        <Card className="p-6">
+          <CardHead right={<Target size={16} className="text-accent" />}>{t("nav.objetivos")}</CardHead>
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <Money value={v.goalsSaved} currency={disp} className="text-[clamp(1.3rem,2.2vw,1.7rem)] font-semibold tabular leading-none" />
+              <div className="text-[11.5px] text-faint mt-1.5">{t("objetivos.saved")}</div>
+            </div>
+            {v.goalsAvg != null ? <span className="text-[14px] font-semibold tabular text-accent">{Math.round(v.goalsAvg)}%</span> : null}
+          </div>
+          {v.goalsAvg != null ? <div className="mt-3"><Bar pct={v.goalsAvg} /></div> : null}
+        </Card>
+      ) : null}
+
+      {/* Composição por moeda */}
+      {v.segments.length > 0 ? (
+        <Card className="p-6">
+          <CardHead>{t("dashboard.composition")}</CardHead>
+          <CompositionBar segments={v.segments.map((s) => ({ label: s.currency, pct: s.pct, color: curColors[s.currency] }))} />
+        </Card>
+      ) : null}
+
+      {/* Transações recentes */}
+      <Card className="p-6">
+        <CardHead>{t("v2.transactions")}</CardHead>
+        <div className="divide-y divide-[var(--grid-line)]">
+          {v.tx.map((tx) => (
+            <div key={tx.kind + tx.id} className="flex items-center gap-3 py-2.5">
+              <span className={cn("grid place-items-center w-8 h-8 rounded-[10px] shrink-0", tx.kind === "in" ? "bg-accent-soft text-accent" : "bg-[var(--neg-soft)] text-neg")}>
+                {tx.kind === "in" ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] truncate">{tx.name}</div>
+                <div className="text-[11px] text-faint capitalize">{monthLabel(tx.month, lang)}</div>
+              </div>
+              <Money value={tx.value} currency={disp} className={cn("text-[13px] font-medium tabular shrink-0", tx.kind === "in" ? "text-accent" : "text-text")} options={{ signDisplay: "never" }} />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Contas a pagar (progresso) */}
+      <Card className="p-6">
+        <CardHead>{t("v2.payableAccounts")}</CardHead>
+        <p className="text-[12px] text-muted -mt-2 mb-4">{t("v2.payableHint")}</p>
+        {v.billsTotal > 0 ? (
+          <>
+            <div className="text-[15px] font-semibold tabular mb-2">{t("v2.paidOf", { paid: v.paid, total: v.billsTotal })}</div>
+            <Bar pct={v.billsTotal > 0 ? (v.paid / v.billsTotal) * 100 : 0} />
+          </>
+        ) : (
+          <p className="text-[12.5px] text-faint">{t("v2.noBills")}</p>
+        )}
+      </Card>
+
+      {/* Recebimentos */}
+      {v.receipts.length > 0 ? (
+        <Card className="p-6">
+          <CardHead>{t("v2.receipts")}</CardHead>
+          <div className="space-y-1">
+            {v.receipts.map((r) => (
+              <div key={r.id} className="flex items-center gap-3 py-2">
+                <span className="grid place-items-center w-9 h-9 rounded-[12px] bg-card2 text-accent shrink-0">
+                  <ArrowUpRight size={16} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] truncate">{tx.name}</div>
-                  <div className="text-[11px] text-faint capitalize">{monthLabel(tx.month, lang, { month: "short", year: "2-digit" })}</div>
+                  <Money value={r.value} currency={disp} className="text-[14px] font-semibold tabular block" />
+                  <div className="text-[11.5px] text-faint truncate">{r.name}</div>
                 </div>
-                <Money value={tx.value} currency={disp} className={cn("text-[13px] font-medium tabular shrink-0", tx.kind === "in" ? "text-accent" : "text-text")} options={{ signDisplay: "never" }} />
               </div>
             ))}
           </div>
         </Card>
-      </div>
+      ) : null}
 
-      {/* Coluna 3 */}
-      <div className="space-y-4 lg:col-span-1">
-        {/* Contas a pagar (progresso) */}
+      {/* A pagar (próximos vencimentos) */}
+      {v.bills.length > 0 ? (
         <Card className="p-6">
-          <Title>{t("v2.payableAccounts")}</Title>
-          <p className="text-[12px] text-muted -mt-2 mb-4">{t("v2.payableHint")}</p>
-          {v.billsTotal > 0 ? (
-            <>
-              <div className="text-[15px] font-semibold tabular mb-2">{t("v2.paidOf", { paid: v.paid, total: v.billsTotal })}</div>
-              <div className="h-2.5 rounded-full bg-card2 overflow-hidden">
-                <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${v.billsTotal > 0 ? (v.paid / v.billsTotal) * 100 : 0}%` }} />
+          <CardHead>{t("orcamento.upcomingBills")}</CardHead>
+          <div className="space-y-1">
+            {v.bills.map((b) => (
+              <div key={b.id} className="flex items-center gap-3 py-2">
+                <span className="grid place-items-center w-9 h-9 rounded-[12px] bg-card2 text-muted shrink-0">
+                  <Receipt size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <Money value={b.value} currency={disp} className="text-[14px] font-semibold tabular block" options={{ signDisplay: "never" }} />
+                  <div className="text-[11.5px] text-faint truncate">{b.name}</div>
+                </div>
+                <span className="inline-flex items-center gap-1 text-[11px] text-faint shrink-0">
+                  <CalendarClock size={13} />
+                  {b.due}
+                </span>
               </div>
-            </>
-          ) : (
-            <p className="text-[12.5px] text-faint">{t("v2.noBills")}</p>
-          )}
+            ))}
+          </div>
         </Card>
+      ) : null}
+    </Masonry>
+  );
+}
 
-        {/* Receitas */}
-        {v.receipts.length > 0 ? (
-          <Card className="p-6">
-            <Title>{t("v2.receipts")}</Title>
-            <div className="space-y-1">
-              {v.receipts.map((r) => (
-                <div key={r.id} className="flex items-center gap-3 py-2">
-                  <span className="grid place-items-center w-9 h-9 rounded-[12px] bg-card2 text-accent shrink-0">
-                    <ArrowUpRight size={16} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <Money value={r.value} currency={disp} className="text-[14px] font-semibold tabular block" />
-                    <div className="text-[11.5px] text-faint truncate">{r.name}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ) : null}
-
-        {/* A pagar (próximos vencimentos) */}
-        {v.bills.length > 0 ? (
-          <Card className="p-6">
-            <Title>{t("orcamento.upcomingBills")}</Title>
-            <div className="space-y-1">
-              {v.bills.map((b) => (
-                <div key={b.id} className="flex items-center gap-3 py-2">
-                  <span className="grid place-items-center w-9 h-9 rounded-[12px] bg-card2 text-muted shrink-0">
-                    <Receipt size={16} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <Money value={b.value} currency={disp} className="text-[14px] font-semibold tabular block" options={{ signDisplay: "never" }} />
-                    <div className="text-[11.5px] text-faint truncate">{b.name}</div>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] text-faint shrink-0">
-                    <CalendarClock size={13} />
-                    {b.due}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ) : null}
-      </div>
+function Bar({ pct }: { pct: number }) {
+  return (
+    <div className="h-2.5 rounded-full bg-card2 overflow-hidden">
+      <div className="h-full rounded-full bg-accent transition-[width] duration-500" style={{ width: `${Math.min(100, Math.max(pct > 0 ? 2 : 0, pct))}%` }} />
     </div>
   );
 }
@@ -322,7 +359,7 @@ function FlowStat({ kind, label, value }: { kind: "in" | "out"; label: string; v
 function EmptyV2() {
   const { t } = useTranslation();
   return (
-    <div className={cn(cardCls, "p-12 grid place-items-center text-center")}>
+    <div className="rounded-[22px] bg-card border border-border shadow-[var(--shadow-card)] p-12 grid place-items-center text-center">
       <div className="grid place-items-center w-12 h-12 rounded-2xl bg-accent-soft text-accent mb-5">
         <Wallet size={22} />
       </div>

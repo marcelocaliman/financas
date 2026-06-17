@@ -128,6 +128,16 @@
   --radius-card: 22px;
 }
 
+/* V2: rótulos limpos (Inter, sem o micro-caps mono da V1) — re-skina os corpos reaproveitados. */
+[data-ui="v2"] .eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--muted);
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-bg2: var(--bg-2);
