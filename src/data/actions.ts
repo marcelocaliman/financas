@@ -14,6 +14,7 @@ import type {
   NetWorthSnapshot,
 } from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
+import { planRecurring } from "@/domain/recurring";
 
 /**
  * Mutações do app. Escrevem PRIMEIRO no repositório local (instantâneo, offline),
@@ -22,6 +23,9 @@ import type { Taxonomy } from "@/domain/taxonomy";
  * unlock/online re-tente subir — sem nunca sobrescrever o local com o servidor.
  */
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Meses com materialização de recorrentes em curso — evita escrita dupla (StrictMode/efeito reentrante). */
+const materializing = new Set<string>();
 
 /** Coalesce: edições rápidas (grid) viram UM push, não um por célula. */
 function schedulePush(): void {
@@ -85,17 +89,41 @@ export const actions = {
       else delete allocationTargets[classId];
       await repository.putSettings({ id: "settings", ...(cur ?? {}), allocationTargets });
     }),
-  /** Copia os lançamentos (receitas + gastos) de um mês pra outro (novos ids). Recorrentes. */
+  /** Traz os lançamentos FIXOS (recurring) pro mês-alvo, vindos do mês anterior mais recente que
+   *  os tenha. Idempotente e dedupado: seguro pra chamar em todo render/efeito. Não escreve (nem
+   *  dispara sync) se não houver nada a trazer. Quem chama garante "não reescrever o passado". */
+  materializeRecurring: async (target: string): Promise<void> => {
+    if (materializing.has(target)) return;
+    materializing.add(target);
+    try {
+      const [expenses, incomes] = await Promise.all([
+        repository.listExpenses(),
+        repository.listIncomes(),
+      ]);
+      const plan = planRecurring(expenses, incomes, target, () => crypto.randomUUID());
+      if (plan.expenses.length === 0 && plan.incomes.length === 0) return;
+      await withSync(async () => {
+        for (const e of plan.expenses) await repository.putExpense(e);
+        for (const i of plan.incomes) await repository.putIncome(i);
+      });
+    } finally {
+      materializing.delete(target);
+    }
+  },
+  /** Copia os lançamentos AVULSOS (não-recorrentes) de um mês pro outro (novos ids).
+   *  Os FIXOS são trazidos sozinhos por `materializeRecurring`, então copiá-los aqui
+   *  também duplicaria a linha — por isso o filtro `!x.recurring`. Assim copiar e
+   *  materializar nunca se sobrepõem, em qualquer ordem (sem corrida de inserção dupla). */
   copyBudgetMonth: (from: string, to: string) =>
     withSync(async () => {
       const [expenses, incomes] = await Promise.all([
         repository.listExpenses(),
         repository.listIncomes(),
       ]);
-      for (const e of expenses.filter((x) => x.month === from)) {
+      for (const e of expenses.filter((x) => x.month === from && !x.recurring)) {
         await repository.putExpense({ ...e, id: crypto.randomUUID(), month: to });
       }
-      for (const i of incomes.filter((x) => x.month === from)) {
+      for (const i of incomes.filter((x) => x.month === from && !x.recurring)) {
         await repository.putIncome({ ...i, id: crypto.randomUUID(), month: to });
       }
     }),

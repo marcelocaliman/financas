@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Trash2 } from "lucide-react";
+import { Repeat, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -10,7 +10,7 @@ import { useUI } from "@/store/ui";
 const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
-export type ColType = "currency" | "text" | "select" | "money" | "number" | "computed";
+export type ColType = "currency" | "text" | "select" | "money" | "number" | "computed" | "toggle";
 
 export type SelectOption = { value: string; label: string };
 
@@ -487,6 +487,29 @@ export function DataGrid<T extends { id: string }>({
       }
       case "computed":
         return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
+      case "toggle": {
+        const on = Boolean(get(row, col.key));
+        return (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={on}
+              aria-label={col.header}
+              // Não roubar o foco de um input em edição (mesma razão do CurrencyPicker):
+              // senão o blur auto-commita a linha-fantasma antes da hora.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => commit(!on)}
+              className={cn(
+                "grid place-items-center w-7 h-7 rounded-[7px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                on ? "text-accent bg-accent-soft" : "text-faint hover:text-muted hover:bg-card-hover",
+              )}
+            >
+              <Repeat size={14} />
+            </button>
+          </div>
+        );
+      }
     }
   };
 
@@ -506,6 +529,7 @@ export function DataGrid<T extends { id: string }>({
             className={cn(
               "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted",
               c.align === "right" && "text-right",
+              c.type === "toggle" && "px-1 text-center",
             )}
           >
             {c.header}

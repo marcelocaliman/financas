@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useBudget } from "@/hooks/use-budget";
@@ -17,7 +17,7 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean };
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 
@@ -98,6 +98,20 @@ export default function Orcamento() {
     };
   }, [data, disp, rates, tax, t, month, lang]);
 
+  // Recorrências: ao abrir um mês NOVO/futuro ainda sem fixos, trazê-los sozinhos do mês
+  // anterior. Idempotente e dedupado na action; nunca reescreve o passado. UMA tentativa por
+  // mês por sessão — assim apagar um fixo deste mês NÃO o ressuscita (respeita o usuário).
+  const autofilled = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!data || month < currentMonth() || autofilled.current.has(month)) return;
+    const hasRec =
+      data.expenses.some((e) => e.month === month && e.recurring) ||
+      data.incomes.some((i) => i.month === month && i.recurring);
+    if (hasRec) return;
+    autofilled.current.add(month);
+    void actions.materializeRecurring(month);
+  }, [data, month]);
+
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
   }
@@ -106,6 +120,7 @@ export default function Orcamento() {
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[]): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
+      { key: "recurring", type: "toggle", header: t("orcamento.recurringShort"), width: "64px" },
       { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories) },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
       { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" },
@@ -116,7 +131,7 @@ export default function Orcamento() {
     return columns;
   };
 
-  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), month, categoryId: "", name: "", currency: base, amount: 0 });
+  const blank = (): BudgetRow => ({ id: crypto.randomUUID(), month, categoryId: "", name: "", currency: base, amount: 0, recurring: false });
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
   const isCurrent = month === currentMonth();
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
@@ -275,6 +290,12 @@ export default function Orcamento() {
           </div>
         </div>
       </section>
+
+      {/* Dica: o toggle ↻ marca lançamentos fixos que entram sozinhos nos próximos meses. */}
+      <p className="flex items-center gap-2 text-[12px] text-faint">
+        <Repeat size={13} className="shrink-0" />
+        {t("orcamento.recurringHint")}
+      </p>
     </div>
   );
 }

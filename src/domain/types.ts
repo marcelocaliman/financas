@@ -42,6 +42,8 @@ export interface Expense {
   name: string;
   currency: Currency;
   amount: number; // valor no mês
+  /** Fixo/recorrente: entra sozinho nos meses seguintes (aluguel, assinaturas…). */
+  recurring?: boolean;
 }
 
 export interface Income {
@@ -54,6 +56,8 @@ export interface Income {
   name: string;
   currency: Currency;
   amount: number; // valor no mês
+  /** Fixo/recorrente: entra sozinho nos meses seguintes (salário, aluguel recebido…). */
+  recurring?: boolean;
 }
 
 export interface NetWorthSnapshot {
