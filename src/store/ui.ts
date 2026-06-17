@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type { Currency } from "@/money/currency";
 
 export type Theme = "light" | "dark";
-/** Posição do menu: barra no topo (padrão) ou painel lateral flutuante à esquerda. */
+/** Posição do menu: painel lateral flutuante à esquerda (padrão) ou barra no topo. */
 export type NavLayout = "top" | "side";
 
 interface UIState {
@@ -48,7 +48,7 @@ export const useUI = create<UIState>()(
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
       configOpen: false,
       setConfigOpen: (configOpen) => set({ configOpen }),
-      navLayout: "top",
+      navLayout: "side",
       setNavLayout: (navLayout) => set({ navLayout }),
       navCollapsed: false,
       setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
@@ -65,7 +65,7 @@ export const useUI = create<UIState>()(
         // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
         const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
-        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "top", navCollapsed: s.navCollapsed ?? false };
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "side", navCollapsed: s.navCollapsed ?? false };
       },
       // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
       onRehydrateStorage: () => (state) => {
