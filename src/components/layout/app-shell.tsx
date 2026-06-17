@@ -5,14 +5,20 @@ import { NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import { ConfigDrawer } from "@/components/config/config-drawer";
 import { useScrollSpy } from "@/hooks/use-scroll-spy";
-import { useAppBoot } from "@/hooks/use-app-boot";
+import { useQuotesSync } from "@/hooks/use-quotes-sync";
+import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
+import { useMainCurrency } from "@/hooks/use-main-currency";
+import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useUI } from "@/store/ui";
 
 /** Casca: menu horizontal no topo + página editorial única + nav inferior (mobile). */
 export function AppShell() {
   const theme = useUI((s) => s.theme);
   const active = useScrollSpy(NAV_ITEMS.map((n) => n.id));
-  useAppBoot();
+  useQuotesSync();
+  useAutoSnapshot();
+  useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
+  useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)
 
   useEffect(() => {
     const dark = theme === "dark";

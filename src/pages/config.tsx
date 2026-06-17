@@ -110,23 +110,9 @@ function Appearance() {
   const { t, i18n } = useTranslation();
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
-  const uiVersion = useUI((s) => s.uiVersion);
-  const setUiVersion = useUI((s) => s.setUiVersion);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
     <div className="max-w-2xl space-y-5">
-      <Card>
-        <SubHeading>{t("v2.uiVersion")}</SubHeading>
-        <div className="flex gap-2">
-          <Pill active={uiVersion === "v1"} onClick={() => setUiVersion("v1")}>
-            {t("v2.v1Label")}
-          </Pill>
-          <Pill active={uiVersion === "v2"} onClick={() => setUiVersion("v2")}>
-            {t("v2.v2Label")}
-          </Pill>
-        </div>
-        <p className="text-[12px] text-muted leading-relaxed mt-3">{t("v2.uiVersionHint")}</p>
-      </Card>
       <Card>
         <SubHeading>{t("common.baseCurrency")}</SubHeading>
         <div className="flex flex-wrap gap-2">

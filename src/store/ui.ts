@@ -3,8 +3,6 @@ import { persist } from "zustand/middleware";
 import type { Currency } from "@/money/currency";
 
 export type Theme = "light" | "dark";
-/** Versão da interface: v1 (atual, editorial escura) ou v2 (nova UI clara em sidebar). */
-export type UiVersion = "v1" | "v2";
 
 interface UIState {
   /** Moeda PRINCIPAL do usuário (fonte da verdade): nova entrada nasce nela; é a âncora
@@ -24,9 +22,6 @@ interface UIState {
   /** Drawer de Configurações aberto (não persiste). */
   configOpen: boolean;
   setConfigOpen: (v: boolean) => void;
-  /** Versão da UI (v1 padrão). Persiste; `?ui=v2`/`?ui=v1` na URL sobrepõe no boot. */
-  uiVersion: UiVersion;
-  setUiVersion: (v: UiVersion) => void;
 }
 
 /** Preferências de UI. Persistem só a moeda PRINCIPAL + tema; a exibição é por-sessão. */
@@ -45,22 +40,20 @@ export const useUI = create<UIState>()(
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
       configOpen: false,
       setConfigOpen: (configOpen) => set({ configOpen }),
-      uiVersion: "v1",
-      setUiVersion: (uiVersion) => set({ uiVersion }),
     }),
     {
       name: "financas-ui",
       version: 3,
-      // Persistir a moeda PRINCIPAL + tema + versão da UI. A exibição é por-sessão (sempre
-      // nasce na principal) — o switcher do topo é prévia temporária, não um estado salvo.
-      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, uiVersion: s.uiVersion }),
+      // Persistir só a moeda PRINCIPAL + tema. A exibição é por-sessão (sempre nasce na
+      // principal) — o switcher do topo é prévia temporária, não um estado salvo.
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme }),
       migrate: (persisted, version) => {
-        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; uiVersion?: UiVersion };
+        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
         // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
         const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
-        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", uiVersion: s.uiVersion ?? "v1" };
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark" };
       },
       // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
       onRehydrateStorage: () => (state) => {
