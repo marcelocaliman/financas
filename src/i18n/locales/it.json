@@ -347,7 +347,10 @@
     "hide": "Nascondi importi",
     "collapse": "Comprimi",
     "expand": "Espandi",
-    "billsDue": "{{n}} in scadenza"
+    "billsDue": "{{n}} in scadenza",
+    "sections": "Sezioni",
+    "expandAll": "Espandi tutto",
+    "collapseAll": "Comprimi tutto"
   },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",

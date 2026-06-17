@@ -347,7 +347,10 @@
     "hide": "Hide amounts",
     "collapse": "Collapse",
     "expand": "Expand",
-    "billsDue": "{{n}} due soon"
+    "billsDue": "{{n}} due soon",
+    "sections": "Sections",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all"
   },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",

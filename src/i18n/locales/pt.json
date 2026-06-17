@@ -347,7 +347,10 @@
     "hide": "Ocultar valores",
     "collapse": "Recolher",
     "expand": "Expandir",
-    "billsDue": "{{n}} a vencer"
+    "billsDue": "{{n}} a vencer",
+    "sections": "Seções",
+    "expandAll": "Expandir tudo",
+    "collapseAll": "Recolher tudo"
   },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",

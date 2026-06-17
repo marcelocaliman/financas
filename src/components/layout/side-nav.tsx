@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
+  ChevronDown, ChevronsDownUp, ChevronsUpDown,
 } from "lucide-react";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
 import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
+import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
@@ -82,8 +84,14 @@ export function SideNav({ active }: { active: string }) {
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
+  const openSections = useSections((s) => s.open);
+  const setSectionOpen = useSections((s) => s.setOpen);
+  const setManySections = useSections((s) => s.setMany);
   const g = useGlance();
 
+  // Seções = todos os itens menos o Painel (que é o hero, não um accordion).
+  const sectionIds = NAV_ITEMS.slice(1).map((n) => n.id);
+  const allOpen = sectionIds.every((id) => openSections[id]);
   const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
@@ -159,26 +167,74 @@ export function SideNav({ active }: { active: string }) {
           </div>
         ) : null}
 
+        {/* Cabeçalho das seções + abrir/fechar TODAS de uma vez */}
+        <div className={cn("flex items-center shrink-0", collapsed ? "justify-center px-2 mb-1" : "justify-between px-3 mt-1 mb-1.5")}>
+          {!collapsed ? <Eyebrow>{t("menu.sections")}</Eyebrow> : null}
+          <button
+            type="button"
+            onClick={() => setManySections(sectionIds, !allOpen)}
+            aria-label={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            title={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            className="grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {allOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
+          </button>
+        </div>
+
         {/* Navegação */}
         <nav className={cn("flex flex-col gap-0.5", collapsed ? "px-2 items-center" : "px-2.5")}>
           {NAV_ITEMS.map(({ id, key, icon: Icon }) => {
             const on = active === id;
+            const isSection = id !== NAV_ITEMS[0].id; // o Painel não é accordion
+            const sectionOpen = isSection && !!openSections[id];
+            if (collapsed) {
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => goToSection(id)}
+                  title={t(`nav.${key}`)}
+                  aria-label={t(`nav.${key}`)}
+                  className={cn(
+                    "relative grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                    on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+                  )}
+                >
+                  <Icon size={17} />
+                  {sectionOpen ? <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" /> : null}
+                </button>
+              );
+            }
             return (
-              <button
+              <div
                 key={id}
-                type="button"
-                onClick={() => goToSection(id)}
-                title={collapsed ? t(`nav.${key}`) : undefined}
-                aria-label={t(`nav.${key}`)}
                 className={cn(
-                  "flex items-center rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                  collapsed ? "w-11 h-11 justify-center" : "gap-3 h-10 px-3 w-full",
+                  "flex items-center rounded-[11px] transition-colors",
                   on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
                 )}
               >
-                <Icon size={17} className="shrink-0" />
-                {!collapsed ? <span className="truncate">{t(`nav.${key}`)}</span> : null}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => goToSection(id)}
+                  aria-label={t(`nav.${key}`)}
+                  className="flex items-center gap-3 h-10 px-3 flex-1 min-w-0 text-[13.5px] font-medium rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                >
+                  <Icon size={17} className="shrink-0" />
+                  <span className="truncate">{t(`nav.${key}`)}</span>
+                </button>
+                {isSection ? (
+                  <button
+                    type="button"
+                    onClick={() => setSectionOpen(id, !sectionOpen)}
+                    aria-label={sectionOpen ? t("menu.collapse") : t("menu.expand")}
+                    title={sectionOpen ? t("menu.collapse") : t("menu.expand")}
+                    aria-expanded={sectionOpen}
+                    className="grid place-items-center w-8 h-10 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    <ChevronDown size={15} className={cn("transition-transform duration-200", sectionOpen ? "text-accent" : "-rotate-90 text-faint")} />
+                  </button>
+                ) : null}
+              </div>
             );
           })}
         </nav>
