@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { useSections } from "@/store/sections";
+import { useUI } from "@/store/ui";
+
+/** Navegação pendente: quando se sai da Config rumo a uma seção, o AppShell rola até ela
+ *  assim que o conteúdo principal volta (a Config fica por cima e some com transição). */
+let pendingNav: string | null = null;
+export function consumePendingNav(): string | null {
+  const id = pendingNav;
+  pendingNav = null;
+  return id;
+}
 
 /**
  * Seção ativa numa página de rolagem única: a última seção cujo topo já cruzou a
@@ -35,10 +45,16 @@ export function scrollToSection(id: string): void {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-/** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move). */
+/** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move).
+ *  Se a Config estiver aberta, fecha-a e adia a rolagem pro AppShell (quando o conteúdo volta). */
 export function goToSection(id: string): void {
   useSections.getState().setOpen(id, true);
-  scrollToSection(id);
+  if (useUI.getState().configOpen) {
+    pendingNav = id;
+    useUI.getState().setConfigOpen(false);
+  } else {
+    scrollToSection(id);
+  }
 }
 
 /** True quando a página foi rolada além do limite (header transparente → sólido). */

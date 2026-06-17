@@ -12,7 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
-import { scrollToSection, goToSection, useScrolled } from "@/hooks/use-scroll-spy";
+import { goToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function TopNav({ active }: { active: string }) {
         <div className="flex items-center gap-6 min-w-0">
           <button
             type="button"
-            onClick={() => scrollToSection(NAV_ITEMS[0].id)}
+            onClick={() => goToSection(NAV_ITEMS[0].id)}
             className="flex items-center gap-2.5 shrink-0"
           >
             <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D]">

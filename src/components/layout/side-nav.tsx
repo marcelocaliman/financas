@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
-import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
+import { goToSection } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
@@ -82,6 +82,7 @@ export function SideNav({ active }: { active: string }) {
   const theme = useUI((s) => s.theme);
   const toggleTheme = useUI((s) => s.toggleTheme);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
+  const configOpen = useUI((s) => s.configOpen);
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
@@ -106,7 +107,7 @@ export function SideNav({ active }: { active: string }) {
       <div className="flex flex-col overflow-y-auto scrollbar-subtle">
         {/* Marca + recolher */}
         <div className={cn("flex shrink-0 px-3 pt-4 pb-3", collapsed ? "flex-col items-center gap-2.5" : "items-center justify-between")}>
-          <button type="button" onClick={() => scrollToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5 min-w-0">
+          <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5 min-w-0">
             <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
               <ArrowLeftRight size={15} strokeWidth={2.6} />
             </div>
@@ -248,7 +249,7 @@ export function SideNav({ active }: { active: string }) {
                 {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
               </IconBtn>
               <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-              <IconBtn onClick={() => setConfigOpen(true)} label={t("menu.settings")}><Settings size={16} /></IconBtn>
+              <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
               <div className="h-px w-7 bg-border my-0.5" />
               <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold" title={email ?? ""}>{initial}</span>
               <IconBtn onClick={() => void signOut()} label={t("menu.logout")}><LogOut size={16} /></IconBtn>
@@ -262,7 +263,7 @@ export function SideNav({ active }: { active: string }) {
                 </IconBtn>
                 <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                 <div className="flex-1" />
-                <IconBtn onClick={() => setConfigOpen(true)} label={t("menu.settings")}><Settings size={16} /></IconBtn>
+                <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
               </div>
               <div className="flex items-center gap-2.5 px-1 py-1.5">
                 <span className="grid place-items-center w-8 h-8 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold shrink-0">{initial}</span>
@@ -308,6 +309,7 @@ export function MobileBar() {
   const numbersHidden = useUI((s) => s.numbersHidden);
   const toggleNumbers = useUI((s) => s.toggleNumbers);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
+  const configOpen = useUI((s) => s.configOpen);
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -318,7 +320,7 @@ export function MobileBar() {
   return (
     <header className={cn("lg:hidden fixed top-0 left-0 right-0 z-50 transition-colors duration-300", scrolled ? "glass border-b border-border" : "border-b border-transparent")}>
       <div className="flex items-center justify-between gap-3 h-[60px] px-5">
-        <button type="button" onClick={() => scrollToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5">
+        <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5">
           <div className="grid place-items-center w-[28px] h-[28px] rounded-[8px] bg-accent text-[#0A0B0D]"><ArrowLeftRight size={14} strokeWidth={2.6} /></div>
           <span className="font-semibold text-[15px] tracking-[-0.02em]">{t("app.name")}</span>
         </button>
@@ -327,7 +329,7 @@ export function MobileBar() {
             {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           <CurrencyMenu />
-          <button type="button" onClick={() => setConfigOpen(true)} aria-label={t("menu.settings")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+          <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             <Settings size={16} />
           </button>
         </div>

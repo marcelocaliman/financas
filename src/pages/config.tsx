@@ -1,6 +1,6 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight, X, Settings } from "lucide-react";
+import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -34,93 +34,96 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-/** Página de Configurações em tela cheia (renderizada pelo ConfigOverlay): cabeçalho +
- *  navegação lateral de seções + conteúdo — coerente com a UI editorial do app. */
+/** Configurações como CONTEÚDO PRINCIPAL (entra no lugar da página, não é modal): título +
+ *  navegação de seções (tabs) + conteúdo — coerente com a UI editorial do app. */
 export default function Config({ onClose }: { onClose?: () => void }) {
   const { t } = useTranslation();
+  const navLayout = useUI((s) => s.navLayout);
   const [tab, setTab] = useState<TabId>("conta");
   const active = TABS.find((x) => x.id === tab)!;
 
+  useEffect(() => {
+    if (!onClose) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // Folga no topo pra não ficar atrás dos menus fixos (barra de topo, ou MobileBar no lateral).
+  const topPad = navLayout === "side" ? "pt-[80px] lg:pt-12" : "pt-[92px]";
+  const stickyTop = navLayout === "side" ? "lg:top-12" : "lg:top-[88px]";
+
   return (
-    <div className="h-full flex flex-col bg-bg text-text">
-      {/* Cabeçalho */}
-      <header className="shrink-0 border-b border-border bg-bg/80 backdrop-blur-md">
-        <div className="max-w-[1120px] mx-auto flex items-center justify-between gap-4 h-[62px] px-5 md:px-8">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
-              <Settings size={15} strokeWidth={2.4} />
-            </span>
-            <span className="font-semibold text-[16px] tracking-[-0.02em] truncate">{t("menu.settings")}</span>
-          </div>
-          {onClose ? (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t("common.close")}
-              className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            >
-              <X size={18} />
-            </button>
-          ) : null}
-        </div>
-      </header>
+    <div className={cn("max-w-[1180px] mx-auto px-5 md:px-10 lg:px-14 pb-24", topPad)}>
+      <div className="flex items-center justify-between gap-4 mb-7">
+        <h2 className="text-[clamp(1.7rem,3vw,2.3rem)] font-semibold tracking-[-0.03em]">{t("menu.settings")}</h2>
+        {onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-border text-[12.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            <X size={15} /> {t("common.close")}
+          </button>
+        ) : null}
+      </div>
 
-      {/* Corpo: navegação de seções + conteúdo */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-subtle">
-        <div className="max-w-[1120px] mx-auto px-5 md:px-8 py-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <nav className="lg:w-[210px] shrink-0 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar lg:sticky lg:top-8 self-start -mx-1 px-1 lg:mx-0 lg:px-0">
-            {TABS.map((tb) => {
-              const Icon = tb.icon;
-              const on = tab === tb.id;
-              return (
-                <button
-                  key={tb.id}
-                  type="button"
-                  onClick={() => setTab(tb.id)}
-                  className={cn(
-                    "flex items-center gap-3 shrink-0 rounded-[11px] px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                    on ? "bg-card2 text-accent" : "text-muted hover:text-text hover:bg-card-hover",
-                  )}
-                >
-                  <Icon size={17} className="shrink-0" />
-                  {t(tb.labelKey)}
-                </button>
-              );
-            })}
-          </nav>
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+        <nav className={cn("lg:w-[210px] shrink-0 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar self-start lg:sticky -mx-1 px-1 lg:mx-0 lg:px-0", stickyTop)}>
+          {TABS.map((tb) => {
+            const Icon = tb.icon;
+            const on = tab === tb.id;
+            return (
+              <button
+                key={tb.id}
+                type="button"
+                onClick={() => setTab(tb.id)}
+                className={cn(
+                  "flex items-center gap-3 shrink-0 rounded-[11px] px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                  on ? "bg-card2 text-accent" : "text-muted hover:text-text hover:bg-card-hover",
+                )}
+              >
+                <Icon size={17} className="shrink-0" />
+                {t(tb.labelKey)}
+              </button>
+            );
+          })}
+        </nav>
 
-          <div className="flex-1 min-w-0">
-            <h2 className="text-[clamp(1.4rem,2.3vw,1.85rem)] font-semibold tracking-[-0.03em] mb-6">{t(active.labelKey)}</h2>
-            {tab === "conta" && (
-              <div className="max-w-xl space-y-5">
-                <Card>
-                  <AccountSection />
-                </Card>
-                <DangerZone />
+        <div className="flex-1 min-w-0">
+          <h3 className="text-[clamp(1.2rem,2vw,1.5rem)] font-semibold tracking-[-0.02em] mb-5">{t(active.labelKey)}</h3>
+          {tab === "conta" && (
+            <div className="max-w-xl space-y-5">
+              <Card>
+                <AccountSection />
+              </Card>
+              <DangerZone />
+            </div>
+          )}
+          {tab === "seguranca" && (
+            <div className="grid sm:grid-cols-2 gap-5 items-start">
+              <Card>
+                <ChangePassword />
+              </Card>
+              <Card>
+                <NewRecoveryCode />
+              </Card>
+            </div>
+          )}
+          {tab === "categorias" && <TaxonomyEditor />}
+          {tab === "aparencia" && <Appearance />}
+          {tab === "dados" && <DataSection />}
+          {tab === "privacidade" && (
+            <div className="max-w-2xl">
+              <PrivacyPolicyContent />
+              <div className="mt-5">
+                <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
               </div>
-            )}
-            {tab === "seguranca" && (
-              <div className="grid sm:grid-cols-2 gap-5 items-start">
-                <Card>
-                  <ChangePassword />
-                </Card>
-                <Card>
-                  <NewRecoveryCode />
-                </Card>
-              </div>
-            )}
-            {tab === "categorias" && <TaxonomyEditor />}
-            {tab === "aparencia" && <Appearance />}
-            {tab === "dados" && <DataSection />}
-            {tab === "privacidade" && (
-              <div className="max-w-2xl">
-                <PrivacyPolicyContent />
-                <div className="mt-5">
-                  <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
