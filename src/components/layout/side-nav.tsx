@@ -206,8 +206,8 @@ export function SideNav({ active }: { active: string }) {
           <div
             inert={configOpen}
             className={cn(
-              "transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none will-change-transform",
-              configOpen ? "absolute inset-x-0 top-0 -translate-x-3 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
+              "transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none will-change-transform",
+              configOpen ? "absolute inset-x-0 top-0 -translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
             )}
           >
             <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
@@ -215,8 +215,8 @@ export function SideNav({ active }: { active: string }) {
           <div
             inert={!configOpen}
             className={cn(
-              "transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none will-change-transform",
-              !configOpen ? "absolute inset-x-0 top-0 translate-x-3 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
+              "transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none will-change-transform",
+              !configOpen ? "absolute inset-x-0 top-0 translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
             )}
           >
             <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />

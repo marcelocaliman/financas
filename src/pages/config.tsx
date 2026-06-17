@@ -152,7 +152,7 @@ function Appearance() {
   const setNavLayout = useUI((s) => s.setNavLayout);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 items-start">
+    <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 [&>*]:mb-5 [&>*]:break-inside-avoid">
       <Card>
         <SubHeading>{t("menu.position")}</SubHeading>
         <div className="flex gap-2">
@@ -263,7 +263,7 @@ function DataSection() {
         ) : null}
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+      <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 [&>*]:mb-5 [&>*]:break-inside-avoid">
         <DataCard title={t("data.exportJson")} desc={t("data.exportJsonDesc")}>
           <Button variant="secondary" onClick={() => void exportBackupJSON()}>
             {t("data.export")}
