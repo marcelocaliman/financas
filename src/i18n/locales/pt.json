@@ -334,6 +334,18 @@
     "generatedOn": "gerado em {{date}}",
     "footer": "Privado · cifrado de ponta a ponta"
   },
+  "menu": {
+    "position": "Posição do menu",
+    "top": "Topo",
+    "side": "Lateral",
+    "hint": "No desktop, troca a barra do topo por um painel lateral flutuante à esquerda que acompanha a rolagem.",
+    "settings": "Configurações",
+    "account": "Conta",
+    "lock": "Trancar o cofre",
+    "logout": "Sair",
+    "show": "Mostrar valores",
+    "hide": "Ocultar valores"
+  },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
     "sections": "Seções",

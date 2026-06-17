@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
+import { SideNav, MobileBar } from "./side-nav";
 import { NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import { ConfigDrawer } from "@/components/config/config-drawer";
@@ -14,6 +15,7 @@ import { useUI } from "@/store/ui";
 /** Casca: menu horizontal no topo + página editorial única + nav inferior (mobile). */
 export function AppShell() {
   const theme = useUI((s) => s.theme);
+  const navLayout = useUI((s) => s.navLayout);
   const active = useScrollSpy(NAV_ITEMS.map((n) => n.id));
   useQuotesSync();
   useAutoSnapshot();
@@ -28,10 +30,19 @@ export function AppShell() {
       ?.setAttribute("content", dark ? "#0a0b0d" : "#fafafa");
   }, [theme]);
 
+  const side = navLayout === "side";
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
-      <TopNav active={active} />
-      <main>
+      {side ? (
+        <>
+          <SideNav active={active} />
+          <MobileBar />
+        </>
+      ) : (
+        <TopNav active={active} />
+      )}
+      {/* No layout lateral, o conteúdo abre espaço pro painel à esquerda (lg+). */}
+      <main className={side ? "lg:pl-[268px]" : undefined}>
         <OnePage />
       </main>
       <BottomNav active={active} />

@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 import type { Currency } from "@/money/currency";
 
 export type Theme = "light" | "dark";
+/** Posição do menu: barra no topo (padrão) ou painel lateral flutuante à esquerda. */
+export type NavLayout = "top" | "side";
 
 interface UIState {
   /** Moeda PRINCIPAL do usuário (fonte da verdade): nova entrada nasce nela; é a âncora
@@ -22,6 +24,9 @@ interface UIState {
   /** Drawer de Configurações aberto (não persiste). */
   configOpen: boolean;
   setConfigOpen: (v: boolean) => void;
+  /** Posição do menu (persiste). */
+  navLayout: NavLayout;
+  setNavLayout: (v: NavLayout) => void;
 }
 
 /** Preferências de UI. Persistem só a moeda PRINCIPAL + tema; a exibição é por-sessão. */
@@ -40,20 +45,22 @@ export const useUI = create<UIState>()(
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
       configOpen: false,
       setConfigOpen: (configOpen) => set({ configOpen }),
+      navLayout: "top",
+      setNavLayout: (navLayout) => set({ navLayout }),
     }),
     {
       name: "financas-ui",
       version: 3,
-      // Persistir só a moeda PRINCIPAL + tema. A exibição é por-sessão (sempre nasce na
-      // principal) — o switcher do topo é prévia temporária, não um estado salvo.
-      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme }),
+      // Persistir a moeda PRINCIPAL + tema + posição do menu. A exibição é por-sessão (sempre
+      // nasce na principal) — o switcher do topo é prévia temporária, não um estado salvo.
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout }),
       migrate: (persisted, version) => {
-        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme };
+        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
         // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
         const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
-        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark" };
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "top" };
       },
       // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
       onRehydrateStorage: () => (state) => {

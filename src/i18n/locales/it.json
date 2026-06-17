@@ -334,6 +334,18 @@
     "generatedOn": "generato il {{date}}",
     "footer": "Privato · cifrato end-to-end"
   },
+  "menu": {
+    "position": "Posizione menu",
+    "top": "In alto",
+    "side": "Laterale",
+    "hint": "Sul desktop, sostituisce la barra in alto con un pannello laterale fluttuante a sinistra che segue lo scorrimento.",
+    "settings": "Impostazioni",
+    "account": "Account",
+    "lock": "Blocca il caveau",
+    "logout": "Esci",
+    "show": "Mostra importi",
+    "hide": "Nascondi importi"
+  },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
     "sections": "Sezioni",

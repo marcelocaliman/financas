@@ -110,9 +110,23 @@ function Appearance() {
   const { t, i18n } = useTranslation();
   const theme = useUI((s) => s.theme);
   const setTheme = useUI((s) => s.setTheme);
+  const navLayout = useUI((s) => s.navLayout);
+  const setNavLayout = useUI((s) => s.setNavLayout);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
     <div className="max-w-2xl space-y-5">
+      <Card>
+        <SubHeading>{t("menu.position")}</SubHeading>
+        <div className="flex gap-2">
+          <Pill active={navLayout === "top"} onClick={() => setNavLayout("top")}>
+            {t("menu.top")}
+          </Pill>
+          <Pill active={navLayout === "side"} onClick={() => setNavLayout("side")}>
+            {t("menu.side")}
+          </Pill>
+        </div>
+        <p className="text-[12px] text-muted leading-relaxed mt-3">{t("menu.hint")}</p>
+      </Card>
       <Card>
         <SubHeading>{t("common.baseCurrency")}</SubHeading>
         <div className="flex flex-wrap gap-2">

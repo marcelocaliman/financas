@@ -334,6 +334,18 @@
     "generatedOn": "generated {{date}}",
     "footer": "Private · end-to-end encrypted"
   },
+  "menu": {
+    "position": "Menu position",
+    "top": "Top bar",
+    "side": "Sidebar",
+    "hint": "On desktop, swaps the top bar for a floating left sidebar that follows the scroll.",
+    "settings": "Settings",
+    "account": "Account",
+    "lock": "Lock the vault",
+    "logout": "Log out",
+    "show": "Show amounts",
+    "hide": "Hide amounts"
+  },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
     "sections": "Sections",
