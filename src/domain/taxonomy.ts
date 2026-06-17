@@ -195,3 +195,14 @@ const QUOTABLE_CLASSES = new Set<string>([
 export function isQuotableClass(classId: string): boolean {
   return QUOTABLE_CLASSES.has(classId);
 }
+
+/**
+ * Elegibilidade PADRÃO p/ a métrica Liberdade: por padrão NÃO contam os ativos ilíquidos que
+ * não geram renda sacável — Imóveis (físicos) e Bens (veículos etc.). Tudo mais (investido +
+ * Caixa) conta. É só o ponto de partida: o usuário liga/desliga cada classe no Config (ex.:
+ * reincluir Imóveis quando há imóvel de aluguel).
+ */
+const NON_ELIGIBLE_DEFAULT = new Set<string>([CLASS.imoveis, CLASS.bens]);
+export function defaultEligibleClass(classId: string): boolean {
+  return !NON_ELIGIBLE_DEFAULT.has(classId);
+}

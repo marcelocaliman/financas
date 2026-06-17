@@ -2,9 +2,12 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
+import { useProjection } from "@/store/projection";
 import { useObjetivos } from "@/hooks/use-objetivos";
 import { actions } from "@/data/actions";
 import { convert, type Currency } from "@/money/currency";
+import { realReturn, yearsToFI } from "@/finance/fire";
+import { addMonthsLabel } from "@/finance/liberdade";
 import type { Goal } from "@/domain/types";
 import { Tile } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -13,23 +16,37 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
+/** "AAAA-MM" → "mmm de AAAA" no idioma corrente. */
+function monthLabel(ym: string, lang: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, 1).toLocaleDateString(lang, { month: "short", year: "numeric" });
+}
+
 export default function Objetivos() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
   const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const data = useObjetivos();
+  // Premissas da Projeção (aporte/retorno/inflação) reusadas p/ a "data de chegada" da meta.
+  const baseScenario = useProjection((s) => s.scenarios.base);
+  const inflation = useProjection((s) => s.annualInflation);
 
   const cards = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const realRet = realReturn(baseScenario.annualReturn, inflation);
     return data.map((g) => {
       const target = conv(g.target, g.currency);
       const current = conv(g.current, g.currency);
       const pct = target > 0 ? Math.min(100, Math.max(0, (current / target) * 100)) : 0;
-      return { ...g, target, current, pct };
+      const done = target > 0 && current >= target;
+      const years = target > 0 ? yearsToFI({ portfolio: current, monthlyContribution: baseScenario.monthly, realAnnualReturn: realRet, target }) : null;
+      const arrival = done ? "done" : years == null ? null : monthLabel(addMonthsLabel(new Date(), Math.round(years * 12)), lang);
+      return { ...g, target, current, pct, arrival };
     });
-  }, [data, disp, rates]);
+  }, [data, disp, rates, baseScenario, inflation, lang]);
 
   if (!data || !cards) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -74,7 +91,14 @@ export default function Objetivos() {
                   style={{ width: `${g.pct}%` }}
                 />
               </div>
-              <div className="mt-2 text-[11.5px] text-muted tabular"><Hidden>{Math.round(g.pct) + "%"}</Hidden></div>
+              <div className="mt-2 flex items-center justify-between gap-2 text-[11.5px]">
+                <span className="text-muted tabular"><Hidden>{Math.round(g.pct) + "%"}</Hidden></span>
+                {g.arrival === "done" ? (
+                  <span className="text-accent font-medium">{t("liberdade.goalReached")}</span>
+                ) : g.arrival ? (
+                  <span className="text-faint tabular capitalize">{t("liberdade.goalArrival", { date: g.arrival })}</span>
+                ) : null}
+              </div>
             </Tile>
           ))}
         </div>

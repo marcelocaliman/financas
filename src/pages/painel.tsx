@@ -8,6 +8,7 @@ import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useLiberdade } from "@/hooks/use-liberdade";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { CLASS, isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
@@ -15,6 +16,7 @@ import { goToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
+import { ProgressRing } from "@/components/common/progress-ring";
 import { Button } from "@/components/common/button";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
@@ -108,6 +110,7 @@ function usePainelView() {
 /** HERO do dashboard — eyebrow mono + manchete + número-herói + composição. */
 export function DashboardHero() {
   const { t, disp, colors, view } = usePainelView();
+  const lib = useLiberdade();
   if (!view) return <div className="h-[40vh] rounded-[16px] bg-card/40 border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
 
@@ -134,6 +137,28 @@ export function DashboardHero() {
             </div>
           ) : null}
         </div>
+        {lib?.ready ? (
+          <button
+            type="button"
+            onClick={() => goToSection("liberdade")}
+            className="flex items-center gap-3.5 text-left group rounded-[12px] -m-1 p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            aria-label={t("liberdade.title")}
+          >
+            <ProgressRing pct={lib.freedomPct} size={66} stroke={6}>
+              <span className="text-[13px] font-semibold tabular leading-none"><Hidden>{Math.round(lib.freedomPct)}%</Hidden></span>
+            </ProgressRing>
+            <div className="min-w-0">
+              <Eyebrow className="mb-1.5">{t("liberdade.short")}</Eyebrow>
+              <div className="text-[13px] text-muted leading-snug max-w-[170px] group-hover:text-text transition-colors">
+                {lib.reached
+                  ? t("liberdade.headlineReached")
+                  : lib.yearsOfFreedom != null
+                    ? t("liberdade.heroYears", { n: lib.yearsOfFreedom.toFixed(1) })
+                    : t("liberdade.heroNote")}
+              </div>
+            </div>
+          </button>
+        ) : null}
         {view.curSegments.length > 0 ? (
           <div className="flex-1 min-w-[280px] max-w-[460px]">
             <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>

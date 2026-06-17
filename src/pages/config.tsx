@@ -18,6 +18,7 @@ import {
   DangerZone,
 } from "@/components/auth/account-settings";
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
+import { LiberdadeSettings } from "@/components/config/liberdade-settings";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { Accordion } from "@/components/common/accordion";
 import { useVault } from "@/vault/vault-store";
@@ -108,6 +109,10 @@ export default function Config({ onClose }: { onClose?: () => void }) {
 
         <Accordion id="cfg-appearance" title={t("config.appearance")} summary={<CfgPreview>{`${themeLabel} · ${layoutLabel} · ${langLabel}`}</CfgPreview>}>
           <Appearance />
+        </Accordion>
+
+        <Accordion id="cfg-liberdade" title={t("config.liberdade")}>
+          <LiberdadeSettings />
         </Accordion>
 
         <Accordion id="cfg-data" title={t("data.title")}>

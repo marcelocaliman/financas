@@ -11,6 +11,7 @@ import type {
   Goal,
   Income,
   Liability,
+  LiberdadeConfig,
   NetWorthSnapshot,
 } from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
@@ -88,6 +89,21 @@ export const actions = {
       if (pct > 0) allocationTargets[classId] = pct;
       else delete allocationTargets[classId];
       await repository.putSettings({ id: "settings", ...(cur ?? {}), allocationTargets });
+    }),
+  /** Mescla campos da config da Liberdade sobre o estado mais fresco (sem apagar os demais). */
+  setLiberdade: (patch: Partial<LiberdadeConfig>) =>
+    withSync(async () => {
+      const cur = await repository.getSettings();
+      const liberdade = { ...(cur?.liberdade ?? {}), ...patch };
+      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), liberdade });
+    }),
+  /** Liga/desliga UMA classe na elegibilidade da Liberdade, lendo o mapa mais fresco (sem clobber). */
+  setEligibleClass: (classId: string, eligible: boolean) =>
+    withSync(async () => {
+      const cur = await repository.getSettings();
+      const liberdade = { ...(cur?.liberdade ?? {}) };
+      liberdade.eligibleClasses = { ...(liberdade.eligibleClasses ?? {}), [classId]: eligible };
+      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), liberdade });
     }),
   /** Traz os lançamentos FIXOS (recurring) pro mês-alvo, vindos do mês anterior mais recente que
    *  os tenha. Idempotente e dedupado: seguro pra chamar em todo render/efeito. Não escreve (nem

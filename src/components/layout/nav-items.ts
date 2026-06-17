@@ -6,6 +6,7 @@ import {
   LineChart,
   Target,
   BarChart3,
+  Mountain,
   Globe,
   User,
   ShieldCheck,
@@ -33,6 +34,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "historico", key: "historico", icon: LineChart },
   { id: "objetivos", key: "objetivos", icon: Target },
   { id: "projecao", key: "projecao", icon: BarChart3 },
+  { id: "liberdade", key: "liberdade", icon: Mountain },
   { id: "crossborder", key: "crossborder", icon: Globe },
 ];
 
@@ -50,6 +52,7 @@ export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { id: "cfg-security", labelKey: "config.security", icon: ShieldCheck },
   { id: "cfg-categories", labelKey: "config.categories", icon: Tags },
   { id: "cfg-appearance", labelKey: "config.appearance", icon: Palette },
+  { id: "cfg-liberdade", labelKey: "config.liberdade", icon: Mountain },
   { id: "cfg-data", labelKey: "data.title", icon: Database },
   { id: "cfg-privacy", labelKey: "config.privacy", icon: Lock },
 ];

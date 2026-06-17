@@ -97,6 +97,24 @@ export interface Dividend {
   amount: number;
 }
 
+/**
+ * Configuração da métrica Liberdade. NADA é fixo: tudo aqui é editável pelo usuário (defaults
+ * só como ponto de partida). A taxa de retirada e as premissas (aporte/retorno/inflação) vivem
+ * no store da Projeção e são reusadas — não se duplicam aqui.
+ */
+export interface LiberdadeConfig {
+  /** Quais CLASSES de ativo contam como patrimônio elegível (classId → conta?). Ausente = conta. */
+  eligibleClasses?: Record<string, boolean>;
+  /** Janela (meses) da média móvel do custo de vida. Ausente = default. */
+  costMonths?: number;
+  /** Meses de custo que definem a reserva de emergência "completa". Ausente = default. */
+  reserveMonths?: number;
+  /** Marcos de patrimônio (valores na moeda principal) — limiares editáveis. */
+  milestones?: number[];
+  /** Saldo mínimo (moeda principal) p/ um mês contar no streak de constância (default 0). */
+  streakMinBalance?: number;
+}
+
 /** Configurações sincronizadas (singleton). */
 export interface AppSettings {
   id: string;
@@ -105,6 +123,8 @@ export interface AppSettings {
   /** Moeda PRINCIPAL do usuário — fonte da verdade durável e sincronizada (cifrada).
    *  Espelhada no useUI p/ boot instantâneo; ausente = nunca escolhida (cai no default). */
   baseCurrency?: Currency;
+  /** Configuração da métrica Liberdade (E2EE, multi-dispositivo). */
+  liberdade?: LiberdadeConfig;
 }
 
 export interface Liability {
