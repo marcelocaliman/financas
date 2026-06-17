@@ -300,6 +300,43 @@
       "removeMilestone": "Rimuovi traguardo"
     }
   },
+  "health": {
+    "title": "Salute finanziaria",
+    "empty": "Aggiungi patrimonio, budget o obiettivi per calcolare la tua salute finanziaria.",
+    "hint": "Un punteggio 0–100 che pesa risparmio, diversificazione, riserva, debito e progresso degli obiettivi.",
+    "noData": "senza dati",
+    "grade": {
+      "excellent": "eccellente",
+      "good": "buona",
+      "fair": "discreta",
+      "weak": "fragile"
+    },
+    "dim": {
+      "savings": "Risparmio",
+      "diversification": "Diversificazione",
+      "reserve": "Riserva",
+      "debt": "Debito",
+      "goals": "Obiettivi"
+    },
+    "cfg": {
+      "hint": "Pesi e soglie sono tuoi. Le dimensioni senza dati vengono ignorate e i pesi si rinormalizzano.",
+      "savingsTarget": "Tasso di risparmio obiettivo",
+      "maxDebtRatio": "Debito/attivi dove azzera",
+      "weights": "Peso per dimensione"
+    }
+  },
+  "compromisso": {
+    "title": "Impegno",
+    "empty": "Imposta un versamento mensile pianificato nelle Impostazioni per seguire i tuoi check-in.",
+    "planned": "Versamento pianificato",
+    "kept": "Mantenuto",
+    "markKept": "Segna come mantenuto",
+    "adherence": "{{n}} di {{total}} mesi mantenuti",
+    "cfg": {
+      "hint": "Il tuo versamento mensile pianificato. Ogni mese confermi se l'hai mantenuto — costruisce costanza.",
+      "monthly": "Versamento mensile pianificato"
+    }
+  },
   "proventos": {
     "title": "Proventi",
     "source": "Fonte",

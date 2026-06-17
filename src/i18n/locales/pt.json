@@ -300,6 +300,43 @@
       "removeMilestone": "Remover marco"
     }
   },
+  "health": {
+    "title": "Saúde financeira",
+    "empty": "Adicione patrimônio, orçamento ou metas para calcular a sua saúde financeira.",
+    "hint": "Nota de 0 a 100 ponderando poupança, diversificação, reserva, dívida e progresso de metas.",
+    "noData": "sem dados",
+    "grade": {
+      "excellent": "excelente",
+      "good": "boa",
+      "fair": "razoável",
+      "weak": "frágil"
+    },
+    "dim": {
+      "savings": "Poupança",
+      "diversification": "Diversificação",
+      "reserve": "Reserva",
+      "debt": "Dívida",
+      "goals": "Metas"
+    },
+    "cfg": {
+      "hint": "Pesos e limiares são seus. Dimensões sem dados são ignoradas e os pesos se renormalizam.",
+      "savingsTarget": "Taxa de poupança alvo",
+      "maxDebtRatio": "Dívida/ativos onde zera",
+      "weights": "Pesos por dimensão"
+    }
+  },
+  "compromisso": {
+    "title": "Compromisso",
+    "empty": "Defina um aporte mensal planejado no Config para acompanhar seus check-ins.",
+    "planned": "Aporte planejado",
+    "kept": "Cumprido",
+    "markKept": "Marcar como cumprido",
+    "adherence": "{{n}} de {{total}} meses cumpridos",
+    "cfg": {
+      "hint": "Seu aporte mensal planejado. Todo mês você confirma se cumpriu — reforça a constância.",
+      "monthly": "Aporte mensal planejado"
+    }
+  },
   "proventos": {
     "title": "Proventos",
     "source": "Fonte",

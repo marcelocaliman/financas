@@ -1,13 +1,24 @@
 import { useTranslation } from "react-i18next";
-import { Sparkles, Flame, CheckCircle2, Circle } from "lucide-react";
+import { Sparkles, Flame, CheckCircle2, Circle, HeartPulse, Check, HandCoins } from "lucide-react";
 import { useUI } from "@/store/ui";
+import { useRates } from "@/store/rates";
 import { useLiberdade, type Milestone } from "@/hooks/use-liberdade";
+import { useHealth, type HealthDimView } from "@/hooks/use-health";
+import { useSettings } from "@/hooks/use-settings";
+import { actions } from "@/data/actions";
+import { convert } from "@/money/currency";
+import { prevMonth } from "@/finance/liberdade";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { ProgressRing } from "@/components/common/progress-ring";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
+
+function thisMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 /** Formata "AAAA-MM" → "mmm de AAAA" no idioma corrente (rótulo da data de chegada). */
 function monthLabel(ym: string, lang: string): string {
@@ -118,12 +129,147 @@ export default function Liberdade() {
         </div>
       </Tile>
 
-      {/* Constância (streak) + Marcos */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      {/* Constância + Compromisso + Marcos + Saúde */}
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
         <StreakCard current={v.streak.current} record={v.streak.record} />
+        <CompromissoCard />
         <MilestonesCard milestones={v.milestones} />
+        <HealthCard />
       </div>
     </div>
+  );
+}
+
+function gradeKey(score: number): string {
+  if (score >= 80) return "excellent";
+  if (score >= 60) return "good";
+  if (score >= 40) return "fair";
+  return "weak";
+}
+
+function HealthCard() {
+  const { t } = useTranslation();
+  const h = useHealth();
+  if (!h) return <div className="rounded-[16px] bg-card border border-border h-44 animate-pulse" />;
+  return (
+    <Tile className="p-6">
+      <div className="flex items-center gap-2">
+        <HeartPulse size={15} className="text-accent shrink-0" />
+        <Eyebrow>{t("health.title")}</Eyebrow>
+      </div>
+      {h.score == null ? (
+        <p className="mt-3 text-[12.5px] text-muted leading-relaxed">{t("health.empty")}</p>
+      ) : (
+        <>
+          <div className="flex items-end gap-3 mt-3">
+            <div className="text-[clamp(2.2rem,6vw,3rem)] font-semibold tabular leading-none">
+              <Hidden>{Math.round(h.score)}</Hidden>
+            </div>
+            <span className="text-[12.5px] text-faint mb-1">/ 100 · {t(`health.grade.${gradeKey(h.score)}`)}</span>
+          </div>
+          <div className="mt-5 space-y-3">
+            {h.dims.map((d) => (
+              <HealthBar key={d.dim} dim={d} />
+            ))}
+          </div>
+          <p className="mt-5 text-[11px] text-faint leading-relaxed">{t("health.hint")}</p>
+        </>
+      )}
+    </Tile>
+  );
+}
+
+function HealthBar({ dim }: { dim: HealthDimView }) {
+  const { t } = useTranslation();
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[12px] mb-1.5">
+        <span className="text-muted">{t(`health.dim.${dim.dim}`)}</span>
+        {dim.value == null ? <span className="text-faint text-[11px]">{t("health.noData")}</span> : null}
+      </div>
+      <div className="h-1.5 rounded-full bg-bg2 overflow-hidden">
+        <div
+          className="h-full rounded-full bg-accent transition-[width] duration-500 motion-reduce:transition-none"
+          style={{ width: `${Math.round((dim.value ?? 0) * 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CompromissoCard() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
+  const rates = useRates((s) => s.rates);
+  const settings = useSettings();
+  const cfg = settings.compromisso ?? {};
+  const monthly = cfg.monthly ?? 0;
+  const checkins = cfg.checkins ?? {};
+  const cur = thisMonth();
+  const done = checkins[cur] === true;
+  const monthlyDisp = convert(monthly, base, disp, rates);
+
+  // Últimos 6 meses (mais antigo → atual) p/ a trilha de check-ins.
+  const recent: string[] = [];
+  let m = cur;
+  for (let i = 0; i < 6; i++) {
+    recent.unshift(m);
+    m = prevMonth(m);
+  }
+  const decided = recent.filter((mm) => checkins[mm] !== undefined);
+  const kept = recent.filter((mm) => checkins[mm] === true).length;
+
+  return (
+    <Tile className="p-6">
+      <div className="flex items-center gap-2">
+        <HandCoins size={15} className={cn("shrink-0", done ? "text-accent" : "text-faint")} />
+        <Eyebrow>{t("compromisso.title")}</Eyebrow>
+      </div>
+
+      {monthly <= 0 ? (
+        <p className="mt-3 text-[12.5px] text-muted leading-relaxed">{t("compromisso.empty")}</p>
+      ) : (
+        <>
+          <p className="mt-3 text-[13px] text-muted">
+            {t("compromisso.planned")}:{" "}
+            <span className="text-text font-medium tabular"><Money value={monthlyDisp} currency={disp} /></span>
+            <span className="text-faint">/{t("liberdade.mo")}</span>
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void actions.setCheckin(cur, !done)}
+            aria-pressed={done}
+            className={cn(
+              "mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-[10px] text-[13px] font-medium border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              done ? "bg-accent text-[#0A0B0D] border-accent" : "border-border text-muted hover:text-text hover:bg-card-hover",
+            )}
+          >
+            <Check size={15} /> {done ? t("compromisso.kept") : t("compromisso.markKept")}
+          </button>
+
+          <div className="mt-5 flex items-center gap-2">
+            {recent.map((mm) => {
+              const st = checkins[mm];
+              return (
+                <span
+                  key={mm}
+                  title={mm}
+                  className={cn(
+                    "w-3 h-3 rounded-full shrink-0",
+                    st === true ? "bg-accent" : st === false ? "bg-[var(--neg)]/60" : "border border-border",
+                  )}
+                />
+              );
+            })}
+          </div>
+          <p className="mt-3 text-[11px] text-faint">
+            {t("compromisso.adherence", { n: kept, total: Math.max(decided.length, 1) })}
+          </p>
+        </>
+      )}
+    </Tile>
   );
 }
 

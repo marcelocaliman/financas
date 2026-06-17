@@ -300,6 +300,43 @@
       "removeMilestone": "Remove milestone"
     }
   },
+  "health": {
+    "title": "Financial health",
+    "empty": "Add wealth, budget or goals to compute your financial health.",
+    "hint": "A 0–100 score weighing savings, diversification, reserve, debt and goal progress.",
+    "noData": "no data",
+    "grade": {
+      "excellent": "excellent",
+      "good": "good",
+      "fair": "fair",
+      "weak": "fragile"
+    },
+    "dim": {
+      "savings": "Savings",
+      "diversification": "Diversification",
+      "reserve": "Reserve",
+      "debt": "Debt",
+      "goals": "Goals"
+    },
+    "cfg": {
+      "hint": "Weights and thresholds are yours. Dimensions with no data are ignored and weights renormalize.",
+      "savingsTarget": "Target savings rate",
+      "maxDebtRatio": "Debt/assets where it hits 0",
+      "weights": "Weight per dimension"
+    }
+  },
+  "compromisso": {
+    "title": "Commitment",
+    "empty": "Set a planned monthly contribution in Settings to track your check-ins.",
+    "planned": "Planned contribution",
+    "kept": "Kept",
+    "markKept": "Mark as kept",
+    "adherence": "{{n}} of {{total}} months kept",
+    "cfg": {
+      "hint": "Your planned monthly contribution. Each month you confirm whether you kept it — it builds consistency.",
+      "monthly": "Planned monthly contribution"
+    }
+  },
   "proventos": {
     "title": "Dividends",
     "source": "Source",

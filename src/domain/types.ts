@@ -115,6 +115,24 @@ export interface LiberdadeConfig {
   streakMinBalance?: number;
 }
 
+/** Saúde financeira: pesos por dimensão + limiares editáveis (defaults só ponto de partida). */
+export interface HealthConfig {
+  /** Peso por dimensão (savings/diversification/reserve/debt/goals → peso). */
+  weights?: Record<string, number>;
+  /** Taxa de poupança alvo (%). */
+  savingsTarget?: number;
+  /** Dívida/ativos (%) onde o score de dívida zera. */
+  maxDebtRatio?: number;
+}
+
+/** Compromisso: aporte mensal planejado + check-ins por mês (sem débito automático). */
+export interface CompromissoConfig {
+  /** Aporte mensal planejado (moeda principal). */
+  monthly?: number;
+  /** Check-in por mês "AAAA-MM" → cumpriu o aporte? */
+  checkins?: Record<string, boolean>;
+}
+
 /** Configurações sincronizadas (singleton). */
 export interface AppSettings {
   id: string;
@@ -125,6 +143,10 @@ export interface AppSettings {
   baseCurrency?: Currency;
   /** Configuração da métrica Liberdade (E2EE, multi-dispositivo). */
   liberdade?: LiberdadeConfig;
+  /** Configuração do score de saúde financeira. */
+  health?: HealthConfig;
+  /** Compromisso de aporte + check-ins. */
+  compromisso?: CompromissoConfig;
 }
 
 export interface Liability {

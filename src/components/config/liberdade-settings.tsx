@@ -9,6 +9,12 @@ import { useUI } from "@/store/ui";
 import { actions } from "@/data/actions";
 import { LIBERDADE_DEFAULTS } from "@/hooks/use-liberdade";
 import { CURRENCY_SYMBOL } from "@/money/currency";
+import {
+  HEALTH_DIMS,
+  DEFAULT_HEALTH_WEIGHTS,
+  DEFAULT_SAVINGS_TARGET,
+  DEFAULT_MAX_DEBT_RATIO,
+} from "@/finance/health";
 import { cn } from "@/lib/utils";
 
 function Card({ children }: { children: ReactNode }) {
@@ -65,6 +71,8 @@ export function LiberdadeSettings() {
   const reserveMonths = cfg.reserveMonths ?? LIBERDADE_DEFAULTS.reserveMonths;
   const streakMin = cfg.streakMinBalance ?? LIBERDADE_DEFAULTS.streakMinBalance;
   const milestones = cfg.milestones ?? [];
+  const health = settings.health ?? {};
+  const compromisso = settings.compromisso ?? {};
 
   // Mantém a lista crua enquanto edita (inclui linhas em branco); o hook ignora ≤ 0 na leitura.
   const setMilestones = (next: number[]) => actions.setLiberdade({ milestones: next });
@@ -151,6 +159,43 @@ export function LiberdadeSettings() {
         >
           <Plus size={15} /> {t("liberdade.cfg.addMilestone")}
         </button>
+      </Card>
+
+      {/* Compromisso — aporte mensal planejado */}
+      <Card>
+        <SubHeading hint={t("compromisso.cfg.hint")}>{t("compromisso.title")}</SubHeading>
+        <label className="block max-w-xs">
+          <span className="eyebrow block mb-1.5">{t("compromisso.cfg.monthly")}</span>
+          <NumInput value={compromisso.monthly ?? 0} onCommit={(v) => actions.setCompromisso({ monthly: v })} suffix={sym} />
+        </label>
+      </Card>
+
+      {/* Saúde financeira — limiares + pesos */}
+      <Card>
+        <SubHeading hint={t("health.cfg.hint")}>{t("health.title")}</SubHeading>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-4 mb-5">
+          <label className="block">
+            <span className="eyebrow block mb-1.5">{t("health.cfg.savingsTarget")}</span>
+            <NumInput value={health.savingsTarget ?? DEFAULT_SAVINGS_TARGET} onCommit={(v) => actions.setHealth({ savingsTarget: v })} suffix="%" />
+          </label>
+          <label className="block">
+            <span className="eyebrow block mb-1.5">{t("health.cfg.maxDebtRatio")}</span>
+            <NumInput value={health.maxDebtRatio ?? DEFAULT_MAX_DEBT_RATIO} onCommit={(v) => actions.setHealth({ maxDebtRatio: v })} suffix="%" />
+          </label>
+        </div>
+        <div className="eyebrow mb-2.5">{t("health.cfg.weights")}</div>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+          {HEALTH_DIMS.map((dim) => (
+            <label key={dim} className="flex items-center justify-between gap-3">
+              <span className="text-[13px] text-muted">{t(`health.dim.${dim}`)}</span>
+              <NumInput
+                value={health.weights?.[dim] ?? DEFAULT_HEALTH_WEIGHTS[dim]}
+                onCommit={(v) => actions.setHealthWeight(dim, v)}
+                className="w-20"
+              />
+            </label>
+          ))}
+        </div>
       </Card>
     </div>
   );
