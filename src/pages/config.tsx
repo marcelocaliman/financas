@@ -83,7 +83,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
       {/* Seções — mesmos accordions/gutters/fontes da página inicial */}
       <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
         <Accordion id="cfg-account" title={t("config.account")} summary={<CfgPreview>{email}</CfgPreview>} defaultOpen>
-          <div className="max-w-xl space-y-5">
+          <div className="grid gap-5 sm:grid-cols-2 items-start">
             <Card>
               <AccountSection />
             </Card>
@@ -152,7 +152,7 @@ function Appearance() {
   const setNavLayout = useUI((s) => s.setNavLayout);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 items-start">
       <Card>
         <SubHeading>{t("menu.position")}</SubHeading>
         <div className="flex gap-2">
@@ -177,32 +177,30 @@ function Appearance() {
         </div>
         <p className="text-[12px] text-muted leading-relaxed mt-3">{t("common.baseCurrencyHint")}</p>
       </Card>
-      <div className="grid sm:grid-cols-2 gap-5">
-        <Card>
-          <SubHeading>{t("common.theme")}</SubHeading>
-          <div className="flex gap-2">
-            {THEMES.map((opt) => (
-              <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
-                {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
-              </Pill>
-            ))}
-          </div>
-        </Card>
-        <Card>
-          <SubHeading>{t("common.language")}</SubHeading>
-          <div className="flex gap-2">
-            {SUPPORTED_LANGS.map((lng) => (
-              <Pill
-                key={lng}
-                active={i18n.resolvedLanguage === lng}
-                onClick={() => void i18n.changeLanguage(lng)}
-              >
-                <span className="uppercase">{lng}</span>
-              </Pill>
-            ))}
-          </div>
-        </Card>
-      </div>
+      <Card>
+        <SubHeading>{t("common.theme")}</SubHeading>
+        <div className="flex gap-2">
+          {THEMES.map((opt) => (
+            <Pill key={opt} active={theme === opt} onClick={() => setTheme(opt)}>
+              {opt === "light" ? t("common.themeLight") : t("common.themeDark")}
+            </Pill>
+          ))}
+        </div>
+      </Card>
+      <Card>
+        <SubHeading>{t("common.language")}</SubHeading>
+        <div className="flex gap-2">
+          {SUPPORTED_LANGS.map((lng) => (
+            <Pill
+              key={lng}
+              active={i18n.resolvedLanguage === lng}
+              onClick={() => void i18n.changeLanguage(lng)}
+            >
+              <span className="uppercase">{lng}</span>
+            </Pill>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
@@ -249,7 +247,7 @@ function DataSection() {
   };
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       <div role="status" aria-live="polite">
         {msg ? (
           <div
@@ -265,7 +263,7 @@ function DataSection() {
         ) : null}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-5 items-start">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
         <DataCard title={t("data.exportJson")} desc={t("data.exportJsonDesc")}>
           <Button variant="secondary" onClick={() => void exportBackupJSON()}>
             {t("data.export")}
@@ -295,7 +293,7 @@ function DataSection() {
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-[13px] font-medium capitalize min-w-[120px] text-center tabular">{reportMonthLabel(reportMonth, lang)}</span>
+              <span className="text-[13px] font-medium capitalize min-w-[92px] text-center tabular">{reportMonthLabel(reportMonth, lang)}</span>
               <button
                 type="button"
                 onClick={() => setReportMonth(shiftReportMonth(reportMonth, 1))}

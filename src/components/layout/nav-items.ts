@@ -7,6 +7,12 @@ import {
   Target,
   BarChart3,
   Globe,
+  User,
+  ShieldCheck,
+  Tags,
+  Palette,
+  Database,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,4 +34,22 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "objetivos", key: "objetivos", icon: Target },
   { id: "projecao", key: "projecao", icon: BarChart3 },
   { id: "crossborder", key: "crossborder", icon: Globe },
+];
+
+export interface ConfigNavItem {
+  /** id do accordion na página de Config (cfg-*) — deve casar com os ids em pages/config.tsx */
+  id: string;
+  /** chave i18n completa do rótulo */
+  labelKey: string;
+  icon: LucideIcon;
+}
+
+/** Seções da página de Configurações — a nav lateral troca pra esta lista quando a Config abre. */
+export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
+  { id: "cfg-account", labelKey: "config.account", icon: User },
+  { id: "cfg-security", labelKey: "config.security", icon: ShieldCheck },
+  { id: "cfg-categories", labelKey: "config.categories", icon: Tags },
+  { id: "cfg-appearance", labelKey: "config.appearance", icon: Palette },
+  { id: "cfg-data", labelKey: "data.title", icon: Database },
+  { id: "cfg-privacy", labelKey: "config.privacy", icon: Lock },
 ];

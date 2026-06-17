@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
-  ChevronDown, ChevronsDownUp, ChevronsUpDown,
+  ChevronDown, ChevronsDownUp, ChevronsUpDown, type LucideIcon,
 } from "lucide-react";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
-import { goToSection } from "@/hooks/use-scroll-spy";
+import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
@@ -91,9 +91,26 @@ export function SideNav({ active }: { active: string }) {
   const setManySections = useSections((s) => s.setMany);
   const g = useGlance();
 
-  // Seções = todos os itens menos o Painel (que é o hero, não um accordion).
-  const sectionIds = NAV_ITEMS.slice(1).map((n) => n.id);
-  const allOpen = sectionIds.every((id) => openSections[id]);
+  // Seções da VISÃO ativa: na página, todas menos o Painel (que é hero); na Config, as 6 (todas
+  // são accordions). É o que o "abrir/fechar todas" atua e o que a lista mostra.
+  const sectionIds = configOpen
+    ? CONFIG_NAV_ITEMS.map((c) => c.id)
+    : NAV_ITEMS.slice(1).map((n) => n.id);
+  const allOpen = sectionIds.length > 0 && sectionIds.every((id) => openSections[id]);
+
+  // Itens normalizados das duas listas (página × Config) — renderizadas em cross-slide.
+  const pageItems = NAV_ITEMS.map((n) => ({
+    id: n.id, label: t(`nav.${n.key}`), Icon: n.icon, isSection: n.id !== NAV_ITEMS[0].id,
+  }));
+  const configItems = CONFIG_NAV_ITEMS.map((c) => ({
+    id: c.id, label: t(c.labelKey), Icon: c.icon, isSection: true,
+  }));
+  // Navegar dentro da Config: abre o accordion e rola até ele (sem fechar a Config).
+  const goConfig = (id: string) => {
+    setSectionOpen(id, true);
+    requestAnimationFrame(() => scrollToSection(id));
+  };
+
   const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
@@ -183,63 +200,28 @@ export function SideNav({ active }: { active: string }) {
           </button>
         </div>
 
-        {/* Navegação */}
-        <nav className={cn("flex flex-col gap-0.5", collapsed ? "px-2 items-center" : "px-2.5")}>
-          {NAV_ITEMS.map(({ id, key, icon: Icon }) => {
-            const on = active === id;
-            const isSection = id !== NAV_ITEMS[0].id; // o Painel não é accordion
-            const sectionOpen = isSection && !!openSections[id];
-            if (collapsed) {
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => goToSection(id)}
-                  title={t(`nav.${key}`)}
-                  aria-label={t(`nav.${key}`)}
-                  className={cn(
-                    "relative grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                    on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
-                  )}
-                >
-                  <Icon size={17} />
-                  {sectionOpen ? <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" /> : null}
-                </button>
-              );
-            }
-            return (
-              <div
-                key={id}
-                className={cn(
-                  "flex items-center rounded-[11px] transition-colors",
-                  on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
-                )}
-              >
-                <button
-                  type="button"
-                  onClick={() => goToSection(id)}
-                  aria-label={t(`nav.${key}`)}
-                  className="flex items-center gap-3 h-10 px-3 flex-1 min-w-0 text-[13.5px] font-medium rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                >
-                  <Icon size={17} className="shrink-0" />
-                  <span className="truncate">{t(`nav.${key}`)}</span>
-                </button>
-                {isSection ? (
-                  <button
-                    type="button"
-                    onClick={() => setSectionOpen(id, !sectionOpen)}
-                    aria-label={sectionOpen ? t("menu.collapse") : t("menu.expand")}
-                    title={sectionOpen ? t("menu.collapse") : t("menu.expand")}
-                    aria-expanded={sectionOpen}
-                    className="grid place-items-center w-8 h-10 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                  >
-                    <ChevronDown size={15} className={cn("transition-transform duration-200", sectionOpen ? "text-accent" : "-rotate-90 text-faint")} />
-                  </button>
-                ) : null}
-              </div>
-            );
-          })}
-        </nav>
+        {/* Navegação — troca entre as seções da PÁGINA e da CONFIG num cross-slide ao abrir/fechar
+            a Config (as duas listas ficam montadas; a ativa fica no fluxo, a outra vira overlay). */}
+        <div className="relative overflow-hidden">
+          <div
+            inert={configOpen}
+            className={cn(
+              "transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none will-change-transform",
+              configOpen ? "absolute inset-x-0 top-0 -translate-x-3 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
+            )}
+          >
+            <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
+          </div>
+          <div
+            inert={!configOpen}
+            className={cn(
+              "transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none will-change-transform",
+              !configOpen ? "absolute inset-x-0 top-0 translate-x-3 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
+            )}
+          >
+            <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
+          </div>
+        </div>
 
         {/* Rodapé */}
         <div className={cn("p-3 pt-3.5 mt-1 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
@@ -283,6 +265,90 @@ export function SideNav({ active }: { active: string }) {
         </div>
       </div>
     </aside>
+  );
+}
+
+interface NavListItem {
+  id: string;
+  label: string;
+  Icon: LucideIcon;
+  isSection: boolean;
+}
+
+/** Lista de seções da nav lateral (página OU Config): rótulo + ícone, indicador de aberto e
+ *  botão de abrir/fechar a seção. Mesmo visual nos dois modos. */
+function NavList({
+  items,
+  collapsed,
+  active,
+  openSections,
+  onNavigate,
+  onToggle,
+}: {
+  items: NavListItem[];
+  collapsed: boolean;
+  active: string;
+  openSections: Record<string, boolean>;
+  onNavigate: (id: string) => void;
+  onToggle: (id: string, v: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <nav className={cn("flex flex-col gap-0.5", collapsed ? "px-2 items-center" : "px-2.5")}>
+      {items.map(({ id, label, Icon, isSection }) => {
+        const on = active === id;
+        const sectionOpen = isSection && !!openSections[id];
+        if (collapsed) {
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onNavigate(id)}
+              title={label}
+              aria-label={label}
+              className={cn(
+                "relative grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+              )}
+            >
+              <Icon size={17} />
+              {sectionOpen ? <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" /> : null}
+            </button>
+          );
+        }
+        return (
+          <div
+            key={id}
+            className={cn(
+              "flex items-center rounded-[11px] transition-colors",
+              on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+            )}
+          >
+            <button
+              type="button"
+              onClick={() => onNavigate(id)}
+              aria-label={label}
+              className="flex items-center gap-3 h-10 px-3 flex-1 min-w-0 text-[13.5px] font-medium rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <Icon size={17} className="shrink-0" />
+              <span className="truncate">{label}</span>
+            </button>
+            {isSection ? (
+              <button
+                type="button"
+                onClick={() => onToggle(id, !sectionOpen)}
+                aria-label={sectionOpen ? t("menu.collapse") : t("menu.expand")}
+                title={sectionOpen ? t("menu.collapse") : t("menu.expand")}
+                aria-expanded={sectionOpen}
+                className="grid place-items-center w-8 h-10 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                <ChevronDown size={15} className={cn("transition-transform duration-200", sectionOpen ? "text-accent" : "-rotate-90 text-faint")} />
+              </button>
+            ) : null}
+          </div>
+        );
+      })}
+    </nav>
   );
 }
 

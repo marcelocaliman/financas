@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
 import { SideNav, MobileBar } from "./side-nav";
-import { NAV_ITEMS } from "./nav-items";
+import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
 import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-scroll-spy";
@@ -22,10 +22,12 @@ export function AppShell() {
   const navCollapsed = useUI((s) => s.navCollapsed);
   const configOpen = useUI((s) => s.configOpen);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
-  // Spy desligado enquanto a Config está aberta: a página fica fora da tela mas montada, então
-  // sem isso a rolagem da Config moveria o "ativo" do menu por geometria fantasma da página.
-  const spyActive = useScrollSpy(configOpen ? [] : NAV_ITEMS.map((n) => n.id));
-  const active = configOpen ? "" : spyActive;
+  // O spy segue o conjunto de seções da VISÃO ativa: as da Config quando ela está aberta
+  // (a página fica fora da tela), as da página quando fechada. Assim a nav lateral destaca a
+  // seção correta nos dois modos e nunca acende uma seção "fantasma" da outra visão.
+  const active = useScrollSpy(
+    (configOpen ? CONFIG_NAV_ITEMS : NAV_ITEMS).map((n) => n.id),
+  );
   useQuotesSync();
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
