@@ -14,9 +14,10 @@ import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
 import Investimentos, { InvestimentosSummary } from "@/pages/investimentos";
 import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
 import Historico, { HistoricoSummary } from "@/pages/historico";
-import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
-import Projecao, { ProjecaoSummary } from "@/pages/projecao";
-import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
+// Páginas V2 sob medida (já incluem título + KPIs + seções próprias):
+import ObjetivosV2 from "./pages/objetivos";
+import ProjecaoV2 from "./pages/projecao";
+import CrossBorderV2 from "./pages/cross-border";
 
 /** Moldura V2 de um módulo: título grande + faixa de KPIs num card + corpo do módulo. */
 function ModuleFrame({ title, summary, children }: { title: string; summary: React.ReactNode; children: React.ReactNode }) {
@@ -29,14 +30,19 @@ function ModuleFrame({ title, summary, children }: { title: string; summary: Rea
   );
 }
 
+/** Módulos com moldura (título + KPIs + corpo reaproveitado). */
 const MODULES: Record<string, { body: React.ReactNode; summary: React.ReactNode }> = {
   patrimonio: { body: <Patrimonio />, summary: <PatrimonioSummary /> },
   investimentos: { body: <Investimentos />, summary: <InvestimentosSummary /> },
   orcamento: { body: <Orcamento />, summary: <OrcamentoSummary /> },
   historico: { body: <Historico />, summary: <HistoricoSummary /> },
-  objetivos: { body: <Objetivos />, summary: <ObjetivosSummary /> },
-  projecao: { body: <Projecao />, summary: <ProjecaoSummary /> },
-  crossborder: { body: <CrossBorder />, summary: <CrossBorderSummary /> },
+};
+
+/** Páginas V2 sob medida (renderizadas direto — já trazem título/KPIs/seções). */
+const BESPOKE: Record<string, React.ReactNode> = {
+  objetivos: <ObjetivosV2 />,
+  projecao: <ProjecaoV2 />,
+  crossborder: <CrossBorderV2 />,
 };
 
 function initials(email: string | null): string {
@@ -71,6 +77,8 @@ export function AppShellV2() {
   const content =
     active === "painel" ? (
       <DashboardV2 />
+    ) : BESPOKE[active] ? (
+      BESPOKE[active]
     ) : (
       <ModuleFrame title={t(`nav.${activeKey}`)} summary={MODULES[active].summary}>
         {MODULES[active].body}
