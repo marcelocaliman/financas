@@ -77,6 +77,40 @@ export function PageHeader({ title, kpis }: { title: string; kpis?: ReactNode })
   );
 }
 
+/** Título grande e proeminente de uma página (no conteúdo, não na topbar). */
+export function PageTitle({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+      <div className="min-w-0">
+        <h2 className="text-[clamp(1.6rem,2.8vw,2.2rem)] font-semibold tracking-[-0.03em] leading-tight">{title}</h2>
+        {subtitle ? <p className="text-[13px] text-muted mt-1.5 max-w-xl leading-relaxed">{subtitle}</p> : null}
+      </div>
+      {right ? <div className="shrink-0">{right}</div> : null}
+    </div>
+  );
+}
+
+/** Setor da página: cabeçalho de seção (título + descrição/ação) + conteúdo agrupado. */
+export function SectionGroup({ title, desc, right, children, className }: { title: string; desc?: string; right?: ReactNode; children: ReactNode; className?: string }) {
+  return (
+    <section className={cn("mb-8", className)}>
+      <div className="flex items-end justify-between gap-3 mb-3.5">
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-semibold tracking-[-0.01em]">{title}</h3>
+          {desc ? <p className="text-[12px] text-muted mt-0.5">{desc}</p> : null}
+        </div>
+        {right ? <div className="shrink-0">{right}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Grade responsiva de cards (preenche telas largas; spans via col-span nas crianças). */
+export function CardGrid({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn("grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 items-start", className)}>{children}</div>;
+}
+
 /** Container de seção dentro de uma página (título opcional + conteúdo em card). */
 export function Section({ title, right, children, className }: { title?: string; right?: ReactNode; children: ReactNode; className?: string }) {
   return (

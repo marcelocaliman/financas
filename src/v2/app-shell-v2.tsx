@@ -8,7 +8,7 @@ import { useVault } from "@/vault/vault-store";
 import { CurrencyMenu } from "@/components/layout/currency-toggle";
 import { ConfigDrawer } from "@/components/config/config-drawer";
 import { cn } from "@/lib/utils";
-import { v2Card } from "./ui";
+import { v2Card, PageTitle } from "./ui";
 import { DashboardV2 } from "./dashboard-v2";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
 import Investimentos, { InvestimentosSummary } from "@/pages/investimentos";
@@ -18,15 +18,26 @@ import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
 import Projecao, { ProjecaoSummary } from "@/pages/projecao";
 import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
 
-/** Moldura V2 de um módulo: faixa de KPIs (do módulo) num card + o corpo do módulo. */
-function ModuleFrame({ summary, children }: { summary: React.ReactNode; children: React.ReactNode }) {
+/** Moldura V2 de um módulo: título grande + faixa de KPIs num card + corpo do módulo. */
+function ModuleFrame({ title, summary, children }: { title: string; summary: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="space-y-5">
-      <div className={cn(v2Card, "px-6 py-5 overflow-x-auto")}>{summary}</div>
-      {children}
+    <div>
+      <PageTitle title={title} />
+      <div className={cn(v2Card, "px-6 py-5 mb-6 overflow-x-auto")}>{summary}</div>
+      <div className="space-y-5">{children}</div>
     </div>
   );
 }
+
+const MODULES: Record<string, { body: React.ReactNode; summary: React.ReactNode }> = {
+  patrimonio: { body: <Patrimonio />, summary: <PatrimonioSummary /> },
+  investimentos: { body: <Investimentos />, summary: <InvestimentosSummary /> },
+  orcamento: { body: <Orcamento />, summary: <OrcamentoSummary /> },
+  historico: { body: <Historico />, summary: <HistoricoSummary /> },
+  objetivos: { body: <Objetivos />, summary: <ObjetivosSummary /> },
+  projecao: { body: <Projecao />, summary: <ProjecaoSummary /> },
+  crossborder: { body: <CrossBorder />, summary: <CrossBorderSummary /> },
+};
 
 function initials(email: string | null): string {
   const h = (email ?? "").split("@")[0];
@@ -41,17 +52,6 @@ function nameFrom(email: string | null): string {
 
 /** Páginas: o Painel é a tela V2 dedicada; os demais módulos ganham a moldura V2
  *  (faixa de KPIs + corpo do módulo, que já herda os tokens claros). */
-const PAGE: Record<string, React.ReactNode> = {
-  painel: <DashboardV2 />,
-  patrimonio: <ModuleFrame summary={<PatrimonioSummary />}><Patrimonio /></ModuleFrame>,
-  investimentos: <ModuleFrame summary={<InvestimentosSummary />}><Investimentos /></ModuleFrame>,
-  orcamento: <ModuleFrame summary={<OrcamentoSummary />}><Orcamento /></ModuleFrame>,
-  historico: <ModuleFrame summary={<HistoricoSummary />}><Historico /></ModuleFrame>,
-  objetivos: <ModuleFrame summary={<ObjetivosSummary />}><Objetivos /></ModuleFrame>,
-  projecao: <ModuleFrame summary={<ProjecaoSummary />}><Projecao /></ModuleFrame>,
-  crossborder: <ModuleFrame summary={<CrossBorderSummary />}><CrossBorder /></ModuleFrame>,
-};
-
 /** Casca da V2: sidebar à esquerda + topbar + conteúdo. Mesmos dados/lógica da V1. */
 export function AppShellV2() {
   const { t } = useTranslation();
@@ -66,6 +66,16 @@ export function AppShellV2() {
 
   // Topo da página ao trocar de seção (a V2 mostra uma seção por vez).
   useEffect(() => window.scrollTo({ top: 0 }), [active]);
+
+  const activeKey = NAV_ITEMS.find((n) => n.id === active)?.key ?? "painel";
+  const content =
+    active === "painel" ? (
+      <DashboardV2 />
+    ) : (
+      <ModuleFrame title={t(`nav.${activeKey}`)} summary={MODULES[active].summary}>
+        {MODULES[active].body}
+      </ModuleFrame>
+    );
 
   return (
     <div className="min-h-screen bg-bg text-text flex">
@@ -116,9 +126,7 @@ export function AppShellV2() {
         {/* Topbar */}
         <header className="sticky top-0 z-30 bg-bg/80 backdrop-blur-md border-b border-border">
           <div className="flex items-center justify-between gap-4 px-5 md:px-8 lg:px-10 h-[68px]">
-            <h1 className="text-[20px] md:text-[22px] font-semibold tracking-[-0.02em] truncate">
-              {t(`nav.${NAV_ITEMS.find((n) => n.id === active)?.key ?? "painel"}`)}
-            </h1>
+            <span className="text-[15px] font-semibold tracking-[-0.01em] text-muted truncate">{t("report.appName")}</span>
             <div className="flex items-center gap-2">
               <CurrencyMenu />
               <button
@@ -141,7 +149,7 @@ export function AppShellV2() {
           </div>
         </header>
 
-        <main className="px-5 md:px-8 lg:px-10 py-7 w-full max-w-[1760px] mx-auto">{PAGE[active]}</main>
+        <main className="px-5 md:px-8 lg:px-10 py-7 w-full max-w-[1760px] mx-auto">{content}</main>
       </div>
 
       <ConfigDrawer />

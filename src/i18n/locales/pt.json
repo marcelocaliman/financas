@@ -349,7 +349,11 @@
     "uiVersion": "Versão da interface",
     "v1Label": "Clássica",
     "v2Label": "Nova (beta)",
-    "uiVersionHint": "Experimento: uma interface clara em sidebar. Mesmos dados; troque quando quiser."
+    "uiVersionHint": "Experimento: uma interface clara em sidebar. Mesmos dados; troque quando quiser.",
+    "dashSubtitle": "Sua vida financeira num relance.",
+    "overview": "Visão geral",
+    "budgetSection": "Orçamento do mês",
+    "agenda": "Agenda"
   },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
