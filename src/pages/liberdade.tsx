@@ -78,11 +78,16 @@ export default function Liberdade() {
                   ? t("liberdade.headlineHidden")
                   : t("liberdade.headline", { pct: pctRounded })}
             </h3>
-            <p className="mt-2.5 text-[13px] text-muted">
-              {t("liberdade.independenceNumber")}:{" "}
-              <span className="text-text font-medium tabular"><Money value={v.independenceNumber} currency={disp} /></span>{" "}
-              <span className="text-faint">· {t("liberdade.subtitle", { mult: multLabel })}</span>
-            </p>
+            {v.coveredByPassive ? (
+              <p className="mt-2.5 text-[13px] text-muted">{t("liberdade.coveredByPassive")}</p>
+            ) : (
+              <p className="mt-2.5 text-[13px] text-muted">
+                {t("liberdade.independenceNumber")}:{" "}
+                <span className="text-text font-medium tabular"><Money value={v.independenceNumber} currency={disp} /></span>{" "}
+                <span className="text-faint">· {t("liberdade.subtitle", { mult: multLabel })}</span>
+                {v.passiveAnnual > 0 ? <span className="text-faint"> · {t("liberdade.netsPassive")}</span> : null}
+              </p>
+            )}
           </div>
 
           {/* Chegada estimada */}
@@ -314,9 +319,15 @@ function MilestonesCard({ milestones }: { milestones: Milestone[] }) {
   // Próximo marco não conquistado (pra dar foco), já conquistados acesos.
   const firstPendingIdx = milestones.findIndex((m) => !m.achieved);
   const label = (m: Milestone): React.ReactNode => {
-    if (m.kind === "freedom") return t("liberdade.milestoneFreedom", { pct: m.value });
     if (m.kind === "reserve") return t("liberdade.milestoneReserve");
-    return <Money value={m.value} currency={disp} />;
+    return (
+      <>
+        <Money value={m.value} currency={disp} />
+        {m.pct != null ? (
+          <span className="text-faint font-normal"> · {t("liberdade.milestoneFreedom", { pct: m.pct })}</span>
+        ) : null}
+      </>
+    );
   };
   return (
     <Tile className="p-6">

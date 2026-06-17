@@ -126,6 +126,33 @@ export function LiberdadeSettings() {
         </div>
       </Card>
 
+      {/* Renda passiva externa — categorias que abatem o custo */}
+      <Card>
+        <SubHeading hint={t("liberdade.cfg.passiveHint")}>{t("liberdade.cfg.passive")}</SubHeading>
+        <div className="flex flex-wrap gap-2">
+          {tax.incomeCategories.map((c) => {
+            const list = cfg.passiveCategories ?? ["aluguel"];
+            const on = list.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() =>
+                  actions.setLiberdade({ passiveCategories: on ? list.filter((x) => x !== c.id) : [...list, c.id] })
+                }
+                aria-pressed={on}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[13px] font-medium border transition-colors",
+                  on ? "bg-accent-soft border-accent/40 text-text" : "border-border text-faint hover:text-muted",
+                )}
+              >
+                {c.name}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* Marcos de patrimônio editáveis */}
       <Card>
         <SubHeading hint={t("liberdade.cfg.milestonesHint")}>{t("liberdade.cfg.milestones")}</SubHeading>

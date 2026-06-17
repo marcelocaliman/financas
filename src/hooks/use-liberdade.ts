@@ -14,7 +14,6 @@ import {
   monthsToIndependence,
   computeStreak,
   addMonthsLabel,
-  suggestWealthMilestones,
   type MonthBalance,
   type Streak,
 } from "@/finance/liberdade";
@@ -22,12 +21,14 @@ import {
 /** Defaults (só ponto de partida — o usuário sobrescreve tudo no Config). */
 export const LIBERDADE_DEFAULTS = { costMonths: 6, reserveMonths: 6, streakMinBalance: 0 };
 
-export type MilestoneKind = "wealth" | "reserve" | "freedom";
+export type MilestoneKind = "wealth" | "reserve";
 export interface Milestone {
   kind: MilestoneKind;
-  /** Limiar: valor (moeda de exibição) p/ wealth/reserve; porcentagem p/ freedom. */
+  /** Valor-limiar na moeda de exibição. */
   value: number;
   achieved: boolean;
+  /** Para marcos de patrimônio: % do Número da Independência que o valor representa. */
+  pct?: number;
 }
 
 export interface LiberdadeView {
@@ -53,6 +54,12 @@ export interface LiberdadeView {
   streak: Streak;
   reserve: { current: number; target: number; monthsCovered: number; complete: boolean };
   milestones: Milestone[];
+  /** Renda passiva externa anual (aluguel) descontada do custo. */
+  passiveAnnual: number;
+  /** Custo anual LÍQUIDO (custo − renda passiva) que a carteira precisa cobrir. */
+  netAnnualCost: number;
+  /** A renda passiva já cobre todo o custo (independência via renda, sem precisar de carteira). */
+  coveredByPassive: boolean;
 }
 
 /**
@@ -96,22 +103,41 @@ export function useLiberdade(): LiberdadeView | null {
     const annualCost = costFromOverride ? proj.annualExpensesOverride! : movingMonthlyCost * 12;
     const monthlyCost = annualCost / 12;
 
-    // Núcleo FIRE (reuso).
+    // Renda passiva EXTERNA abate o custo: a carteira só precisa cobrir o LÍQUIDO. As categorias
+    // que contam são do usuário (default: aluguel). Dividendos/juros NÃO entram (vêm da carteira
+    // contada; a regra dos 4% já os assume). E se o usuário INCLUI Imóveis na elegibilidade, o
+    // aluguel NÃO é descontado — senão o imóvel contaria duas vezes (valor + renda).
+    const passiveCats = new Set(cfg.passiveCategories ?? ["aluguel"]);
+    const rentByMonth = new Map<string, number>();
+    for (const i of budget.incomes) {
+      if (passiveCats.has(i.categoryId)) rentByMonth.set(i.month, (rentByMonth.get(i.month) ?? 0) + conv(i.amount, i.currency));
+    }
+    const rentMonths = [...rentByMonth.keys()].sort((a, b) => b.localeCompare(a)).slice(0, costMonths);
+    const passiveMonthly = rentMonths.length ? rentMonths.reduce((s, m) => s + (rentByMonth.get(m) ?? 0), 0) / rentMonths.length : 0;
+    const passiveAnnual = isEligible(CLASS.imoveis) ? 0 : passiveMonthly * 12;
+    const netAnnualCost = Math.max(0, annualCost - passiveAnnual);
+
+    // Núcleo FIRE (reuso) sobre o custo LÍQUIDO.
     const swr = proj.withdrawalRate;
-    const independenceNumber = fireNumber(annualCost, swr);
-    const ready = annualCost > 0 && Number.isFinite(independenceNumber) && independenceNumber > 0;
-    const freedomPct = calcFreedomPct(eligibleWealth, independenceNumber);
-    const yearsOfFreedom = calcYearsOfFreedom(eligibleWealth, annualCost);
+    const independenceNumber = fireNumber(netAnnualCost, swr); // 0 se coberto; Infinity se swr ≤ 0
+    // Pronto só com base sólida: custo > 0 E (já coberto pela renda OU alvo finito — taxa > 0).
+    const ready = annualCost > 0 && (netAnnualCost <= 0 || Number.isFinite(independenceNumber));
+    const coveredByPassive = ready && netAnnualCost <= 0; // a renda passiva já cobre o custo
+    const finiteTarget = Number.isFinite(independenceNumber) && independenceNumber > 0;
+    const freedomPct = coveredByPassive ? 100 : calcFreedomPct(eligibleWealth, independenceNumber);
+    const reached = coveredByPassive || (finiteTarget && eligibleWealth >= independenceNumber);
+    const remaining = reached || !finiteTarget ? 0 : Math.max(0, independenceNumber - eligibleWealth);
+    const yearsOfFreedom = calcYearsOfFreedom(eligibleWealth, netAnnualCost); // null se custo líquido 0 (∞)
     const safeMonthly = safeMonthlyIncome(eligibleWealth, swr);
     const coverage = monthlyCost > 0 ? (safeMonthly / monthlyCost) * 100 : 0;
-    const remaining = ready ? Math.max(0, independenceNumber - eligibleWealth) : 0;
-    const reached = ready && eligibleWealth >= independenceNumber;
 
     // Data de chegada (ritmo atual): retorno REAL do cenário-base + aporte base.
     const realRet = realReturn(proj.scenarios.base.annualReturn, proj.annualInflation);
-    const months = ready
-      ? monthsToIndependence({ eligibleWealth, monthlyContribution: proj.scenarios.base.monthly, realAnnualReturn: realRet, independenceNumber })
-      : null;
+    const months = reached
+      ? 0
+      : independenceNumber > 0
+        ? monthsToIndependence({ eligibleWealth, monthlyContribution: proj.scenarios.base.monthly, realAnnualReturn: realRet, independenceNumber })
+        : null;
     const arrival = months == null ? null : { months, label: addMonthsLabel(new Date(), months) };
 
     // Streak de constância: saldo (receitas − gastos) por mês.
@@ -133,21 +159,29 @@ export function useLiberdade(): LiberdadeView | null {
       complete: reserveTarget > 0 && cash >= reserveTarget,
     };
 
-    // Marcos: patrimônio (custom na moeda principal → exibição, ou sugerido) + reserva + liberdade %.
+    // Marcos: lista do usuário (moeda principal → exibição) OU frações do alvo em dinheiro
+    // (25/50/75/100% do Número da Independência) + reserva. Atingir 50% ⇔ estar 50% livre.
     const customMilestones = (cfg.milestones ?? []).filter((v) => v > 0);
     const wealthValues = customMilestones.length
       ? customMilestones.map((v) => conv(v, base)).sort((a, b) => a - b)
-      : suggestWealthMilestones(eligibleWealth, ready ? independenceNumber : undefined);
+      : finiteTarget
+        ? [0.25, 0.5, 0.75, 1].map((f) => independenceNumber * f)
+        : [];
     const milestones: Milestone[] = [
-      ...wealthValues.map((value): Milestone => ({ kind: "wealth", value, achieved: eligibleWealth >= value })),
+      ...wealthValues.map((value): Milestone => ({
+        kind: "wealth",
+        value,
+        achieved: eligibleWealth >= value,
+        pct: finiteTarget ? Math.round((value / independenceNumber) * 100) : undefined,
+      })),
       ...(reserveTarget > 0 ? [{ kind: "reserve" as const, value: reserveTarget, achieved: reserve.complete }] : []),
-      ...[25, 50, 75, 100].map((value): Milestone => ({ kind: "freedom", value, achieved: freedomPct >= value })),
     ];
 
     return {
       ready, disp, eligibleWealth, netWorth, monthlyCost, annualCost, costFromOverride,
       withdrawalRate: swr, independenceNumber, freedomPct, yearsOfFreedom, safeMonthly, coverage,
       remaining, reached, arrival, streak, reserve, milestones,
+      passiveAnnual, netAnnualCost, coveredByPassive,
     };
   }, [pat, budget, settings, proj, disp, base, rates]);
 }

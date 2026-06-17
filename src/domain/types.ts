@@ -113,6 +113,8 @@ export interface LiberdadeConfig {
   milestones?: number[];
   /** Saldo mínimo (moeda principal) p/ um mês contar no streak de constância (default 0). */
   streakMinBalance?: number;
+  /** Categorias de receita que contam como renda passiva EXTERNA (abatem o custo). Default: ["aluguel"]. */
+  passiveCategories?: string[];
 }
 
 /** Saúde financeira: pesos por dimensão + limiares editáveis (defaults só ponto de partida). */
