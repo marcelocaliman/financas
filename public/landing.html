@@ -42,10 +42,16 @@
     .eyebrow { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
     .eyebrow.accent { color: var(--accent); }
 
-    /* Header — fundo TRANSPARENTE (só um leve frost ao rolar, sem painel preto) */
-    header.site { position: sticky; top: 0; z-index: 50; background: transparent; border-bottom: 1px solid transparent; transition: border-color .3s, backdrop-filter .3s; }
-    header.site.scrolled { backdrop-filter: blur(12px) saturate(1.1); -webkit-backdrop-filter: blur(12px) saturate(1.1); border-bottom-color: var(--border); }
-    .nav { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 70px; }
+    /* Header — PAINEL FLUTUANTE no topo (mesmo estilo do menu interno do app:
+       superfície de card translúcida, hairline, cantos arredondados, sombra flutuante). */
+    header.site { position: sticky; top: 0; z-index: 50; padding: 14px var(--gutter) 0; }
+    .nav {
+      max-width: var(--maxw); margin: 0 auto; display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; height: 58px; padding: 0 10px 0 18px;
+      background: color-mix(in oklab, var(--card) 84%, transparent);
+      backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-float);
+    }
     .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
     .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #07140d; display: grid; place-items: center; flex: none; }
     .mark svg { width: 16px; height: 16px; }
@@ -174,7 +180,7 @@
 </head>
 <body>
   <header class="site" id="top">
-    <div class="wrap nav">
+    <div class="nav">
       <a class="brand" href="#top">
         <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span>
         <span class="bn">Nossas Finanças</span>
@@ -192,7 +198,7 @@
           <button type="button" data-lang="en">EN</button>
           <button type="button" data-lang="it">IT</button>
         </div>
-        <a class="btn btn-primary" href="#contato" data-i18n="nav.cta">Entrar na lista</a>
+        <a class="btn btn-primary" href="/" data-i18n="nav.cta">Criar conta</a>
       </div>
     </div>
   </header>
@@ -202,9 +208,9 @@
     <div class="wrap hero-inner">
       <div class="eyebrow accent" data-i18n="hero.eyebrow">Patrimônio multimoeda · privado · cross-border</div>
       <h1><span data-i18n="hero.h1a">Sua vida financeira entre países,</span> <span class="grad" data-i18n="hero.h1b">só sua.</span></h1>
-      <p class="sub" data-i18n="hero.sub">O painel completo pra quem vive entre moedas: patrimônio, orçamento, investimentos, projeção e a sua independência financeira — com criptografia ponta a ponta. O servidor nunca vê os seus números.</p>
+      <p class="sub" data-i18n="hero.sub">O painel completo pra gerir o seu patrimônio em qualquer moeda e país — viva você entre países, esteja de mudança, ou só queira tudo organizado num lugar. Com criptografia ponta a ponta: o servidor nunca vê os seus números.</p>
       <div class="ctas">
-        <a class="btn btn-primary btn-lg" href="#contato" data-i18n="hero.cta1">Quero acesso antecipado</a>
+        <a class="btn btn-primary btn-lg" href="/" data-i18n="hero.cta1">Criar conta grátis</a>
         <a class="btn btn-ghost btn-lg" href="#recursos" data-i18n="hero.cta2">Ver os recursos</a>
       </div>
       <div class="meta">
@@ -276,7 +282,7 @@
       <div class="section-head">
         <div class="eyebrow accent" data-i18n="pil.eyebrow">Por que existe</div>
         <h2 data-i18n="pil.h2">Simples, mas completo. E privado de verdade.</h2>
-        <p data-i18n="pil.p">Finanças pessoais é um mercado lotado — mas multimoeda, cross-border e com privacidade real é mal atendido. Foi feito por quem vive a mudança Brasil&nbsp;⇄&nbsp;Itália.</p>
+        <p data-i18n="pil.p">Finanças pessoais é um mercado lotado — mas multimoeda, sem fronteiras e com privacidade real é mal atendido. Seja você expatriado, nômade, de mudança, ou só alguém com patrimônio em mais de uma moeda.</p>
       </div>
       <div class="pillars">
         <div class="card reveal">
@@ -297,7 +303,7 @@
         <div class="card reveal">
           <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M2.5 9h19M2.5 15h19M12 3a13 13 0 0 1 0 18 13 13 0 0 1 0-18z"/></svg></span>
           <h3 data-i18n="pil.4t">Feito p/ cross-border</h3>
-          <p data-i18n="pil.4p">Pensado pra expatriados e pra quem vive entre países. Da renda em euro ao imóvel no Brasil — tudo num só lugar.</p>
+          <p data-i18n="pil.4p">Pensado pra expatriados, nômades e pra quem tem renda ou patrimônio em mais de um país. Da renda numa moeda ao imóvel em outra — tudo num só lugar.</p>
         </div>
       </div>
     </div>
@@ -463,7 +469,7 @@
         <svg viewBox="0 0 420 160" preserveAspectRatio="none" style="width:100%;height:160px"><path d="M0,140 C120,120 260,80 420,18" fill="none" stroke="#3ecf8e" stroke-width="2.4"/><path d="M0,140 C120,128 260,104 420,64" fill="none" stroke="#8a8f98" stroke-width="2"/><path d="M0,140 C120,134 260,122 420,98" fill="none" stroke="#f1746a" stroke-width="2" stroke-opacity=".8"/></svg>
         <div style="display:flex;gap:16px;margin-top:8px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:#3ecf8e;vertical-align:middle"></span> <span data-i18n="f4.opt">Otimista</span></span><span><span style="display:inline-block;width:10px;height:2px;background:#8a8f98;vertical-align:middle"></span> <span data-i18n="f4.base">Base</span></span><span><span style="display:inline-block;width:10px;height:2px;background:#f1746a;vertical-align:middle"></span> <span data-i18n="f4.pess">Pessimista</span></span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px">
-          <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g1">Casa na Itália</span><span class="tabular muted">72%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:72%"></div></div><div class="faint" style="font-size:11px;margin-top:5px">≈ set/2027</div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g1">Casa própria</span><span class="tabular muted">72%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:72%"></div></div><div class="faint" style="font-size:11px;margin-top:5px">≈ set/2027</div></div>
           <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g2">Reserva 12m</span><span class="tabular muted">100%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:100%"></div></div><div class="pos" style="font-size:11px;margin-top:5px" data-i18n="f4.reached">atingida</div></div>
         </div>
       </div>
@@ -498,8 +504,8 @@
     <div class="wrap">
       <div class="section-head" style="max-width:62ch">
         <div class="eyebrow accent" data-i18n="mm.eyebrow">Multimoeda &amp; cross-border</div>
-        <h2 data-i18n="mm.h2">Brasil, Itália — e o que vier.</h2>
-        <p data-i18n="mm.p">Renda em euro, investimentos no Brasil, conta nos EUA. Cada item guarda a própria moeda; você escolhe a moeda de exibição e vê tudo convertido. Com a profundidade de câmbio e estrutura tributária de quem vive a jornada.</p>
+        <h2 data-i18n="mm.h2">Qualquer país, qualquer moeda.</h2>
+        <p data-i18n="mm.p">Renda numa moeda, investimentos em outra, conta num terceiro país — ou tudo no mesmo lugar. Cada item guarda a própria moeda; você escolhe a moeda de exibição e vê tudo convertido, com câmbio ao vivo.</p>
       </div>
       <div class="card pad reveal" style="margin-top:40px">
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px">
@@ -523,8 +529,8 @@
         <details><summary><span data-i18n="faq.q4">Em quais moedas e países funciona?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a4">Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual.</div></details>
         <details><summary><span data-i18n="faq.q5">E se eu esquecer a senha?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a5">No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via.</div></details>
         <details><summary><span data-i18n="faq.q6">Consigo exportar meus dados?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a6">Sim. Você exporta e importa tudo em JSON (backup completo) e CSV (interoperável). Os dados são seus — entram e saem quando quiser.</div></details>
-        <details><summary><span data-i18n="faq.q7">Já posso usar? Como entro?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a7">O cadastro está fechado por enquanto, enquanto o básico legal (LGPD/GDPR) fica pronto. Deixe seu e-mail na lista de espera e você é avisado assim que abrir.</div></details>
-        <details><summary><span data-i18n="faq.q8">Em quais idiomas?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a8">Português, inglês e italiano — com foco em quem vive a jornada Brasil ⇄ Itália.</div></details>
+        <details><summary><span data-i18n="faq.q7">Já posso usar? Como entro?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a7">Sim! É só criar uma conta grátis e começar — leva um minuto. Seus dados já nascem cifrados ponta a ponta, no seu navegador.</div></details>
+        <details><summary><span data-i18n="faq.q8">Em quais idiomas?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a8">Português, inglês e italiano — e o app funciona em qualquer país e moeda.</div></details>
       </div>
     </div>
   </section>
@@ -535,14 +541,13 @@
       <div class="contact-card reveal">
         <div class="feature" style="align-items:center">
           <div>
-            <div class="eyebrow accent" data-i18n="ct.eyebrow">Acesso antecipado</div>
-            <h2 style="font-size:clamp(1.8rem,4vw,2.7rem);font-weight:600;letter-spacing:-0.035em;line-height:1.06;margin:14px 0 0" data-i18n="ct.h2">Quer entrar antes de todo mundo?</h2>
-            <p class="muted" style="margin-top:16px;font-size:16px;line-height:1.55" data-i18n="ct.p">O cadastro é fechado por enquanto, enquanto o básico legal (LGPD/GDPR) fica pronto. Deixe seu e-mail pra entrar na lista — ou fale comigo direto.</p>
+            <div class="eyebrow accent" data-i18n="ct.eyebrow">Comece agora</div>
+            <h2 style="font-size:clamp(1.8rem,4vw,2.7rem);font-weight:600;letter-spacing:-0.035em;line-height:1.06;margin:14px 0 0" data-i18n="ct.h2">Comece agora. É grátis e privado.</h2>
+            <p class="muted" style="margin-top:16px;font-size:16px;line-height:1.55" data-i18n="ct.p">Crie sua conta em um minuto e comece a organizar o seu patrimônio em qualquer moeda. Grátis, privado, sem cartão.</p>
             <div class="field">
-              <input id="leadEmail" type="email" inputmode="email" placeholder="seu@email.com" aria-label="E-mail" />
-              <a id="leadBtn" class="btn btn-primary btn-lg" href="mailto:marcelo.salgado.caliman@gmail.com?subject=Lista%20de%20espera%20%E2%80%94%20Nossas%20Finan%C3%A7as&body=Quero%20entrar%20na%20lista%20de%20acesso%20antecipado." data-i18n="ct.btn">Entrar na lista</a>
+              <a class="btn btn-primary btn-lg" href="/" data-i18n="ct.btn">Criar conta grátis</a>
             </div>
-            <div class="legal" data-i18n="ct.legal">Sem spam, sem cartão. Seu e-mail só pra avisar do lançamento — separado do dado financeiro, com consentimento.</div>
+            <div class="legal" data-i18n="ct.legal">Grátis e sem cartão. Seus dados são cifrados ponta a ponta — nem nós conseguimos ler.</div>
           </div>
           <div style="display:grid;gap:14px">
             <a class="card pad" id="mailDirect" href="mailto:marcelo.salgado.caliman@gmail.com?subject=Nossas%20Finan%C3%A7as%20%E2%80%94%20contato" style="display:flex;align-items:center;gap:14px">
@@ -564,7 +569,7 @@
     <div class="wrap foot">
       <div style="max-width:34ch">
         <a class="brand" href="#top" style="margin-bottom:12px"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span> Nossas Finanças</a>
-        <div style="font-size:13px;line-height:1.6" data-i18n="foot.tag">Patrimônio multimoeda, privado e cross-border. Construído por quem vive a jornada Brasil&nbsp;⇄&nbsp;Itália.</div>
+        <div style="font-size:13px;line-height:1.6" data-i18n="foot.tag">Patrimônio multimoeda, privado e sem fronteiras. Para quem vive, investe ou se move entre países e moedas.</div>
       </div>
       <div class="foot-links">
         <a href="#recursos" data-i18n="nav.recursos">Recursos</a>
