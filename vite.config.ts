@@ -38,4 +38,11 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  // O app sai do index.html (que passa a ser a LANDING, na raiz) e vira app.html, servido
+  // em /app. Mantém base "/" — assets em /assets continuam na raiz, sem mexer no ícone.
+  build: {
+    rollupOptions: {
+      input: fileURLToPath(new URL("./app.html", import.meta.url)),
+    },
+  },
 });
