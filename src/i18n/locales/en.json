@@ -352,6 +352,13 @@
     "expandAll": "Expand all",
     "collapseAll": "Collapse all"
   },
+  "config": {
+    "account": "Account",
+    "security": "Security",
+    "categories": "Categories",
+    "appearance": "Appearance",
+    "privacy": "Privacy"
+  },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
     "sections": "Sections",

@@ -352,6 +352,13 @@
     "expandAll": "Expandir tudo",
     "collapseAll": "Recolher tudo"
   },
+  "config": {
+    "account": "Conta",
+    "security": "Segurança",
+    "categories": "Categorias",
+    "appearance": "Aparência",
+    "privacy": "Privacidade"
+  },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
     "sections": "Seções",

@@ -352,6 +352,13 @@
     "expandAll": "Espandi tutto",
     "collapseAll": "Comprimi tutto"
   },
+  "config": {
+    "account": "Account",
+    "security": "Sicurezza",
+    "categories": "Categorie",
+    "appearance": "Aspetto",
+    "privacy": "Privacy"
+  },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
     "sections": "Sezioni",

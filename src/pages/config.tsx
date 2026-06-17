@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight } from "lucide-react";
+import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight, X, Settings } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -10,6 +10,7 @@ import { exportBackupJSON, importBackupJSON, exportCSV } from "@/data/backup";
 import { MonthlyReport, currentMonthStr, shiftReportMonth, reportMonthLabel } from "@/components/monthly-report";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
+import { Eyebrow } from "@/components/common/tile";
 import {
   AccountSection,
   ChangePassword,
@@ -23,74 +24,104 @@ import { cn } from "@/lib/utils";
 const THEMES: Theme[] = ["light", "dark"];
 
 const TABS = [
-  { id: "conta", label: "Conta", icon: User },
-  { id: "seguranca", label: "Segurança", icon: ShieldCheck },
-  { id: "categorias", label: "Categorias", icon: Tags },
-  { id: "aparencia", label: "Aparência", icon: Palette },
-  { id: "dados", label: "Dados", icon: Database },
-  { id: "privacidade", label: "Privacidade", icon: Lock },
+  { id: "conta", labelKey: "config.account", icon: User },
+  { id: "seguranca", labelKey: "config.security", icon: ShieldCheck },
+  { id: "categorias", labelKey: "config.categories", icon: Tags },
+  { id: "aparencia", labelKey: "config.appearance", icon: Palette },
+  { id: "dados", labelKey: "data.title", icon: Database },
+  { id: "privacidade", labelKey: "config.privacy", icon: Lock },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function Config() {
+/** Página de Configurações em tela cheia (renderizada pelo ConfigOverlay): cabeçalho +
+ *  navegação lateral de seções + conteúdo — coerente com a UI editorial do app. */
+export default function Config({ onClose }: { onClose?: () => void }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TabId>("conta");
+  const active = TABS.find((x) => x.id === tab)!;
 
   return (
-    <div className="flex flex-col sm:flex-row h-full min-h-0">
-      {/* Nav: tabs horizontais (mobile) / sidebar vertical (desktop) */}
-      <nav className="shrink-0 flex sm:flex-col gap-1 sm:gap-0.5 overflow-x-auto no-scrollbar border-b border-border sm:border-b-0 sm:border-r px-3 py-2 sm:py-4 sm:w-[208px]">
-        {TABS.map((tb) => {
-          const Icon = tb.icon;
-          const active = tab === tb.id;
-          return (
+    <div className="h-full flex flex-col bg-bg text-text">
+      {/* Cabeçalho */}
+      <header className="shrink-0 border-b border-border bg-bg/80 backdrop-blur-md">
+        <div className="max-w-[1120px] mx-auto flex items-center justify-between gap-4 h-[62px] px-5 md:px-8">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
+              <Settings size={15} strokeWidth={2.4} />
+            </span>
+            <span className="font-semibold text-[16px] tracking-[-0.02em] truncate">{t("menu.settings")}</span>
+          </div>
+          {onClose ? (
             <button
-              key={tb.id}
               type="button"
-              onClick={() => setTab(tb.id)}
-              className={cn(
-                "flex items-center gap-2.5 shrink-0 rounded-[9px] px-3 py-2 text-[13.5px] font-medium whitespace-nowrap transition-colors",
-                active ? "bg-card2 text-text" : "text-muted hover:text-text hover:bg-card-hover",
-              )}
+              onClick={onClose}
+              aria-label={t("common.close")}
+              className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >
-              <Icon size={16} className={active ? "text-accent" : "text-faint"} />
-              {tb.label}
+              <X size={18} />
             </button>
-          );
-        })}
-      </nav>
+          ) : null}
+        </div>
+      </header>
 
-      {/* Conteúdo (rola independente da sidebar) */}
-      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-subtle px-5 sm:px-7 py-6">
-        {tab === "conta" && (
-          <div className="max-w-xl space-y-5">
-            <Card>
-              <AccountSection />
-            </Card>
-            <DangerZone />
+      {/* Corpo: navegação de seções + conteúdo */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-subtle">
+        <div className="max-w-[1120px] mx-auto px-5 md:px-8 py-8 flex flex-col lg:flex-row gap-8 lg:gap-12">
+          <nav className="lg:w-[210px] shrink-0 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar lg:sticky lg:top-8 self-start -mx-1 px-1 lg:mx-0 lg:px-0">
+            {TABS.map((tb) => {
+              const Icon = tb.icon;
+              const on = tab === tb.id;
+              return (
+                <button
+                  key={tb.id}
+                  type="button"
+                  onClick={() => setTab(tb.id)}
+                  className={cn(
+                    "flex items-center gap-3 shrink-0 rounded-[11px] px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                    on ? "bg-card2 text-accent" : "text-muted hover:text-text hover:bg-card-hover",
+                  )}
+                >
+                  <Icon size={17} className="shrink-0" />
+                  {t(tb.labelKey)}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex-1 min-w-0">
+            <h2 className="text-[clamp(1.4rem,2.3vw,1.85rem)] font-semibold tracking-[-0.03em] mb-6">{t(active.labelKey)}</h2>
+            {tab === "conta" && (
+              <div className="max-w-xl space-y-5">
+                <Card>
+                  <AccountSection />
+                </Card>
+                <DangerZone />
+              </div>
+            )}
+            {tab === "seguranca" && (
+              <div className="grid sm:grid-cols-2 gap-5 items-start">
+                <Card>
+                  <ChangePassword />
+                </Card>
+                <Card>
+                  <NewRecoveryCode />
+                </Card>
+              </div>
+            )}
+            {tab === "categorias" && <TaxonomyEditor />}
+            {tab === "aparencia" && <Appearance />}
+            {tab === "dados" && <DataSection />}
+            {tab === "privacidade" && (
+              <div className="max-w-2xl">
+                <PrivacyPolicyContent />
+                <div className="mt-5">
+                  <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {tab === "seguranca" && (
-          <div className="grid sm:grid-cols-2 gap-5 max-w-3xl items-start">
-            <Card>
-              <ChangePassword />
-            </Card>
-            <Card>
-              <NewRecoveryCode />
-            </Card>
-          </div>
-        )}
-        {tab === "categorias" && <TaxonomyEditor />}
-        {tab === "aparencia" && <Appearance />}
-        {tab === "dados" && <DataSection />}
-        {tab === "privacidade" && (
-          <div className="max-w-2xl">
-            <PrivacyPolicyContent />
-            <div className="mt-5">
-              <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -98,12 +129,12 @@ export default function Config() {
 
 function Card({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-[14px] border border-border bg-card p-5", className)}>{children}</div>
+    <div className={cn("rounded-[16px] border border-border bg-card p-6", className)}>{children}</div>
   );
 }
 
 function SubHeading({ children }: { children: ReactNode }) {
-  return <div className="text-[13px] font-semibold mb-3">{children}</div>;
+  return <Eyebrow className="mb-3">{children}</Eyebrow>;
 }
 
 function Appearance() {
