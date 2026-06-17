@@ -17,7 +17,7 @@ import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { cn } from "@/lib/utils";
-import { Card, CardHead, PageTitle, SectionGroup, CardGrid, StatCard } from "./ui";
+import { Card, CardHead, PageTitle, StatCard } from "./ui";
 
 const ACCENT = "#15976a";
 
@@ -101,7 +101,7 @@ export function DashboardV2() {
       ...data.incomes.map((i) => ({ id: i.id, kind: "in" as const, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), month: i.month, value: conv(i.amount, i.currency) })),
     ]
       .sort((a, b) => (a.month < b.month ? 1 : a.month > b.month ? -1 : 0))
-      .slice(0, 8);
+      .slice(0, 7);
 
     // FIRE
     const expMonths = new Set(data.expenses.map((e) => e.month));
@@ -129,7 +129,7 @@ export function DashboardV2() {
   const greetName = (email ?? "").split("@")[0].split(/[._-]/)[0];
 
   const trendCard = (
-    <Card className="p-6 xl:col-span-2">
+    <Card className="p-6">
       <CardHead right={v.nwChange != null ? <span className={cn("text-[13px] font-semibold tabular", v.nwChange >= 0 ? "text-accent" : "text-neg")}>{(v.nwChange >= 0 ? "+" : "") + v.nwChange.toFixed(1)}%</span> : undefined}>
         {t("dashboard.netWorthTrend")}
       </CardHead>
@@ -236,7 +236,7 @@ export function DashboardV2() {
   ) : null;
 
   const transactionsCard = (
-    <Card className="p-6 xl:col-span-2">
+    <Card className="p-6">
       <CardHead>{t("v2.transactions")}</CardHead>
       <div className="divide-y divide-[var(--grid-line)]">
         {v.tx.map((tx) => (
@@ -292,37 +292,42 @@ export function DashboardV2() {
     <div>
       <PageTitle title={greetName ? t("common.hello", { name: greetName.charAt(0).toUpperCase() + greetName.slice(1) }) : t("nav.painel")} subtitle={t("v2.dashSubtitle")} />
 
-      {/* KPIs do topo */}
-      <CardGrid className="mb-8">
+      {/* KPIs do topo (linha de cards iguais) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-9 items-stretch [&>*]:h-full">
         <StatCard label={t("dashboard.netWorth")} value={<Money value={v.netWorth} currency={disp} />} sub={v.nwChange != null ? `${v.nwChange >= 0 ? "+" : ""}${v.nwChange.toFixed(1)}% ${t("dashboard.vsMonth")}` : undefined} icon={<Wallet size={16} />} />
         <StatCard label={t("orcamento.balance")} value={<Money value={v.saldo} currency={disp} />} tone={v.saldo >= 0 ? "accent" : "neg"} sub={t("v2.cashflow")} />
         <StatCard label={t("fire.title")} value={v.fireProgress != null ? `${Math.round(v.fireProgress)}%` : "—"} tone="accent" sub={t("fire.progress")} icon={<Flame size={16} />} />
         <StatCard label={t("dashboard.invested")} value={<Money value={v.invested} currency={disp} />} sub={t("dashboard.financial")} />
-      </CardGrid>
+      </div>
 
-      <SectionGroup title={t("v2.overview")}>
-        <CardGrid>
+      {/* Colunas temáticas (fluem independentes — alinhadas, sem buracos) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+        <Column title={t("v2.overview")}>
           {trendCard}
           {compositionCard}
           {goalsCard}
-        </CardGrid>
-      </SectionGroup>
-
-      <SectionGroup title={t("v2.budgetSection")}>
-        <CardGrid>
+        </Column>
+        <Column title={t("v2.budgetSection")}>
           {cashflowCard}
           {donutCard}
           {receiptsCard}
-        </CardGrid>
-      </SectionGroup>
-
-      <SectionGroup title={t("v2.agenda")}>
-        <CardGrid>
-          {transactionsCard}
+        </Column>
+        <Column title={t("v2.agenda")}>
           {payableCard}
           {billsCard}
-        </CardGrid>
-      </SectionGroup>
+          {transactionsCard}
+        </Column>
+      </div>
+    </div>
+  );
+}
+
+/** Coluna temática: cabeçalho + pilha de cards (flui naturalmente, sem buracos de alinhamento). */
+function Column({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h3 className="text-[15px] font-semibold tracking-[-0.01em] mb-3.5 px-0.5">{title}</h3>
+      <div className="flex flex-col gap-4">{children}</div>
     </div>
   );
 }
