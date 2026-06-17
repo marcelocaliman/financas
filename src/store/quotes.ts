@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { fetchQuotes, isQuotesStale, type Quote } from "@/money/brapi";
+import { fetchQuotes, isQuoteRefreshDue, type Quote } from "@/money/brapi";
 import { CURRENCIES, type Currency } from "@/money/currency";
 import { actions } from "@/data/actions";
 import type { Asset } from "@/domain/types";
@@ -27,10 +27,9 @@ export const useQuotes = create<QuotesState>()(
         if (get().status === "loading") return;
         const quotable = assets.filter((a) => a.ticker && (a.quantity ?? 0) > 0);
         if (quotable.length === 0) return;
-        // Busca já se algum ticker ainda não tem preço em cache (ativo recém-adicionado),
-        // mesmo dentro do TTL — pra a posição nova precificar na hora.
-        const missing = quotable.some((a) => !get().prices[(a.ticker ?? "").toUpperCase()]);
-        if (!force && !missing && !isQuotesStale(get().updatedAt, Date.now())) return;
+        // Agenda: só em dia de pregão, ≤4×/dia (ver isQuoteRefreshDue). Incluir/editar ticker
+        // chega com `force` (precifica na hora), então a posição nova não espera a janela.
+        if (!force && !isQuoteRefreshDue(get().updatedAt, Date.now())) return;
         set({ status: "loading" });
         try {
           const quotes = await fetchQuotes(quotable.map((a) => a.ticker));
