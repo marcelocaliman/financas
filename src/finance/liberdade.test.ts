@@ -126,4 +126,17 @@ describe("suggestWealthMilestones", () => {
     expect(ms.length).toBeGreaterThan(0);
     expect(ms[0]).toBeGreaterThan(0);
   });
+  it("não passa do teto (Número da Independência) — sem escada irreal", () => {
+    // ~605k de patrimônio, independência ~1.5M: nenhum marco acima de 1.5M (nada de 25M).
+    const ms = suggestWealthMilestones(605_000, 1_500_000);
+    expect(ms.length).toBeGreaterThan(0);
+    expect(Math.max(...ms)).toBeLessThanOrEqual(1_500_000);
+    // inclui o último marco já passado (≤ 605k) e os próximos alcançáveis
+    expect(ms.some((v) => v <= 605_000)).toBe(true);
+    expect(ms.some((v) => v > 605_000)).toBe(true);
+  });
+  it("sem teto, limita a um múltiplo razoável do patrimônio (não dispara)", () => {
+    const ms = suggestWealthMilestones(605_000);
+    expect(Math.max(...ms)).toBeLessThanOrEqual(605_000 * 3);
+  });
 });

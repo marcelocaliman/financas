@@ -140,21 +140,24 @@ export function computeStreak(balances: MonthBalance[], minBalance = 0): Streak 
 /* ─────────────────────────── Marcos ─────────────────────────── */
 
 /**
- * Ladder de marcos de patrimônio sugeridos a partir de um valor de referência (ponto de partida
- * editável). Cobre da casa atual à próxima ordem de grandeza com passos "redondos" (1·, 2.5·, 5·).
+ * Marcos de patrimônio sugeridos: números "redondos" (1·, 1.5·, 2·, 3·, 5·, 7.5·) ancorados no
+ * patrimônio ATUAL — o último já passado + os próximos alcançáveis, limitados pelo `cap` (o Número
+ * da Independência, quando há). Evita escadas irreais (ex.: marcos de dezenas de milhões pra quem
+ * tem centenas de milhares). Só ponto de partida — o usuário define a própria lista no Config.
  */
-export function suggestWealthMilestones(reference: number): number[] {
-  const out: number[] = [];
-  // Começa numa base redonda razoável mesmo com patrimônio baixo/zero.
-  const start = reference > 0 ? Math.pow(10, Math.floor(Math.log10(reference))) : 10_000;
-  const steps = [1, 2.5, 5];
-  let mag = start;
-  while (out.length < 8 && mag <= Math.max(reference, start) * 1000) {
-    for (const s of steps) {
-      const v = mag * s;
-      if (v > reference * 0.5) out.push(Math.round(v));
-    }
-    mag *= 10;
+export function suggestWealthMilestones(reference: number, cap?: number): number[] {
+  const ref = Math.max(0, reference);
+  const ceil = cap && cap > ref ? cap : ref > 0 ? ref * 3 : 100_000;
+  const mults = [1, 1.5, 2, 3, 5, 7.5];
+  const nice: number[] = [];
+  for (let mag = 100; mag <= ceil * 10; mag *= 10) {
+    for (const m of mults) nice.push(Math.round(mag * m));
   }
+  const sorted = [...new Set(nice)].sort((a, b) => a - b);
+  const lowerUpcoming = ref > 0 ? ref : ceil / 20; // sem patrimônio: começa numa fração do alvo
+  const lastPassed = ref > 0 ? sorted.filter((v) => v <= ref).pop() : undefined;
+  const upcoming = sorted.filter((v) => v > lowerUpcoming && v <= ceil);
+  const out = [...new Set([lastPassed, ...upcoming].filter((v): v is number => v != null && v > 0))];
+  out.sort((a, b) => a - b);
   return out.slice(0, 6);
 }

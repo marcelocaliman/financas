@@ -137,7 +137,7 @@ export function useLiberdade(): LiberdadeView | null {
     const customMilestones = (cfg.milestones ?? []).filter((v) => v > 0);
     const wealthValues = customMilestones.length
       ? customMilestones.map((v) => conv(v, base)).sort((a, b) => a - b)
-      : suggestWealthMilestones(eligibleWealth);
+      : suggestWealthMilestones(eligibleWealth, ready ? independenceNumber : undefined);
     const milestones: Milestone[] = [
       ...wealthValues.map((value): Milestone => ({ kind: "wealth", value, achieved: eligibleWealth >= value })),
       ...(reserveTarget > 0 ? [{ kind: "reserve" as const, value: reserveTarget, achieved: reserve.complete }] : []),
