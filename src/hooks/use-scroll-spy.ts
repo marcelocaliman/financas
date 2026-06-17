@@ -50,12 +50,23 @@ function topBarOffset(): number {
   return 88; // TopNav (72) + folga
 }
 
-/** Rola suavemente até a seção, parando logo abaixo da barra fixa (ancora no topo, sem vão). */
+/** Rola suavemente até a seção, parando logo abaixo da barra fixa (ancora no topo, sem vão).
+ *  Re-afirma após a expansão do accordion e o mount dos gráficos: o smooth-scroll nativo é
+ *  facilmente INTERROMPIDO por reflow (e a seção cresce depois do clique), então sem isso ele
+ *  parava no meio da página. Reler o rect.top e rolar de novo cai certinho no topo. */
+let scrollToken = 0;
 export function scrollToSection(id: string): void {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const top = el.getBoundingClientRect().top + window.scrollY - topBarOffset();
-  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  const token = ++scrollToken;
+  const once = () => {
+    if (token !== scrollToken) return; // um clique mais novo assumiu — não re-afirma o antigo
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - topBarOffset();
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
+  once();
+  setTimeout(once, 340); // após a transição do accordion (300ms)
+  setTimeout(once, 640); // após o mount de gráficos pesados / reflow tardio
 }
 
 /** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move).

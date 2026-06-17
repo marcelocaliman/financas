@@ -65,6 +65,9 @@ export function OnePage() {
       </div>
 
       <Footer />
+      {/* Espaço de rolagem no fim: garante que as ÚLTIMAS seções consigam ancorar no topo
+          (sem conteúdo suficiente abaixo, o navegador pararia no meio da tela). */}
+      <div aria-hidden className="h-[45vh]" />
     </div>
   );
 }
