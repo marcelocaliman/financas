@@ -38,9 +38,10 @@ export function planRecurring(
   const src = months.sort().at(-1)!;
 
   return {
+    // Mantém `dueDay` (a conta recorre), mas zera `paid` — o vencimento do novo mês é em aberto.
     expenses: expenses
       .filter((e) => e.month === src && e.recurring)
-      .map((e) => ({ ...e, id: newId(), month: target })),
+      .map((e) => ({ ...e, id: newId(), month: target, paid: false })),
     incomes: incomes
       .filter((i) => i.month === src && i.recurring)
       .map((i) => ({ ...i, id: newId(), month: target })),

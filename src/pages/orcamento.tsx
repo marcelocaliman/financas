@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Copy, Repeat } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useBudget } from "@/hooks/use-budget";
@@ -10,6 +10,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
+import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -17,13 +18,34 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean };
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 
 function currentMonth(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function dueDateLabel(dueDate: string, lang: string): string {
+  const [y, m, d] = dueDate.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { day: "2-digit", month: "short" });
+}
+const STATUS_TONE: Record<BillStatus, string> = {
+  overdue: "text-neg",
+  today: "text-neg",
+  soon: "text-text",
+  later: "text-faint",
+};
+/** Conta a pagar válida: dia 1–31 inteiro; 0/inválido limpa o vencimento (vira gasto comum). */
+function normalizeBill(e: Expense): Expense {
+  if (e.dueDay == null) return e;
+  const d = Math.round(e.dueDay);
+  if (d < 1) return { ...e, dueDay: undefined };
+  return { ...e, dueDay: Math.min(31, d) };
 }
 function shiftMonth(month: string, delta: number): string {
   const [y, mm] = month.split("-").map(Number);
@@ -118,13 +140,16 @@ export default function Orcamento() {
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
-  const cols = (categories: TaxonomyItem[], rows: BudgetRow[]): GridColumn<BudgetRow>[] => {
+  const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
       { key: "recurring", type: "toggle", header: t("orcamento.recurringShort"), width: "64px" },
       { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories) },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
-      { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" },
     ];
+    if (withDueDay) {
+      columns.push({ key: "dueDay", type: "number", header: t("orcamento.dueDay"), width: "72px", align: "right", decimals: 0 });
+    }
+    columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
     if (rows.some((r) => r.currency !== disp)) {
       columns.push({ key: "conv", type: "computed", header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`, width: "minmax(88px,0.8fr)", align: "right", compute: (r) => formatMoney(conv(r.amount, r.currency), disp) });
     }
@@ -188,6 +213,9 @@ export default function Orcamento() {
           ) : null}
         </div>
       ) : null}
+
+      {/* Contas a pagar / próximos vencimentos */}
+      <UpcomingBillsTile />
 
       {/* Histórico mensal */}
       {view.history.length > 1 ? (
@@ -278,11 +306,11 @@ export default function Orcamento() {
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.expenseCategories, view.monthExp as BudgetRow[])}
+              columns={cols(tax.expenseCategories, view.monthExp as BudgetRow[], true)}
               rows={view.monthExp as BudgetRow[]}
               blank={blank}
               isComplete={complete}
-              onCommit={(r) => void actions.putExpense(r as Expense)}
+              onCommit={(r) => void actions.putExpense(normalizeBill(r as Expense))}
               onDelete={(id) => void actions.removeExpense(id)}
               addPlaceholder={t("orcamento.detailPlaceholder")}
               total={<Money value={view.totalExp} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
@@ -300,6 +328,73 @@ export default function Orcamento() {
   );
 }
 
+/** Contas a pagar: próximos vencimentos + atrasadas (não pagas), com marcação rápida de "paga". */
+function UpcomingBillsTile() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const tax = useTaxonomy();
+  const data = useBudget();
+  const view = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const bills = upcomingBills(data.expenses, todayISO());
+    const total = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
+    return { bills, total };
+  }, [data, disp, rates]);
+  if (!view || view.bills.length === 0) return null;
+
+  const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+  const pay = (id: string) => {
+    const e = data?.expenses.find((x) => x.id === id);
+    if (e) void actions.putExpense({ ...e, paid: true });
+  };
+  const daysLabel = (status: BillStatus, daysUntil: number) =>
+    status === "overdue" ? t("orcamento.overdueDays", { n: -daysUntil })
+      : status === "today" ? t("orcamento.dueToday")
+        : t("orcamento.dueInDays", { n: daysUntil });
+  const shown = view.bills.slice(0, 8);
+  const extra = view.bills.length - shown.length;
+
+  return (
+    <Tile className="p-6 md:p-7">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <CalendarClock size={16} className="text-muted shrink-0" />
+          <Eyebrow>{t("orcamento.upcomingBills")}</Eyebrow>
+        </div>
+        <Money value={view.total} currency={disp} className="text-[13px] font-semibold tabular text-neg" options={{ signDisplay: "never" }} />
+      </div>
+      <ul className="divide-y divide-[var(--grid-line)]">
+        {shown.map((b) => (
+          <li key={b.id} className="flex items-center gap-3 py-2.5">
+            <button
+              type="button"
+              onClick={() => pay(b.id)}
+              title={t("orcamento.markPaid")}
+              aria-label={t("orcamento.markPaid")}
+              className="text-faint hover:text-accent transition-colors shrink-0 p-1 -m-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <Circle size={18} />
+            </button>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13.5px] text-text truncate">
+                {b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized")}
+              </div>
+              <div className={`text-[11.5px] tabular ${STATUS_TONE[b.status]}`}>
+                {dueDateLabel(b.dueDate, lang)} · {daysLabel(b.status, b.daysUntil)}
+              </div>
+            </div>
+            <Money value={conv(b.amount, b.currency)} currency={disp} className="text-[13.5px] font-medium tabular shrink-0" />
+          </li>
+        ))}
+      </ul>
+      {extra > 0 ? <p className="text-[11.5px] text-faint mt-3">{t("orcamento.moreBills", { n: extra })}</p> : null}
+    </Tile>
+  );
+}
+
 /** KPIs do cabeçalho do accordion de Orçamento — sempre o MÊS CORRENTE. */
 export function OrcamentoSummary() {
   const { t } = useTranslation();
@@ -313,7 +408,9 @@ export function OrcamentoSummary() {
     const totalExp = data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const saldo = totalInc - totalExp;
-    return { totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0 };
+    const bills = upcomingBills(data.expenses, todayISO());
+    const duePayable = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
+    return { totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0, duePayable, dueCount: bills.length };
   }, [data, disp, rates]);
   if (!v) return null;
   return (
@@ -324,6 +421,9 @@ export function OrcamentoSummary() {
       ) : null}
       <HeaderKpi secondary label={t("orcamento.income")} tone="accent" value={<Money value={v.totalInc} currency={disp} />} />
       <HeaderKpi secondary label={t("orcamento.expenses")} tone="neg" value={<Money value={v.totalExp} currency={disp} options={{ signDisplay: "never" }} />} />
+      {v.dueCount > 0 ? (
+        <HeaderKpi secondary label={t("orcamento.duePayable")} tone="neg" value={<Money value={v.duePayable} currency={disp} options={{ signDisplay: "never" }} />} />
+      ) : null}
     </HeaderKpis>
   );
 }

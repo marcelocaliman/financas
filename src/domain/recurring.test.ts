@@ -13,6 +13,8 @@ const exp = (p: Partial<Expense>): Expense => ({
   currency: p.currency ?? "BRL",
   amount: p.amount ?? 100,
   recurring: p.recurring,
+  dueDay: p.dueDay,
+  paid: p.paid,
 });
 const inc = (p: Partial<Income>): Income => ({
   id: p.id ?? `i${++n}`,
@@ -78,5 +80,12 @@ describe("planRecurring", () => {
     const expenses = [exp({ month: "2026-01", recurring: true })];
     const plan = planRecurring(expenses, [], "2026-02", newId);
     expect(plan.expenses[0].recurring).toBe(true);
+  });
+
+  it("conta recorrente: mantém o dia de vencimento mas reabre como NÃO paga", () => {
+    const expenses = [exp({ month: "2026-01", recurring: true, dueDay: 10, paid: true })];
+    const plan = planRecurring(expenses, [], "2026-02", newId);
+    expect(plan.expenses[0].dueDay).toBe(10);
+    expect(plan.expenses[0].paid).toBe(false);
   });
 });

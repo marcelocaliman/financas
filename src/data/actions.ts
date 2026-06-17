@@ -121,7 +121,7 @@ export const actions = {
         repository.listIncomes(),
       ]);
       for (const e of expenses.filter((x) => x.month === from && !x.recurring)) {
-        await repository.putExpense({ ...e, id: crypto.randomUUID(), month: to });
+        await repository.putExpense({ ...e, id: crypto.randomUUID(), month: to, paid: false });
       }
       for (const i of incomes.filter((x) => x.month === from && !x.recurring)) {
         await repository.putIncome({ ...i, id: crypto.randomUUID(), month: to });

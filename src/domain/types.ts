@@ -44,6 +44,10 @@ export interface Expense {
   amount: number; // valor no mês
   /** Fixo/recorrente: entra sozinho nos meses seguintes (aluguel, assinaturas…). */
   recurring?: boolean;
+  /** Dia de vencimento (1–31) — transforma o gasto numa CONTA A PAGAR. Ausente = sem vencimento. */
+  dueDay?: number;
+  /** Conta já paga no mês? Cada mês tem a sua linha, então `paid` é por competência. */
+  paid?: boolean;
 }
 
 export interface Income {
