@@ -5,7 +5,7 @@ import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { convert, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { COST_OF_LIVING, countryCost } from "@/data/cost-of-living";
+import { currencyCostIndex } from "@/data/cost-of-living";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Kpi } from "@/components/common/kpi";
@@ -150,10 +150,11 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
 function CostOfLiving() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const budget = useBudget();
-  const [from, setFrom] = useState("br");
-  const [to, setTo] = useState("it");
+  const [from, setFrom] = useState<Currency>(base);
+  const [to, setTo] = useState<Currency>(base === "EUR" ? "BRL" : "EUR");
 
   // Gasto MENSAL: média sobre os meses COM lançamento (o rótulo é "/mês", não a soma de tudo).
   const monthly = useMemo(() => {
@@ -164,15 +165,12 @@ function CostOfLiving() {
     return total / months.size;
   }, [budget, disp, rates]);
 
-  const cf = countryCost(from);
-  const ct = countryCost(to);
-  const ratio = cf && ct ? ct.index / cf.index : 1;
+  // Custo de vida por MOEDA (mesma moeda → mesmo índice → mesmo valor). Equivalente na
+  // moeda destino: converte seus gastos pelo câmbio e aplica o índice de custo de vida.
+  const ratio = currencyCostIndex(to) / currencyCostIndex(from);
   const diff = (ratio - 1) * 100;
-  // Equivalente na MOEDA DO PAÍS destino: converte seus gastos pro câmbio de lá e aplica o
-  // índice de custo de vida. Ex.: R$ no Brasil → € na Itália (o que o usuário pediu).
-  const targetCur = ct && CURRENCIES.includes(ct.currency) ? ct.currency : disp;
-  const equivalent = convert(monthly, disp, targetCur, rates) * ratio;
-  const place = ct ? t(`crossborder.countryIn.${ct.key}`) : "";
+  const fromExpenses = convert(monthly, disp, from, rates);
+  const equivalent = convert(monthly, disp, to, rates) * ratio;
 
   return (
     <section className="space-y-4">
@@ -182,13 +180,13 @@ function CostOfLiving() {
       </div>
       <Tile className="p-6 md:p-7">
         <div className="flex flex-wrap items-center gap-3">
-          <CountrySelect value={from} onChange={setFrom} />
+          <CurrencySelect value={from} onChange={setFrom} />
           <span className="text-faint">→</span>
-          <CountrySelect value={to} onChange={setTo} />
+          <CurrencySelect value={to} onChange={setTo} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-          <Kpi label={t("crossborder.yourExpenses")} value={<Money value={monthly} currency={disp} />} />
-          <Kpi label={t("crossborder.equivalent", { place })} tone="accent" value={<Money value={equivalent} currency={targetCur} />} />
+          <Kpi label={t("crossborder.yourExpenses")} value={<Money value={fromExpenses} currency={from} />} />
+          <Kpi label={t("crossborder.equivalentCur", { cur: to })} tone="accent" value={<Money value={equivalent} currency={to} />} />
           <Kpi
             label={t("crossborder.difference")}
             tone={diff > 0 ? "neg" : "accent"}
@@ -201,17 +199,16 @@ function CostOfLiving() {
   );
 }
 
-function CountrySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const { t } = useTranslation();
+function CurrencySelect({ value, onChange }: { value: Currency; onChange: (v: Currency) => void }) {
   return (
     <select
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] cursor-pointer"
+      onChange={(e) => onChange(e.target.value as Currency)}
+      className="h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] cursor-pointer tabular"
     >
-      {COST_OF_LIVING.map((c) => (
-        <option key={c.key} value={c.key} className="bg-card">
-          {c.flag} {t(`crossborder.country.${c.key}`)}
+      {CURRENCIES.map((c) => (
+        <option key={c} value={c} className="bg-card">
+          {CURRENCY_SYMBOL[c]} {c}
         </option>
       ))}
     </select>
