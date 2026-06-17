@@ -318,6 +318,15 @@
     "exportCsvDesc": "Foglio piatto (attività, spese, entrate…) da aprire in Excel/Sheets.",
     "exportCsvBtn": "Esporta CSV"
   },
+  "report": {
+    "appName": "Nossas Finanças",
+    "title": "Riepilogo mensile",
+    "desc": "Genera un riepilogo del mese da stampare o salvare in PDF (dal browser).",
+    "print": "Stampa / PDF",
+    "netWorth": "Patrimonio netto",
+    "generatedOn": "generato il {{date}}",
+    "footer": "Privato · cifrato end-to-end"
+  },
   "footer": {
     "tagline": "Patrimonio e budget multivaluta — local-first e cifrato end-to-end.",
     "sections": "Sezioni",

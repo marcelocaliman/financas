@@ -1,12 +1,13 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { User, ShieldCheck, Tags, Palette, Database, Lock } from "lucide-react";
+import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
 import { exportBackupJSON, importBackupJSON, exportCSV } from "@/data/backup";
+import { MonthlyReport, currentMonthStr, shiftReportMonth, reportMonthLabel } from "@/components/monthly-report";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import {
@@ -167,10 +168,12 @@ function DataCard({ title, desc, children }: { title: string; desc: string; chil
 }
 
 function DataSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
   const [confirmReset, setConfirmReset] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [reportMonth, setReportMonth] = useState(currentMonthStr());
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onPickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,6 +232,34 @@ function DataSection() {
           </Button>
         </DataCard>
 
+        <DataCard title={t("report.title")} desc={t("report.desc")}>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setReportMonth(shiftReportMonth(reportMonth, -1))}
+                aria-label={t("orcamento.prevMonth")}
+                className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <span className="text-[13px] font-medium capitalize min-w-[120px] text-center tabular">{reportMonthLabel(reportMonth, lang)}</span>
+              <button
+                type="button"
+                onClick={() => setReportMonth(shiftReportMonth(reportMonth, 1))}
+                aria-label={t("orcamento.nextMonth")}
+                className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            <Button variant="secondary" onClick={() => window.print()}>
+              <Printer size={15} className="mr-1.5" />
+              {t("report.print")}
+            </Button>
+          </div>
+        </DataCard>
+
         <DataCard title={t("data.sample")} desc={t("data.sampleDesc")}>
           <Button variant="secondary" onClick={() => void actions.loadSample()}>
             {t("data.loadSample")}
@@ -280,6 +311,8 @@ function DataSection() {
           </Button>
         </div>
       </Dialog>
+
+      <MonthlyReport month={reportMonth} />
     </div>
   );
 }

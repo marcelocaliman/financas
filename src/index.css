@@ -315,3 +315,21 @@ summary {
     scroll-behavior: auto;
   }
 }
+
+/* Relatório mensal: invisível na tela, isolado na impressão/PDF (sem servidor).
+   Na impressão escondemos TODO o app (filhos diretos do body, incl. #root e portais)
+   e mostramos só o relatório — evita páginas em branco do layout que continua ocupando espaço. */
+.print-only {
+  display: none;
+}
+@media print {
+  body > * {
+    display: none !important;
+  }
+  #monthly-report {
+    display: block !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

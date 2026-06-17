@@ -318,6 +318,15 @@
     "exportCsvDesc": "Planilha achatada (ativos, gastos, receitas…) pra abrir no Excel/Sheets.",
     "exportCsvBtn": "Exportar CSV"
   },
+  "report": {
+    "appName": "Nossas Finanças",
+    "title": "Resumo mensal",
+    "desc": "Gere um resumo do mês para imprimir ou salvar em PDF (pelo navegador).",
+    "print": "Imprimir / PDF",
+    "netWorth": "Patrimônio líquido",
+    "generatedOn": "gerado em {{date}}",
+    "footer": "Privado · cifrado de ponta a ponta"
+  },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",
     "sections": "Seções",

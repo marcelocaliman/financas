@@ -318,6 +318,15 @@
     "exportCsvDesc": "Flat spreadsheet (assets, expenses, income…) to open in Excel/Sheets.",
     "exportCsvBtn": "Export CSV"
   },
+  "report": {
+    "appName": "Nossas Finanças",
+    "title": "Monthly summary",
+    "desc": "Generate a monthly summary to print or save as PDF (via your browser).",
+    "print": "Print / PDF",
+    "netWorth": "Net worth",
+    "generatedOn": "generated {{date}}",
+    "footer": "Private · end-to-end encrypted"
+  },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
     "sections": "Sections",
