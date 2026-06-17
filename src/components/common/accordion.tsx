@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
+import { scrollToSection } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -43,7 +44,12 @@ export function Accordion({
     <section id={id} className="scroll-mt-24 border-t border-border">
       <button
         type="button"
-        onClick={() => setOpen(id, !open)}
+        onClick={() => {
+          const next = !open;
+          setOpen(id, next);
+          // Ao ABRIR pelo cabeçalho, rola até a seção (mesmo comportamento do menu).
+          if (next) requestAnimationFrame(() => scrollToSection(id));
+        }}
         aria-expanded={open}
         aria-controls={`${id}-body`}
         className="group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]"

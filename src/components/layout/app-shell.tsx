@@ -8,6 +8,7 @@ import { useScrollSpy } from "@/hooks/use-scroll-spy";
 import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
+import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useUI } from "@/store/ui";
 
 /** Casca: menu horizontal no topo + página editorial única + nav inferior (mobile). */
@@ -17,6 +18,7 @@ export function AppShell() {
   useQuotesSync();
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
+  useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)
 
   useEffect(() => {
     const dark = theme === "dark";

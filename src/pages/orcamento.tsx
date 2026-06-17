@@ -12,6 +12,7 @@ import { categoryColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
+import { cn } from "@/lib/utils";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -170,7 +171,7 @@ export default function Orcamento() {
           <button type="button" onClick={() => setMonth(shiftMonth(month, -1))} aria-label={t("orcamento.prevMonth")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
             <ChevronLeft size={18} />
           </button>
-          <span className="text-[15px] font-semibold capitalize min-w-[150px] text-center tabular">{monthLabel(month, lang)}</span>
+          <MonthPicker value={month} onChange={setMonth} lang={lang} />
           <button type="button" onClick={() => setMonth(shiftMonth(month, 1))} aria-label={t("orcamento.nextMonth")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
             <ChevronRight size={18} />
           </button>
@@ -324,6 +325,82 @@ export default function Orcamento() {
         <Repeat size={13} className="shrink-0" />
         {t("orcamento.recurringHint")}
       </p>
+    </div>
+  );
+}
+
+/** Seletor de mês: clicar no nome abre um mini-calendário (ano + 12 meses) pra pular direto. */
+function MonthPicker({ value, onChange, lang }: { value: string; onChange: (m: string) => void; lang: string }) {
+  const [open, setOpen] = useState(false);
+  const [year, setYear] = useState(() => Number(value.split("-")[0]));
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => setYear(Number(value.split("-")[0])), [value]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const [selY, selM] = value.split("-").map(Number);
+  const monthNames = Array.from({ length: 12 }, (_, i) =>
+    new Date(2020, i, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "short" }).replace(".", ""),
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className="text-[15px] font-semibold capitalize min-w-[150px] text-center tabular px-2 py-1 rounded-[8px] hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+      >
+        {monthLabel(value, lang)}
+      </button>
+      {open ? (
+        <div className="absolute z-50 left-0 mt-2 w-[260px] rounded-[12px] border border-border-strong bg-card shadow-[var(--shadow-float)] p-3">
+          <div className="flex items-center justify-between mb-2.5">
+            <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="-1" className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[14px] font-semibold tabular">{year}</span>
+            <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="+1" className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {monthNames.map((mname, i) => {
+              const on = selY === year && selM === i + 1;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    onChange(`${year}-${String(i + 1).padStart(2, "0")}`);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "py-2 rounded-[8px] text-[12.5px] font-medium capitalize transition-colors",
+                    on ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text hover:bg-card-hover",
+                  )}
+                >
+                  {mname}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -3,13 +3,11 @@
  * do SERVIDOR (BRAPI_TOKEN na Vercel) — nunca vai pro bundle do front nem é configurado
  * pelo usuário. O app chama /api/quote?tickers=BBAS3,PETR4 e recebe só preço/moeda.
  *
- * UMA chamada por request com TODOS os tickers (o tier free aceita lote; o limite é de
- * REQUESTS/dia, não de tickers). É barato e poupa a cota: o cache na edge (5 min) é
- * compartilhado entre todos os usuários, então no máximo ~1 chamada à brapi a cada 5 min.
- *
- * ATENÇÃO: cada ticker é codificado individualmente, mas as VÍRGULAS ficam literais —
- * encodeURIComponent na string inteira viraria %2C e a brapi leria "A,B" como UM ticker
- * inválido (devolvendo vazio). Foi esse o bug do multi-ticker.
+ * UMA REQUISIÇÃO POR TICKER, em paralelo, e mescla os resultados. O tier FREE da brapi
+ * devolve VAZIO para o endpoint multi-ticker (quote/A,B,C) — só o single-ticker funciona;
+ * por isso quebrávamos as cotações de quase tudo (só sobrava o ticker que tinha sido
+ * adicionado sozinho, do cache). O custo é N chamadas por cache-miss, mas o cache na edge
+ * (5 min, compartilhado) segura o volume. Para escalar a muitos usuários, subir o plano.
  */
 export default async function handler(req, res) {
   const raw = String((req.query && req.query.tickers) || "").trim();
@@ -36,26 +34,26 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Vírgulas LITERAIS entre tickers (só cada ticker é codificado).
-  const path = tickers.map((t) => encodeURIComponent(t)).join(",");
+  // Uma chamada single-ticker por símbolo (o único formato que o tier free atende), em paralelo.
+  const fetchOne = async (t) => {
+    try {
+      const url = `https://brapi.dev/api/quote/${encodeURIComponent(t)}?token=${encodeURIComponent(token)}`;
+      const r = await fetch(url);
+      if (!r.ok) return null;
+      const data = await r.json();
+      const x = Array.isArray(data?.results) ? data.results[0] : null;
+      if (x && typeof x.regularMarketPrice === "number") {
+        return { symbol: x.symbol ?? t, regularMarketPrice: x.regularMarketPrice, currency: x.currency ?? "BRL" };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   try {
-    const url = `https://brapi.dev/api/quote/${path}?token=${encodeURIComponent(token)}`;
-    const r = await fetch(url);
-    if (!r.ok) {
-      res.status(200).json({ results: [] });
-      return;
-    }
-    const data = await r.json();
-    const results = Array.isArray(data?.results)
-      ? data.results
-          .filter((x) => x && typeof x.regularMarketPrice === "number")
-          .map((x) => ({
-            symbol: x.symbol,
-            regularMarketPrice: x.regularMarketPrice,
-            currency: x.currency ?? "BRL",
-          }))
-      : [];
+    const settled = await Promise.all(tickers.map(fetchOne));
+    const results = settled.filter(Boolean);
     // Só cacheia SUCESSO (preços) — um vazio transitório (cota/erro) não pode ficar
     // preso na edge por minutos e mascarar a cotação. Vazio re-tenta na próxima.
     if (results.length > 0) {

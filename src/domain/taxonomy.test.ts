@@ -25,8 +25,8 @@ describe("DEFAULT_TAXONOMY — integridade", () => {
     expect(uniq(tax.liabilityTypes)).toBe(true);
   });
 
-  it("cobre as 11 classes e os 4 indexadores do modelo", () => {
-    expect(tax.assetClasses).toHaveLength(11);
+  it("cobre as 12 classes e os 4 indexadores do modelo", () => {
+    expect(tax.assetClasses).toHaveLength(12);
     expect([...indexerIds]).toEqual(["prefixado", "cdi", "ipca", "selic"]);
   });
 });

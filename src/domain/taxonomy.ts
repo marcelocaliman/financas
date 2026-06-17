@@ -43,6 +43,7 @@ export const CLASS = {
   commodities: "commodities",
   caixa: "caixa",
   imoveis: "imoveis",
+  bens: "bens",
   privateEquity: "private-equity",
   outros: "outros",
 } as const;
@@ -77,6 +78,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     { id: CLASS.commodities, name: "Commodities / Ouro" },
     { id: CLASS.caixa, name: "Caixa e Liquidez" },
     { id: CLASS.imoveis, name: "Imóveis (físicos)" },
+    { id: CLASS.bens, name: "Bens (veículos e de valor)" },
     { id: CLASS.privateEquity, name: "Private Equity / Alternativos" },
     { id: CLASS.outros, name: "Outros" },
   ],
@@ -94,6 +96,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     ...subs(CLASS.commodities, ["Ouro", "Prata", "ETF de ouro/commodities", "Fundo de commodities", "Outro"]),
     ...subs(CLASS.caixa, ["Conta corrente", "Conta poupança", "Conta internacional", "Money market", "Reserva de emergência", "Outro"]),
     ...subs(CLASS.imoveis, ["Residencial", "Comercial", "Terreno", "Imóvel de aluguel", "Outro"]),
+    ...subs(CLASS.bens, ["Veículo", "Motocicleta", "Bicicleta", "Joias e relógios", "Eletrônicos", "Móveis e eletrodomésticos", "Arte e colecionáveis", "Outro"]),
     ...subs(CLASS.privateEquity, ["Private equity", "Venture capital", "Participação em empresa", "Arte/colecionáveis", "Outro"]),
     // "Outros" é livre — sem subtipos.
   ],
@@ -168,10 +171,10 @@ export function nameById(items: TaxonomyItem[], id?: string): string {
 }
 
 /**
- * Classes que NÃO contam como "investido" (financeiro): Caixa e Imóveis. Seletor
- * ÚNICO usado no Painel e em Investimentos pra "Investido" nunca divergir entre telas.
+ * Classes que NÃO contam como "investido" (financeiro): Caixa, Imóveis e Bens físicos.
+ * Seletor ÚNICO usado no Painel e em Investimentos pra "Investido" nunca divergir entre telas.
  */
-const NON_INVESTED = new Set<string>([CLASS.caixa, CLASS.imoveis]);
+const NON_INVESTED = new Set<string>([CLASS.caixa, CLASS.imoveis, CLASS.bens]);
 export function isInvestedClass(classId: string): boolean {
   return !NON_INVESTED.has(classId);
 }
