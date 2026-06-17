@@ -278,11 +278,16 @@
     "colHint": "What it would cost to keep your current spending standard in another country (approximate index, Brazil = 100).",
     "yourExpenses": "Your expenses/mo",
     "equivalentIn": "Equivalent in {{country}}",
+    "equivalent": "Equivalent {{place}}",
     "difference": "Difference",
-    "colDisclaimer": "Static, approximate index — order of magnitude, not exact prices. Doesn't account for FX or rent specifically.",
+    "colDisclaimer": "Approximate cost-of-living index + today's FX — order of magnitude, not exact prices. Doesn't account for rent specifically.",
     "country": {
       "br": "Brazil", "pt": "Portugal", "it": "Italy", "es": "Spain",
       "fr": "France", "de": "Germany", "uk": "United Kingdom", "us": "United States", "ch": "Switzerland"
+    },
+    "countryIn": {
+      "br": "in Brazil", "pt": "in Portugal", "it": "in Italy", "es": "in Spain",
+      "fr": "in France", "de": "in Germany", "uk": "in the UK", "us": "in the US", "ch": "in Switzerland"
     },
     "fiscalTitle": "Cross-border tax obligations",
     "fiscalHint": "Reminders of key obligations for living between countries. Informational — confirm deadlines and your case with an accountant.",

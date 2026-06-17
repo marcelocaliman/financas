@@ -278,11 +278,16 @@
     "colHint": "Quanto costerebbe mantenere il tuo attuale tenore di spesa in un altro paese (indice approssimativo, Brasile = 100).",
     "yourExpenses": "Spese/mese",
     "equivalentIn": "Equivalente in {{country}}",
+    "equivalent": "Equivalente {{place}}",
     "difference": "Differenza",
-    "colDisclaimer": "Indice statico e approssimativo — ordine di grandezza, non prezzi esatti. Non considera cambio né affitto in modo specifico.",
+    "colDisclaimer": "Indice approssimativo del costo della vita + cambio del giorno — ordine di grandezza, non prezzi esatti. Non considera l'affitto in modo specifico.",
     "country": {
       "br": "Brasile", "pt": "Portogallo", "it": "Italia", "es": "Spagna",
       "fr": "Francia", "de": "Germania", "uk": "Regno Unito", "us": "Stati Uniti", "ch": "Svizzera"
+    },
+    "countryIn": {
+      "br": "in Brasile", "pt": "in Portogallo", "it": "in Italia", "es": "in Spagna",
+      "fr": "in Francia", "de": "in Germania", "uk": "nel Regno Unito", "us": "negli Stati Uniti", "ch": "in Svizzera"
     },
     "fiscalTitle": "Obblighi fiscali cross-border",
     "fiscalHint": "Promemoria dei principali obblighi per chi vive tra paesi. Informativo — verifica scadenze e il tuo caso con un commercialista.",

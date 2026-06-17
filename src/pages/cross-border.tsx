@@ -4,7 +4,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
-import { convert, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
+import { convert, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { COST_OF_LIVING, countryCost } from "@/data/cost-of-living";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -155,15 +155,24 @@ function CostOfLiving() {
   const [from, setFrom] = useState("br");
   const [to, setTo] = useState("it");
 
-  const expenses = useMemo(
-    () => (budget ? budget.expenses.reduce((s, e) => s + convert(e.amount, e.currency, disp, rates), 0) : 0),
-    [budget, disp, rates],
-  );
+  // Gasto MENSAL: média sobre os meses COM lançamento (o rótulo é "/mês", não a soma de tudo).
+  const monthly = useMemo(() => {
+    if (!budget) return 0;
+    const months = new Set(budget.expenses.map((e) => e.month));
+    if (months.size === 0) return 0;
+    const total = budget.expenses.reduce((s, e) => s + convert(e.amount, e.currency, disp, rates), 0);
+    return total / months.size;
+  }, [budget, disp, rates]);
+
   const cf = countryCost(from);
   const ct = countryCost(to);
   const ratio = cf && ct ? ct.index / cf.index : 1;
-  const scaled = expenses * ratio;
   const diff = (ratio - 1) * 100;
+  // Equivalente na MOEDA DO PAÍS destino: converte seus gastos pro câmbio de lá e aplica o
+  // índice de custo de vida. Ex.: R$ no Brasil → € na Itália (o que o usuário pediu).
+  const targetCur = ct && CURRENCIES.includes(ct.currency) ? ct.currency : disp;
+  const equivalent = convert(monthly, disp, targetCur, rates) * ratio;
+  const place = ct ? t(`crossborder.countryIn.${ct.key}`) : "";
 
   return (
     <section className="space-y-4">
@@ -178,8 +187,8 @@ function CostOfLiving() {
           <CountrySelect value={to} onChange={setTo} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-          <Kpi label={t("crossborder.yourExpenses")} value={<Money value={expenses} currency={disp} />} />
-          <Kpi label={t("crossborder.equivalentIn", { country: ct ? t(`crossborder.country.${ct.key}`) : "" })} tone="accent" value={<Money value={scaled} currency={disp} />} />
+          <Kpi label={t("crossborder.yourExpenses")} value={<Money value={monthly} currency={disp} />} />
+          <Kpi label={t("crossborder.equivalent", { place })} tone="accent" value={<Money value={equivalent} currency={targetCur} />} />
           <Kpi
             label={t("crossborder.difference")}
             tone={diff > 0 ? "neg" : "accent"}
