@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
@@ -111,6 +111,17 @@ export function SideNav({ active }: { active: string }) {
     requestAnimationFrame(() => scrollToSection(id));
   };
 
+  // Filmstrip do menu: as duas listas ficam lado a lado num trilho que desliza (só uma
+  // visível por vez — sem ghosting). A altura do quadro acompanha a lista ativa (página tem
+  // 8 itens, Config 6), animando junto pra o rodapé não "pular".
+  const pageRef = useRef<HTMLDivElement>(null);
+  const configRef = useRef<HTMLDivElement>(null);
+  const [listH, setListH] = useState<number | undefined>(undefined);
+  useLayoutEffect(() => {
+    const el = configOpen ? configRef.current : pageRef.current;
+    if (el) setListH(el.offsetHeight);
+  }, [configOpen, collapsed]);
+
   const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
@@ -200,26 +211,23 @@ export function SideNav({ active }: { active: string }) {
           </button>
         </div>
 
-        {/* Navegação — troca entre as seções da PÁGINA e da CONFIG num cross-slide ao abrir/fechar
-            a Config (as duas listas ficam montadas; a ativa fica no fluxo, a outra vira overlay). */}
-        <div className="relative overflow-hidden">
+        {/* Navegação — filmstrip: as listas da PÁGINA e da CONFIG ficam lado a lado e o trilho
+            desliza ao abrir/fechar a Config (só uma visível por vez). A altura do quadro segue a
+            lista ativa, animando junto pra o rodapé não pular. */}
+        <div
+          className="relative overflow-hidden transition-[height] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+          style={{ height: listH }}
+        >
           <div
-            inert={configOpen}
-            className={cn(
-              "transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none will-change-transform",
-              configOpen ? "absolute inset-x-0 top-0 -translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
-            )}
+            className="flex items-start transition-transform duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none will-change-transform"
+            style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
-            <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
-          </div>
-          <div
-            inert={!configOpen}
-            className={cn(
-              "transition-[transform,opacity] duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none will-change-transform",
-              !configOpen ? "absolute inset-x-0 top-0 translate-x-8 opacity-0 pointer-events-none" : "translate-x-0 opacity-100",
-            )}
-          >
-            <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
+            <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
+              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
+            </div>
+            <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
+              <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
+            </div>
           </div>
         </div>
 
