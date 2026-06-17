@@ -353,6 +353,8 @@
     "collapseAll": "Comprimi tutto"
   },
   "config": {
+    "eyebrow": "Preferenze",
+    "subtitle": "Regola account, sicurezza, aspetto e dati — tutto in un unico posto.",
     "account": "Account",
     "security": "Sicurezza",
     "categories": "Categorie",

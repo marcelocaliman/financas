@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
 import { SideNav, MobileBar } from "./side-nav";
@@ -13,15 +13,19 @@ import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
-/** Casca: menu (topo ou lateral) + página editorial única; a Config entra NO LUGAR do
- *  conteúdo principal (slide + fade), sem ser um modal flutuante. */
+/** Casca: menu (topo ou lateral) + página editorial única. A Config entra NO LUGAR do
+ *  conteúdo principal num SLIDE horizontal (a página sai pra esquerda e some; a Config
+ *  desliza da direita) + fade — sem ser um modal flutuante. */
 export function AppShell() {
   const theme = useUI((s) => s.theme);
   const navLayout = useUI((s) => s.navLayout);
   const navCollapsed = useUI((s) => s.navCollapsed);
   const configOpen = useUI((s) => s.configOpen);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
-  const active = useScrollSpy(NAV_ITEMS.map((n) => n.id));
+  // Spy desligado enquanto a Config está aberta: a página fica fora da tela mas montada, então
+  // sem isso a rolagem da Config moveria o "ativo" do menu por geometria fantasma da página.
+  const spyActive = useScrollSpy(configOpen ? [] : NAV_ITEMS.map((n) => n.id));
+  const active = configOpen ? "" : spyActive;
   useQuotesSync();
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
@@ -35,30 +39,61 @@ export function AppShell() {
       ?.setAttribute("content", dark ? "#0a0b0d" : "#fafafa");
   }, [theme]);
 
-  // Conteúdo principal ↔ Config: a Config monta no lugar da página, anima a entrada (sobe +
-  // fade) e, ao sair, volta a página e rola pro topo (ou pra seção pendente, vinda da nav).
-  const [cfgMounted, setCfgMounted] = useState(configOpen);
-  const [cfgShow, setCfgShow] = useState(false);
+  // Slide horizontal entre dois "panes": a PÁGINA (esquerda) e a CONFIG (direita). Os DOIS
+  // ficam sempre montados (o estado-inicial fora-da-tela já vem pintado, então a 1ª abertura
+  // anima de verdade; o estado de cada um é preservado). O alvo (configOpen) fica no fluxo e
+  // define a altura; o que está saindo vira overlay absoluto + `inert` (não interage, sai do
+  // tab/a11y) durante a transição, pra não empurrar o layout nem capturar foco/clique.
+  const [pageShow, setPageShow] = useState(!configOpen);
+  const [cfgShow, setCfgShow] = useState(configOpen);
+  const first = useRef(true);
+  // Última posição de rolagem da PÁGINA (só rastreada enquanto a Config está fechada). Ao abrir
+  // a Config vamos pro topo; ao fechar (sem navegação) voltamos exatamente pra onde o usuário estava.
+  const pageScroll = useRef(0);
   useEffect(() => {
-    if (configOpen) {
-      setCfgMounted(true);
-      window.scrollTo({ top: 0 });
-      const r = requestAnimationFrame(() => setCfgShow(true));
-      return () => cancelAnimationFrame(r);
+    if (configOpen) return;
+    const onScroll = () => {
+      pageScroll.current = window.scrollY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [configOpen]);
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
     }
-    setCfgShow(false);
-    const t = setTimeout(() => {
-      setCfgMounted(false);
-      requestAnimationFrame(() => {
-        const pending = consumePendingNav();
-        if (pending) scrollToSection(pending);
-        else window.scrollTo({ top: 0 });
-      });
-    }, 360);
-    return () => clearTimeout(t);
+    // Ao fechar vindo da navegação, a seção pendente é consumida uma vez (decide o destino do scroll).
+    const pending = configOpen ? null : consumePendingNav();
+    // Reset de scroll INSTANTÂNEO (ignora o scroll-behavior:smooth global) pra não brigar com o
+    // slide: abrir → topo (Config começa do topo); fechar c/ navegação → topo (rola pra seção
+    // depois); fechar simples → restaura a posição anterior da página.
+    const html = document.documentElement;
+    const prevSB = html.style.scrollBehavior;
+    html.style.scrollBehavior = "auto";
+    window.scrollTo({ top: configOpen || pending ? 0 : pageScroll.current });
+    html.style.scrollBehavior = prevSB;
+
+    // No próximo frame, viramos os transforms: o alvo entra, o outro sai.
+    const r = requestAnimationFrame(() => {
+      setCfgShow(configOpen);
+      setPageShow(!configOpen);
+    });
+    // Ao FECHAR vindo da navegação, rola (suave) pra seção pendente quando o slide termina.
+    const tm = setTimeout(() => {
+      if (pending) scrollToSection(pending);
+    }, 460);
+    return () => {
+      cancelAnimationFrame(r);
+      clearTimeout(tm);
+    };
   }, [configOpen]);
 
   const side = navLayout === "side";
+  const target = configOpen ? "config" : "page";
+  const paneBase =
+    "transition-[transform,opacity] duration-[440ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none";
   return (
     <div className="min-h-screen pb-24 lg:pb-0">
       {side ? (
@@ -70,20 +105,30 @@ export function AppShell() {
         <TopNav active={active} />
       )}
       <main className={side ? (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]") : undefined}>
-        {/* Página principal (escondida enquanto a Config está montada — preserva o estado). */}
-        <div className={cfgMounted ? "hidden" : undefined}>
-          <OnePage />
-        </div>
-        {cfgMounted ? (
+        <div className="relative overflow-clip min-h-screen">
+          {/* PÁGINA — pane da esquerda (sai pra esquerda ao abrir a Config) */}
           <div
+            inert={target !== "page"}
             className={cn(
-              "transition-[opacity,transform] duration-[340ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform motion-reduce:transition-none",
-              cfgShow ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
+              paneBase,
+              target !== "page" && "absolute inset-x-0 top-0 pointer-events-none",
+              pageShow ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0",
+            )}
+          >
+            <OnePage />
+          </div>
+          {/* CONFIG — pane da direita (desliza de fora à direita) */}
+          <div
+            inert={target !== "config"}
+            className={cn(
+              paneBase,
+              target !== "config" && "absolute inset-x-0 top-0 pointer-events-none",
+              cfgShow ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
             )}
           >
             <Config onClose={() => setConfigOpen(false)} />
           </div>
-        ) : null}
+        </div>
       </main>
       <BottomNav active={active} />
     </div>

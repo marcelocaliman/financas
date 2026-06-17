@@ -353,6 +353,8 @@
     "collapseAll": "Collapse all"
   },
   "config": {
+    "eyebrow": "Preferences",
+    "subtitle": "Tune your account, security, appearance and data — all in one place.",
     "account": "Account",
     "security": "Security",
     "categories": "Categories",

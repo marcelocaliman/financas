@@ -75,7 +75,7 @@ export function TopNav({ active }: { active: string }) {
           <button
             type="button"
             onClick={toggleNumbers}
-            aria-label={hidden ? "Mostrar valores" : "Ocultar valores"}
+            aria-label={hidden ? t("menu.show") : t("menu.hide")}
             aria-pressed={hidden}
             className="grid place-items-center w-10 h-10 rounded-[11px] text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
@@ -91,10 +91,12 @@ export function TopNav({ active }: { active: string }) {
 }
 
 function UserMenu() {
+  const { t } = useTranslation();
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
   const openConfig = useUI((s) => s.setConfigOpen);
+  const configOpen = useUI((s) => s.configOpen);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ function UserMenu() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Conta"
+        aria-label={t("menu.account")}
         aria-haspopup="menu"
         aria-expanded={open}
         className="flex items-center gap-2 h-9 pl-1 pr-2 rounded-[9px] bg-card2 border border-border hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
@@ -130,18 +132,19 @@ function UserMenu() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-60 max-w-[calc(100vw-2.5rem)] z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden">
             <div className="px-4 py-3.5 border-b border-border">
-              <div className="text-[13.5px] font-semibold truncate">{name || "Conta"}</div>
+              <div className="text-[13.5px] font-semibold truncate">{name || t("menu.account")}</div>
               {email ? <div className="text-[12px] text-muted truncate mt-0.5">{email}</div> : null}
             </div>
             <div className="p-1.5">
               <MenuItem
                 icon={Settings}
+                active={configOpen}
                 onClick={() => {
                   setOpen(false);
-                  openConfig(true);
+                  openConfig(!configOpen);
                 }}
               >
-                Configurações
+                {t("menu.settings")}
               </MenuItem>
               <MenuItem
                 icon={Lock}
@@ -150,7 +153,7 @@ function UserMenu() {
                   lock();
                 }}
               >
-                Trancar o cofre
+                {t("menu.lock")}
               </MenuItem>
               <MenuItem
                 icon={LogOut}
@@ -159,7 +162,7 @@ function UserMenu() {
                   void signOut();
                 }}
               >
-                Sair
+                {t("menu.logout")}
               </MenuItem>
             </div>
           </div>
@@ -172,17 +175,23 @@ function UserMenu() {
 function MenuItem({
   icon: Icon,
   onClick,
+  active,
   children,
 }: {
   icon: LucideIcon;
   onClick: () => void;
+  active?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors text-left"
+      aria-pressed={active}
+      className={cn(
+        "w-full flex items-center gap-2.5 px-3 py-2 rounded-[9px] text-[13.5px] transition-colors text-left",
+        active ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+      )}
     >
       <Icon size={15} />
       {children}

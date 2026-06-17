@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { User, ShieldCheck, Tags, Palette, Database, Lock, Printer, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Printer, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -19,28 +19,23 @@ import {
 } from "@/components/auth/account-settings";
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
+import { Accordion } from "@/components/common/accordion";
+import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
 
 const THEMES: Theme[] = ["light", "dark"];
 
-const TABS = [
-  { id: "conta", labelKey: "config.account", icon: User },
-  { id: "seguranca", labelKey: "config.security", icon: ShieldCheck },
-  { id: "categorias", labelKey: "config.categories", icon: Tags },
-  { id: "aparencia", labelKey: "config.appearance", icon: Palette },
-  { id: "dados", labelKey: "data.title", icon: Database },
-  { id: "privacidade", labelKey: "config.privacy", icon: Lock },
-] as const;
+const GUTTERS = "px-5 md:px-10 lg:px-14";
+const CONTAINER = "max-w-[1280px] mx-auto";
 
-type TabId = (typeof TABS)[number]["id"];
-
-/** Configurações como CONTEÚDO PRINCIPAL (entra no lugar da página, não é modal): título +
- *  navegação de seções (tabs) + conteúdo — coerente com a UI editorial do app. */
+/** Configurações como CONTEÚDO PRINCIPAL — mesma linguagem editorial da página inicial:
+ *  faixa de cabeçalho (eyebrow mono + manchete) + seções em accordions idênticos aos da home
+ *  (mesmos gutters, mesmas fontes, mesmos divisores). Entra no lugar da página (não é modal). */
 export default function Config({ onClose }: { onClose?: () => void }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const email = useVault((s) => s.email);
+  const theme = useUI((s) => s.theme);
   const navLayout = useUI((s) => s.navLayout);
-  const [tab, setTab] = useState<TabId>("conta");
-  const active = TABS.find((x) => x.id === tab)!;
 
   useEffect(() => {
     if (!onClose) return;
@@ -51,82 +46,91 @@ export default function Config({ onClose }: { onClose?: () => void }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // Folga no topo pra não ficar atrás dos menus fixos (barra de topo, ou MobileBar no lateral).
-  const topPad = navLayout === "side" ? "pt-[80px] lg:pt-12" : "pt-[92px]";
-  const stickyTop = navLayout === "side" ? "lg:top-12" : "lg:top-[88px]";
+  const themeLabel = theme === "dark" ? t("common.themeDark") : t("common.themeLight");
+  const layoutLabel = navLayout === "side" ? t("menu.side") : t("menu.top");
+  const langLabel = (i18n.resolvedLanguage ?? "pt").toUpperCase();
 
   return (
-    <div className={cn("max-w-[1180px] mx-auto px-5 md:px-10 lg:px-14 pb-24", topPad)}>
-      <div className="flex items-center justify-between gap-4 mb-7">
-        <h2 className="text-[clamp(1.7rem,3vw,2.3rem)] font-semibold tracking-[-0.03em]">{t("menu.settings")}</h2>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("common.close")}
-            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-border text-[12.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-          >
-            <X size={15} /> {t("common.close")}
-          </button>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-        <nav className={cn("lg:w-[210px] shrink-0 flex lg:flex-col gap-1 overflow-x-auto no-scrollbar self-start lg:sticky -mx-1 px-1 lg:mx-0 lg:px-0", stickyTop)}>
-          {TABS.map((tb) => {
-            const Icon = tb.icon;
-            const on = tab === tb.id;
-            return (
-              <button
-                key={tb.id}
-                type="button"
-                onClick={() => setTab(tb.id)}
-                className={cn(
-                  "flex items-center gap-3 shrink-0 rounded-[11px] px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                  on ? "bg-card2 text-accent" : "text-muted hover:text-text hover:bg-card-hover",
-                )}
-              >
-                <Icon size={17} className="shrink-0" />
-                {t(tb.labelKey)}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[clamp(1.2rem,2vw,1.5rem)] font-semibold tracking-[-0.02em] mb-5">{t(active.labelKey)}</h3>
-          {tab === "conta" && (
-            <div className="max-w-xl space-y-5">
-              <Card>
-                <AccountSection />
-              </Card>
-              <DangerZone />
-            </div>
-          )}
-          {tab === "seguranca" && (
-            <div className="grid sm:grid-cols-2 gap-5 items-start">
-              <Card>
-                <ChangePassword />
-              </Card>
-              <Card>
-                <NewRecoveryCode />
-              </Card>
-            </div>
-          )}
-          {tab === "categorias" && <TaxonomyEditor />}
-          {tab === "aparencia" && <Appearance />}
-          {tab === "dados" && <DataSection />}
-          {tab === "privacidade" && (
-            <div className="max-w-2xl">
-              <PrivacyPolicyContent />
-              <div className="mt-5">
-                <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
+    <div>
+      {/* Cabeçalho — mesma faixa/gutters/topo do HERO da página inicial */}
+      <section className="scroll-mt-20">
+        <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-12")}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent mb-4">
+                {t("config.eyebrow")}
               </div>
+              <h1 className="font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.04em] leading-[1.04]">
+                {t("menu.settings")}
+              </h1>
+              <p className="mt-4 text-muted text-[14.5px] leading-relaxed max-w-[560px]">{t("config.subtitle")}</p>
             </div>
-          )}
+            {onClose ? (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label={t("common.close")}
+                className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-border text-[12.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                <X size={15} /> {t("common.close")}
+              </button>
+            ) : null}
+          </div>
         </div>
+        <div className="border-t border-border" />
+      </section>
+
+      {/* Seções — mesmos accordions/gutters/fontes da página inicial */}
+      <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
+        <Accordion id="cfg-account" title={t("config.account")} summary={<CfgPreview>{email}</CfgPreview>} defaultOpen>
+          <div className="max-w-xl space-y-5">
+            <Card>
+              <AccountSection />
+            </Card>
+            <DangerZone />
+          </div>
+        </Accordion>
+
+        <Accordion id="cfg-security" title={t("config.security")}>
+          <div className="grid sm:grid-cols-2 gap-5 items-start">
+            <Card>
+              <ChangePassword />
+            </Card>
+            <Card>
+              <NewRecoveryCode />
+            </Card>
+          </div>
+        </Accordion>
+
+        <Accordion id="cfg-categories" title={t("config.categories")}>
+          <TaxonomyEditor />
+        </Accordion>
+
+        <Accordion id="cfg-appearance" title={t("config.appearance")} summary={<CfgPreview>{`${themeLabel} · ${layoutLabel} · ${langLabel}`}</CfgPreview>}>
+          <Appearance />
+        </Accordion>
+
+        <Accordion id="cfg-data" title={t("data.title")}>
+          <DataSection />
+        </Accordion>
+
+        <Accordion id="cfg-privacy" title={t("config.privacy")}>
+          <div className="max-w-2xl">
+            <PrivacyPolicyContent />
+            <div className="mt-5">
+              <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
+            </div>
+          </div>
+        </Accordion>
       </div>
     </div>
+  );
+}
+
+/** Prévia discreta no cabeçalho da seção (mesma vibe dos KPIs da home), oculta no mobile. */
+function CfgPreview({ children }: { children: ReactNode }) {
+  return (
+    <span className="hidden md:block max-w-[260px] truncate text-[12.5px] text-muted tabular">{children}</span>
   );
 }
 
