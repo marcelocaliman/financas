@@ -208,6 +208,25 @@
     "base": "Base",
     "optimistic": "Optimistic"
   },
+  "fire": {
+    "title": "Financial independence",
+    "short": "FIRE",
+    "subtitle": "≈ {{mult}}× your annual expenses",
+    "timeToFi": "Time to FI",
+    "yearsValue": "{{n}} years",
+    "reached": "You're there!",
+    "progress": "Progress",
+    "portfolio": "Current net worth",
+    "passiveNow": "Passive income now",
+    "mo": "mo",
+    "covers": "covers {{pct}}% of expenses",
+    "remaining": "Still to go",
+    "annualExpenses": "Annual expenses",
+    "fromBudget": "from budget",
+    "withdrawalRate": "Withdrawal rate",
+    "empty": "Add your spending in Budget (or enter it below) to see how much wealth would sustain your lifestyle.",
+    "hint": "Estimate in today's money (real return of the base scenario). The 4% rule is a starting point, not investment advice."
+  },
   "proventos": {
     "title": "Dividends",
     "source": "Source",

@@ -208,6 +208,25 @@
     "base": "Base",
     "optimistic": "Otimista"
   },
+  "fire": {
+    "title": "Independência financeira",
+    "short": "FIRE",
+    "subtitle": "≈ {{mult}}× seus gastos anuais",
+    "timeToFi": "Tempo até lá",
+    "yearsValue": "{{n}} anos",
+    "reached": "Você já chegou!",
+    "progress": "Progresso",
+    "portfolio": "Patrimônio atual",
+    "passiveNow": "Renda passiva hoje",
+    "mo": "mês",
+    "covers": "cobre {{pct}}% dos gastos",
+    "remaining": "Falta juntar",
+    "annualExpenses": "Gastos anuais",
+    "fromBudget": "do orçamento",
+    "withdrawalRate": "Taxa de retirada",
+    "empty": "Adicione seus gastos no Orçamento (ou informe abaixo) para ver quanto patrimônio sustentaria seu padrão de vida.",
+    "hint": "Estimativa em valor de hoje (retorno real do cenário-base). A regra dos 4% é um ponto de partida, não recomendação de investimento."
+  },
   "proventos": {
     "title": "Proventos",
     "source": "Fonte",

@@ -1,12 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { Flame } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
+import { useBudget } from "@/hooks/use-budget";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
+import { fireNumber, realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -33,6 +36,21 @@ function useNetWorth(): number {
   }, [data, disp, rates]);
 }
 
+/** Gastos anuais derivados do orçamento: média mensal sobre os meses COM lançamento × 12. */
+function useAnnualExpenses(): number {
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const data = useBudget();
+  return useMemo(() => {
+    if (!data) return 0;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const months = new Set(data.expenses.map((e) => e.month));
+    if (months.size === 0) return 0;
+    const total = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    return (total / months.size) * 12;
+  }, [data, disp, rates]);
+}
+
 export default function Projecao() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
@@ -43,7 +61,11 @@ export default function Projecao() {
   const netWorth = useNetWorth();
 
   const override = p.initialOverride;
-  useEffect(() => p.setInitialOverride(null), [disp]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Trocar a moeda de exibição reseta os overrides em valor (eles vivem na moeda atual).
+  useEffect(() => {
+    p.setInitialOverride(null);
+    p.setAnnualExpensesOverride(null);
+  }, [disp]); // eslint-disable-line react-hooks/exhaustive-deps
   const initial = override ?? netWorth;
   const years = Math.max(1, Math.min(60, Math.round(p.years)));
   const sc = p.scenarios;
@@ -94,6 +116,9 @@ export default function Projecao() {
           ))}
         </div>
       </Tile>
+
+      {/* Número FIRE — independência financeira */}
+      <FireCard portfolio={initial} />
 
       {/* Curva comparativa */}
       <Tile className="p-6 md:p-7">
@@ -170,18 +195,159 @@ export function ProjecaoSummary() {
   const disp = useUI((s) => s.displayCurrency);
   const p = useProjection();
   const netWorth = useNetWorth();
+  const annualExp = useAnnualExpenses();
   const v = useMemo(() => {
     const initial = p.initialOverride ?? netWorth;
     const years = Math.max(1, Math.min(60, Math.round(p.years)));
     const b = p.scenarios.base;
     const nominal = projectBalance(initial, b.monthly, b.annualReturn / 100, years);
-    return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years) };
-  }, [netWorth, p.initialOverride, p.scenarios, p.annualInflation, p.years]);
+    const exp = p.annualExpensesOverride ?? annualExp;
+    const target = fireNumber(exp, p.withdrawalRate);
+    const fireProgress = exp > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
+    return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years), fireProgress };
+  }, [netWorth, annualExp, p.initialOverride, p.annualExpensesOverride, p.scenarios, p.annualInflation, p.years, p.withdrawalRate]);
   return (
     <HeaderKpis>
       <HeaderKpi label={t("projecao.finalNominal", { years: v.years })} tone="accent" value={<Money value={v.nominal} currency={disp} />} />
       <HeaderKpi secondary label={t("projecao.finalReal")} value={<Money value={v.real} currency={disp} />} />
+      {v.fireProgress != null ? (
+        <HeaderKpi secondary label={t("fire.short")} tone="accent" value={`${Math.round(v.fireProgress)}%`} />
+      ) : null}
     </HeaderKpis>
+  );
+}
+
+/** Card do número FIRE: alvo, progresso, tempo até a IF e renda passiva atual. */
+function FireCard({ portfolio }: { portfolio: number }) {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const p = useProjection();
+  const derivedAnnual = useAnnualExpenses();
+  const annualExp = p.annualExpensesOverride ?? derivedAnnual;
+  const swr = p.withdrawalRate;
+  const base = p.scenarios.base;
+
+  const target = fireNumber(annualExp, swr);
+  const targetOk = annualExp > 0 && Number.isFinite(target) && target > 0;
+  const realRet = realReturn(base.annualReturn, p.annualInflation);
+  const years = targetOk
+    ? yearsToFI({ portfolio, monthlyContribution: base.monthly, realAnnualReturn: realRet, target })
+    : null;
+  const progress = targetOk ? (portfolio / target) * 100 : 0;
+  const safeMonthly = safeMonthlyIncome(portfolio, swr);
+  const monthlyExp = annualExp / 12;
+  const coverage = monthlyExp > 0 ? (safeMonthly / monthlyExp) * 100 : 0;
+  const mult = swr > 0 ? 100 / swr : 0;
+  const multLabel = mult % 1 === 0 ? mult.toFixed(0) : mult.toFixed(1);
+  const remaining = targetOk ? Math.max(0, target - portfolio) : 0;
+  const targetYear = new Date().getFullYear() + (years != null ? Math.ceil(years) : 0);
+
+  const expField = (
+    <Field
+      label={`${t("fire.annualExpenses")} (${disp})`}
+      value={Math.round(annualExp)}
+      onChange={(v) => p.setAnnualExpensesOverride(v)}
+      hint={p.annualExpensesOverride != null ? t("projecao.custom") : t("fire.fromBudget")}
+      onReset={p.annualExpensesOverride != null ? () => p.setAnnualExpensesOverride(null) : undefined}
+    />
+  );
+  const swrField = <Field label={t("fire.withdrawalRate")} value={swr} onChange={(v) => p.set({ withdrawalRate: v })} suffix="%" />;
+  const header = (
+    <div className="flex items-center gap-2">
+      <Flame size={16} className="text-accent shrink-0" />
+      <Eyebrow>{t("fire.title")}</Eyebrow>
+    </div>
+  );
+  const hint = <p className="mt-4 text-[11px] text-faint leading-relaxed max-w-2xl">{t("fire.hint")}</p>;
+
+  // Sem gastos no orçamento → não dá pra calcular: convida a preencher (ou informar à mão).
+  if (annualExp <= 0) {
+    return (
+      <Tile className="p-6 md:p-7">
+        {header}
+        <p className="mt-3 text-[13px] text-muted max-w-md">{t("fire.empty")}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-5 max-w-lg">
+          {expField}
+          {swrField}
+        </div>
+        {hint}
+      </Tile>
+    );
+  }
+
+  return (
+    <Tile className="p-6 md:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          {header}
+          <div className="mt-2.5 text-[clamp(1.9rem,5.5vw,2.7rem)] font-semibold tracking-[-0.035em] tabular leading-none">
+            <Money value={target} currency={disp} />
+          </div>
+          <p className="text-[12.5px] text-muted mt-2">{t("fire.subtitle", { mult: multLabel })}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <span className="eyebrow block mb-1.5">{t("fire.timeToFi")}</span>
+          {years == null ? (
+            <div className="text-[clamp(1.4rem,4vw,1.9rem)] font-semibold text-faint tabular leading-none">—</div>
+          ) : years === 0 ? (
+            <div className="text-[clamp(1.4rem,4vw,1.9rem)] font-semibold text-accent tracking-[-0.02em] leading-none">{t("fire.reached")}</div>
+          ) : (
+            <>
+              <div className="text-[clamp(1.4rem,4vw,1.9rem)] font-semibold tabular leading-none">{t("fire.yearsValue", { n: years.toFixed(1) })}</div>
+              <span className="text-[11.5px] text-faint">≈ {targetYear}</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Barra de progresso */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between text-[12px] mb-2">
+          <span className="text-muted">{t("fire.progress")}</span>
+          <span className="tabular font-semibold text-accent">{progress >= 100 ? "100%+" : `${Math.round(progress)}%`}</span>
+        </div>
+        <div className="h-2.5 rounded-full bg-bg2 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-500"
+            style={{ width: `${Math.min(100, Math.max(progress > 0 ? 2 : 0, progress))}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Estatísticas */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 mt-6">
+        <Stat label={t("fire.portfolio")} value={<Money value={portfolio} currency={disp} />} />
+        <Stat
+          label={t("fire.passiveNow")}
+          value={
+            <>
+              <Money value={safeMonthly} currency={disp} />
+              <span className="text-faint">/{t("fire.mo")}</span>
+            </>
+          }
+          sub={t("fire.covers", { pct: Math.round(coverage) })}
+          subTone={coverage >= 100 ? "accent" : undefined}
+        />
+        <Stat label={t("fire.remaining")} value={remaining > 0 ? <Money value={remaining} currency={disp} /> : t("fire.reached")} />
+      </div>
+
+      {/* Premissas do FIRE */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-7 max-w-lg">
+        {expField}
+        {swrField}
+      </div>
+      {hint}
+    </Tile>
+  );
+}
+
+function Stat({ label, value, sub, subTone }: { label: string; value: ReactNode; sub?: string; subTone?: "accent" }) {
+  return (
+    <div className="min-w-0">
+      <span className="eyebrow block mb-1">{label}</span>
+      <div className="text-[15px] font-semibold tabular truncate">{value}</div>
+      {sub ? <span className={cn("text-[11px]", subTone === "accent" ? "text-accent" : "text-faint")}>{sub}</span> : null}
+    </div>
   );
 }
 

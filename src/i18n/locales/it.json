@@ -208,6 +208,25 @@
     "base": "Base",
     "optimistic": "Ottimistico"
   },
+  "fire": {
+    "title": "Indipendenza finanziaria",
+    "short": "FIRE",
+    "subtitle": "≈ {{mult}}× le tue spese annue",
+    "timeToFi": "Tempo alla FI",
+    "yearsValue": "{{n}} anni",
+    "reached": "Ci sei già!",
+    "progress": "Progresso",
+    "portfolio": "Patrimonio attuale",
+    "passiveNow": "Rendita passiva oggi",
+    "mo": "mese",
+    "covers": "copre il {{pct}}% delle spese",
+    "remaining": "Ancora da raggiungere",
+    "annualExpenses": "Spese annue",
+    "fromBudget": "dal budget",
+    "withdrawalRate": "Tasso di prelievo",
+    "empty": "Aggiungi le tue spese nel Budget (o inseriscile sotto) per vedere quanto patrimonio sosterrebbe il tuo tenore di vita.",
+    "hint": "Stima in valore di oggi (rendimento reale dello scenario base). La regola del 4% è un punto di partenza, non una consulenza d'investimento."
+  },
   "proventos": {
     "title": "Proventi",
     "source": "Fonte",
