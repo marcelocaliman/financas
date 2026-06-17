@@ -14,6 +14,7 @@ import { isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
 import type { Dividend } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
@@ -146,7 +147,7 @@ export default function Investimentos() {
                   </span>
                   <span className="text-right">
                     <Money value={r.value} currency={disp} className="text-[13px] tabular" />
-                    <span className="block text-[11.5px] text-muted tabular">{r.curPct.toFixed(1)}%</span>
+                    <span className="block text-[11.5px] text-muted tabular"><Hidden>{r.curPct.toFixed(1) + "%"}</Hidden></span>
                   </span>
                   <div className="flex justify-end">
                     <TargetInput value={r.tgtPct} onCommit={(v) => setTarget(r.id, v)} />
@@ -192,7 +193,7 @@ export default function Investimentos() {
                 <span className="flex items-center gap-3 shrink-0">
                   {a.retPct != null ? (
                     <span className={cn("text-[11.5px] tabular", a.retPct >= 0 ? "text-accent" : "text-neg")}>
-                      {(a.retPct >= 0 ? "+" : "") + a.retPct.toFixed(1)}%
+                      <Hidden>{(a.retPct >= 0 ? "+" : "") + a.retPct.toFixed(1) + "%"}</Hidden>
                     </span>
                   ) : null}
                   <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular" />
@@ -350,7 +351,7 @@ export function InvestimentosSummary() {
           value={`${v.returnPct >= 0 ? "+" : ""}${v.returnPct.toFixed(1)}%`}
         />
       ) : null}
-      <HeaderKpi secondary label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
+      <HeaderKpi secondary raw label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
     </HeaderKpis>
   );
 }

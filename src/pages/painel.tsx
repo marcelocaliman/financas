@@ -14,6 +14,7 @@ import { actions } from "@/data/actions";
 import { goToSection } from "@/hooks/use-scroll-spy";
 import { Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { Button } from "@/components/common/button";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
@@ -162,7 +163,7 @@ export function DashboardDetail() {
             <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
             {hasTrend ? (
               <span className="text-accent text-[13px] font-semibold tabular">
-                {(view.nwChange >= 0 ? "+" : "") + view.nwChange.toFixed(1)}%
+                <Hidden>{(view.nwChange >= 0 ? "+" : "") + view.nwChange.toFixed(1) + "%"}</Hidden>
               </span>
             ) : null}
           </div>
@@ -318,7 +319,7 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[14px] font-semibold tabular", up ? "text-accent" : "text-neg")}>
       {up ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-      {(up ? "+" : "") + pct.toFixed(1)}%{suffix ? <span className="text-faint font-medium">{suffix}</span> : null}
+      <Hidden>{(up ? "+" : "") + pct.toFixed(1) + "%"}</Hidden>{suffix ? <span className="text-faint font-medium">{suffix}</span> : null}
     </span>
   );
 }

@@ -8,6 +8,7 @@ import { convert, type Currency } from "@/money/currency";
 import type { Goal } from "@/domain/types";
 import { Tile } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
@@ -73,7 +74,7 @@ export default function Objetivos() {
                   style={{ width: `${g.pct}%` }}
                 />
               </div>
-              <div className="mt-2 text-[11.5px] text-muted tabular">{Math.round(g.pct)}%</div>
+              <div className="mt-2 text-[11.5px] text-muted tabular"><Hidden>{Math.round(g.pct) + "%"}</Hidden></div>
             </Tile>
           ))}
         </div>
@@ -122,7 +123,7 @@ export function ObjetivosSummary() {
     <HeaderKpis>
       <HeaderKpi label={t("objetivos.saved")} value={<Money value={v.saved} currency={disp} />} />
       <HeaderKpi secondary label={t("objetivos.avgProgress")} tone="accent" value={`${Math.round(v.avg)}%`} />
-      <HeaderKpi secondary label={t("nav.objetivos")} value={<span className="tabular">{v.count}</span>} />
+      <HeaderKpi secondary raw label={t("nav.objetivos")} value={<span className="tabular">{v.count}</span>} />
     </HeaderKpis>
   );
 }

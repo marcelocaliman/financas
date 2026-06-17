@@ -15,6 +15,7 @@ import type { Expense, Income } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
@@ -198,8 +199,7 @@ export default function Orcamento() {
             <span className="text-muted">
               {t("orcamento.income")}{" "}
               <span className={`tabular ${view.incDelta >= 0 ? "text-accent" : "text-neg"}`}>
-                {view.incDelta >= 0 ? "+" : ""}
-                {Math.round(view.incDelta)}%
+                <Hidden>{(view.incDelta >= 0 ? "+" : "") + Math.round(view.incDelta) + "%"}</Hidden>
               </span>
             </span>
           ) : null}
@@ -207,8 +207,7 @@ export default function Orcamento() {
             <span className="text-muted">
               {t("orcamento.expenses")}{" "}
               <span className={`tabular ${view.expDelta <= 0 ? "text-accent" : "text-neg"}`}>
-                {view.expDelta >= 0 ? "+" : ""}
-                {Math.round(view.expDelta)}%
+                <Hidden>{(view.expDelta >= 0 ? "+" : "") + Math.round(view.expDelta) + "%"}</Hidden>
               </span>
             </span>
           ) : null}

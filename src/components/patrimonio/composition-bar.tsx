@@ -1,3 +1,5 @@
+import { Hidden } from "@/components/common/hidden";
+
 export interface Segment {
   label: string;
   pct: number;
@@ -23,7 +25,7 @@ export function CompositionBar({ segments }: { segments: Segment[] }) {
           <div key={s.label} className="flex items-center gap-2">
             <span className="w-[8px] h-[8px] rounded-[2px]" style={{ background: s.color }} />
             <span className="text-muted">{s.label}</span>
-            <span className="font-semibold tabular text-text">{s.pct}%</span>
+            <span className="font-semibold tabular text-text"><Hidden>{s.pct + "%"}</Hidden></span>
           </div>
         ))}
       </div>

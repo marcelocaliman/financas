@@ -12,6 +12,7 @@ import { projectBalance, realValue } from "@/finance/projection";
 import { fireNumber, realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
@@ -304,7 +305,7 @@ function FireCard({ portfolio }: { portfolio: number }) {
       <div className="mt-6">
         <div className="flex items-center justify-between text-[12px] mb-2">
           <span className="text-muted">{t("fire.progress")}</span>
-          <span className="tabular font-semibold text-accent">{progress >= 100 ? "100%+" : `${Math.round(progress)}%`}</span>
+          <span className="tabular font-semibold text-accent"><Hidden>{progress >= 100 ? "100%+" : `${Math.round(progress)}%`}</Hidden></span>
         </div>
         <div className="h-2.5 rounded-full bg-bg2 overflow-hidden">
           <div
@@ -325,7 +326,7 @@ function FireCard({ portfolio }: { portfolio: number }) {
               <span className="text-faint">/{t("fire.mo")}</span>
             </>
           }
-          sub={t("fire.covers", { pct: Math.round(coverage) })}
+          sub={<Hidden>{t("fire.covers", { pct: Math.round(coverage) })}</Hidden>}
           subTone={coverage >= 100 ? "accent" : undefined}
         />
         <Stat label={t("fire.remaining")} value={remaining > 0 ? <Money value={remaining} currency={disp} /> : t("fire.reached")} />
@@ -341,7 +342,7 @@ function FireCard({ portfolio }: { portfolio: number }) {
   );
 }
 
-function Stat({ label, value, sub, subTone }: { label: string; value: ReactNode; sub?: string; subTone?: "accent" }) {
+function Stat({ label, value, sub, subTone }: { label: string; value: ReactNode; sub?: ReactNode; subTone?: "accent" }) {
   return (
     <div className="min-w-0">
       <span className="eyebrow block mb-1">{label}</span>

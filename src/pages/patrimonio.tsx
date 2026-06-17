@@ -14,6 +14,7 @@ import { CLASS, isInvestedClass, isQuotableClass, nameById } from "@/domain/taxo
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -136,7 +137,7 @@ export default function Patrimonio() {
           const ret = (((r.quantity ?? 0) * q.price - cost) / cost) * 100;
           return (
             <span className={ret >= 0 ? "text-accent" : "text-neg"}>
-              {(ret >= 0 ? "+" : "") + ret.toFixed(1)}%
+              <Hidden>{(ret >= 0 ? "+" : "") + ret.toFixed(1) + "%"}</Hidden>
             </span>
           );
         },
@@ -165,7 +166,7 @@ export default function Patrimonio() {
           const ret = ((r.amount - cost) / cost) * 100;
           return (
             <span className={ret >= 0 ? "text-accent" : "text-neg"}>
-              {(ret >= 0 ? "+" : "") + ret.toFixed(1)}%
+              <Hidden>{(ret >= 0 ? "+" : "") + ret.toFixed(1) + "%"}</Hidden>
             </span>
           );
         },
@@ -253,7 +254,7 @@ export default function Patrimonio() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
               <Kpi label={t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
               <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
-              <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
+              <Kpi label={t("patrimonio.assetCount")} raw value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
             </div>
 
             <div className="overflow-x-auto">

@@ -17,6 +17,7 @@ import { convert, type Currency } from "@/money/currency";
 import { isInvestedClass, isQuotableClass } from "@/domain/taxonomy";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { Eyebrow } from "@/components/common/tile";
 import { cn } from "@/lib/utils";
 
@@ -131,7 +132,7 @@ export function SideNav({ active }: { active: string }) {
               {g.change != null ? (
                 <span className={cn("inline-flex items-center gap-0.5 text-[11.5px] font-medium mt-1 tabular", g.change >= 0 ? "text-accent" : "text-neg")}>
                   {g.change >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                  {(g.change >= 0 ? "+" : "") + g.change.toFixed(1)}%
+                  <Hidden>{(g.change >= 0 ? "+" : "") + g.change.toFixed(1) + "%"}</Hidden>
                   <span className="text-faint font-normal ml-0.5">{t("dashboard.vsMonth")}</span>
                 </span>
               ) : null}
@@ -139,7 +140,7 @@ export function SideNav({ active }: { active: string }) {
                 <div className="min-w-0">
                   <Eyebrow>{t("investimentos.profitability")}</Eyebrow>
                   <div className={cn("text-[13.5px] font-semibold tabular mt-1", g.returnPct == null ? "text-faint" : g.returnPct >= 0 ? "text-accent" : "text-neg")}>
-                    {g.returnPct == null ? "—" : `${g.returnPct >= 0 ? "+" : ""}${g.returnPct.toFixed(1)}%`}
+                    {g.returnPct == null ? "—" : <Hidden>{`${g.returnPct >= 0 ? "+" : ""}${g.returnPct.toFixed(1)}%`}</Hidden>}
                   </div>
                 </div>
                 <div className="min-w-0">

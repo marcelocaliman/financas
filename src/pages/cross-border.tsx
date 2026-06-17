@@ -8,6 +8,7 @@ import { convert, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/cur
 import { currencyCostIndex } from "@/data/cost-of-living";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
@@ -92,7 +93,7 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
                 </span>
                 <span className="flex items-center gap-2 tabular shrink-0">
                   <Money value={toDisp(r.principal)} currency={disp} className={cn("font-medium", negative && "text-neg")} />
-                  <span className={cn("w-12 text-right", foreign ? "text-muted" : "text-faint")}>{Math.round(share)}%</span>
+                  <span className={cn("w-12 text-right", foreign ? "text-muted" : "text-faint")}><Hidden>{Math.round(share) + "%"}</Hidden></span>
                 </span>
               </div>
               <div className="h-[7px] rounded-full bg-card2 overflow-hidden">
@@ -254,7 +255,7 @@ export function CrossBorderSummary() {
       <HeaderKpi label={t("crossborder.foreignExposure")} value={<Money value={convert(fx.foreign, base, disp, rates)} currency={disp} />} />
       <HeaderKpi secondary label={t("crossborder.foreignShare")} value={`${Math.round(pct)}%`} />
       {/* Diversificação cambial: útil mesmo sem exposição estrangeira (1 moeda) — evita o relance 0/0% vazio. */}
-      <HeaderKpi secondary label={t("crossborder.currencies")} value={<span className="tabular">{fx.rows.length}</span>} />
+      <HeaderKpi secondary raw label={t("crossborder.currencies")} value={<span className="tabular">{fx.rows.length}</span>} />
     </HeaderKpis>
   );
 }

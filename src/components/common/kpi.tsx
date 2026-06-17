@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "./tile";
+import { MONEY_MASK } from "./money";
+import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
 type Tone = "text" | "neg" | "pos" | "accent";
@@ -14,7 +16,8 @@ const TONE: Record<Tone, string> = {
 /**
  * Card de KPI: rótulo mono + valor grande tabular + linha de contexto opcional
  * (contagem, %, variação…) + barra fina opcional (share/progresso). Usado em todas
- * as seções pra dar densidade de informação aos indicadores.
+ * as seções pra dar densidade de informação aos indicadores. Oculta o valor (••••) no
+ * modo privacidade (dinheiro e %); `raw` mantém o que não é sensível (ex.: contagens).
  */
 export function Kpi({
   label,
@@ -22,6 +25,7 @@ export function Kpi({
   sub,
   tone = "text",
   bar,
+  raw,
 }: {
   label: string;
   value: ReactNode;
@@ -29,7 +33,10 @@ export function Kpi({
   tone?: Tone;
   /** 0–100: desenha uma barra fina de proporção. */
   bar?: number;
+  /** Mantém o valor visível no modo privacidade (contagens não sensíveis). */
+  raw?: boolean;
 }) {
+  const hidden = useUI((s) => s.numbersHidden);
   return (
     <div className="rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between">
       <Eyebrow>{label}</Eyebrow>
@@ -39,7 +46,7 @@ export function Kpi({
           TONE[tone],
         )}
       >
-        {value}
+        {hidden && !raw ? MONEY_MASK : value}
       </div>
       {sub != null ? <div className="text-[11.5px] text-faint mt-1.5 leading-tight">{sub}</div> : null}
       {typeof bar === "number" ? (
