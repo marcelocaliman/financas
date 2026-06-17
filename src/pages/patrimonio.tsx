@@ -1,7 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown, TrendingDown } from "lucide-react";
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useQuotes } from "@/store/quotes";
@@ -9,14 +10,24 @@ import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { CLASS, isInvestedClass, isQuotableClass } from "@/domain/taxonomy";
+import { CLASS, isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
+import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
 import { Kpi } from "@/components/common/kpi";
+import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import { cn } from "@/lib/utils";
+
+const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
+/** Rótulo "mês/ano" para N meses à frente de hoje. */
+function monthsAheadLabel(monthsAhead: number, lang: string): string {
+  const d = new Date();
+  const target = new Date(d.getFullYear(), d.getMonth() + Math.round(monthsAhead), 1);
+  return target.toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "short", year: "numeric" });
+}
 
 export default function Patrimonio() {
   const { t } = useTranslation();
@@ -297,7 +308,122 @@ export default function Patrimonio() {
           </div>
         </div>
       </section>
+
+      {/* Cronograma de dívidas */}
+      <DebtScheduleTile />
     </div>
+  );
+}
+
+/** Cronograma de dívidas: parcela, juros e quitação por dívida + saldo agregado caindo a zero. */
+function DebtScheduleTile() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
+  const disp = useUI((s) => s.displayCurrency);
+  const rates = useRates((s) => s.rates);
+  const tax = useTaxonomy();
+  const data = usePatrimonio();
+  const view = useMemo(() => {
+    if (!data) return null;
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const debts: { id: string; name: string; monthly: number; months: number; interest: number; balances: number[] }[] = [];
+    let withoutPlan = 0;
+    let maxMonths = 0;
+    for (const l of data.liabilities) {
+      const plan = debtPlan(l.amount, l.interestRate ?? 0, l.installments ?? 0);
+      if (!plan) {
+        if (l.amount > 0) withoutPlan++;
+        continue;
+      }
+      const native = amortizationBalances(l.amount, l.interestRate ?? 0, l.installments ?? 0);
+      debts.push({
+        id: l.id,
+        name: l.name || nameById(tax.liabilityTypes, l.typeId) || t("patrimonio.liabilities"),
+        monthly: conv(plan.monthly, l.currency),
+        months: plan.months,
+        interest: conv(plan.totalInterest, l.currency),
+        balances: native.map((b) => conv(b, l.currency)),
+      });
+      maxMonths = Math.max(maxMonths, plan.months);
+    }
+    if (debts.length === 0) return { empty: true as const };
+    const totalMonthly = debts.reduce((s, d) => s + d.monthly, 0);
+    const totalInterest = debts.reduce((s, d) => s + d.interest, 0);
+    const series: { month: number; balance: number }[] = [];
+    for (let k = 0; k <= maxMonths; k++) {
+      let bal = 0;
+      for (const d of debts) bal += k < d.balances.length ? d.balances[k] : 0;
+      series.push({ month: k, balance: bal });
+    }
+    return { empty: false as const, debts, totalMonthly, totalInterest, maxMonths, withoutPlan, series };
+  }, [data, disp, rates, tax, t]);
+
+  if (!view || view.empty) return null;
+  const neg = "#f1746a";
+
+  return (
+    <Tile className="p-6 md:p-7">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mb-4">
+        <div className="flex items-center gap-2">
+          <TrendingDown size={16} className="text-muted shrink-0" />
+          <Eyebrow>{t("debt.title")}</Eyebrow>
+        </div>
+        <span className="text-[12px] text-muted">
+          {t("debt.debtFree")} <span className="text-accent font-semibold">{monthsAheadLabel(view.maxMonths, lang)}</span>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <Kpi label={t("debt.monthly")} value={<Money value={view.totalMonthly} currency={disp} options={{ signDisplay: "never" }} />} tone="neg" />
+        <Kpi label={t("debt.totalInterest")} value={<Money value={view.totalInterest} currency={disp} options={{ signDisplay: "never" }} />} />
+        <Kpi label={t("debt.payoffIn")} value={<span className="tabular">{t("debt.months", { n: view.maxMonths })}</span>} />
+      </div>
+
+      {/* Saldo devedor agregado caindo a zero */}
+      <div className="w-full h-[150px] mt-6">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={view.series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+            <defs>
+              <linearGradient id="debtGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={neg} stopOpacity={0.22} />
+                <stop offset="100%" stopColor={neg} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="month" tick={false} axisLine={false} tickLine={false} height={0} />
+            <Tooltip
+              formatter={(v) => [formatMoney(Number(v), disp), t("debt.balance")]}
+              labelFormatter={(m) => monthsAheadLabel(Number(m), lang)}
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+              labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
+            />
+            <Area type="monotone" dataKey="balance" stroke={neg} strokeWidth={2} fill="url(#debtGrad)" dot={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Lista por dívida */}
+      <ul className="mt-5 divide-y divide-[var(--grid-line)]">
+        {view.debts.map((d) => (
+          <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
+            <div className="min-w-0">
+              <div className="text-[13.5px] text-text truncate">{d.name}</div>
+              <div className="text-[11.5px] text-faint tabular">
+                {t("debt.installmentsLeft", { n: d.months })} · {t("debt.until")} {monthsAheadLabel(d.months, lang)}
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <Money value={d.monthly} currency={disp} className="text-[13.5px] font-medium tabular" options={{ signDisplay: "never" }} />
+              <div className="text-[11px] text-faint">
+                {t("debt.interestShort")} <Money value={d.interest} currency={disp} options={{ signDisplay: "never" }} />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      {view.withoutPlan > 0 ? <p className="text-[11.5px] text-faint mt-3">{t("debt.withoutPlan", { n: view.withoutPlan })}</p> : null}
+      <p className="text-[11px] text-faint mt-2 leading-relaxed max-w-2xl">{t("debt.hint")}</p>
+    </Tile>
   );
 }
 

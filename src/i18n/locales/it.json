@@ -128,6 +128,20 @@
     "assetType": { "investment": "Investimento", "property": "Immobile", "cash": "Liquidità" },
     "liabilityType": { "loan": "Prestito", "card": "Carta", "mortgage": "Mutuo", "other": "Altro" }
   },
+  "debt": {
+    "title": "Piano di rientro debiti",
+    "debtFree": "Liberi dal",
+    "monthly": "Rate/mese",
+    "totalInterest": "Interessi totali",
+    "payoffIn": "Estinzione in",
+    "months": "{{n}} mesi",
+    "balance": "Saldo residuo",
+    "installmentsLeft": "{{n}} rate",
+    "until": "fino a",
+    "interestShort": "interessi",
+    "withoutPlan": "{{n}} debito/i senza scadenza non sono nel piano.",
+    "hint": "Stima a rate costanti (ammortamento alla francese), da saldo, tasso annuo e rate residue."
+  },
   "orcamento": {
     "income": "Entrate",
     "expenses": "Spese",

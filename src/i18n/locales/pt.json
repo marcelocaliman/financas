@@ -128,6 +128,20 @@
     "assetType": { "investment": "Investimento", "property": "Imóvel", "cash": "Caixa" },
     "liabilityType": { "loan": "Empréstimo", "card": "Cartão", "mortgage": "Financiamento", "other": "Outro" }
   },
+  "debt": {
+    "title": "Cronograma de dívidas",
+    "debtFree": "Livre em",
+    "monthly": "Parcelas/mês",
+    "totalInterest": "Juros totais",
+    "payoffIn": "Quitação em",
+    "months": "{{n}} meses",
+    "balance": "Saldo devedor",
+    "installmentsLeft": "{{n}} parcelas",
+    "until": "até",
+    "interestShort": "juros",
+    "withoutPlan": "{{n}} dívida(s) sem prazo definido não entram no cronograma.",
+    "hint": "Estimativa em parcelas iguais (Tabela Price), a partir do saldo, da taxa a.a. e das parcelas restantes."
+  },
   "orcamento": {
     "income": "Receitas",
     "expenses": "Gastos",

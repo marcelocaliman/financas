@@ -128,6 +128,20 @@
     "assetType": { "investment": "Investment", "property": "Property", "cash": "Cash" },
     "liabilityType": { "loan": "Loan", "card": "Card", "mortgage": "Mortgage", "other": "Other" }
   },
+  "debt": {
+    "title": "Debt payoff",
+    "debtFree": "Debt-free by",
+    "monthly": "Payments/mo",
+    "totalInterest": "Total interest",
+    "payoffIn": "Paid off in",
+    "months": "{{n}} months",
+    "balance": "Balance",
+    "installmentsLeft": "{{n}} payments",
+    "until": "until",
+    "interestShort": "interest",
+    "withoutPlan": "{{n}} debt(s) without a term aren't scheduled.",
+    "hint": "Estimate with equal installments (amortized), from the balance, annual rate and remaining payments."
+  },
   "orcamento": {
     "income": "Income",
     "expenses": "Expenses",
