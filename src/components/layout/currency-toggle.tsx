@@ -10,7 +10,7 @@ import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
  * prévia temporária (volta pra principal ao recarregar). Sinaliza quando você está
  * vendo numa moeda diferente da principal e marca qual é a principal na lista.
  */
-export function CurrencyMenu() {
+export function CurrencyMenu({ dropUp = false, alignLeft = false }: { dropUp?: boolean; alignLeft?: boolean } = {}) {
   const { t } = useTranslation();
   const cur = useUI((s) => s.displayCurrency);
   const setCur = useUI((s) => s.setDisplayCurrency);
@@ -51,7 +51,13 @@ export function CurrencyMenu() {
       {open ? (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-2 w-52 z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden p-1.5">
+          <div
+            className={cn(
+              "absolute w-52 z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden p-1.5",
+              dropUp ? "bottom-full mb-2" : "mt-2",
+              alignLeft ? "left-0" : "right-0",
+            )}
+          >
             <div className="px-2.5 pt-1 pb-1.5 eyebrow text-faint">{t("common.viewIn")}</div>
             {CURRENCIES.map((c) => (
               <button

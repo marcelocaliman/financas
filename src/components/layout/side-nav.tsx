@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowLeft, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
-  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, type LucideIcon,
+  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark, type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
@@ -15,7 +15,8 @@ import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
-import { convert, type Currency } from "@/money/currency";
+import { useMacro, MACRO_META } from "@/hooks/use-macro";
+import { convert, formatPercent, type Currency } from "@/money/currency";
 import { isInvestedClass, isQuotableClass } from "@/domain/taxonomy";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
@@ -94,6 +95,9 @@ export function SideNav({ active }: { active: string }) {
   const setSectionOpen = useSections((s) => s.setOpen);
   const setManySections = useSections((s) => s.setMany);
   const g = useGlance();
+  const disp = useUI((s) => s.displayCurrency);
+  const macro = useMacro(disp);
+  const macroMeta = MACRO_META[disp];
 
   // Seções da VISÃO ativa: na página, todas menos o Painel (que é hero); na Config, as 6 (todas
   // são accordions). É o que o "abrir/fechar todas" atua e o que a lista mostra.
@@ -198,6 +202,26 @@ export function SideNav({ active }: { active: string }) {
                 </div>
               </button>
             ) : null}
+
+            {/* Juros + inflação do país da moeda (referência pública) — compacto, segue a moeda */}
+            {macro && macroMeta && (macro.rate != null || macro.inflation != null) ? (
+              <div className="rounded-[14px] bg-card2 border border-border px-3.5 py-3">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Landmark size={11} className="text-faint shrink-0" />
+                  <Eyebrow>{t(`dashboard.${macroMeta.countryKey}`)}</Eyebrow>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="min-w-0">
+                    <Eyebrow>{macroMeta.rateName}</Eyebrow>
+                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro.rate == null ? "—" : formatPercent(macro.rate, disp)}</div>
+                  </div>
+                  <div className="min-w-0">
+                    <Eyebrow>{t("dashboard.inflation")}</Eyebrow>
+                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro.inflation == null ? "—" : formatPercent(macro.inflation, disp)}</div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -266,7 +290,7 @@ export function SideNav({ active }: { active: string }) {
                 <>
                   {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
                   <div className="flex items-center gap-1.5">
-                    <CurrencyMenu />
+                    <CurrencyMenu dropUp alignLeft />
                     <div className="flex-1" />
                     <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                       {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}

@@ -8,6 +8,14 @@ export interface Macro {
   inflation: number | null;
 }
 
+/** Rótulos por país/moeda: chave i18n do país + nomes (siglas oficiais) da taxa e do índice. */
+export const MACRO_META: Record<Currency, { countryKey: string; rateName: string; cpiName: string; src: string }> = {
+  BRL: { countryKey: "countryBR", rateName: "Selic", cpiName: "IPCA", src: "BCB" },
+  EUR: { countryKey: "countryEA", rateName: "BCE", cpiName: "HICP", src: "BCE · Eurostat" },
+  USD: { countryKey: "countryUS", rateName: "Fed funds", cpiName: "CPI", src: "Fed · BLS" },
+  GBP: { countryKey: "countryUK", rateName: "Bank Rate", cpiName: "CPI", src: "BoE · ONS" },
+};
+
 // Cache em MÓDULO por moeda — busca uma vez por sessão (o /api/macro já cacheia no edge).
 const cache = new Map<Currency, Macro>();
 const inflight = new Map<Currency, Promise<Macro>>();
