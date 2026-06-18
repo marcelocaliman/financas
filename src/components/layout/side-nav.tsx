@@ -247,32 +247,53 @@ export function SideNav({ active }: { active: string }) {
               {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
               <div className="h-px w-7 bg-border my-0.5" />
               <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold" title={email ?? ""}>{initial}</span>
+              <IconBtn onClick={lock} label={t("menu.lock")}><Lock size={16} /></IconBtn>
               <IconBtn onClick={() => void signOut()} label={t("menu.logout")}><LogOut size={16} /></IconBtn>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-1.5 mb-2.5">
+              {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
+              <div className="flex items-center gap-1.5">
                 <CurrencyMenu />
                 <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                   {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                 </IconBtn>
                 <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-                <div className="flex-1" />
-                {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
-                <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
               </div>
-              <div className="flex items-center gap-2.5 px-1 py-1.5">
-                <span className="grid place-items-center w-8 h-8 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold shrink-0">{initial}</span>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[12.5px] font-semibold truncate leading-tight">{name || t("menu.account")}</div>
-                  {email ? <div className="text-[11px] text-faint truncate">{email}</div> : null}
+
+              {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
+              <div className="mt-2.5 pt-2.5 border-t border-border space-y-0.5">
+                {isAdmin ? (
+                  <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
+                ) : null}
+                <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
+              </div>
+
+              {/* Conta — nome e e-mail ganham a linha inteira; travar/sair embaixo */}
+              <div className="mt-2.5 pt-3 border-t border-border">
+                <div className="flex items-center gap-2.5 px-1">
+                  <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[13px] font-bold shrink-0">{initial}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold truncate leading-tight">{name || t("menu.account")}</div>
+                    {email ? <div className="text-[11px] text-faint truncate mt-0.5">{email}</div> : null}
+                  </div>
                 </div>
-                <button type="button" onClick={lock} aria-label={t("menu.lock")} title={t("menu.lock")} className="grid place-items-center w-8 h-8 rounded-[9px] text-muted hover:text-text hover:bg-card-hover transition-colors shrink-0">
-                  <Lock size={15} />
-                </button>
-                <button type="button" onClick={() => void signOut()} aria-label={t("menu.logout")} title={t("menu.logout")} className="grid place-items-center w-8 h-8 rounded-[9px] text-muted hover:text-neg hover:bg-card-hover transition-colors shrink-0">
-                  <LogOut size={15} />
-                </button>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    type="button"
+                    onClick={lock}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    <Lock size={14} /> {t("menu.lock")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-neg hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    <LogOut size={14} /> {t("menu.logout")}
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -379,6 +400,35 @@ function IconBtn({ onClick, label, active, children }: { onClick: () => void; la
       )}
     >
       {children}
+    </button>
+  );
+}
+
+/** Item de menu do rodapé COM rótulo (Painel admin / Configurações) — mesmo visual dos
+ *  itens de seção, mas separado da navegação principal. */
+function FooterItem({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+        active ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+      )}
+    >
+      <Icon size={17} className="shrink-0" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
