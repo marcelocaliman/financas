@@ -5,7 +5,9 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/app", "destination": "/app.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" }
+    { "source": "/app/(.*)", "destination": "/app.html" },
+    { "source": "/en", "destination": "/en.html" },
+    { "source": "/it", "destination": "/it.html" }
   ],
   "headers": [
     {
@@ -39,6 +41,10 @@
     },
     {
       "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/(en|it)",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]
