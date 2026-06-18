@@ -18,6 +18,10 @@ export default defineConfig({
         clientsClaim: true,
         skipWaiting: true,
         cleanupOutdatedCaches: true,
+        // Navegações sob /app* (ex.: /app/admin no refresh) caem no shell do APP, não na
+        // landing. A landing (/) NÃO está na allowlist → segue servida do precache.
+        navigateFallback: "/app.html",
+        navigateFallbackAllowlist: [/^\/app(\/|$)/],
       },
       manifest: {
         name: "Finanças — multimoeda",
