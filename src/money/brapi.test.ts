@@ -58,9 +58,12 @@ describe("isQuoteRefreshDue", () => {
     expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 11, 0))).toBe(false);
     // 12:31 → janela das 12:30 → atualiza
     expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 12, 31))).toBe(true);
-    last = brt(2026, 6, 15, 17, 35); // pegou o fechamento
-    // 18:00 → sem mais janelas → NÃO atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 0))).toBe(false);
+    last = brt(2026, 6, 15, 14, 31); // marcou na janela das 14:30
+    // 18:01 → janela do fechamento (18h) → atualiza
+    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 1))).toBe(true);
+    last = brt(2026, 6, 15, 18, 5); // pegou o fechamento
+    // 18:30 → sem mais janelas → NÃO atualiza
+    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 30))).toBe(false);
   });
 
   it("abrindo no meio do dia, faz só UMA atualização (não uma por janela perdida)", () => {

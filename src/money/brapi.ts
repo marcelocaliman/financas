@@ -46,8 +46,8 @@ export async function fetchQuotes(
 
 /**
  * Agenda de atualização — ECONOMIA DE COTA (brapi free): atualiza só em DIAS DE PREGÃO
- * (seg–sex) e no máximo 4× ao dia, em janelas alinhadas à B3 (10h–17h, horário de Brasília):
- * abertura, dois no meio e o fechamento. Fim de semana: não atualiza (preços não mudam).
+ * (seg–sex) e no máximo 4× ao dia, em janelas alinhadas à B3 (pregão 10h–17h, horário de
+ * Brasília): abertura, dois no meio e uma após o fechamento (18h). Fim de semana: não atualiza.
  * `force` (incluir/editar ticker) ignora a agenda; o 1º carregamento (updatedAt nulo) também,
  * pra já mostrar o último fechamento.
  *
@@ -60,7 +60,7 @@ export const REFRESH_WINDOWS_BRT: [number, number][] = [
   [10, 30], // abertura
   [12, 30], // meio da manhã
   [14, 30], // meio da tarde
-  [17, 30], // após o fechamento (17h)
+  [18, 0], // após o fechamento (preço de fechamento já consolidado)
 ];
 
 /** Relógio de Brasília a partir de um timestamp (ler com getUTC*). */
