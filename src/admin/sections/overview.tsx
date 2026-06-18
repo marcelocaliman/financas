@@ -7,8 +7,8 @@ import { Eyebrow } from "@/components/common/tile";
 
 /** Visão geral: KPIs de base de usuários, atividade, churn, sync e cadastros no tempo. */
 export function OverviewSection({ days }: { days: number }) {
-  const ov = useAsync(() => adminApi.overview(), []);
-  const su = useAsync(() => adminApi.signupsDaily(days), [days]);
+  const ov = useAsync(() => adminApi.overview(), [], { refreshMs: 20000 });
+  const su = useAsync(() => adminApi.signupsDaily(days), [days], { refreshMs: 20000 });
 
   const o = ov.data;
   const total = o?.total_users ?? 0;

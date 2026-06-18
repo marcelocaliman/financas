@@ -104,6 +104,20 @@ export function PrivacyPolicyContent() {
         </p>
       </Section>
 
+      <Section title="Métricas de uso (anônimas)">
+        <p>
+          Para entender o uso e melhorar o produto, registramos{" "}
+          <b className="text-text">eventos não-identificáveis</b> (ex.: visita à landing, cadastro,
+          abertura do app), o <b className="text-text">país</b> aproximado (o{" "}
+          <b className="text-text">IP nunca é armazenado</b>) e o{" "}
+          <b className="text-text">tipo de dispositivo</b>. É analytics de 1ª-parte,{" "}
+          <b className="text-text">sem cookies</b> e <b className="text-text">nunca ligado à sua
+          conta</b> — não há perfil individual, nem dado financeiro. Uma contagem anônima de
+          sessões abertas pode aparecer como “online agora”, sem identificar ninguém. Base legal:
+          legítimo interesse (LGPD art. 7º, IX / GDPR art. 6(1)(f)); você pode se opor.
+        </p>
+      </Section>
+
       <Section title="Seus direitos (LGPD/GDPR)">
         <p>
           Você é dono dos seus dados e pode, a qualquer momento:{" "}

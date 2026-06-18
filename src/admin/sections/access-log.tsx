@@ -23,7 +23,7 @@ function actionMeta(action: string | null): { label: string; tone: "muted" | "ac
 /** Logs de acesso (Supabase Auth): login, cadastro, recuperação, logout… com IP. */
 export function AccessLogSection() {
   const [page, setPage] = useState(0);
-  const { data, error, loading, reload } = useAsync(() => adminApi.auditLog(PAGE, page * PAGE), [page]);
+  const { data, error, loading, reload } = useAsync(() => adminApi.auditLog(PAGE, page * PAGE), [page], { refreshMs: 20000 });
 
   return (
     <div className="space-y-4">

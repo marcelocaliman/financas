@@ -98,3 +98,21 @@ export interface TopEvent {
 }
 
 export type UserSort = "recent" | "active" | "email";
+
+export interface RecentEvent {
+  created_at: string;
+  surface: string;
+  name: string;
+  country: string | null;
+  device: string | null;
+}
+
+export interface CountryCount {
+  country: string;
+  count: number;
+}
+
+export interface DeviceCount {
+  device: string;
+  count: number;
+}

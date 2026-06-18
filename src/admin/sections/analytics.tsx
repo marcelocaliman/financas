@@ -1,18 +1,52 @@
-import { Eye, MousePointerClick, UserPlus, LogIn, Smartphone } from "lucide-react";
+import type { ReactNode } from "react";
+import { Eye, MousePointerClick, UserPlus, LogIn, Smartphone, Tablet, Monitor, Globe, Radio } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { fmtInt } from "../format";
+import { useOnlineCount, useLiveEvents } from "../use-realtime";
+import { fmtInt, fmtAgo } from "../format";
 import { AdminCard, Stat, BarsChart, StateBlock } from "../components";
 import { Eyebrow } from "@/components/common/tile";
+import { cn } from "@/lib/utils";
 
-/** Analytics próprio (privacy-first): funil landing → cadastro → app, séries e top eventos. */
+const LIVE_MS = 20000;
+
+const EVENT_LABEL: Record<string, string> = {
+  landing_view: "Visita à landing",
+  cta_click: "Clique no CTA",
+  signup: "Cadastro",
+  login: "Login",
+  app_open: "Abriu o app",
+  section_view: "Viu seção",
+};
+
+/** "BR" → 🇧🇷 (regional indicator). Vazio se inválido. */
+function flag(cc: string | null): string {
+  if (!cc || cc.length !== 2 || !/^[A-Za-z]{2}$/.test(cc)) return "🌐";
+  const A = 0x1f1e6;
+  return String.fromCodePoint(A + (cc.toUpperCase().charCodeAt(0) - 65), A + (cc.toUpperCase().charCodeAt(1) - 65));
+}
+
+function DeviceIcon({ device, size = 12 }: { device: string | null; size?: number }) {
+  if (device === "mobile") return <Smartphone size={size} className="inline" />;
+  if (device === "tablet") return <Tablet size={size} className="inline" />;
+  if (device === "desktop") return <Monitor size={size} className="inline" />;
+  return <Globe size={size} className="inline" />;
+}
+
+/** Analytics próprio (privacy-first): AO VIVO (online + feed), funil, séries, país, dispositivo. */
 export function AnalyticsSection({ days }: { days: number }) {
-  const ov = useAsync(() => adminApi.analyticsOverview(days), [days]);
-  const daily = useAsync(() => adminApi.eventsDaily(days), [days]);
-  const top = useAsync(() => adminApi.topEvents(days), [days]);
+  const ov = useAsync(() => adminApi.analyticsOverview(days), [days], { refreshMs: LIVE_MS });
+  const daily = useAsync(() => adminApi.eventsDaily(days), [days], { refreshMs: LIVE_MS });
+  const top = useAsync(() => adminApi.topEvents(days), [days], { refreshMs: LIVE_MS });
+  const country = useAsync(() => adminApi.eventsByCountry(days), [days], { refreshMs: LIVE_MS });
+  const device = useAsync(() => adminApi.eventsByDevice(days), [days], { refreshMs: LIVE_MS });
 
   return (
     <div className="space-y-6">
+      {/* ── AO VIVO ───────────────────────────────────────────────── */}
+      <LiveCard />
+
+      {/* ── Funil / KPIs ──────────────────────────────────────────── */}
       <StateBlock loading={ov.loading} error={ov.error}>
         {ov.data ? (
           <>
@@ -34,14 +68,14 @@ export function AnalyticsSection({ days }: { days: number }) {
                 ]}
               />
               <p className="text-[12px] text-muted mt-4">
-                Conversão visita → cadastro:{" "}
-                <b className="text-accent tabular">{ov.data.conversion_pct}%</b>
+                Conversão visita → cadastro: <b className="text-accent tabular">{ov.data.conversion_pct}%</b>
               </p>
             </AdminCard>
           </>
         ) : null}
       </StateBlock>
 
+      {/* ── Séries diárias ────────────────────────────────────────── */}
       <div className="grid md:grid-cols-2 gap-4">
         <AdminCard title="Visitas por dia">
           <StateBlock loading={daily.loading} error={daily.error}>
@@ -65,6 +99,42 @@ export function AnalyticsSection({ days }: { days: number }) {
         </AdminCard>
       </div>
 
+      {/* ── País + dispositivo ────────────────────────────────────── */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <AdminCard title={<><Globe size={11} className="inline mr-1 -mt-0.5" />Por país</>}>
+          <StateBlock loading={country.loading} error={country.error} empty={!country.loading && (country.data?.length ?? 0) === 0}>
+            <RankList
+              rows={(country.data ?? []).map((c) => ({
+                key: c.country,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <span className="text-[15px] leading-none">{flag(c.country === "??" ? null : c.country)}</span>
+                    <span>{c.country === "??" ? "Desconhecido" : c.country}</span>
+                  </span>
+                ),
+                count: c.count,
+              }))}
+            />
+          </StateBlock>
+        </AdminCard>
+        <AdminCard title="Por dispositivo">
+          <StateBlock loading={device.loading} error={device.error} empty={!device.loading && (device.data?.length ?? 0) === 0}>
+            <RankList
+              rows={(device.data ?? []).map((d) => ({
+                key: d.device,
+                label: (
+                  <span className="flex items-center gap-2 capitalize">
+                    <DeviceIcon device={d.device} size={14} /> {d.device}
+                  </span>
+                ),
+                count: d.count,
+              }))}
+            />
+          </StateBlock>
+        </AdminCard>
+      </div>
+
+      {/* ── Top eventos ───────────────────────────────────────────── */}
       <AdminCard title="Eventos mais frequentes">
         <StateBlock loading={top.loading} error={top.error} empty={!top.loading && (top.data?.length ?? 0) === 0}>
           <div className="divide-y divide-border -my-1">
@@ -72,7 +142,7 @@ export function AnalyticsSection({ days }: { days: number }) {
               <div key={i} className="flex items-center justify-between py-2.5">
                 <div className="flex items-center gap-2.5">
                   <span className="font-mono text-[11px] text-faint w-5">{i + 1}</span>
-                  <span className="text-[13px] font-medium">{e.name}</span>
+                  <span className="text-[13px] font-medium">{EVENT_LABEL[e.name] ?? e.name}</span>
                   <span className="text-[10.5px] font-mono uppercase tracking-[0.1em] text-faint">{e.surface}</span>
                 </div>
                 <span className="font-numeric font-semibold tabular text-[14px]">{fmtInt(e.count)}</span>
@@ -83,9 +153,77 @@ export function AnalyticsSection({ days }: { days: number }) {
       </AdminCard>
 
       <p className="text-[11px] text-faint leading-relaxed">
-        Analytics de 1ª-parte, sem cookie e sem identificar a pessoa: só eventos não-sensíveis (sem
-        nenhum dado financeiro). Os eventos nunca são ligados a uma conta.
+        Analytics de 1ª-parte, sem cookie e sem identificar a pessoa: só eventos não-sensíveis
+        (sem nenhum dado financeiro), país agregado (o IP nunca é armazenado) e tipo de dispositivo.
+        Os eventos nunca são ligados a uma conta.
       </p>
+    </div>
+  );
+}
+
+/** Card AO VIVO: contagem de online (presença anônima) + feed de eventos em tempo real. */
+function LiveCard() {
+  const online = useOnlineCount();
+  const events = useLiveEvents(24);
+  return (
+    <AdminCard
+      title={<span className="flex items-center gap-1.5"><Radio size={11} className="text-accent" /> Ao vivo</span>}
+    >
+      <div className="flex flex-col sm:flex-row gap-5">
+        {/* online agora */}
+        <div className="sm:w-[180px] shrink-0">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
+            </span>
+            <span className="font-numeric font-semibold tabular text-[clamp(28px,4vw,40px)] leading-none">{fmtInt(online)}</span>
+          </div>
+          <div className="text-[12px] text-muted mt-1.5">com o app aberto agora</div>
+          <div className="text-[11px] text-faint mt-0.5">presença anônima, em tempo real</div>
+        </div>
+
+        {/* feed */}
+        <div className="flex-1 min-w-0 sm:border-l sm:border-border sm:pl-5">
+          <Eyebrow>Atividade recente</Eyebrow>
+          <div className="mt-2 max-h-[220px] overflow-y-auto scrollbar-subtle divide-y divide-border -my-1">
+            {events.length === 0 ? (
+              <div className="py-6 text-center text-[12px] text-faint">aguardando eventos…</div>
+            ) : (
+              events.map((e, i) => (
+                <div key={`${e.created_at}-${i}`} className="flex items-center justify-between gap-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", e.surface === "app" ? "bg-accent" : "bg-[var(--eur,#8a8f98)]")} />
+                    <span className="text-[12.5px] truncate">{EVENT_LABEL[e.name] ?? e.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 text-faint text-[11px] tabular">
+                    <span title={e.country ?? ""}>{flag(e.country)}</span>
+                    <DeviceIcon device={e.device} />
+                    <span className="w-[52px] text-right">{fmtAgo(e.created_at)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </AdminCard>
+  );
+}
+
+function RankList({ rows }: { rows: { key: string; label: ReactNode; count: number }[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.count));
+  return (
+    <div className="space-y-2">
+      {rows.map((r) => (
+        <div key={r.key} className="flex items-center gap-3">
+          <div className="w-[130px] shrink-0 text-[12.5px] text-text">{r.label}</div>
+          <div className="flex-1 h-5 rounded-[7px] bg-card2 overflow-hidden">
+            <div className="h-full bg-accent/70 rounded-[7px] transition-[width] duration-700" style={{ width: `${Math.max(3, (r.count / max) * 100)}%` }} />
+          </div>
+          <span className="w-[44px] text-right text-[12px] font-semibold tabular">{fmtInt(r.count)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -101,10 +239,7 @@ function Funnel({ steps }: { steps: { label: string; value: number }[] }) {
           <div key={i} className="flex items-center gap-3">
             <span className="w-[120px] shrink-0 text-[12.5px] text-muted">{s.label}</span>
             <div className="flex-1 h-7 rounded-[8px] bg-card2 overflow-hidden relative">
-              <div
-                className="h-full bg-accent/80 rounded-[8px] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                style={{ width: `${Math.max(2, (s.value / max) * 100)}%` }}
-              />
+              <div className="h-full bg-accent/80 rounded-[8px] transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ width: `${Math.max(2, (s.value / max) * 100)}%` }} />
               <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[12px] font-semibold tabular text-text">{fmtInt(s.value)}</span>
             </div>
             <span className="w-[52px] shrink-0 text-right text-[11.5px] text-faint tabular">{rate != null ? `${rate}%` : ""}</span>

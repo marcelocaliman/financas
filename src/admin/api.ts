@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import type {
   AdminOverview, SignupsDay, UserRow, UserDetail, AuditEntry, AdminRow,
   AnalyticsOverview, EventsDay, TopEvent, UserSort,
+  RecentEvent, CountryCount, DeviceCount,
 } from "./types";
 
 /** Wrappers tipados dos RPCs de admin. Cada um exige is_admin() no servidor. */
@@ -27,4 +28,7 @@ export const adminApi = {
   analyticsOverview: (days = 30) => rpc<AnalyticsOverview>("admin_analytics_overview", { p_days: days }),
   eventsDaily: (days = 30) => rpc<EventsDay[]>("admin_events_daily", { p_days: days }),
   topEvents: (days = 30) => rpc<TopEvent[]>("admin_top_events", { p_days: days }),
+  recentEvents: (limit = 30) => rpc<RecentEvent[]>("admin_recent_events", { p_limit: limit }),
+  eventsByCountry: (days = 30) => rpc<CountryCount[]>("admin_events_by_country", { p_days: days }),
+  eventsByDevice: (days = 30) => rpc<DeviceCount[]>("admin_events_by_device", { p_days: days }),
 };

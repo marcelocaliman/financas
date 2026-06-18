@@ -25,6 +25,32 @@ function clip(v, n) {
   return typeof v === "string" ? v.slice(0, n) : null;
 }
 
+// User-Agent coarse → tipo de dispositivo / OS / browser. Sem fingerprint.
+function deviceFromUA(ua) {
+  if (!ua) return null;
+  if (/iPad|Tablet|PlayBook|Silk/i.test(ua) || (/Android/i.test(ua) && !/Mobile/i.test(ua))) return "tablet";
+  if (/Mobi|iPhone|iPod|Android.*Mobile|Windows Phone/i.test(ua)) return "mobile";
+  return "desktop";
+}
+function osFromUA(ua) {
+  if (!ua) return null;
+  if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Windows/i.test(ua)) return "Windows";
+  if (/Mac OS X|Macintosh/i.test(ua)) return "macOS";
+  if (/Linux/i.test(ua)) return "Linux";
+  return null;
+}
+function browserFromUA(ua) {
+  if (!ua) return null;
+  if (/Edg\//i.test(ua)) return "Edge";
+  if (/OPR\/|Opera/i.test(ua)) return "Opera";
+  if (/Firefox\//i.test(ua)) return "Firefox";
+  if (/Chrome\//i.test(ua)) return "Chrome";
+  if (/Safari\//i.test(ua)) return "Safari";
+  return null;
+}
+
 export default async function handler(req, res) {
   // Beacon/fetch são sempre POST; respondemos 204 pra qualquer outra coisa.
   if (req.method !== "POST") {
@@ -55,12 +81,22 @@ export default async function handler(req, res) {
       }
     }
 
+    // Enriquecimento NO SERVIDOR (sem cookie, sem PII, IP NUNCA armazenado): país
+    // coarse do header da Vercel + dispositivo/OS/browser coarse do User-Agent.
+    const ua = req.headers["user-agent"] || "";
+    const os = osFromUA(ua);
+    const browser = browserFromUA(ua);
+    if (os) props.os = os;
+    if (browser) props.browser = browser;
+
     const row = {
       surface,
       name,
       anon_id: clip(body.a, 40),
       path: clip(body.path, 120),
       lang: clip(body.l, 8),
+      country: clip(req.headers["x-vercel-ip-country"], 2),
+      device: deviceFromUA(ua),
       props,
     };
 

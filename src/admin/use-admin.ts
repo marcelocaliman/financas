@@ -40,8 +40,14 @@ export function useIsAdmin(): boolean {
   return isAdmin;
 }
 
-/** Hook genérico de carregamento assíncrono p/ as seções do painel. */
-export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]): {
+/** Hook genérico de carregamento assíncrono p/ as seções do painel. Com `refreshMs`,
+ *  re-busca em segundo plano (silencioso, sem piscar o loading) — usado pelas seções
+ *  "ao vivo". */
+export function useAsync<T>(
+  fn: () => Promise<T>,
+  deps: unknown[],
+  opts?: { refreshMs?: number },
+): {
   data: T | null;
   error: string | null;
   loading: boolean;
@@ -53,29 +59,35 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[]): {
   const [tick, setTick] = useState(0);
   const fnRef = useRef(fn);
   fnRef.current = fn;
+  const refreshMs = opts?.refreshMs;
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError(null);
-    fnRef
-      .current()
-      .then((d) => {
-        if (alive) setData(d);
-      })
-      .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
+    const run = (silent: boolean) => {
+      if (!silent) setLoading(true);
+      setError(null);
+      fnRef
+        .current()
+        .then((d) => {
+          if (alive) setData(d);
+        })
+        .catch((e: unknown) => {
+          if (alive) setError(e instanceof Error ? e.message : String(e));
+        })
+        .finally(() => {
+          if (alive && !silent) setLoading(false);
+        });
+    };
+    run(false);
+    const id = refreshMs ? setInterval(() => run(true), refreshMs) : undefined;
     return () => {
       alive = false;
+      if (id) clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, tick]);
+  }, [...deps, tick, refreshMs]);
 
   return { data, error, loading, reload };
 }
