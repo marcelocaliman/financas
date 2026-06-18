@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { adminApi } from "./api";
 import type { RecentEvent, OnlinePresence } from "./types";
 
-// Polling near-real-time (robusto, sem depender do WebSocket de Realtime).
-const POLL_MS = 12_000;
+// Polling near-real-time (robusto, sem depender do WebSocket de Realtime). Só o navegador do
+// dono (painel aberto) faz isto — não escala com usuários, então pode ser rápido.
+const POLL_MS = 5_000;
 const EMPTY_PRESENCE: OnlinePresence = { app: 0, landing: 0, total: 0 };
 
 /** "Online agora" por superfície: app (logados) + landing (anônimos). Heartbeat,

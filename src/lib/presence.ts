@@ -19,9 +19,12 @@ function sessionId(): string {
   }
 }
 
-function ping() {
+/** `bye` (saída): remove a sessão JÁ, em vez de esperar a janela de 70s expirar — é o que
+ *  torna o "sair" quase instantâneo no painel. Enviado no pagehide via sendBeacon (sobrevive
+ *  ao unload). O heartbeat normal renova o last_seen. */
+function ping(bye?: boolean) {
   try {
-    const body = JSON.stringify({ s: "app", id: sessionId() });
+    const body = JSON.stringify({ s: "app", id: sessionId(), bye: bye ? 1 : undefined });
     if (typeof navigator !== "undefined" && navigator.sendBeacon) {
       navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
     } else {
@@ -36,14 +39,21 @@ export function usePresenceTracker(active: boolean): void {
   useEffect(() => {
     if (!active) return; // só pinga com sessão autenticada
     ping();
-    const id = setInterval(ping, 20_000);
+    const id = setInterval(() => ping(), 20_000);
     const onVis = () => {
       if (document.visibilityState === "visible") ping();
     };
+    // Ao fechar a aba / navegar pra fora, avisa a saída na hora. bfcache (persisted) pode voltar
+    // — não removemos nesse caso (ele reaparece no próximo heartbeat / ao ficar visível).
+    const onLeave = (e: PageTransitionEvent) => {
+      if (!e.persisted) ping(true);
+    };
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", onLeave);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", onLeave);
     };
   }, [active]);
 }

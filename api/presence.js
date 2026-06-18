@@ -30,26 +30,46 @@ export default async function handler(req, res) {
 
     const surface = clip(body.s, 12);
     const id = clip(body.id, 64);
+    const bye = body.bye === 1 || body.bye === true || body.bye === "1";
     if (!surface || !SURFACES.has(surface) || !id || !SERVICE_ROLE) {
       res.status(204).end();
       return;
     }
 
+    const auth = {
+      apikey: SERVICE_ROLE,
+      Authorization: `Bearer ${SERVICE_ROLE}`,
+      "Content-Type": "application/json",
+    };
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 2500);
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/presence`, {
-        method: "POST",
-        headers: {
-          apikey: SERVICE_ROLE,
-          Authorization: `Bearer ${SERVICE_ROLE}`,
-          "Content-Type": "application/json",
-          // upsert pela PK (session_id): atualiza surface + last_seen.
-          Prefer: "resolution=merge-duplicates,return=minimal",
-        },
-        body: JSON.stringify({ session_id: id, surface, last_seen: new Date().toISOString() }),
-        signal: ctrl.signal,
-      });
+      if (bye) {
+        // Saída explícita (pagehide): remove a sessão JÁ — não espera a janela de 70s expirar.
+        await fetch(`${SUPABASE_URL}/rest/v1/presence?session_id=eq.${encodeURIComponent(id)}`, {
+          method: "DELETE",
+          headers: { ...auth, Prefer: "return=minimal" },
+          signal: ctrl.signal,
+        });
+      } else {
+        // upsert pela PK (session_id): atualiza surface + last_seen.
+        await fetch(`${SUPABASE_URL}/rest/v1/presence`, {
+          method: "POST",
+          headers: { ...auth, Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify({ session_id: id, surface, last_seen: new Date().toISOString() }),
+          signal: ctrl.signal,
+        });
+        // Limpeza oportunista (~8% dos pings): poda sessões mortas (ex.: fechamento "duro" sem
+        // beacon). Mantém a tabela enxuta sem um cron; barata graças ao índice em last_seen.
+        if (Math.random() < 0.08) {
+          const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+          await fetch(`${SUPABASE_URL}/rest/v1/presence?last_seen=lt.${encodeURIComponent(cutoff)}`, {
+            method: "DELETE",
+            headers: { ...auth, Prefer: "return=minimal" },
+            signal: ctrl.signal,
+          }).catch(() => {});
+        }
+      }
     } finally {
       clearTimeout(timer);
     }

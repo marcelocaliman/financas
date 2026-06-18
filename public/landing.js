@@ -82,16 +82,18 @@
   function presSid() {
     try { var s = sessionStorage.getItem("nf-sid"); if (!s) { s = (String(Math.random()) + String(Math.random())).replace(/\D/g, "").slice(0, 32); sessionStorage.setItem("nf-sid", s); } return s; } catch (e) { return "anon"; }
   }
-  function presPing() {
+  function presPing(bye) {
     try {
-      var body = JSON.stringify({ s: "landing", id: presSid() });
+      var body = JSON.stringify({ s: "landing", id: presSid(), bye: bye ? 1 : undefined });
       if (navigator.sendBeacon) navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
       else fetch("/api/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: body, keepalive: true });
     } catch (e) {}
   }
   presPing();
-  setInterval(presPing, 25000);
+  setInterval(function () { presPing(); }, 25000);
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") presPing(); });
+  // Saída na hora ao fechar/navegar — o painel deixa de contar quase instantâneo (sem esperar a janela).
+  window.addEventListener("pagehide", function (e) { if (!e.persisted) presPing(true); });
 
   // Painel do hero "ganha vida": count-up inicial e, em seguida, MODO VIVO contínuo —
   // o patrimônio cresce organicamente (random-walk com viés de alta + rajadas, ritmo
