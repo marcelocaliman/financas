@@ -219,7 +219,14 @@ export function DashboardDetail() {
             <div className="flex-1 grid place-items-center text-center min-h-[180px] py-6">
               <div>
                 <LineChart size={26} className="text-faint mx-auto mb-3" />
-                <p className="text-[13px] text-muted max-w-[260px] mx-auto leading-relaxed">{t("dashboard.trendEmpty")}</p>
+                <p className="text-[13px] text-muted max-w-[280px] mx-auto leading-relaxed">{t("dashboard.trendEmpty")}</p>
+                <button
+                  type="button"
+                  onClick={() => goToSection("historico")}
+                  className="mt-3 text-[12.5px] font-medium text-accent hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
+                >
+                  {t("dashboard.trendEmptyCta")}
+                </button>
               </div>
             </div>
           )}
