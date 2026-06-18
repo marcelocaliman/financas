@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeftRight, ArrowUpRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, Eye, EyeOff, MoveRight, ShieldCheck, TrendingUp } from "lucide-react";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -7,19 +7,34 @@ import { cn } from "@/lib/utils";
 function Brand({ className }: { className?: string }) {
   return (
     <a href="/" className={cn("flex items-center gap-2.5", className)}>
-      <span className="grid place-items-center w-[32px] h-[32px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
-        <ArrowLeftRight size={16} strokeWidth={2.5} />
+      <span className="grid place-items-center w-[34px] h-[34px] rounded-[10px] bg-accent text-[#0A0B0D] shrink-0">
+        <ArrowLeftRight size={17} strokeWidth={2.5} />
       </span>
-      <span className="font-semibold text-[16px] tracking-[-0.02em]">Nossas Finanças</span>
+      <span className="font-semibold text-[16.5px] tracking-[-0.02em]">Nossas Finanças</span>
     </a>
   );
 }
 
-/** Frases que giram no painel esquerdo (com pontinhos). */
+/** Link discreto de volta à landing. */
+function BackToSite({ className }: { className?: string }) {
+  return (
+    <a
+      href="/"
+      className={cn(
+        "inline-flex items-center gap-1 text-[12.5px] font-medium text-muted hover:text-text bg-card/50 border border-border rounded-full px-3 h-8 transition-colors",
+        className,
+      )}
+    >
+      Voltar ao site <ArrowUpRight size={14} />
+    </a>
+  );
+}
+
+/** Frases que giram na vitrine — manchete grande e apertada, com pontinhos. */
 const PHRASES = [
   "Constância vira liberdade.",
   "Seu patrimônio, em qualquer moeda.",
-  "Privado de verdade — só você lê seus números.",
+  "Só você lê os seus números.",
 ];
 function RotatingTagline() {
   const [i, setI] = useState(0);
@@ -29,14 +44,20 @@ function RotatingTagline() {
   }, []);
   return (
     <div>
-      <div className="text-[clamp(1.5rem,2.6vw,2rem)] font-semibold tracking-[-0.03em] leading-[1.15] min-h-[2.4em] transition-opacity duration-500">
+      <h2 className="text-[clamp(1.9rem,2.9vw,2.6rem)] font-semibold tracking-[-0.035em] leading-[1.08] min-h-[2em] transition-opacity duration-500">
         {PHRASES[i]}
-      </div>
+      </h2>
       <div className="flex gap-2 mt-6">
         {PHRASES.map((_, k) => (
-          <span
+          <button
             key={k}
-            className={cn("h-1.5 rounded-full transition-all duration-300", k === i ? "w-7 bg-accent" : "w-3 bg-[var(--border-strong)]")}
+            type="button"
+            onClick={() => setI(k)}
+            aria-label={`Frase ${k + 1}`}
+            className={cn(
+              "h-1.5 rounded-full transition-all duration-300",
+              k === i ? "w-8 bg-accent" : "w-3.5 bg-[var(--border-strong)] hover:bg-faint",
+            )}
           />
         ))}
       </div>
@@ -44,7 +65,125 @@ function RotatingTagline() {
   );
 }
 
-/** Casca das telas de autenticação — split-card: painel da marca (esquerda) + formulário (direita). */
+/** Mini-gráfico de área (ilustrativo) — linha fina no acento + gradiente sutil. */
+function PreviewChart() {
+  const line = "M0,52 C28,48 44,34 70,36 C96,38 110,22 140,24 C172,26 188,12 224,9 C248,7 262,6 280,4";
+  return (
+    <svg viewBox="0 0 280 64" className="w-full h-[58px] mt-4" preserveAspectRatio="none" aria-hidden>
+      <defs>
+        <linearGradient id="auth-spark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={`${line} L280,64 L0,64 Z`} fill="url(#auth-spark)" />
+      <path d={line} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Vitrine do produto: um mini-painel flutuante que evoca o app (números ilustrativos). */
+function AuthPreview() {
+  return (
+    <div className="relative w-full max-w-[420px]">
+      {/* Card principal — patrimônio líquido + tendência + composição */}
+      <div className="rounded-[20px] border border-border bg-card p-6 shadow-[var(--shadow-float)]">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="eyebrow">Patrimônio líquido</div>
+            <div className="hero-number text-[34px] mt-2">R$ 512.480</div>
+          </div>
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-soft)] text-accent px-2.5 py-1 text-[12px] font-semibold tabular shrink-0">
+            <TrendingUp size={13} /> +6,2%
+          </span>
+        </div>
+
+        <PreviewChart />
+
+        <div className="mt-5">
+          <div className="flex h-2 rounded-full overflow-hidden bg-card2">
+            <div className="h-full bg-accent" style={{ width: "64%" }} />
+            <div className="h-full bg-[var(--accent-2)]" style={{ width: "36%" }} />
+          </div>
+          <div className="flex items-center gap-4 mt-2.5 text-[11.5px] text-muted tabular">
+            <span className="flex items-center gap-1.5">
+              <span className="chip chip-BRL">BRL</span> 64%
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="chip chip-EUR">EUR</span> 36%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Chip flutuante — câmbio (multimoeda) */}
+      <div className="absolute -left-5 -top-5 hidden xl:flex items-center gap-2 rounded-[12px] border border-border bg-card px-3 py-2 shadow-[var(--shadow-float)]">
+        <span className="chip chip-BRL">BRL</span>
+        <MoveRight size={13} className="text-faint" />
+        <span className="chip chip-EUR">EUR</span>
+        <span className="text-[12px] text-muted tabular">0,1623</span>
+      </div>
+
+      {/* Card flutuante — rentabilidade dos investimentos */}
+      <div className="absolute -right-5 -bottom-6 rounded-[14px] border border-border bg-card2 px-4 py-3 shadow-[var(--shadow-float)]">
+        <div className="eyebrow">Rentabilidade</div>
+        <div className="text-[19px] font-semibold tabular text-accent mt-1">+12,4%</div>
+      </div>
+    </div>
+  );
+}
+
+/** Painel direito (lg+): marca + vitrine do produto + manchete rotativa, sobre brilho verde. */
+function AuthShowcase() {
+  return (
+    <div className="relative hidden lg:flex lg:flex-col lg:justify-between overflow-hidden bg-bg2 p-12 xl:p-16">
+      {/* Brilhos radiais (cantos opostos) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-32 -right-24 w-[560px] h-[560px]"
+        style={{ background: "radial-gradient(ellipse, rgba(62,207,142,0.18), transparent 62%)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-40 -left-32 w-[520px] h-[520px]"
+        style={{ background: "radial-gradient(ellipse, rgba(62,207,142,0.07), transparent 65%)" }}
+      />
+      {/* Malha discreta com máscara radial (textura premium) */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+          maskImage: "radial-gradient(ellipse at 60% 40%, black, transparent 78%)",
+          WebkitMaskImage: "radial-gradient(ellipse at 60% 40%, black, transparent 78%)",
+        }}
+      />
+
+      <div className="relative">
+        <Brand />
+      </div>
+
+      <div className="relative flex-1 grid place-items-center py-10">
+        <AuthPreview />
+      </div>
+
+      <div className="relative">
+        <div className="eyebrow mb-4" style={{ color: "var(--accent)" }}>
+          Privado · Multimoeda · Cross-border
+        </div>
+        <RotatingTagline />
+        <p className="text-[13.5px] text-muted leading-relaxed mt-5 max-w-[44ch]">
+          Patrimônio, orçamento, investimentos e projeção num só lugar — cifrado de ponta a ponta.
+          Nem nós conseguimos ler os seus números.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Casca das telas de autenticação — split full-screen: formulário (esq.) + vitrine (dir.). */
 export function AuthShell({
   title,
   subtitle,
@@ -57,49 +196,33 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen grid place-items-center bg-bg p-4 sm:p-6">
-      <div className="w-full max-w-[940px] grid md:grid-cols-[1.02fr_1fr] rounded-[22px] overflow-hidden border border-border bg-card shadow-[var(--shadow-float)]">
-        {/* ESQUERDA — marca + brilho + frase (só no desktop) */}
-        <div className="relative hidden md:flex flex-col justify-between p-9 bg-bg2 overflow-hidden">
-          <div
-            aria-hidden
-            className="absolute -top-24 -left-10 w-[460px] h-[420px] pointer-events-none"
-            style={{ background: "radial-gradient(ellipse, rgba(62,207,142,0.16), transparent 62%)" }}
-          />
-          <div className="relative flex items-center justify-between gap-3">
-            <Brand />
-            <a
-              href="/"
-              className="inline-flex items-center gap-1 text-[12.5px] font-medium text-muted hover:text-text bg-card/60 border border-border rounded-full px-3 h-8 transition-colors"
-            >
-              Voltar ao site <ArrowUpRight size={14} />
-            </a>
-          </div>
-          <div className="relative mt-12">
-            <RotatingTagline />
+    <div className="min-h-screen w-full bg-bg lg:grid lg:grid-cols-[1fr_1.08fr]">
+      {/* ESQUERDA — formulário */}
+      <div className="relative flex min-h-screen flex-col px-5 py-7 sm:px-8 lg:min-h-0 lg:px-12 xl:px-20">
+        <div className="flex items-center justify-between gap-3">
+          <Brand className="lg:hidden" />
+          <BackToSite className="ml-auto" />
+        </div>
+
+        <div className="flex flex-1 flex-col justify-center py-10">
+          <div className="w-full max-w-[400px] mx-auto">
+            <h1 className="text-[clamp(1.7rem,3.4vw,2.3rem)] font-semibold tracking-[-0.035em] leading-[1.05]">
+              {title}
+            </h1>
+            {subtitle ? <p className="text-[14px] text-muted mt-3 leading-relaxed">{subtitle}</p> : null}
+            <div className="mt-8">{children}</div>
+            {footer ? <div className="text-[13.5px] text-muted mt-6">{footer}</div> : null}
           </div>
         </div>
 
-        {/* DIREITA — formulário */}
-        <div className="p-7 sm:p-9 lg:p-11">
-          <div className="flex items-center justify-between gap-3 mb-7">
-            <Brand className="md:hidden" />
-            <a
-              href="/"
-              className="md:hidden inline-flex items-center gap-1 text-[12.5px] font-medium text-muted hover:text-text ml-auto"
-            >
-              Voltar ao site <ArrowUpRight size={14} />
-            </a>
-          </div>
-          <h1 className="text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-[-0.03em] leading-tight">{title}</h1>
-          {subtitle ? <p className="text-[13.5px] text-muted mt-2.5 leading-relaxed">{subtitle}</p> : null}
-          <div className="mt-7">{children}</div>
-          {footer ? <div className="text-[13.5px] text-muted mt-6">{footer}</div> : null}
-          <div className="text-[12px] text-faint mt-7">
-            <PrivacyLink />
-          </div>
+        <div className="w-full max-w-[400px] mx-auto flex items-center justify-between gap-3 text-[11.5px] text-faint">
+          <PrivacyLink />
+          <span>© Nossas Finanças</span>
         </div>
       </div>
+
+      {/* DIREITA — vitrine */}
+      <AuthShowcase />
     </div>
   );
 }
@@ -191,4 +314,3 @@ export function SecurityNote() {
     </div>
   );
 }
-
