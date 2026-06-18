@@ -1,8 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 // Cloudflare Turnstile (privacy-friendly, sem rastreamento da Google — coerente com o E2EE).
-// Site key vem da env; SEM ela tudo vira no-op (CAPTCHA desligado, nada muda no fluxo).
-const SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+// A site key é PÚBLICA (renderiza no cliente) → fallback embutido; env var sobrescreve se houver.
+// SEM site key tudo vira no-op (CAPTCHA desligado, nada muda no fluxo).
+const SITE_KEY =
+  (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || "0x4AAAAAADnX32Qstm3PaHoz";
 const SCRIPT_SRC = "https://challenges.cloudflare.com/turnstile/v0/api.js";
 
 /** True quando há site key configurada (CAPTCHA ativo). */
