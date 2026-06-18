@@ -5,6 +5,7 @@ import { UsersSection } from "./sections/users";
 import { AnalyticsSection } from "./sections/analytics";
 import { AccessLogSection } from "./sections/access-log";
 import { AdminsSection } from "./sections/admins";
+import { SectionErrorBoundary } from "./error-boundary";
 import { cn } from "@/lib/utils";
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
@@ -55,19 +56,19 @@ export function AdminPage() {
 
       <div className={cn(CONTAINER, GUTTERS, "pb-24 lg:pb-28")}>
         <Accordion id="adm-overview" title="Visão geral" summary={<OverviewSummary />} defaultOpen>
-          <OverviewSection days={days} />
+          <SectionErrorBoundary name="Visão geral"><OverviewSection days={days} /></SectionErrorBoundary>
         </Accordion>
         <Accordion id="adm-users" title="Usuários">
-          <UsersSection />
+          <SectionErrorBoundary name="Usuários"><UsersSection /></SectionErrorBoundary>
         </Accordion>
         <Accordion id="adm-analytics" title="Analytics">
-          <AnalyticsSection days={days} />
+          <SectionErrorBoundary name="Analytics"><AnalyticsSection days={days} /></SectionErrorBoundary>
         </Accordion>
         <Accordion id="adm-access" title="Acessos & logs">
-          <AccessLogSection />
+          <SectionErrorBoundary name="Acessos & logs"><AccessLogSection /></SectionErrorBoundary>
         </Accordion>
         <Accordion id="adm-admins" title="Administradores">
-          <AdminsSection />
+          <SectionErrorBoundary name="Administradores"><AdminsSection /></SectionErrorBoundary>
         </Accordion>
       </div>
     </div>
