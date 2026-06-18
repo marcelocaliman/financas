@@ -15,6 +15,7 @@ import { useVault } from "@/vault/vault-store";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
 import { useOnlinePresence } from "@/admin/use-realtime";
+import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
@@ -78,6 +79,7 @@ export function SideNav({ active }: { active: string }) {
   const macroMeta = MACRO_META[disp];
   const hasMacro = !!(macro && macroMeta && (macro.rate != null || macro.inflation != null));
   const hasBills = !!g && g.billCount > 0;
+  const suporteUnread = useMyTicketStats().unread;
 
   // Seções da VISÃO ativa: na página, todas menos o Painel (que é hero); na Config, as 6 (todas
   // são accordions). É o que o "abrir/fechar todas" atua e o que a lista mostra.
@@ -208,7 +210,7 @@ export function SideNav({ active }: { active: string }) {
             style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
             <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
-              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
+              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ suporte: suporteUnread }} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
@@ -322,6 +324,7 @@ export function NavList({
   openSections,
   onNavigate,
   onToggle,
+  badges,
 }: {
   items: NavListItem[];
   collapsed: boolean;
@@ -329,6 +332,8 @@ export function NavList({
   openSections: Record<string, boolean>;
   onNavigate: (id: string) => void;
   onToggle: (id: string, v: boolean) => void;
+  /** Selo de notificação por item (ex.: tickets de suporte não lidos). */
+  badges?: Record<string, number>;
 }) {
   const { t } = useTranslation();
   return (
@@ -336,6 +341,7 @@ export function NavList({
       {items.map(({ id, label, Icon, isSection }) => {
         const on = active === id;
         const sectionOpen = isSection && !!openSections[id];
+        const badge = badges?.[id] ?? 0;
         // Clique no item ALTERNA: se já estamos na seção e ela está aberta, fecha; senão
         // navega (abre + rola). Dá pra abrir E fechar a aba pelo próprio menu.
         const handleClick = () => (sectionOpen && on ? onToggle(id, false) : onNavigate(id));
@@ -353,7 +359,11 @@ export function NavList({
               )}
             >
               <Icon size={17} />
-              {sectionOpen ? <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" /> : null}
+              {badge > 0 ? (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
+              ) : sectionOpen ? (
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
+              ) : null}
             </button>
           );
         }
@@ -373,6 +383,11 @@ export function NavList({
             >
               <Icon size={17} className="shrink-0" />
               <span className="truncate">{label}</span>
+              {badge > 0 ? (
+                <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[10px] font-bold tabular leading-none">
+                  {badge}
+                </span>
+              ) : null}
             </button>
             {isSection ? (
               <button

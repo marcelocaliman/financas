@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { LifeBuoy, Plus, ArrowLeft, ChevronRight, ShieldAlert } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
-  listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, unreadCount, ticketMeta,
+  listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, ticketMeta,
   TICKET_CATEGORIES, type Ticket, type TicketMessage, type TicketCategory,
 } from "@/lib/tickets";
+import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -22,16 +23,10 @@ function fmtAgo(iso: string): string {
 /** KPIs do cabeçalho da seção: nº de tickets + respostas não lidas. */
 export function SuporteSummary() {
   const { t } = useTranslation();
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  useEffect(() => {
-    let alive = true;
-    listMyTickets().then((d) => alive && setTickets(d)).catch(() => {});
-    return () => { alive = false; };
-  }, []);
-  const unread = unreadCount(tickets);
+  const { total, unread } = useMyTicketStats();
   return (
     <HeaderKpis>
-      <HeaderKpi label={t("support.kpiTickets")} value={<span className="tabular">{tickets.length}</span>} />
+      <HeaderKpi label={t("support.kpiTickets")} value={<span className="tabular">{total}</span>} />
       <HeaderKpi secondary tone={unread > 0 ? "accent" : "text"} label={t("support.kpiUnread")} value={<span className="tabular">{unread}</span>} />
     </HeaderKpis>
   );

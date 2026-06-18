@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { TicketMessage, TicketAuthor } from "@/lib/tickets";
 
@@ -25,8 +25,15 @@ export function TicketThread({
   youLabel: string;
   supportLabel: string;
 }) {
+  // Altura limitada (~8 mensagens) + scroll, ancorando sempre na última (comportamento de chat),
+  // pra a conversa não crescer sem fim e empurrar a caixa de resposta.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages]);
   return (
-    <div className="flex flex-col gap-3">
+    <div ref={scrollRef} className="flex flex-col gap-3 max-h-[480px] overflow-y-auto scrollbar-subtle pr-1">
       {messages.map((m) => {
         const mine = m.author === mySide;
         const who = m.author === "admin" ? supportLabel : youLabel;
