@@ -1,55 +1,101 @@
 import { useEffect, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { adminApi } from "./api";
+import { supabase } from "@/lib/supabase";
 import type { RecentEvent, OnlinePresence } from "./types";
 
-// Polling near-real-time (robusto, sem depender do WebSocket de Realtime). Só o navegador do
-// dono (painel aberto) faz isto — não escala com usuários, então pode ser rápido.
-const POLL_MS = 5_000;
+// Realtime via Postgres Changes (admin-push): o painel do DONO assina as mudanças das tabelas
+// e reconta na hora. O heartbeat (serverless) continua sendo a fonte da verdade; aqui só
+// ESCUTAMOS. A rede de segurança cobre o que não vira evento (sessão que envelhece sem 'bye',
+// reconexão do websocket). Os casos comuns — entrar (INSERT) e sair via 'bye' (DELETE) — chegam
+// na hora. Cada fonte é um SINGLETON ref-contado: UM canal por tópico (vários componentes
+// consomem o mesmo), o que evita o bug de canais duplicados que travava o cliente Realtime.
+const SAFETY_MS = 25_000;
 const EMPTY_PRESENCE: OnlinePresence = { app: 0, landing: 0, total: 0 };
 
-/** "Online agora" por superfície: app (logados) + landing (anônimos). Heartbeat,
- *  conta, nunca quem. Atualiza por polling a cada ~12s. */
+/* ── "Online agora" ──────────────────────────────────────────────────────────── */
+let pState: OnlinePresence = EMPTY_PRESENCE;
+const pListeners = new Set<(p: OnlinePresence) => void>();
+let pChannel: RealtimeChannel | null = null;
+let pSafety: ReturnType<typeof setInterval> | null = null;
+let pDebounce: ReturnType<typeof setTimeout> | null = null;
+let pRefs = 0;
+
+function pRefresh() {
+  adminApi.online().then((d) => { if (d) { pState = d; pListeners.forEach((l) => l(pState)); } }).catch(() => {});
+}
+function pBump() { if (pDebounce) clearTimeout(pDebounce); pDebounce = setTimeout(pRefresh, 250); } // coalesce rajadas
+function pStart() {
+  pRefresh();
+  pChannel = supabase
+    .channel("admin:presence")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "presence" }, pBump)
+    .on("postgres_changes", { event: "DELETE", schema: "public", table: "presence" }, pBump)
+    .subscribe();
+  pSafety = setInterval(pRefresh, SAFETY_MS);
+}
+function pStop() {
+  if (pChannel) { void supabase.removeChannel(pChannel); pChannel = null; }
+  if (pSafety) { clearInterval(pSafety); pSafety = null; }
+  if (pDebounce) { clearTimeout(pDebounce); pDebounce = null; }
+}
+
+/** "Online agora" por superfície (app/landing), em tempo real. Só o painel do dono assina
+ *  (RLS is_admin) e reconta — a métrica segue privada e nenhum usuário abre conexão. */
 export function useOnlinePresence(): OnlinePresence {
-  const [p, setP] = useState<OnlinePresence>(EMPTY_PRESENCE);
+  const [p, setP] = useState<OnlinePresence>(pState);
   useEffect(() => {
-    let alive = true;
-    const load = () => {
-      adminApi
-        .online()
-        .then((d) => {
-          if (alive && d) setP(d);
-        })
-        .catch(() => {});
-    };
-    load();
-    const id = setInterval(load, POLL_MS);
+    const l = (np: OnlinePresence) => setP(np);
+    pListeners.add(l);
+    if (pRefs++ === 0) pStart();
+    else setP(pState); // já há estado quente
     return () => {
-      alive = false;
-      clearInterval(id);
+      pListeners.delete(l);
+      if (--pRefs === 0) pStop();
     };
   }, []);
   return p;
 }
 
-/** Feed de atividade recente (anônimo), atualizado a cada ~12s. */
+/* ── Feed de atividade recente ─────────────────────────────────────────────────
+   app_events já está no Realtime (policy de admin). Novo evento = INSERT → atualiza. */
+let eState: RecentEvent[] = [];
+const eListeners = new Set<(e: RecentEvent[]) => void>();
+let eChannel: RealtimeChannel | null = null;
+let eSafety: ReturnType<typeof setInterval> | null = null;
+let eDebounce: ReturnType<typeof setTimeout> | null = null;
+let eRefs = 0;
+
+function eRefresh() {
+  adminApi.recentEvents(40).then((rows) => { eState = rows ?? []; eListeners.forEach((l) => l(eState)); }).catch(() => {});
+}
+function eBump() { if (eDebounce) clearTimeout(eDebounce); eDebounce = setTimeout(eRefresh, 250); }
+function eStart() {
+  eRefresh();
+  eChannel = supabase
+    .channel("admin:events")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_events" }, eBump)
+    .subscribe();
+  eSafety = setInterval(eRefresh, 30_000);
+}
+function eStop() {
+  if (eChannel) { void supabase.removeChannel(eChannel); eChannel = null; }
+  if (eSafety) { clearInterval(eSafety); eSafety = null; }
+  if (eDebounce) { clearTimeout(eDebounce); eDebounce = null; }
+}
+
+/** Feed de atividade recente (anônimo) em tempo real — novos eventos chegam na hora. */
 export function useLiveEvents(limit = 24): RecentEvent[] {
-  const [events, setEvents] = useState<RecentEvent[]>([]);
+  const [events, setEvents] = useState<RecentEvent[]>(eState);
   useEffect(() => {
-    let alive = true;
-    const load = () => {
-      adminApi
-        .recentEvents(limit)
-        .then((rows) => {
-          if (alive) setEvents(rows ?? []);
-        })
-        .catch(() => {});
-    };
-    load();
-    const id = setInterval(load, POLL_MS);
+    const l = (e: RecentEvent[]) => setEvents(e);
+    eListeners.add(l);
+    if (eRefs++ === 0) eStart();
+    else setEvents(eState);
     return () => {
-      alive = false;
-      clearInterval(id);
+      eListeners.delete(l);
+      if (--eRefs === 0) eStop();
     };
-  }, [limit]);
-  return events;
+  }, []);
+  return events.slice(0, limit);
 }
