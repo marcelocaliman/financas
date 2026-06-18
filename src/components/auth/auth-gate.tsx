@@ -74,7 +74,7 @@ function Login({ onSignup }: { onSignup: () => void }) {
     setErr("");
     if (!email.trim()) return setErr("Digite seu e-mail primeiro.");
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+      await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + "/app" });
       setResetSent(true);
     } catch (e2) {
       setErr(msg(e2, "Não foi possível enviar o e-mail."));
