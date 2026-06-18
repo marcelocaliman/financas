@@ -84,6 +84,16 @@
     a.addEventListener("click", function () { track("cta_click"); });
   });
 
+  // Logo / links "#top": o header é position:sticky (sempre no topo da viewport), então
+  // o anchor nativo não rola. Forçamos a rolagem suave pro topo.
+  [].forEach.call(document.querySelectorAll('a[href="#top"]'), function (a) {
+    a.addEventListener("click", function (e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (history.replaceState) history.replaceState(null, "", location.pathname + location.search);
+    });
+  });
+
   // Painel do hero "ganha vida": count-up inicial e, em seguida, MODO VIVO contínuo —
   // o patrimônio cresce organicamente (random-walk com viés de alta + rajadas, ritmo
   // variável: às vezes devagar, às vezes rápido) e alguns KPIs oscilam de leve. Pausa
