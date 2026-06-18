@@ -510,9 +510,11 @@
     "notE2ee": "I messaggi di supporto restano sul nostro server (non cifrati end-to-end come i tuoi dati). Non includere password, codice di recupero o numeri di conto.",
     "kpiTickets": "Ticket",
     "kpiUnread": "Non letti",
-    "errFields": "Compila oggetto e messaggio.",
+    "errFields": "Compila l'oggetto e aggiungi un messaggio o un'immagine.",
     "errSend": "Invio non riuscito. Riprova.",
     "errLoad": "Caricamento non riuscito.",
+    "attach": "Allega immagine",
+    "attachError": "Impossibile allegare l'immagine (usa PNG/JPG/WebP, fino a 3 MB).",
     "cat": {
       "duvida": "Domanda",
       "problema": "Problema",

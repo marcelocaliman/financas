@@ -7,7 +7,7 @@ import { fmtAgo, fmtInt } from "../format";
 import { AdminCard, StateBlock } from "../components";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
-import { replyTicket } from "@/lib/tickets";
+import { replyTicket, uploadTicketImage, type TicketAttachment } from "@/lib/tickets";
 import type { AdminTicketRow } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -49,10 +49,10 @@ function TicketDetail({ id, onBack, onChanged }: { id: string; onBack: () => voi
   const [sending, setSending] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const send = async (body: string) => {
+  const send = async (body: string, attachments: TicketAttachment[]) => {
     setSending(true);
     try {
-      await replyTicket(id, body);
+      await replyTicket(id, body, attachments);
       reload();
       onChanged();
     } finally {
@@ -103,7 +103,7 @@ function TicketDetail({ id, onBack, onChanged }: { id: string; onBack: () => voi
             </div>
 
             <TicketThread messages={data.messages} mySide="admin" supportLabel="Você" youLabel={data.name || data.email} />
-            <TicketComposer onSend={send} sending={sending} placeholder="Responder ao usuário…" sendLabel="Responder" />
+            <TicketComposer onSend={send} onUpload={(f) => uploadTicketImage(f)} sending={sending} placeholder="Responder ao usuário…" sendLabel="Responder" attachLabel="Anexar imagem" uploadErrorLabel="Não foi possível anexar a imagem." />
           </div>
         ) : null}
       </StateBlock>

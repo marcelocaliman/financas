@@ -30,6 +30,9 @@ const EMAIL_FROM = process.env.EMAIL_FROM || "Nossas Finanças <nao-responda@nos
 const OWNER_EMAIL = process.env.CRON_ALERT_EMAIL || "marcelo.salgado.caliman@gmail.com";
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 const SITE = "https://nossasfinancas.com.br";
+const BUCKET = "ticket-attachments";
+const ATTACH_PREFIX = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
+const MAX_IMAGE_BYTES = 3.2 * 1024 * 1024; // base64 (~4.27MB) cabe no limite de corpo da Vercel (~4.5MB)
 
 const CATEGORIES = new Set(["duvida", "problema", "sugestao", "conta", "outro"]);
 const META_KEYS = new Set(["app_version", "section", "ua", "tz", "screen", "path", "referrer"]);
@@ -217,11 +220,20 @@ function sanitizeMeta(meta) {
   return out;
 }
 
-async function insertMessage(ticketId, author, body) {
+// Só aceitamos URLs do NOSSO bucket público (evita injeção de <img> de terceiros).
+function sanitizeAttachments(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter((a) => a && typeof a.url === "string" && a.url.startsWith(ATTACH_PREFIX) && !a.url.includes(".."))
+    .slice(0, 6)
+    .map((a) => ({ url: a.url, name: clip(a.name, 120) || "imagem" }));
+}
+
+async function insertMessage(ticketId, author, body, attachments) {
   await sbFetch(`/rest/v1/ticket_messages`, {
     method: "POST",
     headers: { Prefer: "return=minimal" },
-    body: JSON.stringify({ ticket_id: ticketId, author, body }),
+    body: JSON.stringify({ ticket_id: ticketId, author, body, attachments: attachments || [] }),
   });
 }
 async function touchTicket(ticketId, patch) {
@@ -237,13 +249,14 @@ async function touchTicket(ticketId, patch) {
 async function handleCreate(req, res) {
   const body = parseBody(req);
   const subject = clip(body.subject, 200);
-  const message = clip(body.body, 5000);
+  const message = clip(body.body, 5000) || "";
+  const attachments = sanitizeAttachments(body.attachments);
   let category = clip(body.category, 20);
   if (!CATEGORIES.has(category)) category = "duvida";
   const locale = clip(body.locale, 8);
   const meta = sanitizeMeta(body.meta);
 
-  if (!subject || !subject.trim() || !message || !message.trim()) {
+  if (!subject || !subject.trim() || (!message.trim() && attachments.length === 0)) {
     return json(res, 400, { error: "missing_fields" });
   }
 
@@ -276,9 +289,9 @@ async function handleCreate(req, res) {
   if (!r.ok) return json(res, 502, { error: "create_failed" });
   const created = (await r.json())[0];
   if (!created || !created.id) return json(res, 502, { error: "create_failed" });
-  await insertMessage(created.id, "user", message);
+  await insertMessage(created.id, "user", message, attachments);
 
-  void notifyOwnerNew(created, message);
+  void notifyOwnerNew(created, message || "(imagem anexada)");
   if (!user) void notifyUserConfirmation(created);
 
   return json(res, 201, user ? { id: created.id } : { id: created.id, token: created.access_token });
@@ -303,15 +316,16 @@ async function handleGet(req, res) {
   const rows = await r.json();
   if (!Array.isArray(rows) || rows.length === 0) return json(res, 404, { error: "not_found" });
   const ticket = rows[0];
-  const mr = await sbFetch(`/rest/v1/ticket_messages?ticket_id=eq.${ticket.id}&select=id,author,body,created_at&order=created_at.asc`);
+  const mr = await sbFetch(`/rest/v1/ticket_messages?ticket_id=eq.${ticket.id}&select=id,author,body,created_at,attachments&order=created_at.asc`);
   const messages = mr.ok ? await mr.json() : [];
   return json(res, 200, { ticket, messages });
 }
 
 async function handleReply(req, res) {
   const body = parseBody(req);
-  const message = clip(body.body, 5000);
-  if (!message || !message.trim()) return json(res, 400, { error: "missing_body" });
+  const message = clip(body.body, 5000) || "";
+  const attachments = sanitizeAttachments(body.attachments);
+  if (!message.trim() && attachments.length === 0) return json(res, 400, { error: "missing_body" });
 
   const token = clip((req.query && req.query.t) || "", 80);
   let ticket = null;
@@ -340,13 +354,57 @@ async function handleReply(req, res) {
     author = owner ? "user" : "admin";
   }
 
-  await insertMessage(ticket.id, author, message);
+  await insertMessage(ticket.id, author, message, attachments);
   await touchTicket(ticket.id, author === "user" ? { last_author: "user", status: "open" } : { last_author: "admin" });
 
-  if (author === "user") void notifyOwnerReply(ticket, message);
-  else void notifyUserReply(ticket, message);
+  const quote = message || "(imagem anexada)";
+  if (author === "user") void notifyOwnerReply(ticket, quote);
+  else void notifyUserReply(ticket, quote);
 
   return json(res, 201, { ok: true });
+}
+
+// Upload de imagem (data URL base64) → bucket público, path aleatório. Auth: token de
+// convidado (?t=) OU JWT (registrado/admin). Valida tipo e tamanho.
+async function handleUpload(req, res) {
+  const token = clip((req.query && req.query.t) || "", 80);
+  let ok = false;
+  if (token) {
+    const r = await sbFetch(`/rest/v1/tickets?access_token=eq.${encodeURIComponent(token)}&select=id`);
+    const rows = r.ok ? await r.json().catch(() => []) : [];
+    ok = Array.isArray(rows) && rows.length > 0;
+  } else {
+    ok = !!(await userFromJwt(req));
+  }
+  if (!ok) return json(res, 401, { error: "unauthenticated" });
+
+  const body = parseBody(req);
+  const data = typeof body.data === "string" ? body.data : "";
+  const m = /^data:(image\/(png|jpe?g|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(data);
+  if (!m) return json(res, 400, { error: "invalid_image" });
+  const mime = m[1];
+  const ext = m[2] === "jpeg" || m[2] === "jpg" ? "jpg" : m[2];
+  let buf;
+  try { buf = Buffer.from(m[3], "base64"); } catch { return json(res, 400, { error: "invalid_image" }); }
+  if (!buf.length || buf.length > MAX_IMAGE_BYTES) return json(res, 413, { error: "too_large" });
+
+  const path = `${genToken()}.${ext}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const up = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      method: "POST",
+      headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}`, "Content-Type": mime, "x-upsert": "false" },
+      body: buf,
+      signal: ctrl.signal,
+    });
+    if (!up.ok) return json(res, 502, { error: "upload_failed" });
+  } catch {
+    return json(res, 502, { error: "upload_failed" });
+  } finally {
+    clearTimeout(timer);
+  }
+  return json(res, 201, { url: `${ATTACH_PREFIX}${path}`, name: clip(body.name, 120) || `imagem.${ext}` });
 }
 
 export default async function handler(req, res) {
@@ -356,6 +414,7 @@ export default async function handler(req, res) {
     if (action === "create" && req.method === "POST") return await handleCreate(req, res);
     if (action === "get" && req.method === "GET") return await handleGet(req, res);
     if (action === "reply" && req.method === "POST") return await handleReply(req, res);
+    if (action === "upload" && req.method === "POST") return await handleUpload(req, res);
     return json(res, 400, { error: "bad_action" });
   } catch (e) {
     return json(res, 500, { error: "server_error" });

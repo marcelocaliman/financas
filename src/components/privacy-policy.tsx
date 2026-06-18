@@ -61,7 +61,8 @@ export function PrivacyPolicyContent() {
           pelo formulário de contato), guardamos o seu e-mail e o conteúdo da mensagem em{" "}
           <b className="text-text">texto legível</b> (não são cifradas como o cofre), porque
           precisamos lê-las para responder. Por isso, não inclua senha, código de recuperação nem
-          números de conta nessas mensagens.
+          números de conta nessas mensagens. Imagens que você anexar ficam acessíveis por um link
+          não-listado (não-adivinhável) — evite anexar conteúdo sensível.
         </p>
       </Section>
 

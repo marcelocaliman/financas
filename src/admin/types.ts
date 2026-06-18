@@ -124,6 +124,7 @@ export interface AdminTicketMessage {
   author: "user" | "admin";
   body: string;
   created_at: string;
+  attachments?: { url: string; name: string }[];
 }
 
 export interface AdminTicketThread {

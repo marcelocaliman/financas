@@ -8,12 +8,19 @@ export type TicketAuthor = "user" | "admin";
 export type TicketCategory = "duvida" | "problema" | "sugestao" | "conta" | "outro";
 export const TICKET_CATEGORIES: TicketCategory[] = ["duvida", "problema", "sugestao", "conta", "outro"];
 
+export interface TicketAttachment {
+  url: string;
+  name: string;
+}
 export interface TicketMessage {
   id: string;
   author: TicketAuthor;
   body: string;
   created_at: string;
+  attachments?: TicketAttachment[];
 }
+
+export const MAX_IMAGE_BYTES = 3.2 * 1024 * 1024;
 export interface Ticket {
   id: string;
   email: string;
@@ -54,14 +61,43 @@ export interface NewTicketInput {
   category: TicketCategory;
   locale?: string;
   meta?: Record<string, unknown>;
+  attachments?: TicketAttachment[];
 }
 
 export function createTicket(input: NewTicketInput): Promise<{ id: string }> {
   return callApi("create", { method: "POST", body: JSON.stringify(input) }) as Promise<{ id: string }>;
 }
 
-export async function replyTicket(ticketId: string, body: string): Promise<void> {
-  await callApi("reply", { method: "POST", body: JSON.stringify({ ticket_id: ticketId, body }) });
+export async function replyTicket(ticketId: string, body: string, attachments?: TicketAttachment[]): Promise<void> {
+  await callApi("reply", { method: "POST", body: JSON.stringify({ ticket_id: ticketId, body, attachments }) });
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.onerror = () => reject(new Error("read_failed"));
+    r.readAsDataURL(file);
+  });
+}
+
+/**
+ * Sobe uma imagem pro bucket de anexos via /api/ticket?action=upload e devolve {url, name}.
+ * `token` (do convidado) substitui o JWT quando não há sessão (página pública do ticket).
+ */
+export async function uploadTicketImage(file: File, token?: string): Promise<TicketAttachment> {
+  if (!file.type.startsWith("image/")) throw new Error("not_image");
+  if (file.size > MAX_IMAGE_BYTES) throw new Error("too_large");
+  const data = await fileToDataUrl(file);
+  const tok = token ? null : await accessToken();
+  const res = await fetch(`/api/ticket?action=upload${token ? `&t=${encodeURIComponent(token)}` : ""}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
+    body: JSON.stringify({ data, name: file.name }),
+  });
+  const d = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) throw new Error(String(d.error || "upload_failed"));
+  return { url: String(d.url), name: String(d.name || file.name) };
 }
 
 const COLS = "id,email,name,subject,category,status,surface,last_author,user_read_at,last_message_at,created_at";
@@ -78,7 +114,7 @@ export async function listMyTickets(): Promise<Ticket[]> {
 export async function getMyThread(ticketId: string): Promise<{ ticket: Ticket; messages: TicketMessage[] }> {
   const { data, error } = await supabase
     .from("tickets")
-    .select(`${COLS}, ticket_messages(id,author,body,created_at)`)
+    .select(`${COLS}, ticket_messages(id,author,body,created_at,attachments)`)
     .eq("id", ticketId)
     .single();
   if (error) throw error;

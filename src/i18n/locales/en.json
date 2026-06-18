@@ -510,9 +510,11 @@
     "notE2ee": "Support messages live on our server (not end-to-end encrypted like your data). Don't include passwords, your recovery code, or account numbers.",
     "kpiTickets": "Tickets",
     "kpiUnread": "Unread",
-    "errFields": "Fill in the subject and message.",
+    "errFields": "Fill in the subject and add a message or image.",
     "errSend": "Couldn't send. Try again.",
     "errLoad": "Couldn't load.",
+    "attach": "Attach image",
+    "attachError": "Couldn't attach the image (use PNG/JPG/WebP, up to 3 MB).",
     "cat": {
       "duvida": "Question",
       "problema": "Problem",

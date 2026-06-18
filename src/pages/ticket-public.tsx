@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeftRight, LifeBuoy } from "lucide-react";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
-import type { TicketMessage } from "@/lib/tickets";
+import { uploadTicketImage, type TicketMessage, type TicketAttachment } from "@/lib/tickets";
 
 // Página PÚBLICA (sem conta): o convidado acompanha e responde o ticket pelo link rastreável
 // (/ticket?t=TOKEN). Fala só com /api/ticket (token), nunca com o Supabase direto.
@@ -27,7 +27,7 @@ const T: Record<string, Record<string, string>> = {
     closed: "Este ticket foi marcado como resolvido.",
     open: "Aberto", resolved: "Resolvido", errSend: "Não foi possível enviar. Tente de novo.",
     note: "As mensagens não são cifradas de ponta a ponta — não inclua senha nem números de conta.",
-    back: "Ir para o site",
+    back: "Ir para o site", attach: "Anexar imagem", attachError: "Não foi possível anexar a imagem.",
   },
   en: {
     title: "Track your ticket", you: "You", team: "Support", send: "Reply",
@@ -36,7 +36,7 @@ const T: Record<string, Record<string, string>> = {
     closed: "This ticket was marked resolved.",
     open: "Open", resolved: "Resolved", errSend: "Couldn't send. Try again.",
     note: "Messages aren't end-to-end encrypted — don't include passwords or account numbers.",
-    back: "Go to the site",
+    back: "Go to the site", attach: "Attach image", attachError: "Couldn't attach the image.",
   },
   it: {
     title: "Segui il tuo ticket", you: "Tu", team: "Supporto", send: "Rispondi",
@@ -45,7 +45,7 @@ const T: Record<string, Record<string, string>> = {
     closed: "Questo ticket è stato segnato come risolto.",
     open: "Aperto", resolved: "Risolto", errSend: "Invio non riuscito. Riprova.",
     note: "I messaggi non sono cifrati end-to-end — non includere password o numeri di conto.",
-    back: "Vai al sito",
+    back: "Vai al sito", attach: "Allega immagine", attachError: "Impossibile allegare l'immagine.",
   },
 };
 const t = (k: string) => T[LANG][k] ?? T.pt[k] ?? k;
@@ -82,14 +82,14 @@ export function TicketPublicPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const send = async (body: string) => {
+  const send = async (body: string, attachments: TicketAttachment[]) => {
     setSending(true);
     setErr("");
     try {
       const r = await fetch(`/api/ticket?action=reply&t=${encodeURIComponent(tk)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, attachments }),
       });
       if (!r.ok) throw new Error("send_failed");
       await load();
@@ -135,7 +135,7 @@ export function TicketPublicPage() {
               {ticket.status === "closed" ? (
                 <p className="text-[12px] text-faint mt-4 pt-3 border-t border-border">{t("closed")}</p>
               ) : (
-                <TicketComposer onSend={send} sending={sending} placeholder={t("replyPh")} sendLabel={t("send")} note={t("note")} />
+                <TicketComposer onSend={send} onUpload={(f) => uploadTicketImage(f, tk)} sending={sending} placeholder={t("replyPh")} sendLabel={t("send")} note={t("note")} attachLabel={t("attach")} uploadErrorLabel={t("attachError")} />
               )}
               {err ? <p className="text-[12.5px] text-neg mt-2">{err}</p> : null}
             </>

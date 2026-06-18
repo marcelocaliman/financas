@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LifeBuoy, Plus, ArrowLeft, ChevronRight, ShieldAlert } from "lucide-react";
+import { LifeBuoy, Plus, ArrowLeft, ChevronRight, ShieldAlert, Paperclip, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
-  listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, ticketMeta,
-  TICKET_CATEGORIES, type Ticket, type TicketMessage, type TicketCategory,
+  listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, ticketMeta, uploadTicketImage,
+  TICKET_CATEGORIES, type Ticket, type TicketMessage, type TicketCategory, type TicketAttachment,
 } from "@/lib/tickets";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
@@ -115,18 +115,37 @@ function NewTicket({ onDone, onCancel }: { onDone: (id?: string) => void; onCanc
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState<TicketCategory>("duvida");
   const [message, setMessage] = useState("");
+  const [atts, setAtts] = useState<TicketAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setErr("");
+    setUploading(true);
+    try {
+      const a = await uploadTicketImage(file);
+      setAtts((p) => [...p, a]);
+    } catch {
+      setErr(t("support.attachError"));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
-    if (!subject.trim() || !message.trim()) return setErr(t("support.errFields"));
+    if (!subject.trim() || (!message.trim() && atts.length === 0)) return setErr(t("support.errFields"));
     setBusy(true);
     try {
       const { id } = await createTicket({
         subject: subject.trim(), body: message.trim(), category,
-        locale: i18n.resolvedLanguage ?? "pt", meta: ticketMeta(),
+        locale: i18n.resolvedLanguage ?? "pt", meta: ticketMeta(), attachments: atts,
       });
       onDone(id);
     } catch {
@@ -158,16 +177,36 @@ function NewTicket({ onDone, onCancel }: { onDone: (id?: string) => void; onCanc
           <div>
             <span className="block text-[12px] text-muted font-medium mb-1.5">{t("support.message")}</span>
             <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder={t("support.messagePh")} rows={5} maxLength={5000}
-              className="w-full px-3.5 py-2.5 rounded-[10px] border border-border bg-bg2 text-[14px] text-text outline-none transition-colors placeholder:text-faint focus:border-accent focus:ring-2 focus:ring-[var(--ring)] resize-y" required />
+              className="w-full px-3.5 py-2.5 rounded-[10px] border border-border bg-bg2 text-[14px] text-text outline-none transition-colors placeholder:text-faint focus:border-accent focus:ring-2 focus:ring-[var(--ring)] resize-y" />
           </div>
+          {atts.length ? (
+            <div className="flex flex-wrap gap-2">
+              {atts.map((a, i) => (
+                <div key={i} className="relative">
+                  <img src={a.url} alt={a.name} className="h-16 w-16 rounded-[8px] border border-border object-cover" />
+                  <button type="button" onClick={() => setAtts((p) => p.filter((_, j) => j !== i))} aria-label="Remover"
+                    className="absolute -top-1.5 -right-1.5 grid place-items-center w-5 h-5 rounded-full bg-card border border-border text-faint hover:text-neg transition-colors">
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
           <div className="flex items-start gap-2 rounded-[10px] bg-card2 border border-border px-3 py-2.5">
             <ShieldAlert size={15} className="text-faint shrink-0 mt-0.5" />
             <p className="text-[11.5px] text-faint leading-relaxed">{t(NOTE_KEY)}</p>
           </div>
           {err ? <p className="text-[12.5px] text-neg">{err}</p> : null}
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onCancel} className="h-9 px-3.5 rounded-[9px] border border-border text-[13px] font-medium text-muted hover:text-text hover:bg-card-hover transition">{t("common.cancel")}</button>
-            <button type="submit" disabled={busy} className="inline-flex items-center justify-center h-9 px-4 rounded-[9px] bg-accent text-[#0A0B0D] font-semibold text-[13px] transition hover:opacity-95 disabled:opacity-50">{busy ? "…" : t("support.send")}</button>
+          <div className="flex items-center justify-between gap-2">
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={pick} />
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} title={t("support.attach")} aria-label={t("support.attach")}
+              className="grid place-items-center w-9 h-9 rounded-[9px] border border-border text-faint hover:text-text hover:bg-card-hover transition-colors disabled:opacity-50">
+              {uploading ? <span className="text-[13px]">…</span> : <Paperclip size={16} />}
+            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={onCancel} className="h-9 px-3.5 rounded-[9px] border border-border text-[13px] font-medium text-muted hover:text-text hover:bg-card-hover transition">{t("common.cancel")}</button>
+              <button type="submit" disabled={busy || uploading} className="inline-flex items-center justify-center h-9 px-4 rounded-[9px] bg-accent text-[#0A0B0D] font-semibold text-[13px] transition hover:opacity-95 disabled:opacity-50">{busy ? "…" : t("support.send")}</button>
+            </div>
           </div>
         </form>
       </Tile>
@@ -203,11 +242,11 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
     return () => { void supabase.removeChannel(ch); };
   }, [id, load]);
 
-  const send = async (body: string) => {
+  const send = async (body: string, attachments: TicketAttachment[]) => {
     setSending(true);
     setErr("");
     try {
-      await replyTicket(id, body);
+      await replyTicket(id, body, attachments);
       await load();
     } catch {
       setErr(t("support.errSend"));
@@ -239,7 +278,7 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
         {ticket?.status === "closed" ? (
           <p className="text-[12px] text-faint mt-4 pt-3 border-t border-border">{t("support.closedNote")}</p>
         ) : (
-          <TicketComposer onSend={send} sending={sending} placeholder={t("support.replyPh")} sendLabel={t("support.send")} note={t(NOTE_KEY)} />
+          <TicketComposer onSend={send} onUpload={(f) => uploadTicketImage(f)} sending={sending} placeholder={t("support.replyPh")} sendLabel={t("support.send")} note={t(NOTE_KEY)} attachLabel={t("support.attach")} uploadErrorLabel={t("support.attachError")} />
         )}
         {err ? <p className="text-[12.5px] text-neg mt-2">{err}</p> : null}
       </Tile>
