@@ -39,8 +39,22 @@ export function useLiveEvents(limit = 30): RecentEvent[] {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "app_events" },
         (payload) => {
-          const r = payload.new as RecentEvent;
-          setEvents((prev) => [r, ...prev].slice(0, limitRef.current));
+          // Minimização: fica SÓ com os campos exibidos — descarta anon_id/path/props
+          // (que chegam na linha bruta do Realtime e não têm uso na UI).
+          const p = payload.new as Record<string, unknown>;
+          const r: RecentEvent = {
+            created_at: String(p.created_at ?? ""),
+            surface: String(p.surface ?? ""),
+            name: String(p.name ?? ""),
+            country: (p.country as string | null) ?? null,
+            device: (p.device as string | null) ?? null,
+          };
+          setEvents((prev) => {
+            // dedupe: o snapshot inicial e o stream do Realtime podem coincidir.
+            const h = prev[0];
+            if (h && h.created_at === r.created_at && h.name === r.name && h.surface === r.surface) return prev;
+            return [r, ...prev].slice(0, limitRef.current);
+          });
         },
       )
       .subscribe();

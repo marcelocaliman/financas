@@ -20,6 +20,9 @@ const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // Allowlist — só estes eventos são aceitos (evita lixo/abuso na tabela).
 const ALLOWED = new Set(["landing_view", "cta_click", "signup", "login", "app_open", "section_view"]);
 const SURFACES = new Set(["landing", "app"]);
+// Allowlist de chaves de props — barra PII/lixo no SERVIDOR (não confia no caller).
+// os/browser são preenchidos pelo próprio servidor; o resto é metadado de UI não-sensível.
+const PROP_KEYS = new Set(["section", "variant", "plan", "ref", "os", "browser"]);
 
 function clip(v, n) {
   return typeof v === "string" ? v.slice(0, n) : null;
@@ -71,13 +74,14 @@ export default async function handler(req, res) {
       return;
     }
 
-    // props: só um punhado de chaves curtas de UI (nunca financeiro). Saneadas.
+    // props: SÓ chaves da allowlist (nunca PII/financeiro). Valores saneados.
     let props = {};
     if (body.p && typeof body.p === "object" && !Array.isArray(body.p)) {
-      for (const k of Object.keys(body.p).slice(0, 8)) {
+      for (const k of Object.keys(body.p)) {
+        if (!PROP_KEYS.has(k)) continue; // descarta qualquer chave desconhecida
         const val = body.p[k];
-        if (typeof val === "string") props[clip(k, 24)] = clip(val, 64);
-        else if (typeof val === "number" || typeof val === "boolean") props[clip(k, 24)] = val;
+        if (typeof val === "string") props[k] = clip(val, 64);
+        else if (typeof val === "number" || typeof val === "boolean") props[k] = val;
       }
     }
 
