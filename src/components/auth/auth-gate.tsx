@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useVault } from "@/vault/vault-store";
-import { AuthShell, Field, SubmitButton, ErrorText, LinkButton } from "./auth-shell";
+import { AuthShell, Field, SubmitButton, ErrorText, LinkButton, SocialRow } from "./auth-shell";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { supabase } from "@/lib/supabase";
 
@@ -36,7 +36,10 @@ export function AuthGate() {
 
 // ── Não autenticado: login ↔ cadastro ──────────────────────────────────────
 function SignedOutFlow() {
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  // Modo inicial vem da URL: /app#signup (ou #criar) abre direto no cadastro; senão, login.
+  const initial: "login" | "signup" =
+    typeof window !== "undefined" && /signup|criar/i.test(window.location.hash) ? "signup" : "login";
+  const [mode, setMode] = useState<"login" | "signup">(initial);
   return mode === "login" ? (
     <Login onSignup={() => setMode("signup")} />
   ) : (
@@ -93,15 +96,18 @@ function Login({ onSignup }: { onSignup: () => void }) {
           recuperação</b> pra destravar o cofre.
         </p>
       ) : (
-        <form onSubmit={submit}>
-          <ErrorText>{err}</ErrorText>
-          <Field label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Field label="Senha" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          <SubmitButton loading={loading}>Entrar</SubmitButton>
-          <div className="text-center mt-3 text-[12.5px]">
-            <LinkButton onClick={forgot}>Esqueci minha senha</LinkButton>
-          </div>
-        </form>
+        <>
+          <form onSubmit={submit}>
+            <ErrorText>{err}</ErrorText>
+            <Field label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Field label="Senha" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <SubmitButton loading={loading}>Entrar</SubmitButton>
+            <div className="text-center mt-3 text-[12.5px]">
+              <LinkButton onClick={forgot}>Esqueci minha senha</LinkButton>
+            </div>
+          </form>
+          <SocialRow verb="entre" />
+        </>
       )}
     </AuthShell>
   );
@@ -178,6 +184,7 @@ function Signup({ onLogin }: { onLogin: () => void }) {
         </div>
         <SubmitButton loading={loading}>Criar conta</SubmitButton>
       </form>
+      <SocialRow verb="cadastre-se" />
     </AuthShell>
   );
 }
