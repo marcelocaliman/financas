@@ -44,9 +44,10 @@ function RotatingTagline() {
   }, []);
   return (
     <div>
-      <h2 className="text-[clamp(1.9rem,2.9vw,2.6rem)] font-semibold tracking-[-0.035em] leading-[1.08] min-h-[2em] transition-opacity duration-500">
+      {/* Não é heading semântico (a h1 da página é o título do formulário) — é copy de marketing. */}
+      <div className="text-[clamp(1.9rem,2.9vw,2.6rem)] font-semibold tracking-[-0.035em] leading-[1.08] min-h-[2em] transition-opacity duration-500">
         {PHRASES[i]}
-      </h2>
+      </div>
       <div className="flex gap-2 mt-6">
         {PHRASES.map((_, k) => (
           <button
@@ -87,7 +88,7 @@ function AuthPreview() {
   return (
     <div className="relative w-full max-w-[420px]">
       {/* Card principal — patrimônio líquido + tendência + composição */}
-      <div className="rounded-[20px] border border-border bg-card p-6 shadow-[var(--shadow-float)]">
+      <div className="rounded-[20px] border border-border bg-card2 p-6 shadow-[var(--shadow-float)]">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="eyebrow">Patrimônio líquido</div>
@@ -117,7 +118,7 @@ function AuthPreview() {
       </div>
 
       {/* Chip flutuante — câmbio (multimoeda) */}
-      <div className="absolute -left-5 -top-5 hidden xl:flex items-center gap-2 rounded-[12px] border border-border bg-card px-3 py-2 shadow-[var(--shadow-float)]">
+      <div className="absolute -left-5 -top-5 hidden xl:flex items-center gap-2 rounded-[12px] border border-border bg-card2 px-3 py-2 shadow-[var(--shadow-float)]">
         <span className="chip chip-BRL">BRL</span>
         <MoveRight size={13} className="text-faint" />
         <span className="chip chip-EUR">EUR</span>
@@ -133,10 +134,10 @@ function AuthPreview() {
   );
 }
 
-/** Painel direito (lg+): marca + vitrine do produto + manchete rotativa, sobre brilho verde. */
+/** Vitrine (lg+): CARD flutuante — marca + preview do produto + manchete rotativa, sobre brilho verde. */
 function AuthShowcase() {
   return (
-    <div className="relative hidden lg:flex lg:flex-col lg:justify-between overflow-hidden bg-bg2 p-12 xl:p-16">
+    <div className="relative flex-1 flex flex-col justify-between overflow-hidden rounded-[20px] border border-border bg-card shadow-[var(--shadow-float)] p-12 xl:p-14">
       {/* Brilhos radiais (cantos opostos) */}
       <div
         aria-hidden
@@ -196,9 +197,15 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="min-h-screen w-full bg-bg lg:grid lg:grid-cols-[1fr_1.08fr]">
-      {/* ESQUERDA — formulário */}
-      <div className="relative flex min-h-screen flex-col px-5 py-7 sm:px-8 lg:min-h-0 lg:px-12 xl:px-20">
+    <div className="min-h-screen w-full bg-bg lg:grid lg:grid-cols-[1.06fr_1fr]">
+      {/* ESQUERDA — vitrine como CARD flutuante (lg+), recuada das bordas como o menu lateral.
+          lg:h-screen garante que o card preencha 100vh (a row do grid não estica sozinha). */}
+      <div className="hidden lg:flex p-4 lg:h-screen">
+        <AuthShowcase />
+      </div>
+
+      {/* DIREITA — formulário */}
+      <div className="relative flex min-h-screen flex-col px-5 py-7 sm:px-8 lg:min-h-0 lg:px-12 xl:px-16">
         <div className="flex items-center justify-between gap-3">
           <Brand className="lg:hidden" />
           <BackToSite className="ml-auto" />
@@ -220,9 +227,6 @@ export function AuthShell({
           <span>© Nossas Finanças</span>
         </div>
       </div>
-
-      {/* DIREITA — vitrine */}
-      <AuthShowcase />
     </div>
   );
 }
