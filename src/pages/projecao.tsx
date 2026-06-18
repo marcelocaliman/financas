@@ -104,7 +104,7 @@ export default function Projecao() {
       </Tile>
 
       {/* Número FIRE — independência financeira */}
-      <FireCard portfolio={initial} />
+      <FireCard />
 
       {/* Curva comparativa */}
       <Tile className="p-6 md:p-7">
@@ -189,8 +189,9 @@ export function ProjecaoSummary() {
     const nominal = projectBalance(initial, b.monthly, b.annualReturn / 100, years);
     // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório).
     const target = fire?.independenceNumber ?? Infinity;
+    // % FIRE mede sobre o patrimônio INVESTÍVEL (= Liberdade), não o total da projeção.
     const fireProgress =
-      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
+      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (fire.eligibleWealth / target) * 100 : null;
     return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years), fireProgress };
   }, [netWorth, fire, p.initialOverride, p.scenarios, p.annualInflation, p.years]);
   return (
@@ -205,13 +206,16 @@ export function ProjecaoSummary() {
 }
 
 /** Card do número FIRE: alvo, progresso, tempo até a IF e renda passiva atual. */
-function FireCard({ portfolio }: { portfolio: number }) {
+function FireCard() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const p = useProjection();
   // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório): usa o
   // custo LÍQUIDO (gastos − renda passiva durável) e a mesma janela/taxa.
   const fire = useFireTarget();
+  // FIRE (%, tempo até a IF) mede sobre o patrimônio INVESTÍVEL — igual à Liberdade. A regra dos
+  // 4% só vale sobre o que dá pra sacar; por isso difere do patrimônio total da curva de projeção.
+  const portfolio = fire?.eligibleWealth ?? 0;
   const annualExp = fire?.annualCost ?? 0;
   const coveredByPassive = fire?.coveredByPassive ?? false;
   const swr = p.withdrawalRate;
@@ -310,7 +314,7 @@ function FireCard({ portfolio }: { portfolio: number }) {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 mt-6">
-        <Stat label={t("fire.portfolio")} value={<Money value={portfolio} currency={disp} />} />
+        <Stat label={t("liberdade.eligible")} value={<Money value={portfolio} currency={disp} />} />
         <Stat
           label={t("fire.passiveNow")}
           value={

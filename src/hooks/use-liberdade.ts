@@ -2,12 +2,10 @@ import { useMemo } from "react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection } from "@/store/projection";
-import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { useSettings } from "@/hooks/use-settings";
 import { useFireTarget, FIRE_DEFAULTS } from "@/hooks/use-fire-target";
 import { convert, type Currency } from "@/money/currency";
-import { CLASS, defaultEligibleClass } from "@/domain/taxonomy";
 import { realReturn, safeMonthlyIncome } from "@/finance/fire";
 import {
   freedomPct as calcFreedomPct,
@@ -73,31 +71,20 @@ export function useLiberdade(): LiberdadeView | null {
   const disp = useUI((s) => s.displayCurrency);
   const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
-  const pat = usePatrimonio();
   const budget = useBudget();
   const settings = useSettings();
   const proj = useProjection();
   const fire = useFireTarget();
 
   return useMemo(() => {
-    if (!pat || !budget || !fire) return null;
+    if (!budget || !fire) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const cfg = settings.liberdade ?? {};
-    const eligibleClasses = cfg.eligibleClasses ?? {};
-    // Override explícito do usuário; na ausência, cai no default honesto (exclui Imóveis e Bens).
-    const isEligible = (classId: string) => eligibleClasses[classId] ?? defaultEligibleClass(classId);
 
-    // Patrimônio: total e ELEGÍVEL (classes ligadas) − todos os passivos.
-    const assetsTotal = pat.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
-    const assetsEligible = pat.assets.reduce((s, a) => (isEligible(a.classId) ? s + conv(a.amount, a.currency) : s), 0);
-    const liabilities = pat.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
-    const netWorth = assetsTotal - liabilities;
-    const eligibleWealth = assetsEligible - liabilities;
-    const cash = pat.assets.reduce((s, a) => (a.classId === CLASS.caixa ? s + conv(a.amount, a.currency) : s), 0);
-
-    // Custo + número da independência — FONTE ÚNICA (mesma da Projeção e do relatório).
-    const { annualCost, monthlyCost, costFromOverride, passiveAnnual, netAnnualCost,
-      withdrawalRate: swr, independenceNumber, ready, coveredByPassive } = fire;
+    // Patrimônio (total/elegível/caixa) + custo + número da independência — FONTE ÚNICA,
+    // a MESMA da Projeção e do relatório (não recalcular aqui, senão volta a divergir).
+    const { eligibleWealth, netWorth, cash, annualCost, monthlyCost, costFromOverride,
+      passiveAnnual, netAnnualCost, withdrawalRate: swr, independenceNumber, ready, coveredByPassive } = fire;
 
     const finiteTarget = Number.isFinite(independenceNumber) && independenceNumber > 0;
     const freedomPct = coveredByPassive ? 100 : calcFreedomPct(eligibleWealth, independenceNumber);
@@ -161,5 +148,5 @@ export function useLiberdade(): LiberdadeView | null {
       remaining, reached, arrival, streak, reserve, milestones,
       passiveAnnual, netAnnualCost, coveredByPassive,
     };
-  }, [pat, budget, fire, settings, proj, disp, base, rates]);
+  }, [budget, fire, settings, proj, disp, base, rates]);
 }

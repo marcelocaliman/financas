@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection } from "@/store/projection";
+import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { useSettings } from "@/hooks/use-settings";
 import { convert, type Currency } from "@/money/currency";
@@ -28,6 +29,13 @@ export interface FireTarget {
   independenceNumber: number;
   /** A renda passiva já cobre todo o custo (independência via renda, sem precisar de carteira). */
   coveredByPassive: boolean;
+  /** Patrimônio líquido TOTAL (ativos − passivos). */
+  netWorth: number;
+  /** Patrimônio INVESTÍVEL/elegível (classes ligadas − passivos) — base do % e do tempo até a IF.
+   *  A regra dos 4% só vale sobre o que dá pra sacar (a casa/bens não financiam a retirada). */
+  eligibleWealth: number;
+  /** Caixa (classe "caixa") — p/ a reserva de emergência. */
+  cash: number;
 }
 
 /**
@@ -43,16 +51,25 @@ export interface FireTarget {
 export function useFireTarget(): FireTarget | null {
   const disp = useUI((s) => s.displayCurrency);
   const rates = useRates((s) => s.rates);
+  const pat = usePatrimonio();
   const budget = useBudget();
   const settings = useSettings();
   const proj = useProjection();
 
   return useMemo(() => {
-    if (!budget) return null;
+    if (!budget || !pat) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const cfg = settings.liberdade ?? {};
     const eligibleClasses = cfg.eligibleClasses ?? {};
     const isEligible = (classId: string) => eligibleClasses[classId] ?? defaultEligibleClass(classId);
+
+    // Patrimônio: total, INVESTÍVEL (classes elegíveis) e caixa — todos − passivos.
+    const assetsTotal = pat.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
+    const assetsEligible = pat.assets.reduce((s, a) => (isEligible(a.classId) ? s + conv(a.amount, a.currency) : s), 0);
+    const liabilities = pat.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
+    const netWorth = assetsTotal - liabilities;
+    const eligibleWealth = assetsEligible - liabilities;
+    const cash = pat.assets.reduce((s, a) => (a.classId === CLASS.caixa ? s + conv(a.amount, a.currency) : s), 0);
 
     // Custo de vida: média móvel dos últimos N meses COM lançamento (ou valor-alvo informado).
     const costMonths = Math.max(1, Math.round(cfg.costMonths ?? FIRE_DEFAULTS.costMonths));
@@ -86,6 +103,7 @@ export function useFireTarget(): FireTarget | null {
     return {
       ready, disp, annualCost, monthlyCost, costFromOverride,
       passiveAnnual, netAnnualCost, withdrawalRate, independenceNumber, coveredByPassive,
+      netWorth, eligibleWealth, cash,
     };
-  }, [budget, settings, proj, disp, rates]);
+  }, [pat, budget, settings, proj, disp, rates]);
 }

@@ -78,10 +78,11 @@ export function MonthlyReport({ month }: { month: string }) {
     const caixa = pat.assets.filter((a) => a.classId === CLASS.caixa).reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const reserveMonths = totalExp > 0 ? caixa / totalExp : null;
 
-    // Número da independência — fonte única (idêntico às abas Projeção e Liberdade).
+    // Número da independência — fonte única (idêntico às abas Projeção e Liberdade). O % mede
+    // sobre o patrimônio INVESTÍVEL (regra dos 4% só vale sobre o sacável), como nas abas.
     const target = fire?.independenceNumber ?? Infinity;
     const fireProgress =
-      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (netWorth / target) * 100 : null;
+      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (fire.eligibleWealth / target) * 100 : null;
 
     const bills = upcomingBills(bud.expenses, todayISO()).slice(0, 10).map((b) => ({
       name: b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized"),
