@@ -101,7 +101,7 @@ function UserMenu() {
   const openConfig = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
-  const isAdmin = useIsAdmin();
+  const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {

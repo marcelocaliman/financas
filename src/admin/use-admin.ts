@@ -8,36 +8,47 @@ const BOOTSTRAP_ADMIN = "marcelo.salgado.caliman@gmail.com";
 
 let cached: boolean | null = null;
 
-/** Caller é admin? Confirma no servidor (RPC is_admin) e cacheia por sessão. */
-export function useIsAdmin(): boolean {
+/** Caller é admin? Confirma no servidor (RPC is_admin) e cacheia por sessão. Retorna
+ *  também `resolving` = ainda checando (1ª vez na sessão) — usado pra mostrar um splash
+ *  em /app/admin em vez de piscar o app do usuário antes de confirmar. */
+export function useIsAdmin(): { isAdmin: boolean; resolving: boolean } {
   const email = useVault((s) => s.email);
   const status = useVault((s) => s.status);
   const [isAdmin, setIsAdmin] = useState<boolean>(cached ?? false);
+  const [resolving, setResolving] = useState<boolean>(cached === null);
 
   useEffect(() => {
-    if (status !== "unlocked") return;
     if (cached !== null) {
       setIsAdmin(cached);
+      setResolving(false);
       return;
     }
+    if (status !== "unlocked") return; // espera o unlock; `resolving` segue true
     let alive = true;
+    setResolving(true);
     adminApi
       .isAdmin()
       .then((ok) => {
         cached = !!ok;
-        if (alive) setIsAdmin(cached);
+        if (alive) {
+          setIsAdmin(cached);
+          setResolving(false);
+        }
       })
       .catch(() => {
         // fallback otimista pelo e-mail conhecido (o servidor ainda barra quem não for)
-        cached = email === BOOTSTRAP_ADMIN ? true : false;
-        if (alive) setIsAdmin(cached);
+        cached = email === BOOTSTRAP_ADMIN;
+        if (alive) {
+          setIsAdmin(cached);
+          setResolving(false);
+        }
       });
     return () => {
       alive = false;
     };
   }, [status, email]);
 
-  return isAdmin;
+  return { isAdmin, resolving };
 }
 
 /** Hook genérico de carregamento assíncrono p/ as seções do painel. Com `refreshMs`,

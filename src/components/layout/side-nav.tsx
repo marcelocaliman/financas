@@ -86,7 +86,7 @@ export function SideNav({ active }: { active: string }) {
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
-  const isAdmin = useIsAdmin();
+  const { isAdmin } = useIsAdmin();
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);

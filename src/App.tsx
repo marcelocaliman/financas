@@ -24,7 +24,7 @@ export default function App() {
   const theme = useUI((s) => s.theme);
   const adminOpen = useAdminUI((s) => s.adminOpen);
   const syncFromPath = useAdminUI((s) => s.syncFromPath);
-  const isAdmin = useIsAdmin();
+  const { isAdmin, resolving: adminResolving } = useIsAdmin();
 
   // URL própria do painel (/app/admin): mantém o estado em sincronia com voltar/avançar.
   useEffect(() => {
@@ -68,6 +68,8 @@ export default function App() {
 
   // Painel super-admin (só pro dono): substitui o app enquanto aberto.
   if (adminOpen && isAdmin) return <AdminApp />;
+  // Em /app/admin, enquanto confirma se é admin, mostra splash — NÃO pisca o app do usuário.
+  if (adminOpen && adminResolving) return <Splash />;
 
   return (
     <>
