@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Globe, MonitorSmartphone, type LucideIcon } from "lucide-react";
 import { Eyebrow } from "@/components/common/tile";
 import { cn } from "@/lib/utils";
 import type { OnlinePresence } from "./types";
@@ -118,20 +119,43 @@ export function StateBlock({
   return <>{children}</>;
 }
 
-/** Card "online agora" — destaque VERDE, contagem ANÔNIMA por superfície (app + landing). */
+/** "Online agora" — DOIS cards lado a lado (anônimo, tempo real): app (logados) e
+ *  landing (visitantes). */
 export function OnlineCard({ data }: { data: OnlinePresence }) {
   return (
-    <div className="rounded-[16px] border border-accent/30 bg-accent-soft px-5 py-4 sm:px-6 sm:py-5 flex items-center gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      <OnlineTile icon={MonitorSmartphone} value={data.app} label="No app" sub="logados, com o app aberto" accent />
+      <OnlineTile icon={Globe} value={data.landing} label="Na landing" sub="visitantes anônimos" />
+    </div>
+  );
+}
+
+function OnlineTile({
+  icon: Icon,
+  value,
+  label,
+  sub,
+  accent,
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  sub: string;
+  accent?: boolean;
+}) {
+  const dot = accent ? "bg-accent" : "bg-[var(--eur,#8a8f98)]";
+  return (
+    <div className={cn("rounded-[16px] border px-5 py-4 sm:px-6 sm:py-5 flex items-center gap-4", accent ? "border-accent/30 bg-accent-soft" : "border-border bg-card2")}>
       <span className="relative flex h-3 w-3 shrink-0">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
-        <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
+        <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-60", dot)} />
+        <span className={cn("relative inline-flex rounded-full h-3 w-3", dot)} />
       </span>
-      <div className="font-numeric font-semibold tabular text-accent text-[clamp(30px,5vw,44px)] leading-none">{data.total}</div>
+      <div className={cn("font-numeric font-semibold tabular text-[clamp(28px,4.5vw,42px)] leading-none", accent ? "text-accent" : "text-text")}>{value}</div>
       <div className="min-w-0">
-        <div className="text-[13px] font-semibold text-text leading-tight">online agora</div>
-        <div className="text-[11.5px] text-muted mt-0.5 tabular">
-          {data.app} no app · {data.landing} na landing · anônimo
+        <div className="text-[13px] font-semibold text-text leading-tight flex items-center gap-1.5">
+          <Icon size={14} className="text-faint shrink-0" /> {label}
         </div>
+        <div className="text-[11.5px] text-muted mt-0.5">{sub} · tempo real</div>
       </div>
     </div>
   );
