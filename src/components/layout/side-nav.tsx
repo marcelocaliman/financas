@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeftRight, ArrowLeft, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
+  ArrowLeftRight, ArrowLeft, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
-  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark, type LucideIcon,
+  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
+  MonitorSmartphone, Globe, type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
@@ -13,14 +14,13 @@ import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
+import { useOnlinePresence } from "@/admin/use-realtime";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { convert, formatPercent, type Currency } from "@/money/currency";
-import { isInvestedClass, isQuotableClass } from "@/domain/taxonomy";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
-import { Hidden } from "@/components/common/hidden";
 import { Eyebrow } from "@/components/common/tile";
 import { cn } from "@/lib/utils";
 
@@ -29,16 +29,13 @@ function nameFromEmail(email: string | null): string {
   const h = email.split("@")[0].split(/[._-]/)[0];
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : "";
 }
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-/** Relance: patrimônio líquido + variação, rentabilidade, saldo do mês e contas a vencer. */
+/** Relance do menu: só contas a vencer (alerta compacto). O patrimônio líquido saiu daqui —
+ *  era redundante com o número-herói do Painel, logo acima. */
 function useGlance() {
   const disp = useUI((s) => s.displayCurrency);
   const rates = useRates((s) => s.rates);
@@ -46,28 +43,9 @@ function useGlance() {
   return useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const net = data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0) - data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0);
-
-    const trend = [...data.snapshots].sort((a, b) => a.month.localeCompare(b.month));
-    const last = trend.at(-1);
-    const prev = trend.at(-2);
-    const change = last && prev && prev.amount !== 0 ? ((conv(last.amount, last.currency) - conv(prev.amount, prev.currency)) / Math.abs(conv(prev.amount, prev.currency))) * 100 : null;
-
-    let totalCost = 0;
-    let totalCostValue = 0;
-    for (const a of data.assets.filter((x) => isInvestedClass(x.classId))) {
-      const cost = isQuotableClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
-      if (cost > 0) { totalCost += conv(cost, a.currency); totalCostValue += conv(a.amount, a.currency); }
-    }
-    const returnPct = totalCost > 0 ? ((totalCostValue - totalCost) / totalCost) * 100 : null;
-
-    const mo = currentMonth();
-    const saldo = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0) - data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
-
     const bills = upcomingBills(data.expenses, todayISO());
     const billTotal = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
-
-    return { net, change, returnPct, saldo, billCount: bills.length, billTotal, disp };
+    return { billCount: bills.length, billTotal, disp };
   }, [data, disp, rates]);
 }
 
@@ -98,6 +76,8 @@ export function SideNav({ active }: { active: string }) {
   const disp = useUI((s) => s.displayCurrency);
   const macro = useMacro(disp);
   const macroMeta = MACRO_META[disp];
+  const hasMacro = !!(macro && macroMeta && (macro.rate != null || macro.inflation != null));
+  const hasBills = !!g && g.billCount > 0;
 
   // Seções da VISÃO ativa: na página, todas menos o Painel (que é hero); na Config, as 6 (todas
   // são accordions). É o que o "abrir/fechar todas" atua e o que a lista mostra.
@@ -160,34 +140,11 @@ export function SideNav({ active }: { active: string }) {
           </button>
         </div>
 
-        {/* Relance (só expandido) */}
-        {!collapsed && g ? (
+        {/* Relance (só expandido): contas a vencer + juros/inflação. (O patrimônio líquido saiu —
+            redundante com o herói do Painel.) */}
+        {!collapsed && (hasBills || hasMacro) ? (
           <div className="px-3.5 pb-3.5 shrink-0 space-y-2.5">
-            <div className="rounded-[14px] bg-card2 border border-border px-3.5 py-3">
-              <Eyebrow>{t("dashboard.netWorth")}</Eyebrow>
-              <Money value={g.net} currency={g.disp} className="block font-semibold text-[19px] tracking-[-0.02em] tabular mt-1.5" />
-              {g.change != null ? (
-                <span className={cn("inline-flex items-center gap-0.5 text-[11.5px] font-medium mt-1 tabular", g.change >= 0 ? "text-accent" : "text-neg")}>
-                  {g.change >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
-                  <Hidden>{(g.change >= 0 ? "+" : "") + g.change.toFixed(1) + "%"}</Hidden>
-                  <span className="text-faint font-normal ml-0.5">{t("dashboard.vsMonth")}</span>
-                </span>
-              ) : null}
-              <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
-                <div className="min-w-0">
-                  <Eyebrow>{t("investimentos.profitability")}</Eyebrow>
-                  <div className={cn("text-[13.5px] font-semibold tabular mt-1", g.returnPct == null ? "text-faint" : g.returnPct >= 0 ? "text-accent" : "text-neg")}>
-                    {g.returnPct == null ? "—" : <Hidden>{`${g.returnPct >= 0 ? "+" : ""}${g.returnPct.toFixed(1)}%`}</Hidden>}
-                  </div>
-                </div>
-                <div className="min-w-0">
-                  <Eyebrow>{t("dashboard.monthlyBalance")}</Eyebrow>
-                  <Money value={g.saldo} currency={g.disp} className={cn("block text-[13.5px] font-semibold tabular mt-1", g.saldo >= 0 ? "text-text" : "text-neg")} />
-                </div>
-              </div>
-            </div>
-
-            {g.billCount > 0 ? (
+            {g && g.billCount > 0 ? (
               <button
                 type="button"
                 onClick={() => goToSection("orcamento")}
@@ -273,7 +230,12 @@ export function SideNav({ active }: { active: string }) {
                   </IconBtn>
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
-                  {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
+                  {isAdmin ? (
+                    <>
+                      <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn>
+                      <AdminPresence collapsed />
+                    </>
+                  ) : null}
                 </>
               )}
               <div className="h-px w-7 bg-border my-0.5" />
@@ -299,9 +261,12 @@ export function SideNav({ active }: { active: string }) {
                   </div>
 
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
-                  <div className="mt-2.5 pt-2.5 border-t border-border space-y-0.5">
+                  <div className="mt-2.5 pt-2.5 border-t border-border space-y-1">
                     {isAdmin ? (
-                      <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
+                      <>
+                        <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
+                        <AdminPresence collapsed={false} />
+                      </>
                     ) : null}
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
@@ -471,6 +436,67 @@ function FooterItem({
       <Icon size={17} className="shrink-0" />
       <span className="truncate">{label}</span>
     </button>
+  );
+}
+
+/** Pontinho "ao vivo" (ping verde) — sinaliza dado em tempo real. */
+function LiveDot({ size = "h-2 w-2" }: { size?: string }) {
+  return (
+    <span className={cn("relative flex shrink-0", size)}>
+      <span className={cn("animate-ping motion-reduce:animate-none absolute inline-flex rounded-full bg-accent opacity-60", size)} />
+      <span className={cn("relative inline-flex rounded-full bg-accent", size)} />
+    </span>
+  );
+}
+
+/**
+ * Mini-card "online agora" — SÓ pro super-admin (renderizado dentro do guard isAdmin, então o
+ * hook só monta pra admin). Mostra logados no app + visitantes na landing em tempo real, pra dar
+ * a visão rápida sem abrir o painel. Os números são metadado agregado (não dado financeiro do
+ * usuário) — não passam por privacidade. A segurança real é a RLS is_admin no RPC/Realtime.
+ * O hook é singleton ref-contado: compartilha o canal com o painel se ele estiver aberto.
+ */
+function AdminPresence({ collapsed }: { collapsed: boolean }) {
+  const p = useOnlinePresence();
+
+  if (collapsed) {
+    return (
+      <div
+        role="img"
+        aria-label={`Online agora — ${p.app} no app, ${p.landing} na landing`}
+        title={`Online agora — app ${p.app} · landing ${p.landing}`}
+        className="flex flex-col items-center gap-1 w-11 py-1.5 rounded-[11px] border border-border bg-card2"
+      >
+        <LiveDot size="h-1.5 w-1.5" />
+        <span aria-hidden className="text-[12px] font-semibold tabular text-accent leading-none">{p.app}</span>
+        <span aria-hidden className="text-[10px] tabular text-faint leading-none">{p.landing}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-[12px] border border-border bg-card2 px-3 py-2.5">
+      <div className="flex items-center gap-1.5 mb-2">
+        <LiveDot />
+        <Eyebrow>Online agora</Eyebrow>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 text-faint">
+            <MonitorSmartphone size={11} className="shrink-0" />
+            <Eyebrow>App</Eyebrow>
+          </div>
+          <div className="text-[17px] font-semibold tabular text-accent mt-0.5 leading-none">{p.app}</div>
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-1 text-faint">
+            <Globe size={11} className="shrink-0" />
+            <Eyebrow>Landing</Eyebrow>
+          </div>
+          <div className="text-[17px] font-semibold tabular text-text mt-0.5 leading-none">{p.landing}</div>
+        </div>
+      </div>
+    </div>
   );
 }
 

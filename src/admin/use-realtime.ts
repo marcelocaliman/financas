@@ -19,6 +19,7 @@ const pListeners = new Set<(p: OnlinePresence) => void>();
 let pChannel: RealtimeChannel | null = null;
 let pSafety: ReturnType<typeof setInterval> | null = null;
 let pDebounce: ReturnType<typeof setTimeout> | null = null;
+let pGrace: ReturnType<typeof setTimeout> | null = null;
 let pRefs = 0;
 
 function pRefresh() {
@@ -39,6 +40,13 @@ function pStop() {
   if (pSafety) { clearInterval(pSafety); pSafety = null; }
   if (pDebounce) { clearTimeout(pDebounce); pDebounce = null; }
 }
+// Carência no teardown: trocar o layout do menu (recolher/expandir) desmonta e remonta o
+// consumidor num piscar. Sem isso, fecharíamos e reabriríamos o canal na hora (churn / risco do
+// bug de canal duplicado). Se ninguém voltar em 3s, aí sim desliga de fato.
+function pScheduleStop() {
+  if (pGrace) clearTimeout(pGrace);
+  pGrace = setTimeout(() => { pGrace = null; if (pRefs === 0) pStop(); }, 3000);
+}
 
 /** "Online agora" por superfície (app/landing), em tempo real. Só o painel do dono assina
  *  (RLS is_admin) e reconta — a métrica segue privada e nenhum usuário abre conexão. */
@@ -47,11 +55,12 @@ export function useOnlinePresence(): OnlinePresence {
   useEffect(() => {
     const l = (np: OnlinePresence) => setP(np);
     pListeners.add(l);
-    if (pRefs++ === 0) pStart();
+    if (pGrace) { clearTimeout(pGrace); pGrace = null; } // cancela um teardown em carência
+    if (pRefs++ === 0 && !pChannel) pStart(); // só (re)inicia se o canal não está vivo
     else setP(pState); // já há estado quente
     return () => {
       pListeners.delete(l);
-      if (--pRefs === 0) pStop();
+      if (--pRefs === 0) pScheduleStop();
     };
   }, []);
   return p;
