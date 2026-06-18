@@ -81,6 +81,16 @@ export function goToSection(id: string): void {
   }
 }
 
+/** Clique de nav que ALTERNA a seção pelo próprio menu: se já estamos nela (`active`) e está
+ *  aberta, FECHA; senão navega (abre + rola). Assim dá pra abrir E fechar a aba pelo menu. */
+export function toggleSection(id: string, active: boolean): void {
+  if (active && useSections.getState().open[id]) {
+    useSections.getState().setOpen(id, false);
+  } else {
+    goToSection(id);
+  }
+}
+
 /** True quando a página foi rolada além do limite (header transparente → sólido). */
 export function useScrolled(threshold = 40): boolean {
   const [scrolled, setScrolled] = useState(false);

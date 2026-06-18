@@ -5,7 +5,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { ADMIN_NAV_ITEMS } from "./nav-items";
 import { NavList } from "@/components/layout/side-nav";
-import { goToSection } from "@/hooks/use-scroll-spy";
+import { goToSection, toggleSection } from "@/hooks/use-scroll-spy";
 import { useAdminUI } from "@/store/admin-ui";
 import { useUI } from "@/store/ui";
 import { useSections } from "@/store/sections";
@@ -183,7 +183,7 @@ export function AdminTopBar({ active }: { active: string }) {
             <button
               key={id}
               type="button"
-              onClick={() => goToSection(id)}
+              onClick={() => toggleSection(id, on)}
               className={cn(
                 "shrink-0 h-8 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors whitespace-nowrap",
                 on ? "text-accent bg-card2" : "text-muted hover:text-text",

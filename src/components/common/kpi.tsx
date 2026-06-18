@@ -27,7 +27,7 @@ export function Kpi({
   bar,
   raw,
 }: {
-  label: string;
+  label: ReactNode;
   value: ReactNode;
   sub?: ReactNode;
   tone?: Tone;

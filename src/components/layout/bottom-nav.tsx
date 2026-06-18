@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
-import { goToSection } from "@/hooks/use-scroll-spy";
+import { toggleSection } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
 /** Navegação inferior (mobile, < md) — âncoras, primeiras 5 seções. */
@@ -18,7 +18,7 @@ export function BottomNav({ active }: { active: string }) {
           <button
             key={id}
             type="button"
-            onClick={() => goToSection(id)}
+            onClick={() => toggleSection(id, on)}
             className={cn(
               "flex flex-col items-center gap-0.5 px-2 py-1 min-h-[44px] justify-center rounded-[10px] text-[10px] transition-colors",
               "outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",

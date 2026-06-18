@@ -347,12 +347,15 @@ export function NavList({
       {items.map(({ id, label, Icon, isSection }) => {
         const on = active === id;
         const sectionOpen = isSection && !!openSections[id];
+        // Clique no item ALTERNA: se já estamos na seção e ela está aberta, fecha; senão
+        // navega (abre + rola). Dá pra abrir E fechar a aba pelo próprio menu.
+        const handleClick = () => (sectionOpen && on ? onToggle(id, false) : onNavigate(id));
         if (collapsed) {
           return (
             <button
               key={id}
               type="button"
-              onClick={() => onNavigate(id)}
+              onClick={handleClick}
               title={label}
               aria-label={label}
               className={cn(
@@ -375,7 +378,7 @@ export function NavList({
           >
             <button
               type="button"
-              onClick={() => onNavigate(id)}
+              onClick={handleClick}
               aria-label={label}
               className="flex items-center gap-3 h-10 px-3 flex-1 min-w-0 text-[13.5px] font-medium rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >

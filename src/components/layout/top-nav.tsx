@@ -13,7 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
-import { goToSection, useScrolled } from "@/hooks/use-scroll-spy";
+import { goToSection, toggleSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { useAdminUI } from "@/store/admin-ui";
@@ -60,7 +60,7 @@ export function TopNav({ active }: { active: string }) {
                 <button
                   key={id}
                   type="button"
-                  onClick={() => goToSection(id)}
+                  onClick={() => toggleSection(id, on)}
                   className={cn(
                     "px-3 py-2 rounded-[10px] text-[13px] font-medium transition-colors",
                     "outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",

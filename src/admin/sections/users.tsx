@@ -6,6 +6,7 @@ import { fmtInt, fmtDate, fmtAgo, fmtBytes } from "../format";
 import type { UserRow, UserSort } from "../types";
 import { AdminCard, StateBlock, Badge } from "../components";
 import { Eyebrow } from "@/components/common/tile";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import { cn } from "@/lib/utils";
@@ -227,8 +228,10 @@ export function UsersSummary() {
   const { data } = useAsync(() => adminApi.overview(), []);
   if (!data) return null;
   return (
-    <span className="hidden md:block text-[12.5px] text-muted tabular">
-      {fmtInt(data.total_users)} contas · {fmtInt(data.confirmed_users)} confirmadas · {fmtInt(data.new_30d)} novas 30d
-    </span>
+    <HeaderKpis>
+      <HeaderKpi label="contas" value={fmtInt(data.total_users)} raw />
+      <HeaderKpi secondary label="confirmadas" tone="accent" value={fmtInt(data.confirmed_users)} raw />
+      <HeaderKpi secondary label="novas 30d" value={fmtInt(data.new_30d)} raw />
+    </HeaderKpis>
   );
 }

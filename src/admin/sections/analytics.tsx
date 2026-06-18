@@ -6,6 +6,7 @@ import { useOnlinePresence, useLiveEvents } from "../use-realtime";
 import { fmtInt, fmtAgo } from "../format";
 import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
 const LIVE_MS = 20000;
@@ -246,8 +247,10 @@ export function AnalyticsSummary({ days }: { days: number }) {
   const { data } = useAsync(() => adminApi.analyticsOverview(days), [days]);
   if (!data) return null;
   return (
-    <span className="hidden md:block text-[12.5px] text-muted tabular">
-      {fmtInt(data.landing_views)} visitas · {fmtInt(data.signups)} cadastros · {data.conversion_pct}% conv.
-    </span>
+    <HeaderKpis>
+      <HeaderKpi label="visitas" value={fmtInt(data.landing_views)} raw />
+      <HeaderKpi secondary label="cadastros" tone="accent" value={fmtInt(data.signups)} raw />
+      <HeaderKpi secondary label="conversão" tone="accent" value={`${data.conversion_pct}%`} raw />
+    </HeaderKpis>
   );
 }

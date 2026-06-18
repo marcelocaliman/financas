@@ -5,6 +5,7 @@ import { useAsync } from "../use-admin";
 import { fmtDateTime, fmtAgo } from "../format";
 import { AdminCard, StateBlock, Badge } from "../components";
 import { Eyebrow } from "@/components/common/tile";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 
 const PAGE = 40;
 
@@ -92,8 +93,8 @@ export function AccessSummary() {
   const { data } = useAsync(() => adminApi.auditLog(1, 0), []);
   if (!data) return null;
   return (
-    <span className="hidden md:block text-[12.5px] text-muted tabular">
-      {data.length === 0 ? "sem registros" : `último acesso ${fmtAgo(data[0].created_at)}`}
-    </span>
+    <HeaderKpis>
+      <HeaderKpi label="último acesso" value={data.length === 0 ? "—" : fmtAgo(data[0].created_at)} raw />
+    </HeaderKpis>
   );
 }

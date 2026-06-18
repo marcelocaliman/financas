@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Globe, MonitorSmartphone, type LucideIcon } from "lucide-react";
 import { Eyebrow } from "@/components/common/tile";
+import { Kpi } from "@/components/common/kpi";
 import { cn } from "@/lib/utils";
 import type { OnlinePresence } from "./types";
 
@@ -30,14 +31,9 @@ export function AdminCard({
 }
 
 type Tone = "text" | "accent" | "neg" | "muted";
-const TONE: Record<Tone, string> = {
-  text: "text-text",
-  accent: "text-accent",
-  neg: "text-neg",
-  muted: "text-muted",
-};
 
-/** Indicador: rótulo mono + número grande tabular (NUNCA mascarado — não é financeiro). */
+/** Indicador do painel — MESMO design do KPI do app (reusa `Kpi`). Sempre `raw`: é metadado
+ *  agregado, nunca dado financeiro, então nunca entra no modo privacidade. */
 export function Stat({
   label,
   value,
@@ -49,15 +45,7 @@ export function Stat({
   sub?: ReactNode;
   tone?: Tone;
 }) {
-  return (
-    <div className="rounded-[14px] bg-card2 border border-border px-4 py-3.5">
-      <Eyebrow>{label}</Eyebrow>
-      <div className={cn("font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(20px,2.2vw,26px)] mt-1.5 leading-none", TONE[tone])}>
-        {value}
-      </div>
-      {sub != null ? <div className="text-[11.5px] text-faint mt-1.5 leading-tight">{sub}</div> : null}
-    </div>
-  );
+  return <Kpi label={label} value={value} sub={sub} tone={tone === "muted" ? "text" : tone} raw />;
 }
 
 /** Gráfico de barras fino (SVG): proporções discretas, acento, baseline hairline. */

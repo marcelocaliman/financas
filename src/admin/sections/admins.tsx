@@ -4,6 +4,7 @@ import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
 import { fmtInt, fmtDate } from "../format";
 import { AdminCard, StateBlock } from "../components";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { Button } from "@/components/common/button";
 
 /** Equipe de administradores: lista, concede e retira (nunca remove o último). */
@@ -111,8 +112,8 @@ export function AdminsSummary() {
   const { data } = useAsync(() => adminApi.adminsList(), []);
   if (!data) return null;
   return (
-    <span className="hidden md:block text-[12.5px] text-muted tabular">
-      {fmtInt(data.length)} {data.length === 1 ? "administrador" : "administradores"}
-    </span>
+    <HeaderKpis>
+      <HeaderKpi label="administradores" value={fmtInt(data.length)} raw />
+    </HeaderKpis>
   );
 }

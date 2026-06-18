@@ -5,6 +5,7 @@ import { useOnlinePresence } from "../use-realtime";
 import { fmtInt, fmtBytes } from "../format";
 import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
+import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 
 /** Visão geral: KPIs de base de usuários, atividade, churn, sync e cadastros no tempo. */
 export function OverviewSection({ days }: { days: number }) {
@@ -86,12 +87,23 @@ export function OverviewSummary() {
   const online = useOnlinePresence();
   if (!ov.data) return null;
   return (
-    <span className="hidden md:flex items-center gap-2 text-[12.5px] text-muted tabular">
-      <span className="inline-flex items-center gap-1.5 text-accent font-medium">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent" />{fmtInt(online.total)} online
-      </span>
-      <span className="text-faint">·</span>
-      {fmtInt(ov.data.total_users)} usuários · {fmtInt(ov.data.active_7d)} ativos 7d
-    </span>
+    <HeaderKpis>
+      <HeaderKpi
+        label="online agora"
+        tone="accent"
+        raw
+        value={
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent" />
+            </span>
+            {fmtInt(online.total)}
+          </span>
+        }
+      />
+      <HeaderKpi secondary label="usuários" value={fmtInt(ov.data.total_users)} raw />
+      <HeaderKpi secondary label="ativos 7d" value={fmtInt(ov.data.active_7d)} raw />
+    </HeaderKpis>
   );
 }
