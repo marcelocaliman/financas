@@ -53,7 +53,11 @@ export default defineConfig({
   // em /app. Mantém base "/" — assets em /assets continuam na raiz, sem mexer no ícone.
   build: {
     rollupOptions: {
-      input: fileURLToPath(new URL("./app.html", import.meta.url)),
+      input: {
+        app: fileURLToPath(new URL("./app.html", import.meta.url)),
+        // Página pública (sem auth) p/ acompanhar um ticket de suporte por token: /ticket?t=…
+        ticket: fileURLToPath(new URL("./ticket.html", import.meta.url)),
+      },
     },
   },
 });

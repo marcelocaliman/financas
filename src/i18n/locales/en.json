@@ -20,6 +20,7 @@
     "projecao": "Projection",
     "liberdade": "Freedom",
     "crossborder": "Cross-border",
+    "suporte": "Help & Support",
     "config": "Settings"
   },
   "common": {
@@ -484,5 +485,40 @@
     "noTracking": "No tracking · no ads",
     "rights": "multicurrency & private",
     "encrypted": "End-to-end encrypted"
+  },
+  "support": {
+    "intro": "Need help or want to reach us? Open a ticket — I'll reply right here.",
+    "new": "New ticket",
+    "myTickets": "My tickets",
+    "loading": "Loading…",
+    "empty": "No tickets yet",
+    "emptyDesc": "Questions, problems, suggestions — open a ticket and we'll talk right here.",
+    "statusOpen": "Open",
+    "statusClosed": "Resolved",
+    "subject": "Subject",
+    "subjectPh": "Sum it up in one line",
+    "category": "Category",
+    "message": "Message",
+    "messagePh": "Tell us what's going on…",
+    "reply": "Reply",
+    "replyPh": "Write a reply…",
+    "send": "Send",
+    "back": "Back",
+    "you": "You",
+    "team": "Support",
+    "closedNote": "This ticket was marked resolved. Open a new one if you need.",
+    "notE2ee": "Support messages live on our server (not end-to-end encrypted like your data). Don't include passwords, your recovery code, or account numbers.",
+    "kpiTickets": "Tickets",
+    "kpiUnread": "Unread",
+    "errFields": "Fill in the subject and message.",
+    "errSend": "Couldn't send. Try again.",
+    "errLoad": "Couldn't load.",
+    "cat": {
+      "duvida": "Question",
+      "problema": "Problem",
+      "sugestao": "Suggestion",
+      "conta": "Account & access",
+      "outro": "Other"
+    }
   }
 }

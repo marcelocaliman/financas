@@ -79,6 +79,11 @@ function gen(lang) {
     const t = dict[key];
     return t != null ? open + esc(t) + close : full;
   });
+  // traduz placeholders marcados (ordem no HTML: data-i18n-ph="k" placeholder="...")
+  html = html.replace(/data-i18n-ph="([^"]+)"(\s+placeholder=")[^"]*(")/g, (full, key, mid, end) => {
+    const t = dict[key];
+    return t != null ? `data-i18n-ph="${key}"${mid}${esc(t)}${end}` : full;
+  });
   html = html
     .replace(/<html lang="[^"]*">/, `<html lang="${m.lang}">`)
     .replace(/<title>[^<]*<\/title>/, `<title>${esc(m.title)}</title>`)

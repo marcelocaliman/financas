@@ -56,6 +56,13 @@ export function PrivacyPolicyContent() {
           códigos dos papéis (ex.: PETR4) passam pelo nosso servidor só para buscar o preço do dia.
           Não associamos isso às suas quantidades/valores (que seguem cifrados) e não os guardamos.
         </p>
+        <p>
+          • <b className="text-text">Mensagens de suporte</b> — se você abre um ticket (no app ou
+          pelo formulário de contato), guardamos o seu e-mail e o conteúdo da mensagem em{" "}
+          <b className="text-text">texto legível</b> (não são cifradas como o cofre), porque
+          precisamos lê-las para responder. Por isso, não inclua senha, código de recuperação nem
+          números de conta nessas mensagens.
+        </p>
       </Section>
 
       <Section title="Base legal e finalidade">
@@ -74,6 +81,10 @@ export function PrivacyPolicyContent() {
         </p>
         <p>
           • <b className="text-text">Vercel</b> — hospedagem do app e a função que busca cotações.
+        </p>
+        <p>
+          • <b className="text-text">Resend</b> — envio dos nossos e-mails (confirmação, redefinição
+          de senha e notificações de suporte). Recebe só o seu e-mail e o conteúdo da mensagem.
         </p>
         <p>
           • <b className="text-text">APIs de câmbio/cotação</b> (Frankfurter, brapi) — recebem só

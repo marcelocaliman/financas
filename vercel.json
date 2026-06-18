@@ -6,6 +6,7 @@
   "rewrites": [
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/(.*)", "destination": "/app.html" },
+    { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/en", "destination": "/en.html" },
     { "source": "/it", "destination": "/it.html" }
   ],
@@ -45,6 +46,14 @@
     },
     {
       "source": "/(en|it)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/app.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/ticket.html",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]

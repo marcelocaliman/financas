@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Accordion } from "@/components/common/accordion";
 import { OverviewSection, OverviewSummary } from "./sections/overview";
 import { UsersSection, UsersSummary } from "./sections/users";
+import { TicketsSection, TicketsSummary } from "./sections/tickets";
 import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
 import { AccessLogSection, AccessSummary } from "./sections/access-log";
 import { AdminsSection, AdminsSummary } from "./sections/admins";
@@ -60,6 +61,9 @@ export function AdminPage() {
         </Accordion>
         <Accordion id="adm-users" title="Usuários" summary={<UsersSummary />}>
           <SectionErrorBoundary name="Usuários"><UsersSection /></SectionErrorBoundary>
+        </Accordion>
+        <Accordion id="adm-tickets" title="Tickets" summary={<TicketsSummary />}>
+          <SectionErrorBoundary name="Tickets"><TicketsSection /></SectionErrorBoundary>
         </Accordion>
         <Accordion id="adm-analytics" title="Analytics" summary={<AnalyticsSummary days={days} />}>
           <SectionErrorBoundary name="Analytics"><AnalyticsSection days={days} /></SectionErrorBoundary>

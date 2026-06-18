@@ -167,3 +167,73 @@
     } else { begin(); }
   }
 })();
+
+/* Formulário de contato → abre um ticket de convidado em /api/ticket (com Turnstile invisível).
+   Sem conta: a resposta chega por um link rastreável (/ticket?t=…) enviado por e-mail. */
+(function () {
+  var form = document.getElementById("contactForm");
+  if (!form) return;
+  var SITE_KEY = "0x4AAAAAADnX32Qstm3PaHoz";
+  var statusEl = document.getElementById("cfStatus");
+  var submitBtn = document.getElementById("cfSubmit");
+  var tsId = null, tsReady = false, resolveToken = null;
+
+  var s = document.createElement("script");
+  s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+  s.async = true; s.defer = true;
+  s.onload = function () {
+    try {
+      tsId = window.turnstile.render("#cfTs", {
+        sitekey: SITE_KEY, size: "invisible",
+        callback: function (tok) { if (resolveToken) resolveToken(tok); },
+        "error-callback": function () { if (resolveToken) resolveToken(null); },
+        "timeout-callback": function () { if (resolveToken) resolveToken(null); },
+      });
+      tsReady = true;
+    } catch (e) {}
+  };
+  document.head.appendChild(s);
+
+  function getToken() {
+    return new Promise(function (resolve) {
+      if (!tsReady || !window.turnstile || tsId == null) return resolve(null);
+      resolveToken = resolve;
+      try { window.turnstile.reset(tsId); window.turnstile.execute(tsId); }
+      catch (e) { resolveToken = null; return resolve(null); }
+      setTimeout(function () { if (resolveToken === resolve) { resolveToken = null; resolve(null); } }, 9000);
+    });
+  }
+
+  var l = (document.documentElement.lang || "pt").toLowerCase();
+  var lang = l.indexOf("en") === 0 ? "en" : l.indexOf("it") === 0 ? "it" : "pt";
+  var MSG = {
+    sending: { pt: "Enviando…", en: "Sending…", it: "Invio…" },
+    ok: { pt: "Recebido! Te enviamos um link por e-mail pra acompanhar a conversa.", en: "Got it! We've emailed you a link to follow the conversation.", it: "Ricevuto! Ti abbiamo inviato un link via email per seguire la conversazione." },
+    err: { pt: "Não foi possível enviar. Tente de novo.", en: "Couldn't send. Try again.", it: "Invio non riuscito. Riprova." },
+    captcha: { pt: "Verificação de segurança falhou. Recarregue e tente de novo.", en: "Security check failed. Reload and try again.", it: "Verifica di sicurezza non riuscita. Ricarica e riprova." },
+  };
+  function msg(k) { return (MSG[k] && MSG[k][lang]) || MSG[k].pt; }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = (document.getElementById("cfEmail").value || "").trim();
+    var subject = (document.getElementById("cfSubject").value || "").trim();
+    var message = (document.getElementById("cfMessage").value || "").trim();
+    if (!email || !subject || !message) return;
+    submitBtn.disabled = true;
+    statusEl.className = "cf-status";
+    statusEl.textContent = msg("sending");
+    getToken().then(function (token) {
+      var body = JSON.stringify({ email: email, subject: subject, body: message, category: "duvida", locale: lang, captcha: token, meta: { referrer: (document.referrer || "").slice(0, 160) } });
+      return fetch("/api/ticket?action=create", { method: "POST", headers: { "Content-Type": "application/json" }, body: body });
+    }).then(function (r) {
+      if (r.ok) { statusEl.className = "cf-status ok"; statusEl.textContent = msg("ok"); form.reset(); return; }
+      return r.json().then(function (d) {
+        statusEl.className = "cf-status err";
+        statusEl.textContent = d && d.error === "captcha_failed" ? msg("captcha") : msg("err");
+      });
+    }).catch(function () {
+      statusEl.className = "cf-status err"; statusEl.textContent = msg("err");
+    }).finally(function () { submitBtn.disabled = false; });
+  });
+})();

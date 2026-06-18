@@ -8,6 +8,7 @@ import {
   BarChart3,
   Mountain,
   Globe,
+  LifeBuoy,
   User,
   ShieldCheck,
   Tags,
@@ -36,6 +37,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "projecao", key: "projecao", icon: BarChart3 },
   { id: "liberdade", key: "liberdade", icon: Mountain },
   { id: "crossborder", key: "crossborder", icon: Globe },
+  { id: "suporte", key: "suporte", icon: LifeBuoy },
 ];
 
 export interface ConfigNavItem {

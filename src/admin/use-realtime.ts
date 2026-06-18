@@ -108,3 +108,54 @@ export function useLiveEvents(limit = 24): RecentEvent[] {
   }, []);
   return events.slice(0, limit);
 }
+
+/* ── Tickets aguardando resposta (badge do dono) ─────────────────────────────
+   Recontagem via admin_tickets_unread() ao mudar tickets/ticket_messages. Mesmo
+   singleton ref-contado com carência (evita churn ao recolher/trocar de seção). */
+let tkState = 0;
+const tkListeners = new Set<(n: number) => void>();
+let tkChannel: RealtimeChannel | null = null;
+let tkSafety: ReturnType<typeof setInterval> | null = null;
+let tkDebounce: ReturnType<typeof setTimeout> | null = null;
+let tkGrace: ReturnType<typeof setTimeout> | null = null;
+let tkRefs = 0;
+
+function tkRefresh() {
+  adminApi.ticketsUnread().then((n) => { tkState = n ?? 0; tkListeners.forEach((l) => l(tkState)); }).catch(() => {});
+}
+function tkBump() { if (tkDebounce) clearTimeout(tkDebounce); tkDebounce = setTimeout(tkRefresh, 300); }
+function tkStart() {
+  tkRefresh();
+  tkChannel = supabase
+    .channel("admin:tickets")
+    .on("postgres_changes", { event: "*", schema: "public", table: "tickets" }, tkBump)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "ticket_messages" }, tkBump)
+    .subscribe();
+  tkSafety = setInterval(tkRefresh, 40_000);
+}
+function tkStop() {
+  if (tkChannel) { void supabase.removeChannel(tkChannel); tkChannel = null; }
+  if (tkSafety) { clearInterval(tkSafety); tkSafety = null; }
+  if (tkDebounce) { clearTimeout(tkDebounce); tkDebounce = null; }
+}
+function tkScheduleStop() {
+  if (tkGrace) clearTimeout(tkGrace);
+  tkGrace = setTimeout(() => { tkGrace = null; if (tkRefs === 0) tkStop(); }, 3000);
+}
+
+/** Nº de tickets aguardando a resposta do dono, em tempo real. */
+export function useTicketsUnread(): number {
+  const [n, setN] = useState(tkState);
+  useEffect(() => {
+    const l = (nn: number) => setN(nn);
+    tkListeners.add(l);
+    if (tkGrace) { clearTimeout(tkGrace); tkGrace = null; }
+    if (tkRefs++ === 0 && !tkChannel) tkStart();
+    else setN(tkState);
+    return () => {
+      tkListeners.delete(l);
+      if (--tkRefs === 0) tkScheduleStop();
+    };
+  }, []);
+  return n;
+}

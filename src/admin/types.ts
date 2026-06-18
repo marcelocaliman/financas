@@ -105,6 +105,44 @@ export interface OnlinePresence {
   total: number;
 }
 
+export interface AdminTicketRow {
+  id: string;
+  email: string;
+  name: string | null;
+  subject: string;
+  category: string;
+  status: string;
+  surface: string;
+  last_author: string;
+  created_at: string;
+  last_message_at: string;
+  msgs: number;
+}
+
+export interface AdminTicketMessage {
+  id: string;
+  author: "user" | "admin";
+  body: string;
+  created_at: string;
+}
+
+export interface AdminTicketThread {
+  id: string;
+  user_id: string | null;
+  email: string;
+  name: string | null;
+  subject: string;
+  category: string;
+  status: string;
+  surface: string;
+  locale: string | null;
+  meta: Record<string, unknown>;
+  last_author: string;
+  created_at: string;
+  last_message_at: string;
+  messages: AdminTicketMessage[];
+}
+
 export interface RecentEvent {
   created_at: string;
   surface: string;

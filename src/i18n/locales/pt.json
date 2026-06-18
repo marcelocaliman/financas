@@ -20,6 +20,7 @@
     "projecao": "Projeção",
     "liberdade": "Liberdade",
     "crossborder": "Internacional",
+    "suporte": "Ajuda & Suporte",
     "config": "Config"
   },
   "common": {
@@ -484,5 +485,40 @@
     "noTracking": "Sem rastreamento · sem anúncios",
     "rights": "multimoeda & privado",
     "encrypted": "Cifrado de ponta a ponta"
+  },
+  "support": {
+    "intro": "Precisa de ajuda ou quer falar com a gente? Abra um ticket — respondo por aqui mesmo.",
+    "new": "Novo ticket",
+    "myTickets": "Meus tickets",
+    "loading": "Carregando…",
+    "empty": "Nenhum ticket ainda",
+    "emptyDesc": "Dúvidas, problemas, sugestões — abra um ticket e a gente conversa por aqui.",
+    "statusOpen": "Aberto",
+    "statusClosed": "Resolvido",
+    "subject": "Assunto",
+    "subjectPh": "Resuma em uma linha",
+    "category": "Categoria",
+    "message": "Mensagem",
+    "messagePh": "Conte o que está acontecendo…",
+    "reply": "Responder",
+    "replyPh": "Escreva uma resposta…",
+    "send": "Enviar",
+    "back": "Voltar",
+    "you": "Você",
+    "team": "Suporte",
+    "closedNote": "Este ticket foi marcado como resolvido. Abra um novo se precisar.",
+    "notE2ee": "As mensagens de suporte ficam no nosso servidor (não são cifradas de ponta a ponta como os seus dados). Não inclua senha, código de recuperação nem números de conta.",
+    "kpiTickets": "Tickets",
+    "kpiUnread": "Não lidos",
+    "errFields": "Preencha o assunto e a mensagem.",
+    "errSend": "Não foi possível enviar. Tente de novo.",
+    "errLoad": "Não foi possível carregar.",
+    "cat": {
+      "duvida": "Dúvida",
+      "problema": "Problema",
+      "sugestao": "Sugestão",
+      "conta": "Conta e acesso",
+      "outro": "Outro"
+    }
   }
 }
