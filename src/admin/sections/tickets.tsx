@@ -76,14 +76,14 @@ function TicketDetail({ id, onBack, onChanged }: { id: string; onBack: () => voi
     .filter(Boolean);
 
   return (
-    <AdminCard>
+    <AdminCard className="p-4 sm:p-4">
       <button type="button" onClick={onBack} className="lg:hidden inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-text mb-3">
         <ArrowLeft size={14} /> Voltar à lista
       </button>
       <StateBlock loading={loading} error={error}>
         {data ? (
           <div>
-            <div className="flex items-start justify-between gap-3 pb-4 mb-4 border-b border-border">
+            <div className="flex items-start justify-between gap-3 pb-3 mb-3 border-b border-border">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[10.5px] font-mono uppercase tracking-[0.1em] text-faint">{CAT_LABEL[data.category] ?? data.category}</span>

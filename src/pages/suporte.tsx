@@ -65,8 +65,10 @@ function StatusBadge({ status }: { status: string }) {
 
 function TicketList({ tickets, onOpen, onNew }: { tickets: Ticket[] | null; onOpen: (id: string) => void; onNew: () => void }) {
   const { t } = useTranslation();
+  const [filter, setFilter] = useState<"open" | "all" | "closed">("open");
+  const shown = tickets == null ? null : tickets.filter((tk) => filter === "all" || tk.status === (filter === "open" ? "open" : "closed"));
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[13.5px] text-muted leading-relaxed max-w-[58ch]">{t("support.intro")}</p>
         <button type="button" onClick={onNew}
@@ -88,23 +90,38 @@ function TicketList({ tickets, onOpen, onNew }: { tickets: Ticket[] | null; onOp
           </button>
         </Tile>
       ) : (
-        <Tile className="divide-y divide-border overflow-hidden">
-          {tickets.map((tk) => {
-            const unread = tk.last_author === "admin" && (!tk.user_read_at || tk.user_read_at < tk.last_message_at);
-            return (
-              <button key={tk.id} type="button" onClick={() => onOpen(tk.id)}
-                className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-card-hover transition-colors">
-                {unread ? <span className="w-2 h-2 rounded-full bg-accent shrink-0" /> : <span className="w-2 h-2 shrink-0" />}
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13.5px] font-medium truncate">{tk.subject}</div>
-                  <div className="text-[11.5px] text-faint mt-0.5 tabular">{t(`support.cat.${tk.category}`)} · {fmtAgo(tk.last_message_at)}</div>
-                </div>
-                <StatusBadge status={tk.status} />
-                <ChevronRight size={16} className="text-faint shrink-0" />
+        <>
+          <div className="flex gap-1.5">
+            {(["open", "all", "closed"] as const).map((f) => (
+              <button key={f} type="button" onClick={() => setFilter(f)}
+                className={cn("h-8 px-3 rounded-[8px] text-[12.5px] font-medium transition-colors",
+                  filter === f ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text bg-card2")}>
+                {t(`support.tab.${f}`)}
               </button>
-            );
-          })}
-        </Tile>
+            ))}
+          </div>
+          {!shown || shown.length === 0 ? (
+            <div className="text-[13px] text-faint py-8 text-center">{t("support.emptyFilter")}</div>
+          ) : (
+            <Tile className="divide-y divide-border overflow-hidden">
+              {shown.map((tk) => {
+                const unread = tk.last_author === "admin" && (!tk.user_read_at || tk.user_read_at < tk.last_message_at);
+                return (
+                  <button key={tk.id} type="button" onClick={() => onOpen(tk.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-card-hover transition-colors">
+                    {unread ? <span className="w-2 h-2 rounded-full bg-accent shrink-0" /> : <span className="w-2 h-2 shrink-0" />}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13.5px] font-medium truncate">{tk.subject}</div>
+                      <div className="text-[11.5px] text-faint mt-0.5 tabular">{t(`support.cat.${tk.category}`)} · {fmtAgo(tk.last_message_at)}</div>
+                    </div>
+                    <StatusBadge status={tk.status} />
+                    <ChevronRight size={16} className="text-faint shrink-0" />
+                  </button>
+                );
+              })}
+            </Tile>
+          )}
+        </>
       )}
     </div>
   );

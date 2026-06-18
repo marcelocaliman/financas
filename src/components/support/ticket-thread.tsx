@@ -19,12 +19,15 @@ export function TicketThread({
   mySide,
   youLabel,
   supportLabel,
+  heightClass = "max-h-[420px]",
 }: {
   messages: TicketMessage[];
   /** Qual autor é "eu" (bolha à direita, acento). */
   mySide: TicketAuthor;
   youLabel: string;
   supportLabel: string;
+  /** Teto de altura da janela de mensagens (scroll depois disso). */
+  heightClass?: string;
 }) {
   // Altura limitada (~8 mensagens) + scroll, ancorando sempre na última (comportamento de chat),
   // pra a conversa não crescer sem fim e empurrar a caixa de resposta.
@@ -34,7 +37,7 @@ export function TicketThread({
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
   return (
-    <div ref={scrollRef} className="flex flex-col gap-3 max-h-[480px] overflow-y-auto scrollbar-subtle pr-1">
+    <div ref={scrollRef} className={cn("flex flex-col gap-2.5 overflow-y-auto scrollbar-subtle pr-1", heightClass)}>
       {messages.map((m) => {
         const mine = m.author === mySide;
         const who = m.author === "admin" ? supportLabel : youLabel;

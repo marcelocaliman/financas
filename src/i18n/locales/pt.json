@@ -495,6 +495,8 @@
     "emptyDesc": "Dúvidas, problemas, sugestões — abra um ticket e a gente conversa por aqui.",
     "statusOpen": "Aberto",
     "statusClosed": "Resolvido",
+    "tab": { "open": "Abertos", "all": "Todos", "closed": "Resolvidos" },
+    "emptyFilter": "Nada nesta aba.",
     "subject": "Assunto",
     "subjectPh": "Resuma em uma linha",
     "category": "Categoria",

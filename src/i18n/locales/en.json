@@ -495,6 +495,8 @@
     "emptyDesc": "Questions, problems, suggestions — open a ticket and we'll talk right here.",
     "statusOpen": "Open",
     "statusClosed": "Resolved",
+    "tab": { "open": "Open", "all": "All", "closed": "Resolved" },
+    "emptyFilter": "Nothing in this tab.",
     "subject": "Subject",
     "subjectPh": "Sum it up in one line",
     "category": "Category",
