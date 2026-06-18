@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeftRight, ArrowUpRight, Eye, EyeOff } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -175,6 +175,20 @@ export function LinkButton({ children, ...props }: React.ButtonHTMLAttributes<HT
     <button type="button" {...props} className="text-accent font-medium hover:underline">
       {children}
     </button>
+  );
+}
+
+/** Nota de credibilidade: sem login social, de propósito — a senha é a chave de cifragem (E2EE). */
+export function SecurityNote() {
+  return (
+    <div className="mt-6 pt-5 border-t border-border flex items-start gap-2.5">
+      <ShieldCheck size={15} className="text-accent shrink-0 mt-0.5" />
+      <p className="text-[11.5px] text-faint leading-relaxed">
+        <b className="text-muted font-medium">Sem login social — por segurança.</b> A sua senha é a
+        chave que cifra os seus dados (criptografia ponta a ponta): ela nunca passa por terceiros,
+        nem pela Google. Nem nós conseguimos ler o que você guarda.
+      </p>
+    </div>
   );
 }
 

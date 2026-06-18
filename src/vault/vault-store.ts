@@ -43,8 +43,8 @@ interface VaultStore {
   syncing: boolean;
 
   init: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, captchaToken?: string | null) => Promise<{ needsConfirmation: boolean }>;
+  signIn: (email: string, password: string, captchaToken?: string | null) => Promise<void>;
   signOut: () => Promise<void>;
   unlock: (password: string) => Promise<void>;
   unlockWithRecovery: (code: string) => Promise<void>;
@@ -148,8 +148,8 @@ export const useVault = create<VaultStore>((set, get) => {
       });
     },
 
-    async signUp(email, password) {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+    async signUp(email, password, captchaToken) {
+      const { data, error } = await supabase.auth.signUp({ email, password, options: captchaToken ? { captchaToken } : undefined });
       if (error) throw error;
       if (!data.session) return { needsConfirmation: true };
       // Confirmação de e-mail desligada → já tem sessão; cria o cofre agora.
@@ -169,8 +169,8 @@ export const useVault = create<VaultStore>((set, get) => {
       return { needsConfirmation: false };
     },
 
-    async signIn(email, password) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    async signIn(email, password, captchaToken) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password, options: captchaToken ? { captchaToken } : undefined });
       if (error) throw error;
       const user = data.user;
       const server = await fetchVaultMeta(user.id);

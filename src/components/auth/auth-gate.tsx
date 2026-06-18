@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useVault } from "@/vault/vault-store";
-import { AuthShell, Field, SubmitButton, ErrorText, LinkButton } from "./auth-shell";
+import { AuthShell, Field, SubmitButton, ErrorText, LinkButton, SecurityNote } from "./auth-shell";
+import { Turnstile, type TurnstileHandle } from "./turnstile";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
@@ -13,6 +14,7 @@ function msg(e: unknown, fallback: string): string {
   if (/should be at least|Password/i.test(m)) return "Senha muito curta (mínimo 6 caracteres).";
   if (/signups? not allowed|signups? are disabled|signup.*disabled/i.test(m))
     return "O cadastro está fechado no momento. Em breve abrimos — fique de olho.";
+  if (/captcha/i.test(m)) return "Verificação de segurança falhou. Recarregue a página e tente de novo.";
   return fallback;
 }
 
@@ -55,13 +57,15 @@ function Login({ onSignup }: { onSignup: () => void }) {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErr("");
     setLoading(true);
     try {
-      await signIn(email.trim(), password);
+      const captchaToken = await turnstileRef.current?.getToken();
+      await signIn(email.trim(), password, captchaToken);
       track("login");
     } catch (e2) {
       setErr(msg(e2, "Não foi possível entrar."));
@@ -74,7 +78,8 @@ function Login({ onSignup }: { onSignup: () => void }) {
     setErr("");
     if (!email.trim()) return setErr("Digite seu e-mail primeiro.");
     try {
-      await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + "/app" });
+      const captchaToken = await turnstileRef.current?.getToken();
+      await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin + "/app", captchaToken: captchaToken ?? undefined });
       setResetSent(true);
     } catch (e2) {
       setErr(msg(e2, "Não foi possível enviar o e-mail."));
@@ -103,11 +108,13 @@ function Login({ onSignup }: { onSignup: () => void }) {
             <ErrorText>{err}</ErrorText>
             <Field label="E-mail" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <Field label="Senha" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Turnstile ref={turnstileRef} />
             <SubmitButton loading={loading}>Entrar</SubmitButton>
             <div className="text-center mt-3 text-[12.5px]">
               <LinkButton onClick={forgot}>Esqueci minha senha</LinkButton>
             </div>
           </form>
+          <SecurityNote />
         </>
       )}
     </AuthShell>
@@ -123,6 +130,7 @@ function Signup({ onLogin }: { onLogin: () => void }) {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [sentConfirm, setSentConfirm] = useState(false);
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +140,8 @@ function Signup({ onLogin }: { onLogin: () => void }) {
     if (!consent) return setErr("Pra criar a conta, aceite a Política de Privacidade.");
     setLoading(true);
     try {
-      const { needsConfirmation } = await signUp(email.trim(), password);
+      const captchaToken = await turnstileRef.current?.getToken();
+      const { needsConfirmation } = await signUp(email.trim(), password, captchaToken);
       track("signup");
       if (needsConfirmation) setSentConfirm(true);
     } catch (e2) {
@@ -184,8 +193,10 @@ function Signup({ onLogin }: { onLogin: () => void }) {
             <PrivacyLink label="Política de Privacidade" className="text-accent hover:underline font-medium" />.
           </span>
         </div>
+        <Turnstile ref={turnstileRef} />
         <SubmitButton loading={loading}>Criar conta</SubmitButton>
       </form>
+      <SecurityNote />
     </AuthShell>
   );
 }
