@@ -3,13 +3,12 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
-import { useProjection } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
+import { useFireTarget } from "@/hooks/use-fire-target";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { CLASS, nameById } from "@/domain/taxonomy";
-import { fireNumber } from "@/finance/fire";
 import { upcomingBills } from "@/domain/bills";
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
@@ -50,10 +49,10 @@ export function MonthlyReport({ month }: { month: string }) {
   const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
   const rates = useRates((s) => s.rates);
-  const proj = useProjection();
   const tax = useTaxonomy();
   const pat = usePatrimonio();
   const bud = useBudget();
+  const fire = useFireTarget();
 
   const v = useMemo(() => {
     if (!pat || !bud) return null;
@@ -79,12 +78,10 @@ export function MonthlyReport({ month }: { month: string }) {
     const caixa = pat.assets.filter((a) => a.classId === CLASS.caixa).reduce((s, a) => s + conv(a.amount, a.currency), 0);
     const reserveMonths = totalExp > 0 ? caixa / totalExp : null;
 
-    const expMonths = new Set(bud.expenses.map((e) => e.month));
-    const annualExp = expMonths.size > 0
-      ? (proj.annualExpensesOverride ?? (bud.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0) / expMonths.size) * 12)
-      : 0;
-    const target = fireNumber(annualExp, proj.withdrawalRate);
-    const fireProgress = annualExp > 0 && Number.isFinite(target) && target > 0 ? (netWorth / target) * 100 : null;
+    // Número da independência — fonte única (idêntico às abas Projeção e Liberdade).
+    const target = fire?.independenceNumber ?? Infinity;
+    const fireProgress =
+      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (netWorth / target) * 100 : null;
 
     const bills = upcomingBills(bud.expenses, todayISO()).slice(0, 10).map((b) => ({
       name: b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized"),
@@ -93,7 +90,7 @@ export function MonthlyReport({ month }: { month: string }) {
     }));
 
     return { totalAssets, totalLiab, netWorth, totalExp, totalInc, saldo, savingsRate, byCat, reserveMonths, fireProgress, bills };
-  }, [pat, bud, disp, rates, tax, proj, month, t]);
+  }, [pat, bud, fire, disp, rates, tax, month, t]);
 
   const money = (n: number) => formatMoney(n, disp);
 

@@ -6,10 +6,10 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
-import { useBudget } from "@/hooks/use-budget";
+import { useFireTarget } from "@/hooks/use-fire-target";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
-import { fireNumber, realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
+import { realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
@@ -34,21 +34,6 @@ function useNetWorth(): number {
       data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0) -
       data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0)
     );
-  }, [data, disp, rates]);
-}
-
-/** Gastos anuais derivados do orçamento: média mensal sobre os meses COM lançamento × 12. */
-function useAnnualExpenses(): number {
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = useBudget();
-  return useMemo(() => {
-    if (!data) return 0;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const months = new Set(data.expenses.map((e) => e.month));
-    if (months.size === 0) return 0;
-    const total = data.expenses.reduce((s, e) => s + conv(e.amount, e.currency), 0);
-    return (total / months.size) * 12;
   }, [data, disp, rates]);
 }
 
@@ -196,17 +181,18 @@ export function ProjecaoSummary() {
   const disp = useUI((s) => s.displayCurrency);
   const p = useProjection();
   const netWorth = useNetWorth();
-  const annualExp = useAnnualExpenses();
+  const fire = useFireTarget();
   const v = useMemo(() => {
     const initial = p.initialOverride ?? netWorth;
     const years = Math.max(1, Math.min(60, Math.round(p.years)));
     const b = p.scenarios.base;
     const nominal = projectBalance(initial, b.monthly, b.annualReturn / 100, years);
-    const exp = p.annualExpensesOverride ?? annualExp;
-    const target = fireNumber(exp, p.withdrawalRate);
-    const fireProgress = exp > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
+    // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório).
+    const target = fire?.independenceNumber ?? Infinity;
+    const fireProgress =
+      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
     return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years), fireProgress };
-  }, [netWorth, annualExp, p.initialOverride, p.annualExpensesOverride, p.scenarios, p.annualInflation, p.years, p.withdrawalRate]);
+  }, [netWorth, fire, p.initialOverride, p.scenarios, p.annualInflation, p.years]);
   return (
     <HeaderKpis>
       <HeaderKpi label={t("projecao.finalNominal", { years: v.years })} tone="accent" value={<Money value={v.nominal} currency={disp} />} />
@@ -223,24 +209,29 @@ function FireCard({ portfolio }: { portfolio: number }) {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const p = useProjection();
-  const derivedAnnual = useAnnualExpenses();
-  const annualExp = p.annualExpensesOverride ?? derivedAnnual;
+  // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório): usa o
+  // custo LÍQUIDO (gastos − renda passiva durável) e a mesma janela/taxa.
+  const fire = useFireTarget();
+  const annualExp = fire?.annualCost ?? 0;
+  const coveredByPassive = fire?.coveredByPassive ?? false;
   const swr = p.withdrawalRate;
   const base = p.scenarios.base;
 
-  const target = fireNumber(annualExp, swr);
-  const targetOk = annualExp > 0 && Number.isFinite(target) && target > 0;
+  const target = fire?.independenceNumber ?? Infinity;
+  const targetOk = !!fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0;
   const realRet = realReturn(base.annualReturn, p.annualInflation);
-  const years = targetOk
-    ? yearsToFI({ portfolio, monthlyContribution: base.monthly, realAnnualReturn: realRet, target })
-    : null;
-  const progress = targetOk ? (portfolio / target) * 100 : 0;
+  const years = coveredByPassive
+    ? 0
+    : targetOk
+      ? yearsToFI({ portfolio, monthlyContribution: base.monthly, realAnnualReturn: realRet, target })
+      : null;
+  const progress = coveredByPassive ? 100 : targetOk ? (portfolio / target) * 100 : 0;
   const safeMonthly = safeMonthlyIncome(portfolio, swr);
   const monthlyExp = annualExp / 12;
   const coverage = monthlyExp > 0 ? (safeMonthly / monthlyExp) * 100 : 0;
   const mult = swr > 0 ? 100 / swr : 0;
   const multLabel = mult % 1 === 0 ? mult.toFixed(0) : mult.toFixed(1);
-  const remaining = targetOk ? Math.max(0, target - portfolio) : 0;
+  const remaining = coveredByPassive ? 0 : targetOk ? Math.max(0, target - portfolio) : 0;
   const targetYear = new Date().getFullYear() + (years != null ? Math.ceil(years) : 0);
 
   const expField = (
@@ -284,7 +275,9 @@ function FireCard({ portfolio }: { portfolio: number }) {
           <div className="mt-2.5 text-[clamp(1.9rem,5.5vw,2.7rem)] font-semibold tracking-[-0.035em] tabular leading-none">
             <Money value={target} currency={disp} />
           </div>
-          <p className="text-[12.5px] text-muted mt-2">{t("fire.subtitle", { mult: multLabel })}</p>
+          <p className="text-[12.5px] text-muted mt-2">
+            {coveredByPassive ? t("liberdade.coveredByPassive") : t("fire.subtitle", { mult: multLabel })}
+          </p>
         </div>
         <div className="text-right shrink-0">
           <span className="eyebrow block mb-1.5">{t("fire.timeToFi")}</span>

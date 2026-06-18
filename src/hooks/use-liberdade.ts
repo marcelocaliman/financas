@@ -5,9 +5,10 @@ import { useProjection } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { useSettings } from "@/hooks/use-settings";
+import { useFireTarget, FIRE_DEFAULTS } from "@/hooks/use-fire-target";
 import { convert, type Currency } from "@/money/currency";
 import { CLASS, defaultEligibleClass } from "@/domain/taxonomy";
-import { fireNumber, realReturn, safeMonthlyIncome } from "@/finance/fire";
+import { realReturn, safeMonthlyIncome } from "@/finance/fire";
 import {
   freedomPct as calcFreedomPct,
   yearsOfFreedom as calcYearsOfFreedom,
@@ -18,8 +19,9 @@ import {
   type Streak,
 } from "@/finance/liberdade";
 
-/** Defaults (só ponto de partida — o usuário sobrescreve tudo no Config). */
-export const LIBERDADE_DEFAULTS = { costMonths: 6, reserveMonths: 6, streakMinBalance: 0 };
+/** Defaults (só ponto de partida — o usuário sobrescreve tudo no Config). A janela de custo
+ *  (costMonths) vem da fonte única do número FIRE, p/ Liberdade e Projeção baterem. */
+export const LIBERDADE_DEFAULTS = { costMonths: FIRE_DEFAULTS.costMonths, reserveMonths: 6, streakMinBalance: 0 };
 
 export type MilestoneKind = "wealth" | "reserve";
 export interface Milestone {
@@ -63,8 +65,9 @@ export interface LiberdadeView {
 }
 
 /**
- * Monta a métrica Liberdade reusando Patrimônio (elegível), Orçamento (custo/saldo), Projeção
- * (taxa de retirada, aporte, retorno, inflação) e a config do usuário. Tudo na moeda de exibição.
+ * Monta a métrica Liberdade reusando Patrimônio (elegível), o número FIRE da fonte única
+ * (useFireTarget — mesmo da Projeção/relatório), a Projeção (aporte/retorno/inflação p/ a data
+ * de chegada) e a config do usuário (streak, marcos, reserva). Tudo na moeda de exibição.
  */
 export function useLiberdade(): LiberdadeView | null {
   const disp = useUI((s) => s.displayCurrency);
@@ -74,9 +77,10 @@ export function useLiberdade(): LiberdadeView | null {
   const budget = useBudget();
   const settings = useSettings();
   const proj = useProjection();
+  const fire = useFireTarget();
 
   return useMemo(() => {
-    if (!pat || !budget) return null;
+    if (!pat || !budget || !fire) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const cfg = settings.liberdade ?? {};
     const eligibleClasses = cfg.eligibleClasses ?? {};
@@ -91,38 +95,10 @@ export function useLiberdade(): LiberdadeView | null {
     const eligibleWealth = assetsEligible - liabilities;
     const cash = pat.assets.reduce((s, a) => (a.classId === CLASS.caixa ? s + conv(a.amount, a.currency) : s), 0);
 
-    // Custo de vida: média móvel dos últimos N meses COM lançamento (ou valor-alvo informado).
-    const costMonths = Math.max(1, Math.round(cfg.costMonths ?? LIBERDADE_DEFAULTS.costMonths));
-    const expByMonth = new Map<string, number>();
-    for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
-    const recentMonths = [...expByMonth.keys()].sort((a, b) => b.localeCompare(a)).slice(0, costMonths);
-    const movingMonthlyCost = recentMonths.length
-      ? recentMonths.reduce((s, m) => s + (expByMonth.get(m) ?? 0), 0) / recentMonths.length
-      : 0;
-    const costFromOverride = proj.annualExpensesOverride != null;
-    const annualCost = costFromOverride ? proj.annualExpensesOverride! : movingMonthlyCost * 12;
-    const monthlyCost = annualCost / 12;
+    // Custo + número da independência — FONTE ÚNICA (mesma da Projeção e do relatório).
+    const { annualCost, monthlyCost, costFromOverride, passiveAnnual, netAnnualCost,
+      withdrawalRate: swr, independenceNumber, ready, coveredByPassive } = fire;
 
-    // Renda passiva EXTERNA abate o custo: a carteira só precisa cobrir o LÍQUIDO. As categorias
-    // que contam são do usuário (default: aluguel). Dividendos/juros NÃO entram (vêm da carteira
-    // contada; a regra dos 4% já os assume). E se o usuário INCLUI Imóveis na elegibilidade, o
-    // aluguel NÃO é descontado — senão o imóvel contaria duas vezes (valor + renda).
-    const passiveCats = new Set(cfg.passiveCategories ?? ["aluguel"]);
-    const rentByMonth = new Map<string, number>();
-    for (const i of budget.incomes) {
-      if (passiveCats.has(i.categoryId)) rentByMonth.set(i.month, (rentByMonth.get(i.month) ?? 0) + conv(i.amount, i.currency));
-    }
-    const rentMonths = [...rentByMonth.keys()].sort((a, b) => b.localeCompare(a)).slice(0, costMonths);
-    const passiveMonthly = rentMonths.length ? rentMonths.reduce((s, m) => s + (rentByMonth.get(m) ?? 0), 0) / rentMonths.length : 0;
-    const passiveAnnual = isEligible(CLASS.imoveis) ? 0 : passiveMonthly * 12;
-    const netAnnualCost = Math.max(0, annualCost - passiveAnnual);
-
-    // Núcleo FIRE (reuso) sobre o custo LÍQUIDO.
-    const swr = proj.withdrawalRate;
-    const independenceNumber = fireNumber(netAnnualCost, swr); // 0 se coberto; Infinity se swr ≤ 0
-    // Pronto só com base sólida: custo > 0 E (já coberto pela renda OU alvo finito — taxa > 0).
-    const ready = annualCost > 0 && (netAnnualCost <= 0 || Number.isFinite(independenceNumber));
-    const coveredByPassive = ready && netAnnualCost <= 0; // a renda passiva já cobre o custo
     const finiteTarget = Number.isFinite(independenceNumber) && independenceNumber > 0;
     const freedomPct = coveredByPassive ? 100 : calcFreedomPct(eligibleWealth, independenceNumber);
     const reached = coveredByPassive || (finiteTarget && eligibleWealth >= independenceNumber);
@@ -140,7 +116,9 @@ export function useLiberdade(): LiberdadeView | null {
         : null;
     const arrival = months == null ? null : { months, label: addMonthsLabel(new Date(), months) };
 
-    // Streak de constância: saldo (receitas − gastos) por mês.
+    // Streak de constância: saldo (receitas − gastos) por mês (TODOS os meses, não a janela).
+    const expByMonth = new Map<string, number>();
+    for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
     const incByMonth = new Map<string, number>();
     for (const i of budget.incomes) incByMonth.set(i.month, (incByMonth.get(i.month) ?? 0) + conv(i.amount, i.currency));
     const allMonths = new Set<string>([...expByMonth.keys(), ...incByMonth.keys()]);
@@ -183,5 +161,5 @@ export function useLiberdade(): LiberdadeView | null {
       remaining, reached, arrival, streak, reserve, milestones,
       passiveAnnual, netAnnualCost, coveredByPassive,
     };
-  }, [pat, budget, settings, proj, disp, base, rates]);
+  }, [pat, budget, fire, settings, proj, disp, base, rates]);
 }
