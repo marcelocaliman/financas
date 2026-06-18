@@ -84,37 +84,75 @@
     a.addEventListener("click", function () { track("cta_click"); });
   });
 
-  // Painel do hero "ganha vida": count-up dos números + dispara as animações CSS
-  // (anel, barras, traço do gráfico, cards) quando o painel entra na viewport.
+  // Painel do hero "ganha vida": count-up inicial e, em seguida, MODO VIVO contínuo —
+  // o patrimônio cresce organicamente (random-walk com viés de alta + rajadas, ritmo
+  // variável: às vezes devagar, às vezes rápido) e alguns KPIs oscilam de leve. Pausa
+  // quando a aba/seção não está visível. Respeita prefers-reduced-motion (estático).
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   function fmtNum(v, dec) {
     return v.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
-  function countUp() {
+
+  var liveEls = [], livePaused = false, heroVisible = true, liveStarted = false;
+  function updatePaused() { livePaused = (typeof document.hidden !== "undefined" && document.hidden) || !heroVisible; }
+
+  function startCountUp() {
     [].forEach.call(document.querySelectorAll("[data-count]"), function (el) {
-      var target = parseFloat(el.getAttribute("data-count"));
+      var base = parseFloat(el.getAttribute("data-count"));
       var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
-      if (isNaN(target)) return;
-      if (reduceMotion) { el.textContent = fmtNum(target, dec); return; }
+      var live = el.getAttribute("data-live"); // "grow" | "jitter" | null
+      if (isNaN(base)) return;
+      if (reduceMotion) { el.textContent = fmtNum(base, dec); return; }
       var dur = 1400, start = null;
       function step(ts) {
         if (start === null) start = ts;
         var p = Math.min(1, (ts - start) / dur);
         var e = 1 - Math.pow(1 - p, 3); // easeOutCubic
-        el.textContent = fmtNum(target * e, dec);
-        if (p < 1) requestAnimationFrame(step); else el.textContent = fmtNum(target, dec);
+        el.textContent = fmtNum(base * e, dec);
+        if (p < 1) requestAnimationFrame(step);
+        else {
+          el.textContent = fmtNum(base, dec);
+          if (live) liveEls.push({ el: el, base: base, dec: dec, grow: live === "grow", value: base, vel: 0 });
+        }
       }
       requestAnimationFrame(step);
     });
+    if (!reduceMotion && !liveStarted) { liveStarted = true; liveLoop(); }
   }
+
+  function liveLoop() {
+    if (!livePaused) {
+      for (var i = 0; i < liveEls.length; i++) {
+        var o = liveEls[i], amp = o.grow ? 1 : 0.5;
+        o.vel += (Math.random() - 0.5) * o.base * 0.0001 * amp;       // ruído
+        if (o.grow) o.vel += o.base * 0.000006;                       // viés de alta (só patrimônio)
+        o.vel *= 0.86;                                                 // amortecimento
+        if (Math.random() < 0.03) o.vel += Math.random() * o.base * 0.0008 * amp; // rajada ocasional
+        o.value += o.vel;
+        var floor = o.base * (o.grow ? 0.997 : 0.985);
+        var ceil = o.base * (o.grow ? 1.08 : 1.02);
+        if (o.value < floor) { o.value = floor; o.vel = Math.abs(o.vel) * 0.4; }
+        if (o.value > ceil) { o.value = ceil; o.vel = -Math.abs(o.vel) * 0.4; }
+        o.el.textContent = fmtNum(o.value, o.dec);
+      }
+    }
+    setTimeout(liveLoop, 70 + Math.random() * 150); // ritmo variável
+  }
+
+  document.addEventListener("visibilitychange", updatePaused);
+
   var heroFrame = document.querySelector(".hero .frame");
   if (heroFrame) {
-    var fire = function () { heroFrame.classList.add("animate"); countUp(); };
+    var begin = function () { heroFrame.classList.add("animate"); startCountUp(); };
     if ("IntersectionObserver" in window) {
+      var startedAnim = false;
       var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { if (en.isIntersecting) { fire(); io.disconnect(); } });
+        entries.forEach(function (en) {
+          heroVisible = en.isIntersecting; updatePaused();
+          if (en.isIntersecting && !startedAnim) { startedAnim = true; begin(); }
+        });
       }, { threshold: 0.2 });
       io.observe(heroFrame);
-    } else { fire(); }
+    } else { begin(); }
   }
 })();
