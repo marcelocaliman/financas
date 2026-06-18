@@ -39,7 +39,7 @@ export interface LiberdadeView {
   netWorth: number;
   monthlyCost: number;
   annualCost: number;
-  costFromOverride: boolean;
+  costFromTarget: boolean;
   withdrawalRate: number;
   independenceNumber: number;
   /** % rumo à independência (NÃO capado — pode passar de 100). */
@@ -83,7 +83,7 @@ export function useLiberdade(): LiberdadeView | null {
 
     // Patrimônio (total/elegível/caixa) + custo + número da independência — FONTE ÚNICA,
     // a MESMA da Projeção e do relatório (não recalcular aqui, senão volta a divergir).
-    const { eligibleWealth, netWorth, cash, annualCost, monthlyCost, costFromOverride,
+    const { eligibleWealth, netWorth, cash, annualCost, monthlyCost, budgetMonthlyCost, costFromTarget,
       passiveAnnual, netAnnualCost, withdrawalRate: swr, independenceNumber, ready, coveredByPassive } = fire;
 
     const finiteTarget = Number.isFinite(independenceNumber) && independenceNumber > 0;
@@ -116,11 +116,13 @@ export function useLiberdade(): LiberdadeView | null {
 
     // Reserva de emergência: caixa ÷ custo mensal ≥ X meses.
     const reserveMonths = Math.max(1, Math.round(cfg.reserveMonths ?? LIBERDADE_DEFAULTS.reserveMonths));
-    const reserveTarget = monthlyCost * reserveMonths;
+    // Reserva de emergência usa o custo ATUAL (do orçamento), não o alvo futuro — é p/ cobrir
+    // imprevistos da vida de HOJE.
+    const reserveTarget = budgetMonthlyCost * reserveMonths;
     const reserve = {
       current: cash,
       target: reserveTarget,
-      monthsCovered: monthlyCost > 0 ? cash / monthlyCost : 0,
+      monthsCovered: budgetMonthlyCost > 0 ? cash / budgetMonthlyCost : 0,
       complete: reserveTarget > 0 && cash >= reserveTarget,
     };
 
@@ -143,7 +145,7 @@ export function useLiberdade(): LiberdadeView | null {
     ];
 
     return {
-      ready, disp, eligibleWealth, netWorth, monthlyCost, annualCost, costFromOverride,
+      ready, disp, eligibleWealth, netWorth, monthlyCost, annualCost, costFromTarget,
       withdrawalRate: swr, independenceNumber, freedomPct, yearsOfFreedom, safeMonthly, coverage,
       remaining, reached, arrival, streak, reserve, milestones,
       passiveAnnual, netAnnualCost, coveredByPassive,

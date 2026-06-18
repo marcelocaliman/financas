@@ -7,6 +7,7 @@ import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useFireTarget } from "@/hooks/use-fire-target";
+import { actions } from "@/data/actions";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
 import { realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
@@ -47,10 +48,10 @@ export default function Projecao() {
   const netWorth = useNetWorth();
 
   const override = p.initialOverride;
-  // Trocar a moeda de exibição reseta os overrides em valor (eles vivem na moeda atual).
+  // Trocar a moeda de exibição reseta o saldo inicial customizado (vive na moeda atual; o
+  // custo-alvo NÃO precisa — fica salvo em moeda principal).
   useEffect(() => {
     p.setInitialOverride(null);
-    p.setAnnualExpensesOverride(null);
   }, [disp]); // eslint-disable-line react-hooks/exhaustive-deps
   const initial = override ?? netWorth;
   const years = Math.max(1, Math.min(60, Math.round(p.years)));
@@ -209,6 +210,8 @@ export function ProjecaoSummary() {
 function FireCard() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
+  const baseCur = useUI((s) => s.baseCurrency);
+  const rates = useRates((s) => s.rates);
   const p = useProjection();
   // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório): usa o
   // custo LÍQUIDO (gastos − renda passiva durável) e a mesma janela/taxa.
@@ -217,6 +220,9 @@ function FireCard() {
   // 4% só vale sobre o que dá pra sacar; por isso difere do patrimônio total da curva de projeção.
   const portfolio = fire?.eligibleWealth ?? 0;
   const annualExp = fire?.annualCost ?? 0;
+  const monthlyPlan = fire?.monthlyCost ?? 0;       // custo de PLANEJAMENTO (alvo ou orçamento)
+  const budgetMonthly = fire?.budgetMonthlyCost ?? 0; // custo ATUAL do orçamento (referência)
+  const costFromTarget = fire?.costFromTarget ?? false;
   const coveredByPassive = fire?.coveredByPassive ?? false;
   const swr = p.withdrawalRate;
   const base = p.scenarios.base;
@@ -238,13 +244,16 @@ function FireCard() {
   const remaining = coveredByPassive ? 0 : targetOk ? Math.max(0, target - portfolio) : 0;
   const targetYear = new Date().getFullYear() + (years != null ? Math.ceil(years) : 0);
 
+  // Custo de vida na independência: editável e PERSISTIDO (moeda principal), com o custo atual
+  // do orçamento sempre visível como referência. Vazio/igual = usa o do orçamento.
+  const refStr = `${t("fire.currentCost")}: ${formatMoney(budgetMonthly, disp)}/${t("fire.mo")}`;
   const expField = (
     <Field
-      label={`${t("fire.annualExpenses")} (${disp})`}
-      value={Math.round(annualExp)}
-      onChange={(v) => p.setAnnualExpensesOverride(v)}
-      hint={p.annualExpensesOverride != null ? t("projecao.custom") : t("fire.fromBudget")}
-      onReset={p.annualExpensesOverride != null ? () => p.setAnnualExpensesOverride(null) : undefined}
+      label={`${t("fire.targetCost")} (${disp}/${t("fire.mo")})`}
+      value={Math.round(monthlyPlan)}
+      onChange={(v) => actions.setLiberdade({ targetMonthlyCost: convert(v, disp, baseCur, rates) })}
+      hint={costFromTarget ? `${t("projecao.custom")} · ${refStr}` : refStr}
+      onReset={costFromTarget ? () => actions.setLiberdade({ targetMonthlyCost: 0 }) : undefined}
     />
   );
   const swrField = <Field label={t("fire.withdrawalRate")} value={swr} onChange={(v) => p.set({ withdrawalRate: v })} suffix="%" />;

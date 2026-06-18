@@ -253,6 +253,8 @@
     "remaining": "Ancora da raggiungere",
     "annualExpenses": "Spese annue",
     "fromBudget": "dal budget",
+    "targetCost": "Costo della vita all'indipendenza",
+    "currentCost": "attuale (budget)",
     "withdrawalRate": "Tasso di prelievo",
     "empty": "Aggiungi le tue spese nel Budget (o inseriscile sotto) per vedere quanto patrimonio sosterrebbe il tuo tenore di vita.",
     "hint": "Stima in valore di oggi (rendimento reale dello scenario base). La regola del 4% è un punto di partenza, non una consulenza d'investimento."
@@ -300,6 +302,8 @@
       "monthsUnit": "mesi",
       "reserveMonths": "Riserva (mesi di costo)",
       "streakMin": "Saldo minimo della serie",
+      "targetCost": "Costo della vita all'indipendenza (mese)",
+      "targetCostHint": "Vuoto/0 = usa il tuo costo attuale (dal budget). Imposta un valore mensile per pianificare la libertà sul tuo costo della vita FUTURO, diverso da oggi (es. andare a vivere da solo, sposarti, figli).",
       "eligible": "Patrimonio idoneo",
       "eligibleHint": "Quali classi contano per la tua libertà. Immobili e Beni sono disattivati di default (non generano reddito prelevabile); attiva ciò che rende (es. un immobile in affitto).",
       "passive": "Reddito passivo esterno",

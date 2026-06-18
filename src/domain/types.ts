@@ -105,8 +105,11 @@ export interface Dividend {
 export interface LiberdadeConfig {
   /** Quais CLASSES de ativo contam como patrimônio elegível (classId → conta?). Ausente = conta. */
   eligibleClasses?: Record<string, boolean>;
-  /** Janela (meses) da média móvel do custo de vida. Ausente = default. */
+  /** Janela (meses) da média móvel do custo de vida ATUAL (do orçamento). Ausente = default. */
   costMonths?: number;
+  /** Custo de vida MENSAL alvo na independência (moeda principal). Ausente/≤0 = usa o do
+   *  orçamento. Permite planejar pra um custo futuro diferente do de hoje (ex.: sair de casa). */
+  targetMonthlyCost?: number;
   /** Meses de custo que definem a reserva de emergência "completa". Ausente = default. */
   reserveMonths?: number;
   /** Marcos de patrimônio (valores na moeda principal) — limiares editáveis. */

@@ -100,6 +100,17 @@ export function LiberdadeSettings() {
             <NumInput value={streakMin} onCommit={(v) => actions.setLiberdade({ streakMinBalance: v })} suffix={sym} />
           </label>
         </div>
+        <div className="mt-4 pt-4 border-t border-border">
+          <span className="eyebrow block mb-1.5">{t("liberdade.cfg.targetCost")}</span>
+          <div className="max-w-[260px]">
+            <NumInput
+              value={cfg.targetMonthlyCost ?? 0}
+              onCommit={(v) => actions.setLiberdade({ targetMonthlyCost: v })}
+              suffix={`${sym}/${t("liberdade.mo")}`}
+            />
+          </div>
+          <p className="text-[11.5px] text-faint mt-1.5 leading-relaxed max-w-md">{t("liberdade.cfg.targetCostHint")}</p>
+        </div>
       </Card>
 
       {/* Patrimônio elegível — toggle por classe */}

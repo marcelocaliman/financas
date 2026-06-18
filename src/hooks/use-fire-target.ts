@@ -16,10 +16,15 @@ export interface FireTarget {
   /** Tem base suficiente p/ a métrica fazer sentido (custo > 0 e alvo finito ou já coberto). */
   ready: boolean;
   disp: Currency;
-  /** Custo anual BRUTO (override em valor OU média móvel dos últimos N meses × 12). */
+  /** Custo anual BRUTO de PLANEJAMENTO usado no número FIRE = custo-alvo na independência (se
+   *  o usuário definiu um) OU o do orçamento (média móvel dos últimos N meses × 12). */
   annualCost: number;
   monthlyCost: number;
-  costFromOverride: boolean;
+  /** True se há um custo-alvo definido (diferente do orçamento atual). */
+  costFromTarget: boolean;
+  /** Custo de vida ATUAL do orçamento (média móvel) — referência; sempre calculado. */
+  budgetMonthlyCost: number;
+  budgetAnnualCost: number;
   /** Renda passiva durável anual descontável (aluguel; 0 se Imóveis conta como patrimônio). */
   passiveAnnual: number;
   /** Custo anual LÍQUIDO que a carteira precisa cobrir = max(0, bruto − passiva). */
@@ -50,6 +55,7 @@ export interface FireTarget {
  */
 export function useFireTarget(): FireTarget | null {
   const disp = useUI((s) => s.displayCurrency);
+  const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const pat = usePatrimonio();
   const budget = useBudget();
@@ -71,17 +77,24 @@ export function useFireTarget(): FireTarget | null {
     const eligibleWealth = assetsEligible - liabilities;
     const cash = pat.assets.reduce((s, a) => (a.classId === CLASS.caixa ? s + conv(a.amount, a.currency) : s), 0);
 
-    // Custo de vida: média móvel dos últimos N meses COM lançamento (ou valor-alvo informado).
+    // Custo de vida ATUAL (do orçamento): média móvel dos últimos N meses COM lançamento.
     const costMonths = Math.max(1, Math.round(cfg.costMonths ?? FIRE_DEFAULTS.costMonths));
     const expByMonth = new Map<string, number>();
     for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
     const recentMonths = [...expByMonth.keys()].sort((a, b) => b.localeCompare(a)).slice(0, costMonths);
-    const movingMonthlyCost = recentMonths.length
+    const budgetMonthlyCost = recentMonths.length
       ? recentMonths.reduce((s, m) => s + (expByMonth.get(m) ?? 0), 0) / recentMonths.length
       : 0;
-    const costFromOverride = proj.annualExpensesOverride != null;
-    const annualCost = costFromOverride ? proj.annualExpensesOverride! : movingMonthlyCost * 12;
-    const monthlyCost = annualCost / 12;
+    const budgetAnnualCost = budgetMonthlyCost * 12;
+
+    // Custo de PLANEJAMENTO (o que o FIRE mira): o custo-alvo na independência, se o usuário
+    // definiu um (guardado em moeda PRINCIPAL → converte p/ exibição); senão, o do orçamento.
+    // Permite mirar num custo FUTURO diferente do de hoje (ex.: quando sair de casa) — vale pra
+    // qualquer cenário de qualquer usuário; quem não define, segue no custo atual.
+    const targetSet = (cfg.targetMonthlyCost ?? 0) > 0;
+    const monthlyCost = targetSet ? convert(cfg.targetMonthlyCost!, base, disp, rates) : budgetMonthlyCost;
+    const annualCost = monthlyCost * 12;
+    const costFromTarget = targetSet;
 
     // Renda passiva EXTERNA (default: aluguel) abate o custo. Dividendos/juros NÃO entram (vêm
     // da carteira contada; a regra dos 4% já os assume).
@@ -101,9 +114,9 @@ export function useFireTarget(): FireTarget | null {
     const coveredByPassive = ready && netAnnualCost <= 0;
 
     return {
-      ready, disp, annualCost, monthlyCost, costFromOverride,
+      ready, disp, annualCost, monthlyCost, costFromTarget, budgetMonthlyCost, budgetAnnualCost,
       passiveAnnual, netAnnualCost, withdrawalRate, independenceNumber, coveredByPassive,
       netWorth, eligibleWealth, cash,
     };
-  }, [pat, budget, settings, proj, disp, rates]);
+  }, [pat, budget, settings, proj, disp, base, rates]);
 }

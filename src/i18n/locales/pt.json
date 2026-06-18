@@ -253,6 +253,8 @@
     "remaining": "Falta juntar",
     "annualExpenses": "Gastos anuais",
     "fromBudget": "do orçamento",
+    "targetCost": "Custo de vida na independência",
+    "currentCost": "atual (orçamento)",
     "withdrawalRate": "Taxa de retirada",
     "empty": "Adicione seus gastos no Orçamento (ou informe abaixo) para ver quanto patrimônio sustentaria seu padrão de vida.",
     "hint": "Estimativa em valor de hoje (retorno real do cenário-base). A regra dos 4% é um ponto de partida, não recomendação de investimento."
@@ -300,6 +302,8 @@
       "monthsUnit": "meses",
       "reserveMonths": "Reserva (meses de custo)",
       "streakMin": "Saldo mínimo do streak",
+      "targetCost": "Custo de vida na independência (mês)",
+      "targetCostHint": "Vazio/0 = usa o seu custo atual (do orçamento). Defina um valor mensal para planejar a liberdade pelo seu custo de vida FUTURO, diferente do de hoje (ex.: quando sair de casa, casar ou ter filhos).",
       "eligible": "Patrimônio elegível",
       "eligibleHint": "Quais classes contam para a sua liberdade. Imóveis e Bens vêm desligados (não geram renda sacável); ligue o que rende (ex.: um imóvel de aluguel).",
       "passive": "Renda passiva externa",

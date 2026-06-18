@@ -253,6 +253,8 @@
     "remaining": "Still to go",
     "annualExpenses": "Annual expenses",
     "fromBudget": "from budget",
+    "targetCost": "Cost of living at independence",
+    "currentCost": "current (budget)",
     "withdrawalRate": "Withdrawal rate",
     "empty": "Add your spending in Budget (or enter it below) to see how much wealth would sustain your lifestyle.",
     "hint": "Estimate in today's money (real return of the base scenario). The 4% rule is a starting point, not investment advice."
@@ -300,6 +302,8 @@
       "monthsUnit": "months",
       "reserveMonths": "Reserve (months of cost)",
       "streakMin": "Streak minimum balance",
+      "targetCost": "Cost of living at independence (mo.)",
+      "targetCostHint": "Empty/0 = uses your current cost (from the budget). Set a monthly amount to plan freedom around your FUTURE cost of living, different from today's (e.g. moving out, marriage, kids).",
       "eligible": "Eligible wealth",
       "eligibleHint": "Which classes count toward your freedom. Real estate and physical goods are off by default (they don't produce drawable income); turn on what does (e.g. a rental property).",
       "passive": "External passive income",

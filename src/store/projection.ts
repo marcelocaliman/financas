@@ -23,12 +23,9 @@ interface ProjectionState {
   withdrawalRate: number;
   /** Valor inicial customizado (null = usa o patrimônio atual). Não persiste. */
   initialOverride: number | null;
-  /** Gastos anuais customizados p/ FIRE (null = derivado do orçamento). NÃO persiste (é valor). */
-  annualExpensesOverride: number | null;
   setScenario: (key: ScenarioKey, patch: Partial<Scenario>) => void;
   set: (patch: Partial<Pick<ProjectionState, "annualInflation" | "years" | "withdrawalRate">>) => void;
   setInitialOverride: (v: number | null) => void;
-  setAnnualExpensesOverride: (v: number | null) => void;
 }
 
 const DEFAULTS: Pick<ProjectionState, "scenarios" | "annualInflation" | "years" | "withdrawalRate"> = {
@@ -47,12 +44,10 @@ export const useProjection = create<ProjectionState>()(
     (set) => ({
       ...DEFAULTS,
       initialOverride: null,
-      annualExpensesOverride: null,
       setScenario: (key, patch) =>
         set((s) => ({ scenarios: { ...s.scenarios, [key]: { ...s.scenarios[key], ...patch } } })),
       set: (patch) => set(patch),
       setInitialOverride: (initialOverride) => set({ initialOverride }),
-      setAnnualExpensesOverride: (annualExpensesOverride) => set({ annualExpensesOverride }),
     }),
     {
       name: "financas-projection",
