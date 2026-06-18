@@ -11,6 +11,7 @@ import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useUI } from "@/store/ui";
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 /** Casca: menu (topo ou lateral) + página editorial única. A Config entra NO LUGAR do
@@ -32,6 +33,11 @@ export function AppShell() {
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
   useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)
+
+  // Analytics próprio: 1 evento "app_open" por sessão de app (anônimo, sem dado financeiro).
+  useEffect(() => {
+    track("app_open");
+  }, []);
 
   useEffect(() => {
     const dark = theme === "dark";

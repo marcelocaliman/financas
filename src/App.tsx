@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { useVault } from "@/vault/vault-store";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
+import { useAdminUI } from "@/store/admin-ui";
+import { useIsAdmin } from "@/admin/use-admin";
+import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
 import { AppShell } from "@/components/layout/app-shell";
@@ -18,6 +21,8 @@ export default function App() {
   const status = useVault((s) => s.status);
   const init = useVault((s) => s.init);
   const theme = useUI((s) => s.theme);
+  const adminOpen = useAdminUI((s) => s.adminOpen);
+  const isAdmin = useIsAdmin();
 
   useEffect(() => {
     void init();
@@ -47,6 +52,9 @@ export default function App() {
 
   if (status === "loading") return <Splash />;
   if (status !== "unlocked") return <AuthGate />;
+
+  // Painel super-admin (só pro dono): substitui o app enquanto aberto.
+  if (adminOpen && isAdmin) return <AdminApp />;
 
   return (
     <>

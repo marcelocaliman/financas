@@ -7,6 +7,7 @@ import {
   Lock,
   LogOut,
   ChevronDown,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +16,8 @@ import { CurrencyMenu } from "./currency-toggle";
 import { goToSection, useScrolled } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
+import { useAdminUI } from "@/store/admin-ui";
+import { useIsAdmin } from "@/admin/use-admin";
 import { cn } from "@/lib/utils";
 
 function nameFromEmail(email: string | null): string {
@@ -97,6 +100,8 @@ function UserMenu() {
   const signOut = useVault((s) => s.signOut);
   const openConfig = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
+  const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
+  const isAdmin = useIsAdmin();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -136,6 +141,17 @@ function UserMenu() {
               {email ? <div className="text-[12px] text-muted truncate mt-0.5">{email}</div> : null}
             </div>
             <div className="p-1.5">
+              {isAdmin ? (
+                <MenuItem
+                  icon={ShieldCheck}
+                  onClick={() => {
+                    setOpen(false);
+                    setAdminOpen(true);
+                  }}
+                >
+                  Painel admin
+                </MenuItem>
+              ) : null}
               <MenuItem
                 icon={Settings}
                 active={configOpen}

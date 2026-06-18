@@ -31,4 +31,26 @@
 
   var y = document.getElementById("year");
   if (y) y.textContent = String(new Date().getFullYear());
+
+  // Analytics próprio (privacy-first): mesmo coletor /api/track do app, sem cookie e
+  // sem PII. O anon_id é de 1ª-parte (localStorage "nf-anon") e é compartilhado com o
+  // app — costura o funil visita → cadastro sem identificar a pessoa.
+  function anonId() {
+    try {
+      var id = localStorage.getItem("nf-anon");
+      if (!id) { id = (String(Math.random()) + String(Math.random())).replace(/\D/g, "").slice(0, 24); localStorage.setItem("nf-anon", id); }
+      return id;
+    } catch (e) { return "anon"; }
+  }
+  function track(name) {
+    try {
+      var body = JSON.stringify({ n: name, s: "landing", a: anonId(), l: navigator.language || null, path: location.pathname, p: {} });
+      if (navigator.sendBeacon) navigator.sendBeacon("/api/track", new Blob([body], { type: "application/json" }));
+      else fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body: body, keepalive: true });
+    } catch (e) {}
+  }
+  track("landing_view");
+  [].forEach.call(document.querySelectorAll('a[href^="/app"]'), function (a) {
+    a.addEventListener("click", function () { track("cta_click"); });
+  });
 })();

@@ -3,6 +3,7 @@ import { useVault } from "@/vault/vault-store";
 import { AuthShell, Field, SubmitButton, ErrorText, LinkButton, SocialRow } from "./auth-shell";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { supabase } from "@/lib/supabase";
+import { track } from "@/lib/analytics";
 
 function msg(e: unknown, fallback: string): string {
   const m = e instanceof Error ? e.message : String(e);
@@ -61,6 +62,7 @@ function Login({ onSignup }: { onSignup: () => void }) {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
+      track("login");
     } catch (e2) {
       setErr(msg(e2, "Não foi possível entrar."));
     } finally {
@@ -132,6 +134,7 @@ function Signup({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
     try {
       const { needsConfirmation } = await signUp(email.trim(), password);
+      track("signup");
       if (needsConfirmation) setSentConfirm(true);
     } catch (e2) {
       setErr(msg(e2, "Não foi possível criar a conta."));

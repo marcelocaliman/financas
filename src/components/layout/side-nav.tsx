@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
-  ChevronDown, ChevronsDownUp, ChevronsUpDown, type LucideIcon,
+  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
@@ -11,6 +11,8 @@ import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
+import { useAdminUI } from "@/store/admin-ui";
+import { useIsAdmin } from "@/admin/use-admin";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { convert, type Currency } from "@/money/currency";
@@ -83,6 +85,8 @@ export function SideNav({ active }: { active: string }) {
   const toggleTheme = useUI((s) => s.toggleTheme);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
+  const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
+  const isAdmin = useIsAdmin();
   const email = useVault((s) => s.email);
   const lock = useVault((s) => s.lock);
   const signOut = useVault((s) => s.signOut);
@@ -240,6 +244,7 @@ export function SideNav({ active }: { active: string }) {
               </IconBtn>
               <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
               <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
+              {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
               <div className="h-px w-7 bg-border my-0.5" />
               <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold" title={email ?? ""}>{initial}</span>
               <IconBtn onClick={() => void signOut()} label={t("menu.logout")}><LogOut size={16} /></IconBtn>
@@ -253,6 +258,7 @@ export function SideNav({ active }: { active: string }) {
                 </IconBtn>
                 <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                 <div className="flex-1" />
+                {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
                 <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
               </div>
               <div className="flex items-center gap-2.5 px-1 py-1.5">
