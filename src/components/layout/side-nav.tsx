@@ -132,11 +132,11 @@ export function SideNav({ active }: { active: string }) {
   return (
     <aside
       className={cn(
-        "hidden lg:flex flex-col fixed left-4 top-4 z-40 rounded-[20px] bg-card border border-border shadow-[var(--shadow-float)] max-h-[calc(100vh-2rem)] overflow-hidden transition-[width] duration-200",
+        "hidden lg:flex flex-col fixed left-4 top-4 z-40 rounded-[20px] bg-card border border-border shadow-[var(--shadow-float)] h-[calc(100vh-2rem)] overflow-hidden transition-[width] duration-200",
         collapsed ? "w-[68px]" : "w-[244px]",
       )}
     >
-      <div className="flex flex-col overflow-y-auto scrollbar-subtle">
+      <div className="flex-1 min-h-0 flex flex-col overflow-y-auto scrollbar-subtle">
         {/* Marca + recolher */}
         <div className={cn("flex shrink-0 px-3 pt-4 pb-3", collapsed ? "flex-col items-center gap-2.5" : "items-center justify-between")}>
           <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5 min-w-0">
@@ -234,9 +234,10 @@ export function SideNav({ active }: { active: string }) {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Rodapé */}
-        <div className={cn("p-3 pt-3.5 mt-1 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
+      {/* Rodapé fixo no fim do menu — fora da área rolável */}
+      <div className={cn("shrink-0 p-3 pt-3 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
           {collapsed ? (
             <>
               <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
@@ -255,6 +256,7 @@ export function SideNav({ active }: { active: string }) {
               {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
               <div className="flex items-center gap-1.5">
                 <CurrencyMenu />
+                <div className="flex-1" />
                 <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                   {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                 </IconBtn>
@@ -282,23 +284,22 @@ export function SideNav({ active }: { active: string }) {
                   <button
                     type="button"
                     onClick={lock}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   >
-                    <Lock size={14} /> {t("menu.lock")}
+                    <Lock size={14} className="shrink-0" /> {t("menu.lock")}
                   </button>
                   <button
                     type="button"
                     onClick={() => void signOut()}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-neg hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-neg hover:bg-card-hover transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                   >
-                    <LogOut size={14} /> {t("menu.logout")}
+                    <LogOut size={14} className="shrink-0" /> {t("menu.logout")}
                   </button>
                 </div>
               </div>
             </>
           )}
         </div>
-      </div>
     </aside>
   );
 }
