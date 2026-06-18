@@ -58,11 +58,10 @@
     .nav-links { display: flex; gap: 28px; }
     .nav-links a { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; }
     .nav-links a:hover { color: var(--text); }
-    .nav-right { display: flex; align-items: center; gap: 12px; }
-    .nav-login { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; white-space: nowrap; }
-    .nav-login:hover { color: var(--text); }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-right .btn { height: 40px; padding: 0 16px; }
     @media (max-width: 880px) { .nav-links { display: none; } }
-    @media (max-width: 400px) { .brand span.bn, .nav-login { display: none; } }
+    @media (max-width: 480px) { .brand span.bn { display: none; } .btn-login { display: none; } }
 
     /* Language switch */
     .lang { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
@@ -199,7 +198,7 @@
           <button type="button" data-lang="en">EN</button>
           <button type="button" data-lang="it">IT</button>
         </div>
-        <a class="nav-login" href="/app" data-i18n="nav.login">Entrar</a>
+        <a class="btn btn-ghost btn-login" href="/app" data-i18n="nav.login">Entrar</a>
         <a class="btn btn-primary" href="/app#signup" data-i18n="nav.cta">Criar conta</a>
       </div>
     </div>
