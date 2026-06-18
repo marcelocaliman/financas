@@ -94,6 +94,21 @@
     });
   });
 
+  // Presença "online agora" na landing (anônimo, sem cookie) — pinga /api/presence.
+  function presSid() {
+    try { var s = sessionStorage.getItem("nf-sid"); if (!s) { s = (String(Math.random()) + String(Math.random())).replace(/\D/g, "").slice(0, 32); sessionStorage.setItem("nf-sid", s); } return s; } catch (e) { return "anon"; }
+  }
+  function presPing() {
+    try {
+      var body = JSON.stringify({ s: "landing", id: presSid() });
+      if (navigator.sendBeacon) navigator.sendBeacon("/api/presence", new Blob([body], { type: "application/json" }));
+      else fetch("/api/presence", { method: "POST", headers: { "Content-Type": "application/json" }, body: body, keepalive: true });
+    } catch (e) {}
+  }
+  presPing();
+  setInterval(presPing, 25000);
+  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") presPing(); });
+
   // Painel do hero "ganha vida": count-up inicial e, em seguida, MODO VIVO contínuo —
   // o patrimônio cresce organicamente (random-walk com viés de alta + rajadas, ritmo
   // variável: às vezes devagar, às vezes rápido) e alguns KPIs oscilam de leve. Pausa

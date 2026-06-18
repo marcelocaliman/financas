@@ -99,6 +99,12 @@ export interface TopEvent {
 
 export type UserSort = "recent" | "active" | "email";
 
+export interface OnlinePresence {
+  app: number;
+  landing: number;
+  total: number;
+}
+
 export interface RecentEvent {
   created_at: string;
   surface: string;

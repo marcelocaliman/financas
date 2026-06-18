@@ -1,7 +1,7 @@
 import { TrendingUp, Users, UserCheck, Activity, Moon, CloudUpload, Mail, Database } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { useOnlineCount } from "../use-realtime";
+import { useOnlinePresence } from "../use-realtime";
 import { fmtInt, fmtBytes } from "../format";
 import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
@@ -10,7 +10,7 @@ import { Eyebrow } from "@/components/common/tile";
 export function OverviewSection({ days }: { days: number }) {
   const ov = useAsync(() => adminApi.overview(), [], { refreshMs: 20000 });
   const su = useAsync(() => adminApi.signupsDaily(days), [days], { refreshMs: 20000 });
-  const online = useOnlineCount();
+  const online = useOnlinePresence();
 
   const o = ov.data;
   const total = o?.total_users ?? 0;
@@ -18,7 +18,7 @@ export function OverviewSection({ days }: { days: number }) {
 
   return (
     <div className="space-y-6">
-      <OnlineCard count={online} />
+      <OnlineCard data={online} />
       <StateBlock loading={ov.loading} error={ov.error}>
         {o ? (
           <>
@@ -83,12 +83,12 @@ export function OverviewSection({ days }: { days: number }) {
 /** Resumo p/ o cabeçalho do accordion — online ao vivo + base de usuários. */
 export function OverviewSummary() {
   const ov = useAsync(() => adminApi.overview(), [], { refreshMs: 30000 });
-  const online = useOnlineCount();
+  const online = useOnlinePresence();
   if (!ov.data) return null;
   return (
     <span className="hidden md:flex items-center gap-2 text-[12.5px] text-muted tabular">
       <span className="inline-flex items-center gap-1.5 text-accent font-medium">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent" />{fmtInt(online)} online
+        <span className="h-1.5 w-1.5 rounded-full bg-accent" />{fmtInt(online.total)} online
       </span>
       <span className="text-faint">·</span>
       {fmtInt(ov.data.total_users)} usuários · {fmtInt(ov.data.active_7d)} ativos 7d

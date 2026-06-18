@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Eye, MousePointerClick, UserPlus, LogIn, Smartphone, Tablet, Monitor, Globe, Radio } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { useOnlineCount, useLiveEvents } from "../use-realtime";
+import { useOnlinePresence, useLiveEvents } from "../use-realtime";
 import { fmtInt, fmtAgo } from "../format";
 import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
@@ -163,11 +163,11 @@ export function AnalyticsSection({ days }: { days: number }) {
 
 /** AO VIVO: card VERDE com a contagem de online (presença anônima) + feed de eventos. */
 function LiveCard() {
-  const online = useOnlineCount();
+  const online = useOnlinePresence();
   const events = useLiveEvents(24);
   return (
     <div className="space-y-4">
-      <OnlineCard count={online} />
+      <OnlineCard data={online} />
       <AdminCard title={<span className="flex items-center gap-1.5"><Radio size={11} className="text-accent" /> Atividade recente</span>}>
         <div className="max-h-[240px] overflow-y-auto scrollbar-subtle divide-y divide-border -my-1">
           {events.length === 0 ? (

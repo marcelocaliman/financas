@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "@/components/common/tile";
 import { cn } from "@/lib/utils";
+import type { OnlinePresence } from "./types";
 
 /** Card seco no padrão do app (hairline + surface + radius 16). */
 export function AdminCard({
@@ -117,18 +118,20 @@ export function StateBlock({
   return <>{children}</>;
 }
 
-/** Card "online agora" — destaque VERDE, contagem ANÔNIMA de sessões abertas em tempo real. */
-export function OnlineCard({ count }: { count: number }) {
+/** Card "online agora" — destaque VERDE, contagem ANÔNIMA por superfície (app + landing). */
+export function OnlineCard({ data }: { data: OnlinePresence }) {
   return (
     <div className="rounded-[16px] border border-accent/30 bg-accent-soft px-5 py-4 sm:px-6 sm:py-5 flex items-center gap-4">
       <span className="relative flex h-3 w-3 shrink-0">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
         <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
       </span>
-      <div className="font-numeric font-semibold tabular text-accent text-[clamp(30px,5vw,44px)] leading-none">{count}</div>
+      <div className="font-numeric font-semibold tabular text-accent text-[clamp(30px,5vw,44px)] leading-none">{data.total}</div>
       <div className="min-w-0">
-        <div className="text-[13px] font-semibold text-text leading-tight">com o app aberto agora</div>
-        <div className="text-[11.5px] text-muted mt-0.5">presença anônima · tempo real</div>
+        <div className="text-[13px] font-semibold text-text leading-tight">online agora</div>
+        <div className="text-[11.5px] text-muted mt-0.5 tabular">
+          {data.app} no app · {data.landing} na landing · anônimo
+        </div>
       </div>
     </div>
   );

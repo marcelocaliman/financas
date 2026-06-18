@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { adminApi } from "./api";
-import type { RecentEvent } from "./types";
+import type { RecentEvent, OnlinePresence } from "./types";
 
 // Polling near-real-time (robusto, sem depender do WebSocket de Realtime).
 const POLL_MS = 12_000;
+const EMPTY_PRESENCE: OnlinePresence = { app: 0, landing: 0, total: 0 };
 
-/** Quantas sessões do app estão abertas AGORA (heartbeat anônimo — conta, nunca quem). */
-export function useOnlineCount(): number {
-  const [n, setN] = useState(0);
+/** "Online agora" por superfície: app (logados) + landing (anônimos). Heartbeat,
+ *  conta, nunca quem. Atualiza por polling a cada ~12s. */
+export function useOnlinePresence(): OnlinePresence {
+  const [p, setP] = useState<OnlinePresence>(EMPTY_PRESENCE);
   useEffect(() => {
     let alive = true;
     const load = () => {
       adminApi
-        .onlineCount()
-        .then((c) => {
-          if (alive) setN(c ?? 0);
+        .online()
+        .then((d) => {
+          if (alive && d) setP(d);
         })
         .catch(() => {});
     };
@@ -25,7 +27,7 @@ export function useOnlineCount(): number {
       clearInterval(id);
     };
   }, []);
-  return n;
+  return p;
 }
 
 /** Feed de atividade recente (anônimo), atualizado a cada ~12s. */
