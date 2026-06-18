@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ShieldCheck, UserPlus, X } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { fmtDate } from "../format";
+import { fmtInt, fmtDate } from "../format";
 import { AdminCard, StateBlock } from "../components";
 import { Button } from "@/components/common/button";
 
@@ -103,5 +103,16 @@ export function AdminsSection() {
         </StateBlock>
       </AdminCard>
     </div>
+  );
+}
+
+/** Resumo p/ o cabeçalho do accordion. */
+export function AdminsSummary() {
+  const { data } = useAsync(() => adminApi.adminsList(), []);
+  if (!data) return null;
+  return (
+    <span className="hidden md:block text-[12.5px] text-muted tabular">
+      {fmtInt(data.length)} {data.length === 1 ? "administrador" : "administradores"}
+    </span>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { fmtDateTime } from "../format";
+import { fmtDateTime, fmtAgo } from "../format";
 import { AdminCard, StateBlock, Badge } from "../components";
 import { Eyebrow } from "@/components/common/tile";
 
@@ -84,5 +84,16 @@ export function AccessLogSection() {
         </button>
       </div>
     </div>
+  );
+}
+
+/** Resumo p/ o cabeçalho do accordion — último acesso registrado. */
+export function AccessSummary() {
+  const { data } = useAsync(() => adminApi.auditLog(1, 0), []);
+  if (!data) return null;
+  return (
+    <span className="hidden md:block text-[12.5px] text-muted tabular">
+      {data.length === 0 ? "sem registros" : `último acesso ${fmtAgo(data[0].created_at)}`}
+    </span>
   );
 }

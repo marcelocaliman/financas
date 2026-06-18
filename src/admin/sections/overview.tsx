@@ -80,12 +80,17 @@ export function OverviewSection({ days }: { days: number }) {
   );
 }
 
-/** Resumo p/ o cabeçalho do accordion. */
+/** Resumo p/ o cabeçalho do accordion — online ao vivo + base de usuários. */
 export function OverviewSummary() {
-  const ov = useAsync(() => adminApi.overview(), []);
+  const ov = useAsync(() => adminApi.overview(), [], { refreshMs: 30000 });
+  const online = useOnlineCount();
   if (!ov.data) return null;
   return (
-    <span className="hidden md:block text-[12.5px] text-muted tabular">
+    <span className="hidden md:flex items-center gap-2 text-[12.5px] text-muted tabular">
+      <span className="inline-flex items-center gap-1.5 text-accent font-medium">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent" />{fmtInt(online)} online
+      </span>
+      <span className="text-faint">·</span>
       {fmtInt(ov.data.total_users)} usuários · {fmtInt(ov.data.active_7d)} ativos 7d
     </span>
   );

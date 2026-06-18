@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Accordion } from "@/components/common/accordion";
 import { OverviewSection, OverviewSummary } from "./sections/overview";
-import { UsersSection } from "./sections/users";
-import { AnalyticsSection } from "./sections/analytics";
-import { AccessLogSection } from "./sections/access-log";
-import { AdminsSection } from "./sections/admins";
+import { UsersSection, UsersSummary } from "./sections/users";
+import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
+import { AccessLogSection, AccessSummary } from "./sections/access-log";
+import { AdminsSection, AdminsSummary } from "./sections/admins";
 import { SectionErrorBoundary } from "./error-boundary";
 import { cn } from "@/lib/utils";
 
@@ -58,16 +58,16 @@ export function AdminPage() {
         <Accordion id="adm-overview" title="Visão geral" summary={<OverviewSummary />} defaultOpen>
           <SectionErrorBoundary name="Visão geral"><OverviewSection days={days} /></SectionErrorBoundary>
         </Accordion>
-        <Accordion id="adm-users" title="Usuários">
+        <Accordion id="adm-users" title="Usuários" summary={<UsersSummary />}>
           <SectionErrorBoundary name="Usuários"><UsersSection /></SectionErrorBoundary>
         </Accordion>
-        <Accordion id="adm-analytics" title="Analytics">
+        <Accordion id="adm-analytics" title="Analytics" summary={<AnalyticsSummary days={days} />}>
           <SectionErrorBoundary name="Analytics"><AnalyticsSection days={days} /></SectionErrorBoundary>
         </Accordion>
-        <Accordion id="adm-access" title="Acessos & logs">
+        <Accordion id="adm-access" title="Acessos & logs" summary={<AccessSummary />}>
           <SectionErrorBoundary name="Acessos & logs"><AccessLogSection /></SectionErrorBoundary>
         </Accordion>
-        <Accordion id="adm-admins" title="Administradores">
+        <Accordion id="adm-admins" title="Administradores" summary={<AdminsSummary />}>
           <SectionErrorBoundary name="Administradores"><AdminsSection /></SectionErrorBoundary>
         </Accordion>
       </div>

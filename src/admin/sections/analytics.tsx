@@ -240,3 +240,14 @@ function Range({ data }: { data: string[] }) {
     </div>
   );
 }
+
+/** Resumo p/ o cabeçalho do accordion. */
+export function AnalyticsSummary({ days }: { days: number }) {
+  const { data } = useAsync(() => adminApi.analyticsOverview(days), [days]);
+  if (!data) return null;
+  return (
+    <span className="hidden md:block text-[12.5px] text-muted tabular">
+      {fmtInt(data.landing_views)} visitas · {fmtInt(data.signups)} cadastros · {data.conversion_pct}% conv.
+    </span>
+  );
+}

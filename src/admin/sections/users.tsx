@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Search, ChevronLeft, ChevronRight, Trash2, ShieldCheck, Mail, Clock } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
-import { fmtDate, fmtAgo, fmtBytes } from "../format";
+import { fmtInt, fmtDate, fmtAgo, fmtBytes } from "../format";
 import type { UserRow, UserSort } from "../types";
 import { AdminCard, StateBlock, Badge } from "../components";
 import { Eyebrow } from "@/components/common/tile";
@@ -219,5 +219,16 @@ function Field({ label, value }: { label: string; value: string }) {
       <Eyebrow>{label}</Eyebrow>
       <div className="text-[13px] text-text tabular mt-1">{value}</div>
     </div>
+  );
+}
+
+/** Resumo p/ o cabeçalho do accordion. */
+export function UsersSummary() {
+  const { data } = useAsync(() => adminApi.overview(), []);
+  if (!data) return null;
+  return (
+    <span className="hidden md:block text-[12.5px] text-muted tabular">
+      {fmtInt(data.total_users)} contas · {fmtInt(data.confirmed_users)} confirmadas · {fmtInt(data.new_30d)} novas 30d
+    </span>
   );
 }
