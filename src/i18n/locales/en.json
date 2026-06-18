@@ -76,6 +76,7 @@
     "budget": "Budget",
     "byCategory": "Spending by category",
     "netWorthTrend": "Net worth trend",
+    "trendEmpty": "Your net worth history shows up here as you log each month.",
     "last6months": "Last 6 months",
     "positionsTitle": "Positions",
     "topPositions": "Top positions",

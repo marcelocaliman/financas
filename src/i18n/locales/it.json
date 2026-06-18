@@ -76,6 +76,7 @@
     "budget": "Budget",
     "byCategory": "Spese per categoria",
     "netWorthTrend": "Andamento del patrimonio",
+    "trendEmpty": "Lo storico del tuo patrimonio appare qui man mano che registri i mesi.",
     "last6months": "Ultimi 6 mesi",
     "positionsTitle": "Posizioni",
     "topPositions": "Posizioni principali",

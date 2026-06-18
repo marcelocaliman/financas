@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, Landmark } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, Landmark, LineChart } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -183,8 +183,8 @@ export function DashboardDetail() {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className={cn("lg:col-span-2 p-6", CARD)}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+        <div className={cn("lg:col-span-2 p-6 flex flex-col", CARD)}>
           <div className="flex items-center justify-between mb-5">
             <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
             {hasTrend ? (
@@ -193,47 +193,55 @@ export function DashboardDetail() {
               </span>
             ) : null}
           </div>
-          <div className="w-full h-[210px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={view.trend} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
-                <defs>
-                  <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={accent} stopOpacity={0.22} />
-                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Tooltip
-                  cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }}
-                  formatter={(v) => money(Number(v))}
-                  contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                  labelStyle={{ color: "var(--muted)", marginBottom: 2 }}
-                />
-                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2} fill="url(#nwGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="text-[11.5px] text-faint mt-3">{t("dashboard.last6months")}</div>
+          {hasTrend ? (
+            <>
+              <div className="w-full flex-1 min-h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={view.trend} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+                    <defs>
+                      <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={accent} stopOpacity={0.22} />
+                        <stop offset="100%" stopColor={accent} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Tooltip
+                      cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }}
+                      formatter={(v) => money(Number(v))}
+                      contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                      labelStyle={{ color: "var(--muted)", marginBottom: 2 }}
+                    />
+                    <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2} fill="url(#nwGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="text-[11.5px] text-faint mt-3">{t("dashboard.last6months")}</div>
+            </>
+          ) : (
+            <div className="flex-1 grid place-items-center text-center min-h-[180px] py-6">
+              <div>
+                <LineChart size={26} className="text-faint mx-auto mb-3" />
+                <p className="text-[13px] text-muted max-w-[260px] mx-auto leading-relaxed">{t("dashboard.trendEmpty")}</p>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Indicadores compactos — preenchem a coluna ao lado do gráfico (sem buracos) */}
+        <div className="grid grid-cols-2 gap-3">
           <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
           <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.financial")} />
           <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
           <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
+          <StatTile label={t("dashboard.savingsRate")} value={`${Math.round(view.savingsRate)}%`} sub={t("dashboard.savingsRateSub")} positive={view.savingsRate >= 0} />
+          <StatTile
+            label={t("dashboard.reserve")}
+            value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
+            sub={t("dashboard.reserveSub")}
+          />
         </div>
       </div>
 
-      {/* Saúde financeira: taxa de poupança + cobertura da reserva */}
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        <StatTile label={t("dashboard.savingsRate")} value={`${Math.round(view.savingsRate)}%`} sub={t("dashboard.savingsRateSub")} positive={view.savingsRate >= 0} />
-        <StatTile
-          label={t("dashboard.reserve")}
-          value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
-          sub={t("dashboard.reserveSub")}
-        />
-      </div>
-
-      {/* Indicadores do Brasil (Selic + IPCA) — referência pública, só com BRL envolvido */}
+      {/* Indicadores do país da moeda (juros + inflação) — referência pública */}
       <MacroCard />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
