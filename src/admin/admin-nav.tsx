@@ -32,8 +32,9 @@ export function AdminSideNav({ active }: { active: string }) {
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
   return (
-    <aside className="hidden lg:flex flex-col fixed left-4 top-4 z-40 w-[244px] rounded-[20px] bg-card border border-border shadow-[var(--shadow-float)] max-h-[calc(100vh-2rem)] overflow-hidden">
-      <div className="flex flex-col overflow-y-auto scrollbar-subtle">
+    <aside className="hidden lg:flex flex-col fixed left-4 top-4 z-40 w-[244px] rounded-[20px] bg-card border border-border shadow-[var(--shadow-float)] h-[calc(100vh-2rem)] overflow-hidden">
+      {/* Topo rolável: marca + navegação das seções */}
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-subtle">
         <div className="flex items-center gap-2.5 px-3.5 pt-4 pb-3.5">
           <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
             <ShieldCheck size={16} strokeWidth={2.4} />
@@ -63,29 +64,50 @@ export function AdminSideNav({ active }: { active: string }) {
             );
           })}
         </nav>
+      </div>
 
-        <div className="p-3 pt-3 mt-1 border-t border-border">
-          <button
-            type="button"
-            onClick={() => close(false)}
-            className="w-full flex items-center gap-2.5 h-10 px-3 rounded-[11px] text-[13px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors mb-1"
-          >
-            <ArrowLeft size={16} /> Voltar ao app
-          </button>
-          <div className="flex items-center gap-2.5 px-1 py-1.5">
-            <span className="grid place-items-center w-8 h-8 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold shrink-0">{initial}</span>
+      {/* Rodapé fixo no fim do menu */}
+      <div className="shrink-0 p-3 pt-3 border-t border-border">
+        {/* Voltar ao app — ação principal, item com rótulo */}
+        <button
+          type="button"
+          onClick={() => close(false)}
+          className="w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          <ArrowLeft size={17} className="shrink-0" /> Voltar ao app
+        </button>
+
+        {/* Conta — nome e e-mail ganham a linha inteira; ações embaixo */}
+        <div className="mt-2.5 pt-3 border-t border-border">
+          <div className="flex items-center gap-2.5 px-1">
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[13px] font-bold shrink-0">{initial}</span>
             <div className="min-w-0 flex-1">
-              <div className="text-[12.5px] font-semibold truncate leading-tight">{name || "Admin"}</div>
-              {email ? <div className="text-[11px] text-faint truncate">{email}</div> : null}
+              <div className="text-[13px] font-semibold truncate leading-tight">{name || "Admin"}</div>
+              {email ? <div className="text-[11px] text-faint truncate mt-0.5">{email}</div> : null}
             </div>
-            <button type="button" onClick={toggleTheme} aria-label="Tema" className="grid place-items-center w-8 h-8 rounded-[9px] text-muted hover:text-text hover:bg-card-hover transition-colors shrink-0">
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Tema"
+              className="shrink-0 grid place-items-center w-9 h-9 rounded-[9px] border border-border text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
               {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
             </button>
-            <button type="button" onClick={lock} aria-label="Travar" className="grid place-items-center w-8 h-8 rounded-[9px] text-muted hover:text-text hover:bg-card-hover transition-colors shrink-0">
-              <Lock size={15} />
+            <button
+              type="button"
+              onClick={lock}
+              className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 h-9 px-2 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <Lock size={14} className="shrink-0" /> Trancar
             </button>
-            <button type="button" onClick={() => void signOut()} aria-label="Sair" className="grid place-items-center w-8 h-8 rounded-[9px] text-muted hover:text-neg hover:bg-card-hover transition-colors shrink-0">
-              <LogOut size={15} />
+            <button
+              type="button"
+              onClick={() => void signOut()}
+              className="shrink-0 inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-neg hover:bg-card-hover transition-colors whitespace-nowrap outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <LogOut size={14} className="shrink-0" /> Sair
             </button>
           </div>
         </div>
