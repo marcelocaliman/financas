@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Printer, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Printer, ChevronLeft, ChevronRight } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -56,26 +56,14 @@ export default function Config({ onClose }: { onClose?: () => void }) {
       {/* Cabeçalho — mesma faixa/gutters/topo do HERO da página inicial */}
       <section className="scroll-mt-20">
         <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-12")}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent mb-4">
-                {t("config.eyebrow")}
-              </div>
-              <h1 className="font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.04em] leading-[1.04]">
-                {t("menu.settings")}
-              </h1>
-              <p className="mt-4 text-muted text-[14.5px] leading-relaxed max-w-[560px]">{t("config.subtitle")}</p>
+          <div className="min-w-0">
+            <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent mb-4">
+              {t("config.eyebrow")}
             </div>
-            {onClose ? (
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label={t("common.close")}
-                className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3 rounded-[10px] border border-border text-[12.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-              >
-                <X size={15} /> {t("common.close")}
-              </button>
-            ) : null}
+            <h1 className="font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.04em] leading-[1.04]">
+              {t("menu.settings")}
+            </h1>
+            <p className="mt-4 text-muted text-[14.5px] leading-relaxed max-w-[560px]">{t("config.subtitle")}</p>
           </div>
         </div>
         <div className="border-t border-border" />

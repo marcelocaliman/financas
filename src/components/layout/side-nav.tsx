@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeftRight, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
+  ArrowLeftRight, ArrowLeft, ArrowUpRight, ArrowDownRight, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
   ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, type LucideIcon,
 } from "lucide-react";
@@ -240,12 +240,18 @@ export function SideNav({ active }: { active: string }) {
       <div className={cn("shrink-0 p-3 pt-3 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
           {collapsed ? (
             <>
-              <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
-                {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-              </IconBtn>
-              <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-              <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
-              {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
+              {configOpen ? (
+                <IconBtn onClick={() => setConfigOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
+              ) : (
+                <>
+                  <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
+                    {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </IconBtn>
+                  <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
+                  <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
+                  {isAdmin ? <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn> : null}
+                </>
+              )}
               <div className="h-px w-7 bg-border my-0.5" />
               <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-[#0A0B0D] text-[12px] font-bold" title={email ?? ""}>{initial}</span>
               <IconBtn onClick={lock} label={t("menu.lock")}><Lock size={16} /></IconBtn>
@@ -253,23 +259,30 @@ export function SideNav({ active }: { active: string }) {
             </>
           ) : (
             <>
-              {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
-              <div className="flex items-center gap-1.5">
-                <CurrencyMenu />
-                <div className="flex-1" />
-                <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
-                  {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                </IconBtn>
-                <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-              </div>
+              {configOpen ? (
+                /* Em Configurações: só "Voltar ao app" (como no painel admin) */
+                <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setConfigOpen(false)} />
+              ) : (
+                <>
+                  {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
+                  <div className="flex items-center gap-1.5">
+                    <CurrencyMenu />
+                    <div className="flex-1" />
+                    <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
+                      {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </IconBtn>
+                    <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
+                  </div>
 
-              {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
-              <div className="mt-2.5 pt-2.5 border-t border-border space-y-0.5">
-                {isAdmin ? (
-                  <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
-                ) : null}
-                <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
-              </div>
+                  {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
+                  <div className="mt-2.5 pt-2.5 border-t border-border space-y-0.5">
+                    {isAdmin ? (
+                      <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
+                    ) : null}
+                    <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
+                  </div>
+                </>
+              )}
 
               {/* Conta — nome e e-mail ganham a linha inteira; travar/sair embaixo */}
               <div className="mt-2.5 pt-3 border-t border-border">
@@ -460,8 +473,8 @@ export function MobileBar() {
             {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           <CurrencyMenu />
-          <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
-            <Settings size={16} />
+          <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={configOpen ? t("menu.back") : t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
+            {configOpen ? <ArrowLeft size={16} /> : <Settings size={16} />}
           </button>
         </div>
       </div>

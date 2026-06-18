@@ -439,6 +439,7 @@
     "side": "Laterale",
     "hint": "Sul desktop, sostituisce la barra in alto con un pannello laterale fluttuante a sinistra che segue lo scorrimento.",
     "settings": "Impostazioni",
+    "back": "Torna all'app",
     "account": "Account",
     "lock": "Blocca il caveau",
     "logout": "Esci",

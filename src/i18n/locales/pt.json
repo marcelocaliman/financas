@@ -439,6 +439,7 @@
     "side": "Lateral",
     "hint": "No desktop, troca a barra do topo por um painel lateral flutuante à esquerda que acompanha a rolagem.",
     "settings": "Configurações",
+    "back": "Voltar ao app",
     "account": "Conta",
     "lock": "Trancar o cofre",
     "logout": "Sair",
