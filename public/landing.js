@@ -83,4 +83,38 @@
   [].forEach.call(document.querySelectorAll('a[href^="/app"]'), function (a) {
     a.addEventListener("click", function () { track("cta_click"); });
   });
+
+  // Painel do hero "ganha vida": count-up dos números + dispara as animações CSS
+  // (anel, barras, traço do gráfico, cards) quando o painel entra na viewport.
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function fmtNum(v, dec) {
+    return v.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+  }
+  function countUp() {
+    [].forEach.call(document.querySelectorAll("[data-count]"), function (el) {
+      var target = parseFloat(el.getAttribute("data-count"));
+      var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+      if (isNaN(target)) return;
+      if (reduceMotion) { el.textContent = fmtNum(target, dec); return; }
+      var dur = 1400, start = null;
+      function step(ts) {
+        if (start === null) start = ts;
+        var p = Math.min(1, (ts - start) / dur);
+        var e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+        el.textContent = fmtNum(target * e, dec);
+        if (p < 1) requestAnimationFrame(step); else el.textContent = fmtNum(target, dec);
+      }
+      requestAnimationFrame(step);
+    });
+  }
+  var heroFrame = document.querySelector(".hero .frame");
+  if (heroFrame) {
+    var fire = function () { heroFrame.classList.add("animate"); countUp(); };
+    if ("IntersectionObserver" in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { fire(); io.disconnect(); } });
+      }, { threshold: 0.2 });
+      io.observe(heroFrame);
+    } else { fire(); }
+  }
 })();
