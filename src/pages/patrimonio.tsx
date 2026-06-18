@@ -254,7 +254,7 @@ export default function Patrimonio() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
               <Kpi label={t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
               <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
-              <Kpi label={t("patrimonio.assetCount")} raw value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
+              <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
             </div>
 
             <div className="overflow-x-auto">

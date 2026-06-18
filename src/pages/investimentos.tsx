@@ -351,7 +351,7 @@ export function InvestimentosSummary() {
           value={`${v.returnPct >= 0 ? "+" : ""}${v.returnPct.toFixed(1)}%`}
         />
       ) : null}
-      <HeaderKpi secondary raw label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
+      <HeaderKpi secondary label={t("investimentos.positions")} value={<span className="tabular">{v.count}</span>} />
     </HeaderKpis>
   );
 }

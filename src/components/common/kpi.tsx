@@ -16,8 +16,9 @@ const TONE: Record<Tone, string> = {
 /**
  * Card de KPI: rótulo mono + valor grande tabular + linha de contexto opcional
  * (contagem, %, variação…) + barra fina opcional (share/progresso). Usado em todas
- * as seções pra dar densidade de informação aos indicadores. Oculta o valor (••••) no
- * modo privacidade (dinheiro e %); `raw` mantém o que não é sensível (ex.: contagens).
+ * as seções pra dar densidade de informação aos indicadores. No modo privacidade
+ * oculta o valor (••••) — dinheiro, % E contagens do usuário (nada vaza). `raw` só
+ * para METADADO do painel admin (não é dado financeiro do usuário), nunca nas seções.
  */
 export function Kpi({
   label,
@@ -33,7 +34,7 @@ export function Kpi({
   tone?: Tone;
   /** 0–100: desenha uma barra fina de proporção. */
   bar?: number;
-  /** Mantém o valor visível no modo privacidade (contagens não sensíveis). */
+  /** Só para o painel admin (metadado, não dado do usuário): mantém visível em modo privado. */
   raw?: boolean;
 }) {
   const hidden = useUI((s) => s.numbersHidden);

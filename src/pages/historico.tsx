@@ -95,7 +95,7 @@ export default function Historico() {
           tone={yieldUp ? "accent" : "neg"}
           sub={t("historico.returnSub")}
         />
-        <Kpi label={t("historico.period")} raw value={t("historico.monthsValue", { n: view.months })} sub={view.first && view.last ? `${view.first.label} → ${view.last.label}` : "—"} />
+        <Kpi label={t("historico.period")} value={t("historico.monthsValue", { n: view.months })} sub={view.first && view.last ? `${view.first.label} → ${view.last.label}` : "—"} />
       </div>
 
       {view.hasTrend ? (

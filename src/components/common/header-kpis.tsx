@@ -20,8 +20,8 @@ export function HeaderKpis({ children }: { children: ReactNode }) {
 
 /**
  * KPI compacto: rótulo mono pequeno + valor. `secondary` esconde no mobile.
- * Oculta o valor (••••) no modo privacidade — cobre tanto dinheiro quanto % (rentabilidade,
- * poupança, FIRE…). `raw` mantém visível o que NÃO é sensível (ex.: contagens).
+ * No modo privacidade oculta o valor (••••) — dinheiro, % E contagens do usuário (nada de
+ * número vaza no cabeçalho da seção). `raw` só para METADADO do painel admin.
  */
 export function HeaderKpi({
   label,
@@ -34,6 +34,7 @@ export function HeaderKpi({
   value: ReactNode;
   tone?: Tone;
   secondary?: boolean;
+  /** Só para o painel admin (metadado, não dado do usuário): mantém visível em modo privado. */
   raw?: boolean;
 }) {
   const hidden = useUI((s) => s.numbersHidden);

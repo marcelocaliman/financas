@@ -193,7 +193,7 @@ export function ObjetivosSummary() {
     <HeaderKpis>
       <HeaderKpi label={t("objetivos.saved")} value={<Money value={v.saved} currency={disp} />} />
       <HeaderKpi secondary label={t("objetivos.avgProgress")} tone="accent" value={`${Math.round(v.avg)}%`} />
-      <HeaderKpi secondary raw label={t("nav.objetivos")} value={<span className="tabular">{v.count}</span>} />
+      <HeaderKpi secondary label={t("nav.objetivos")} value={<span className="tabular">{v.count}</span>} />
     </HeaderKpis>
   );
 }
