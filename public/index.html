@@ -26,7 +26,7 @@
       --shadow-float: 0 24px 60px -28px rgba(0, 0, 0, 0.72);
       --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-      --gutter: clamp(20px, 5vw, 56px); --maxw: 1180px;
+      --gutter: clamp(20px, 5vw, 56px); --maxw: 1180px; --maxw-wide: min(1600px, 95vw);
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
@@ -39,14 +39,16 @@
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
     .wrap { max-width: var(--maxw); margin: 0 auto; padding-inline: var(--gutter); }
+    .wrap-wide { max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
     .eyebrow { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
     .eyebrow.accent { color: var(--accent); }
 
     /* Header — PAINEL FLUTUANTE no topo (mesmo estilo do menu interno do app:
        superfície de card translúcida, hairline, cantos arredondados, sombra flutuante). */
     header.site { position: sticky; top: 0; z-index: 50; padding: 14px var(--gutter) 0; }
+    .headrow { max-width: var(--maxw-wide); margin: 0 auto; display: flex; align-items: center; gap: 12px; }
     .nav {
-      max-width: var(--maxw); margin: 0 auto; display: flex; align-items: center; justify-content: space-between;
+      flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between;
       gap: 16px; height: 58px; padding: 0 10px 0 18px;
       background: color-mix(in oklab, var(--card) 84%, transparent);
       backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
@@ -63,11 +65,27 @@
     @media (max-width: 880px) { .nav-links { display: none; } }
     @media (max-width: 480px) { .brand span.bn { display: none; } .btn-login { display: none; } }
 
-    /* Language switch */
-    .lang { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
-    .lang button { font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--faint); background: transparent; border: 0; padding: 7px 9px; cursor: pointer; transition: color .2s, background .2s; }
-    .lang button:hover { color: var(--muted); }
-    .lang button[aria-current="true"] { color: var(--accent); background: var(--accent-soft); }
+    /* Language dropdown — pílula flutuante à direita, fora do card do menu */
+    .langdrop { position: relative; flex: none; }
+    .langbtn { display: inline-flex; align-items: center; gap: 7px; height: 50px; padding: 0 13px; border-radius: 15px;
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--card) 84%, transparent);
+      backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
+      box-shadow: var(--shadow-float); color: var(--text); font-family: var(--font-mono); font-size: 12px;
+      font-weight: 600; letter-spacing: .08em; cursor: pointer; transition: border-color .2s, background .2s; }
+    .langbtn:hover { border-color: var(--border-strong); }
+    .langbtn .chev { width: 13px; height: 13px; color: var(--faint); transition: transform .2s; }
+    .langdrop.open .langbtn .chev { transform: rotate(180deg); }
+    .langmenu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 156px; z-index: 60;
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-float);
+      padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+    .langmenu[hidden] { display: none; }
+    .langmenu button { display: flex; align-items: center; justify-content: space-between; text-align: left;
+      padding: 9px 11px; border-radius: 10px; border: 0; background: transparent; color: var(--muted);
+      font-size: 13.5px; font-weight: 500; cursor: pointer; transition: color .2s, background .2s; }
+    .langmenu button:hover { color: var(--text); background: var(--card-2); }
+    .langmenu button[aria-current="true"] { color: var(--accent); background: var(--accent-soft); }
+    .langmenu button .code { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; color: var(--faint); }
+    @media (max-width: 600px) { .langbtn { height: 44px; } }
 
     .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; padding: 0 18px; height: 42px; border-radius: 11px; border: 1px solid transparent; cursor: pointer; transition: transform .15s, background .2s, border-color .2s; white-space: nowrap; }
     .btn-primary { background: var(--accent); color: #07140d; }
@@ -80,7 +98,7 @@
     .hero { position: relative; overflow: hidden; }
     .hero::before { content: ""; position: absolute; top: -160px; left: 50%; transform: translateX(-50%); width: 1000px; height: 560px; max-width: 110%; background: radial-gradient(ellipse, rgba(62,207,142,0.14), transparent 62%); pointer-events: none; }
     .hero-inner { position: relative; padding-top: clamp(54px, 8vw, 104px); padding-bottom: clamp(36px, 5vw, 64px); }
-    .hero h1 { font-size: clamp(2.6rem, 7vw, 5rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.02; margin: 18px 0 0; max-width: 16ch; }
+    .hero h1 { font-size: clamp(2.8rem, 7.6vw, 5.6rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.01; margin: 18px 0 0; max-width: 17ch; }
     .hero h1 .grad { color: var(--accent); }
     .hero .sub { color: var(--muted); font-size: clamp(15px, 2vw, 19px); max-width: 56ch; margin-top: 24px; line-height: 1.55; }
     .hero .ctas { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 34px; }
@@ -180,33 +198,41 @@
 </head>
 <body>
   <header class="site" id="top">
-    <div class="nav">
-      <a class="brand" href="#top">
-        <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span>
-        <span class="bn">Nossas Finanças</span>
-      </a>
-      <nav class="nav-links">
-        <a href="#recursos" data-i18n="nav.recursos">Recursos</a>
-        <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
-        <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
-        <a href="#faq" data-i18n="nav.faq">FAQ</a>
-        <a href="#contato" data-i18n="nav.contato">Contato</a>
-      </nav>
-      <div class="nav-right">
-        <div class="lang" role="group" aria-label="Idioma">
-          <button type="button" data-lang="pt" aria-current="true">PT</button>
-          <button type="button" data-lang="en">EN</button>
-          <button type="button" data-lang="it">IT</button>
+    <div class="headrow">
+      <div class="nav">
+        <a class="brand" href="#top">
+          <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span>
+          <span class="bn">Nossas Finanças</span>
+        </a>
+        <nav class="nav-links">
+          <a href="#recursos" data-i18n="nav.recursos">Recursos</a>
+          <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
+          <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
+          <a href="#faq" data-i18n="nav.faq">FAQ</a>
+          <a href="#contato" data-i18n="nav.contato">Contato</a>
+        </nav>
+        <div class="nav-right">
+          <a class="btn btn-ghost btn-login" href="/app" data-i18n="nav.login">Entrar</a>
+          <a class="btn btn-primary" href="/app#signup" data-i18n="nav.cta">Criar conta</a>
         </div>
-        <a class="btn btn-ghost btn-login" href="/app" data-i18n="nav.login">Entrar</a>
-        <a class="btn btn-primary" href="/app#signup" data-i18n="nav.cta">Criar conta</a>
+      </div>
+      <div class="langdrop" id="langdrop">
+        <button class="langbtn" type="button" id="langbtn" aria-haspopup="listbox" aria-expanded="false" aria-label="Idioma">
+          <span class="langcur" id="langcur">PT</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="langmenu" id="langmenu" role="listbox" aria-label="Idioma" hidden>
+          <button type="button" data-lang="pt" role="option" aria-current="true">Português <span class="code">PT</span></button>
+          <button type="button" data-lang="en" role="option">English <span class="code">EN</span></button>
+          <button type="button" data-lang="it" role="option">Italiano <span class="code">IT</span></button>
+        </div>
       </div>
     </div>
   </header>
 
   <!-- HERO -->
   <div class="hero">
-    <div class="wrap hero-inner">
+    <div class="wrap-wide hero-inner">
       <div class="eyebrow accent" data-i18n="hero.eyebrow">Patrimônio multimoeda · privado · cross-border</div>
       <h1><span data-i18n="hero.h1a">Sua vida financeira entre países,</span> <span class="grad" data-i18n="hero.h1b">só sua.</span></h1>
       <p class="sub" data-i18n="hero.sub">O painel completo pra gerir o seu patrimônio em qualquer moeda e país — viva você entre países, esteja de mudança, ou só queira tudo organizado num lugar. Com criptografia ponta a ponta: o servidor nunca vê os seus números.</p>

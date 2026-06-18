@@ -12,6 +12,13 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["icon.svg"],
+      // Nova versão entra no ar e aplica sozinha (skipWaiting + clientsClaim); o
+      // main.tsx recarrega a aba automaticamente ao assumir o controle.
+      workbox: {
+        clientsClaim: true,
+        skipWaiting: true,
+        cleanupOutdatedCaches: true,
+      },
       manifest: {
         name: "Finanças — multimoeda",
         short_name: "Finanças",

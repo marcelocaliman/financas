@@ -4,7 +4,7 @@ import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
 import { useOnlineCount, useLiveEvents } from "../use-realtime";
 import { fmtInt, fmtAgo } from "../format";
-import { AdminCard, Stat, BarsChart, StateBlock } from "../components";
+import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
 import { cn } from "@/lib/utils";
 
@@ -161,53 +161,35 @@ export function AnalyticsSection({ days }: { days: number }) {
   );
 }
 
-/** Card AO VIVO: contagem de online (presença anônima) + feed de eventos em tempo real. */
+/** AO VIVO: card VERDE com a contagem de online (presença anônima) + feed de eventos. */
 function LiveCard() {
   const online = useOnlineCount();
   const events = useLiveEvents(24);
   return (
-    <AdminCard
-      title={<span className="flex items-center gap-1.5"><Radio size={11} className="text-accent" /> Ao vivo</span>}
-    >
-      <div className="flex flex-col sm:flex-row gap-5">
-        {/* online agora */}
-        <div className="sm:w-[180px] shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
-            </span>
-            <span className="font-numeric font-semibold tabular text-[clamp(28px,4vw,40px)] leading-none">{fmtInt(online)}</span>
-          </div>
-          <div className="text-[12px] text-muted mt-1.5">com o app aberto agora</div>
-          <div className="text-[11px] text-faint mt-0.5">presença anônima, em tempo real</div>
-        </div>
-
-        {/* feed */}
-        <div className="flex-1 min-w-0 sm:border-l sm:border-border sm:pl-5">
-          <Eyebrow>Atividade recente</Eyebrow>
-          <div className="mt-2 max-h-[220px] overflow-y-auto scrollbar-subtle divide-y divide-border -my-1">
-            {events.length === 0 ? (
-              <div className="py-6 text-center text-[12px] text-faint">aguardando eventos…</div>
-            ) : (
-              events.map((e, i) => (
-                <div key={`${e.created_at}-${i}`} className="flex items-center justify-between gap-3 py-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", e.surface === "app" ? "bg-accent" : "bg-[var(--eur,#8a8f98)]")} />
-                    <span className="text-[12.5px] truncate">{EVENT_LABEL[e.name] ?? e.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0 text-faint text-[11px] tabular">
-                    <span title={e.country ?? ""}>{flag(e.country)}</span>
-                    <DeviceIcon device={e.device} />
-                    <span className="w-[52px] text-right">{fmtAgo(e.created_at)}</span>
-                  </div>
+    <div className="space-y-4">
+      <OnlineCard count={online} />
+      <AdminCard title={<span className="flex items-center gap-1.5"><Radio size={11} className="text-accent" /> Atividade recente</span>}>
+        <div className="max-h-[240px] overflow-y-auto scrollbar-subtle divide-y divide-border -my-1">
+          {events.length === 0 ? (
+            <div className="py-6 text-center text-[12px] text-faint">aguardando eventos…</div>
+          ) : (
+            events.map((e, i) => (
+              <div key={`${e.created_at}-${i}`} className="flex items-center justify-between gap-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", e.surface === "app" ? "bg-accent" : "bg-[var(--eur,#8a8f98)]")} />
+                  <span className="text-[12.5px] truncate">{EVENT_LABEL[e.name] ?? e.name}</span>
                 </div>
-              ))
-            )}
-          </div>
+                <div className="flex items-center gap-2 shrink-0 text-faint text-[11px] tabular">
+                  <span title={e.country ?? ""}>{flag(e.country)}</span>
+                  <DeviceIcon device={e.device} />
+                  <span className="w-[52px] text-right">{fmtAgo(e.created_at)}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      </div>
-    </AdminCard>
+      </AdminCard>
+    </div>
   );
 }
 

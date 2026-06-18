@@ -117,6 +117,23 @@ export function StateBlock({
   return <>{children}</>;
 }
 
+/** Card "online agora" — destaque VERDE, contagem ANÔNIMA de sessões abertas em tempo real. */
+export function OnlineCard({ count }: { count: number }) {
+  return (
+    <div className="rounded-[16px] border border-accent/30 bg-accent-soft px-5 py-4 sm:px-6 sm:py-5 flex items-center gap-4">
+      <span className="relative flex h-3 w-3 shrink-0">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-60" />
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
+      </span>
+      <div className="font-numeric font-semibold tabular text-accent text-[clamp(30px,5vw,44px)] leading-none">{count}</div>
+      <div className="min-w-0">
+        <div className="text-[13px] font-semibold text-text leading-tight">com o app aberto agora</div>
+        <div className="text-[11.5px] text-muted mt-0.5">presença anônima · tempo real</div>
+      </div>
+    </div>
+  );
+}
+
 /** Badge discreto (status de usuário, surface de evento…). */
 export function Badge({ children, tone = "muted" }: { children: ReactNode; tone?: "muted" | "accent" | "neg" }) {
   const cls =

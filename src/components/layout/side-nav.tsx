@@ -304,7 +304,7 @@ export function SideNav({ active }: { active: string }) {
   );
 }
 
-interface NavListItem {
+export interface NavListItem {
   id: string;
   label: string;
   Icon: LucideIcon;
@@ -312,8 +312,8 @@ interface NavListItem {
 }
 
 /** Lista de seções da nav lateral (página OU Config): rótulo + ícone, indicador de aberto e
- *  botão de abrir/fechar a seção. Mesmo visual nos dois modos. */
-function NavList({
+ *  botão de abrir/fechar a seção. Mesmo visual nos dois modos. Reusada pelo painel admin. */
+export function NavList({
   items,
   collapsed,
   active,

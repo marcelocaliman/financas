@@ -1,14 +1,16 @@
 import { TrendingUp, Users, UserCheck, Activity, Moon, CloudUpload, Mail, Database } from "lucide-react";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
+import { useOnlineCount } from "../use-realtime";
 import { fmtInt, fmtBytes } from "../format";
-import { AdminCard, Stat, BarsChart, StateBlock } from "../components";
+import { AdminCard, Stat, BarsChart, StateBlock, OnlineCard } from "../components";
 import { Eyebrow } from "@/components/common/tile";
 
 /** Visão geral: KPIs de base de usuários, atividade, churn, sync e cadastros no tempo. */
 export function OverviewSection({ days }: { days: number }) {
   const ov = useAsync(() => adminApi.overview(), [], { refreshMs: 20000 });
   const su = useAsync(() => adminApi.signupsDaily(days), [days], { refreshMs: 20000 });
+  const online = useOnlineCount();
 
   const o = ov.data;
   const total = o?.total_users ?? 0;
@@ -16,6 +18,7 @@ export function OverviewSection({ days }: { days: number }) {
 
   return (
     <div className="space-y-6">
+      <OnlineCard count={online} />
       <StateBlock loading={ov.loading} error={ov.error}>
         {o ? (
           <>

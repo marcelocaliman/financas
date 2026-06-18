@@ -8,26 +8,56 @@
     return { el: el, key: el.getAttribute("data-i18n"), pt: el.textContent };
   });
 
-  function apply(lang) {
+  var LABELS = { pt: "PT", en: "EN", it: "IT" };
+
+  function apply(lang, persist) {
     var dict = I18N[lang];
     els.forEach(function (o) {
       o.el.textContent = (lang !== "pt" && dict && dict[o.key] != null) ? dict[o.key] : o.pt;
     });
     document.documentElement.lang = lang === "pt" ? "pt-BR" : lang;
-    [].forEach.call(document.querySelectorAll(".lang button"), function (b) {
+    var cur = document.getElementById("langcur");
+    if (cur) cur.textContent = LABELS[lang] || "PT";
+    [].forEach.call(document.querySelectorAll(".langmenu button"), function (b) {
       b.setAttribute("aria-current", b.getAttribute("data-lang") === lang ? "true" : "false");
     });
-    try { localStorage.setItem("nf_lang", lang); } catch (e) {}
+    if (persist) { try { localStorage.setItem("nf_lang", lang); } catch (e) {} }
   }
 
-  [].forEach.call(document.querySelectorAll(".lang button"), function (b) {
-    b.addEventListener("click", function () { apply(b.getAttribute("data-lang")); });
+  // Dropdown de idioma — abre/fecha + seleção.
+  var drop = document.getElementById("langdrop");
+  var lbtn = document.getElementById("langbtn");
+  var menu = document.getElementById("langmenu");
+  function closeMenu() { if (drop) drop.classList.remove("open"); if (menu) menu.hidden = true; if (lbtn) lbtn.setAttribute("aria-expanded", "false"); }
+  function openMenu() { if (drop) drop.classList.add("open"); if (menu) menu.hidden = false; if (lbtn) lbtn.setAttribute("aria-expanded", "true"); }
+  if (lbtn) lbtn.addEventListener("click", function (e) { e.stopPropagation(); (menu && menu.hidden) ? openMenu() : closeMenu(); });
+  [].forEach.call(document.querySelectorAll(".langmenu button"), function (b) {
+    b.addEventListener("click", function () { apply(b.getAttribute("data-lang"), true); closeMenu(); });
   });
+  document.addEventListener("click", function (e) { if (drop && !drop.contains(e.target)) closeMenu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
 
+  // Detecção: escolha salva > idioma do navegador (pt/en/it) > geo por localização > pt.
+  function mapCountry(cc) {
+    if (!cc) return null;
+    cc = String(cc).toUpperCase();
+    if (cc === "BR" || cc === "PT" || cc === "AO" || cc === "MZ") return "pt";
+    if (cc === "IT") return "it";
+    return "en";
+  }
   var saved = null;
   try { saved = localStorage.getItem("nf_lang"); } catch (e) {}
-  var nav2 = (navigator.language || "pt").slice(0, 2).toLowerCase();
-  apply(saved || ((nav2 === "en" || nav2 === "it") ? nav2 : "pt"));
+  var nav2 = (navigator.language || "").slice(0, 2).toLowerCase();
+  var navLang = (nav2 === "en" || nav2 === "it" || nav2 === "pt") ? nav2 : null;
+  apply(saved || navLang || "pt", false); // render imediato; auto-detecção NÃO persiste
+  if (!saved && !navLang) {
+    // navegador ambíguo → refina pela localização (best-effort, não bloqueia nada)
+    fetch("/api/geo").then(function (r) { return r.json(); }).then(function (d) {
+      var lang = mapCountry(d && d.country), has = null;
+      try { has = localStorage.getItem("nf_lang"); } catch (e) {}
+      if (lang && !has) apply(lang, false);
+    }).catch(function () {});
+  }
 
   var y = document.getElementById("year");
   if (y) y.textContent = String(new Date().getFullYear());
