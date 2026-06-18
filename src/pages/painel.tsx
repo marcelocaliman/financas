@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ArrowDownRight, Plus, Sparkles } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, Landmark } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, formatPercent, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useLiberdade } from "@/hooks/use-liberdade";
+import { useMacro } from "@/hooks/use-macro";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { CLASS, isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
@@ -232,6 +233,9 @@ export function DashboardDetail() {
         />
       </div>
 
+      {/* Indicadores do Brasil (Selic + IPCA) — referência pública, só com BRL envolvido */}
+      <MacroCard />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <div className={cn("p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
@@ -358,6 +362,46 @@ function StatTile({ label, value, sub, positive }: { label: string; value: strin
         {hidden ? "••••" : value}
       </div>
       {sub ? <div className="text-[11.5px] text-faint mt-1">{sub}</div> : null}
+    </div>
+  );
+}
+
+/** Por país/moeda: nome do país (i18n) + nome da taxa e do índice de inflação (siglas oficiais). */
+const MACRO_META: Record<Currency, { countryKey: string; rateName: string; cpiName: string; src: string }> = {
+  BRL: { countryKey: "countryBR", rateName: "Selic", cpiName: "IPCA", src: "BCB" },
+  EUR: { countryKey: "countryEA", rateName: "BCE", cpiName: "HICP", src: "BCE · Eurostat" },
+  USD: { countryKey: "countryUS", rateName: "Fed funds", cpiName: "CPI", src: "Fed · BLS" },
+  GBP: { countryKey: "countryUK", rateName: "Bank Rate", cpiName: "CPI", src: "BoE · ONS" },
+};
+
+/** Mini-card de juros + inflação do PAÍS da moeda de exibição (muda conforme o usuário escolhe).
+ *  Dados públicos de bancos centrais/órgãos oficiais — não é dado do usuário. Some se indisponível. */
+function MacroCard() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const m = useMacro(disp);
+  const meta = MACRO_META[disp];
+  if (!meta || !m || (m.rate == null && m.inflation == null)) return null;
+  const pct = (v: number | null) => (v == null ? "—" : formatPercent(v, disp));
+  return (
+    <div className={cn("p-5 mt-4", CARD)}>
+      <div className="flex items-center gap-2 mb-3.5">
+        <Landmark size={14} className="text-faint shrink-0" />
+        <Eyebrow>{t(`dashboard.${meta.countryKey}`)} · {t("dashboard.ratesInflation")}</Eyebrow>
+      </div>
+      <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
+        <div>
+          <Eyebrow>{meta.rateName}</Eyebrow>
+          <div className="font-numeric font-semibold text-[22px] tabular tracking-[-0.02em] mt-1">{pct(m.rate)}</div>
+          <div className="text-[11px] text-faint mt-0.5">{t("dashboard.perYear")}</div>
+        </div>
+        <div>
+          <Eyebrow>{t("dashboard.inflation")}</Eyebrow>
+          <div className="font-numeric font-semibold text-[22px] tabular tracking-[-0.02em] mt-1">{pct(m.inflation)}</div>
+          <div className="text-[11px] text-faint mt-0.5">{meta.cpiName} · 12m</div>
+        </div>
+        <div className="ml-auto self-end text-[10.5px] text-faint">{t("dashboard.source")}: {meta.src}</div>
+      </div>
     </div>
   );
 }

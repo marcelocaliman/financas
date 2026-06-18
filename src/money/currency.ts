@@ -82,6 +82,11 @@ export function formatMoney(
   }).format(amount);
 }
 
+/** Percentual no estilo numérico do locale da moeda (ex.: 14,25% em BRL, 3.63% em USD). */
+export function formatPercent(value: number, currency: Currency): string {
+  return new Intl.NumberFormat(LOCALE[currency], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) + "%";
+}
+
 /** Número SEM símbolo, com separador de milhar do locale da moeda — p/ campos numéricos
  *  (ex.: 20000 → "20.000" em BRL, "20,000" em USD). */
 export function groupNumber(n: number, currency: Currency): string {
