@@ -23,7 +23,20 @@ export default function App() {
   const init = useVault((s) => s.init);
   const theme = useUI((s) => s.theme);
   const adminOpen = useAdminUI((s) => s.adminOpen);
+  const syncFromHash = useAdminUI((s) => s.syncFromHash);
   const isAdmin = useIsAdmin();
+
+  // URL própria do painel (#admin): mantém o estado em sincronia com a barra de endereço
+  // e com os botões voltar/avançar do navegador.
+  useEffect(() => {
+    const sync = () => syncFromHash();
+    window.addEventListener("hashchange", sync);
+    window.addEventListener("popstate", sync);
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      window.removeEventListener("popstate", sync);
+    };
+  }, [syncFromHash]);
 
   // "Online agora": pinga enquanto houver sessão AUTENTICADA (travada ou destravada),
   // não só no app destravado — assim o contador acusa quem está logado de verdade.
