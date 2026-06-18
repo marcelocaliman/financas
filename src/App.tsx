@@ -4,6 +4,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
+import { usePresenceTracker } from "@/lib/presence";
 import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
@@ -23,6 +24,10 @@ export default function App() {
   const theme = useUI((s) => s.theme);
   const adminOpen = useAdminUI((s) => s.adminOpen);
   const isAdmin = useIsAdmin();
+
+  // "Online agora": pinga enquanto houver sessão AUTENTICADA (travada ou destravada),
+  // não só no app destravado — assim o contador acusa quem está logado de verdade.
+  usePresenceTracker(status === "locked" || status === "unlocked");
 
   useEffect(() => {
     void init();

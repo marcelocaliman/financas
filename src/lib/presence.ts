@@ -7,8 +7,9 @@ import { supabase } from "./supabase";
  * (sessionStorage), sem user_id/PII: o servidor só sabe que "uma sessão está
  * aberta", nunca quem. O painel admin conta as sessões com ping recente.
  */
-export function usePresenceTracker(): void {
+export function usePresenceTracker(active: boolean): void {
   useEffect(() => {
+    if (!active) return; // só pinga com sessão autenticada (travada ou destravada)
     let sid = "";
     try {
       sid = sessionStorage.getItem("nf-sid") || "";
@@ -23,7 +24,7 @@ export function usePresenceTracker(): void {
       void supabase.rpc("presence_ping", { p_session: sid, p_surface: "app" });
     };
     ping();
-    const id = setInterval(ping, 25_000);
+    const id = setInterval(ping, 20_000);
     const onVis = () => {
       if (document.visibilityState === "visible") ping();
     };
@@ -32,5 +33,5 @@ export function usePresenceTracker(): void {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, []);
+  }, [active]);
 }

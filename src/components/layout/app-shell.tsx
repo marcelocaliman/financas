@@ -12,7 +12,6 @@ import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useUI } from "@/store/ui";
 import { track } from "@/lib/analytics";
-import { usePresenceTracker } from "@/lib/presence";
 import { cn } from "@/lib/utils";
 
 /** Casca: menu (topo ou lateral) + página editorial única. A Config entra NO LUGAR do
@@ -39,7 +38,6 @@ export function AppShell() {
   useEffect(() => {
     track("app_open");
   }, []);
-  usePresenceTracker(); // marca a sessão como "online agora" (anônimo) p/ o painel admin
 
   useEffect(() => {
     const dark = theme === "dark";
