@@ -26,6 +26,16 @@ export function Accordion({
   const setOpen = useSections((s) => s.setOpen);
   const open = stored ?? defaultOpen;
 
+  // Reflete o `defaultOpen` no STORE na 1ª montagem. Sem isto, a seção aparece aberta (via
+  // fallback) mas o store fica `undefined` — e o menu a enxerga como "fechada", então clicar
+  // no item não a fecha (era o caso da Conta na Config / Visão geral no admin). Sincronizar
+  // deixa a nav e os contadores de "abrir/fechar tudo" verem o estado real. Roda 1× e respeita
+  // uma escolha posterior do usuário (aí `stored` deixa de ser undefined).
+  useEffect(() => {
+    if (defaultOpen && useSections.getState().open[id] === undefined) setOpen(id, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // `mounted`: corpo (pesado) só entra no DOM ao abrir pela 1ª vez e fica montado.
   // `expanded`: dispara a grid 0fr→1fr UM frame DEPOIS do corpo montar, pra a 1ª
   // abertura animar de verdade (em vez de aparecer de estalo). Colapsar é imediato.
