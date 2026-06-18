@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useVault } from "@/vault/vault-store";
-import { AuthShell, Field, SubmitButton, ErrorText, LinkButton, SocialRow } from "./auth-shell";
+import { AuthShell, Field, SubmitButton, ErrorText, LinkButton } from "./auth-shell";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
@@ -108,7 +108,6 @@ function Login({ onSignup }: { onSignup: () => void }) {
               <LinkButton onClick={forgot}>Esqueci minha senha</LinkButton>
             </div>
           </form>
-          <SocialRow verb="entre" />
         </>
       )}
     </AuthShell>
@@ -187,7 +186,6 @@ function Signup({ onLogin }: { onLogin: () => void }) {
         </div>
         <SubmitButton loading={loading}>Criar conta</SubmitButton>
       </form>
-      <SocialRow verb="cadastre-se" />
     </AuthShell>
   );
 }
