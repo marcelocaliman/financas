@@ -4,11 +4,96 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nossas Finanças — patrimônio multimoeda, privado e cross-border</title>
-  <meta name="description" content="O painel completo pra quem vive entre países: patrimônio, orçamento, investimentos e a sua independência financeira — multimoeda e com criptografia ponta a ponta. O servidor nunca vê seus números." />
+  <meta name="description" content="O painel completo pra quem vive entre países: patrimônio, orçamento, investimentos e a sua independência financeira — multimoeda e com criptografia ponta a ponta. O servidor nunca vê seus números. Grátis, privado e local-first." />
+  <link rel="canonical" href="https://nossasfinancas.com.br/" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="author" content="Nossas Finanças" />
+  <meta name="keywords" content="finanças multimoeda, gestão patrimonial, orçamento, investimentos, expatriados, cross-border, criptografia ponta a ponta, E2EE, finanças privadas, independência financeira, FIRE, BRL, EUR, USD, GBP, Brasil, Itália, PWA, local-first" />
   <meta name="theme-color" content="#0a0b0d" />
-  <meta property="og:title" content="Nossas Finanças" />
-  <meta property="og:description" content="Patrimônio multimoeda, privado de verdade. Para quem vive entre países." />
+
+  <!-- Ícones -->
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="mask-icon" href="/icon.svg" color="#3ecf8e" />
+
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Nossas Finanças" />
+  <meta property="og:title" content="Nossas Finanças — patrimônio multimoeda, privado e cross-border" />
+  <meta property="og:description" content="Gerencie seu patrimônio em qualquer moeda e país, com criptografia ponta a ponta. O servidor nunca vê os seus números. Grátis, privado e local-first." />
+  <meta property="og:url" content="https://nossasfinancas.com.br/" />
+  <meta property="og:image" content="https://nossasfinancas.com.br/og.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Nossas Finanças — painel de patrimônio multimoeda, privado e cross-border" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:locale:alternate" content="en_US" />
+  <meta property="og:locale:alternate" content="it_IT" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Nossas Finanças — patrimônio multimoeda e privado" />
+  <meta name="twitter:description" content="Gerencie seu patrimônio em qualquer moeda e país, com criptografia ponta a ponta. O servidor nunca vê os seus números." />
+  <meta name="twitter:image" content="https://nossasfinancas.com.br/og.png" />
+  <meta name="twitter:image:alt" content="Nossas Finanças — painel de patrimônio multimoeda" />
+
+  <!-- Dados estruturados (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://nossasfinancas.com.br/#org",
+        "name": "Nossas Finanças",
+        "url": "https://nossasfinancas.com.br/",
+        "logo": "https://nossasfinancas.com.br/og.png",
+        "description": "Gestão de patrimônio multimoeda, privada e cross-border, com criptografia ponta a ponta."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://nossasfinancas.com.br/#website",
+        "url": "https://nossasfinancas.com.br/",
+        "name": "Nossas Finanças",
+        "inLanguage": "pt-BR",
+        "publisher": { "@id": "https://nossasfinancas.com.br/#org" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "Nossas Finanças",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Web, iOS, Android (PWA)",
+        "url": "https://nossasfinancas.com.br/app",
+        "inLanguage": ["pt-BR", "en", "it"],
+        "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+        "featureList": [
+          "Multimoeda (BRL, EUR, USD, GBP)",
+          "Criptografia ponta a ponta (E2EE)",
+          "Local-first e offline (PWA)",
+          "Patrimônio e investimentos",
+          "Orçamento mensal multimoeda",
+          "Projeção e independência financeira (FIRE)",
+          "Export/import (JSON e CSV)"
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          { "@type": "Question", "name": "É grátis?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. O app é gratuito e privado. A ideia é entregar valor real primeiro; uma camada paga (como sync entre dispositivos e recursos avançados) pode vir depois, sempre opcional." } },
+          { "@type": "Question", "name": "Meus dados estão seguros? Quem consegue ver?", "acceptedAnswer": { "@type": "Answer", "text": "Só você. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair. O servidor guarda apenas um blob cifrado — nunca os valores em texto claro. Nem nós conseguimos ler." } },
+          { "@type": "Question", "name": "Funciona offline?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. É local-first: roda instantâneo e offline, e sincroniza sozinho em segundo plano quando há conexão. Limpar o navegador não perde nada — o cofre cifrado vive no servidor." } },
+          { "@type": "Question", "name": "Em quais moedas e países funciona?", "acceptedAnswer": { "@type": "Answer", "text": "Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual." } },
+          { "@type": "Question", "name": "E se eu esquecer a senha?", "acceptedAnswer": { "@type": "Answer", "text": "No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via." } },
+          { "@type": "Question", "name": "Consigo exportar meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. Você exporta e importa tudo em JSON (backup completo) e CSV (interoperável). Os dados são seus — entram e saem quando quiser." } },
+          { "@type": "Question", "name": "Já posso usar? Como entro?", "acceptedAnswer": { "@type": "Answer", "text": "Sim! É só criar uma conta grátis e começar — leva um minuto. Seus dados já nascem cifrados ponta a ponta, no seu navegador." } },
+          { "@type": "Question", "name": "Em quais idiomas?", "acceptedAnswer": { "@type": "Answer", "text": "Português, inglês e italiano — e o app funciona em qualquer país e moeda." } }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />

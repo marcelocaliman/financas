@@ -24,13 +24,13 @@ export default defineConfig({
         navigateFallbackAllowlist: [/^\/app(\/|$)/],
       },
       manifest: {
-        name: "Finanças — multimoeda",
-        short_name: "Finanças",
+        name: "Nossas Finanças — patrimônio multimoeda",
+        short_name: "Nossas Finanças",
         description:
-          "Gestão patrimonial e orçamento multimoeda — local-first e privado.",
+          "Gestão patrimonial e orçamento multimoeda, privado por criptografia ponta a ponta — local-first.",
         lang: "pt-BR",
-        theme_color: "#2C7A7B",
-        background_color: "#F5F8FA",
+        theme_color: "#0a0b0d",
+        background_color: "#0a0b0d",
         display: "standalone",
         start_url: "/app",
         icons: [
