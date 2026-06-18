@@ -8,7 +8,7 @@ import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projecti
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useFireTarget } from "@/hooks/use-fire-target";
 import { actions } from "@/data/actions";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, groupNumber, parseNumber, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
 import { realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
 import { Tile, Eyebrow } from "@/components/common/tile";
@@ -254,9 +254,10 @@ function FireCard() {
       onChange={(v) => actions.setLiberdade({ targetMonthlyCost: convert(v, disp, baseCur, rates) })}
       hint={costFromTarget ? `${t("projecao.custom")} · ${refStr}` : refStr}
       onReset={costFromTarget ? () => actions.setLiberdade({ targetMonthlyCost: 0 }) : undefined}
+      labelClass="min-h-[2.6em] leading-[1.3]"
     />
   );
-  const swrField = <Field label={t("fire.withdrawalRate")} value={swr} onChange={(v) => p.set({ withdrawalRate: v })} suffix="%" />;
+  const swrField = <Field label={t("fire.withdrawalRate")} value={swr} onChange={(v) => p.set({ withdrawalRate: v })} suffix="%" labelClass="min-h-[2.6em] leading-[1.3]" />;
   const header = (
     <div className="flex items-center gap-2">
       <Flame size={16} className="text-accent shrink-0" />
@@ -365,6 +366,7 @@ function Field({
   suffix,
   hint,
   onReset,
+  labelClass,
 }: {
   label: string;
   value: number;
@@ -372,20 +374,23 @@ function Field({
   suffix?: string;
   hint?: string;
   onReset?: () => void;
+  /** Classe extra no rótulo (ex.: reservar 2 linhas p/ alinhar os inputs num grid). */
+  labelClass?: string;
 }) {
-  const [v, setV] = useState(String(value));
+  const disp = useUI((s) => s.displayCurrency);
+  const [v, setV] = useState(() => groupNumber(value, disp));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
-    if (!focused) setV(String(value));
-  }, [value, focused]);
+    if (!focused) setV(groupNumber(value, disp));
+  }, [value, focused, disp]);
   const commit = () => {
-    const n = Number(v.replace(",", "."));
+    const n = parseNumber(v, disp);
     if (!Number.isNaN(n) && n >= 0) onChange(n);
-    else setV(String(value));
+    else setV(groupNumber(value, disp));
   };
   return (
     <label className="block">
-      <span className="eyebrow block mb-1.5">{label}</span>
+      <span className={cn("eyebrow block mb-1.5", labelClass)}>{label}</span>
       <div className="relative">
         <input
           inputMode="decimal"

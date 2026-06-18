@@ -8,7 +8,7 @@ import { defaultEligibleClass } from "@/domain/taxonomy";
 import { useUI } from "@/store/ui";
 import { actions } from "@/data/actions";
 import { LIBERDADE_DEFAULTS } from "@/hooks/use-liberdade";
-import { CURRENCY_SYMBOL } from "@/money/currency";
+import { CURRENCY_SYMBOL, groupNumber, parseNumber } from "@/money/currency";
 import {
   HEALTH_DIMS,
   DEFAULT_HEALTH_WEIGHTS,
@@ -31,15 +31,16 @@ function SubHeading({ children, hint }: { children: ReactNode; hint?: string }) 
 
 /** Input numérico que confirma no blur/Enter (mantém o texto enquanto edita). */
 function NumInput({ value, onCommit, suffix, min = 0, className }: { value: number; onCommit: (v: number) => void; suffix?: string; min?: number; className?: string }) {
-  const [v, setV] = useState(String(value));
+  const base = useUI((s) => s.baseCurrency);
+  const [v, setV] = useState(() => groupNumber(value, base));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
-    if (!focused) setV(String(value));
-  }, [value, focused]);
+    if (!focused) setV(groupNumber(value, base));
+  }, [value, focused, base]);
   const commit = () => {
-    const n = Number(v.replace(",", "."));
+    const n = parseNumber(v, base);
     if (!Number.isNaN(n) && n >= min) onCommit(n);
-    else setV(String(value));
+    else setV(groupNumber(value, base));
   };
   return (
     <div className={cn("relative", className)}>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { convert, formatMoney, type RateTable } from "./currency";
+import { convert, formatMoney, groupNumber, parseNumber, type RateTable } from "./currency";
 
 const rates: RateTable = { BRL: 1, EUR: 5.97, USD: 5.45, GBP: 6.9 };
 
@@ -36,5 +36,31 @@ describe("formatMoney", () => {
 
   it("respeita maximumFractionDigits", () => {
     expect(formatMoney(1.5, "EUR", { maximumFractionDigits: 2 })).toContain("1,5");
+  });
+});
+
+describe("groupNumber / parseNumber", () => {
+  it("agrupa o milhar no locale da moeda", () => {
+    expect(groupNumber(20000, "BRL")).toBe("20.000"); // pt-BR
+    expect(groupNumber(20000, "USD")).toBe("20,000"); // en-US
+  });
+
+  it("parseia milhar e decimal conforme o locale", () => {
+    expect(parseNumber("20.000", "BRL")).toBe(20000); // ponto = milhar em pt
+    expect(parseNumber("20000,5", "BRL")).toBe(20000.5); // vírgula = decimal em pt
+    expect(parseNumber("20,000", "USD")).toBe(20000); // vírgula = milhar em en
+    expect(parseNumber("20000.5", "USD")).toBe(20000.5); // ponto = decimal em en
+  });
+
+  it("ida e volta (número → texto agrupado → número)", () => {
+    for (const n of [0, 8, 4108, 20000, 605269]) {
+      expect(parseNumber(groupNumber(n, "BRL"), "BRL")).toBe(n);
+      expect(parseNumber(groupNumber(n, "USD"), "USD")).toBe(n);
+    }
+  });
+
+  it("vazio/inválido → NaN", () => {
+    expect(parseNumber("", "BRL")).toBeNaN();
+    expect(parseNumber("abc", "BRL")).toBeNaN();
   });
 });

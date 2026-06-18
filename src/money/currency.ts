@@ -81,3 +81,19 @@ export function formatMoney(
     ...opts,
   }).format(amount);
 }
+
+/** Número SEM símbolo, com separador de milhar do locale da moeda — p/ campos numéricos
+ *  (ex.: 20000 → "20.000" em BRL, "20,000" em USD). */
+export function groupNumber(n: number, currency: Currency): string {
+  return new Intl.NumberFormat(LOCALE[currency], { maximumFractionDigits: 2 }).format(n);
+}
+
+/** Parseia o que o usuário digitou (com/sem milhar, vírgula OU ponto decimal) no locale da
+ *  moeda → número. NaN se vazio/inválido. Robusto: deriva os separadores reais do locale. */
+export function parseNumber(s: string, currency: Currency): number {
+  const parts = new Intl.NumberFormat(LOCALE[currency]).formatToParts(11111.1);
+  const group = parts.find((p) => p.type === "group")?.value ?? ".";
+  const decimal = parts.find((p) => p.type === "decimal")?.value ?? ",";
+  const t = s.split(group).join("").split(decimal).join(".").replace(/[^0-9.-]/g, "");
+  return t === "" || t === "-" || t === "." ? NaN : Number(t);
+}
