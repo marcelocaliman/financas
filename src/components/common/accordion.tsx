@@ -14,12 +14,15 @@ export function Accordion({
   title,
   summary,
   defaultOpen = false,
+  bare = false,
   children,
 }: {
   id: string;
   title: string;
   summary?: ReactNode;
   defaultOpen?: boolean;
+  /** Sem a borda-divisória do topo (ex.: quando a seção vive dentro de um card próprio). */
+  bare?: boolean;
   children: ReactNode;
 }) {
   const stored = useSections((s) => s.open[id]);
@@ -51,7 +54,7 @@ export function Accordion({
   }, [open]);
 
   return (
-    <section id={id} className="scroll-mt-24 border-t border-border">
+    <section id={id} className={cn("scroll-mt-24", !bare && "border-t border-border")}>
       <button
         type="button"
         onClick={() => {

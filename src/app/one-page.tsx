@@ -26,7 +26,6 @@ const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
   projecao: { detail: <Projecao />, summary: <ProjecaoSummary /> },
   liberdade: { detail: <Liberdade />, summary: <LiberdadeSummary /> },
   crossborder: { detail: <CrossBorder />, summary: <CrossBorderSummary /> },
-  suporte: { detail: <Suporte />, summary: <SuporteSummary /> },
 };
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
@@ -64,6 +63,13 @@ export function OnePage() {
             </Accordion>
           );
         })}
+
+        {/* Ajuda & Suporte — fora das seções de patrimônio, num card próprio (atendimento, não gestão). */}
+        <div className="mt-8 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
+          <Accordion id="suporte" title={t("nav.suporte")} summary={<SuporteSummary />} bare>
+            <Suporte />
+          </Accordion>
+        </div>
       </div>
 
       <Footer />

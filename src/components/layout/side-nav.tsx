@@ -4,7 +4,7 @@ import {
   ArrowLeftRight, ArrowLeft, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
   ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
-  MonitorSmartphone, Globe, type LucideIcon,
+  MonitorSmartphone, Globe, LifeBuoy, type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
@@ -210,7 +210,7 @@ export function SideNav({ active }: { active: string }) {
             style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
             <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
-              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ suporte: suporteUnread }} />
+              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
@@ -231,6 +231,7 @@ export function SideNav({ active }: { active: string }) {
                     {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                   </IconBtn>
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
+                  <IconBtn onClick={() => goToSection("suporte")} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
                   {isAdmin ? (
                     <>
@@ -270,6 +271,7 @@ export function SideNav({ active }: { active: string }) {
                         <AdminPresence collapsed={false} />
                       </>
                     ) : null}
+                    <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => goToSection("suporte")} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
                 </>
@@ -408,19 +410,20 @@ export function NavList({
   );
 }
 
-function IconBtn({ onClick, label, active, children }: { onClick: () => void; label: string; active?: boolean; children: React.ReactNode }) {
+function IconBtn({ onClick, label, active, badge = 0, children }: { onClick: () => void; label: string; active?: boolean; badge?: number; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={badge > 0 ? `${label} (${badge})` : label}
       title={label}
       className={cn(
-        "grid place-items-center w-9 h-9 rounded-[10px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+        "relative grid place-items-center w-9 h-9 rounded-[10px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
         active ? "border-border-strong bg-card2 text-text" : "border-border text-muted hover:text-text hover:bg-card-hover",
       )}
     >
       {children}
+      {badge > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" /> : null}
     </button>
   );
 }
@@ -432,11 +435,13 @@ function FooterItem({
   label,
   onClick,
   active,
+  badge = 0,
 }: {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
   active?: boolean;
+  badge?: number;
 }) {
   return (
     <button
@@ -450,6 +455,11 @@ function FooterItem({
     >
       <Icon size={17} className="shrink-0" />
       <span className="truncate">{label}</span>
+      {badge > 0 ? (
+        <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[10px] font-bold tabular leading-none">
+          {badge}
+        </span>
+      ) : null}
     </button>
   );
 }
