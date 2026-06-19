@@ -20,6 +20,9 @@ import {
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
 import { FamilyAccess } from "@/components/config/family-access";
 import { LiberdadeSettings } from "@/components/config/liberdade-settings";
+import { useTaxonomy } from "@/hooks/use-taxonomy";
+import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { countShares } from "@/lib/shares";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { Accordion } from "@/components/common/accordion";
 import { CONFIG_NAV_ITEMS } from "@/components/layout/nav-items";
@@ -60,6 +63,22 @@ export default function Config({ onClose }: { onClose?: () => void }) {
   const layoutLabel = navLayout === "side" ? t("menu.side") : t("menu.top");
   const langLabel = (i18n.resolvedLanguage ?? "pt").toUpperCase();
 
+  // KPIs das abas (mesma vibe dos KPIs do painel): contagens reais + descritores curtos.
+  const tax = useTaxonomy();
+  const { data: dash } = useDashboardData();
+  const [shareCount, setShareCount] = useState<number | null>(null);
+  useEffect(() => {
+    if (!configOpen) return;
+    let alive = true;
+    void countShares().then((n) => { if (alive) setShareCount(n); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [configOpen]);
+
+  const catCount = tax.expenseCategories.length + tax.incomeCategories.length;
+  const entryCount = dash
+    ? dash.assets.length + dash.liabilities.length + dash.expenses.length + dash.incomes.length + dash.snapshots.length
+    : null;
+
   return (
     <div>
       {/* Cabeçalho — mesma faixa/gutters/topo do HERO da página inicial */}
@@ -89,7 +108,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
           </div>
         </Accordion>
 
-        <Accordion id="cfg-security" title={t("config.security")}>
+        <Accordion id="cfg-security" title={t("config.security")} summary={<CfgPreview>{t("config.kpiSecurity")}</CfgPreview>}>
           <div className="grid sm:grid-cols-2 gap-5 items-start">
             <Card>
               <ChangePassword />
@@ -100,11 +119,19 @@ export default function Config({ onClose }: { onClose?: () => void }) {
           </div>
         </Accordion>
 
-        <Accordion id="cfg-family" title={t("config.family")}>
+        <Accordion
+          id="cfg-family"
+          title={t("config.family")}
+          summary={<CfgPreview>{shareCount == null ? "" : `${t("config.kpiAccesses")}: ${shareCount}`}</CfgPreview>}
+        >
           <FamilyAccess />
         </Accordion>
 
-        <Accordion id="cfg-categories" title={t("config.categories")}>
+        <Accordion
+          id="cfg-categories"
+          title={t("config.categories")}
+          summary={<CfgPreview>{`${t("config.categories")}: ${catCount}`}</CfgPreview>}
+        >
           <TaxonomyEditor />
         </Accordion>
 
@@ -112,15 +139,19 @@ export default function Config({ onClose }: { onClose?: () => void }) {
           <Appearance />
         </Accordion>
 
-        <Accordion id="cfg-liberdade" title={t("config.liberdade")}>
+        <Accordion id="cfg-liberdade" title={t("config.liberdade")} summary={<CfgPreview>{t("config.kpiLiberdade")}</CfgPreview>}>
           <LiberdadeSettings />
         </Accordion>
 
-        <Accordion id="cfg-data" title={t("data.title")}>
+        <Accordion
+          id="cfg-data"
+          title={t("data.title")}
+          summary={<CfgPreview>{entryCount == null ? "" : `${t("config.kpiEntries")}: ${entryCount}`}</CfgPreview>}
+        >
           <DataSection />
         </Accordion>
 
-        <Accordion id="cfg-privacy" title={t("config.privacy")}>
+        <Accordion id="cfg-privacy" title={t("config.privacy")} summary={<CfgPreview>{t("config.kpiPrivacy")}</CfgPreview>}>
           <div className="max-w-2xl">
             <PrivacyPolicyContent />
             <div className="mt-5">

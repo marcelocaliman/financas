@@ -145,6 +145,15 @@ export async function revokeShare(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Quantos acessos o dono tem (KPI da Config). Só conta — não precisa decifrar nada. */
+export async function countShares(): Promise<number> {
+  const { count, error } = await supabase
+    .from("vault_shares")
+    .select("id", { count: "exact", head: true });
+  if (error) return 0;
+  return count ?? 0;
+}
+
 /* ── VIEWER (esposa, sem conta) ─────────────────────────────────────────────── */
 
 export type ShareOpenResult =
