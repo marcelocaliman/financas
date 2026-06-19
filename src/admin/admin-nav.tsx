@@ -37,6 +37,7 @@ export function AdminSideNav({ active }: { active: string }) {
   const setCollapsed = useUI((s) => s.setNavCollapsed);
   const close = useAdminUI((s) => s.setAdminOpen);
   const setTicketsView = useAdminUI((s) => s.setTicketsView);
+  const ticketsView = useAdminUI((s) => s.ticketsView);
   const theme = useUI((s) => s.theme);
   const toggleTheme = useUI((s) => s.toggleTheme);
   const email = useVault((s) => s.email);
@@ -101,7 +102,7 @@ export function AdminSideNav({ active }: { active: string }) {
         </div>
 
         {/* Navegação — abrir/fechar cada seção pela seta (mesmo NavList do app) */}
-        <NavList items={items} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
+        <NavList items={items} collapsed={collapsed} active={ticketsView ? "" : active} openSections={openSections} onNavigate={(id) => { setTicketsView(false); goToSection(id); }} onToggle={setSectionOpen} />
       </div>
 
       {/* Rodapé fixo no fim do menu */}
@@ -121,7 +122,10 @@ export function AdminSideNav({ active }: { active: string }) {
             <button
               type="button"
               onClick={() => setTicketsView(true)}
-              className="relative w-full flex items-center gap-3 h-10 px-3 mb-1 rounded-[11px] text-[13.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              className={cn(
+                "relative w-full flex items-center gap-3 h-10 px-3 mb-1 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                ticketsView ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+              )}
             >
               <LifeBuoy size={17} className="shrink-0" /> <span className="truncate">Tickets</span>
               {ticketsUnread > 0 ? (
@@ -182,6 +186,7 @@ function IconBtn({ onClick, label, badge = 0, children }: { onClick: () => void;
 export function AdminTopBar({ active }: { active: string }) {
   const close = useAdminUI((s) => s.setAdminOpen);
   const setTicketsView = useAdminUI((s) => s.setTicketsView);
+  const ticketsView = useAdminUI((s) => s.ticketsView);
   const ticketsUnread = useTicketsUnread();
   return (
     <header className="lg:hidden fixed top-0 left-0 right-0 z-50 glass border-b border-border">
@@ -191,9 +196,9 @@ export function AdminTopBar({ active }: { active: string }) {
           <span className="font-semibold text-[14.5px] tracking-[-0.02em]">Painel</span>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setTicketsView(true)} className="relative inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text transition-colors">
+          <button type="button" onClick={() => setTicketsView(!ticketsView)} className={cn("relative inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border text-[12px] font-medium transition-colors", ticketsView ? "border-accent/40 text-accent bg-accent-soft" : "border-border text-muted hover:text-text")}>
             <LifeBuoy size={13} /> Tickets
-            {ticketsUnread > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
+            {!ticketsView && ticketsUnread > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
           </button>
           <button type="button" onClick={() => close(false)} className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text transition-colors">
             <ArrowLeftRight size={13} /> App
@@ -202,12 +207,12 @@ export function AdminTopBar({ active }: { active: string }) {
       </div>
       <div className="flex gap-1 px-3 pb-2 overflow-x-auto scrollbar-subtle">
         {ADMIN_NAV_ITEMS.map(({ id, key }) => {
-          const on = active === id;
+          const on = !ticketsView && active === id;
           return (
             <button
               key={id}
               type="button"
-              onClick={() => toggleSection(id, on)}
+              onClick={() => { setTicketsView(false); toggleSection(id, on); }}
               className={cn(
                 "shrink-0 h-8 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors whitespace-nowrap",
                 on ? "text-accent bg-card2" : "text-muted hover:text-text",

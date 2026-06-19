@@ -66,6 +66,7 @@ export function SideNav({ active }: { active: string }) {
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
   const setSupportOpen = useUI((s) => s.setSupportOpen);
+  const supportOpen = useUI((s) => s.supportOpen);
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
   const { isAdmin } = useIsAdmin();
   const email = useVault((s) => s.email);
@@ -226,6 +227,8 @@ export function SideNav({ active }: { active: string }) {
             <>
               {configOpen ? (
                 <IconBtn onClick={() => setConfigOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
+              ) : supportOpen ? (
+                <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
                   <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
@@ -252,6 +255,9 @@ export function SideNav({ active }: { active: string }) {
               {configOpen ? (
                 /* Em Configurações: só "Voltar ao app" (como no painel admin) */
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setConfigOpen(false)} />
+              ) : supportOpen ? (
+                /* Em Ajuda & Suporte: mesma cara — só "Voltar ao app" */
+                <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
               ) : (
                 <>
                   {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
@@ -534,6 +540,7 @@ export function MobileBar() {
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
   const setSupportOpen = useUI((s) => s.setSupportOpen);
+  const supportOpen = useUI((s) => s.supportOpen);
   const supportUnread = useMyTicketStats().unread;
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -554,9 +561,9 @@ export function MobileBar() {
             {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           <CurrencyMenu />
-          <button type="button" onClick={() => setSupportOpen(true)} aria-label={t("nav.suporte")} className="relative grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
-            <LifeBuoy size={16} />
-            {supportUnread > 0 ? <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
+          <button type="button" onClick={() => setSupportOpen(!supportOpen)} aria-label={t("nav.suporte")} className={cn("relative grid place-items-center w-9 h-9 rounded-[10px] transition-colors", supportOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
+            {supportOpen ? <ArrowLeft size={16} /> : <LifeBuoy size={16} />}
+            {!supportOpen && supportUnread > 0 ? <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
           </button>
           <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={configOpen ? t("menu.back") : t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             {configOpen ? <ArrowLeft size={16} /> : <Settings size={16} />}

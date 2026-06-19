@@ -5,6 +5,7 @@ import { SideNav, MobileBar } from "./side-nav";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
+import { SupportView } from "@/app/support-app";
 import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
@@ -23,6 +24,7 @@ export function AppShell() {
   const navCollapsed = useUI((s) => s.navCollapsed);
   const configOpen = useUI((s) => s.configOpen);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
+  const supportOpen = useUI((s) => s.supportOpen);
   // O spy segue o conjunto de seções da VISÃO ativa: as da Config quando ela está aberta
   // (a página fica fora da tela), as da página quando fechada. Assim a nav lateral destaca a
   // seção correta nos dois modos e nunca acende uma seção "fantasma" da outra visão.
@@ -113,6 +115,9 @@ export function AppShell() {
         <TopNav active={active} />
       )}
       <main className={side ? (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]") : undefined}>
+        {supportOpen ? (
+          <SupportView />
+        ) : (
         <div className="relative overflow-clip min-h-screen">
           {/* PÁGINA — pane da esquerda (sai pra esquerda ao abrir a Config) */}
           <div
@@ -137,6 +142,7 @@ export function AppShell() {
             <Config onClose={() => setConfigOpen(false)} />
           </div>
         </div>
+        )}
       </main>
       <BottomNav active={active} />
     </div>

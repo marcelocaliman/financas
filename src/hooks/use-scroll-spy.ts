@@ -72,6 +72,7 @@ export function scrollToSection(id: string): void {
 /** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move).
  *  Se a Config estiver aberta, fecha-a e adia a rolagem pro AppShell (quando o conteúdo volta). */
 export function goToSection(id: string): void {
+  useUI.getState().setSupportOpen(false); // navegar por uma seção sai da página de Suporte
   useSections.getState().setOpen(id, true);
   if (useUI.getState().configOpen) {
     pendingNav = id;
