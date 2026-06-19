@@ -65,7 +65,7 @@ export function OnePage() {
         })}
 
         {/* Ajuda & Suporte — fora das seções de patrimônio, num card próprio (atendimento, não gestão). */}
-        <div className="mt-8 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
+        <div className="mt-14 lg:mt-16 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
           <Accordion id="suporte" title={t("nav.suporte")} summary={<SuporteSummary />} bare>
             <Suporte />
           </Accordion>
