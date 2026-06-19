@@ -9,7 +9,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full max-w-sm h-10 px-3 rounded-[8px] border border-border bg-bg2 text-[13.5px] text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors"
+      className="w-full h-10 px-3 rounded-[8px] border border-border bg-card text-[13.5px] text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors"
     />
   );
 }
@@ -180,57 +180,67 @@ export function FamilyAccess() {
     }
   };
 
+  const count = rows?.length ?? 0;
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-2.5 rounded-[12px] border border-amber-500/30 bg-amber-500/[0.05] p-4">
-        <ShieldAlert size={17} className="text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-[12.5px] text-muted leading-relaxed">
-          Crie um link com PIN pra alguém de confiança <b className="text-text">ver</b> o seu painel (só leitura — não
-          dá pra editar). <b className="text-text">Quem tiver o link e o PIN vê todos os seus números.</b> Por
-          segurança, mande o PIN por um canal diferente do link. Você pode revogar o acesso a qualquer momento.
-        </p>
+    <div className="grid gap-6 lg:grid-cols-2 lg:gap-8 items-start">
+      {/* Coluna esquerda: aviso de privacidade + criar novo acesso */}
+      <div className="space-y-5">
+        <div className="flex items-start gap-2.5 rounded-[12px] border border-amber-500/30 bg-amber-500/[0.05] p-4">
+          <ShieldAlert size={17} className="text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-[12.5px] text-muted leading-relaxed">
+            Crie um link com PIN pra alguém de confiança <b className="text-text">ver</b> o seu painel (só leitura — não
+            dá pra editar). <b className="text-text">Quem tiver o link e o PIN vê todos os seus números.</b> Por
+            segurança, mande o PIN por um canal diferente do link. Você pode revogar o acesso a qualquer momento.
+          </p>
+        </div>
+
+        <div className="rounded-[14px] border border-border bg-bg2 p-5 space-y-3">
+          <div className="flex items-center gap-2 text-[14px] font-semibold text-text">
+            <Users size={16} className="text-muted" /> Novo acesso
+          </div>
+          {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
+          <Input
+            aria-label="Nome (opcional)"
+            placeholder="Pra quem? (ex.: Esposa) — opcional"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={40}
+          />
+          <Input
+            type="password"
+            aria-label="Sua senha"
+            autoComplete="current-password"
+            placeholder="Sua senha (pra confirmar)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <Btn tone="teal" className="w-full" disabled={creating || password.length === 0} onClick={create}>
+            {creating ? <><Loader2 size={14} className="animate-spin" /> Criando…</> : <>Criar acesso</>}
+          </Btn>
+          <p className="text-[11.5px] text-faint leading-relaxed">
+            O segredo do link nunca chega ao servidor — fica só no link. O PIN é um 2º fator com bloqueio por tentativas.
+          </p>
+        </div>
       </div>
 
+      {/* Coluna direita: acessos ativos */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-[14px] font-semibold text-text">
-          <Users size={16} className="text-muted" /> Novo acesso
+        <div className="eyebrow text-faint">
+          Acessos ativos{count > 0 ? ` · ${count}` : ""}
         </div>
-        {err ? <p className="text-[12.5px] text-red-400">{err}</p> : null}
-        <Input
-          aria-label="Nome (opcional)"
-          placeholder="Pra quem? (ex.: Esposa) — opcional"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          maxLength={40}
-        />
-        <Input
-          type="password"
-          aria-label="Sua senha"
-          autoComplete="current-password"
-          placeholder="Sua senha (pra confirmar)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Btn tone="teal" disabled={creating || password.length === 0} onClick={create}>
-          {creating ? <><Loader2 size={14} className="animate-spin" /> Criando…</> : <>Criar acesso</>}
-        </Btn>
-        <p className="text-[11.5px] text-faint leading-relaxed">
-          O segredo do link nunca chega ao servidor — fica só no link. O PIN é um 2º fator com bloqueio por tentativas.
-        </p>
-      </div>
-
-      {rows === null ? (
-        <p className="text-[12.5px] text-faint">Carregando…</p>
-      ) : rows.length === 0 ? (
-        <p className="text-[12.5px] text-faint">Nenhum acesso ativo.</p>
-      ) : (
-        <div className="space-y-3">
-          <div className="eyebrow text-faint">Acessos ativos</div>
-          {rows.map((row) => (
+        {rows === null ? (
+          <p className="text-[12.5px] text-faint">Carregando…</p>
+        ) : rows.length === 0 ? (
+          <div className="rounded-[14px] border border-dashed border-border p-6 text-center">
+            <p className="text-[12.5px] text-faint">Nenhum acesso ativo ainda.</p>
+          </div>
+        ) : (
+          rows.map((row) => (
             <ShareCard key={row.id} row={row} onRevoke={() => void revoke(row.id)} highlight={justCreated === row.id} />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

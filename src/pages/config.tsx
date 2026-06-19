@@ -101,9 +101,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
         </Accordion>
 
         <Accordion id="cfg-family" title={t("config.family")}>
-          <div className="max-w-2xl">
-            <FamilyAccess />
-          </div>
+          <FamilyAccess />
         </Accordion>
 
         <Accordion id="cfg-categories" title={t("config.categories")}>
