@@ -24,6 +24,9 @@ interface UIState {
   /** Drawer de Configurações aberto (não persiste). */
   configOpen: boolean;
   setConfigOpen: (v: boolean) => void;
+  /** Página de Ajuda & Suporte aberta — tela cheia, igual ao painel admin (não persiste). */
+  supportOpen: boolean;
+  setSupportOpen: (v: boolean) => void;
   /** Posição do menu (persiste). */
   navLayout: NavLayout;
   setNavLayout: (v: NavLayout) => void;
@@ -48,6 +51,9 @@ export const useUI = create<UIState>()(
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
       configOpen: false,
       setConfigOpen: (configOpen) => set({ configOpen }),
+      supportOpen: false,
+      // Suporte e Config são telas separadas mutuamente exclusivas.
+      setSupportOpen: (supportOpen) => set(supportOpen ? { supportOpen, configOpen: false } : { supportOpen }),
       navLayout: "side",
       setNavLayout: (navLayout) => set({ navLayout }),
       navCollapsed: false,

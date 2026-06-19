@@ -65,6 +65,7 @@ export function SideNav({ active }: { active: string }) {
   const toggleTheme = useUI((s) => s.toggleTheme);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
+  const setSupportOpen = useUI((s) => s.setSupportOpen);
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
   const { isAdmin } = useIsAdmin();
   const email = useVault((s) => s.email);
@@ -231,7 +232,7 @@ export function SideNav({ active }: { active: string }) {
                     {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                   </IconBtn>
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-                  <IconBtn onClick={() => goToSection("suporte")} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
+                  <IconBtn onClick={() => setSupportOpen(true)} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
                   {isAdmin ? (
                     <>
@@ -271,7 +272,7 @@ export function SideNav({ active }: { active: string }) {
                         <AdminPresence collapsed={false} />
                       </>
                     ) : null}
-                    <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => goToSection("suporte")} />
+                    <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => setSupportOpen(true)} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
                 </>
@@ -532,6 +533,8 @@ export function MobileBar() {
   const toggleNumbers = useUI((s) => s.toggleNumbers);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const configOpen = useUI((s) => s.configOpen);
+  const setSupportOpen = useUI((s) => s.setSupportOpen);
+  const supportUnread = useMyTicketStats().unread;
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -551,6 +554,10 @@ export function MobileBar() {
             {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
           <CurrencyMenu />
+          <button type="button" onClick={() => setSupportOpen(true)} aria-label={t("nav.suporte")} className="relative grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+            <LifeBuoy size={16} />
+            {supportUnread > 0 ? <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
+          </button>
           <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={configOpen ? t("menu.back") : t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             {configOpen ? <ArrowLeft size={16} /> : <Settings size={16} />}
           </button>

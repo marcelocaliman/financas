@@ -36,6 +36,7 @@ export function AdminSideNav({ active }: { active: string }) {
   const collapsed = useUI((s) => s.navCollapsed);
   const setCollapsed = useUI((s) => s.setNavCollapsed);
   const close = useAdminUI((s) => s.setAdminOpen);
+  const setTicketsView = useAdminUI((s) => s.setTicketsView);
   const theme = useUI((s) => s.theme);
   const toggleTheme = useUI((s) => s.toggleTheme);
   const email = useVault((s) => s.email);
@@ -107,7 +108,7 @@ export function AdminSideNav({ active }: { active: string }) {
       <div className={cn("shrink-0 p-3 pt-3 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
         {collapsed ? (
           <>
-            <IconBtn onClick={() => goToSection("adm-tickets")} label="Tickets" badge={ticketsUnread}><LifeBuoy size={16} /></IconBtn>
+            <IconBtn onClick={() => setTicketsView(true)} label="Tickets" badge={ticketsUnread}><LifeBuoy size={16} /></IconBtn>
             <IconBtn onClick={() => close(false)} label="Voltar ao app"><ArrowLeft size={16} /></IconBtn>
             <IconBtn onClick={toggleTheme} label="Tema">{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
             <div className="h-px w-7 bg-border my-0.5" />
@@ -119,7 +120,7 @@ export function AdminSideNav({ active }: { active: string }) {
           <>
             <button
               type="button"
-              onClick={() => goToSection("adm-tickets")}
+              onClick={() => setTicketsView(true)}
               className="relative w-full flex items-center gap-3 h-10 px-3 mb-1 rounded-[11px] text-[13.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >
               <LifeBuoy size={17} className="shrink-0" /> <span className="truncate">Tickets</span>
@@ -180,6 +181,8 @@ function IconBtn({ onClick, label, badge = 0, children }: { onClick: () => void;
 /** Barra superior do painel no mobile (<lg): marca + voltar + abas horizontais roláveis. */
 export function AdminTopBar({ active }: { active: string }) {
   const close = useAdminUI((s) => s.setAdminOpen);
+  const setTicketsView = useAdminUI((s) => s.setTicketsView);
+  const ticketsUnread = useTicketsUnread();
   return (
     <header className="lg:hidden fixed top-0 left-0 right-0 z-50 glass border-b border-border">
       <div className="flex items-center justify-between gap-3 h-[54px] px-4">
@@ -187,9 +190,15 @@ export function AdminTopBar({ active }: { active: string }) {
           <div className="grid place-items-center w-[26px] h-[26px] rounded-[8px] bg-accent text-[#0A0B0D]"><ShieldCheck size={14} strokeWidth={2.4} /></div>
           <span className="font-semibold text-[14.5px] tracking-[-0.02em]">Painel</span>
         </div>
-        <button type="button" onClick={() => close(false)} className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text transition-colors">
-          <ArrowLeftRight size={13} /> App
-        </button>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setTicketsView(true)} className="relative inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text transition-colors">
+            <LifeBuoy size={13} /> Tickets
+            {ticketsUnread > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
+          </button>
+          <button type="button" onClick={() => close(false)} className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text transition-colors">
+            <ArrowLeftRight size={13} /> App
+          </button>
+        </div>
       </div>
       <div className="flex gap-1 px-3 pb-2 overflow-x-auto scrollbar-subtle">
         {ADMIN_NAV_ITEMS.map(({ id, key }) => {

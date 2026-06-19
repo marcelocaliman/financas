@@ -14,7 +14,6 @@ import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
 import Projecao, { ProjecaoSummary } from "@/pages/projecao";
 import Liberdade, { LiberdadeSummary } from "@/pages/liberdade";
 import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
-import Suporte, { SuporteSummary } from "@/pages/suporte";
 
 /** id → { detalhe (corpo do accordion), summary (KPIs do header) }. */
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
@@ -63,13 +62,6 @@ export function OnePage() {
             </Accordion>
           );
         })}
-
-        {/* Ajuda & Suporte — fora das seções de patrimônio, num card próprio (atendimento, não gestão). */}
-        <div className="mt-14 lg:mt-16 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
-          <Accordion id="suporte" title={t("nav.suporte")} summary={<SuporteSummary />} bare>
-            <Suporte />
-          </Accordion>
-        </div>
       </div>
 
       <Footer />

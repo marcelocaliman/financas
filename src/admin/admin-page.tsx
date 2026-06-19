@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Accordion } from "@/components/common/accordion";
 import { OverviewSection, OverviewSummary } from "./sections/overview";
 import { UsersSection, UsersSummary } from "./sections/users";
-import { TicketsSection, TicketsSummary } from "./sections/tickets";
 import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
 import { AccessLogSection, AccessSummary } from "./sections/access-log";
 import { AdminsSection, AdminsSummary } from "./sections/admins";
@@ -71,13 +70,6 @@ export function AdminPage() {
         <Accordion id="adm-admins" title="Administradores" summary={<AdminsSummary />}>
           <SectionErrorBoundary name="Administradores"><AdminsSection /></SectionErrorBoundary>
         </Accordion>
-
-        {/* Tickets — atendimento, separado das métricas do app, num card próprio (igual ao app). */}
-        <div className="mt-14 lg:mt-16 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
-          <Accordion id="adm-tickets" title="Tickets" summary={<TicketsSummary />} bare>
-            <SectionErrorBoundary name="Tickets"><TicketsSection /></SectionErrorBoundary>
-          </Accordion>
-        </div>
       </div>
     </div>
   );

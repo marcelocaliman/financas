@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useUI } from "./ui";
 
 /** Estado do painel super-admin, espelhado na URL no path /app/admin — assim o painel
  *  tem URL própria e profissional: bookmarkável, recarregável (refresh mantém no painel)
@@ -7,6 +8,9 @@ import { create } from "zustand";
 interface AdminUIState {
   adminOpen: boolean;
   setAdminOpen: (v: boolean) => void;
+  /** Tickets em tela cheia DENTRO do painel (métricas ↔ tickets). */
+  ticketsView: boolean;
+  setTicketsView: (v: boolean) => void;
   /** Recalcula a partir do path atual (para popstate). */
   syncFromPath: () => void;
 }
@@ -36,7 +40,10 @@ export const useAdminUI = create<AdminUIState>((set) => ({
   adminOpen: isAdminPath(),
   setAdminOpen: (adminOpen) => {
     pushUrl(adminOpen);
-    set({ adminOpen });
+    if (adminOpen) useUI.getState().setSupportOpen(false); // só uma tela cheia por vez
+    set({ adminOpen, ticketsView: false }); // abre/fecha o painel sempre nas métricas
   },
-  syncFromPath: () => set({ adminOpen: isAdminPath() }),
+  ticketsView: false,
+  setTicketsView: (ticketsView) => set({ ticketsView }),
+  syncFromPath: () => set((s) => ({ adminOpen: isAdminPath(), ticketsView: isAdminPath() ? s.ticketsView : false })),
 }));
