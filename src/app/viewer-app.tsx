@@ -14,7 +14,41 @@ import { useMainCurrency } from "@/hooks/use-main-currency";
 import i18n from "@/i18n";
 import { openShare, parseShareFragment, type ShareOpenResult } from "@/lib/shares";
 
-type Stage = "pin" | "loading" | "ready";
+type Stage = "checking" | "pin" | "loading" | "ready";
+
+// "Lembrar 24h": guarda SÓ o PIN (gate de 4 dígitos) neste aparelho, com validade.
+// O segredo de cripto já vive na URL; um PIN sem o link é inútil. No reload reabre
+// sozinho e busca os dados FRESCOS do servidor (não guarda os números decifrados).
+const UNLOCK_TTL_MS = 24 * 60 * 60 * 1000;
+const unlockKey = (token: string) => `nf_share_unlock_${token}`;
+function readCachedPin(token: string): string | null {
+  try {
+    const raw = localStorage.getItem(unlockKey(token));
+    if (!raw) return null;
+    const { pin, exp } = JSON.parse(raw) as { pin?: unknown; exp?: unknown };
+    if (typeof pin !== "string" || typeof exp !== "number" || exp < Date.now()) {
+      localStorage.removeItem(unlockKey(token));
+      return null;
+    }
+    return pin;
+  } catch {
+    return null;
+  }
+}
+function writeCachedPin(token: string, pin: string): void {
+  try {
+    localStorage.setItem(unlockKey(token), JSON.stringify({ pin, exp: Date.now() + UNLOCK_TTL_MS }));
+  } catch {
+    /* localStorage indisponível (modo privado) — segue sem lembrar */
+  }
+}
+function clearCachedPin(token: string): void {
+  try {
+    localStorage.removeItem(unlockKey(token));
+  } catch {
+    /* ignora */
+  }
+}
 
 const T: Record<string, Record<string, string>> = {
   pt: {
@@ -23,6 +57,7 @@ const T: Record<string, Record<string, string>> = {
     badInvalid: "Link inválido ou revogado.", badPin: "PIN incorreto.", badLocked: "Muitas tentativas. Tente de novo em {{s}}s.",
     badEmpty: "Este painel ainda não tem dados.", badErr: "Não foi possível abrir. Tente de novo.",
     invalidLink: "Link inválido. Confira o endereço que você recebeu.",
+    remember: "Lembrar neste aparelho por 24h",
   },
   en: {
     title: "Shared dashboard", sub: "Enter the 4-digit PIN you received to view the dashboard.",
@@ -30,6 +65,7 @@ const T: Record<string, Record<string, string>> = {
     badInvalid: "Invalid or revoked link.", badPin: "Wrong PIN.", badLocked: "Too many tries. Try again in {{s}}s.",
     badEmpty: "This dashboard has no data yet.", badErr: "Couldn't open. Try again.",
     invalidLink: "Invalid link. Check the address you received.",
+    remember: "Remember on this device for 24h",
   },
   it: {
     title: "Pannello condiviso", sub: "Inserisci il PIN di 4 cifre che hai ricevuto per vedere il pannello.",
@@ -37,6 +73,7 @@ const T: Record<string, Record<string, string>> = {
     badInvalid: "Link non valido o revocato.", badPin: "PIN errato.", badLocked: "Troppi tentativi. Riprova tra {{s}}s.",
     badEmpty: "Questo pannello non ha ancora dati.", badErr: "Impossibile aprire. Riprova.",
     invalidLink: "Link non valido. Controlla l'indirizzo ricevuto.",
+    remember: "Ricorda su questo dispositivo per 24h",
   },
 };
 // Idioma do viewer = o do DONO (vem no fragmento `&l=`), com fallback pro navegador.
@@ -58,13 +95,14 @@ function errorMessage(r: Extract<ShareOpenResult, { ok: false }>): string {
 }
 
 /** Tela do PIN. */
-function PinGate({ onOpen, busy, error }: { onOpen: (pin: string) => void; busy: boolean; error: string }) {
+function PinGate({ onOpen, busy, error }: { onOpen: (pin: string, remember: boolean) => void; busy: boolean; error: string }) {
   const [pin, setPin] = useState("");
+  const [remember, setRemember] = useState(true);
   const ok = pin.length === 4;
   return (
     <div className="min-h-screen grid place-items-center bg-bg text-text px-4">
       <form
-        onSubmit={(e) => { e.preventDefault(); if (ok && !busy) onOpen(pin); }}
+        onSubmit={(e) => { e.preventDefault(); if (ok && !busy) onOpen(pin, remember); }}
         className="w-full max-w-[360px] rounded-[18px] border border-border bg-card p-6 sm:p-7 shadow-[var(--shadow-card)]"
       >
         <div className="flex items-center gap-2.5 mb-5">
@@ -86,6 +124,15 @@ function PinGate({ onOpen, busy, error }: { onOpen: (pin: string) => void; busy:
           />
         </label>
         {error ? <p className="text-[12.5px] text-neg mt-3">{error}</p> : null}
+        <label className="flex items-center gap-2 mt-4 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4 rounded border-border-strong bg-bg2 accent-[var(--accent)]"
+          />
+          <span className="text-[12.5px] text-muted">{tt("remember")}</span>
+        </label>
         <button
           type="submit"
           disabled={!ok || busy}
@@ -146,9 +193,10 @@ function ReadyView() {
 
 export function ViewerApp() {
   const theme = useUI((s) => s.theme);
-  const [stage, setStage] = useState<Stage>("pin");
+  const [stage, setStage] = useState<Stage>("checking");
   const [error, setError] = useState("");
   const frag = useRef(parseShareFragment());
+  const didInit = useRef(false);
 
   // idioma do viewer = o do dono (do fragmento) → seções do painel (react-i18next) seguem ele
   useEffect(() => {
@@ -167,21 +215,37 @@ export function ViewerApp() {
     return () => window.removeEventListener("pagehide", clear);
   }, []);
 
-  const open = async (pin: string) => {
-    if (!frag.current) return;
+  const open = async (pin: string, remember: boolean, auto = false) => {
+    const f = frag.current;
+    if (!f) return;
     setError("");
-    setStage("loading");
-    const r = await openShare(frag.current.token, frag.current.secret, pin);
+    setStage(auto ? "checking" : "loading"); // auto: spinner; manual: form com spinner
+    const r = await openShare(f.token, f.secret, pin);
     if (!r.ok) {
+      if (auto) clearCachedPin(f.token); // PIN lembrado não vale mais (revogado/expirado)
       setError(errorMessage(r));
       setStage("pin");
       return;
     }
+    if (remember) writeCachedPin(f.token, pin); // janela deslizante de 24h
+    else clearCachedPin(f.token);
     await loadVault(db, r.data);     // popula o Dexie com o cofre decifrado do dono
     setRepositoryReadOnly(true);     // garantia dura: nenhuma escrita persiste
     useViewer.getState().setViewer(null);
     setStage("ready");
   };
+
+  // No load: se há PIN lembrado (≤24h) p/ este link, reabre sozinho (dados frescos do servidor).
+  useEffect(() => {
+    if (didInit.current) return;
+    didInit.current = true;
+    const f = frag.current;
+    if (!f) return;
+    const cached = readCachedPin(f.token);
+    if (cached) void open(cached, true, true);
+    else setStage("pin");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!frag.current) {
     return (
@@ -194,5 +258,12 @@ export function ViewerApp() {
     );
   }
   if (stage === "ready") return <ReadyView />;
+  if (stage === "checking") {
+    return (
+      <div className="min-h-screen grid place-items-center bg-bg text-text">
+        <Loader2 size={22} className="animate-spin text-muted" />
+      </div>
+    );
+  }
   return <PinGate onOpen={open} busy={stage === "loading"} error={error} />;
 }
