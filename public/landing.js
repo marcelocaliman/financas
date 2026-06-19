@@ -100,71 +100,128 @@
   // variável: às vezes devagar, às vezes rápido) e alguns KPIs oscilam de leve. Pausa
   // quando a aba/seção não está visível. Respeita prefers-reduced-motion (estático).
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // Formata no idioma da PÁGINA — senão /en e /it mostrariam "1.284.930" (separador pt-BR).
+  var NUM_LOCALE = lang === "en" ? "en-US" : lang === "it" ? "it-IT" : "pt-BR";
   function fmtNum(v, dec) {
-    return v.toLocaleString("pt-BR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    return v.toLocaleString(NUM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
 
-  var liveEls = [], livePaused = false, heroVisible = true, liveStarted = false;
-  function updatePaused() { livePaused = (typeof document.hidden !== "undefined" && document.hidden) || !heroVisible; }
+  var liveEls = [], livePaused = false, heroVisible = true, liveStarted = false, liveRunning = false;
+  function updatePaused() {
+    var was = livePaused;
+    livePaused = (typeof document.hidden !== "undefined" && document.hidden) || !heroVisible;
+    if (was && !livePaused && liveStarted && !liveRunning) { liveRunning = true; liveLoop(); } // retoma do idle
+  }
+  function startLive() { if (!reduceMotion && !liveStarted) { liveStarted = true; liveRunning = true; liveLoop(); } }
 
-  function startCountUp() {
-    [].forEach.call(document.querySelectorAll("[data-count]"), function (el) {
-      var base = parseFloat(el.getAttribute("data-count"));
-      var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
-      var live = el.getAttribute("data-live"); // "grow" | "jitter" | null
-      if (isNaN(base)) return;
-      if (reduceMotion) { el.textContent = fmtNum(base, dec); return; }
-      var dur = 1400, start = null;
-      function step(ts) {
-        if (start === null) start = ts;
-        var p = Math.min(1, (ts - start) / dur);
-        var e = 1 - Math.pow(1 - p, 3); // easeOutCubic
-        el.textContent = fmtNum(base * e, dec);
-        if (p < 1) requestAnimationFrame(step);
-        else {
-          el.textContent = fmtNum(base, dec);
-          if (live) liveEls.push({ el: el, base: base, dec: dec, grow: live === "grow", value: base, vel: 0 });
-        }
+  // Count-up de UM elemento [data-count], disparado quando entra na viewport (não mais tudo de uma
+  // vez). data-live="grow|jitter" mantém o número "vivo" depois (random-walk no liveLoop).
+  function countEl(el) {
+    if (el.__counted) return; el.__counted = true;
+    var base = parseFloat(el.getAttribute("data-count"));
+    var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+    var live = el.getAttribute("data-live"); // "grow" | "jitter" | null
+    if (isNaN(base)) return;
+    if (reduceMotion) {
+      el.textContent = fmtNum(base, dec);
+      if (live) { liveEls.push({ el: el, base: base, dec: dec, grow: live === "grow", value: base, vel: 0 }); startLive(); }
+      return;
+    }
+    var dur = 1400, start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      var e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      el.textContent = fmtNum(base * e, dec);
+      if (p < 1) requestAnimationFrame(step);
+      else {
+        el.textContent = fmtNum(base, dec);
+        if (live) { liveEls.push({ el: el, base: base, dec: dec, grow: live === "grow", value: base, vel: 0 }); startLive(); }
       }
-      requestAnimationFrame(step);
-    });
-    if (!reduceMotion && !liveStarted) { liveStarted = true; liveLoop(); }
+    }
+    requestAnimationFrame(step);
   }
 
   function liveLoop() {
-    if (!livePaused) {
-      for (var i = 0; i < liveEls.length; i++) {
-        var o = liveEls[i], amp = o.grow ? 1 : 0.5;
-        o.vel += (Math.random() - 0.5) * o.base * 0.0001 * amp;       // ruído
-        if (o.grow) o.vel += o.base * 0.000006;                       // viés de alta (só patrimônio)
-        o.vel *= 0.86;                                                 // amortecimento
-        if (Math.random() < 0.03) o.vel += Math.random() * o.base * 0.0008 * amp; // rajada ocasional
-        o.value += o.vel;
-        var floor = o.base * (o.grow ? 0.997 : 0.985);
-        var ceil = o.base * (o.grow ? 1.08 : 1.02);
-        if (o.value < floor) { o.value = floor; o.vel = Math.abs(o.vel) * 0.4; }
-        if (o.value > ceil) { o.value = ceil; o.vel = -Math.abs(o.vel) * 0.4; }
-        o.el.textContent = fmtNum(o.value, o.dec);
-      }
+    if (livePaused) { liveRunning = false; return; } // fica IDLE enquanto pausado (sem timer girando)
+    for (var i = 0; i < liveEls.length; i++) {
+      var o = liveEls[i], amp = o.grow ? 1 : 0.5;
+      o.vel += (Math.random() - 0.5) * o.base * 0.0001 * amp;       // ruído
+      if (o.grow) o.vel += o.base * 0.000006;                       // viés de alta (só patrimônio)
+      o.vel *= 0.86;                                                 // amortecimento
+      if (Math.random() < 0.03) o.vel += Math.random() * o.base * 0.0008 * amp; // rajada ocasional
+      o.value += o.vel;
+      var floor = o.base * (o.grow ? 0.997 : 0.985);
+      var ceil = o.base * (o.grow ? 1.08 : 1.02);
+      if (o.value < floor) { o.value = floor; o.vel = Math.abs(o.vel) * 0.4; }
+      if (o.value > ceil) { o.value = ceil; o.vel = -Math.abs(o.vel) * 0.4; }
+      o.el.textContent = fmtNum(o.value, o.dec);
     }
     setTimeout(liveLoop, 70 + Math.random() * 150); // ritmo variável
   }
 
+  // Anéis que "preenchem" (.ring-fill): vazio = stroke-dashoffset == dasharray (circunferência);
+  // cheio = data-off (alvo). Inline já traz o alvo (estado final sem JS).
+  function ringEmpty(scope) {
+    if (reduceMotion) return;
+    [].forEach.call(scope.querySelectorAll(".ring-fill"), function (c) {
+      c.style.strokeDashoffset = c.getAttribute("stroke-dasharray");
+    });
+  }
+  function ringFill(scope) {
+    [].forEach.call(scope.querySelectorAll(".ring-fill"), function (c) {
+      var off = c.getAttribute("data-off"); if (off != null) c.style.strokeDashoffset = off;
+    });
+  }
+
+  // Conta todos os [data-count] dentro de `scope` (idempotente via __counted).
+  function countWithin(scope) { [].forEach.call(scope.querySelectorAll("[data-count]"), countEl); }
+
   document.addEventListener("visibilitychange", updatePaused);
 
+  var hasIO = "IntersectionObserver" in window;
+
+  if (hasIO && !reduceMotion) {
+    // Reveals: armamos (escondemos) só o que está ABAIXO da dobra — o topo nunca pisca. O count-up
+    // dispara JUNTO com o reveal (não por geometria solta), pra não rodar com o painel ainda invisível.
+    var revIO = new IntersectionObserver(function (es) {
+      es.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        en.target.classList.add("in"); ringFill(en.target); countWithin(en.target); revIO.unobserve(en.target);
+      });
+    }, { threshold: 0.14, rootMargin: "0px 0px -7% 0px" });
+    [].forEach.call(document.querySelectorAll(".reveal, .stagger"), function (el) {
+      if (el.getBoundingClientRect().top < window.innerHeight * 0.92) { el.classList.add("in"); ringFill(el); countWithin(el); }
+      else { el.classList.add("armed"); ringEmpty(el); revIO.observe(el); }
+    });
+    // [data-count] que NÃO está dentro de um reveal/stagger conta por geometria (fallback).
+    var cntIO = new IntersectionObserver(function (es) {
+      es.forEach(function (en) { if (en.isIntersecting) { countEl(en.target); cntIO.unobserve(en.target); } });
+    }, { threshold: 0.45 });
+    [].forEach.call(document.querySelectorAll("[data-count]"), function (el) {
+      if (!el.closest(".reveal, .stagger")) cntIO.observe(el);
+    });
+  } else {
+    // Sem IO ou reduced-motion: tudo no estado final, na hora.
+    [].forEach.call(document.querySelectorAll(".reveal, .stagger"), function (el) { el.classList.add("in"); });
+    ringFill(document);
+    countWithin(document);
+  }
+
+  // Hero: dispara as animações CSS do painel (anel, barras, linha, KPIs) ao aparecer, e controla a
+  // pausa do "modo vivo" quando a aba/seção não está visível.
   var heroFrame = document.querySelector(".hero .frame");
   if (heroFrame) {
-    var begin = function () { heroFrame.classList.add("animate"); startCountUp(); };
-    if ("IntersectionObserver" in window) {
+    if (hasIO) {
       var startedAnim = false;
       var io = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) {
           heroVisible = en.isIntersecting; updatePaused();
-          if (en.isIntersecting && !startedAnim) { startedAnim = true; begin(); }
+          if (en.isIntersecting && !startedAnim) { startedAnim = true; heroFrame.classList.add("animate"); }
         });
       }, { threshold: 0.2 });
       io.observe(heroFrame);
-    } else { begin(); }
+    } else { heroFrame.classList.add("animate"); }
   }
 })();
 
