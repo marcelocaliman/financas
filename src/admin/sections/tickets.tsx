@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Mail, Globe, MonitorSmartphone, CheckCircle2, RotateCcw, Search } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { adminApi } from "../api";
 import { useAsync } from "../use-admin";
 import { useTicketsCounts, refreshTicketsCounts } from "../use-realtime";
@@ -27,19 +28,33 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function TicketRow({ tk, active, onClick }: { tk: AdminTicketRow; active: boolean; onClick: () => void }) {
+/** Cabeçalho de coluna no padrão de tabela (mono, caixa-alta, hairline). */
+function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
+  return <span className={cn("font-mono uppercase text-[10.5px] tracking-[0.12em] text-faint", className)}>{children}</span>;
+}
+
+function SurfaceIcon({ surface }: { surface: string }) {
+  const Icon = surface === "landing" ? Globe : MonitorSmartphone;
+  return <Icon size={11} className="shrink-0 text-faint" />;
+}
+
+/** Linha da tabela de tickets (mesmo padrão da lista do usuário, com quem enviou). */
+function TicketRow({ tk, onOpen }: { tk: AdminTicketRow; onOpen: (id: string) => void }) {
   return (
-    <button type="button" onClick={onClick}
-      className={cn("w-full flex items-center gap-2.5 py-3 px-1 text-left transition-colors rounded-[8px]", active ? "bg-card2" : "hover:bg-card-hover")}>
-      {tk.unread ? <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" /> : <span className="w-1.5 h-1.5 shrink-0" />}
-      <span className="grid place-items-center w-7 h-7 rounded-full bg-card2 text-faint shrink-0" title={tk.surface}>
-        {tk.surface === "landing" ? <Globe size={13} /> : <MonitorSmartphone size={13} />}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className={cn("text-[12.5px] truncate", tk.unread ? "font-semibold text-text" : "font-medium text-muted")}>{tk.subject}</div>
-        <div className="text-[11px] text-faint truncate tabular">{tk.email} · {fmtAgo(tk.last_message_at)}</div>
+    <button type="button" onClick={() => onOpen(tk.id)}
+      className="w-full grid grid-cols-[12px_minmax(0,1fr)_auto] md:grid-cols-[12px_minmax(0,1fr)_132px_104px_104px] items-center gap-3 px-4 py-3 text-left hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]">
+      {tk.unread ? <span className="w-2 h-2 rounded-full bg-accent shrink-0" title="Não lido" /> : <span className="w-2 h-2 shrink-0" />}
+      <div className="min-w-0">
+        <div className={cn("text-[13.5px] truncate text-text", tk.unread ? "font-semibold" : "font-medium")}>{tk.subject}</div>
+        <div className="flex items-center gap-1 text-[11px] text-faint mt-0.5 min-w-0">
+          <SurfaceIcon surface={tk.surface} />
+          <span className="truncate">{tk.name ? `${tk.name} · ` : ""}{tk.email}</span>
+        </div>
+        <div className="md:hidden text-[11px] text-faint mt-0.5 tabular truncate">{CAT_LABEL[tk.category] ?? tk.category} · {fmtAgo(tk.last_message_at)}</div>
       </div>
-      <StatusBadge status={tk.status} />
+      <div className="hidden md:block text-[12.5px] text-muted truncate">{CAT_LABEL[tk.category] ?? tk.category}</div>
+      <div className="justify-self-start"><StatusBadge status={tk.status} /></div>
+      <div className="hidden md:block text-right text-[12px] text-faint tabular">{fmtAgo(tk.last_message_at)}</div>
     </button>
   );
 }
@@ -53,6 +68,15 @@ function TicketDetail({ id, onBack, onChanged }: { id: string; onBack: () => voi
   useEffect(() => {
     void adminApi.ticketRead(id).then(refreshTicketsCounts).catch(() => {});
   }, [id]);
+
+  // Ao vivo: resposta nova do usuário neste ticket chega na hora (igual ao thread do usuário).
+  useEffect(() => {
+    const ch = supabase
+      .channel(`admin:ticket:${id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ticket_messages", filter: `ticket_id=eq.${id}` }, () => reload())
+      .subscribe();
+    return () => { void supabase.removeChannel(ch); };
+  }, [id, reload]);
 
   const send = async (body: string, attachments: TicketAttachment[]) => {
     setSending(true);
@@ -81,42 +105,45 @@ function TicketDetail({ id, onBack, onChanged }: { id: string; onBack: () => voi
     .filter(Boolean);
 
   return (
-    <AdminCard className="p-4 sm:p-4">
-      <button type="button" onClick={onBack} className="lg:hidden inline-flex items-center gap-1.5 text-[12.5px] text-muted hover:text-text mb-3">
-        <ArrowLeft size={14} /> Voltar à lista
+    <div className="space-y-4">
+      <button type="button" onClick={onBack}
+        className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">
+        <ArrowLeft size={15} /> Voltar à lista
       </button>
-      <StateBlock loading={loading} error={error}>
-        {data ? (
-          <div>
-            <div className="flex items-start justify-between gap-3 pb-3 mb-3 border-b border-border">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10.5px] font-mono uppercase tracking-[0.1em] text-faint">{CAT_LABEL[data.category] ?? data.category}</span>
-                  <StatusBadge status={data.status} />
+      <AdminCard>
+        <StateBlock loading={loading} error={error}>
+          {data ? (
+            <div>
+              <div className="flex items-start justify-between gap-3 pb-4 mb-4 border-b border-border">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10.5px] font-mono uppercase tracking-[0.1em] text-faint">{CAT_LABEL[data.category] ?? data.category}</span>
+                    <StatusBadge status={data.status} />
+                  </div>
+                  <h3 className="text-[17px] font-semibold tracking-[-0.01em] mt-1.5 break-words">{data.subject}</h3>
+                  <div className="flex items-center gap-1.5 text-[12px] text-muted mt-1.5">
+                    <Mail size={12} className="shrink-0" />
+                    <a href={`mailto:${data.email}`} className="hover:text-text truncate">{data.name ? `${data.name} · ` : ""}{data.email}</a>
+                  </div>
+                  {metaBits.length ? <div className="text-[10.5px] text-faint mt-1 truncate" title={metaBits.join(" · ")}>{metaBits.join(" · ")}</div> : null}
                 </div>
-                <h3 className="text-[16px] font-semibold tracking-[-0.01em] mt-1.5 break-words">{data.subject}</h3>
-                <div className="flex items-center gap-1.5 text-[12px] text-muted mt-1.5">
-                  <Mail size={12} className="shrink-0" />
-                  <a href={`mailto:${data.email}`} className="hover:text-text truncate">{data.name ? `${data.name} · ` : ""}{data.email}</a>
-                </div>
-                {metaBits.length ? <div className="text-[10.5px] text-faint mt-1 truncate" title={metaBits.join(" · ")}>{metaBits.join(" · ")}</div> : null}
+                <button type="button" disabled={busy} onClick={() => setStatus(data.status === "open" ? "closed" : "open")}
+                  className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+                  {data.status === "open" ? <><CheckCircle2 size={14} /> Resolver</> : <><RotateCcw size={14} /> Reabrir</>}
+                </button>
               </div>
-              <button type="button" disabled={busy} onClick={() => setStatus(data.status === "open" ? "closed" : "open")}
-                className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition disabled:opacity-50">
-                {data.status === "open" ? <><CheckCircle2 size={14} /> Resolver</> : <><RotateCcw size={14} /> Reabrir</>}
-              </button>
-            </div>
 
-            <TicketThread messages={data.messages} mySide="admin" supportLabel="Você" youLabel={data.name || data.email} />
-            <TicketComposer onSend={send} onUpload={(f) => uploadTicketImage(f)} sending={sending} placeholder="Responder ao usuário…" sendLabel="Responder" attachLabel="Anexar imagem" uploadErrorLabel="Não foi possível anexar a imagem." />
-          </div>
-        ) : null}
-      </StateBlock>
-    </AdminCard>
+              <TicketThread messages={data.messages} mySide="admin" supportLabel="Você" youLabel={data.name || data.email} />
+              <TicketComposer onSend={send} onUpload={(f) => uploadTicketImage(f)} sending={sending} placeholder="Responder ao usuário…" sendLabel="Responder" attachLabel="Anexar imagem" uploadErrorLabel="Não foi possível anexar a imagem." />
+            </div>
+          ) : null}
+        </StateBlock>
+      </AdminCard>
+    </div>
   );
 }
 
-/** Triagem de tickets: busca + filtro + lista paginada (não-lidos primeiro) | conversa. */
+/** Triagem de tickets: tabela paginada + busca (não-lidos primeiro) → conversa em tela cheia. */
 export function TicketsSection() {
   const [filter, setFilter] = useState<"open" | "all" | "closed">("open");
   const [searchInput, setSearchInput] = useState("");
@@ -131,9 +158,7 @@ export function TicketsSection() {
   // Refs lidas dentro de callbacks SEM virar dependência (evita recriar `load` / recarregar à toa).
   const genRef = useRef(0); // geração: descarta respostas obsoletas (corrida de busca/atualização)
   const rowsLenRef = useRef(0); // quantas linhas já estão carregadas (preserva a profundidade no reload)
-  const selectedRef = useRef<string | null>(null); // ticket aberto: seu selo fica limpo mesmo após reload
   rowsLenRef.current = rows?.length ?? 0;
-  selectedRef.current = selected;
 
   // Busca com debounce (não dispara a cada tecla).
   useEffect(() => {
@@ -151,8 +176,7 @@ export function TicketsSection() {
         const data = await adminApi.ticketsList(filter === "all" ? null : filter, search || null, limit, 0);
         if (gen !== genRef.current) return; // resposta obsoleta — uma carga mais nova venceu
         setTotal(data[0]?.total_count ?? 0);
-        // mantém limpo o selo do ticket aberto, mesmo que o read RPC ainda não tenha commitado
-        setRows(data.map((r) => (r.id === selectedRef.current ? { ...r, unread: false } : r)));
+        setRows(data); // o servidor é a fonte da verdade do `unread` (admin_read_at); sem máscara local
       } catch (e) {
         if (gen !== genRef.current) return;
         setErr(e instanceof Error ? e.message : String(e));
@@ -167,14 +191,18 @@ export function TicketsSection() {
     void load(PAGE);
   }, [load]);
 
-  // Entrou atividade nova (não-lidos SOBE: ticket novo ou resposta do usuário) → atualiza PRESERVANDO
-  // a profundidade carregada (não colapsa pra 30). Leituras (CAI) não recarregam; o selo lido some na
-  // hora via onSelect (otimista) e fica limpo no reload via selectedRef.
-  const prevUnread = useRef(counts.unread);
+  // Qualquer atividade em tickets (novo, resposta do usuário, leitura, mudança de status) gera um
+  // refresh dos contadores via realtime, e `counts` vem como um objeto NOVO a cada refresh. Atualiza
+  // a lista nesse sinal — PRESERVANDO a profundidade carregada (não colapsa pra 30). Isso pega casos
+  // que um gatilho só-de-contador perderia: resposta a um ticket já não-lido (contador não muda) e
+  // soma-zero (uma resposta +1 coincide com uma leitura −1 na mesma janela). genRef descarta corridas.
+  const prevCounts = useRef(counts);
   useEffect(() => {
-    if (counts.unread > prevUnread.current) void load(Math.max(PAGE, rowsLenRef.current));
-    prevUnread.current = counts.unread;
-  }, [counts.unread, load]);
+    if (prevCounts.current !== counts) {
+      prevCounts.current = counts;
+      void load(Math.max(PAGE, rowsLenRef.current));
+    }
+  }, [counts, load]);
 
   // Atualiza preservando a profundidade carregada (após responder / mudar status).
   const refresh = useCallback(() => load(Math.max(PAGE, rowsLenRef.current)), [load]);
@@ -210,61 +238,73 @@ export function TicketsSection() {
     }
   };
 
+  // Conversa em tela cheia (substitui a tabela), igual à lógica da página do usuário.
+  if (selected) {
+    return <TicketDetail id={selected} onBack={() => setSelected(null)} onChanged={refresh} />;
+  }
+
+  const isEmpty = rows !== null && rows.length === 0;
+  const emptyMsg = search
+    ? "Nenhum ticket encontrado."
+    : filter === "open" ? "Nenhum ticket aberto."
+    : filter === "closed" ? "Nenhum ticket resolvido."
+    : "Nenhum ticket ainda.";
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1 min-w-[180px]">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+        <div className="relative sm:flex-1 sm:max-w-[340px]">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
           <input
+            type="search"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Buscar por e-mail, assunto ou nome…"
-            className="w-full h-9 pl-9 pr-3 rounded-[9px] border border-border bg-card2 text-[13px] text-text outline-none focus:border-accent transition-colors placeholder:text-faint"
+            aria-label="Buscar tickets"
+            className="w-full h-9 pl-9 pr-3 rounded-[9px] border border-border bg-card2 text-[13px] text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors placeholder:text-faint"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 sm:ml-auto">
           {(["open", "all", "closed"] as const).map((f) => (
             <button key={f} type="button" onClick={() => setFilter(f)}
-              className={cn("h-9 px-3 rounded-[8px] text-[12.5px] font-medium transition-colors", filter === f ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text bg-card2")}>
+              className={cn("h-9 px-3 rounded-[8px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                filter === f ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text bg-card2")}>
               {FILTER_LABEL[f]}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[340px_1fr] gap-4 items-start">
-        <div className={cn("min-w-0", selected && "hidden lg:block")}>
-          <AdminCard>
-            <StateBlock loading={rows === null} error={err} empty={rows !== null && rows.length === 0}>
-              <div className="divide-y divide-border -my-2">
-                {rows?.map((tk) => (
-                  <TicketRow key={tk.id} tk={tk} active={tk.id === selected} onClick={() => onSelect(tk.id)} />
-                ))}
+      <AdminCard className="!p-0 overflow-hidden">
+        {rows === null || err ? (
+          <StateBlock loading={rows === null} error={err}>{null}</StateBlock>
+        ) : isEmpty ? (
+          <div className="py-12 text-center text-[13px] text-faint">{emptyMsg}</div>
+        ) : (
+          <>
+            <div className="hidden md:grid grid-cols-[12px_minmax(0,1fr)_132px_104px_104px] items-center gap-3 px-4 py-2.5 border-b border-border bg-card2/40">
+              <span />
+              <Th>Assunto / Remetente</Th>
+              <Th>Categoria</Th>
+              <Th>Status</Th>
+              <Th className="text-right">Atualizado</Th>
+            </div>
+            <div className="divide-y divide-border">
+              {rows.map((tk) => <TicketRow key={tk.id} tk={tk} onOpen={onSelect} />)}
+            </div>
+            {rows.length < total ? (
+              <div className="px-4 py-3.5 text-center border-t border-border">
+                <button type="button" onClick={() => void loadMore()} disabled={more}
+                  className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+                  {more ? "…" : `Carregar mais — ${rows.length}/${total}`}
+                </button>
               </div>
-              {rows && rows.length < total ? (
-                <div className="pt-3.5 mt-1 text-center">
-                  <button type="button" onClick={() => void loadMore()} disabled={more}
-                    className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-[9px] border border-border text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition disabled:opacity-50">
-                    {more ? "…" : `Carregar mais — ${rows.length}/${total}`}
-                  </button>
-                </div>
-              ) : rows && rows.length > 0 ? (
-                <div className="pt-3.5 mt-1 text-center text-[11px] text-faint tabular">{total} ticket{total === 1 ? "" : "s"}</div>
-              ) : null}
-            </StateBlock>
-          </AdminCard>
-        </div>
-
-        <div className={cn("min-w-0", !selected && "hidden lg:block")}>
-          {selected ? (
-            <TicketDetail id={selected} onBack={() => setSelected(null)} onChanged={refresh} />
-          ) : (
-            <AdminCard>
-              <div className="py-16 text-center text-[13px] text-faint">Selecione um ticket para ver a conversa.</div>
-            </AdminCard>
-          )}
-        </div>
-      </div>
+            ) : (
+              <div className="px-4 py-3 text-center text-[11px] text-faint tabular border-t border-border">{total} ticket{total === 1 ? "" : "s"}</div>
+            )}
+          </>
+        )}
+      </AdminCard>
     </div>
   );
 }
