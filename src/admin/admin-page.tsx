@@ -62,9 +62,6 @@ export function AdminPage() {
         <Accordion id="adm-users" title="Usuários" summary={<UsersSummary />}>
           <SectionErrorBoundary name="Usuários"><UsersSection /></SectionErrorBoundary>
         </Accordion>
-        <Accordion id="adm-tickets" title="Tickets" summary={<TicketsSummary />}>
-          <SectionErrorBoundary name="Tickets"><TicketsSection /></SectionErrorBoundary>
-        </Accordion>
         <Accordion id="adm-analytics" title="Analytics" summary={<AnalyticsSummary days={days} />}>
           <SectionErrorBoundary name="Analytics"><AnalyticsSection days={days} /></SectionErrorBoundary>
         </Accordion>
@@ -74,6 +71,13 @@ export function AdminPage() {
         <Accordion id="adm-admins" title="Administradores" summary={<AdminsSummary />}>
           <SectionErrorBoundary name="Administradores"><AdminsSection /></SectionErrorBoundary>
         </Accordion>
+
+        {/* Tickets — atendimento, separado das métricas do app, num card próprio (igual ao app). */}
+        <div className="mt-14 lg:mt-16 rounded-[18px] border border-border bg-card px-5 md:px-7 shadow-[var(--shadow-card)]">
+          <Accordion id="adm-tickets" title="Tickets" summary={<TicketsSummary />} bare>
+            <SectionErrorBoundary name="Tickets"><TicketsSection /></SectionErrorBoundary>
+          </Accordion>
+        </div>
       </div>
     </div>
   );

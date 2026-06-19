@@ -1,9 +1,10 @@
 import {
-  ArrowLeftRight, ArrowLeft, Sun, Moon, Lock, LogOut, ShieldCheck,
+  ArrowLeftRight, ArrowLeft, Sun, Moon, Lock, LogOut, ShieldCheck, LifeBuoy,
   PanelLeftClose, PanelLeftOpen, ChevronsDownUp, ChevronsUpDown,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ADMIN_NAV_ITEMS } from "./nav-items";
+import { useTicketsUnread } from "./use-realtime";
 import { NavList } from "@/components/layout/side-nav";
 import { goToSection, toggleSection } from "@/hooks/use-scroll-spy";
 import { useAdminUI } from "@/store/admin-ui";
@@ -43,6 +44,7 @@ export function AdminSideNav({ active }: { active: string }) {
   const openSections = useSections((s) => s.open);
   const setSectionOpen = useSections((s) => s.setOpen);
   const setManySections = useSections((s) => s.setMany);
+  const ticketsUnread = useTicketsUnread();
   const name = nameFromEmail(email);
   const initial = (name || email || "?").charAt(0).toUpperCase();
 
@@ -105,6 +107,7 @@ export function AdminSideNav({ active }: { active: string }) {
       <div className={cn("shrink-0 p-3 pt-3 border-t border-border", collapsed && "flex flex-col items-center gap-1.5")}>
         {collapsed ? (
           <>
+            <IconBtn onClick={() => goToSection("adm-tickets")} label="Tickets" badge={ticketsUnread}><LifeBuoy size={16} /></IconBtn>
             <IconBtn onClick={() => close(false)} label="Voltar ao app"><ArrowLeft size={16} /></IconBtn>
             <IconBtn onClick={toggleTheme} label="Tema">{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
             <div className="h-px w-7 bg-border my-0.5" />
@@ -114,6 +117,16 @@ export function AdminSideNav({ active }: { active: string }) {
           </>
         ) : (
           <>
+            <button
+              type="button"
+              onClick={() => goToSection("adm-tickets")}
+              className="relative w-full flex items-center gap-3 h-10 px-3 mb-1 rounded-[11px] text-[13.5px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <LifeBuoy size={17} className="shrink-0" /> <span className="truncate">Tickets</span>
+              {ticketsUnread > 0 ? (
+                <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[10px] font-bold tabular leading-none">{ticketsUnread}</span>
+              ) : null}
+            </button>
             <button
               type="button"
               onClick={() => close(false)}
@@ -149,16 +162,17 @@ export function AdminSideNav({ active }: { active: string }) {
 }
 
 /** Botão só-ícone do rodapé recolhido. */
-function IconBtn({ onClick, label, children }: { onClick: () => void; label: string; children: React.ReactNode }) {
+function IconBtn({ onClick, label, badge = 0, children }: { onClick: () => void; label: string; badge?: number; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
+      aria-label={badge > 0 ? `${label} (${badge})` : label}
       title={label}
-      className="grid place-items-center w-9 h-9 rounded-[10px] border border-border text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+      className="relative grid place-items-center w-9 h-9 rounded-[10px] border border-border text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
     >
       {children}
+      {badge > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" /> : null}
     </button>
   );
 }
