@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LifeBuoy, Plus, ArrowLeft, ChevronRight, ShieldAlert, Paperclip, X } from "lucide-react";
+import { LifeBuoy, Plus, ArrowLeft, ShieldAlert, Paperclip, X, Search } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
   listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, ticketMeta, uploadTicketImage,
@@ -63,10 +63,51 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/** Cabeçalho de coluna no padrão de tabela (mono, caixa-alta, hairline). */
+function Th({ children, className }: { children?: React.ReactNode; className?: string }) {
+  return <span className={cn("font-mono uppercase text-[10.5px] tracking-[0.12em] text-faint", className)}>{children}</span>;
+}
+
+function TicketRow({ tk, onOpen }: { tk: Ticket; onOpen: (id: string) => void }) {
+  const { t } = useTranslation();
+  const unread = tk.last_author === "admin" && (!tk.user_read_at || new Date(tk.user_read_at) < new Date(tk.last_message_at));
+  return (
+    <button type="button" onClick={() => onOpen(tk.id)}
+      className="w-full grid grid-cols-[12px_minmax(0,1fr)_auto] md:grid-cols-[12px_minmax(0,1fr)_132px_104px_104px] items-center gap-3 px-4 py-3 text-left hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]">
+      {unread ? <span className="w-2 h-2 rounded-full bg-accent shrink-0" title={t("support.kpiUnread")} /> : <span className="w-2 h-2 shrink-0" />}
+      <div className="min-w-0">
+        <div className={cn("text-[13.5px] truncate text-text", unread ? "font-semibold" : "font-medium")}>{tk.subject}</div>
+        <div className="md:hidden text-[11.5px] text-faint mt-0.5 tabular">{t(`support.cat.${tk.category}`)} · {fmtAgo(tk.last_message_at)}</div>
+      </div>
+      <div className="hidden md:block text-[12.5px] text-muted truncate">{t(`support.cat.${tk.category}`)}</div>
+      <div className="justify-self-start"><StatusBadge status={tk.status} /></div>
+      <div className="hidden md:block text-right text-[12px] text-faint tabular">{fmtAgo(tk.last_message_at)}</div>
+    </button>
+  );
+}
+
 function TicketList({ tickets, onOpen, onNew }: { tickets: Ticket[] | null; onOpen: (id: string) => void; onNew: () => void }) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<"open" | "all" | "closed">("open");
-  const shown = tickets == null ? null : tickets.filter((tk) => filter === "all" || tk.status === (filter === "open" ? "open" : "closed"));
+  const [search, setSearch] = useState("");
+  const showSearch = (tickets?.length ?? 0) > 4;
+
+  const matchesTab = useCallback(
+    (tk: Ticket) => filter === "all" || tk.status === (filter === "open" ? "open" : "closed"),
+    [filter],
+  );
+  const shown = useMemo(() => {
+    if (tickets == null) return null;
+    const q = search.trim().toLowerCase();
+    return tickets.filter(
+      (tk) => matchesTab(tk) && (!q || tk.subject.toLowerCase().includes(q) || t(`support.cat.${tk.category}`).toLowerCase().includes(q)),
+    );
+  }, [tickets, matchesTab, search, t]);
+  // Atribui a mensagem de vazio à causa certa: "nada nesta aba" se a aba já está vazia;
+  // "nenhum encontrado" só quando a aba tem tickets mas a busca os filtrou todos.
+  const tabHasTickets = (tickets ?? []).some(matchesTab);
+  const emptyKey = search.trim() && tabHasTickets ? "support.searchEmpty" : "support.emptyFilter";
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -91,34 +132,39 @@ function TicketList({ tickets, onOpen, onNew }: { tickets: Ticket[] | null; onOp
         </Tile>
       ) : (
         <>
-          <div className="flex gap-1.5">
-            {(["open", "all", "closed"] as const).map((f) => (
-              <button key={f} type="button" onClick={() => setFilter(f)}
-                className={cn("h-8 px-3 rounded-[8px] text-[12.5px] font-medium transition-colors",
-                  filter === f ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text bg-card2")}>
-                {t(`support.tab.${f}`)}
-              </button>
-            ))}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            {showSearch ? (
+              <div className="relative sm:flex-1 sm:max-w-[340px]">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
+                <input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("support.searchPh")} aria-label={t("support.searchPh")}
+                  className="w-full h-9 pl-9 pr-3 rounded-[9px] border border-border bg-card2 text-[13px] text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors placeholder:text-faint" />
+              </div>
+            ) : null}
+            <div className="flex gap-1.5 sm:ml-auto">
+              {(["open", "all", "closed"] as const).map((f) => (
+                <button key={f} type="button" onClick={() => setFilter(f)}
+                  className={cn("h-9 px-3 rounded-[8px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                    filter === f ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text bg-card2")}>
+                  {t(`support.tab.${f}`)}
+                </button>
+              ))}
+            </div>
           </div>
+
           {!shown || shown.length === 0 ? (
-            <div className="text-[13px] text-faint py-8 text-center">{t("support.emptyFilter")}</div>
+            <div className="text-[13px] text-faint py-10 text-center">{t(emptyKey)}</div>
           ) : (
-            <Tile className="divide-y divide-border overflow-hidden">
-              {shown.map((tk) => {
-                const unread = tk.last_author === "admin" && (!tk.user_read_at || tk.user_read_at < tk.last_message_at);
-                return (
-                  <button key={tk.id} type="button" onClick={() => onOpen(tk.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-card-hover transition-colors">
-                    {unread ? <span className="w-2 h-2 rounded-full bg-accent shrink-0" /> : <span className="w-2 h-2 shrink-0" />}
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[13.5px] font-medium truncate">{tk.subject}</div>
-                      <div className="text-[11.5px] text-faint mt-0.5 tabular">{t(`support.cat.${tk.category}`)} · {fmtAgo(tk.last_message_at)}</div>
-                    </div>
-                    <StatusBadge status={tk.status} />
-                    <ChevronRight size={16} className="text-faint shrink-0" />
-                  </button>
-                );
-              })}
+            <Tile className="overflow-hidden p-0">
+              <div className="hidden md:grid grid-cols-[12px_minmax(0,1fr)_132px_104px_104px] items-center gap-3 px-4 py-2.5 border-b border-border bg-card2/40">
+                <span />
+                <Th>{t("support.colSubject")}</Th>
+                <Th>{t("support.colCategory")}</Th>
+                <Th>{t("support.colStatus")}</Th>
+                <Th className="text-right">{t("support.colUpdated")}</Th>
+              </div>
+              <div className="divide-y divide-border">
+                {shown.map((tk) => <TicketRow key={tk.id} tk={tk} onOpen={onOpen} />)}
+              </div>
             </Tile>
           )}
         </>
