@@ -83,8 +83,8 @@
       {
         "@type": "FAQPage",
         "mainEntity": [
-          { "@type": "Question", "name": "É grátis?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. O app é gratuito e privado. A ideia é entregar valor real primeiro; uma camada paga (como sync entre dispositivos e recursos avançados) pode vir depois, sempre opcional." } },
-          { "@type": "Question", "name": "Meus dados estão seguros? Quem consegue ver?", "acceptedAnswer": { "@type": "Answer", "text": "Só você. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair. O servidor guarda apenas um blob cifrado — nunca os valores em texto claro. Nem nós conseguimos ler." } },
+          { "@type": "Question", "name": "É grátis?", "acceptedAnswer": { "@type": "Answer", "text": "Sim — o app inteiro é grátis. Patrimônio, orçamento, projeção, objetivos e até o compartilhamento com a família entram no plano gratuito, sem cartão e sem paywall." } },
+          { "@type": "Question", "name": "Meus dados estão seguros? Quem consegue ver?", "acceptedAnswer": { "@type": "Answer", "text": "Só você — e quem você escolher. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair; o servidor guarda só um blob cifrado, nunca os valores. Se quiser, dá pra compartilhar o painel só-leitura com alguém de confiança (por link + PIN), sem o servidor ver nada." } },
           { "@type": "Question", "name": "Funciona offline?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. É local-first: roda instantâneo e offline, e sincroniza sozinho em segundo plano quando há conexão. Limpar o navegador não perde nada — o cofre cifrado vive no servidor." } },
           { "@type": "Question", "name": "Em quais moedas e países funciona?", "acceptedAnswer": { "@type": "Answer", "text": "Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual." } },
           { "@type": "Question", "name": "E se eu esquecer a senha?", "acceptedAnswer": { "@type": "Answer", "text": "No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via." } },
@@ -440,6 +440,7 @@
         <nav class="nav-links">
           <a href="#recursos" data-i18n="nav.recursos">Recursos</a>
           <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
+          <a href="#compartilhar" data-i18n="nav.compartilhar">Compartilhar</a>
           <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
           <a href="#faq" data-i18n="nav.faq">FAQ</a>
           <a href="#contato" data-i18n="nav.contato">Contato</a>
@@ -748,6 +749,40 @@
     </div></div>
   </section>
 
+  <!-- COMPARTILHAR — acompanhem juntos (família / casal) -->
+  <section id="compartilhar" class="sec-tight" style="border-top:1px solid var(--border)">
+    <div class="wrap"><div class="feature">
+      <div class="copy reveal from-l">
+        <div class="eyebrow accent" data-i18n="fam.eyebrow">Acompanhem juntos</div>
+        <h2 data-i18n="fam.h2">As finanças da casa, a dois.</h2>
+        <p data-i18n="fam.p">Compartilhe o seu painel — só leitura — com quem você confia: cônjuge, parceiro(a), família. A outra pessoa vê tudo por um link com PIN, sem precisar criar conta. E continua cifrado: o servidor nunca vê os seus números.</p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="fam.l1">Link + PIN de 4 dígitos — sem o outro criar conta</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="fam.l2">Só leitura, e você revoga quando quiser</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="fam.l3">Continua E2EE — o segredo nunca chega ao servidor</span></li>
+        </ul>
+      </div>
+      <div class="card pad reveal from-r">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div class="eyebrow" data-i18n="fam.card">Acesso da família</div>
+          <span class="chip chip-BRL" data-i18n="fam.ro">SÓ LEITURA</span>
+        </div>
+        <div style="margin-top:16px;display:grid;gap:10px;font-family:var(--font-mono);font-size:12.5px">
+          <div style="display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--muted)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">nossasfinancas.com.br/share#…</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:11px 13px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4M18 5l2 2M15 8l2 2"/></svg>
+            <span class="tabular" style="font-size:15px;letter-spacing:.3em;color:var(--text)">8 9 8 0</span>
+            <span class="faint" style="margin-left:auto">PIN</span>
+          </div>
+        </div>
+        <div class="faint" style="font-size:11.5px;margin-top:14px" data-i18n="fam.note">Quem tem o link e o PIN vê o painel — nada é editável.</div>
+      </div>
+    </div></div>
+  </section>
+
   <!-- PRIVACIDADE -->
   <section id="privacidade" class="declare sec-air" style="background:var(--bg-2);border-block:1px solid var(--border)">
     <div class="wrap-narrow reveal">
@@ -794,8 +829,8 @@
     <div class="wrap">
       <div class="section-head reveal" style="margin:0 auto;text-align:center;max-width:54ch"><div class="eyebrow accent" data-i18n="faq.eyebrow">Perguntas frequentes</div><h2 data-i18n="faq.h2">Tudo que você quer saber.</h2></div>
       <div class="faq stagger" style="max-width:820px;margin-left:auto;margin-right:auto">
-        <details><summary><span data-i18n="faq.q1">É grátis?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">Sim. O app é gratuito e privado. A ideia é entregar valor real primeiro; uma camada paga (como sync entre dispositivos e recursos avançados) pode vir depois, sempre opcional.</div></details>
-        <details><summary><span data-i18n="faq.q2">Meus dados estão seguros? Quem consegue ver?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Só você. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair. O servidor guarda apenas um blob cifrado — nunca os valores em texto claro. Nem nós conseguimos ler.</div></details>
+        <details><summary><span data-i18n="faq.q1">É grátis?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">Sim — o app inteiro é grátis. Patrimônio, orçamento, projeção, objetivos e até o compartilhamento com a família entram no plano gratuito, sem cartão e sem paywall.</div></details>
+        <details><summary><span data-i18n="faq.q2">Meus dados estão seguros? Quem consegue ver?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Só você — e quem você escolher. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair; o servidor guarda só um blob cifrado, nunca os valores. Se quiser, dá pra compartilhar o painel só-leitura com alguém de confiança (por link + PIN), sem o servidor ver nada.</div></details>
         <details><summary><span data-i18n="faq.q3">Funciona offline?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a3">Sim. É local-first: roda instantâneo e offline, e sincroniza sozinho em segundo plano quando há conexão. Limpar o navegador não perde nada — o cofre cifrado vive no servidor.</div></details>
         <details><summary><span data-i18n="faq.q4">Em quais moedas e países funciona?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a4">Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual.</div></details>
         <details><summary><span data-i18n="faq.q5">E se eu esquecer a senha?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a5">No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via.</div></details>
