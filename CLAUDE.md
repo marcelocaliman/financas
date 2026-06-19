@@ -60,7 +60,7 @@ ponta-a-ponta — o servidor nunca vê o dado financeiro em texto claro.
   tabulares à direita. Módulos não construídos: tiles COMPACTOS "em breve" (borda tracejada).
 - HERO destaca-se do resto: eyebrow mono+acento, headline grande e apertada, número-herói gigante,
   brilho radial verde MUITO sutil atrás, variação em verde, barra de composição — mais ar que as seções.
-- Valores VISÍVEIS por padrão; olho 👁 no header oculta (modo privacidade, não persiste).
+- Valores VISÍVEIS por padrão; olho 👁 no header oculta (modo privacidade; a escolha PERSISTE — recarregar mantém oculto).
 - Referência visual definitiva: **docs/reference/direcao-refinada-v2.jsx** (copiar essa estética).
 
 ## Escopo — V1 COMPLETA (não é MVP), em ordem de construção
