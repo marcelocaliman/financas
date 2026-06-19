@@ -56,6 +56,8 @@ export default defineConfig({
         app: fileURLToPath(new URL("./app.html", import.meta.url)),
         // Página pública (sem auth) p/ acompanhar um ticket de suporte por token: /ticket?t=…
         ticket: fileURLToPath(new URL("./ticket.html", import.meta.url)),
+        // Acesso da família: painel só-leitura aberto por link + PIN: /share#s=…
+        share: fileURLToPath(new URL("./share.html", import.meta.url)),
       },
     },
   },

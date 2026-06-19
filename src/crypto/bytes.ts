@@ -40,6 +40,20 @@ export function aad(...parts: (Uint8Array | string)[]): Uint8Array {
   return concat(...chunks);
 }
 
+/** Base64url (URL-safe, sem padding) — usado pra carregar o segredo de share no fragmento da URL. */
+export function toBase64url(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export function fromBase64url(str: string): Uint8Array {
+  const bin = atob(str.replace(/-/g, "+").replace(/_/g, "/"));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
 /** Comparação em tempo constante (evita timing oracle). */
 export function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false;

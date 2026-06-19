@@ -1,4 +1,4 @@
-import { repository } from "@/data/dexie-repository";
+import { repository, isRepositoryReadOnly } from "@/data/dexie-repository";
 import { buildSeed } from "@/data/seed";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
@@ -43,6 +43,7 @@ function schedulePush(): void {
 }
 
 async function withSync(write: () => Promise<void>): Promise<void> {
+  if (isRepositoryReadOnly()) return; // modo visitante: nenhuma escrita/sync (inerte)
   await write();
   pending.set(); // durabilidade: marcado já; o push é re-tentado no unlock/online
   schedulePush();

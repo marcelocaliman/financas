@@ -6,6 +6,7 @@ import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
 import { formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "@/money/parse";
 import { useUI } from "@/store/ui";
+import { useViewer } from "@/store/viewer";
 
 const MASK = "••••";
 
@@ -372,6 +373,39 @@ function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Curr
   );
 }
 
+/** Célula só-leitura (modo visitante): mostra o VALOR formatado, sem input. */
+function ReadOnlyCell<T extends { id: string }>({ col, row }: { col: GridColumn<T>; row: T }) {
+  const hidden = useUI((s) => s.numbersHidden);
+  const v = get(row, col.key);
+  switch (col.type) {
+    case "currency":
+      return (
+        <div className="px-2">
+          <CurrencyBadge currency={v as Currency} />
+        </div>
+      );
+    case "money": {
+      const cur = get(row, col.currencyKey ?? "currency") as Currency;
+      return <div className="px-2 tabular text-text text-[13.5px]">{hidden ? MASK : formatAmountEdit((v as number) ?? 0, cur)}</div>;
+    }
+    case "number": {
+      const cur = get(row, col.currencyKey ?? "currency") as Currency;
+      return <div className="px-2 tabular text-text text-[13.5px]">{formatNumberEdit(v as number | undefined, cur, col.decimals) || "—"}</div>;
+    }
+    case "select": {
+      const opts = col.optionsFor ? col.optionsFor(row) : col.options ?? [];
+      return <div className="px-2 text-[13.5px] text-text">{opts.find((o) => o.value === v)?.label ?? "—"}</div>;
+    }
+    case "computed":
+      return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
+    case "toggle":
+      return <div className="flex justify-center">{v ? <Repeat size={14} className="text-accent" /> : null}</div>;
+    case "text":
+    default:
+      return <div className="px-2 text-[13.5px] text-text truncate">{(v as string) || "—"}</div>;
+  }
+}
+
 // ── Grid ──────────────────────────────────────────────────────────────────────
 export function DataGrid<T extends { id: string }>({
   columns,
@@ -386,6 +420,7 @@ export function DataGrid<T extends { id: string }>({
   const containerRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<T>(() => blank());
   const hidden = useUI((s) => s.numbersHidden);
+  const viewerMode = useViewer((s) => s.viewerMode);
 
   const template = columns.map((c) => c.width).join(" ") + " 44px";
   const firstTextKey = columns.find((c) => c.type === "text")?.key ?? columns[0].key;
@@ -426,6 +461,7 @@ export function DataGrid<T extends { id: string }>({
   };
 
   const renderCell = (col: GridColumn<T>, row: T, ghostRow: boolean): ReactNode => {
+    if (viewerMode) return <ReadOnlyCell col={col} row={row} />;
     const rowId = ghostRow ? "ghost" : row.id;
     const commit = (value: unknown) =>
       ghostRow ? commitGhost(col.key, value) : onCommit({ ...row, [col.key]: value } as T);
@@ -551,30 +587,34 @@ export function DataGrid<T extends { id: string }>({
             </div>
           ))}
           <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => onDelete(row.id)}
-              aria-label="Excluir"
-              className="p-2 rounded-md text-faint hover:text-neg hover:bg-bg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-            >
-              <Trash2 size={15} />
-            </button>
+            {!viewerMode ? (
+              <button
+                type="button"
+                onClick={() => onDelete(row.id)}
+                aria-label="Excluir"
+                className="p-2 rounded-md text-faint hover:text-neg hover:bg-bg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 size={15} />
+              </button>
+            ) : null}
           </div>
         </div>
       ))}
 
-      {/* Linha-fantasma */}
-      <div
-        className="grid items-center border-t border-dashed border-border-strong opacity-65 focus-within:opacity-100 transition-opacity"
-        style={{ gridTemplateColumns: template }}
-      >
-        {columns.map((c) => (
-          <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
-            {renderCell(c, ghost, true)}
-          </div>
-        ))}
-        <div />
-      </div>
+      {/* Linha-fantasma (adicionar) — oculta no modo visitante */}
+      {!viewerMode ? (
+        <div
+          className="grid items-center border-t border-dashed border-border-strong opacity-65 focus-within:opacity-100 transition-opacity"
+          style={{ gridTemplateColumns: template }}
+        >
+          {columns.map((c) => (
+            <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
+              {renderCell(c, ghost, true)}
+            </div>
+          ))}
+          <div />
+        </div>
+      ) : null}
 
       {/* Rodapé: atalhos + total */}
       {total ? (
@@ -583,7 +623,7 @@ export function DataGrid<T extends { id: string }>({
           style={{ gridTemplateColumns: template }}
         >
           <div className="px-3 py-2.5 text-[11px] text-muted" style={{ gridColumn: "1 / -2" }}>
-            <span className="hidden sm:inline">↵ confirmar · ⇥ próximo campo · ⎋ cancelar</span>
+            {!viewerMode ? <span className="hidden sm:inline">↵ confirmar · ⇥ próximo campo · ⎋ cancelar</span> : null}
           </div>
           <div
             className="px-3 py-2.5 text-right font-semibold tabular text-text"

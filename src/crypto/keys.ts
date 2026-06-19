@@ -60,6 +60,7 @@ export async function deriveWrappingKey(
 
 export const PWK_INFO = "pwk-v1";
 export const RWK_INFO = "rwk-v1";
+export const SKW_INFO = "skw-v1"; // share wrapping key (acesso da família, só-leitura)
 
 /** AAD do embrulho da senha — amarra a params do KDF + salt (downgrade → desembrulho falha). */
 export function pwWrapAad(userId: string, kdf: KdfParams, salt: Uint8Array): Uint8Array {
@@ -69,6 +70,11 @@ export function pwWrapAad(userId: string, kdf: KdfParams, salt: Uint8Array): Uin
 /** AAD do embrulho do código de recuperação. */
 export function recoveryWrapAad(userId: string, saltRecovery: Uint8Array): Uint8Array {
   return aad(userId, "wrap-recovery-v1", saltRecovery);
+}
+
+/** AAD do embrulho de SHARE (acesso da família). Amarra ao dono + salt do share. */
+export function shareWrapAad(userId: string, saltShare: Uint8Array): Uint8Array {
+  return aad(userId, "wrap-share-v1", saltShare);
 }
 
 /** Embrulha a DEK com uma chave de embrulho. */

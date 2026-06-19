@@ -5,7 +5,10 @@ import {
   rotateRecoveryCode,
   unlockWithPassword,
   unlockWithRecoveryCode,
+  wrapDekForShare,
+  unlockWithShare,
   type VaultMeta,
+  type ShareWrap,
 } from "./envelope";
 import { aeadDecrypt, aeadEncrypt, ivFromCounter } from "./aead";
 import { KDF_FLOOR, type KdfParams } from "./kdf";
@@ -101,5 +104,47 @@ describe("envelope E2EE — fluxo completo", () => {
     const v = await createVault(USER, PW, FAST);
     const tampered: VaultMeta = { ...meta(v), kdfParams: { ...meta(v).kdfParams, m: 32_768 } };
     await expect(unlockWithPassword(tampered, PW)).rejects.toThrow();
+  });
+});
+
+describe("envelope — acesso da família (share só-leitura)", () => {
+  const shareMeta = (userId: string, sh: ShareWrap) => ({
+    userId,
+    saltShare: sh.saltShare,
+    wrappedDekShare: sh.wrappedDekShare,
+    wrappedDekShareIv: sh.wrappedDekShareIv,
+  });
+
+  it("o segredo do link destrava a MESMA DEK", async () => {
+    const v = await createVault(USER, PW, FAST);
+    const sh = await wrapDekForShare(meta(v), PW);
+    const byShare = await unlockWithShare(shareMeta(USER, sh), sh.secret);
+    expect(await isSameDek(v.dek, byShare.dek)).toBe(true);
+  });
+
+  it("senha errada ao criar o share → LANÇA (re-auth)", async () => {
+    const v = await createVault(USER, PW, FAST);
+    await expect(wrapDekForShare(meta(v), "senha-errada")).rejects.toThrow();
+  });
+
+  it("segredo errado no viewer → LANÇA", async () => {
+    const v = await createVault(USER, PW, FAST);
+    const sh = await wrapDekForShare(meta(v), PW);
+    const wrong = (sh.secret[0] === "A" ? "B" : "A") + sh.secret.slice(1);
+    await expect(unlockWithShare(shareMeta(USER, sh), wrong)).rejects.toThrow();
+  });
+
+  it("share sobrevive à troca de senha (DEK estável)", async () => {
+    const v = await createVault(USER, PW, FAST);
+    const sh = await wrapDekForShare(meta(v), PW);
+    await rewrapPassword(meta(v), PW, "nova-senha-qualquer-tres", FAST);
+    const byShare = await unlockWithShare(shareMeta(USER, sh), sh.secret);
+    expect(await isSameDek(v.dek, byShare.dek)).toBe(true);
+  });
+
+  it("adulterar userId (AAD) quebra o unlock do share", async () => {
+    const v = await createVault(USER, PW, FAST);
+    const sh = await wrapDekForShare(meta(v), PW);
+    await expect(unlockWithShare(shareMeta("outro-user", sh), sh.secret)).rejects.toThrow();
   });
 });

@@ -10,6 +10,7 @@ import {
   Globe,
   User,
   ShieldCheck,
+  Users,
   Tags,
   Palette,
   Database,
@@ -50,6 +51,7 @@ export interface ConfigNavItem {
 export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { id: "cfg-account", labelKey: "config.account", icon: User },
   { id: "cfg-security", labelKey: "config.security", icon: ShieldCheck },
+  { id: "cfg-family", labelKey: "config.family", icon: Users },
   { id: "cfg-categories", labelKey: "config.categories", icon: Tags },
   { id: "cfg-appearance", labelKey: "config.appearance", icon: Palette },
   { id: "cfg-liberdade", labelKey: "config.liberdade", icon: Mountain },

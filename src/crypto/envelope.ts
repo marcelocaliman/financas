@@ -1,5 +1,5 @@
 import { ivFromCounter, randomBytes } from "./aead";
-import { wipe, timingSafeEqual } from "./bytes";
+import { wipe, timingSafeEqual, toBase64url, fromBase64url } from "./bytes";
 import { DEFAULT_KDF, deriveArgon2id, type KdfParams } from "./kdf";
 import {
   deriveServerAuthTag,
@@ -10,6 +10,8 @@ import {
   pwWrapAad,
   RWK_INFO,
   recoveryWrapAad,
+  SKW_INFO,
+  shareWrapAad,
   unwrapDek,
   wrapDek,
 } from "./keys";
@@ -222,6 +224,72 @@ export interface RecoveryRewrap {
   wrappedDekRecovery: Uint8Array;
   wrappedDekRecoveryIv: Uint8Array;
   recoveryCode: string;
+}
+
+const SHARE_SECRET_BYTES = 32; // 256 bits de entropia no segredo do link
+
+export interface ShareWrap {
+  secret: string; // base64url — vai no FRAGMENTO do link, nunca ao servidor
+  saltShare: Uint8Array;
+  wrappedDekShare: Uint8Array;
+  wrappedDekShareIv: Uint8Array;
+}
+
+/** Só os campos que o viewer (esposa) recebe do servidor pra desembrulhar a DEK. */
+export interface ShareMeta {
+  userId: string;
+  saltShare: Uint8Array;
+  wrappedDekShare: Uint8Array;
+  wrappedDekShareIv: Uint8Array;
+}
+
+/**
+ * ACESSO DA FAMÍLIA (só-leitura). Desembrulha a DEK pela SENHA (re-auth → prova de
+ * posse) e re-embrulha a MESMA DEK sob um segredo aleatório de 256 bits. O segredo
+ * (base64url) vai no link; o servidor só guarda `wrappedDekShare`. Self-test embutido.
+ */
+export async function wrapDekForShare(meta: VaultMeta, password: string): Promise<ShareWrap> {
+  const material = await deriveArgon2id(password, meta.salt, meta.kdfParams);
+  const pwk = await deriveWrappingKey(material, PWK_INFO, meta.salt);
+  wipe(material);
+  const dekBytes = await unwrapDek(
+    pwk,
+    meta.wrappedDekPw,
+    meta.wrappedDekPwIv,
+    pwWrapAad(meta.userId, meta.kdfParams, meta.salt),
+  );
+  try {
+    const secretBytes = randomBytes(SHARE_SECRET_BYTES);
+    const saltShare = randomBytes(SALT_BYTES);
+    const skw = await deriveWrappingKey(secretBytes, SKW_INFO, saltShare);
+    const wrapAad = shareWrapAad(meta.userId, saltShare);
+    const wrappedDekShare = await wrapDek(skw, dekBytes, WRAP_IV, wrapAad);
+
+    const check = await unwrapDek(skw, wrappedDekShare, WRAP_IV, wrapAad);
+    const ok = timingSafeEqual(check, dekBytes);
+    wipe(check);
+    if (!ok) throw new Error("self-test do acesso de família falhou");
+
+    const secret = toBase64url(secretBytes);
+    wipe(secretBytes);
+    return { secret, saltShare, wrappedDekShare, wrappedDekShareIv: WRAP_IV };
+  } finally {
+    wipe(dekBytes);
+  }
+}
+
+/** Viewer (só-leitura): destrava a DEK com o segredo do link. LANÇA se segredo/AAD não conferem. */
+export async function unlockWithShare(meta: ShareMeta, secret: string): Promise<VaultKeys> {
+  const secretBytes = fromBase64url(secret);
+  const skw = await deriveWrappingKey(secretBytes, SKW_INFO, meta.saltShare);
+  wipe(secretBytes);
+  const dekBytes = await unwrapDek(
+    skw,
+    meta.wrappedDekShare,
+    meta.wrappedDekShareIv,
+    shareWrapAad(meta.userId, meta.saltShare),
+  );
+  return bytesToKeys(dekBytes);
 }
 
 /** Rotaciona o código de recuperação (novo código + novo embrulho). Exige a senha. */

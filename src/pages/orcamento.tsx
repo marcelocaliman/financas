@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { CalendarClock, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
+import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
 import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
@@ -69,6 +70,7 @@ export default function Orcamento() {
   const tax = useTaxonomy();
   const data = useBudget();
   const CAT = categoryColors(theme);
+  const viewerMode = useViewer((s) => s.viewerMode);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
   const [month, setMonth] = useState(currentMonth());
@@ -178,7 +180,7 @@ export default function Orcamento() {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          {empty ? (
+          {empty && !viewerMode ? (
             <button type="button" onClick={() => void actions.copyBudgetMonth(prev, month)} className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] border border-border text-[12.5px] text-muted hover:text-text hover:bg-card-hover transition-colors">
               <Copy size={14} /> {t("orcamento.copyPrev")}
             </button>
@@ -409,6 +411,7 @@ function UpcomingBillsTile() {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
+  const viewerMode = useViewer((s) => s.viewerMode);
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const data = useBudget();
@@ -445,15 +448,19 @@ function UpcomingBillsTile() {
       <ul className="divide-y divide-[var(--grid-line)]">
         {shown.map((b) => (
           <li key={b.id} className="flex items-center gap-3 py-2.5">
-            <button
-              type="button"
-              onClick={() => pay(b.id)}
-              title={t("orcamento.markPaid")}
-              aria-label={t("orcamento.markPaid")}
-              className="text-faint hover:text-accent transition-colors shrink-0 p-1 -m-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            >
-              <Circle size={18} />
-            </button>
+            {viewerMode ? (
+              <Circle size={18} className="text-faint shrink-0" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => pay(b.id)}
+                title={t("orcamento.markPaid")}
+                aria-label={t("orcamento.markPaid")}
+                className="text-faint hover:text-accent transition-colors shrink-0 p-1 -m-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                <Circle size={18} />
+              </button>
+            )}
             <div className="min-w-0 flex-1">
               <div className="text-[13.5px] text-text truncate">
                 {b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized")}

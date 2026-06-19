@@ -18,6 +18,7 @@ import {
   DangerZone,
 } from "@/components/auth/account-settings";
 import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
+import { FamilyAccess } from "@/components/config/family-access";
 import { LiberdadeSettings } from "@/components/config/liberdade-settings";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { Accordion } from "@/components/common/accordion";
@@ -96,6 +97,12 @@ export default function Config({ onClose }: { onClose?: () => void }) {
             <Card>
               <NewRecoveryCode />
             </Card>
+          </div>
+        </Accordion>
+
+        <Accordion id="cfg-family" title={t("config.family")}>
+          <div className="max-w-2xl">
+            <FamilyAccess />
           </div>
         </Accordion>
 

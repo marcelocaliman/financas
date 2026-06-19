@@ -128,5 +128,34 @@ export class DexieRepository implements DataRepository {
   }
 }
 
-/** Instância única usada pelo app (a UI só conhece a INTERFACE DataRepository). */
-export const repository: DataRepository = new DexieRepository(db);
+/** Métodos de ESCRITA — no-op em modo visitante (acesso da família, só-leitura). */
+const WRITE_METHODS = new Set([
+  "seed", "clearAll", "putAsset", "removeAsset", "putLiability", "removeLiability",
+  "putTaxonomy", "putExpense", "removeExpense", "putIncome", "removeIncome",
+  "putNetWorthSnapshot", "removeNetWorthSnapshot", "putGoal", "removeGoal",
+  "putDividend", "removeDividend", "putSettings",
+]);
+
+let READ_ONLY = false;
+/** Liga o modo só-leitura: toda escrita do repositório vira no-op (garantia dura do viewer). */
+export function setRepositoryReadOnly(v: boolean): void {
+  READ_ONLY = v;
+}
+export function isRepositoryReadOnly(): boolean {
+  return READ_ONLY;
+}
+
+const base = new DexieRepository(db);
+
+/** Instância única usada pelo app (a UI só conhece a INTERFACE DataRepository). Em modo
+ *  visitante, um Proxy intercepta os métodos de escrita e os neutraliza (sem editar cada um). */
+export const repository: DataRepository = new Proxy(base, {
+  get(target, prop, receiver) {
+    const val = Reflect.get(target, prop, receiver);
+    if (typeof val !== "function") return val;
+    if (READ_ONLY && typeof prop === "string" && WRITE_METHODS.has(prop)) {
+      return async () => undefined; // escrita inerte no viewer
+    }
+    return (val as (...a: unknown[]) => unknown).bind(target);
+  },
+}) as DataRepository;

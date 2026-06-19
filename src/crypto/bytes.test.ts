@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { aad, concat, timingSafeEqual, u64be, utf8, wipe } from "./bytes";
+import { aad, concat, timingSafeEqual, u64be, utf8, wipe, toBase64url, fromBase64url } from "./bytes";
+
+describe("base64url (segredo do link de share)", () => {
+  it("round-trip preserva os bytes e é URL-safe (sem + / =)", () => {
+    for (let n = 0; n <= 33; n++) {
+      const bytes = new Uint8Array(n).map((_, i) => (i * 37 + 11) & 0xff);
+      const s = toBase64url(bytes);
+      expect(s).not.toMatch(/[+/=]/);
+      expect(Array.from(fromBase64url(s))).toEqual(Array.from(bytes));
+    }
+  });
+});
 
 describe("aad (dado autenticado canônico)", () => {
   it("é não-ambíguo: prefixar por tamanho evita colisão de concatenação", () => {
