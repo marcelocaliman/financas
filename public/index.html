@@ -216,13 +216,9 @@
     .frame.animate .comp span:nth-child(3) { animation-delay: .24s; }
     .frame.animate .trend-area { animation: nf-fade 1.4s ease .3s both; }
     .frame.animate .trend-line { stroke-dasharray: 1; animation: nf-draw 1.8s ease .15s both; }
-    .frame.animate .kpi { animation: nf-rise .7s cubic-bezier(0.22,1,0.36,1) both; }
-    .frame.animate .kpi:nth-child(2) { animation-delay: .08s; }
-    .frame.animate .kpi:nth-child(3) { animation-delay: .16s; }
-    .frame.animate .kpi:nth-child(4) { animation-delay: .24s; }
     @media (prefers-reduced-motion: reduce) {
-      .frame.animate .ring-anim, .frame.animate .comp span, .frame.animate .trend-area,
-      .frame.animate .trend-line, .frame.animate .kpi { animation: none; }
+      .frame.animate .ring-anim, .frame.animate .comp span,
+      .frame.animate .trend-area, .frame.animate .trend-line { animation: none; }
     }
 
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-card); }
@@ -241,8 +237,6 @@
     /* KPI band — sem divisórias verticais, números grandes, bastante ar */
     /* Hero em DUAS COLUNAS: texto à esquerda, painel à direita */
     .hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(30px, 4.5vw, 60px); align-items: center; }
-    /* Card menor → empilha o gráfico sobre os KPIs (2×2 ganham a largura toda do card, sem espremer). */
-    .hero-visual .trend-row { grid-template-columns: 1fr; }
     .hero-copy, .hero-visual { min-width: 0; }
     .hero-visual .frame { margin-top: 0; }
     @media (max-width: 1000px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
@@ -270,9 +264,7 @@
     .feature li { display: flex; gap: 11px; align-items: flex-start; font-size: 14.5px; color: var(--text); }
     .feature li svg { width: 18px; height: 18px; color: var(--accent); flex: none; margin-top: 1px; }
     @media (max-width: 860px) { .feature, .feature.rev { grid-template-columns: 1fr; gap: 30px; } .feature.rev .copy { order: 0; } }
-    .trend-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; margin-top: 26px; }
     .lib-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 24px; margin-top: 46px; }
-    @media (max-width: 720px) { .trend-row { grid-template-columns: 1fr; } }
     @media (max-width: 880px) { .lib-grid { grid-template-columns: 1fr; } }
 
     .hero-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; line-height: 1; }
@@ -500,17 +492,9 @@
               <div style="display:flex;gap:18px;margin-top:11px;font-size:11.5px" class="faint tabular"><span><span class="chip chip-BRL">BRL</span> <span data-count="54" data-dec="0">54</span>%</span><span><span class="chip chip-EUR">EUR</span> <span data-count="33" data-dec="0">33</span>%</span><span><span class="chip chip-EUR">USD</span> <span data-count="13" data-dec="0">13</span>%</span></div>
             </div>
           </div>
-          <div class="trend-row">
-            <div class="card pad">
-              <div class="eyebrow" style="margin-bottom:10px" data-i18n="mock.trend">Tendência do patrimônio</div>
-              <svg viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".22"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs><path class="trend-area" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16 L400,120 L0,120 Z" fill="url(#g1)"/><path class="trend-line" pathLength="1" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16" fill="none" stroke="#3ecf8e" stroke-width="2"/></svg>
-            </div>
-            <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
-              <div class="kpi"><div class="eyebrow" data-i18n="mock.balance">Saldo do mês</div><div class="v pos tabular">+R$ <span data-count="7392" data-dec="0" data-live="jitter">7.392</span></div></div>
-              <div class="kpi"><div class="eyebrow" data-i18n="mock.return">Rentabilidade</div><div class="v pos tabular">+<span data-count="11.4" data-dec="1" data-live="jitter">11,4</span>%</div></div>
-              <div class="kpi"><div class="eyebrow" data-i18n="mock.reserve">Reserva</div><div class="v tabular" data-i18n="mock.reserveV">8,2 meses</div></div>
-              <div class="kpi"><div class="eyebrow" data-i18n="mock.due">A vencer</div><div class="v tabular" data-i18n="mock.dueV">3 contas</div></div>
-            </div>
+          <div class="card pad" style="margin-top:24px">
+            <div class="eyebrow" style="margin-bottom:10px" data-i18n="mock.trend">Tendência do patrimônio</div>
+            <svg viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".22"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs><path class="trend-area" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16 L400,120 L0,120 Z" fill="url(#g1)"/><path class="trend-line" pathLength="1" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16" fill="none" stroke="#3ecf8e" stroke-width="2"/></svg>
           </div>
         </div>
       </div>
