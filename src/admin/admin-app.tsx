@@ -40,7 +40,7 @@ export function AdminApp() {
     <div className="min-h-screen bg-bg pb-16">
       <AdminSideNav active={active} />
       <AdminTopBar active={active} />
-      <main className={cn("pt-[104px] lg:pt-4 transition-[padding] duration-200", navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]")}>
+      <main className={cn("pt-[104px] lg:pt-[84px] transition-[padding] duration-200", navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]")}>
         {ticketsView ? <AdminTicketsView /> : <AdminPage />}
       </main>
     </div>

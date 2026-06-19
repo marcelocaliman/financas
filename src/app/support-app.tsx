@@ -14,7 +14,7 @@ export function SupportView() {
   return (
     <div className="min-h-screen view-fade-in">
       <section className="scroll-mt-24">
-        <div className={cn(CONTAINER, GUTTERS, "pt-8 lg:pt-10 pb-9")}>
+        <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-9")}>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <h1 className="font-semibold text-[clamp(2rem,4.4vw,3.2rem)] tracking-[-0.04em] leading-[1.04]">
               {t("nav.suporte")}
