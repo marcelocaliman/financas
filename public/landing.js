@@ -46,6 +46,20 @@
   var y = document.getElementById("year");
   if (y) y.textContent = String(new Date().getFullYear());
 
+  // Tema claro/escuro (botão visível). O estado inicial já veio do theme-init.js (sem flash);
+  // aqui só tratamos o clique: alterna a classe, persiste em nf_theme e ajusta o theme-color.
+  var themeBtn = document.getElementById("themebtn");
+  if (themeBtn) {
+    var themeMeta = document.querySelector('meta[name="theme-color"]');
+    themeBtn.setAttribute("aria-label", { pt: "Alternar tema", en: "Toggle theme", it: "Cambia tema" }[lang] || "Alternar tema");
+    themeBtn.addEventListener("click", function () {
+      var light = !document.documentElement.classList.contains("light");
+      document.documentElement.classList.toggle("light", light);
+      if (themeMeta) themeMeta.setAttribute("content", light ? "#ecedef" : "#0a0b0d");
+      try { localStorage.setItem("nf_theme", light ? "light" : "dark"); } catch (e) {}
+    });
+  }
+
   // Analytics próprio (privacy-first): mesmo coletor /api/track do app, sem cookie e
   // sem PII. O anon_id é de 1ª-parte (localStorage "nf-anon") e é compartilhado com o
   // app — costura o funil visita → cadastro sem identificar a pessoa.

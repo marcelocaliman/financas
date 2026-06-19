@@ -10,6 +10,8 @@
   <meta name="author" content="Nossas Finanças" />
   <meta name="keywords" content="finanças multimoeda, gestão patrimonial, orçamento, investimentos, expatriados, cross-border, criptografia ponta a ponta, E2EE, finanças privadas, independência financeira, FIRE, BRL, EUR, USD, GBP, Brasil, Itália, PWA, local-first" />
   <meta name="theme-color" content="#0a0b0d" />
+  <!-- Aplica o tema salvo antes da pintura (sem flash). Bloqueante, externo (CSP). -->
+  <script src="/theme-init.js"></script>
 
   <!-- Ícones -->
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -113,6 +115,23 @@
       --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
       --gutter: clamp(20px, 5vw, 56px); --maxw: 1180px; --maxw-wide: min(1600px, 95vw);
     }
+    /* Claro — mesma família do app (zinc neutro premium, acento verde mais escuro). */
+    html.light {
+      --bg: #ecedef; --bg-2: #ffffff; --card: #ffffff; --card-2: #f4f4f5;
+      --text: #18181b; --muted: #52525b; --faint: #8a8f98;
+      --border: #e6e6e9; --border-strong: #d6d6da;
+      --accent: #15976a; --accent-press: #0f7e57; --accent-soft: rgba(21, 151, 106, 0.1);
+      --neg: #dc5a4e; --eur: #6b7280;
+      --ring: rgba(21, 151, 106, 0.32);
+      --chip-brl-fg: #128a5f; --chip-brl-bg: #e3f6ee;
+      --chip-eur-fg: #6b7280; --chip-eur-bg: #f0f0f2;
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.05), 0 16px 40px -26px rgba(0, 0, 0, 0.12);
+      --shadow-float: 0 24px 60px -28px rgba(0, 0, 0, 0.18);
+    }
+    /* Os brilhos verdes nascem no escuro; no claro ficam mais sutis pra não "sujar" o fundo. */
+    html.light .hero::before { background: radial-gradient(ellipse, rgba(62, 207, 142, 0.12), transparent 64%); }
+    html.light .declare::before { background: radial-gradient(ellipse, rgba(62, 207, 142, 0.07), transparent 64%); }
+    html.light .liberdade { background: linear-gradient(180deg, rgba(62, 207, 142, 0.045), transparent 40%); }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
     body {
@@ -146,6 +165,13 @@
     .nav-links a:hover { color: var(--text); }
     .nav-right { display: flex; align-items: center; gap: 10px; }
     .nav-right .btn { height: 40px; padding: 0 16px; }
+    /* Botão de tema (claro/escuro) — ícone, mesma família dos controles do menu. */
+    .themebtn { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 11px; border: 1px solid var(--border-strong); background: transparent; color: var(--muted); cursor: pointer; transition: color .2s, background .2s, border-color .2s; }
+    .themebtn:hover { color: var(--text); background: var(--card-2); }
+    .themebtn svg { width: 17px; height: 17px; }
+    .themebtn .ic-moon { display: none; }
+    html.light .themebtn .ic-sun { display: none; }
+    html.light .themebtn .ic-moon { display: block; }
     @media (max-width: 880px) { .nav-links { display: none; } }
     @media (max-width: 480px) { .brand span.bn { display: none; } .btn-login { display: none; } }
 
@@ -300,7 +326,7 @@
     .cf-note { color: var(--faint); font-size: 11.5px; line-height: 1.5; }
     .cf-status { font-size: 12.5px; min-height: 1.1em; }
     .cf-status.ok { color: var(--accent); }
-    .cf-status.err { color: #f1746a; }
+    .cf-status.err { color: var(--neg); }
     .field { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
     .field input { flex: 1; min-width: 220px; height: 50px; border-radius: 13px; border: 1px solid var(--border-strong); background: var(--bg-2); color: var(--text); padding: 0 16px; font-size: 15px; outline: none; }
     .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
@@ -419,6 +445,10 @@
           <a href="#contato" data-i18n="nav.contato">Contato</a>
         </nav>
         <div class="nav-right">
+          <button class="themebtn" id="themebtn" type="button" aria-label="Tema">
+            <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
           <a class="btn btn-ghost btn-login" href="/app" data-i18n="nav.login">Entrar</a>
           <a class="btn btn-primary" href="/app#signup" data-i18n="nav.cta">Criar conta</a>
         </div>
@@ -493,7 +523,7 @@
           </div>
           <div class="card pad" style="margin-top:24px">
             <div class="eyebrow" style="margin-bottom:10px" data-i18n="mock.trend">Tendência do patrimônio</div>
-            <svg viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".22"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs><path class="trend-area" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16 L400,120 L0,120 Z" fill="url(#g1)"/><path class="trend-line" pathLength="1" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16" fill="none" stroke="#3ecf8e" stroke-width="2"/></svg>
+            <svg viewBox="0 0 400 120" preserveAspectRatio="none" style="width:100%;height:120px"><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".22"/><stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs><path class="trend-area" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16 L400,120 L0,120 Z" fill="url(#g1)"/><path class="trend-line" pathLength="1" d="M0,96 L36,90 L72,92 L109,78 L145,80 L181,64 L218,58 L254,46 L290,40 L327,30 L363,26 L400,16" fill="none" style="stroke:var(--accent)" stroke-width="2"/></svg>
           </div>
         </div>
       </div>
@@ -561,8 +591,8 @@
           <svg width="148" height="148" viewBox="0 0 148 148" style="flex:none">
             <g transform="rotate(-90 74 74)">
               <circle cx="74" cy="74" r="58" fill="none" stroke="var(--card-2)" stroke-width="18"/>
-              <circle cx="74" cy="74" r="58" fill="none" stroke="#3ecf8e" stroke-width="18" stroke-dasharray="204.1 364.4" stroke-dashoffset="0"/>
-              <circle cx="74" cy="74" r="58" fill="none" stroke="#8a8f98" stroke-width="18" stroke-dasharray="102 364.4" stroke-dashoffset="-204.1"/>
+              <circle cx="74" cy="74" r="58" fill="none" style="stroke:var(--accent)" stroke-width="18" stroke-dasharray="204.1 364.4" stroke-dashoffset="0"/>
+              <circle cx="74" cy="74" r="58" fill="none" style="stroke:var(--eur)" stroke-width="18" stroke-dasharray="102 364.4" stroke-dashoffset="-204.1"/>
               <circle cx="74" cy="74" r="58" fill="none" stroke="#6b7280" stroke-width="18" stroke-dasharray="40.1 364.4" stroke-dashoffset="-306.1"/>
               <circle cx="74" cy="74" r="58" fill="none" stroke="#4b5563" stroke-width="18" stroke-dasharray="18.2 364.4" stroke-dashoffset="-346.2"/>
             </g>
@@ -626,8 +656,8 @@
           <div class="kpi"><div class="eyebrow" data-i18n="f3.k3">Aportes</div><div class="v tabular">R$ 186k</div></div>
           <div class="kpi"><div class="eyebrow" data-i18n="f3.k4">Rendimento</div><div class="v pos tabular">R$ 152k</div></div>
         </div>
-        <svg viewBox="0 0 420 150" preserveAspectRatio="none" style="width:100%;height:clamp(190px,26vw,280px)"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3ecf8e" stop-opacity=".2"/><stop offset="100%" stop-color="#3ecf8e" stop-opacity="0"/></linearGradient></defs><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22 L420,150 L0,150 Z" fill="url(#g2)"/><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22" fill="none" stroke="#3ecf8e" stroke-width="2.2"/><path d="M0,134 L42,132 L84,131 L126,127 L168,126 L210,118 L252,114 L294,106 L336,103 L378,95 L420,90" fill="none" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="3 4"/></svg>
-        <div style="display:flex;gap:18px;margin-top:10px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:#3ecf8e;vertical-align:middle"></span> <span data-i18n="f3.leg1">Patrimônio</span></span><span><span style="display:inline-block;width:10px;height:0;border-top:1px dashed var(--faint);vertical-align:middle"></span> <span data-i18n="f3.leg2">Só aportes</span></span></div>
+        <svg viewBox="0 0 420 150" preserveAspectRatio="none" style="width:100%;height:clamp(190px,26vw,280px)"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".2"/><stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22 L420,150 L0,150 Z" fill="url(#g2)"/><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22" fill="none" style="stroke:var(--accent)" stroke-width="2.2"/><path d="M0,134 L42,132 L84,131 L126,127 L168,126 L210,118 L252,114 L294,106 L336,103 L378,95 L420,90" fill="none" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="3 4"/></svg>
+        <div style="display:flex;gap:18px;margin-top:10px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:var(--accent);vertical-align:middle"></span> <span data-i18n="f3.leg1">Patrimônio</span></span><span><span style="display:inline-block;width:10px;height:0;border-top:1px dashed var(--faint);vertical-align:middle"></span> <span data-i18n="f3.leg2">Só aportes</span></span></div>
       </div>
     </div>
   </section>
@@ -708,8 +738,8 @@
       </div>
       <div class="card pad reveal from-l">
         <div class="eyebrow" style="margin-bottom:12px" data-i18n="f4.proj">Projeção · 20 anos</div>
-        <svg viewBox="0 0 420 160" preserveAspectRatio="none" style="width:100%;height:160px"><path d="M0,140 C120,120 260,80 420,18" fill="none" stroke="#3ecf8e" stroke-width="2.4"/><path d="M0,140 C120,128 260,104 420,64" fill="none" stroke="#8a8f98" stroke-width="2"/><path d="M0,140 C120,134 260,122 420,98" fill="none" stroke="#f1746a" stroke-width="2" stroke-opacity=".8"/></svg>
-        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:#3ecf8e;vertical-align:middle"></span> <span data-i18n="f4.opt">Otimista</span></span><span><span style="display:inline-block;width:10px;height:2px;background:#8a8f98;vertical-align:middle"></span> <span data-i18n="f4.base">Base</span></span><span><span style="display:inline-block;width:10px;height:2px;background:#f1746a;vertical-align:middle"></span> <span data-i18n="f4.pess">Pessimista</span></span></div>
+        <svg viewBox="0 0 420 160" preserveAspectRatio="none" style="width:100%;height:160px"><path d="M0,140 C120,120 260,80 420,18" fill="none" style="stroke:var(--accent)" stroke-width="2.4"/><path d="M0,140 C120,128 260,104 420,64" fill="none" style="stroke:var(--eur)" stroke-width="2"/><path d="M0,140 C120,134 260,122 420,98" fill="none" style="stroke:var(--neg)" stroke-width="2" stroke-opacity=".8"/></svg>
+        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:var(--accent);vertical-align:middle"></span> <span data-i18n="f4.opt">Otimista</span></span><span><span style="display:inline-block;width:10px;height:2px;background:var(--eur);vertical-align:middle"></span> <span data-i18n="f4.base">Base</span></span><span><span style="display:inline-block;width:10px;height:2px;background:var(--neg);vertical-align:middle"></span> <span data-i18n="f4.pess">Pessimista</span></span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px">
           <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g1">Casa própria</span><span class="tabular muted">72%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:72%"></div></div><div class="faint" style="font-size:11px;margin-top:5px">≈ set/2027</div></div>
           <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g2">Reserva 12m</span><span class="tabular muted">100%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:100%"></div></div><div class="pos" style="font-size:11px;margin-top:5px" data-i18n="f4.reached">atingida</div></div>
