@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Sun, Moon, ShieldCheck, Loader2 } from "lucide-react";
 import { Logo } from "@/components/common/logo";
 import { CurrencyMenu } from "@/components/layout/currency-toggle";
+import { LanguageMenu } from "@/components/layout/language-toggle";
 import { OnePage } from "@/app/one-page";
 import { db } from "@/data/db";
 import { loadVault } from "@/vault/serialize";
@@ -84,6 +85,20 @@ const LANG = (() => {
 })();
 const tt = (k: string, s?: number) => (T[LANG][k] ?? T.pt[k] ?? k).replace("{{s}}", String(s ?? ""));
 
+// Idioma do viewer: padrão = o do dono (LANG). Se a pessoa TROCAR pelo seletor, a escolha
+// dela persiste neste aparelho e passa a valer sobre o padrão nos próximos carregamentos.
+const VIEWER_LANG_KEY = "nf_viewer_lang";
+function viewerInitialLang(): string {
+  try {
+    const v = localStorage.getItem(VIEWER_LANG_KEY);
+    if (v && (["pt", "en", "it"] as string[]).includes(v)) return v;
+  } catch { /* ignora */ }
+  return LANG;
+}
+function setViewerLangPref(lng: string): void {
+  try { localStorage.setItem(VIEWER_LANG_KEY, lng.slice(0, 2)); } catch { /* ignora */ }
+}
+
 function errorMessage(r: Extract<ShareOpenResult, { ok: false }>): string {
   switch (r.error) {
     case "not_found": return tt("badInvalid");
@@ -158,23 +173,26 @@ function ViewerBar() {
   const theme = useUI((s) => s.theme);
   const toggleTheme = useUI((s) => s.toggleTheme);
   return (
-    <header className="sticky top-0 z-40 glass border-b border-border">
-      <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14 h-[60px] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Logo size={28} />
-          <span className="font-semibold text-[15px] tracking-[-0.02em] truncate">{t("app.name")}</span>
-          <span className="hidden sm:inline-flex items-center gap-1 ml-1 rounded-full border border-border bg-card2 px-2 py-0.5 text-[10.5px] font-medium text-muted">
-            <ShieldCheck size={11} /> {tt("readonly")}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={toggleNumbers} aria-label={numbersHidden ? t("menu.show") : t("menu.hide")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
-            {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-          <CurrencyMenu />
-          <button type="button" onClick={toggleTheme} aria-label={t("common.theme")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
-            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
+    <header className="fixed top-0 inset-x-0 z-40 px-5 md:px-10 lg:px-14 pt-3.5">
+      <div className="max-w-[1280px] mx-auto">
+        <div className="flex items-center justify-between gap-3 h-[58px] pl-[18px] pr-2.5 rounded-[18px] border border-border bg-card/80 backdrop-blur-lg shadow-[var(--shadow-float)]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Logo size={28} />
+            <span className="font-semibold text-[15px] tracking-[-0.02em] truncate">{t("app.name")}</span>
+            <span className="hidden sm:inline-flex items-center gap-1 ml-1 rounded-full border border-border bg-card2 px-2 py-0.5 text-[10.5px] font-medium text-muted">
+              <ShieldCheck size={11} /> {tt("readonly")}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button type="button" onClick={toggleNumbers} aria-label={numbersHidden ? t("menu.show") : t("menu.hide")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+            <CurrencyMenu />
+            <LanguageMenu onChange={setViewerLangPref} />
+            <button type="button" onClick={toggleTheme} aria-label={t("common.theme")} className="grid place-items-center w-9 h-9 rounded-[10px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </div>
         </div>
       </div>
     </header>
@@ -202,9 +220,9 @@ export function ViewerApp() {
   const frag = useRef(parseShareFragment());
   const didInit = useRef(false);
 
-  // idioma do viewer = o do dono (do fragmento) → seções do painel (react-i18next) seguem ele
+  // idioma do viewer = escolha da pessoa (se houver) ou o do dono → seções seguem (react-i18next)
   useEffect(() => {
-    void i18n.changeLanguage(LANG);
+    void i18n.changeLanguage(viewerInitialLang());
   }, []);
 
   // tema do viewer
