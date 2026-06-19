@@ -1,5 +1,6 @@
-import { ArrowLeftRight, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
 import { scrollToSection, goToSection } from "@/hooks/use-scroll-spy";
 import { PrivacyLink } from "@/components/privacy-policy";
@@ -18,9 +19,7 @@ export function Footer() {
               onClick={() => scrollToSection(NAV_ITEMS[0].id)}
               className="flex items-center gap-2.5"
             >
-              <div className="grid place-items-center w-[28px] h-[28px] rounded-[7px] bg-accent text-[#0A0B0D]">
-                <ArrowLeftRight size={15} strokeWidth={2.6} />
-              </div>
+              <Logo size={28} />
               <span className="font-semibold text-[15.5px] tracking-[-0.02em]">
                 {t("app.name")}
               </span>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeftRight, LifeBuoy } from "lucide-react";
+import { LifeBuoy } from "lucide-react";
+import { Logo } from "@/components/common/logo";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
 import { uploadTicketImage, type TicketMessage, type TicketAttachment } from "@/lib/tickets";
 
@@ -104,9 +105,7 @@ export function TicketPublicPage() {
     <div className="min-h-screen bg-bg text-text grid place-items-start sm:place-items-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-[560px]">
         <a href="/" className="flex items-center gap-2.5 mb-6">
-          <span className="grid place-items-center w-[32px] h-[32px] rounded-[9px] bg-accent text-[#0A0B0D]">
-            <ArrowLeftRight size={16} strokeWidth={2.5} />
-          </span>
+          <Logo size={32} />
           <span className="font-semibold text-[15.5px] tracking-[-0.02em]">Nossas Finanças</span>
         </a>
 

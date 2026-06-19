@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowLeftRight, ArrowUpRight, Eye, EyeOff, MoveRight, ShieldCheck, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, MoveRight, ShieldCheck, TrendingUp } from "lucide-react";
+import { Logo } from "@/components/common/logo";
 import { PrivacyLink } from "@/components/privacy-policy";
 import { cn } from "@/lib/utils";
 
@@ -7,9 +8,7 @@ import { cn } from "@/lib/utils";
 function Brand({ className }: { className?: string }) {
   return (
     <a href="/" className={cn("flex items-center gap-2.5", className)}>
-      <span className="grid place-items-center w-[34px] h-[34px] rounded-[10px] bg-accent text-[#0A0B0D] shrink-0">
-        <ArrowLeftRight size={17} strokeWidth={2.5} />
-      </span>
+      <Logo size={34} className="shrink-0" />
       <span className="font-semibold text-[16.5px] tracking-[-0.02em]">Nossas Finanças</span>
     </a>
   );

@@ -11,7 +11,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon.svg"],
+      includeAssets: ["icon.svg", "icon-maskable.svg", "apple-touch-icon.png"],
       // Nova versão entra no ar e aplica sozinha (skipWaiting + clientsClaim); o
       // main.tsx recarrega a aba automaticamente ao assumir o controle.
       workbox: {
@@ -34,12 +34,11 @@ export default defineConfig({
         display: "standalone",
         start_url: "/app",
         icons: [
-          {
-            src: "icon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any maskable",
-          },
+          // Logo circular (badge) para uso normal; versão full-bleed verde para "maskable"
+          // (o launcher recorta no próprio formato sem cantos transparentes).
+          { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
+          { src: "icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+          { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png", purpose: "any" },
         ],
       },
     }),

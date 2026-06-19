@@ -140,8 +140,7 @@
       border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-float);
     }
     .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
-    .mark { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #07140d; display: grid; place-items: center; flex: none; }
-    .mark svg { width: 16px; height: 16px; }
+    .mark { width: 30px; height: 30px; flex: none; display: block; }
     .nav-links { display: flex; gap: 28px; }
     .nav-links a { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; }
     .nav-links a:hover { color: var(--text); }
@@ -409,7 +408,7 @@
     <div class="headrow">
       <div class="nav">
         <a class="brand" href="#top">
-          <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span>
+          <img class="mark" src="/icon.svg" alt="" width="30" height="30" />
           <span class="bn">Nossas Finanças</span>
         </a>
         <nav class="nav-links">
@@ -813,7 +812,7 @@
   <footer class="site">
     <div class="wrap foot">
       <div style="max-width:34ch">
-        <a class="brand" href="#top" style="margin-bottom:12px"><span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3l4 4-4 4"/><path d="M20 7H8a4 4 0 0 0-4 4"/><path d="M8 21l-4-4 4-4"/><path d="M4 17h12a4 4 0 0 0 4-4"/></svg></span> Nossas Finanças</a>
+        <a class="brand" href="#top" style="margin-bottom:12px"><img class="mark" src="/icon.svg" alt="" width="30" height="30" /> Nossas Finanças</a>
         <div style="font-size:13px;line-height:1.6" data-i18n="foot.tag">Patrimônio multimoeda, privado e sem fronteiras. Para quem vive, investe ou se move entre países e moedas.</div>
       </div>
       <div class="foot-links">

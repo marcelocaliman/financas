@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  ArrowLeftRight, ArrowLeft, Eye, EyeOff, Sun, Moon,
+  ArrowLeft, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
   MonitorSmartphone, Globe, LifeBuoy, type LucideIcon,
 } from "lucide-react";
+import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
 import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
@@ -128,9 +129,7 @@ export function SideNav({ active }: { active: string }) {
         {/* Marca + recolher */}
         <div className={cn("flex shrink-0 px-3 pt-4 pb-3", collapsed ? "flex-col items-center gap-2.5" : "items-center justify-between")}>
           <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5 min-w-0">
-            <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D] shrink-0">
-              <ArrowLeftRight size={15} strokeWidth={2.6} />
-            </div>
+            <Logo size={30} className="shrink-0" />
             {!collapsed ? <span className="font-semibold text-[15.5px] tracking-[-0.02em] truncate">{t("app.name")}</span> : null}
           </button>
           <button
@@ -571,7 +570,7 @@ export function MobileBar() {
     <header className={cn("lg:hidden fixed top-0 left-0 right-0 z-50 transition-colors duration-300", scrolled ? "glass border-b border-border" : "border-b border-transparent")}>
       <div className="flex items-center justify-between gap-3 h-[60px] px-5">
         <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5">
-          <div className="grid place-items-center w-[28px] h-[28px] rounded-[8px] bg-accent text-[#0A0B0D]"><ArrowLeftRight size={14} strokeWidth={2.6} /></div>
+          <Logo size={28} />
           <span className="font-semibold text-[15px] tracking-[-0.02em]">{t("app.name")}</span>
         </button>
         <div className="flex items-center gap-2">

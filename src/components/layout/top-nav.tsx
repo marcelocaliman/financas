@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  ArrowLeftRight,
   Eye,
   EyeOff,
   Settings,
@@ -11,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
 import { goToSection, toggleSection, useScrolled } from "@/hooks/use-scroll-spy";
@@ -47,9 +47,7 @@ export function TopNav({ active }: { active: string }) {
             onClick={() => goToSection(NAV_ITEMS[0].id)}
             className="flex items-center gap-2.5 shrink-0"
           >
-            <div className="grid place-items-center w-[30px] h-[30px] rounded-[9px] bg-accent text-[#0A0B0D]">
-              <ArrowLeftRight size={15} strokeWidth={2.6} />
-            </div>
+            <Logo size={30} />
             <span className="font-semibold text-[16px] tracking-[-0.02em]">{t("app.name")}</span>
           </button>
 
