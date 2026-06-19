@@ -4,10 +4,37 @@ import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
 import { scrollToSection, goToSection } from "@/hooks/use-scroll-spy";
 import { PrivacyLink } from "@/components/privacy-policy";
+import { useViewer } from "@/store/viewer";
+
+/** Barra inferior (copyright + selo cifrado) — reusada no footer cheio e no enxuto do viewer. */
+function BottomBar() {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-faint">
+      <span>© 2026 {t("app.name")} · {t("footer.rights")}</span>
+      <span className="eyebrow inline-flex items-center gap-1.5">
+        <Lock size={12} />
+        {t("footer.encrypted")}
+      </span>
+    </div>
+  );
+}
 
 /** Footer editorial do app (página única). */
 export function Footer() {
   const { t } = useTranslation();
+  const viewerMode = useViewer((s) => s.viewerMode);
+
+  // Painel compartilhado (só-leitura): footer enxuto — só a barra inferior, sem navegação/links.
+  if (viewerMode) {
+    return (
+      <footer className="border-t border-border">
+        <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14 py-8">
+          <BottomBar />
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="border-t border-border">
@@ -39,12 +66,8 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-border flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-faint">
-          <span>© 2026 {t("app.name")} · {t("footer.rights")}</span>
-          <span className="eyebrow inline-flex items-center gap-1.5">
-            <Lock size={12} />
-            {t("footer.encrypted")}
-          </span>
+        <div className="mt-12 pt-6 border-t border-border">
+          <BottomBar />
         </div>
       </div>
     </footer>

@@ -46,8 +46,11 @@ function gen4Pin(): string {
 function genToken(): string {
   return Array.from(randomBytes(24), (b) => b.toString(16).padStart(2, "0")).join("");
 }
-function shareLink(token: string, secret: string): string {
-  return `${location.origin}/share#s=${token}:${secret}`;
+/** O idioma do DONO viaja no fragmento (`&l=`) → o viewer renderiza no MESMO idioma do
+ *  app do dono (não no do navegador da esposa). Não é sensível e fica fora do servidor. */
+function shareLink(token: string, secret: string, lang?: string): string {
+  const base = `${location.origin}/share#s=${token}:${secret}`;
+  return lang ? `${base}&l=${lang}` : base;
 }
 
 export interface ShareRow {
@@ -58,6 +61,7 @@ export interface ShareRow {
   accessedAt: string | null;
   secret: string; // decifrado — só pra reexibir
   pin: string;
+  lang?: string; // idioma do dono na criação (pt/en/it)
   link: string;
 }
 
@@ -71,6 +75,7 @@ export async function createShare(
   userId: string,
   password: string,
   label: string,
+  lang: string,
 ): Promise<ShareRow> {
   const { secret, saltShare, wrappedDekShare, wrappedDekShareIv } = await wrapDekForShare(meta, password);
   const pin = gen4Pin();
@@ -79,7 +84,8 @@ export async function createShare(
   // da DEK (que têm byte alto 0 p/ qualquer contador realista) → impossível colidir.
   const iv = randomBytes(12);
   iv[0] |= 0x80;
-  const secretEnc = await aeadEncrypt(dek, utf8(JSON.stringify({ secret, pin })), iv, aad(userId, AAD_INFO, token));
+  // `lang` no secret_enc → o dono reconstrói o link COM o idioma ao reexibir na Config.
+  const secretEnc = await aeadEncrypt(dek, utf8(JSON.stringify({ secret, pin, lang })), iv, aad(userId, AAD_INFO, token));
   const { data, error } = await supabase.rpc("create_vault_share", {
     p_token: token,
     p_pin: pin,
@@ -99,7 +105,8 @@ export async function createShare(
     accessedAt: null,
     secret,
     pin,
-    link: shareLink(token, secret),
+    lang,
+    link: shareLink(token, secret, lang),
   };
 }
 
@@ -114,7 +121,7 @@ export async function listShares(dek: CryptoKey, userId: string): Promise<ShareR
   for (const r of (data ?? []) as Record<string, string>[]) {
     try {
       const pt = await aeadDecrypt(dek, fromHex(r.secret_enc), fromHex(r.secret_iv), aad(userId, AAD_INFO, r.token));
-      const { secret, pin } = JSON.parse(new TextDecoder().decode(pt)) as { secret: string; pin: string };
+      const { secret, pin, lang } = JSON.parse(new TextDecoder().decode(pt)) as { secret: string; pin: string; lang?: string };
       out.push({
         id: r.id,
         token: r.token,
@@ -123,7 +130,8 @@ export async function listShares(dek: CryptoKey, userId: string): Promise<ShareR
         accessedAt: r.accessed_at ?? null,
         secret,
         pin,
-        link: shareLink(r.token, secret),
+        lang,
+        link: shareLink(r.token, secret, lang),
       });
     } catch {
       /* linha ilegível (DEK diferente?) — ignora */
@@ -143,8 +151,8 @@ export type ShareOpenResult =
   | { ok: true; data: VaultData; ownerId: string; version: number }
   | { ok: false; error: "not_found" | "pin" | "locked" | "empty" | "error"; retryAfter?: number };
 
-/** Lê o link, parseia o fragmento `#s=<token>:<segredo>`. */
-export function parseShareFragment(): { token: string; secret: string } | null {
+/** Lê o link, parseia o fragmento `#s=<token>:<segredo>[&l=<idioma>]`. */
+export function parseShareFragment(): { token: string; secret: string; lang?: string } | null {
   const h = (location.hash || "").replace(/^#/, "");
   const m = /(?:^|&)s=([^&]+)/.exec(h);
   if (!m) return null;
@@ -154,7 +162,8 @@ export function parseShareFragment(): { token: string; secret: string } | null {
   const token = raw.slice(0, i);
   const secret = raw.slice(i + 1);
   if (!token || !secret) return null;
-  return { token, secret };
+  const lm = /(?:^|&)l=([a-z]{2})/.exec(h);
+  return { token, secret, lang: lm ? lm[1] : undefined };
 }
 
 /** Abre o acesso (anon): verifica o PIN no servidor (lockout) e, se ok, decifra o cofre. */

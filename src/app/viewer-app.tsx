@@ -11,6 +11,7 @@ import { useViewer } from "@/store/viewer";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useMainCurrency } from "@/hooks/use-main-currency";
+import i18n from "@/i18n";
 import { openShare, parseShareFragment, type ShareOpenResult } from "@/lib/shares";
 
 type Stage = "pin" | "loading" | "ready";
@@ -38,8 +39,10 @@ const T: Record<string, Record<string, string>> = {
     invalidLink: "Link non valido. Controlla l'indirizzo ricevuto.",
   },
 };
+// Idioma do viewer = o do DONO (vem no fragmento `&l=`), com fallback pro navegador.
+// Assim o painel compartilhado abre no MESMO idioma do app do dono, não no do aparelho da esposa.
 const LANG = (() => {
-  const l = (navigator.language || "pt").toLowerCase();
+  const l = (parseShareFragment()?.lang || navigator.language || "pt").toLowerCase();
   return l.startsWith("en") ? "en" : l.startsWith("it") ? "it" : "pt";
 })();
 const tt = (k: string, s?: number) => (T[LANG][k] ?? T.pt[k] ?? k).replace("{{s}}", String(s ?? ""));
@@ -146,6 +149,11 @@ export function ViewerApp() {
   const [stage, setStage] = useState<Stage>("pin");
   const [error, setError] = useState("");
   const frag = useRef(parseShareFragment());
+
+  // idioma do viewer = o do dono (do fragmento) → seções do painel (react-i18next) seguem ele
+  useEffect(() => {
+    void i18n.changeLanguage(LANG);
+  }, []);
 
   // tema do viewer
   useEffect(() => {

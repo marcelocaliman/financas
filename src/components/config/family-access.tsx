@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Copy, Check, Trash2, Loader2, ShieldAlert, Link2, KeyRound, Users } from "lucide-react";
 import { useVault } from "@/vault/vault-store";
 import { createShare, listShares, revokeShare, type ShareRow } from "@/lib/shares";
@@ -130,6 +131,7 @@ function ShareCard({ row, onRevoke, highlight }: { row: ShareRow; onRevoke: () =
 }
 
 export function FamilyAccess() {
+  const { i18n } = useTranslation();
   const meta = useVault((s) => s.meta);
   const keys = useVault((s) => s.keys);
   const userId = useVault((s) => s.userId);
@@ -155,7 +157,8 @@ export function FamilyAccess() {
     setErr("");
     setCreating(true);
     try {
-      const row = await createShare(meta, keys.dek, userId, password, label.trim());
+      const lang = (i18n.resolvedLanguage ?? "pt").slice(0, 2);
+      const row = await createShare(meta, keys.dek, userId, password, label.trim(), lang);
       setRows((r) => [row, ...(r ?? [])]);
       setJustCreated(row.id);
       setPassword("");
