@@ -106,8 +106,10 @@
   presPing();
   setInterval(function () { presPing(); }, 25000);
   document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") presPing(); });
-  // Saída na hora ao fechar/navegar — o painel deixa de contar quase instantâneo (sem esperar a janela).
-  window.addEventListener("pagehide", function (e) { if (!e.persisted) presPing(true); });
+  // Saída na hora ao fechar/navegar — SEMPRE (não só !persisted) → o painel para de contar na hora.
+  // Se voltar do bfcache, o pageshow(persisted) re-pinga e reaparece.
+  window.addEventListener("pagehide", function () { presPing(true); });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) presPing(); });
 
   // Painel do hero "ganha vida": count-up inicial e, em seguida, MODO VIVO contínuo —
   // o patrimônio cresce organicamente (random-walk com viés de alta + rajadas, ritmo

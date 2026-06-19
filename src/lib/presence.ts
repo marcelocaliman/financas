@@ -43,17 +43,21 @@ export function usePresenceTracker(active: boolean): void {
     const onVis = () => {
       if (document.visibilityState === "visible") ping();
     };
-    // Ao fechar a aba / navegar pra fora, avisa a saída na hora. bfcache (persisted) pode voltar
-    // — não removemos nesse caso (ele reaparece no próximo heartbeat / ao ficar visível).
-    const onLeave = (e: PageTransitionEvent) => {
-      if (!e.persisted) ping(true);
+    // Ao fechar a aba / navegar pra fora, avisa a saída SEMPRE (não só quando !persisted) → o
+    // painel para de contar na hora, sem esperar a janela. Se a página voltar do bfcache, o
+    // pageshow(persisted) re-pinga e ela reaparece. Isso torna o "sair" confiável.
+    const onLeave = () => ping(true);
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) ping();
     };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", onLeave);
+    window.addEventListener("pageshow", onShow);
     return () => {
       clearInterval(id);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pagehide", onLeave);
+      window.removeEventListener("pageshow", onShow);
     };
   }, [active]);
 }

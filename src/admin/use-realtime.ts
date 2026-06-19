@@ -10,7 +10,7 @@ import type { RecentEvent, OnlinePresence, AdminTicketCounts } from "./types";
 // reconexão do websocket). Os casos comuns — entrar (INSERT) e sair via 'bye' (DELETE) — chegam
 // na hora. Cada fonte é um SINGLETON ref-contado: UM canal por tópico (vários componentes
 // consomem o mesmo), o que evita o bug de canais duplicados que travava o cliente Realtime.
-const SAFETY_MS = 25_000;
+const SAFETY_MS = 10_000;
 const EMPTY_PRESENCE: OnlinePresence = { app: 0, landing: 0, total: 0 };
 
 /* ── "Online agora" ──────────────────────────────────────────────────────────── */
