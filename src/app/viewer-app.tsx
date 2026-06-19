@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Eye, EyeOff, Sun, Moon, ShieldCheck, Loader2, Lock } from "lucide-react";
+import { Eye, EyeOff, Sun, Moon, ShieldCheck, Loader2 } from "lucide-react";
 import { Logo } from "@/components/common/logo";
 import { CurrencyMenu } from "@/components/layout/currency-toggle";
 import { OnePage } from "@/app/one-page";
@@ -94,17 +94,23 @@ function errorMessage(r: Extract<ShareOpenResult, { ok: false }>): string {
   }
 }
 
-/** Tela do PIN. */
-function PinGate({ onOpen, busy, error }: { onOpen: (pin: string, remember: boolean) => void; busy: boolean; error: string }) {
+/** Tela do PIN — verifica AUTOMATICAMENTE ao completar 4 dígitos (sem botão) e redireciona no acerto. */
+function PinGate({ onOpen, busy, error }: { onOpen: (pin: string, remember: boolean) => Promise<boolean>; busy: boolean; error: string }) {
   const [pin, setPin] = useState("");
   const [remember, setRemember] = useState(true);
-  const ok = pin.length === 4;
+  const submittedRef = useRef("");
+
+  // Ao completar 4 dígitos: verifica sozinho. Acerto → redireciona; erro → limpa p/ re-tentar.
+  useEffect(() => {
+    if (pin.length < 4) { submittedRef.current = ""; return; }
+    if (busy || submittedRef.current === pin) return;
+    submittedRef.current = pin;
+    void onOpen(pin, remember).then((okRes) => { if (!okRes) setPin(""); });
+  }, [pin, busy, remember, onOpen]);
+
   return (
     <div className="min-h-screen grid place-items-center bg-bg text-text px-4">
-      <form
-        onSubmit={(e) => { e.preventDefault(); if (ok && !busy) onOpen(pin, remember); }}
-        className="w-full max-w-[360px] rounded-[18px] border border-border bg-card p-6 sm:p-7 shadow-[var(--shadow-card)]"
-      >
+      <div className="w-full max-w-[360px] rounded-[18px] border border-border bg-card p-6 sm:p-7 shadow-[var(--shadow-card)]">
         <div className="flex items-center gap-2.5 mb-5">
           <Logo size={32} />
           <span className="font-semibold text-[15.5px] tracking-[-0.02em]">Nossas Finanças</span>
@@ -119,8 +125,9 @@ function PinGate({ onOpen, busy, error }: { onOpen: (pin: string, remember: bool
             inputMode="numeric"
             autoComplete="off"
             autoFocus
+            disabled={busy}
             placeholder="••••"
-            className="w-full h-12 text-center text-[22px] tracking-[0.4em] tabular rounded-[11px] border border-border-strong bg-bg2 text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors"
+            className="w-full h-12 text-center text-[22px] tracking-[0.4em] tabular rounded-[11px] border border-border-strong bg-bg2 text-text outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] transition-colors disabled:opacity-60"
           />
         </label>
         {error ? <p className="text-[12.5px] text-neg mt-3">{error}</p> : null}
@@ -129,19 +136,16 @@ function PinGate({ onOpen, busy, error }: { onOpen: (pin: string, remember: bool
             type="checkbox"
             checked={remember}
             onChange={(e) => setRemember(e.target.checked)}
+            disabled={busy}
             className="h-4 w-4 rounded border-border-strong bg-bg2 accent-[var(--accent)]"
           />
           <span className="text-[12.5px] text-muted">{tt("remember")}</span>
         </label>
-        <button
-          type="submit"
-          disabled={!ok || busy}
-          className="mt-5 w-full inline-flex items-center justify-center gap-2 h-11 rounded-[11px] bg-accent text-[#06281C] font-semibold text-[14px] transition hover:opacity-95 disabled:opacity-50"
-        >
-          {busy ? <><Loader2 size={16} className="animate-spin" /> {tt("opening")}</> : <><Lock size={15} /> {tt("open")}</>}
-        </button>
-        <p className="text-[11px] text-faint mt-4 leading-relaxed">{tt("readonly")} · E2EE</p>
-      </form>
+        <div className="mt-5 h-5 flex items-center gap-2 text-[12.5px] text-muted">
+          {busy ? <><Loader2 size={15} className="animate-spin" /> {tt("opening")}</> : null}
+        </div>
+        <p className="text-[11px] text-faint mt-2 leading-relaxed">{tt("readonly")} · E2EE</p>
+      </div>
     </div>
   );
 }
@@ -215,9 +219,9 @@ export function ViewerApp() {
     return () => window.removeEventListener("pagehide", clear);
   }, []);
 
-  const open = async (pin: string, remember: boolean, auto = false) => {
+  const open = async (pin: string, remember: boolean, auto = false): Promise<boolean> => {
     const f = frag.current;
-    if (!f) return;
+    if (!f) return false;
     setError("");
     setStage(auto ? "checking" : "loading"); // auto: spinner; manual: form com spinner
     const r = await openShare(f.token, f.secret, pin);
@@ -225,7 +229,7 @@ export function ViewerApp() {
       if (auto) clearCachedPin(f.token); // PIN lembrado não vale mais (revogado/expirado)
       setError(errorMessage(r));
       setStage("pin");
-      return;
+      return false;
     }
     if (remember) writeCachedPin(f.token, pin); // janela deslizante de 24h
     else clearCachedPin(f.token);
@@ -233,6 +237,7 @@ export function ViewerApp() {
     setRepositoryReadOnly(true);     // garantia dura: nenhuma escrita persiste
     useViewer.getState().setViewer(null);
     setStage("ready");
+    return true;
   };
 
   // No load: se há PIN lembrado (≤24h) p/ este link, reabre sozinho (dados frescos do servidor).
