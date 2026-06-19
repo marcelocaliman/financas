@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   ArrowLeftRight, ArrowLeft, Eye, EyeOff, Sun, Moon,
   Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
-  ChevronDown, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
+  ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
   MonitorSmartphone, Globe, LifeBuoy, type LucideIcon,
 } from "lucide-react";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
@@ -272,12 +272,7 @@ export function SideNav({ active }: { active: string }) {
 
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
                   <div className="mt-2.5 pt-2.5 border-t border-border space-y-1">
-                    {isAdmin ? (
-                      <>
-                        <FooterItem icon={ShieldCheck} label="Painel admin" onClick={() => setAdminOpen(true)} />
-                        <AdminPresence collapsed={false} />
-                      </>
-                    ) : null}
+                    {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
                     <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => setSupportOpen(true)} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
@@ -488,7 +483,7 @@ function LiveDot({ size = "h-2 w-2" }: { size?: string }) {
  * usuário) — não passam por privacidade. A segurança real é a RLS is_admin no RPC/Realtime.
  * O hook é singleton ref-contado: compartilha o canal com o painel se ele estiver aberto.
  */
-function AdminPresence({ collapsed }: { collapsed: boolean }) {
+function AdminPresence({ collapsed, onOpenAdmin }: { collapsed: boolean; onOpenAdmin?: () => void }) {
   const p = useOnlinePresence();
 
   if (collapsed) {
@@ -507,25 +502,38 @@ function AdminPresence({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="rounded-[12px] border border-border bg-card2 px-3 py-2.5">
-      <div className="flex items-center gap-1.5 mb-2">
-        <LiveDot />
-        <Eyebrow>Online agora</Eyebrow>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-faint">
-            <MonitorSmartphone size={11} className="shrink-0" />
-            <Eyebrow>App</Eyebrow>
-          </div>
-          <div className="text-[17px] font-semibold tabular text-accent mt-0.5 leading-none">{p.app}</div>
+    <div className="rounded-[12px] border border-border bg-card2 overflow-hidden">
+      {onOpenAdmin ? (
+        <button
+          type="button"
+          onClick={onOpenAdmin}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          <ShieldCheck size={16} className="shrink-0" />
+          <span className="text-[13px] font-medium flex-1 truncate">Painel admin</span>
+          <ChevronRight size={14} className="text-faint shrink-0" />
+        </button>
+      ) : null}
+      <div className={cn("px-3 py-2.5", onOpenAdmin && "border-t border-border")}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <LiveDot />
+          <Eyebrow>Online agora</Eyebrow>
         </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1 text-faint">
-            <Globe size={11} className="shrink-0" />
-            <Eyebrow>Landing</Eyebrow>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1 text-faint">
+              <MonitorSmartphone size={11} className="shrink-0" />
+              <Eyebrow>App</Eyebrow>
+            </div>
+            <div className="text-[17px] font-semibold tabular text-accent mt-0.5 leading-none">{p.app}</div>
           </div>
-          <div className="text-[17px] font-semibold tabular text-text mt-0.5 leading-none">{p.landing}</div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1 text-faint">
+              <Globe size={11} className="shrink-0" />
+              <Eyebrow>Landing</Eyebrow>
+            </div>
+            <div className="text-[17px] font-semibold tabular text-text mt-0.5 leading-none">{p.landing}</div>
+          </div>
         </div>
       </div>
     </div>

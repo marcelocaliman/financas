@@ -21,6 +21,8 @@ import { TaxonomyEditor } from "@/components/config/taxonomy-editor";
 import { LiberdadeSettings } from "@/components/config/liberdade-settings";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { Accordion } from "@/components/common/accordion";
+import { CONFIG_NAV_ITEMS } from "@/components/layout/nav-items";
+import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
   const email = useVault((s) => s.email);
   const theme = useUI((s) => s.theme);
   const navLayout = useUI((s) => s.navLayout);
+  const configOpen = useUI((s) => s.configOpen);
 
   useEffect(() => {
     if (!onClose) return;
@@ -46,6 +49,11 @@ export default function Config({ onClose }: { onClose?: () => void }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // Ao ENTRAR na Config, todas as abas começam fechadas (o usuário escolhe o que abrir).
+  useEffect(() => {
+    if (configOpen) useSections.getState().setMany(CONFIG_NAV_ITEMS.map((c) => c.id), false);
+  }, [configOpen]);
 
   const themeLabel = theme === "dark" ? t("common.themeDark") : t("common.themeLight");
   const layoutLabel = navLayout === "side" ? t("menu.side") : t("menu.top");
@@ -71,7 +79,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
 
       {/* Seções — mesmos accordions/gutters/fontes da página inicial */}
       <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
-        <Accordion id="cfg-account" title={t("config.account")} summary={<CfgPreview>{email}</CfgPreview>} defaultOpen>
+        <Accordion id="cfg-account" title={t("config.account")} summary={<CfgPreview>{email}</CfgPreview>}>
           <div className="grid gap-5 sm:grid-cols-2 items-start">
             <Card>
               <AccountSection />
