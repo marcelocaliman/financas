@@ -28,8 +28,8 @@ export function OverviewSection({ days }: { days: number }) {
               <Stat label={<><UserCheck size={11} className="inline mr-1 -mt-0.5" />Confirmados</>} value={fmtInt(o.confirmed_users)} sub={`${pct(o.confirmed_users)}% da base`} tone="accent" />
               <Stat label={<><Activity size={11} className="inline mr-1 -mt-0.5" />Ativos 7d</>} value={fmtInt(o.active_7d)} sub={`${pct(o.active_7d)}% · 30d: ${fmtInt(o.active_30d)}`} />
               <Stat label={<><TrendingUp size={11} className="inline mr-1 -mt-0.5" />Novos 7d</>} value={fmtInt(o.new_7d)} sub="cadastros na semana" />
-              <Stat label={<><Moon size={11} className="inline mr-1 -mt-0.5" />Dormentes 30d</>} value={fmtInt(o.dormant_30d)} sub={`${pct(o.dormant_30d)}% sem login`} tone={o.dormant_30d > 0 ? "neg" : "text"} />
-              <Stat label="Dormentes 90d" value={fmtInt(o.dormant_90d)} sub="sem login há 3 meses" tone={o.dormant_90d > 0 ? "neg" : "text"} />
+              <Stat label={<><Moon size={11} className="inline mr-1 -mt-0.5" />Dormentes 30d</>} value={fmtInt(o.dormant_30d)} sub={`${pct(o.dormant_30d)}% sem acessar`} tone={o.dormant_30d > 0 ? "neg" : "text"} />
+              <Stat label="Dormentes 90d" value={fmtInt(o.dormant_90d)} sub="sem acessar há 3 meses" tone={o.dormant_90d > 0 ? "neg" : "text"} />
               <Stat label={<><CloudUpload size={11} className="inline mr-1 -mt-0.5" />Com sync</>} value={fmtInt(o.synced_users)} sub={`${fmtInt(o.vault_users)} cofres criados`} />
               <Stat label={<><Mail size={11} className="inline mr-1 -mt-0.5" />Opt-in e-mail</>} value={fmtInt(o.optin_count)} sub={`${pct(o.optin_count)}% consentiram`} />
             </div>

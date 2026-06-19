@@ -4,7 +4,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
-import { usePresenceTracker } from "@/lib/presence";
+import { usePresenceTracker, markSeen } from "@/lib/presence";
 import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
@@ -35,7 +35,14 @@ export default function App() {
 
   // "Online agora": pinga enquanto houver sessão AUTENTICADA (travada ou destravada),
   // não só no app destravado — assim o contador acusa quem está logado de verdade.
-  usePresenceTracker(status === "locked" || status === "unlocked");
+  const authed = status === "locked" || status === "unlocked";
+  usePresenceTracker(authed);
+
+  // "Último acesso": carimba uma vez por sessão assim que há sessão autenticada (mede
+  // retenção real no admin, já que a sessão persistente não atualiza o last_sign_in_at).
+  useEffect(() => {
+    if (authed) void markSeen();
+  }, [authed]);
 
   useEffect(() => {
     void init();

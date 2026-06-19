@@ -1,4 +1,15 @@
 import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
+/** Carimba o "último acesso" do usuário (metadado p/ medir retenção real no admin). Uma vez
+ *  por sessão, no boot autenticado — independe de destravar o cofre. Best-effort. */
+export async function markSeen(): Promise<void> {
+  try {
+    await supabase.rpc("mark_seen");
+  } catch {
+    /* best-effort — não bloqueia nada */
+  }
+}
 
 /**
  * Heartbeat de "online agora" do APP. A cada ~20s manda um ping anônimo pro coletor

@@ -31,6 +31,7 @@ export interface UserRow {
   email: string;
   created_at: string;
   last_sign_in_at: string | null;
+  last_seen_at: string | null;
   email_confirmed_at: string | null;
   vault_version: number | null;
   vault_updated_at: string | null;
@@ -45,6 +46,7 @@ export interface UserDetail {
   email: string;
   created_at: string;
   last_sign_in_at: string | null;
+  last_seen_at: string | null;
   email_confirmed_at: string | null;
   vault_version: number | null;
   vault_updated_at: string | null;

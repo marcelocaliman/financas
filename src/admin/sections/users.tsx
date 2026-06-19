@@ -95,7 +95,7 @@ export function UsersSection() {
                 </div>
                 <div className="text-[12.5px] text-muted tabular">{fmtDate(u.created_at)}</div>
                 <div className="text-[12.5px] text-muted tabular flex items-center gap-1">
-                  <Clock size={11} className="text-faint md:hidden" />{fmtAgo(u.last_sign_in_at)}
+                  <Clock size={11} className="text-faint md:hidden" />{fmtAgo(u.last_seen_at)}
                 </div>
                 <div className="text-[12.5px] text-muted tabular">
                   {u.vault_version != null ? `v${u.vault_version} · ${fmtBytes(u.ciphertext_bytes)}` : "—"}
@@ -171,7 +171,8 @@ function UserDetailDialog({ row, onClose, onDeleted }: { row: UserRow | null; on
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <Field label="Cadastro" value={fmtDate(row.created_at)} />
-            <Field label="Último acesso" value={fmtAgo(row.last_sign_in_at)} />
+            <Field label="Último acesso" value={fmtAgo(row.last_seen_at)} />
+            <Field label="Último login" value={fmtAgo(row.last_sign_in_at)} />
             <Field label="E-mail confirmado" value={row.email_confirmed_at ? fmtDate(row.email_confirmed_at) : "Não"} />
             <Field label="Opt-in e-mail" value={row.opted_in ? "Sim" : "Não"} />
             <Field label="Versão do cofre" value={row.vault_version != null ? `v${row.vault_version}` : "Sem cofre"} />
