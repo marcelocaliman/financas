@@ -14,7 +14,7 @@ import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
-import { useOnlinePresence } from "@/admin/use-realtime";
+import { useOnlinePresence, useTicketsCounts } from "@/admin/use-realtime";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
@@ -237,12 +237,7 @@ export function SideNav({ active }: { active: string }) {
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                   <IconBtn onClick={() => setSupportOpen(true)} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
-                  {isAdmin ? (
-                    <>
-                      <IconBtn onClick={() => setAdminOpen(true)} label="Painel admin"><ShieldCheck size={16} /></IconBtn>
-                      <AdminPresence collapsed />
-                    </>
-                  ) : null}
+                  {isAdmin ? <AdminRailCollapsed onOpen={() => setAdminOpen(true)} /> : null}
                 </>
               )}
               <div className="h-px w-7 bg-border my-0.5" />
@@ -483,8 +478,20 @@ function LiveDot({ size = "h-2 w-2" }: { size?: string }) {
  * usuário) — não passam por privacidade. A segurança real é a RLS is_admin no RPC/Realtime.
  * O hook é singleton ref-contado: compartilha o canal com o painel se ele estiver aberto.
  */
+/** Rail recolhido (admin): botão do painel com selo de não-lidos + mini-card "online agora". */
+function AdminRailCollapsed({ onOpen }: { onOpen: () => void }) {
+  const unread = useTicketsCounts().unread;
+  return (
+    <>
+      <IconBtn onClick={onOpen} label="Painel admin" badge={unread}><ShieldCheck size={16} /></IconBtn>
+      <AdminPresence collapsed />
+    </>
+  );
+}
+
 function AdminPresence({ collapsed, onOpenAdmin }: { collapsed: boolean; onOpenAdmin?: () => void }) {
   const p = useOnlinePresence();
+  const unread = useTicketsCounts().unread;
 
   if (collapsed) {
     return (
@@ -511,6 +518,9 @@ function AdminPresence({ collapsed, onOpenAdmin }: { collapsed: boolean; onOpenA
         >
           <ShieldCheck size={16} className="shrink-0" />
           <span className="text-[13px] font-medium flex-1 truncate">Painel admin</span>
+          {unread > 0 ? (
+            <span className="grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[#0A0B0D] text-[11px] font-bold tabular shrink-0">{unread}</span>
+          ) : null}
           <ChevronRight size={14} className="text-faint shrink-0" />
         </button>
       ) : null}

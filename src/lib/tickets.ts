@@ -130,7 +130,7 @@ export async function markTicketRead(ticketId: string): Promise<void> {
 /** Tickets com resposta NOVA do suporte ainda não lida — para o badge in-app. */
 export function unreadCount(tickets: Ticket[]): number {
   return tickets.filter(
-    (t) => t.last_author === "admin" && (!t.user_read_at || t.user_read_at < t.last_message_at),
+    (t) => t.last_author === "admin" && (!t.user_read_at || new Date(t.user_read_at) < new Date(t.last_message_at)),
   ).length;
 }
 

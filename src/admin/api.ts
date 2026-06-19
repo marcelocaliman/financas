@@ -3,7 +3,7 @@ import type {
   AdminOverview, SignupsDay, UserRow, UserDetail, AuditEntry, AdminRow,
   AnalyticsOverview, EventsDay, TopEvent, UserSort,
   RecentEvent, CountryCount, DeviceCount, OnlinePresence,
-  AdminTicketRow, AdminTicketThread,
+  AdminTicketRow, AdminTicketThread, AdminTicketCounts,
 } from "./types";
 
 /** Wrappers tipados dos RPCs de admin. Cada um exige is_admin() no servidor. */
@@ -33,9 +33,11 @@ export const adminApi = {
   online: () => rpc<OnlinePresence>("admin_online"),
   eventsByCountry: (days = 30) => rpc<CountryCount[]>("admin_events_by_country", { p_days: days }),
   eventsByDevice: (days = 30) => rpc<DeviceCount[]>("admin_events_by_device", { p_days: days }),
-  ticketsList: (status?: string | null) => rpc<AdminTicketRow[]>("admin_tickets_list", { p_status: status ?? null }),
+  ticketsList: (status: string | null, search: string | null, limit: number, offset: number) =>
+    rpc<AdminTicketRow[]>("admin_tickets_list", { p_status: status, p_search: search, p_limit: limit, p_offset: offset }),
   ticketThread: (id: string) => rpc<AdminTicketThread>("admin_ticket_thread", { p_id: id }),
-  ticketsUnread: () => rpc<number>("admin_tickets_unread"),
+  ticketsCounts: () => rpc<AdminTicketCounts>("admin_tickets_counts"),
+  ticketRead: (id: string) => rpc<void>("admin_ticket_read", { p_id: id }),
   ticketSetStatus: (id: string, status: "open" | "closed") =>
     rpc<void>("admin_ticket_set_status", { p_id: id, p_status: status }),
 };

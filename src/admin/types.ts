@@ -117,6 +117,15 @@ export interface AdminTicketRow {
   created_at: string;
   last_message_at: string;
   msgs: number;
+  unread: boolean;
+  total_count: number;
+}
+
+export interface AdminTicketCounts {
+  total: number;
+  open: number;
+  unread: number;
+  novos: number;
 }
 
 export interface AdminTicketMessage {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { adminApi } from "./api";
 import { supabase } from "@/lib/supabase";
-import type { RecentEvent, OnlinePresence } from "./types";
+import type { RecentEvent, OnlinePresence, AdminTicketCounts } from "./types";
 
 // Realtime via Postgres Changes (admin-push): o painel do DONO assina as mudanças das tabelas
 // e reconta na hora. O heartbeat (serverless) continua sendo a fonte da verdade; aqui só
@@ -109,11 +109,12 @@ export function useLiveEvents(limit = 24): RecentEvent[] {
   return events.slice(0, limit);
 }
 
-/* ── Tickets aguardando resposta (badge do dono) ─────────────────────────────
-   Recontagem via admin_tickets_unread() ao mudar tickets/ticket_messages. Mesmo
-   singleton ref-contado com carência (evita churn ao recolher/trocar de seção). */
-let tkState = 0;
-const tkListeners = new Set<(n: number) => void>();
+/* ── Contadores de tickets do dono (total/abertos/não-lidos/novos) em tempo real ──
+   Recontagem via admin_tickets_counts() ao mudar tickets/ticket_messages. Singleton
+   ref-contado com carência. `unread` LIMPA ao ler (admin_read_at). */
+const TK_EMPTY: AdminTicketCounts = { total: 0, open: 0, unread: 0, novos: 0 };
+let tkState: AdminTicketCounts = TK_EMPTY;
+const tkListeners = new Set<(c: AdminTicketCounts) => void>();
 let tkChannel: RealtimeChannel | null = null;
 let tkSafety: ReturnType<typeof setInterval> | null = null;
 let tkDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -121,7 +122,7 @@ let tkGrace: ReturnType<typeof setTimeout> | null = null;
 let tkRefs = 0;
 
 function tkRefresh() {
-  adminApi.ticketsUnread().then((n) => { tkState = n ?? 0; tkListeners.forEach((l) => l(tkState)); }).catch(() => {});
+  adminApi.ticketsCounts().then((c) => { if (c) { tkState = c; tkListeners.forEach((l) => l(tkState)); } }).catch(() => {});
 }
 function tkBump() { if (tkDebounce) clearTimeout(tkDebounce); tkDebounce = setTimeout(tkRefresh, 300); }
 function tkStart() {
@@ -143,19 +144,29 @@ function tkScheduleStop() {
   tkGrace = setTimeout(() => { tkGrace = null; if (tkRefs === 0) tkStop(); }, 3000);
 }
 
-/** Nº de tickets aguardando a resposta do dono, em tempo real. */
-export function useTicketsUnread(): number {
-  const [n, setN] = useState(tkState);
+/** Força um recálculo imediato dos contadores (ex.: logo após o dono LER um ticket). */
+export function refreshTicketsCounts() {
+  if (tkChannel) tkRefresh();
+}
+
+/** Contadores de tickets do dono (total/abertos/não-lidos/novos), em tempo real. */
+export function useTicketsCounts(): AdminTicketCounts {
+  const [c, setC] = useState<AdminTicketCounts>(tkState);
   useEffect(() => {
-    const l = (nn: number) => setN(nn);
+    const l = (nc: AdminTicketCounts) => setC(nc);
     tkListeners.add(l);
     if (tkGrace) { clearTimeout(tkGrace); tkGrace = null; }
     if (tkRefs++ === 0 && !tkChannel) tkStart();
-    else setN(tkState);
+    else setC(tkState);
     return () => {
       tkListeners.delete(l);
       if (--tkRefs === 0) tkScheduleStop();
     };
   }, []);
-  return n;
+  return c;
+}
+
+/** Atalho: só o nº de não-lidos (para o selo do menu). */
+export function useTicketsUnread(): number {
+  return useTicketsCounts().unread;
 }

@@ -52,6 +52,11 @@ function scheduleStop() {
   grace = setTimeout(() => { grace = null; if (refs === 0) stop(); }, 3000);
 }
 
+/** Força um recálculo imediato (ex.: logo após o usuário LER um ticket). */
+export function refreshMyTicketStats() {
+  if (channel) refresh();
+}
+
 /** { total, unread } dos tickets do usuário, em tempo real. */
 export function useMyTicketStats(): Stats {
   const [s, setS] = useState<Stats>(state);

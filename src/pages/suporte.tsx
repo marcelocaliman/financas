@@ -6,7 +6,7 @@ import {
   listMyTickets, getMyThread, createTicket, replyTicket, markTicketRead, ticketMeta, uploadTicketImage,
   TICKET_CATEGORIES, type Ticket, type TicketMessage, type TicketCategory, type TicketAttachment,
 } from "@/lib/tickets";
-import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
+import { useMyTicketStats, refreshMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { TicketThread, TicketComposer } from "@/components/support/ticket-thread";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -243,7 +243,7 @@ function ThreadView({ id, onBack }: { id: string; onBack: () => void }) {
       const { ticket, messages } = await getMyThread(id);
       setTicket(ticket);
       setMessages(messages);
-      void markTicketRead(id);
+      void markTicketRead(id).then(refreshMyTicketStats);
     } catch {
       setErr(t("support.errLoad"));
     }
