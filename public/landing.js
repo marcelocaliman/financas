@@ -223,6 +223,24 @@
       io.observe(heroFrame);
     } else { heroFrame.classList.add("animate"); }
   }
+
+  // Headline ROTATIVA: cruza entre as frases (fade + subida). Pausa com aba oculta;
+  // reduced-motion / 1 frase só → fica estática na primeira.
+  var rot = document.querySelector(".hero-rot");
+  if (rot && !reduceMotion) {
+    var rotItems = rot.querySelectorAll(".rot-item");
+    if (rotItems.length > 1) {
+      var rotIdx = 0;
+      setInterval(function () {
+        if (typeof document.hidden !== "undefined" && document.hidden) return;
+        var cur = rotItems[rotIdx];
+        rotIdx = (rotIdx + 1) % rotItems.length;
+        var nxt = rotItems[rotIdx];
+        cur.classList.remove("is-on"); cur.classList.add("is-out"); cur.setAttribute("aria-hidden", "true");
+        nxt.classList.remove("is-out"); nxt.classList.add("is-on"); nxt.setAttribute("aria-hidden", "false");
+      }, 4000);
+    }
+  }
 })();
 
 /* Formulário de contato → abre um ticket de convidado em /api/ticket (com Turnstile invisível).
