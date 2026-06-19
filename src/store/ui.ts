@@ -22,7 +22,7 @@ interface UIState {
    *  (recarregar mantém oculto se o usuário escondeu). */
   numbersHidden: boolean;
   toggleNumbers: () => void;
-  /** Drawer de Configurações aberto (não persiste). */
+  /** Página de Configurações aberta. PERSISTE: recarregar mantém o usuário na Config (não volta pro painel). */
   configOpen: boolean;
   setConfigOpen: (v: boolean) => void;
   /** Página de Ajuda & Suporte aberta — tela cheia, igual ao painel admin (não persiste). */
@@ -65,7 +65,7 @@ export const useUI = create<UIState>()(
       version: 3,
       // Persistir a moeda PRINCIPAL + tema + posição/estado do menu + modo privacidade. A exibição
       // é por-sessão (sempre nasce na principal) — o switcher do topo é prévia temporária, não salvo.
-      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout, navCollapsed: s.navCollapsed, numbersHidden: s.numbersHidden }),
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout, navCollapsed: s.navCollapsed, numbersHidden: s.numbersHidden, configOpen: s.configOpen }),
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout; navCollapsed?: boolean; numbersHidden?: boolean };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
