@@ -23,7 +23,7 @@ export function OverviewSection({ days }: { days: number }) {
       <StateBlock loading={ov.loading} error={ov.error}>
         {o ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 min-[1200px]:grid-cols-8 gap-3 min-[1200px]:gap-2.5">
               <Stat label={<><Users size={11} className="inline mr-1 -mt-0.5" />Usuários</>} value={fmtInt(o.total_users)} sub={`${fmtInt(o.new_30d)} novos em 30d`} />
               <Stat label={<><UserCheck size={11} className="inline mr-1 -mt-0.5" />Confirmados</>} value={fmtInt(o.confirmed_users)} sub={`${pct(o.confirmed_users)}% da base`} tone="accent" />
               <Stat label={<><Activity size={11} className="inline mr-1 -mt-0.5" />Ativos 7d</>} value={fmtInt(o.active_7d)} sub={`${pct(o.active_7d)}% · 30d: ${fmtInt(o.active_30d)}`} />
