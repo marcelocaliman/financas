@@ -17,7 +17,7 @@ export function AdminPage() {
   const [days, setDays] = useState<number>(30);
 
   return (
-    <div>
+    <div className="view-fade-in">
       {/* Hero — mesma faixa/gutters/topo do app */}
       <section className="scroll-mt-24">
         <div className={cn(CONTAINER, GUTTERS, "pt-2 lg:pt-6 pb-10")}>

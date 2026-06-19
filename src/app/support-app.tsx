@@ -12,7 +12,7 @@ const CONTAINER = "max-w-[1280px] mx-auto";
 export function SupportView() {
   const { t } = useTranslation();
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen view-fade-in">
       <section className="scroll-mt-24">
         <div className={cn(CONTAINER, GUTTERS, "pt-8 lg:pt-10 pb-9")}>
           <div className="flex flex-wrap items-end justify-between gap-4">

@@ -11,7 +11,7 @@ const CONTAINER = "max-w-[1280px] mx-auto";
  */
 export function AdminTicketsView() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen view-fade-in">
       <section className="scroll-mt-24">
         <div className={cn(CONTAINER, GUTTERS, "pt-2 lg:pt-6 pb-8")}>
           <div className="flex flex-wrap items-end justify-between gap-4">

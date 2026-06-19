@@ -118,7 +118,7 @@ export function AppShell() {
         {supportOpen ? (
           <SupportView />
         ) : (
-        <div className="relative overflow-clip min-h-screen">
+        <div className="relative overflow-clip min-h-screen view-fade-in">
           {/* PÁGINA — pane da esquerda (sai pra esquerda ao abrir a Config) */}
           <div
             inert={target !== "page"}
