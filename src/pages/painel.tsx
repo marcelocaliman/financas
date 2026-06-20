@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, LineChart } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useLiberdade } from "@/hooks/use-liberdade";
 import { useHealth } from "@/hooks/use-health";
+import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
+import { SUPPORTED_LANGS } from "@/i18n";
 import { CLASS, isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
 import { goToSection } from "@/hooks/use-scroll-spy";
@@ -396,8 +398,24 @@ function StatTile({ label, value, sub, positive, wide }: { label: string; value:
   );
 }
 
+function SetupPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "px-3 py-1.5 rounded-lg text-[12.5px] font-medium border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+        active ? "bg-accent text-[#0A0B0D] border-accent" : "border-border text-muted hover:text-text",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
 function PainelEmpty() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { baseCurrency, setMainCurrency } = useMainCurrency();
   const steps: { n: number; label: string; section: string }[] = [
     { n: 1, label: t("dashboard.step1"), section: "patrimonio" },
     { n: 2, label: t("dashboard.step2"), section: "orcamento" },
@@ -411,8 +429,34 @@ function PainelEmpty() {
       <div className="text-[clamp(26px,4.5vw,46px)] font-semibold tracking-[-0.025em]">{t("dashboard.empty")}</div>
       <p className="text-[14px] text-muted mt-3 max-w-md leading-relaxed">{t("dashboard.emptyDesc")}</p>
 
+      {/* Primeiro acesso: idioma + moeda principal (toques rápidos, sem atrito) */}
+      <div className="w-full max-w-2xl rounded-[14px] border border-border bg-card2 p-5 mt-7 text-left">
+        <div className="grid sm:grid-cols-2 gap-5">
+          <div>
+            <span className="eyebrow block mb-2.5">{t("common.language")}</span>
+            <div className="flex flex-wrap gap-1.5">
+              {SUPPORTED_LANGS.map((lng) => (
+                <SetupPill key={lng} active={i18n.resolvedLanguage === lng} onClick={() => void i18n.changeLanguage(lng)}>
+                  {lng.toUpperCase()}
+                </SetupPill>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="eyebrow block mb-2.5">{t("common.baseCurrency")}</span>
+            <div className="flex flex-wrap gap-1.5">
+              {CURRENCIES.map((c) => (
+                <SetupPill key={c} active={baseCurrency === c} onClick={() => setMainCurrency(c)}>
+                  {CURRENCY_SYMBOL[c]} {c}
+                </SetupPill>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Como começar — 3 passos clicáveis (orienta o recém-chegado) */}
-      <div className="grid sm:grid-cols-3 gap-3 mt-8 w-full max-w-2xl text-left">
+      <div className="grid sm:grid-cols-3 gap-3 mt-6 w-full max-w-2xl text-left">
         {steps.map((s) => (
           <button
             key={s.n}
