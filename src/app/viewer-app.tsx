@@ -68,20 +68,12 @@ const T: Record<string, Record<string, string>> = {
     invalidLink: "Invalid link. Check the address you received.",
     remember: "Remember on this device for 24h",
   },
-  it: {
-    title: "Pannello condiviso", sub: "Inserisci il PIN di 4 cifre che hai ricevuto per vedere il pannello.",
-    pin: "PIN", open: "Vedi pannello", opening: "Apertura…", readonly: "Sola lettura",
-    badInvalid: "Link non valido o revocato.", badPin: "PIN errato.", badLocked: "Troppi tentativi. Riprova tra {{s}}s.",
-    badEmpty: "Questo pannello non ha ancora dati.", badErr: "Impossibile aprire. Riprova.",
-    invalidLink: "Link non valido. Controlla l'indirizzo ricevuto.",
-    remember: "Ricorda su questo dispositivo per 24h",
-  },
 };
 // Idioma do viewer = o do DONO (vem no fragmento `&l=`), com fallback pro navegador.
 // Assim o painel compartilhado abre no MESMO idioma do app do dono, não no do aparelho da esposa.
 const LANG = (() => {
   const l = (parseShareFragment()?.lang || navigator.language || "pt").toLowerCase();
-  return l.startsWith("en") ? "en" : l.startsWith("it") ? "it" : "pt";
+  return l.startsWith("en") ? "en" : "pt";
 })();
 const tt = (k: string, s?: number) => (T[LANG][k] ?? T.pt[k] ?? k).replace("{{s}}", String(s ?? ""));
 
@@ -91,7 +83,7 @@ const VIEWER_LANG_KEY = "nf_viewer_lang";
 function viewerInitialLang(): string {
   try {
     const v = localStorage.getItem(VIEWER_LANG_KEY);
-    if (v && (["pt", "en", "it"] as string[]).includes(v)) return v;
+    if (v && (["pt", "en"] as string[]).includes(v)) return v;
   } catch { /* ignora */ }
   return LANG;
 }

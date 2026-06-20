@@ -8,8 +8,7 @@
     { "source": "/app/(.*)", "destination": "/app.html" },
     { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/share", "destination": "/share.html" },
-    { "source": "/en", "destination": "/en.html" },
-    { "source": "/it", "destination": "/it.html" }
+    { "source": "/en", "destination": "/en.html" }
   ],
   "headers": [
     {
@@ -46,7 +45,7 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
-      "source": "/(en|it)",
+      "source": "/en",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {

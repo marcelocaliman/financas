@@ -4,10 +4,10 @@ import { ChevronDown, Check, Globe } from "lucide-react";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { cn } from "@/lib/utils";
 
-const LANG_LABEL: Record<string, string> = { pt: "Português", en: "English", it: "Italiano" };
+const LANG_LABEL: Record<string, string> = { pt: "Português", en: "English" };
 
 /**
- * Seletor de idioma (PT/EN/IT). Troca o idioma do i18next na hora. `onChange` opcional
+ * Seletor de idioma (PT/EN). Troca o idioma do i18next na hora. `onChange` opcional
  * permite a quem usa (ex.: o viewer) persistir a escolha à parte.
  */
 export function LanguageMenu({

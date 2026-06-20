@@ -19,17 +19,11 @@ const META = {
     title: "Nossas Finanças — multicurrency wealth, private & cross-border",
     desc: "The complete dashboard to manage your wealth in any currency and country, with end-to-end encryption. The server never sees your numbers. Free, private and local-first.",
   },
-  it: {
-    lang: "it", ogLocale: "it_IT", url: "/it", og: "/og-it.png",
-    title: "Nossas Finanças — patrimonio multivaluta, privato e cross-border",
-    desc: "La dashboard completa per gestire il tuo patrimonio in qualsiasi valuta e paese, con crittografia end-to-end. Il server non vede mai i tuoi numeri. Gratis, privato e local-first.",
-  },
 };
 
 const HREFLANG = [
   `<link rel="alternate" hreflang="pt-BR" href="${SITE}/" />`,
   `<link rel="alternate" hreflang="en" href="${SITE}/en" />`,
-  `<link rel="alternate" hreflang="it" href="${SITE}/it" />`,
   `<link rel="alternate" hreflang="x-default" href="${SITE}/" />`,
 ].join("\n  ");
 
@@ -39,11 +33,6 @@ const LD = {
     orgDesc: "Multicurrency, private and cross-border wealth management, with end-to-end encryption.",
     appDesc: "Multicurrency wealth and budget dashboard with end-to-end encryption (E2EE). Net worth, investments, budget, goals, projection and financial independence — for people who live between countries.",
     features: ["Multicurrency (BRL, EUR, USD, GBP)", "End-to-end encryption (E2EE)", "Local-first and offline (PWA)", "Net worth and investments", "Multicurrency monthly budget", "Projection and financial independence (FIRE)", "Export/import (JSON and CSV)"],
-  },
-  it: {
-    orgDesc: "Gestione patrimoniale multivaluta, privata e cross-border, con crittografia end-to-end.",
-    appDesc: "Dashboard di gestione patrimoniale e budget multivaluta con crittografia end-to-end (E2EE). Patrimonio, investimenti, budget, obiettivi, proiezione e indipendenza finanziaria — per chi vive tra paesi.",
-    features: ["Multivaluta (BRL, EUR, USD, GBP)", "Crittografia end-to-end (E2EE)", "Local-first e offline (PWA)", "Patrimonio e investimenti", "Budget mensile multivaluta", "Proiezione e indipendenza finanziaria (FIRE)", "Export/import (JSON e CSV)"],
   },
 };
 
@@ -59,7 +48,7 @@ function buildJsonLd(lang) {
     "@graph": [
       { "@type": "Organization", "@id": `${SITE}/#org`, name: "Nossas Finanças", url: `${SITE}/`, logo: `${SITE}/og.png`, description: ld.orgDesc },
       { "@type": "WebSite", "@id": `${SITE}/#website`, url: `${SITE}/`, name: "Nossas Finanças", inLanguage: m.lang, publisher: { "@id": `${SITE}/#org` } },
-      { "@type": "SoftwareApplication", name: "Nossas Finanças", applicationCategory: "FinanceApplication", operatingSystem: "Web, iOS, Android (PWA)", url: `${SITE}/app`, inLanguage: ["pt-BR", "en", "it"], description: ld.appDesc, offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" }, featureList: ld.features },
+      { "@type": "SoftwareApplication", name: "Nossas Finanças", applicationCategory: "FinanceApplication", operatingSystem: "Web, iOS, Android (PWA)", url: `${SITE}/app`, inLanguage: ["pt-BR", "en"], description: ld.appDesc, offers: { "@type": "Offer", price: "0", priceCurrency: "BRL" }, featureList: ld.features },
       { "@type": "FAQPage", inLanguage: m.lang, mainEntity: faq },
     ],
   }, null, 2);
@@ -100,13 +89,12 @@ function gen(lang) {
     // JSON-LD localizado (FAQ, inLanguage e descrições no idioma da página)
     .replace(/(<script type="application\/ld\+json">)[\s\S]*?(<\/script>)/, `$1\n${buildJsonLd(lang)}\n  $2`);
   // og:locale:alternate → os OUTROS dois idiomas (não repetir o principal)
-  const ALT = { en: ["pt_BR", "it_IT"], it: ["pt_BR", "en_US"] };
+  const ALT = { en: ["pt_BR"] };
   let ai = 0;
   html = html.replace(/(<meta property="og:locale:alternate" content=")[^"]*(")/g, (_m, a, b) => `${a}${ALT[lang][ai++]}${b}`);
   return injectHreflang(html);
 }
 
 writeFileSync(`${DIST}/en.html`, gen("en"));
-writeFileSync(`${DIST}/it.html`, gen("it"));
 writeFileSync(`${DIST}/index.html`, injectHreflang(base));
-console.log("✓ i18n landing: dist/en.html, dist/it.html geradas + hreflang em index.html");
+console.log("✓ i18n landing: dist/en.html gerada + hreflang em index.html");

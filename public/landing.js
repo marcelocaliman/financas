@@ -1,14 +1,14 @@
 /* Progressive enhancement da landing — a página já funciona 100% sem isto.
    Externo porque o CSP do app é script-src 'self' (bloqueia <script> inline).
-   i18n por URL: cada idioma é uma página própria (/, /en, /it) gerada no build a partir
+   i18n por URL: cada idioma é uma página própria (/, /en) gerada no build a partir
    de scripts/landing-i18n.json — bom p/ SEO. Aqui só marcamos o idioma e navegamos. */
 (function () {
-  var LABELS = { pt: "PT", en: "EN", it: "IT" };
-  var URLS = { pt: "/", en: "/en", it: "/it" };
+  var LABELS = { pt: "PT", en: "EN" };
+  var URLS = { pt: "/", en: "/en" };
 
   // Idioma da página = atributo lang do HTML (cada URL já vem pré-renderizada no idioma).
   var l = (document.documentElement.lang || "pt").toLowerCase();
-  var lang = l.indexOf("en") === 0 ? "en" : l.indexOf("it") === 0 ? "it" : "pt";
+  var lang = l.indexOf("en") === 0 ? "en" : "pt";
 
   // Marca o idioma atual no seletor.
   var cur = document.getElementById("langcur");
@@ -35,12 +35,12 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
 
   // Na raiz (/), respeita uma escolha de idioma já feita: manda o visitante recorrente
-  // pra /en ou /it. Primeira visita NÃO redireciona — cada URL é rastreável (SEO limpo)
+  // pra /en. Primeira visita NÃO redireciona — cada URL é rastreável (SEO limpo)
   // e o PT continua sendo o conteúdo da raiz.
   if (lang === "pt" && location.pathname === "/") {
     var saved = null;
     try { saved = localStorage.getItem("nf_lang"); } catch (e) {}
-    if (saved === "en" || saved === "it") location.replace(URLS[saved]);
+    if (saved === "en") location.replace(URLS.en);
   }
 
   var y = document.getElementById("year");
@@ -116,8 +116,8 @@
   // variável: às vezes devagar, às vezes rápido) e alguns KPIs oscilam de leve. Pausa
   // quando a aba/seção não está visível. Respeita prefers-reduced-motion (estático).
   var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Formata no idioma da PÁGINA — senão /en e /it mostrariam "1.284.930" (separador pt-BR).
-  var NUM_LOCALE = lang === "en" ? "en-US" : lang === "it" ? "it-IT" : "pt-BR";
+  // Formata no idioma da PÁGINA — senão /en mostraria "1.284.930" (separador pt-BR).
+  var NUM_LOCALE = lang === "en" ? "en-US" : "pt-BR";
   function fmtNum(v, dec) {
     return v.toLocaleString(NUM_LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
   }
@@ -296,7 +296,7 @@
   }
 
   var l = (document.documentElement.lang || "pt").toLowerCase();
-  var lang = l.indexOf("en") === 0 ? "en" : l.indexOf("it") === 0 ? "it" : "pt";
+  var lang = l.indexOf("en") === 0 ? "en" : "pt";
   var MSG = {
     sending: { pt: "Enviando…", en: "Sending…", it: "Invio…" },
     ok: { pt: "Recebido! Te enviamos um link por e-mail pra acompanhar a conversa.", en: "Got it! We've emailed you a link to follow the conversation.", it: "Ricevuto! Ti abbiamo inviato un link via email per seguire la conversazione." },

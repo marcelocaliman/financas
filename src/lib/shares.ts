@@ -61,7 +61,7 @@ export interface ShareRow {
   accessedAt: string | null;
   secret: string; // decifrado — só pra reexibir
   pin: string;
-  lang?: string; // idioma do dono na criação (pt/en/it)
+  lang?: string; // idioma do dono na criação (pt/en)
   link: string;
 }
 
