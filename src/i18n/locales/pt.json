@@ -455,7 +455,8 @@
     "privacy": "Privacidade",
     "noTracking": "Sem rastreamento · sem anúncios",
     "rights": "multimoeda & privado",
-    "encrypted": "Cifrado de ponta a ponta"
+    "encrypted": "Cifrado de ponta a ponta",
+    "community": "Comunidade no Discord"
   },
   "support": {
     "intro": "Precisa de ajuda ou quer falar com a gente? Abra um ticket — respondo por aqui mesmo.",

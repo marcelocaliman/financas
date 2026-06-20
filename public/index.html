@@ -198,6 +198,9 @@
     .btn-primary:hover { background: var(--accent-press); transform: translateY(-1px); }
     .btn-ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
     .btn-ghost:hover { background: var(--card-2); }
+    /* Botão da comunidade — blurple do Discord (único lugar com a cor da marca deles) */
+    .btn-discord { display: inline-flex; align-items: center; gap: 10px; height: 50px; padding: 0 24px; border-radius: 13px; background: #5865F2; color: #fff; font-weight: 600; font-size: 15px; transition: filter .2s, transform .15s; }
+    .btn-discord:hover { filter: brightness(1.08); transform: translateY(-1px); }
     .btn-lg { height: 50px; padding: 0 24px; font-size: 15px; border-radius: 13px; }
 
     /* Hero */
@@ -438,6 +441,7 @@
           <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
           <a href="#compartilhar" data-i18n="nav.compartilhar">Compartilhar</a>
           <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
+          <a href="#comunidade" data-i18n="nav.comunidade">Comunidade</a>
           <a href="#faq" data-i18n="nav.faq">FAQ</a>
           <a href="#contato" data-i18n="nav.contato">Contato</a>
         </nav>
@@ -804,17 +808,79 @@
     </div>
   </section>
 
-  <!-- CONTATO + COMUNIDADE (Discord em breve) -->
+  <!-- COMUNIDADE — Discord -->
+  <section id="comunidade" class="sec-air" style="position:relative;overflow:hidden;border-top:1px solid var(--border)">
+    <div style="position:absolute;top:-180px;left:50%;transform:translateX(-50%);width:1100px;height:540px;max-width:130%;background:radial-gradient(ellipse, rgba(88,101,242,0.16), transparent 62%);pointer-events:none"></div>
+    <div class="wrap-wide" style="position:relative">
+      <div class="feature">
+        <div class="copy reveal from-l">
+          <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:6px">
+            <span style="display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:rgba(88,101,242,0.16)"><svg viewBox="0 0 24 24" fill="#5865F2" style="width:21px;height:21px" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></span>
+            <span class="eyebrow" style="color:#8b96f5" data-i18n="community.eyebrow">Comunidade</span>
+          </div>
+          <h2 data-i18n="community.h2">Você não está sozinho nessa.</h2>
+          <p data-i18n="community.p">Entre na nossa comunidade no Discord — gente que também administra dinheiro entre países. Câmbio, mudança, investir lá e cá, e o uso do app: troque experiências, tire dúvidas e ajude a decidir o que vem por aí.</p>
+          <ul>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="community.l1">Tire dúvidas do app direto com a gente</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="community.l2">Trocas reais de quem vive entre países</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="community.l3">Você ajuda a decidir o que vem a seguir</span></li>
+          </ul>
+          <div style="margin-top:30px">
+            <a class="btn-discord" href="https://discord.gg/J3yzjQVw3v" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" fill="#fff" style="width:22px;height:22px" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+              <span data-i18n="community.cta">Entrar no Discord</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Mock de janela do Discord -->
+        <div class="reveal from-r" style="border:1px solid var(--border);border-radius:18px;overflow:hidden;background:var(--card);box-shadow:var(--shadow-float)">
+          <div style="display:flex;align-items:center;gap:7px;padding:12px 15px;border-bottom:1px solid var(--border)">
+            <span style="width:11px;height:11px;border-radius:50%;background:#ff5f57"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#febc2e"></span>
+            <span style="width:11px;height:11px;border-radius:50%;background:#28c840"></span>
+            <span style="margin-left:8px;font-size:12px;color:var(--faint);font-family:var(--font-mono)">Nossas Finanças · Discord</span>
+          </div>
+          <div style="display:grid;grid-template-columns:150px 1fr">
+            <div style="background:var(--bg);border-right:1px solid var(--border);padding:13px 9px;min-height:236px">
+              <div class="eyebrow" style="padding:0 6px;margin-bottom:9px" data-i18n="community.mch">Canais</div>
+              <div style="display:grid;gap:2px;font-size:13px">
+                <span style="padding:6px 8px;border-radius:7px;color:var(--muted)"># boas-vindas</span>
+                <span style="padding:6px 8px;border-radius:7px;background:rgba(88,101,242,0.16);color:#fff"># geral</span>
+                <span style="padding:6px 8px;border-radius:7px;color:var(--muted)"># câmbio-e-mudança</span>
+                <span style="padding:6px 8px;border-radius:7px;color:var(--muted)"># dúvidas-do-app</span>
+                <span style="padding:6px 8px;border-radius:7px;color:var(--muted)"># investir-lá-e-cá</span>
+              </div>
+            </div>
+            <div style="padding:15px 16px;display:grid;gap:15px;align-content:start">
+              <div style="display:flex;gap:10px">
+                <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#06281c;font-weight:700;font-size:13px;flex:none">A</span>
+                <div style="min-width:0">
+                  <div style="font-size:12.5px;font-weight:600">Aline</div>
+                  <div class="muted" style="font-size:13px;margin-top:2px;line-height:1.45" data-i18n="community.m1">Cheguei na Itália essa semana — alguém aqui já passou pela parte do câmbio dos primeiros meses?</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <span style="display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#8b96f5;color:#0a0b0d;font-weight:700;font-size:13px;flex:none">M</span>
+                <div style="min-width:0">
+                  <div style="font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap">Marcelo <span style="font-size:9.5px;background:rgba(88,101,242,0.2);color:#8b96f5;padding:1px 6px;border-radius:5px;font-family:var(--font-mono)">ADMIN</span></div>
+                  <div class="muted" style="font-size:13px;margin-top:2px;line-height:1.45" data-i18n="community.m2">Passei sim! Te conto o que funcionou — e joga teu patrimônio no app pra ver o impacto do euro 👇</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:2px;padding-top:12px;border-top:1px solid var(--border)">
+                <span style="width:8px;height:8px;border-radius:50%;background:#28c840"></span>
+                <span class="faint" style="font-size:11.5px" data-i18n="community.online">comunidade ativa toda semana</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTATO -->
   <section id="contato" style="border-top:1px solid var(--border)">
     <div class="wrap">
-      <a href="/app#signup" class="reveal" style="display:flex;align-items:center;gap:14px;border:1px solid var(--border);border-radius:16px;padding:15px 18px;margin:0 auto 30px;max-width:1080px;background:var(--bg-2)">
-        <span style="display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:rgba(88,101,242,0.12);flex:none"><svg viewBox="0 0 24 24" fill="#5865F2" style="width:25px;height:25px" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></span>
-        <span style="flex:1;min-width:0">
-          <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:14.5px" data-i18n="community.banner">Comunidade no Discord</b> <span class="eyebrow" style="border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--muted)" data-i18n="community.soon">em breve</span></span>
-          <span class="muted" style="display:block;font-size:13px;margin-top:3px" data-i18n="community.note">Crie sua conta e a gente te avisa quando a comunidade abrir.</span>
-        </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none;color:var(--faint)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
       <div class="contact-card reveal">
         <div class="feature" style="align-items:center">
           <div>
@@ -855,6 +921,7 @@
         <a href="#recursos" data-i18n="nav.recursos">Recursos</a>
         <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
         <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
+        <a href="#comunidade" data-i18n="nav.comunidade">Comunidade</a>
         <a href="#faq" data-i18n="nav.faq">FAQ</a>
         <a href="#contato" data-i18n="nav.contato">Contato</a>
       </div>
