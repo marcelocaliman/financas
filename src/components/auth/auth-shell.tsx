@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ArrowUpRight, Eye, EyeOff, MoveRight, ShieldCheck, TrendingUp } from "lucide-react";
 import { Logo } from "@/components/common/logo";
 import { PrivacyLink } from "@/components/privacy-policy";
+import { TermsLink } from "@/components/terms-of-use";
 import { cn } from "@/lib/utils";
 
 /** Marca do app (ícone + nome). */
@@ -222,7 +223,11 @@ export function AuthShell({
         </div>
 
         <div className="w-full max-w-[400px] mx-auto flex items-center justify-between gap-3 text-[11.5px] text-faint">
-          <PrivacyLink />
+          <span className="flex items-center gap-2">
+            <PrivacyLink />
+            <span className="text-faint">·</span>
+            <TermsLink />
+          </span>
           <span>© Nossas Finanças</span>
         </div>
       </div>

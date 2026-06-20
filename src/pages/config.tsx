@@ -24,6 +24,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { countShares } from "@/lib/shares";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
+import { TermsLink } from "@/components/terms-of-use";
 import { Accordion } from "@/components/common/accordion";
 import { CONFIG_NAV_ITEMS } from "@/components/layout/nav-items";
 import { useSections } from "@/store/sections";
@@ -154,8 +155,9 @@ export default function Config({ onClose }: { onClose?: () => void }) {
         <Accordion id="cfg-privacy" title={t("config.privacy")} summary={<CfgPreview>{t("config.kpiPrivacy")}</CfgPreview>}>
           <div className="max-w-2xl">
             <PrivacyPolicyContent />
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-4">
               <PrivacyLink className="text-accent font-medium hover:underline text-[13px]" />
+              <TermsLink className="text-accent font-medium hover:underline text-[13px]" />
             </div>
           </div>
         </Accordion>

@@ -3,6 +3,7 @@ import { useVault } from "@/vault/vault-store";
 import { AuthShell, Field, SubmitButton, ErrorText, LinkButton, SecurityNote } from "./auth-shell";
 import { Turnstile, type TurnstileHandle } from "./turnstile";
 import { PrivacyLink } from "@/components/privacy-policy";
+import { TermsLink } from "@/components/terms-of-use";
 import { supabase } from "@/lib/supabase";
 import { track } from "@/lib/analytics";
 
@@ -190,7 +191,8 @@ function Signup({ onLogin }: { onLogin: () => void }) {
             <label htmlFor="consent" className="cursor-pointer">
               Li e aceito a{" "}
             </label>
-            <PrivacyLink label="Política de Privacidade" className="text-accent hover:underline font-medium" />.
+            <PrivacyLink label="Política de Privacidade" className="text-accent hover:underline font-medium" /> e os{" "}
+            <TermsLink label="Termos de Uso" className="text-accent hover:underline font-medium" />.
           </span>
         </div>
         <Turnstile ref={turnstileRef} />

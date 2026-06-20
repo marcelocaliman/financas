@@ -4,6 +4,7 @@ import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, type NavItem } from "./nav-items";
 import { scrollToSection, goToSection } from "@/hooks/use-scroll-spy";
 import { PrivacyLink } from "@/components/privacy-policy";
+import { TermsLink } from "@/components/terms-of-use";
 import { useViewer } from "@/store/viewer";
 
 /** Barra inferior (copyright + selo cifrado) — reusada no footer cheio e no enxuto do viewer. */
@@ -62,6 +63,7 @@ export function Footer() {
           <div>
             <div className="eyebrow mb-3.5">{t("footer.privacy")}</div>
             <PrivacyLink className="block text-[13px] text-muted hover:text-text transition-colors mb-2.5 text-left" />
+            <TermsLink className="block text-[13px] text-muted hover:text-text transition-colors mb-2.5 text-left" />
             <span className="block text-[13px] text-muted">{t("footer.noTracking")}</span>
           </div>
         </div>
