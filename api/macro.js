@@ -1,12 +1,23 @@
 /**
- * Indicadores macro por PAÍS/MOEDA — taxa básica de juros + inflação (12m). Públicos (não é
- * dado de usuário). `/api/macro?c=BRL|EUR|USD|GBP`. Best-effort: cada métrica que falha vira
- * null. Cacheado no edge (mudam pouco). Fontes oficiais, sem chave:
- *   BRL → Banco Central (SGS): Selic meta (432) + IPCA 12m (13522)
- *   EUR → BCE (Data Portal): taxa de depósito (DFR) + HICP anual (Eurostat)
- *   USD → NY Fed (EFFR) + BLS (CPI, YoY calculado do índice)
+ * Indicadores macro por PRAÇA/MOEDA — taxa básica de juros + inflação (12m). Públicos (não é
+ * dado de usuário). `/api/macro?c=BRL|EUR|USD|GBP`.
+ *
+ * Robustez (o card NÃO pode ficar "—"): cada métrica tem fonte oficial + fallback vivo, e há um
+ * CACHE DURÁVEL de "último valor bom" no Supabase (public.macro_cache). Se a fonte cair na hora
+ * (o IP do datacenter é bloqueado/limitado de vez em quando), preenchemos a lacuna com a última
+ * leitura REAL já vista — nunca um número chumbado/defasado (IPCA é mensal, Selic é por Copom).
+ *   BRL → Selic meta (BCB SGS 432) + IPCA 12m (BCB SGS 13522 → fallback IBGE SIDRA 2265)
+ *   EUR → BCE (taxa de depósito DFR) + HICP anual (Eurostat)
+ *   USD → NY Fed (EFFR) + BLS (CPI YoY)
  *   GBP → BoE (Bank Rate) + ONS (CPI 12m, best-effort)
+ * Edge cache: LONGO só quando os dois vêm; CURTO quando falta algo (auto-cura, sem congelar lacuna).
  */
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  "https://rudpurnhqoffwjaackka.supabase.co";
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
 const toNum = (v) => {
   const n = v == null ? NaN : Number(String(v).replace(",", "."));
   return Number.isFinite(n) ? n : null;
@@ -20,6 +31,34 @@ async function bcb(id, signal) {
     const j = await r.json();
     return toNum(Array.isArray(j) && j[0] ? j[0].valor : null);
   } catch { return null; }
+}
+
+/** IPCA acumulado 12m direto do IBGE (SIDRA) — fonte oficial independente do BCB (fallback). */
+async function ibgeIpca12m(signal) {
+  try {
+    const r = await get(
+      "https://servicodados.ibge.gov.br/api/v3/agregados/1737/periodos/-1/variaveis/2265?localidades=N1%5Ball%5D",
+      signal,
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    const serie = j?.[0]?.resultados?.[0]?.series?.[0]?.serie;
+    if (!serie) return null;
+    const last = Object.keys(serie).sort().pop(); // período mais recente (AAAAMM)
+    return last ? toNum(serie[last]) : null;
+  } catch { return null; }
+}
+
+/** IPCA 12m: BCB primeiro; se cair, IBGE. */
+async function ipca12m(signal) {
+  const a = await bcb(13522, signal);
+  return a != null ? a : ibgeIpca12m(signal);
+}
+
+/** Selic meta: série 432; se esse endpoint específico falhar (host de pé), tenta a 1178 (anualizada). */
+async function selicBR(signal) {
+  const a = await bcb(432, signal);
+  return a != null ? a : bcb(1178, signal);
 }
 
 async function ecb(key, signal) {
@@ -71,13 +110,15 @@ async function boeRate(signal) {
 }
 
 async function onsCpi(signal) {
-  for (const cdid of ["l55o", "d7g7"]) {
+  // A api.ons.gov.uk foi DESATIVADA (aposentada em 25/11/2024). Fonte atual = JSON do site da ONS.
+  // d7g7 = CPI 12m (manchete); l55o = CPIH 12m (fallback). Lê de `months` (último) ou da descrição.
+  for (const cdid of ["d7g7", "l55o"]) {
     try {
-      const r = await get(`https://api.ons.gov.uk/timeseries/${cdid}/dataset/mm23/data`, signal);
+      const r = await get(`https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/${cdid}/mm23/data`, signal);
       if (!r.ok) continue;
       const j = await r.json();
       const months = j?.months ?? [];
-      const v = months.length ? toNum(months[months.length - 1].value) : null;
+      const v = (months.length ? toNum(months[months.length - 1].value) : null) ?? toNum(j?.description?.number);
       if (v != null) return v;
     } catch { /* tenta o próximo */ }
   }
@@ -85,21 +126,77 @@ async function onsCpi(signal) {
 }
 
 const PROVIDERS = {
-  BRL: (s) => Promise.all([bcb(432, s), bcb(13522, s)]),
+  BRL: (s) => Promise.all([selicBR(s), ipca12m(s)]),
   EUR: (s) => Promise.all([ecb("FM/B.U2.EUR.4F.KR.DFR.LEV", s), ecb("ICP/M.U2.N.000000.4.ANR", s)]),
   USD: (s) => Promise.all([effr(s), blsCpiYoY(s)]),
   GBP: (s) => Promise.all([boeRate(s), onsCpi(s)]),
 };
 
+/* ── Cache durável (último valor bom) — REST do Supabase via service_role ─────────────────────── */
+
+async function readCache(c, signal) {
+  if (!SERVICE_ROLE) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/macro_cache?currency=eq.${c}&select=rate,inflation,updated_at`, {
+      headers: { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}` },
+      signal,
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    return Array.isArray(j) && j[0] ? j[0] : null;
+  } catch { return null; }
+}
+
+async function writeCache(c, rate, inflation) {
+  if (!SERVICE_ROLE) return;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 2500);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/macro_cache?on_conflict=currency`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({ currency: c, rate, inflation, updated_at: new Date().toISOString() }),
+      signal: ctrl.signal,
+    });
+  } catch { /* best-effort */ } finally { clearTimeout(timer); }
+}
+
 export default async function handler(req, res) {
   const c = String((req.query && req.query.c) || "BRL").toUpperCase();
   const provider = PROVIDERS[c];
-  let rate = null, inflation = null;
-  if (provider) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 7000);
-    try { [rate, inflation] = await provider(ctrl.signal); } catch { /* best-effort */ } finally { clearTimeout(timer); }
-  }
-  res.setHeader("Cache-Control", "public, s-maxage=21600, stale-while-revalidate=86400");
-  res.status(200).json({ rate, inflation });
+
+  // Busca a fonte viva e o último-valor-bom em paralelo (ambos sob o mesmo timeout).
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 7000);
+  let liveRate = null, liveInflation = null, cached = null;
+  try {
+    const [live, row] = await Promise.all([
+      provider ? provider(ctrl.signal).catch(() => [null, null]) : Promise.resolve([null, null]),
+      readCache(c, ctrl.signal),
+    ]);
+    [liveRate, liveInflation] = live;
+    cached = row;
+  } catch { /* best-effort */ } finally { clearTimeout(timer); }
+
+  // Mescla: o vivo manda; faltando, cai no último-valor-bom (nunca regride um número já real).
+  const rate = liveRate != null ? liveRate : (cached ? toNum(cached.rate) : null);
+  const inflation = liveInflation != null ? liveInflation : (cached ? toNum(cached.inflation) : null);
+
+  // Pegou algo fresco? Persiste o melhor conjunto pra abastecer o próximo apagão de fonte.
+  if (liveRate != null || liveInflation != null) await writeCache(c, rate, inflation);
+
+  // Edge: longo só quando completo; curto quando falta algo, pra auto-curar sem congelar a lacuna.
+  const complete = rate != null && inflation != null;
+  res.setHeader(
+    "Cache-Control",
+    complete
+      ? "public, s-maxage=21600, stale-while-revalidate=86400"
+      : "public, s-maxage=120, stale-while-revalidate=600",
+  );
+  res.status(200).json({ rate, inflation, asOf: cached ? cached.updated_at : null });
 }

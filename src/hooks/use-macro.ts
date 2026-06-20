@@ -29,10 +29,17 @@ function load(c: Currency): Promise<Macro> {
     p = fetch(`/api/macro?c=${c}`)
       .then((r) => (r.ok ? (r.json() as Promise<Macro>) : { rate: null, inflation: null }))
       .then((d) => {
-        cache.set(c, d);
-        return d;
+        const v: Macro = { rate: d?.rate ?? null, inflation: d?.inflation ?? null };
+        // Só cacheia (pela sessão) resultado COMPLETO. Incompleto = libera p/ refetch — nunca
+        // congela um "—" (o servidor já auto-cura com cache curto + último-valor-bom).
+        if (v.rate != null && v.inflation != null) cache.set(c, v);
+        inflight.delete(c);
+        return v;
       })
-      .catch(() => ({ rate: null, inflation: null }));
+      .catch(() => {
+        inflight.delete(c);
+        return { rate: null, inflation: null };
+      });
     inflight.set(c, p);
   }
   return p;
