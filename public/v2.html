@@ -113,7 +113,8 @@
     @media (max-width: 1000px) { .hero-grid { grid-template-columns: 1fr; gap: 38px; } .hero-visual { order: -1; } }
 
     /* Hero photo + número flutuante */
-    .hero-photo { aspect-ratio: 4 / 5; }
+    .hero-photo { aspect-ratio: 1 / 1; }
+    .hero-photo img { object-position: center 42%; }
     .floatcard { position: absolute; left: 16px; bottom: 16px; z-index: 4; max-width: min(82%, 320px); background: color-mix(in oklab, var(--card) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: var(--shadow-float); padding: 15px 17px; }
     .floatcard .lbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .floatcard .big { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1; margin-top: 7px; color: var(--text); }
@@ -230,7 +231,10 @@
     .cipher-line { font-family: var(--font-mono); font-size: 12.5px; word-break: break-all; color: var(--faint); line-height: 1.7; }
     .cipher-line b { color: var(--accent); }
 
-    /* Discord mock */
+    /* Colagem de fotos da comunidade (ao lado do texto) + Discord mock */
+    .ccollage { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .ccollage .photo { aspect-ratio: 1 / 1; }
+    .ccollage .photo.wide { grid-column: span 2; aspect-ratio: 16 / 9; }
     .discwin { border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: var(--card); box-shadow: var(--shadow-float); }
     .discwin .bar { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid var(--border); }
     .discwin .bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--card-2); }
@@ -658,6 +662,10 @@
           </div>
         </div>
         <div class="reveal from-r">
+          <div class="ccollage">
+            <figure class="photo"><img src="/img/v2/scene-community.jpg" alt="Pessoas trocando experiências sobre viver entre países" loading="lazy" /></figure>
+            <figure class="photo"><img src="/img/v2/scene-work.jpg" alt="Trabalhando e recebendo entre países" loading="lazy" /></figure>
+          </div>
           <div class="discwin">
             <div class="bar"><i></i><i></i><i></i><span class="t">Nossas Finanças · Discord</span></div>
             <div class="chans">
