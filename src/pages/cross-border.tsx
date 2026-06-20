@@ -63,12 +63,17 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
   const foreignDisp = toDisp(fx.foreign);
   const swing = Math.abs(foreignDisp) * (pct / 100); // impacto de ±pct% nas moedas estrangeiras
   const totalDisp = toDisp(fx.total);
+  // Tem patrimônio, mas tudo na moeda principal? Então NÃO há exposição cambial: a sensibilidade
+  // (oscilação/faixa) seria sempre zero — mostramos um aviso claro em vez de "±0" confuso.
+  const hasForeign = fx.rows.some((r) => r.currency !== base);
 
   return (
     <section className="space-y-4">
       <div>
         <Eyebrow>{t("crossborder.fxTitle")}</Eyebrow>
-        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">{t("crossborder.fxHint")}</p>
+        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">
+          {hasForeign ? t("crossborder.fxHint") : t("crossborder.fxHintSingle", { base })}
+        </p>
       </div>
 
       {/* Exposição por moeda */}
@@ -101,7 +106,8 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
         })}
       </Tile>
 
-      {/* Sensibilidade ao câmbio */}
+      {/* Sensibilidade ao câmbio — só faz sentido com moeda estrangeira (senão a oscilação é sempre 0) */}
+      {hasForeign ? (
       <Tile className="p-6 md:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -138,6 +144,7 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
           />
         </div>
       </Tile>
+      ) : null}
     </section>
   );
 }

@@ -371,6 +371,7 @@
   "crossborder": {
     "fxTitle": "Impacto do câmbio no patrimônio",
     "fxHint": "Você tem patrimônio em mais de uma moeda. Quando o câmbio mexe, o seu patrimônio (na moeda principal) mexe junto. Veja a exposição e a sensibilidade.",
+    "fxHintSingle": "Todo o seu patrimônio está em {{base}} — você não tem exposição cambial. Quando o câmbio mexe, o seu total não muda. Adicione um ativo em outra moeda pra ver a sensibilidade.",
     "fxEmpty": "Adicione ativos pra ver a exposição cambial.",
     "principal": "principal",
     "sensitivity": "Sensibilidade ao câmbio",

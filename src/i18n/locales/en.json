@@ -371,6 +371,7 @@
   "crossborder": {
     "fxTitle": "FX impact on your wealth",
     "fxHint": "You hold wealth in more than one currency. When exchange rates move, your net worth (in your main currency) moves with them. See your exposure and sensitivity.",
+    "fxHintSingle": "All your wealth is in {{base}} — you have no FX exposure. When exchange rates move, your total doesn't change. Add an asset in another currency to see the sensitivity.",
     "fxEmpty": "Add assets to see your FX exposure.",
     "principal": "main",
     "sensitivity": "FX sensitivity",
