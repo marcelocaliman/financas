@@ -28,7 +28,7 @@
       --shadow-float: 0 24px 60px -28px rgba(0, 0, 0, 0.72);
       --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
       --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-      --gutter: clamp(20px, 5vw, 56px); --maxw: 1180px; --maxw-wide: min(1500px, 94vw);
+      --gutter: clamp(20px, 5vw, 56px); --maxw: 1180px; --maxw-wide: min(1600px, 95vw);
     }
     html.light {
       --bg: #ecedef; --bg-2: #ffffff; --card: #ffffff; --card-2: #f4f4f5;
@@ -54,7 +54,8 @@
     .tabular { font-variant-numeric: tabular-nums slashed-zero; }
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
-    .wrap { max-width: var(--maxw); margin: 0 auto; padding-inline: var(--gutter); }
+    /* Conteúdo na MESMA largura larga da V1 (antes estava no 1180 estreito) */
+    .wrap { max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
     .wrap-wide { max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
     .eyebrow { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
     .eyebrow.accent { color: var(--accent); }
