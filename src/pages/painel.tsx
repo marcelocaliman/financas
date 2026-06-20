@@ -121,7 +121,7 @@ function gradeKey(score: number): string {
 
 /** HERO do dashboard — eyebrow mono + manchete + número-herói + composição. */
 export function DashboardHero() {
-  const { t, disp, colors, view } = usePainelView();
+  const { t, disp, colors, view, health } = usePainelView();
   const lib = useLiberdade();
   if (!view) return <div className="h-[40vh] rounded-[16px] bg-card/40 border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
@@ -171,6 +171,25 @@ export function DashboardHero() {
             </div>
           </button>
         ) : null}
+        {health?.score != null ? (
+          <button
+            type="button"
+            onClick={() => goToSection("liberdade")}
+            className="flex items-center gap-3.5 text-left group rounded-[12px] -m-1 p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            aria-label={t("dashboard.health")}
+          >
+            <ProgressRing pct={health.score} size={66} stroke={6}>
+              <span className="text-[14px] font-semibold tabular leading-none"><Hidden>{Math.round(health.score)}</Hidden></span>
+            </ProgressRing>
+            <div className="min-w-0">
+              <Eyebrow className="mb-1.5">{t("dashboard.health")}</Eyebrow>
+              <div className="text-[13px] text-muted leading-snug max-w-[150px] group-hover:text-text transition-colors">
+                <span className="capitalize">{t(`health.grade.${gradeKey(health.score)}`)}</span>
+                <span className="text-faint"> · {Math.round(health.score)}/100</span>
+              </div>
+            </div>
+          </button>
+        ) : null}
         {view.curSegments.length > 0 ? (
           <div className="flex-1 min-w-[280px] max-w-[460px]">
             <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>
@@ -186,7 +205,7 @@ export function DashboardHero() {
 
 /** Dashboard (abaixo do hero): gráfico + stats, depois orçamento + posições. */
 export function DashboardDetail() {
-  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view, health } = usePainelView();
+  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view } = usePainelView();
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
@@ -256,15 +275,6 @@ export function DashboardDetail() {
             value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
             sub={t("dashboard.reserveSub")}
           />
-          {health?.score != null ? (
-            <StatTile
-              wide
-              label={t("dashboard.health")}
-              value={String(Math.round(health.score))}
-              sub={`/ 100 · ${t(`health.grade.${gradeKey(health.score)}`)}`}
-              positive={health.score >= 60}
-            />
-          ) : null}
         </div>
       </div>
 

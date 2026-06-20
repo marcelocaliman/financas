@@ -254,8 +254,11 @@ export function SideNav({ active }: { active: string }) {
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
               ) : (
                 <>
+                  {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
+                  {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
+
                   {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
-                  <div className="flex items-center gap-1.5">
+                  <div className={cn("flex items-center gap-1.5", isAdmin && "mt-2.5")}>
                     <CurrencyMenu dropUp alignLeft />
                     <div className="flex-1" />
                     <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
@@ -266,7 +269,6 @@ export function SideNav({ active }: { active: string }) {
 
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
                   <div className="mt-2.5 pt-2.5 border-t border-border space-y-1">
-                    {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
                     <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => setSupportOpen(true)} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
