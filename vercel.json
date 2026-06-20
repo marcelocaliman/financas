@@ -9,7 +9,7 @@
     { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/share", "destination": "/share.html" },
     { "source": "/en", "destination": "/en.html" },
-    { "source": "/v2", "destination": "/v2.html" }
+    { "source": "/v1", "destination": "/v1.html" }
   ],
   "headers": [
     {
@@ -62,7 +62,7 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
-      "source": "/v2",
+      "source": "/v1",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ]

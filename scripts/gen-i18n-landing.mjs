@@ -32,7 +32,7 @@ const LD = {
   en: {
     orgDesc: "Multicurrency, private and cross-border wealth management, with end-to-end encryption.",
     appDesc: "Multicurrency wealth and budget dashboard with end-to-end encryption (E2EE). Net worth, investments, budget, goals, projection and financial independence — for people who live between countries.",
-    features: ["Multicurrency (BRL, EUR, USD, GBP)", "End-to-end encryption (E2EE)", "Local-first and offline (PWA)", "Net worth and investments", "Multicurrency monthly budget", "Projection and financial independence (FIRE)", "Export/import (JSON and CSV)"],
+    features: ["Multicurrency (BRL, EUR, USD, GBP)", "End-to-end encryption (E2EE)", "Local-first and offline (PWA)", "Net worth and investments", "Multicurrency monthly budget", "Projection and financial independence (FIRE)", "Family access (read-only)"],
   },
 };
 
@@ -40,7 +40,7 @@ const LD = {
 function buildJsonLd(lang) {
   const m = META[lang], ld = LD[lang], d = I18N[lang];
   const faq = [];
-  for (let n = 1; n <= 5; n++) {
+  for (let n = 1; n <= 6; n++) {
     faq.push({ "@type": "Question", name: d[`faq.q${n}`], acceptedAnswer: { "@type": "Answer", text: d[`faq.a${n}`] } });
   }
   return JSON.stringify({
@@ -58,6 +58,17 @@ const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const injectHreflang = (html) => html.replace(/(<link rel="canonical"[^>]*>)/, `$1\n  ${HREFLANG}`);
 
 const base = readFileSync(`${DIST}/index.html`, "utf8");
+
+// Checagem de órfãs: toda chave data-i18n do HTML precisa existir no dicionário EN,
+// senão a página /en mostraria o texto PT (vazamento). Falha o build pra pegar cedo.
+{
+  const keysInHtml = [...base.matchAll(/data-i18n(?:-ph)?="([^"]+)"/g)].map((m) => m[1]);
+  const missing = [...new Set(keysInHtml)].filter((k) => (I18N.en || {})[k] == null);
+  if (missing.length) {
+    console.error(`✗ i18n: ${missing.length} chave(s) data-i18n sem tradução em EN:\n  ${missing.join("\n  ")}`);
+    process.exit(1);
+  }
+}
 
 function gen(lang) {
   const m = META[lang];
