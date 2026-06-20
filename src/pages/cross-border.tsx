@@ -3,9 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
-import { useBudget } from "@/hooks/use-budget";
-import { convert, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { currencyCostIndex } from "@/data/cost-of-living";
+import { convert, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
@@ -35,8 +33,6 @@ function useFxExposure() {
   }, [data, base, rates]);
 }
 
-const FISCAL = ["crs", "brExit", "irpf", "quadroRw", "dichiarazione", "forfettario"];
-
 export default function CrossBorder() {
   const base = useUI((s) => s.baseCurrency);
   const fx = useFxExposure();
@@ -44,8 +40,6 @@ export default function CrossBorder() {
   return (
     <div className="space-y-8">
       <FxImpact base={base} fx={fx} />
-      <CostOfLiving />
-      <FiscalReminders />
     </div>
   );
 }
@@ -144,100 +138,6 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
           />
         </div>
       </Tile>
-    </section>
-  );
-}
-
-function CostOfLiving() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const base = useUI((s) => s.baseCurrency);
-  const rates = useRates((s) => s.rates);
-  const budget = useBudget();
-  const [from, setFrom] = useState<Currency>(base);
-  const [to, setTo] = useState<Currency>(base === "EUR" ? "BRL" : "EUR");
-
-  // Gasto MENSAL: média sobre os meses COM lançamento (o rótulo é "/mês", não a soma de tudo).
-  const monthly = useMemo(() => {
-    if (!budget) return 0;
-    const months = new Set(budget.expenses.map((e) => e.month));
-    if (months.size === 0) return 0;
-    const total = budget.expenses.reduce((s, e) => s + convert(e.amount, e.currency, disp, rates), 0);
-    return total / months.size;
-  }, [budget, disp, rates]);
-
-  // Custo de vida por MOEDA (mesma moeda → mesmo índice → mesmo valor). Equivalente na
-  // moeda destino: converte seus gastos pelo câmbio e aplica o índice de custo de vida.
-  const ratio = currencyCostIndex(to) / currencyCostIndex(from);
-  const diff = (ratio - 1) * 100;
-  const fromExpenses = convert(monthly, disp, from, rates);
-  const equivalent = convert(monthly, disp, to, rates) * ratio;
-
-  return (
-    <section className="space-y-4">
-      <div>
-        <Eyebrow>{t("crossborder.colTitle")}</Eyebrow>
-        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">{t("crossborder.colHint")}</p>
-      </div>
-      <Tile className="p-6 md:p-7">
-        <div className="flex flex-wrap items-center gap-3">
-          <CurrencySelect value={from} onChange={setFrom} />
-          <span className="text-faint">→</span>
-          <CurrencySelect value={to} onChange={setTo} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-          <Kpi label={t("crossborder.yourExpenses")} value={<Money value={fromExpenses} currency={from} />} />
-          <Kpi label={t("crossborder.equivalentCur", { cur: to })} tone="accent" value={<Money value={equivalent} currency={to} />} />
-          <Kpi
-            label={t("crossborder.difference")}
-            tone={diff > 0 ? "neg" : "accent"}
-            value={`${diff >= 0 ? "+" : ""}${Math.round(diff)}%`}
-          />
-        </div>
-        <p className="text-[11px] text-faint mt-4 leading-relaxed">{t("crossborder.colDisclaimer")}</p>
-      </Tile>
-    </section>
-  );
-}
-
-function CurrencySelect({ value, onChange }: { value: Currency; onChange: (v: Currency) => void }) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value as Currency)}
-      className="h-10 px-3 rounded-[8px] border border-border bg-card text-[14px] outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)] cursor-pointer tabular"
-    >
-      {CURRENCIES.map((c) => (
-        <option key={c} value={c} className="bg-card">
-          {CURRENCY_SYMBOL[c]} {c}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function FiscalReminders() {
-  const { t } = useTranslation();
-  return (
-    <section className="space-y-4">
-      <div>
-        <Eyebrow>{t("crossborder.fiscalTitle")}</Eyebrow>
-        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">{t("crossborder.fiscalHint")}</p>
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        {FISCAL.map((k) => (
-          <Tile key={k} className="p-5">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-[13.5px] font-semibold">{t(`crossborder.fiscal.${k}.title`)}</h3>
-              <span className="eyebrow text-accent shrink-0 bg-accent-soft px-2 py-0.5 rounded-full">
-                {t(`crossborder.fiscal.${k}.when`)}
-              </span>
-            </div>
-            <p className="text-[12px] text-muted leading-relaxed mt-2">{t(`crossborder.fiscal.${k}.desc`)}</p>
-          </Tile>
-        ))}
-      </div>
-      <p className="text-[11px] text-faint leading-relaxed">{t("crossborder.fiscalDisclaimer")}</p>
     </section>
   );
 }

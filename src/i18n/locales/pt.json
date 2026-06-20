@@ -388,34 +388,7 @@
     "foreignShare": "do patrimônio",
     "currencies": "Moedas",
     "swing": "Oscilação",
-    "range": "Faixa do patrimônio",
-    "colTitle": "Custo de vida por moeda",
-    "colHint": "Quanto custaria manter o seu padrão de gastos numa economia de outra moeda (índice aproximado, Real = 100). Mesma moeda, mesmo valor.",
-    "equivalentCur": "Equivalente em {{cur}}",
-    "yourExpenses": "Seus gastos/mês",
-    "equivalentIn": "Equivalente em {{country}}",
-    "equivalent": "Equivalente {{place}}",
-    "difference": "Diferença",
-    "colDisclaimer": "Índice aproximado de custo de vida + câmbio do dia — ordem de grandeza, não preço exato. Não considera aluguel especificamente.",
-    "country": {
-      "br": "Brasil", "pt": "Portugal", "it": "Itália", "es": "Espanha",
-      "fr": "França", "de": "Alemanha", "uk": "Reino Unido", "us": "Estados Unidos", "ch": "Suíça"
-    },
-    "countryIn": {
-      "br": "no Brasil", "pt": "em Portugal", "it": "na Itália", "es": "na Espanha",
-      "fr": "na França", "de": "na Alemanha", "uk": "no Reino Unido", "us": "nos Estados Unidos", "ch": "na Suíça"
-    },
-    "fiscalTitle": "Obrigações fiscais cross-border",
-    "fiscalHint": "Lembretes das principais obrigações pra quem vive entre países. Informativo — confirme prazos e o seu caso com um contador.",
-    "fiscalDisclaimer": "Conteúdo informativo, não é aconselhamento fiscal ou jurídico. Regras e prazos mudam e dependem do seu caso.",
-    "fiscal": {
-      "crs": { "title": "CRS — troca de informações", "when": "Anual", "desc": "Bancos reportam contas de não residentes às autoridades fiscais, que trocam dados entre países (Common Reporting Standard). Mantenha consistência entre o que declara aqui e lá." },
-      "brExit": { "title": "Saída fiscal do Brasil", "when": "Ao mudar", "desc": "Ao virar residente fiscal no exterior: Comunicação e Declaração de Saída Definitiva do País — pra não continuar tributado como residente." },
-      "irpf": { "title": "IRPF (Brasil)", "when": "Até abril", "desc": "Enquanto residente fiscal no Brasil, a declaração anual do imposto de renda vence normalmente no fim de abril." },
-      "quadroRw": { "title": "Quadro RW (Itália)", "when": "Anual", "desc": "Residentes na Itália declaram ativos e contas no exterior (monitoraggio fiscale) — inclui investimentos e imóveis fora do país." },
-      "dichiarazione": { "title": "Dichiarazione dei redditi (Itália)", "when": "Set–Nov", "desc": "Declaração de renda italiana (Modello Redditi / 730). Os prazos costumam cair entre setembro e novembro, conforme o modelo." },
-      "forfettario": { "title": "Regime Forfettario (Itália)", "when": "Contínuo", "desc": "Regime simplificado pra autônomos, com alíquota reduzida e teto de faturamento — vale avaliar se você presta serviços na Itália." }
-    }
+    "range": "Faixa do patrimônio"
   },
   "data": {
     "title": "Dados",

@@ -388,34 +388,7 @@
     "foreignShare": "of net worth",
     "currencies": "Currencies",
     "swing": "Swing",
-    "range": "Net worth range",
-    "colTitle": "Cost of living by currency",
-    "colHint": "What it would cost to keep your spending standard in another currency's economy (approximate index, Real = 100). Same currency, same value.",
-    "equivalentCur": "Equivalent in {{cur}}",
-    "yourExpenses": "Your expenses/mo",
-    "equivalentIn": "Equivalent in {{country}}",
-    "equivalent": "Equivalent {{place}}",
-    "difference": "Difference",
-    "colDisclaimer": "Approximate cost-of-living index + today's FX — order of magnitude, not exact prices. Doesn't account for rent specifically.",
-    "country": {
-      "br": "Brazil", "pt": "Portugal", "it": "Italy", "es": "Spain",
-      "fr": "France", "de": "Germany", "uk": "United Kingdom", "us": "United States", "ch": "Switzerland"
-    },
-    "countryIn": {
-      "br": "in Brazil", "pt": "in Portugal", "it": "in Italy", "es": "in Spain",
-      "fr": "in France", "de": "in Germany", "uk": "in the UK", "us": "in the US", "ch": "in Switzerland"
-    },
-    "fiscalTitle": "Cross-border tax obligations",
-    "fiscalHint": "Reminders of key obligations for living between countries. Informational — confirm deadlines and your case with an accountant.",
-    "fiscalDisclaimer": "Informational only, not tax or legal advice. Rules and deadlines change and depend on your situation.",
-    "fiscal": {
-      "crs": { "title": "CRS — information exchange", "when": "Yearly", "desc": "Banks report non-residents' accounts to tax authorities, which exchange data between countries (Common Reporting Standard). Keep what you declare here and abroad consistent." },
-      "brExit": { "title": "Brazil tax exit", "when": "On move", "desc": "When you become a tax resident abroad: file the Definitive Departure Communication and Declaration in Brazil so you're no longer taxed as a resident." },
-      "irpf": { "title": "IRPF (Brazil)", "when": "By April", "desc": "While a Brazilian tax resident, the annual income tax return is normally due end of April." },
-      "quadroRw": { "title": "Quadro RW (Italy)", "when": "Yearly", "desc": "Italian residents declare foreign assets and accounts (monitoraggio fiscale) — including investments and property held abroad." },
-      "dichiarazione": { "title": "Dichiarazione dei redditi (Italy)", "when": "Sep–Nov", "desc": "Italian income tax return (Modello Redditi / 730). Deadlines usually fall between September and November, depending on the form." },
-      "forfettario": { "title": "Regime Forfettario (Italy)", "when": "Ongoing", "desc": "Simplified flat-tax regime for the self-employed with a revenue cap — worth assessing if you provide services in Italy." }
-    }
+    "range": "Net worth range"
   },
   "data": {
     "title": "Data",
