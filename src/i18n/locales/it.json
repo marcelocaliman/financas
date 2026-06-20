@@ -88,7 +88,10 @@
     "scroll": "scorri",
     "empty": "Tutto pronto per iniziare",
     "emptyDesc": "Aggiungi il tuo patrimonio e il budget — i tuoi numeri appaiono qui, sempre cifrati sul tuo dispositivo.",
-    "emptyCta": "Inizia dal patrimonio"
+    "emptyCta": "Inizia dal patrimonio",
+    "step1": "Aggiungi il tuo patrimonio — attività, investimenti e debiti",
+    "step2": "Crea il tuo budget mensile",
+    "step3": "Segui la tua libertà finanziaria"
   },
   "patrimonio": {
     "netWorth": "Patrimonio netto",

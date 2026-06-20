@@ -398,6 +398,11 @@ function StatTile({ label, value, sub, positive, wide }: { label: string; value:
 
 function PainelEmpty() {
   const { t } = useTranslation();
+  const steps: { n: number; label: string; section: string }[] = [
+    { n: 1, label: t("dashboard.step1"), section: "patrimonio" },
+    { n: 2, label: t("dashboard.step2"), section: "orcamento" },
+    { n: 3, label: t("dashboard.step3"), section: "liberdade" },
+  ];
   return (
     <div className="flex flex-col items-center text-center w-full py-10">
       <div className="w-12 h-12 rounded-2xl bg-accent-soft text-accent flex items-center justify-center mb-5">
@@ -405,7 +410,23 @@ function PainelEmpty() {
       </div>
       <div className="text-[clamp(26px,4.5vw,46px)] font-semibold tracking-[-0.025em]">{t("dashboard.empty")}</div>
       <p className="text-[14px] text-muted mt-3 max-w-md leading-relaxed">{t("dashboard.emptyDesc")}</p>
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-7">
+
+      {/* Como começar — 3 passos clicáveis (orienta o recém-chegado) */}
+      <div className="grid sm:grid-cols-3 gap-3 mt-8 w-full max-w-2xl text-left">
+        {steps.map((s) => (
+          <button
+            key={s.n}
+            type="button"
+            onClick={() => goToSection(s.section)}
+            className="p-4 rounded-[12px] border border-border bg-card2 hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            <span className="grid place-items-center w-6 h-6 rounded-full bg-accent-soft text-accent text-[12px] font-bold mb-2.5">{s.n}</span>
+            <div className="text-[12.5px] text-muted leading-snug">{s.label}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
         <Button onClick={() => goToSection("patrimonio")}>
           <Plus size={15} />
           {t("dashboard.emptyCta")}

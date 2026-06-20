@@ -88,7 +88,10 @@
     "scroll": "rolar",
     "empty": "Tudo pronto pra começar",
     "emptyDesc": "Adicione seu patrimônio e seu orçamento — seus números aparecem aqui, sempre cifrados no seu aparelho.",
-    "emptyCta": "Começar pelo patrimônio"
+    "emptyCta": "Começar pelo patrimônio",
+    "step1": "Adicione seu patrimônio — ativos, investimentos e dívidas",
+    "step2": "Monte o seu orçamento do mês",
+    "step3": "Acompanhe a sua liberdade financeira"
   },
   "patrimonio": {
     "netWorth": "Patrimônio líquido",

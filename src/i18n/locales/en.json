@@ -88,7 +88,10 @@
     "scroll": "scroll",
     "empty": "Ready to start",
     "emptyDesc": "Add your net worth and budget — your numbers show up here, always encrypted on your device.",
-    "emptyCta": "Start with net worth"
+    "emptyCta": "Start with net worth",
+    "step1": "Add your wealth — assets, investments and debts",
+    "step2": "Build your monthly budget",
+    "step3": "Track your financial freedom"
   },
   "patrimonio": {
     "netWorth": "Net worth",
