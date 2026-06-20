@@ -78,9 +78,18 @@ export function SideNav({ active }: { active: string }) {
   const setManySections = useSections((s) => s.setMany);
   const g = useGlance();
   const disp = useUI((s) => s.displayCurrency);
-  const macro = useMacro(disp);
-  const macroMeta = MACRO_META[disp];
-  const hasMacro = !!(macro && macroMeta && (macro.rate != null || macro.inflation != null));
+  // Juros/inflação: por padrão segue a moeda de exibição; o usuário pode trocar p/ ver as outras
+  // praças de referência (EUA/Europa são as principais). Reseta p/ a moeda local ao trocar de disp.
+  const macroTabs = useMemo<Currency[]>(
+    () => Array.from(new Set<Currency>([disp, "USD", "EUR"])),
+    [disp],
+  );
+  const [macroCountry, setMacroCountry] = useState<Currency>(disp);
+  useEffect(() => setMacroCountry(disp), [disp]);
+  const dispMacro = useMacro(disp); // ancora a VISIBILIDADE do card na praça local (estável ao trocar de aba)
+  const macro = useMacro(macroCountry); // o que está sendo EXIBIDO
+  const macroMeta = MACRO_META[macroCountry];
+  const hasMacro = !!(dispMacro && (dispMacro.rate != null || dispMacro.inflation != null));
   const hasBills = !!g && g.billCount > 0;
   const suporteUnread = useMyTicketStats().unread;
 
@@ -163,21 +172,38 @@ export function SideNav({ active }: { active: string }) {
               </button>
             ) : null}
 
-            {/* Juros + inflação do país da moeda (referência pública) — compacto, segue a moeda */}
-            {macro && macroMeta && (macro.rate != null || macro.inflation != null) ? (
+            {/* Juros + inflação (referência pública) — compacto. Switch p/ trocar a praça:
+                local (moeda de exibição) + EUA/Europa, as principais. */}
+            {hasMacro ? (
               <div className="rounded-[14px] bg-card2 border border-border px-3.5 py-3">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Landmark size={11} className="text-faint shrink-0" />
-                  <Eyebrow>{t(`dashboard.${macroMeta.countryKey}`)}</Eyebrow>
+                  <span className="ml-auto inline-flex items-center gap-0.5 rounded-[8px] bg-card p-0.5">
+                    {macroTabs.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setMacroCountry(c)}
+                        aria-pressed={c === macroCountry}
+                        title={t(`dashboard.${MACRO_META[c].countryKey}`)}
+                        className={cn(
+                          "px-1.5 py-0.5 rounded-[6px] text-[10px] font-mono uppercase tracking-[0.08em] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                          c === macroCountry ? "bg-accent-soft text-accent" : "text-faint hover:text-text hover:bg-card-hover",
+                        )}
+                      >
+                        {MACRO_META[c].tag}
+                      </button>
+                    ))}
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="min-w-0">
                     <Eyebrow>{macroMeta.rateName}</Eyebrow>
-                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro.rate == null ? "—" : formatPercent(macro.rate, disp)}</div>
+                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro?.rate == null ? "—" : formatPercent(macro.rate, disp)}</div>
                   </div>
                   <div className="min-w-0">
                     <Eyebrow>{t("dashboard.inflation")}</Eyebrow>
-                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro.inflation == null ? "—" : formatPercent(macro.inflation, disp)}</div>
+                    <div className="text-[14.5px] font-semibold tabular mt-0.5 truncate">{macro?.inflation == null ? "—" : formatPercent(macro.inflation, disp)}</div>
                   </div>
                 </div>
               </div>
