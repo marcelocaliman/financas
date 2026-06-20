@@ -165,6 +165,11 @@
     "foot.l3": "Privacy",
     "foot.l4": "Community",
     "foot.l5": "Log in",
-    "foot.legal": "Privacy by end-to-end encryption · LGPD/GDPR"
+    "foot.legal": "Privacy by end-to-end encryption · LGPD/GDPR",
+
+    "install.title": "Install on your phone",
+    "install.desc": "Add it to your home screen — opens fast, full-screen and works offline.",
+    "install.cta": "Install",
+    "install.iosOpen": "Open in the app"
   }
 }

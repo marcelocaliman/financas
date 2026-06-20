@@ -459,6 +459,14 @@
     "encrypted": "Cifrado de ponta a ponta",
     "community": "Comunidade no Discord"
   },
+  "install": {
+    "title": "Instale no seu celular",
+    "desc": "Adicione à tela inicial — abre rápido, em tela cheia e funciona offline.",
+    "cta": "Instalar",
+    "iosHow": "Como instalar",
+    "iosSteps": "Toque em Compartilhar e depois em \"Adicionar à Tela de Início\".",
+    "dismiss": "Dispensar"
+  },
   "support": {
     "intro": "Precisa de ajuda ou quer falar com a gente? Abra um ticket — respondo por aqui mesmo.",
     "new": "Novo ticket",

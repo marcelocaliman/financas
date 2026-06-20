@@ -328,3 +328,47 @@
     }).finally(function () { submitBtn.disabled = false; });
   });
 })();
+
+// ── Instalação como app (PWA) na landing ───────────────────────────────────────
+// Android/desktop Chrome: captura o beforeinstallprompt e instala com 1 toque (o app abre
+// em /app pelo start_url do manifesto). iOS: oferece "Abrir no app" (instalar de lá, em
+// standalone). Some se já instalado ou dispensado (lembrado ~3 semanas).
+(function () {
+  var bar = document.getElementById("installbar");
+  if (!bar) return;
+  var btn = document.getElementById("installbtn");
+  var ios = document.getElementById("installios");
+  var x = document.getElementById("installx");
+  var KEY = "nf-install-dismissed";
+  function standalone() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  }
+  function dismissedRecently() {
+    try { var v = Number(localStorage.getItem(KEY)); return !!v && Date.now() - v < 21 * 86400000; } catch (e) { return false; }
+  }
+  function isIOS() {
+    var ua = navigator.userAgent || "";
+    return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  }
+  if (standalone() || dismissedRecently()) return;
+
+  var deferred = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferred = e;
+    if (btn) btn.hidden = false;
+    bar.hidden = false;
+  });
+  if (isIOS() && ios) { ios.hidden = false; bar.hidden = false; }
+
+  if (btn) btn.addEventListener("click", function () {
+    if (!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function () { deferred = null; bar.hidden = true; });
+  });
+  if (x) x.addEventListener("click", function () {
+    try { localStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+    bar.hidden = true;
+  });
+  window.addEventListener("appinstalled", function () { bar.hidden = true; });
+})();

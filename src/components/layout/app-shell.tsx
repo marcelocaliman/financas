@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
 import { SideNav, MobileBar } from "./side-nav";
+import { InstallBanner } from "@/components/common/install-banner";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
@@ -145,6 +146,7 @@ export function AppShell() {
         )}
       </main>
       <BottomNav active={active} />
+      <InstallBanner />
     </div>
   );
 }

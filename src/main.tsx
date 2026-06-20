@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@/i18n";
+import "@/lib/pwa-install"; // captura o beforeinstallprompt no boot (antes de qualquer evento)
 import "./index.css";
 import App from "./App";
 

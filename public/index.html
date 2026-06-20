@@ -16,6 +16,9 @@
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="mask-icon" href="/icon.svg" color="#3ecf8e" />
+  <!-- PWA: permite instalar o app a partir da landing (Android/desktop) e funcionar offline. -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <script src="/sw-register.js" defer></script>
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -101,6 +104,8 @@
     .tabular { font-variant-numeric: tabular-nums slashed-zero; }
     a { color: inherit; text-decoration: none; }
     img { max-width: 100%; display: block; }
+    /* `hidden` precisa vencer o `display` inline (banner de instalar começa escondido). */
+    [hidden] { display: none !important; }
     .wrap { max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
     .wrap-wide { max-width: var(--maxw-wide); margin: 0 auto; padding-inline: var(--gutter); }
     .eyebrow { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); }
@@ -859,6 +864,20 @@
       </div>
     </div>
   </footer>
+
+  <!-- Banner de instalação (PWA) — o landing.js mostra quando dá pra instalar no celular -->
+  <div id="installbar" hidden style="position:fixed;left:0;right:0;bottom:18px;z-index:90;display:flex;justify-content:center;padding:0 16px;pointer-events:none">
+    <div style="pointer-events:auto;width:100%;max-width:460px;display:flex;align-items:center;gap:12px;background:color-mix(in oklab, var(--card) 94%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--border-strong);border-radius:16px;box-shadow:var(--shadow-float);padding:13px 14px">
+      <span style="display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);flex:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:19px;height:19px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></span>
+      <span style="flex:1;min-width:0">
+        <b style="font-size:13.5px;display:block" data-i18n="install.title">Instale no seu celular</b>
+        <span class="muted" style="font-size:12px;display:block;margin-top:1px" data-i18n="install.desc">Adicione à tela inicial — abre rápido, em tela cheia e funciona offline.</span>
+      </span>
+      <button id="installbtn" type="button" hidden style="flex:none;height:36px;padding:0 14px;border-radius:10px;border:0;background:var(--accent);color:#07140d;font-weight:600;font-size:13px;cursor:pointer" data-i18n="install.cta">Instalar</button>
+      <a id="installios" href="/app" hidden style="flex:none;height:36px;padding:0 14px;border-radius:10px;background:var(--accent);color:#07140d;font-weight:600;font-size:13px;display:inline-flex;align-items:center" data-i18n="install.iosOpen">Abrir no app</a>
+      <button id="installx" type="button" aria-label="Dispensar" style="flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:9px;border:0;background:transparent;color:var(--faint);cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+  </div>
 
   <script src="/landing.js" defer></script>
 </body>

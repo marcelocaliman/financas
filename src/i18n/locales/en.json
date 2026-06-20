@@ -459,6 +459,14 @@
     "encrypted": "End-to-end encrypted",
     "community": "Community on Discord"
   },
+  "install": {
+    "title": "Install on your phone",
+    "desc": "Add it to your home screen — opens fast, full-screen and works offline.",
+    "cta": "Install",
+    "iosHow": "How to install",
+    "iosSteps": "Tap Share, then \"Add to Home Screen\".",
+    "dismiss": "Dismiss"
+  },
   "support": {
     "intro": "Need help or want to reach us? Open a ticket — I'll reply right here.",
     "new": "New ticket",

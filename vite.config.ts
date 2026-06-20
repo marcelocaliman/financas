@@ -11,7 +11,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon.svg", "icon-maskable.svg", "apple-touch-icon.png"],
+      includeAssets: [
+        "icon.svg", "icon-maskable.svg", "apple-touch-icon.png",
+        "icon-192.png", "icon-512.png", "icon-maskable-192.png", "icon-maskable-512.png",
+      ],
       // Nova versão entra no ar e aplica sozinha (skipWaiting + clientsClaim); o
       // main.tsx recarrega a aba automaticamente ao assumir o controle.
       workbox: {
@@ -34,8 +37,13 @@ export default defineConfig({
         display: "standalone",
         start_url: "/app",
         icons: [
-          // Logo circular (badge) para uso normal; versão full-bleed verde para "maskable"
-          // (o launcher recorta no próprio formato sem cantos transparentes).
+          // PNG 192/512 são o que o Android/Chrome exige p/ a instalação aparecer.
+          // "any" = badge circular com cantos transparentes; "maskable" = full-bleed verde
+          // (o launcher recorta no próprio formato). SVG fica como extra escalável.
+          { src: "icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icon-maskable-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           { src: "icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
           { src: "icon-maskable.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
           { src: "apple-touch-icon.png", sizes: "180x180", type: "image/png", purpose: "any" },
