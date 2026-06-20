@@ -1,0 +1,16 @@
+Imagens da landing V2 — Unsplash (Unsplash License: uso comercial livre, atribuição opcional).
+Fonte: https://unsplash.com — baixadas via images.unsplash.com.
+
+hero.jpg            photo-1544005313-94ddf0286df2
+scene-community.jpg photo-1522202176988-66273c2fd55f
+scene-global.jpg    photo-1521295121783-8a321d551ad2
+scene-work.jpg      photo-1573496359142-b8d87734a5a2
+avatar-1.jpg        photo-1494790108377-be9c29b29330
+avatar-2.jpg        photo-1500648767791-00dcc994a43e
+avatar-3.jpg        photo-1438761681033-6461ffad8d80
+avatar-4.jpg        photo-1507003211169-0a1dd7228f2d
+avatar-5.jpg        photo-1539571696357-5a69c17a67c6
+avatar-6.jpg        photo-1573497019940-1c28c88b4f3e
+scene-family.jpg    photo-1606216794074-735e91aa2c92
+scene-cta.jpg       photo-1511895426328-dc8714191300
+texture-travel.jpg  photo-1488646953014-85cb44e25828
