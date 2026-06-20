@@ -51,7 +51,7 @@ const LD = {
 function buildJsonLd(lang) {
   const m = META[lang], ld = LD[lang], d = I18N[lang];
   const faq = [];
-  for (let n = 1; n <= 8; n++) {
+  for (let n = 1; n <= 5; n++) {
     faq.push({ "@type": "Question", name: d[`faq.q${n}`], acceptedAnswer: { "@type": "Answer", text: d[`faq.a${n}`] } });
   }
   return JSON.stringify({

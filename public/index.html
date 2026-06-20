@@ -87,10 +87,7 @@
           { "@type": "Question", "name": "Meus dados estão seguros? Quem consegue ver?", "acceptedAnswer": { "@type": "Answer", "text": "Só você — e quem você escolher. O dado financeiro é cifrado no seu navegador (E2EE) antes de sair; o servidor guarda só um blob cifrado, nunca os valores. Se quiser, dá pra compartilhar o painel só-leitura com alguém de confiança (por link + PIN), sem o servidor ver nada." } },
           { "@type": "Question", "name": "Funciona offline?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. É local-first: roda instantâneo e offline, e sincroniza sozinho em segundo plano quando há conexão. Limpar o navegador não perde nada — o cofre cifrado vive no servidor." } },
           { "@type": "Question", "name": "Em quais moedas e países funciona?", "acceptedAnswer": { "@type": "Answer", "text": "Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual." } },
-          { "@type": "Question", "name": "E se eu esquecer a senha?", "acceptedAnswer": { "@type": "Answer", "text": "No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via." } },
-          { "@type": "Question", "name": "Consigo exportar meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Sim. Você exporta e importa tudo em JSON (backup completo) e CSV (interoperável). Os dados são seus — entram e saem quando quiser." } },
-          { "@type": "Question", "name": "Já posso usar? Como entro?", "acceptedAnswer": { "@type": "Answer", "text": "Sim! É só criar uma conta grátis e começar — leva um minuto. Seus dados já nascem cifrados ponta a ponta, no seu navegador." } },
-          { "@type": "Question", "name": "Em quais idiomas?", "acceptedAnswer": { "@type": "Answer", "text": "Português, inglês e italiano — e o app funciona em qualquer país e moeda." } }
+          { "@type": "Question", "name": "E se eu esquecer a senha?", "acceptedAnswer": { "@type": "Answer", "text": "No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via." } }
         ]
       }
     ]
@@ -636,29 +633,34 @@
     </div></div>
   </section>
 
-  <!-- HISTÓRICO — faixa de visual LARGO (gráfico edge-to-edge) -->
-  <section>
+  <!-- E MAIS — histórico, projeção, objetivos, relatório (grid compacto) -->
+  <section class="sec-tight" style="background:var(--bg-2)">
     <div class="wrap-wide">
-      <div class="band-head reveal">
-        <div class="copy">
-          <div class="eyebrow accent" data-i18n="f3.eyebrow">Histórico</div>
-          <h2 data-i18n="f3.h2">Veja o dinheiro trabalhar.</h2>
-          <p data-i18n="f3.p">A evolução do seu patrimônio mês a mês — e quanto do crescimento veio do seu bolso (aporte) e quanto veio do rendimento. O “trabalho do dinheiro”, separado.</p>
-        </div>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="f3.l1">Aporte vs. rendimento</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="f3.l2">Snapshot automático do patrimônio</span></li>
-        </ul>
+      <div class="section-head reveal" style="max-width:56ch">
+        <div class="eyebrow accent" data-i18n="emais.eyebrow">E ainda</div>
+        <h2 data-i18n="emais.h2">Tudo que você precisa, num lugar só.</h2>
       </div>
-      <div class="band-visual card pad reveal zoom">
-        <div class="kpi-grid" style="margin-bottom:22px">
-          <div class="kpi"><div class="eyebrow" data-i18n="f3.k1">Atual</div><div class="v tabular">R$ 1,28M</div></div>
-          <div class="kpi"><div class="eyebrow" data-i18n="f3.k2">Crescimento</div><div class="v pos tabular">+38%</div></div>
-          <div class="kpi"><div class="eyebrow" data-i18n="f3.k3">Aportes</div><div class="v tabular">R$ 186k</div></div>
-          <div class="kpi"><div class="eyebrow" data-i18n="f3.k4">Rendimento</div><div class="v pos tabular">R$ 152k</div></div>
+      <div class="pillars stagger">
+        <div class="card">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span>
+          <h3 data-i18n="emais.1t">Histórico</h3>
+          <p data-i18n="emais.1p">A evolução mês a mês, separando o que veio do seu bolso (aporte) do rendimento.</p>
         </div>
-        <svg viewBox="0 0 420 150" preserveAspectRatio="none" style="width:100%;height:clamp(190px,26vw,280px)"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".2"/><stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22 L420,150 L0,150 Z" fill="url(#g2)"/><path d="M0,128 L42,124 L84,118 L126,108 L168,104 L210,86 L252,78 L294,60 L336,52 L378,32 L420,22" fill="none" style="stroke:var(--accent)" stroke-width="2.2"/><path d="M0,134 L42,132 L84,131 L126,127 L168,126 L210,118 L252,114 L294,106 L336,103 L378,95 L420,90" fill="none" stroke="var(--faint)" stroke-width="1.4" stroke-dasharray="3 4"/></svg>
-        <div style="display:flex;gap:18px;margin-top:10px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:var(--accent);vertical-align:middle"></span> <span data-i18n="f3.leg1">Patrimônio</span></span><span><span style="display:inline-block;width:10px;height:0;border-top:1px dashed var(--faint);vertical-align:middle"></span> <span data-i18n="f3.leg2">Só aportes</span></span></div>
+        <div class="card">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></span>
+          <h3 data-i18n="emais.2t">Projeção &amp; FIRE</h3>
+          <p data-i18n="emais.2p">Juros compostos em cenários otimista, base e pessimista — e o seu número da independência.</p>
+        </div>
+        <div class="card">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
+          <h3 data-i18n="emais.3t">Objetivos</h3>
+          <p data-i18n="emais.3p">Metas em qualquer moeda, com barra de progresso e data de chegada estimada.</p>
+        </div>
+        <div class="card">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
+          <h3 data-i18n="emais.4t">Resumo em PDF</h3>
+          <p data-i18n="emais.4p">Um relatório mensal do patrimônio e do orçamento — bom pra arquivar ou declarar.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -725,30 +727,6 @@
     </div>
   </section>
 
-  <!-- FEATURE: Projeção & Objetivos -->
-  <section>
-    <div class="wrap"><div class="feature vis-lg rev">
-      <div class="copy reveal from-r">
-        <div class="eyebrow accent" data-i18n="f4.eyebrow">Projeção &amp; Objetivos</div>
-        <h2 data-i18n="f4.h2">O futuro, em números.</h2>
-        <p data-i18n="f4.p">Juros compostos sobre patrimônio e aportes, em cenários otimista / base / pessimista, nominal e em valor de hoje. E metas com barra de progresso e data de chegada no seu ritmo.</p>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="f4.l1">Multi-cenário e número FIRE</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="f4.l2">Metas com “chegada estimada”</span></li>
-        </ul>
-      </div>
-      <div class="card pad reveal from-l">
-        <div class="eyebrow" style="margin-bottom:12px" data-i18n="f4.proj">Projeção · 20 anos</div>
-        <svg viewBox="0 0 420 160" preserveAspectRatio="none" style="width:100%;height:160px"><path d="M0,140 C120,120 260,80 420,18" fill="none" style="stroke:var(--accent)" stroke-width="2.4"/><path d="M0,140 C120,128 260,104 420,64" fill="none" style="stroke:var(--eur)" stroke-width="2"/><path d="M0,140 C120,134 260,122 420,98" fill="none" style="stroke:var(--neg)" stroke-width="2" stroke-opacity=".8"/></svg>
-        <div style="display:flex;gap:16px;margin-top:8px;font-size:11px" class="faint"><span><span style="display:inline-block;width:10px;height:2px;background:var(--accent);vertical-align:middle"></span> <span data-i18n="f4.opt">Otimista</span></span><span><span style="display:inline-block;width:10px;height:2px;background:var(--eur);vertical-align:middle"></span> <span data-i18n="f4.base">Base</span></span><span><span style="display:inline-block;width:10px;height:2px;background:var(--neg);vertical-align:middle"></span> <span data-i18n="f4.pess">Pessimista</span></span></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px">
-          <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g1">Casa própria</span><span class="tabular muted">72%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:72%"></div></div><div class="faint" style="font-size:11px;margin-top:5px">≈ set/2027</div></div>
-          <div><div style="display:flex;justify-content:space-between;font-size:13px"><span data-i18n="f4.g2">Reserva 12m</span><span class="tabular muted">100%</span></div><div class="bar-track" style="margin-top:6px"><div class="bar-fill" style="width:100%"></div></div><div class="pos" style="font-size:11px;margin-top:5px" data-i18n="f4.reached">atingida</div></div>
-        </div>
-      </div>
-    </div></div>
-  </section>
-
   <!-- COMPARTILHAR — acompanhem juntos (família / casal) -->
   <section id="compartilhar" class="sec-tight" style="border-top:1px solid var(--border)">
     <div class="wrap"><div class="feature">
@@ -798,23 +776,12 @@
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--faint);word-break:break-all;line-height:1.7">kZ9·a7F2···8Qx//Vd1n+Lp4Tg···Rb6m≈c0Y···eW3kJh···Os51d2···Ux8//4Aq···Tn0pLz·9</div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:12px"><span class="chip chip-EUR" data-i18n="priv.srv">SERVIDOR</span> <span class="faint" data-i18n="priv.cipher">vê só ciphertext — nunca o valor</span></div>
       </div>
-      <ul class="priv-bullets stagger">
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="priv.l1">Cifra e decifra só no navegador (E2EE)</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="priv.l2">Sem recuperação por e-mail do dado: a chave é sua</span></li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="priv.l3">Export/import: você é dono dos dados (JSON e CSV)</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- PROMESSA — grátis de verdade, pra sempre -->
-  <section id="promessa" class="sec-tight" style="background:var(--bg-2);border-top:1px solid var(--border)">
-    <div class="wrap-narrow reveal" style="text-align:center">
-      <div class="eyebrow accent" data-i18n="promise.eyebrow">A nossa promessa</div>
-      <h2 style="font-size:clamp(1.9rem,4.2vw,3rem);font-weight:600;letter-spacing:-0.035em;line-height:1.05;margin:14px 0 0" data-i18n="promise.h2">Grátis de verdade. Pra sempre.</h2>
-      <p class="muted" style="font-size:clamp(15px,1.7vw,18px);margin:16px auto 0;max-width:60ch;line-height:1.55" data-i18n="promise.p">O app inteiro é grátis. O que te protege e te dá liberdade nunca vai pra trás de um paywall — sem anúncios, sem vender o seu dado.</p>
-    </div>
-    <div class="wrap" style="margin-top:clamp(36px,5vw,52px)">
-      <div class="stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:920px;margin:0 auto">
+      <div class="reveal" style="text-align:center;margin-top:clamp(44px,6vw,66px)">
+        <div class="eyebrow accent" data-i18n="promise.eyebrow">A nossa promessa</div>
+        <h3 style="font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:600;letter-spacing:-0.03em;line-height:1.1;margin:12px 0 0" data-i18n="promise.h2">Grátis de verdade. Pra sempre.</h3>
+        <p class="muted" style="font-size:15px;margin:14px auto 0;max-width:56ch;line-height:1.55" data-i18n="promise.p">O app inteiro é grátis. O que te protege e te dá liberdade nunca vai pra trás de um paywall — sem anúncios, sem vender o seu dado.</p>
+      </div>
+      <div class="stagger" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;max-width:920px;margin:clamp(28px,4vw,40px) auto 0">
         <div class="card pad" style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="promise.l1">Criptografia E2EE — pra sempre</span></div>
         <div class="card pad" style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="promise.l2">Sincronização entre aparelhos — grátis</span></div>
         <div class="card pad" style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="promise.l3">Compartilhar com a família — grátis</span></div>
@@ -822,24 +789,6 @@
         <div class="card pad" style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="promise.l5">Sem anúncios. Nunca.</span></div>
         <div class="card pad" style="display:flex;align-items:center;gap:12px"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none"><path d="M20 6L9 17l-5-5"/></svg><span data-i18n="promise.l6">Nunca vendemos o seu dado.</span></div>
       </div>
-    </div>
-  </section>
-
-  <!-- MULTIMOEDA -->
-  <section id="multimoeda">
-    <div class="wrap-narrow reveal" style="text-align:center">
-      <div class="eyebrow accent" data-i18n="mm.eyebrow">Multimoeda &amp; cross-border</div>
-      <h2 style="font-size:clamp(1.9rem,4.2vw,3rem);font-weight:600;letter-spacing:-0.035em;line-height:1.05;margin:14px 0 0" data-i18n="mm.h2">Qualquer país, qualquer moeda.</h2>
-      <p class="muted" style="font-size:clamp(15px,1.7vw,18px);margin:16px auto 0;max-width:60ch;line-height:1.55" data-i18n="mm.p">Renda numa moeda, investimentos em outra, conta num terceiro país — ou tudo no mesmo lugar. Cada item guarda a própria moeda; você escolhe a moeda de exibição e vê tudo convertido, com câmbio ao vivo.</p>
-    </div>
-    <div class="wrap" style="margin-top:clamp(38px,5vw,56px)">
-      <div class="fx-band stagger">
-        <div class="fx"><div class="eyebrow">USD → BRL</div><div class="tabular" style="font-size:clamp(22px,2.6vw,28px);font-weight:600;margin-top:10px">5,42</div><div class="pos" style="font-size:12.5px;margin-top:5px">+0,3%</div></div>
-        <div class="fx"><div class="eyebrow">EUR → BRL</div><div class="tabular" style="font-size:clamp(22px,2.6vw,28px);font-weight:600;margin-top:10px">5,98</div><div class="pos" style="font-size:12.5px;margin-top:5px">+0,1%</div></div>
-        <div class="fx"><div class="eyebrow">GBP → BRL</div><div class="tabular" style="font-size:clamp(22px,2.6vw,28px);font-weight:600;margin-top:10px">6,95</div><div class="negc" style="font-size:12.5px;margin-top:5px">−0,2%</div></div>
-        <div class="fx"><div class="eyebrow">EUR → USD</div><div class="tabular" style="font-size:clamp(22px,2.6vw,28px);font-weight:600;margin-top:10px">1,10</div><div class="pos" style="font-size:12.5px;margin-top:5px">+0,2%</div></div>
-      </div>
-      <div class="faint" style="font-size:11.5px;margin-top:18px;text-align:center" data-i18n="mm.fx">Câmbio ilustrativo — no app, ao vivo.</div>
     </div>
   </section>
 
@@ -853,30 +802,21 @@
         <details><summary><span data-i18n="faq.q3">Funciona offline?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a3">Sim. É local-first: roda instantâneo e offline, e sincroniza sozinho em segundo plano quando há conexão. Limpar o navegador não perde nada — o cofre cifrado vive no servidor.</div></details>
         <details><summary><span data-i18n="faq.q4">Em quais moedas e países funciona?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a4">Em qualquer país. Cada item guarda a própria moeda (BRL, EUR, USD, GBP e mais) e você escolhe a moeda de exibição — tudo convertido com câmbio ao vivo e fallback manual.</div></details>
         <details><summary><span data-i18n="faq.q5">E se eu esquecer a senha?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a5">No cadastro você recebe um código de recuperação — guarde-o bem. Como a criptografia é ponta a ponta, não existe recuperação do dado por e-mail: a chave é sua, e o código é a única segunda via.</div></details>
-        <details><summary><span data-i18n="faq.q6">Consigo exportar meus dados?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a6">Sim. Você exporta e importa tudo em JSON (backup completo) e CSV (interoperável). Os dados são seus — entram e saem quando quiser.</div></details>
-        <details><summary><span data-i18n="faq.q7">Já posso usar? Como entro?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a7">Sim! É só criar uma conta grátis e começar — leva um minuto. Seus dados já nascem cifrados ponta a ponta, no seu navegador.</div></details>
-        <details><summary><span data-i18n="faq.q8">Em quais idiomas?</span><span class="plus">+</span></summary><div class="ans" data-i18n="faq.a8">Português, inglês e italiano — e o app funciona em qualquer país e moeda.</div></details>
       </div>
     </div>
   </section>
 
-  <!-- COMUNIDADE — Discord (em breve) -->
-  <section id="comunidade" style="border-top:1px solid var(--border)">
-    <div class="wrap-narrow reveal" style="text-align:center">
-      <div style="display:inline-grid;place-items:center;width:64px;height:64px;border-radius:18px;background:rgba(88,101,242,0.12);margin-bottom:18px">
-        <svg viewBox="0 0 24 24" fill="#5865F2" style="width:34px;height:34px" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
-      </div>
-      <div><span class="eyebrow" style="display:inline-block;border:1px solid var(--border);border-radius:999px;padding:5px 12px;color:var(--muted)" data-i18n="community.soon">em breve</span></div>
-      <h2 style="font-size:clamp(1.8rem,4vw,2.7rem);font-weight:600;letter-spacing:-0.035em;line-height:1.06;margin:18px 0 0" data-i18n="community.h2">Uma comunidade pra quem vive entre países.</h2>
-      <p class="muted" style="font-size:clamp(15px,1.7vw,18px);margin:16px auto 0;max-width:58ch;line-height:1.55" data-i18n="community.p">Troque experiências com gente que também administra dinheiro entre países — câmbio, mudança, investir lá e cá. Chegando no Discord.</p>
-      <div style="margin-top:26px"><a class="btn btn-primary btn-lg" href="/app#signup" data-i18n="community.cta">Criar conta grátis</a></div>
-      <p class="faint" style="font-size:12.5px;margin-top:14px" data-i18n="community.note">Crie sua conta e a gente te avisa quando a comunidade abrir.</p>
-    </div>
-  </section>
-
-  <!-- CONTATO -->
+  <!-- CONTATO + COMUNIDADE (Discord em breve) -->
   <section id="contato" style="border-top:1px solid var(--border)">
     <div class="wrap">
+      <a href="/app#signup" class="reveal" style="display:flex;align-items:center;gap:14px;border:1px solid var(--border);border-radius:16px;padding:15px 18px;margin-bottom:30px;background:var(--bg-2)">
+        <span style="display:grid;place-items:center;width:46px;height:46px;border-radius:13px;background:rgba(88,101,242,0.12);flex:none"><svg viewBox="0 0 24 24" fill="#5865F2" style="width:25px;height:25px" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></span>
+        <span style="flex:1;min-width:0">
+          <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:14.5px" data-i18n="community.banner">Comunidade no Discord</b> <span class="eyebrow" style="border:1px solid var(--border);border-radius:999px;padding:3px 9px;color:var(--muted)" data-i18n="community.soon">em breve</span></span>
+          <span class="muted" style="display:block;font-size:13px;margin-top:3px" data-i18n="community.note">Crie sua conta e a gente te avisa quando a comunidade abrir.</span>
+        </span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex:none;color:var(--faint)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
       <div class="contact-card reveal">
         <div class="feature" style="align-items:center">
           <div>
