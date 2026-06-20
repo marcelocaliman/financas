@@ -66,6 +66,7 @@
     "reserve": "Fondo emergenza",
     "reserveMonths": "{{n}} mesi",
     "reserveSub": "copertura cassa",
+    "health": "Salute finanziaria",
     "ratesInflation": "tassi e inflazione",
     "inflation": "Inflazione",
     "perYear": "all'anno",
@@ -349,18 +350,6 @@
       "savingsTarget": "Tasso di risparmio obiettivo",
       "maxDebtRatio": "Debito/attivi dove azzera",
       "weights": "Peso per dimensione"
-    }
-  },
-  "compromisso": {
-    "title": "Impegno",
-    "empty": "Imposta un versamento mensile pianificato nelle Impostazioni per seguire i tuoi check-in.",
-    "planned": "Versamento pianificato",
-    "kept": "Mantenuto",
-    "markKept": "Segna come mantenuto",
-    "adherence": "{{n}} di {{total}} mesi mantenuti",
-    "cfg": {
-      "hint": "Il tuo versamento mensile pianificato. Ogni mese confermi se l'hai mantenuto — costruisce costanza.",
-      "monthly": "Versamento mensile pianificato"
     }
   },
   "proventos": {

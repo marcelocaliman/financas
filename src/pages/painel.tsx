@@ -9,6 +9,7 @@ import { convert, formatMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useLiberdade } from "@/hooks/use-liberdade";
+import { useHealth } from "@/hooks/use-health";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { CLASS, isInvestedClass, nameById } from "@/domain/taxonomy";
 import { actions } from "@/data/actions";
@@ -36,6 +37,7 @@ function usePainelView() {
   const theme = useUI((s) => s.theme);
   const name = firstName(useVault((s) => s.email));
   const { data } = useDashboardData();
+  const health = useHealth();
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
   const colors = currencyColors(theme);
@@ -104,7 +106,15 @@ function usePainelView() {
     };
   }, [data, disp, rates, tax, t]);
 
-  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view };
+  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view, health };
+}
+
+/** Faixa qualitativa do score de saúde (mesma régua do card da Liberdade). */
+function gradeKey(score: number): string {
+  if (score >= 80) return "excellent";
+  if (score >= 60) return "good";
+  if (score >= 40) return "fair";
+  return "weak";
 }
 
 /** HERO do dashboard — eyebrow mono + manchete + número-herói + composição. */
@@ -174,7 +184,7 @@ export function DashboardHero() {
 
 /** Dashboard (abaixo do hero): gráfico + stats, depois orçamento + posições. */
 export function DashboardDetail() {
-  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view } = usePainelView();
+  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view, health } = usePainelView();
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
@@ -244,6 +254,15 @@ export function DashboardDetail() {
             value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
             sub={t("dashboard.reserveSub")}
           />
+          {health?.score != null ? (
+            <StatTile
+              wide
+              label={t("dashboard.health")}
+              value={String(Math.round(health.score))}
+              sub={`/ 100 · ${t(`health.grade.${gradeKey(health.score)}`)}`}
+              positive={health.score >= 60}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -364,10 +383,10 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
   );
 }
 
-function StatTile({ label, value, sub, positive }: { label: string; value: string; sub?: string; positive?: boolean }) {
+function StatTile({ label, value, sub, positive, wide }: { label: string; value: string; sub?: string; positive?: boolean; wide?: boolean }) {
   const hidden = useUI((s) => s.numbersHidden);
   return (
-    <div className={cn("p-5", CARD)}>
+    <div className={cn("p-5", CARD, wide && "col-span-2")}>
       <Eyebrow>{label}</Eyebrow>
       <div className={cn("font-numeric font-semibold text-[22px] tracking-[-0.02em] tabular mt-2", positive ? "text-accent" : "text-text")}>
         {hidden ? "••••" : value}

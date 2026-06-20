@@ -73,7 +73,6 @@ export function LiberdadeSettings() {
   const streakMin = cfg.streakMinBalance ?? LIBERDADE_DEFAULTS.streakMinBalance;
   const milestones = cfg.milestones ?? [];
   const health = settings.health ?? {};
-  const compromisso = settings.compromisso ?? {};
 
   // Mantém a lista crua enquanto edita (inclui linhas em branco); o hook ignora ≤ 0 na leitura.
   const setMilestones = (next: number[]) => actions.setLiberdade({ milestones: next });
@@ -198,15 +197,6 @@ export function LiberdadeSettings() {
         >
           <Plus size={15} /> {t("liberdade.cfg.addMilestone")}
         </button>
-      </Card>
-
-      {/* Compromisso — aporte mensal planejado */}
-      <Card>
-        <SubHeading hint={t("compromisso.cfg.hint")}>{t("compromisso.title")}</SubHeading>
-        <label className="block max-w-xs">
-          <span className="eyebrow block mb-1.5">{t("compromisso.cfg.monthly")}</span>
-          <NumInput value={compromisso.monthly ?? 0} onCommit={(v) => actions.setCompromisso({ monthly: v })} suffix={sym} />
-        </label>
       </Card>
 
       {/* Saúde financeira — limiares + pesos */}

@@ -66,6 +66,7 @@
     "reserve": "Reserva de emergência",
     "reserveMonths": "{{n}} meses",
     "reserveSub": "cobertura do caixa",
+    "health": "Saúde financeira",
     "ratesInflation": "juros e inflação",
     "inflation": "Inflação",
     "perYear": "ao ano",
@@ -349,18 +350,6 @@
       "savingsTarget": "Taxa de poupança alvo",
       "maxDebtRatio": "Dívida/ativos onde zera",
       "weights": "Pesos por dimensão"
-    }
-  },
-  "compromisso": {
-    "title": "Compromisso",
-    "empty": "Defina um aporte mensal planejado no Config para acompanhar seus check-ins.",
-    "planned": "Aporte planejado",
-    "kept": "Cumprido",
-    "markKept": "Marcar como cumprido",
-    "adherence": "{{n}} de {{total}} meses cumpridos",
-    "cfg": {
-      "hint": "Seu aporte mensal planejado. Todo mês você confirma se cumpriu — reforça a constância.",
-      "monthly": "Aporte mensal planejado"
     }
   },
   "proventos": {

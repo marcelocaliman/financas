@@ -130,14 +130,6 @@ export interface HealthConfig {
   maxDebtRatio?: number;
 }
 
-/** Compromisso: aporte mensal planejado + check-ins por mês (sem débito automático). */
-export interface CompromissoConfig {
-  /** Aporte mensal planejado (moeda principal). */
-  monthly?: number;
-  /** Check-in por mês "AAAA-MM" → cumpriu o aporte? */
-  checkins?: Record<string, boolean>;
-}
-
 /** Configurações sincronizadas (singleton). */
 export interface AppSettings {
   id: string;
@@ -150,8 +142,6 @@ export interface AppSettings {
   liberdade?: LiberdadeConfig;
   /** Configuração do score de saúde financeira. */
   health?: HealthConfig;
-  /** Compromisso de aporte + check-ins. */
-  compromisso?: CompromissoConfig;
 }
 
 export interface Liability {

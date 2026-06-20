@@ -8,7 +8,6 @@ import type {
   Asset,
   Dividend,
   Expense,
-  CompromissoConfig,
   Goal,
   HealthConfig,
   Income,
@@ -122,21 +121,6 @@ export const actions = {
       const health = { ...(cur?.health ?? {}) };
       health.weights = { ...(health.weights ?? {}), [dim]: weight };
       await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), health });
-    }),
-  /** Mescla campos do Compromisso (aporte planejado) sobre o estado mais fresco (sem clobber). */
-  setCompromisso: (patch: Partial<CompromissoConfig>) =>
-    withSync(async () => {
-      const cur = await repository.getSettings();
-      const compromisso = { ...(cur?.compromisso ?? {}), ...patch };
-      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), compromisso });
-    }),
-  /** Marca/desmarca o check-in de aporte de UM mês, lendo o mapa mais fresco (sem clobber). */
-  setCheckin: (month: string, done: boolean) =>
-    withSync(async () => {
-      const cur = await repository.getSettings();
-      const compromisso = { ...(cur?.compromisso ?? {}) };
-      compromisso.checkins = { ...(compromisso.checkins ?? {}), [month]: done };
-      await repository.putSettings({ id: "settings", allocationTargets: {}, ...(cur ?? {}), compromisso });
     }),
   /** Traz os lançamentos FIXOS (recurring) pro mês-alvo, vindos do mês anterior mais recente que
    *  os tenha. Idempotente e dedupado: seguro pra chamar em todo render/efeito. Não escreve (nem

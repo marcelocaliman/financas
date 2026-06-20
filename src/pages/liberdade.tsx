@@ -1,24 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { Sparkles, Flame, CheckCircle2, Circle, HeartPulse, Check, HandCoins } from "lucide-react";
+import { Sparkles, Flame, CheckCircle2, Circle, HeartPulse } from "lucide-react";
 import { useUI } from "@/store/ui";
-import { useRates } from "@/store/rates";
 import { useLiberdade, type Milestone } from "@/hooks/use-liberdade";
 import { useHealth, type HealthDimView } from "@/hooks/use-health";
-import { useSettings } from "@/hooks/use-settings";
-import { actions } from "@/data/actions";
-import { convert } from "@/money/currency";
-import { prevMonth } from "@/finance/liberdade";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { ProgressRing } from "@/components/common/progress-ring";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
-
-function thisMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 /** Formata "AAAA-MM" → "mmm de AAAA" no idioma corrente (rótulo da data de chegada). */
 function monthLabel(ym: string, lang: string): string {
@@ -134,10 +124,9 @@ export default function Liberdade() {
         </div>
       </Tile>
 
-      {/* Constância + Compromisso + Marcos + Saúde */}
+      {/* Constância + Marcos + Saúde */}
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         <StreakCard current={v.streak.current} record={v.streak.record} />
-        <CompromissoCard />
         <MilestonesCard milestones={v.milestones} />
         <HealthCard />
       </div>
@@ -199,82 +188,6 @@ function HealthBar({ dim }: { dim: HealthDimView }) {
         />
       </div>
     </div>
-  );
-}
-
-function CompromissoCard() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const base = useUI((s) => s.baseCurrency);
-  const rates = useRates((s) => s.rates);
-  const settings = useSettings();
-  const cfg = settings.compromisso ?? {};
-  const monthly = cfg.monthly ?? 0;
-  const checkins = cfg.checkins ?? {};
-  const cur = thisMonth();
-  const done = checkins[cur] === true;
-  const monthlyDisp = convert(monthly, base, disp, rates);
-
-  // Últimos 6 meses (mais antigo → atual) p/ a trilha de check-ins.
-  const recent: string[] = [];
-  let m = cur;
-  for (let i = 0; i < 6; i++) {
-    recent.unshift(m);
-    m = prevMonth(m);
-  }
-  const decided = recent.filter((mm) => checkins[mm] !== undefined);
-  const kept = recent.filter((mm) => checkins[mm] === true).length;
-
-  return (
-    <Tile className="p-6">
-      <div className="flex items-center gap-2">
-        <HandCoins size={15} className={cn("shrink-0", done ? "text-accent" : "text-faint")} />
-        <Eyebrow>{t("compromisso.title")}</Eyebrow>
-      </div>
-
-      {monthly <= 0 ? (
-        <p className="mt-3 text-[12.5px] text-muted leading-relaxed">{t("compromisso.empty")}</p>
-      ) : (
-        <>
-          <p className="mt-3 text-[13px] text-muted">
-            {t("compromisso.planned")}:{" "}
-            <span className="text-text font-medium tabular"><Money value={monthlyDisp} currency={disp} /></span>
-            <span className="text-faint">/{t("liberdade.mo")}</span>
-          </p>
-
-          <button
-            type="button"
-            onClick={() => void actions.setCheckin(cur, !done)}
-            aria-pressed={done}
-            className={cn(
-              "mt-4 inline-flex items-center gap-2 h-10 px-4 rounded-[10px] text-[13px] font-medium border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-              done ? "bg-accent text-[#0A0B0D] border-accent" : "border-border text-muted hover:text-text hover:bg-card-hover",
-            )}
-          >
-            <Check size={15} /> {done ? t("compromisso.kept") : t("compromisso.markKept")}
-          </button>
-
-          <div className="mt-5 flex items-center gap-2">
-            {recent.map((mm) => {
-              const st = checkins[mm];
-              return (
-                <span
-                  key={mm}
-                  title={mm}
-                  className={cn(
-                    "w-3 h-3 rounded-full shrink-0",
-                    st === true ? "bg-accent" : st === false ? "bg-[var(--neg)]/60" : "border border-border",
-                  )}
-                />
-              );
-            })}
-          </div>
-          <p className="mt-3 text-[11px] text-faint">
-            {t("compromisso.adherence", { n: kept, total: Math.max(decided.length, 1) })}
-          </p>
-        </>
-      )}
-    </Tile>
   );
 }
 

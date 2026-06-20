@@ -66,6 +66,7 @@
     "reserve": "Emergency fund",
     "reserveMonths": "{{n}} months",
     "reserveSub": "cash runway",
+    "health": "Financial health",
     "ratesInflation": "rates & inflation",
     "inflation": "Inflation",
     "perYear": "per year",
@@ -349,18 +350,6 @@
       "savingsTarget": "Target savings rate",
       "maxDebtRatio": "Debt/assets where it hits 0",
       "weights": "Weight per dimension"
-    }
-  },
-  "compromisso": {
-    "title": "Commitment",
-    "empty": "Set a planned monthly contribution in Settings to track your check-ins.",
-    "planned": "Planned contribution",
-    "kept": "Kept",
-    "markKept": "Mark as kept",
-    "adherence": "{{n}} of {{total}} months kept",
-    "cfg": {
-      "hint": "Your planned monthly contribution. Each month you confirm whether you kept it — it builds consistency.",
-      "monthly": "Planned monthly contribution"
     }
   },
   "proventos": {
