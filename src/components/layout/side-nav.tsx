@@ -214,19 +214,15 @@ export function SideNav({ active }: { active: string }) {
         {/* Cabeçalho das seções + abrir/fechar TODAS de uma vez */}
         <div className={cn("flex items-center shrink-0", collapsed ? "justify-center px-2 mb-1" : "justify-between px-3 mt-1 mb-1.5")}>
           {!collapsed ? <Eyebrow>{t("menu.sections")}</Eyebrow> : null}
-          {/* "Abrir/fechar tudo" só na Config (multi-aberta). No painel as seções são ABA ÚNICA
-              — abrir tudo não faz sentido, e fechar a aberta é só clicar nela de novo. */}
-          {configOpen ? (
-            <button
-              type="button"
-              onClick={() => setManySections(sectionIds, !allOpen)}
-              aria-label={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
-              title={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
-              className="grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            >
-              {allOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => setManySections(sectionIds, !allOpen)}
+            aria-label={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            title={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            className="grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {allOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
+          </button>
         </div>
 
         {/* Navegação — filmstrip: as listas da PÁGINA e da CONFIG ficam lado a lado e o trilho

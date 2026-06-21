@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
 import { scrollToSection } from "@/hooks/use-scroll-spy";
@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
  * Seção em accordion: título grande + KPIs ao lado (sempre visíveis), detalhes dentro.
  * Expand/colapso suave (grid-rows 0fr→1fr + fade). Estado no store useSections, com
  * fallback `defaultOpen`. A âncora (id) fica no header, que não se move ao expandir.
+ * Várias seções podem ficar abertas ao mesmo tempo (cada uma é independente).
  */
 export function Accordion({
   id,
@@ -15,7 +16,6 @@ export function Accordion({
   summary,
   defaultOpen = false,
   bare = false,
-  exclusive = false,
   children,
 }: {
   id: string;
@@ -24,83 +24,45 @@ export function Accordion({
   defaultOpen?: boolean;
   /** Sem a borda-divisória do topo (ex.: quando a seção vive dentro de um card próprio). */
   bare?: boolean;
-  /** "Aba única": ao abrir, as OUTRAS fecham. Aqui isso muda a ANIMAÇÃO: a seção que fecha
-   *  colapsa INSTANTÂNEA (sem alvo móvel) e compensamos o scroll, pra não "pular". */
-  exclusive?: boolean;
   children: ReactNode;
 }) {
   const stored = useSections((s) => s.open[id]);
   const setOpen = useSections((s) => s.setOpen);
   const open = stored ?? defaultOpen;
 
-  // Reflete o `defaultOpen` no STORE na 1ª montagem (senão a nav a vê como "fechada").
+  // Reflete o `defaultOpen` no STORE na 1ª montagem. Sem isto, a seção aparece aberta (via
+  // fallback) mas o store fica `undefined` — e o menu a enxerga como "fechada", então clicar
+  // no item não a fecha. Sincronizar deixa a nav e os contadores de "abrir/fechar tudo" verem o
+  // estado real. Roda 1× e respeita uma escolha posterior do usuário (aí `stored` deixa de ser undefined).
   useEffect(() => {
     if (defaultOpen && useSections.getState().open[id] === undefined) setOpen(id, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // `mounted`: corpo (pesado) só entra no DOM ao abrir pela 1ª vez e fica montado.
-  // `anim`: dispara a grid 0fr→1fr UM frame DEPOIS do corpo montar, pra a 1ª ABERTURA animar.
-  // `expanded = open && anim`: FECHAR colapsa no MESMO render (sem esperar efeito) — essencial
-  // pro modo exclusivo, onde a outra seção precisa sumir na hora pra a compensação de scroll
-  // medir a posição final certa.
+  // `expanded`: dispara a grid 0fr→1fr UM frame DEPOIS do corpo montar, pra a 1ª
+  // abertura animar de verdade (em vez de aparecer de estalo). Colapsar é imediato.
   const [mounted, setMounted] = useState(open);
-  const [anim, setAnim] = useState(open);
+  const [expanded, setExpanded] = useState(open);
   useEffect(() => {
     if (open) {
       setMounted(true);
-      const raf = requestAnimationFrame(() => setAnim(true));
+      const raf = requestAnimationFrame(() => setExpanded(true));
       return () => cancelAnimationFrame(raf);
     }
-    setAnim(false);
-  }, [open]);
-  const expanded = open && anim;
-
-  // No modo exclusivo, a seção que FECHA não anima (colapsa instantâneo); a que abre sempre anima.
-  const animateBody = !exclusive || open;
-
-  // Topo do header no instante do clique (aba única). O useLayoutEffect abaixo compensa o scroll
-  // já com as outras fechadas — ANTES da pintura, então o header nunca aparece fora da tela.
-  const pendingTop = useRef<number | null>(null);
-
-  const onToggle = () => {
-    if (open) {
-      setOpen(id, false); // fechar a própria: comportamento normal
-      return;
-    }
-    pendingTop.current = document.getElementById(id)?.getBoundingClientRect().top ?? 0;
-    setOpen(id, true); // fecha as outras (instantâneo) + abre esta
-  };
-
-  // Roda DEPOIS do commit (DOM já com as outras fechadas) e ANTES da pintura: mede onde o header
-  // foi parar, devolve ele à posição do clique (scroll instantâneo) e SÓ ENTÃO rola suave ao topo.
-  // Como tudo acontece antes de pintar, não há o "sobe, sai da tela, desce e volta".
-  useLayoutEffect(() => {
-    if (!open || pendingTop.current == null) return;
-    const before = pendingTop.current;
-    pendingTop.current = null;
-    const el = document.getElementById(id);
-    if (!el) return;
-    const delta = el.getBoundingClientRect().top - before;
-    if (delta) {
-      // Compensa de forma INSTANTÂNEA (mesmo padrão do app-shell, que já funciona): desliga o
-      // scroll-behavior:smooth global no html, dá o scrollTo, e restaura. Assim o header volta
-      // pro lugar do clique ANTES da pintura — nunca aparece fora da tela.
-      const html = document.documentElement;
-      const prevSB = html.style.scrollBehavior;
-      html.style.scrollBehavior = "auto";
-      window.scrollTo({ top: Math.max(0, window.scrollY + delta) });
-      html.style.scrollBehavior = prevSB;
-    }
-    scrollToSection(id); // agora rola suave até o topo, com a posição já estável
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setExpanded(false);
   }, [open]);
 
   return (
     <section id={id} className={cn("scroll-mt-24", !bare && "border-t border-border")}>
       <button
         type="button"
-        onClick={onToggle}
+        onClick={() => {
+          const next = !open;
+          setOpen(id, next);
+          // Ao ABRIR pelo cabeçalho, rola até a seção (mesmo comportamento do menu).
+          if (next) requestAnimationFrame(() => scrollToSection(id));
+        }}
         aria-expanded={open}
         aria-controls={`${id}-body`}
         className="group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]"
@@ -126,8 +88,7 @@ export function Accordion({
         role="region"
         aria-labelledby={`${id}-title`}
         className={cn(
-          "grid motion-reduce:transition-none",
-          animateBody && "transition-all duration-300 ease-out",
+          "grid transition-all duration-300 ease-out motion-reduce:transition-none",
           expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
