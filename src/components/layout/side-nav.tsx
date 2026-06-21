@@ -284,18 +284,14 @@ export function SideNav({ active }: { active: string }) {
                   {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
                   {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
 
-                  {/* Seletores (moeda + idioma, lado a lado) e os toggles (privacidade + tema) abaixo */}
-                  <div className={cn("space-y-1.5", isAdmin && "mt-2.5")}>
-                    <div className="flex items-center gap-1.5">
-                      <CurrencyMenu dropUp alignLeft />
-                      <LanguageMenu dropUp />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
-                        {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </IconBtn>
-                      <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
-                    </div>
+                  {/* Controles numa linha só: moeda (compacta, só o símbolo) + idioma + privacidade + tema */}
+                  <div className={cn("flex items-center gap-1.5", isAdmin && "mt-2.5")}>
+                    <CurrencyMenu dropUp alignLeft compact />
+                    <LanguageMenu dropUp alignLeft />
+                    <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
+                      {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </IconBtn>
+                    <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                   </div>
 
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}

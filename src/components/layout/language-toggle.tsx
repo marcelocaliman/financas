@@ -53,7 +53,7 @@ export function LanguageMenu({
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
             className={cn(
-              "absolute w-40 z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden p-1.5",
+              "absolute w-36 z-50 rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] overflow-hidden p-1.5",
               dropUp ? "bottom-full mb-2" : "mt-2",
               alignLeft ? "left-0" : "right-0",
             )}

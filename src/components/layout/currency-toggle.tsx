@@ -10,7 +10,11 @@ import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
  * prévia temporária (volta pra principal ao recarregar). Sinaliza quando você está
  * vendo numa moeda diferente da principal e marca qual é a principal na lista.
  */
-export function CurrencyMenu({ dropUp = false, alignLeft = false }: { dropUp?: boolean; alignLeft?: boolean } = {}) {
+export function CurrencyMenu({
+  dropUp = false,
+  alignLeft = false,
+  compact = false,
+}: { dropUp?: boolean; alignLeft?: boolean; compact?: boolean } = {}) {
   const { t } = useTranslation();
   const cur = useUI((s) => s.displayCurrency);
   const setCur = useUI((s) => s.setDisplayCurrency);
@@ -45,7 +49,7 @@ export function CurrencyMenu({ dropUp = false, alignLeft = false }: { dropUp?: b
       >
         {preview ? <span className="w-[5px] h-[5px] rounded-full bg-accent shrink-0" /> : null}
         <span className="text-[13px] font-semibold tabular text-text">{CURRENCY_SYMBOL[cur]}</span>
-        <span className="text-[11px] text-faint font-medium hidden sm:inline">{cur}</span>
+        {!compact ? <span className="text-[11px] text-faint font-medium hidden sm:inline">{cur}</span> : null}
         <ChevronDown size={14} className="text-faint" />
       </button>
       {open ? (
