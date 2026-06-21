@@ -9,6 +9,7 @@ import {
 import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { CurrencyMenu } from "./currency-toggle";
+import { LanguageMenu } from "./language-toggle";
 import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useUI } from "@/store/ui";
 import { useSections } from "@/store/sections";
@@ -283,14 +284,18 @@ export function SideNav({ active }: { active: string }) {
                   {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
                   {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
 
-                  {/* Controles em ícone (já são claros): moeda, privacidade, tema */}
-                  <div className={cn("flex items-center gap-1.5", isAdmin && "mt-2.5")}>
-                    <CurrencyMenu dropUp alignLeft />
-                    <div className="flex-1" />
-                    <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
-                      {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </IconBtn>
-                    <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
+                  {/* Seletores (moeda + idioma, lado a lado) e os toggles (privacidade + tema) abaixo */}
+                  <div className={cn("space-y-1.5", isAdmin && "mt-2.5")}>
+                    <div className="flex items-center gap-1.5">
+                      <CurrencyMenu dropUp alignLeft />
+                      <LanguageMenu dropUp />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
+                        {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </IconBtn>
+                      <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
+                    </div>
                   </div>
 
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
