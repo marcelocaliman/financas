@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
 import { scrollToSection } from "@/hooks/use-scroll-spy";
@@ -64,24 +65,24 @@ export function Accordion({
       setOpen(id, false); // fechar a própria: comportamento normal
       return;
     }
-    // Abrir: mede o topo do header ANTES, troca (as outras fecham na hora), compensa o scroll
-    // pra o header não pular, e SÓ ENTÃO rola suave até o topo. Some o "sobe-sai-volta".
+    // Abrir (aba única): mede o topo do header AGORA, e com flushSync força o React a APLICAR já
+    // o fechamento das outras (instantâneo, sem transição). Aí o getBoundingClientRect já reflete
+    // a posição FINAL → compensamos o scroll pra o header não pular, e só então rolamos suave ao
+    // topo. Sem o flushSync, a medição saía no estado antigo e o item "subia, saía e voltava".
     const before = document.getElementById(id)?.getBoundingClientRect().top ?? 0;
-    setOpen(id, true);
-    requestAnimationFrame(() => {
-      const el = document.getElementById(id);
-      if (el) {
-        const delta = el.getBoundingClientRect().top - before;
-        if (delta) {
-          const html = document.documentElement;
-          const prev = html.style.scrollBehavior;
-          html.style.scrollBehavior = "auto"; // compensação é instantânea (ignora smooth global)
-          window.scrollBy(0, delta);
-          html.style.scrollBehavior = prev;
-        }
+    flushSync(() => setOpen(id, true));
+    const el = document.getElementById(id);
+    if (el) {
+      const delta = el.getBoundingClientRect().top - before;
+      if (delta) {
+        const html = document.documentElement;
+        const prev = html.style.scrollBehavior;
+        html.style.scrollBehavior = "auto"; // compensação é instantânea (ignora smooth global)
+        window.scrollBy(0, delta);
+        html.style.scrollBehavior = prev;
       }
-      scrollToSection(id);
-    });
+    }
+    scrollToSection(id);
   };
 
   return (
