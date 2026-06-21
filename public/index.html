@@ -119,12 +119,12 @@
     .nav { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 58px; padding: 0 10px 0 18px;
       background: color-mix(in oklab, var(--card) 84%, transparent); backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
       border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow-float); }
-    .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 16px; letter-spacing: -0.02em; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 600; font-size: 16px; letter-spacing: -0.02em; white-space: nowrap; flex: none; }
     .mark { width: 30px; height: 30px; flex: none; display: block; }
-    .nav-links { display: flex; gap: 28px; }
-    .nav-links a { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; }
+    .nav-links { display: flex; gap: 18px; flex: none; }
+    .nav-links a { color: var(--muted); font-size: 13.5px; font-weight: 500; transition: color .2s; white-space: nowrap; }
     .nav-links a:hover { color: var(--text); }
-    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; flex: none; }
     .nav-right .btn { height: 40px; padding: 0 16px; }
     .themebtn { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 11px; border: 1px solid var(--border-strong); background: transparent; color: var(--muted); cursor: pointer; transition: color .2s, background .2s, border-color .2s; }
     .themebtn:hover { color: var(--text); background: var(--card-2); }
@@ -132,7 +132,8 @@
     .themebtn .ic-moon { display: none; }
     html.light .themebtn .ic-sun { display: none; }
     html.light .themebtn .ic-moon { display: block; }
-    @media (max-width: 880px) { .nav-links { display: none; } }
+    /* Esconde os links quando não cabem com a marca + botões (evita a quebra/sobreposição). */
+    @media (max-width: 1200px) { .nav-links { display: none; } }
     @media (max-width: 480px) { .brand span.bn { display: none; } .btn-login { display: none; } }
 
     /* Language dropdown */

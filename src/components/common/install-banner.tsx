@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, X, Share } from "lucide-react";
 import { useInstallPrompt } from "@/hooks/use-install-prompt";
+import { isMobile } from "@/lib/pwa-install";
 
 const DISMISS_KEY = "nf-install-dismissed";
 const RESHOW_DAYS = 21;
@@ -28,7 +29,8 @@ export function InstallBanner() {
   const [dismissed, setDismissed] = useState(dismissedRecently);
   const [showSteps, setShowSteps] = useState(false);
 
-  if (standalone || dismissed || (!canInstall && !iosHint)) return null;
+  // Só no celular (pedido do dono) — no desktop o banner não aparece.
+  if (standalone || dismissed || !isMobile() || (!canInstall && !iosHint)) return null;
 
   const iosOnly = iosHint && !canInstall;
 

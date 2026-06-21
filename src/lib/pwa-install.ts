@@ -61,3 +61,10 @@ export function isIOS(): boolean {
   const ua = navigator.userAgent;
   return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
 }
+
+/** Celular/tablet — só oferecemos instalar aqui (no desktop o banner não aparece). */
+export function isMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /android|iphone|ipad|ipod|mobile|silk|kindle/i.test(ua) || isIOS();
+}

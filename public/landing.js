@@ -350,7 +350,12 @@
     var ua = navigator.userAgent || "";
     return /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
   }
-  if (standalone() || dismissedRecently()) return;
+  function isMobile() {
+    var ua = navigator.userAgent || "";
+    return /android|iphone|ipad|ipod|mobile|silk|kindle/i.test(ua) || isIOS();
+  }
+  // Só no celular (pedido do dono): no desktop o banner não aparece, mesmo que dê pra instalar.
+  if (standalone() || dismissedRecently() || !isMobile()) return;
 
   var deferred = null;
   window.addEventListener("beforeinstallprompt", function (e) {
