@@ -1,5 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { flushSync } from "react-dom";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
 import { scrollToSection } from "@/hooks/use-scroll-spy";
@@ -60,30 +59,32 @@ export function Accordion({
   // No modo exclusivo, a seção que FECHA não anima (colapsa instantâneo); a que abre sempre anima.
   const animateBody = !exclusive || open;
 
+  // Topo do header no instante do clique (aba única). O useLayoutEffect abaixo compensa o scroll
+  // já com as outras fechadas — ANTES da pintura, então o header nunca aparece fora da tela.
+  const pendingTop = useRef<number | null>(null);
+
   const onToggle = () => {
     if (open) {
       setOpen(id, false); // fechar a própria: comportamento normal
       return;
     }
-    // Abrir (aba única): mede o topo do header AGORA, e com flushSync força o React a APLICAR já
-    // o fechamento das outras (instantâneo, sem transição). Aí o getBoundingClientRect já reflete
-    // a posição FINAL → compensamos o scroll pra o header não pular, e só então rolamos suave ao
-    // topo. Sem o flushSync, a medição saía no estado antigo e o item "subia, saía e voltava".
-    const before = document.getElementById(id)?.getBoundingClientRect().top ?? 0;
-    flushSync(() => setOpen(id, true));
-    const el = document.getElementById(id);
-    if (el) {
-      const delta = el.getBoundingClientRect().top - before;
-      if (delta) {
-        const html = document.documentElement;
-        const prev = html.style.scrollBehavior;
-        html.style.scrollBehavior = "auto"; // compensação é instantânea (ignora smooth global)
-        window.scrollBy(0, delta);
-        html.style.scrollBehavior = prev;
-      }
-    }
-    scrollToSection(id);
+    pendingTop.current = document.getElementById(id)?.getBoundingClientRect().top ?? 0;
+    setOpen(id, true); // fecha as outras (instantâneo) + abre esta
   };
+
+  // Roda DEPOIS do commit (DOM já com as outras fechadas) e ANTES da pintura: mede onde o header
+  // foi parar, devolve ele à posição do clique (scroll instantâneo) e SÓ ENTÃO rola suave ao topo.
+  // Como tudo acontece antes de pintar, não há o "sobe, sai da tela, desce e volta".
+  useLayoutEffect(() => {
+    if (!open || pendingTop.current == null) return;
+    const before = pendingTop.current;
+    pendingTop.current = null;
+    const after = document.getElementById(id)?.getBoundingClientRect().top ?? before;
+    const delta = after - before;
+    if (delta) window.scrollBy({ top: delta, left: 0, behavior: "instant" as ScrollBehavior });
+    scrollToSection(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <section id={id} className={cn("scroll-mt-24", !bare && "border-t border-border")}>
