@@ -57,7 +57,7 @@ export function OnePage() {
         {rest.map((item) => {
           const sec = SECTIONS[item.id];
           return (
-            <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary}>
+            <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary} exclusive>
               {sec?.detail ?? <ComingSoon />}
             </Accordion>
           );
