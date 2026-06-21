@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { Flame } from "lucide-react";
+import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from "recharts";
+import { Flame, Dices } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
@@ -11,6 +11,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, groupNumber, parseNumber, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
 import { realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
+import { simulateAccumulation, simulateDecumulation, type MonteCarloBand } from "@/finance/montecarlo";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
@@ -106,6 +107,9 @@ export default function Projecao() {
 
       {/* Número FIRE — independência financeira */}
       <FireCard />
+
+      {/* Monte Carlo — probabilidade de sucesso (acumulação + aposentadoria) */}
+      <MonteCarloCard />
 
       {/* Curva comparativa */}
       <Tile className="p-6 md:p-7">
@@ -346,6 +350,256 @@ function FireCard() {
       </div>
       {hint}
     </Tile>
+  );
+}
+
+/** Presets de volatilidade anual (%) por perfil de risco — evita o usuário ter de saber σ. */
+const RISK_PRESETS = [
+  { key: "conservative", vol: 8 },
+  { key: "moderate", vol: 14 },
+  { key: "aggressive", vol: 20 },
+] as const;
+
+/** Verde se a chance é alta, neutro se média, vermelho se baixa. */
+function probColor(prob: number, dark: boolean): string {
+  if (prob >= 0.8) return dark ? "#3ecf8e" : "#15976a";
+  if (prob >= 0.6) return "#8a8f98";
+  return "#f1746a";
+}
+
+/** Card colapsável do Monte Carlo: o cálculo (pesado) só monta quando o usuário abre. */
+function MonteCarloCard() {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  return (
+    <Tile className="p-6 md:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Dices size={16} className="text-accent shrink-0" />
+            <Eyebrow>{t("montecarlo.title")}</Eyebrow>
+          </div>
+          <p className="mt-2 text-[12.5px] text-muted max-w-xl leading-relaxed">{t("montecarlo.subtitle")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="shrink-0 h-9 px-3.5 rounded-[10px] border border-border bg-card2 text-[13px] font-medium text-text hover:bg-card-hover transition-colors"
+        >
+          {open ? t("montecarlo.hide") : t("montecarlo.calculate")}
+        </button>
+      </div>
+      {open ? <MonteCarloPanel /> : null}
+    </Tile>
+  );
+}
+
+/** Painel pesado: roda as duas simulações (memoizadas) sobre o que o usuário JÁ preencheu. */
+function MonteCarloPanel() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const dark = useUI((s) => s.theme) === "dark";
+  const p = useProjection();
+  const fire = useFireTarget();
+
+  const vol = Math.max(0, p.annualVolatility) / 100;
+  const base = p.scenarios.base;
+  const realRet = realReturn(base.annualReturn, p.annualInflation);
+  const years = Math.max(1, Math.min(60, Math.round(p.years)));
+  const retYears = Math.max(1, Math.min(60, Math.round(p.retirementYears)));
+
+  const target = fire?.independenceNumber ?? Infinity;
+  const targetOk = !!fire && Number.isFinite(target) && target > 0;
+  const eligible = Math.max(0, fire?.eligibleWealth ?? 0);
+  const netAnnual = fire?.netAnnualCost ?? 0;
+
+  // Acumulação: mesma base do número FIRE (investível, retorno real, alvo) + volatilidade.
+  const accum = useMemo(
+    () =>
+      targetOk
+        ? simulateAccumulation({
+            initial: eligible,
+            monthlyContribution: base.monthly,
+            realAnnualReturn: realRet,
+            annualVolatility: vol,
+            years,
+            target,
+          })
+        : null,
+    [targetOk, eligible, base.monthly, realRet, vol, years, target],
+  );
+
+  // Decumulação: parte do número FIRE e saca o custo líquido pela aposentadoria.
+  const decum = useMemo(
+    () =>
+      targetOk && netAnnual > 0
+        ? simulateDecumulation({
+            initialPortfolio: target,
+            annualSpending: netAnnual,
+            realAnnualReturn: realRet,
+            annualVolatility: vol,
+            years: retYears,
+          })
+        : null,
+    [targetOk, target, netAnnual, realRet, vol, retYears],
+  );
+
+  if (!targetOk) {
+    return <p className="mt-5 text-[13px] text-muted max-w-md">{t("montecarlo.empty")}</p>;
+  }
+
+  return (
+    <div className="mt-6 space-y-8">
+      {/* Perfil de risco / volatilidade */}
+      <div>
+        <Eyebrow className="mb-2.5">{t("montecarlo.risk")}</Eyebrow>
+        <div className="flex flex-wrap items-center gap-2">
+          {RISK_PRESETS.map((r) => {
+            const on = Math.round(p.annualVolatility) === r.vol;
+            return (
+              <button
+                key={r.key}
+                type="button"
+                onClick={() => p.set({ annualVolatility: r.vol })}
+                className={cn(
+                  "h-8 px-3 rounded-full border text-[12.5px] font-medium transition-colors tabular",
+                  on
+                    ? "border-accent/50 bg-accent-soft text-text"
+                    : "border-border bg-card2 text-muted hover:text-text hover:bg-card-hover",
+                )}
+              >
+                {t(`montecarlo.${r.key}`)} · {r.vol}%
+              </button>
+            );
+          })}
+          <div className="w-px h-6 bg-border mx-1" />
+          <div className="w-28">
+            <Field label={t("montecarlo.volatility")} value={p.annualVolatility} onChange={(v) => p.set({ annualVolatility: v })} suffix="%" />
+          </div>
+        </div>
+      </div>
+
+      {/* Fase 1 — acumulação */}
+      {accum ? (
+        <MonteSection
+          title={t("montecarlo.accumTitle")}
+          headline={t("montecarlo.accumHeadline", { pct: Math.round(accum.successProb * 100), years })}
+          prob={accum.successProb}
+          note={t("montecarlo.accumNote")}
+          bands={accum.bands}
+          target={target}
+          dark={dark}
+          disp={disp}
+          trials={accum.trials}
+        />
+      ) : null}
+
+      {/* Fase 2 — decumulação (aposentadoria) */}
+      {decum ? (
+        <MonteSection
+          title={t("montecarlo.retireTitle")}
+          headline={t("montecarlo.retireHeadline", { pct: Math.round(decum.survivalProb * 100), years: retYears })}
+          prob={decum.survivalProb}
+          note={t("montecarlo.retireNote")}
+          bands={decum.bands}
+          dark={dark}
+          disp={disp}
+          trials={decum.trials}
+          extra={
+            <div className="w-28">
+              <Field label={t("montecarlo.retireYears")} value={p.retirementYears} onChange={(v) => p.set({ retirementYears: v })} />
+            </div>
+          }
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** Uma fase do Monte Carlo: número-herói (chance) + fan chart (banda P10–P90 + mediana). */
+function MonteSection({
+  title,
+  headline,
+  prob,
+  note,
+  bands,
+  target,
+  dark,
+  disp,
+  trials,
+  extra,
+}: {
+  title: string;
+  headline: string;
+  prob: number;
+  note: string;
+  bands: MonteCarloBand[];
+  target?: number;
+  dark: boolean;
+  disp: Currency;
+  trials: number;
+  extra?: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const axis = dark ? "#5f646c" : "#8a8f98";
+  const color = probColor(prob, dark);
+  const data = bands.map((b) => ({ year: b.year, range: [b.p10, b.p90], p50: b.p50 }));
+  const fmt = (v: number) => formatMoney(v, disp);
+  return (
+    <section>
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3 mb-3">
+        <div className="min-w-0">
+          <Eyebrow>{title}</Eyebrow>
+          <p className="mt-2 text-[15px] sm:text-[16.5px] font-semibold tracking-[-0.01em] tabular" style={{ color }}>
+            {headline}
+          </p>
+          <p className="mt-1 text-[11.5px] text-faint max-w-xl leading-relaxed">{note}</p>
+        </div>
+        {extra}
+      </div>
+      <div className="w-full h-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+            <XAxis dataKey="year" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+            <Tooltip
+              formatter={(v) => [fmt(Number(v)), t("montecarlo.median")]}
+              labelFormatter={(y) => `${t("montecarlo.year")} ${y}`}
+              contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+              labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
+            />
+            <Area type="monotone" dataKey="range" stroke="none" fill={color} fillOpacity={0.14} tooltipType="none" isAnimationActive={false} />
+            <Line type="monotone" dataKey="p50" stroke={color} strokeWidth={2} dot={false} isAnimationActive={false} />
+            {target != null ? (
+              <ReferenceLine
+                y={target}
+                stroke={axis}
+                strokeDasharray="4 4"
+                ifOverflow="extendDomain"
+                label={{ value: t("montecarlo.target"), position: "insideTopRight", fontSize: 10, fill: axis }}
+              />
+            ) : null}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3 text-[11.5px] text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-3 h-[2px] rounded-full" style={{ background: color }} />
+          {t("montecarlo.median")}
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-3 h-2 rounded-[2px]" style={{ background: color, opacity: 0.25 }} />
+          {t("montecarlo.band")}
+        </span>
+        {target != null ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3.5 border-t border-dashed" style={{ borderColor: axis }} />
+            {t("montecarlo.target")}
+          </span>
+        ) : null}
+        <span className="text-faint ml-auto">{t("montecarlo.trials", { n: groupNumber(trials, disp) })}</span>
+      </div>
+    </section>
   );
 }
 
