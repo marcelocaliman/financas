@@ -79,10 +79,20 @@ export function Accordion({
     if (!open || pendingTop.current == null) return;
     const before = pendingTop.current;
     pendingTop.current = null;
-    const after = document.getElementById(id)?.getBoundingClientRect().top ?? before;
-    const delta = after - before;
-    if (delta) window.scrollBy({ top: delta, left: 0, behavior: "instant" as ScrollBehavior });
-    scrollToSection(id);
+    const el = document.getElementById(id);
+    if (!el) return;
+    const delta = el.getBoundingClientRect().top - before;
+    if (delta) {
+      // Compensa de forma INSTANTÂNEA (mesmo padrão do app-shell, que já funciona): desliga o
+      // scroll-behavior:smooth global no html, dá o scrollTo, e restaura. Assim o header volta
+      // pro lugar do clique ANTES da pintura — nunca aparece fora da tela.
+      const html = document.documentElement;
+      const prevSB = html.style.scrollBehavior;
+      html.style.scrollBehavior = "auto";
+      window.scrollTo({ top: Math.max(0, window.scrollY + delta) });
+      html.style.scrollBehavior = prevSB;
+    }
+    scrollToSection(id); // agora rola suave até o topo, com a posição já estável
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
