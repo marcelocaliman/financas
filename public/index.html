@@ -192,20 +192,21 @@
     .hero-photo img { object-position: center 42%; }
     /* Selo "carimbo" 100% grátis — FLUTUA sobre o canto da foto (parte pra fora), nos tons do app */
     .hero-visual { position: relative; }
-    .hero-seal { position: absolute; top: -24px; right: -20px; z-index: 6; width: 104px; height: 104px; border-radius: 50%;
-      background: rgba(8,10,12,.5); -webkit-backdrop-filter: blur(8px) saturate(1.1); backdrop-filter: blur(8px) saturate(1.1);
-      box-shadow: 0 16px 36px -14px rgba(0,0,0,.7), 0 0 30px -8px rgba(62,207,142,.4);
+    .hero-seal { position: absolute; top: -26px; right: -22px; z-index: 6; width: 136px; height: 136px; border-radius: 50%;
+      background: rgba(8,10,12,.55); -webkit-backdrop-filter: blur(9px) saturate(1.1); backdrop-filter: blur(9px) saturate(1.1);
+      box-shadow: 0 16px 40px -14px rgba(0,0,0,.7), 0 0 34px -8px rgba(62,207,142,.42);
       animation: sealIn .7s cubic-bezier(.2,.9,.2,1) both; }
     .hero-seal svg { width: 100%; height: 100%; display: block; overflow: visible; }
-    .hero-seal .seal-ring { fill: none; stroke: rgba(62,207,142,.55); stroke-width: 1.4; }
-    .hero-seal .seal-ring--in { stroke: rgba(62,207,142,.3); stroke-width: 1; }
-    .hero-seal .seal-arc { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
-    .hero-seal .seal-center { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 14px; letter-spacing: .03em; text-transform: uppercase; }
-    .hero-seal .seal-star { fill: var(--accent); font-size: 7px; opacity: .9; }
+    .hero-seal .seal-ring { fill: none; stroke: rgba(62,207,142,.6); stroke-width: 1.7; }
+    .hero-seal .seal-ring--in { stroke: rgba(62,207,142,.3); stroke-width: 1.1; }
+    .hero-seal .seal-arc { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; }
+    .hero-seal .seal-check { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+    .hero-seal .seal-star { fill: var(--accent); font-size: 9px; }
+    .hero-seal .seal-star--sm { font-size: 6.5px; opacity: .85; }
     @keyframes sealIn { from { opacity: 0; transform: scale(.55) rotate(-14deg); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .hero-seal { animation: none; } }
-    @media (max-width: 1000px) { .hero-seal { top: -18px; right: -10px; width: 94px; height: 94px; } }
-    @media (max-width: 480px) { .hero-seal { width: 82px; height: 82px; top: -14px; right: 4px; } }
+    @media (max-width: 1000px) { .hero-seal { top: -20px; right: -12px; width: 118px; height: 118px; } }
+    @media (max-width: 480px) { .hero-seal { width: 102px; height: 102px; top: -16px; right: 4px; } }
     .floatcard { position: absolute; left: 16px; bottom: 16px; z-index: 4; max-width: min(82%, 320px); background: color-mix(in oklab, var(--card) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: var(--shadow-float); padding: 15px 17px; }
     .floatcard .lbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .floatcard .big { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1; margin-top: 7px; color: var(--text); }
@@ -459,14 +460,22 @@
           </div>
         </div>
         <div class="hero-visual reveal from-r">
-          <span class="hero-seal" role="img" aria-label="100% grátis">
-            <svg viewBox="0 0 104 104">
-              <defs><path id="sealTop" d="M 11 52 a 41 41 0 0 1 82 0" fill="none" /></defs>
-              <circle class="seal-ring" cx="52" cy="52" r="49.5" />
-              <circle class="seal-ring seal-ring--in" cx="52" cy="52" r="37" />
+          <span class="hero-seal" role="img" aria-label="100% grátis, 100% privado">
+            <svg viewBox="0 0 120 120">
+              <defs>
+                <path id="sealTop" d="M 12 60 A 48 48 0 0 1 108 60" fill="none" />
+                <path id="sealBot" d="M 12 60 A 48 48 0 0 0 108 60" fill="none" />
+              </defs>
+              <circle class="seal-ring" cx="60" cy="60" r="57" />
+              <circle class="seal-ring seal-ring--in" cx="60" cy="60" r="43" />
               <text class="seal-arc"><textPath href="#sealTop" startOffset="50%" text-anchor="middle" data-i18n="hero.badge">100% GRÁTIS</textPath></text>
-              <text class="seal-star" x="52" y="41" text-anchor="middle">★</text>
-              <text class="seal-center" x="52" y="59" text-anchor="middle" data-i18n="hero.badge2">grátis</text>
+              <text class="seal-arc"><textPath href="#sealBot" startOffset="50%" text-anchor="middle" data-i18n="hero.badge2">100% PRIVADO</textPath></text>
+              <text class="seal-star" x="9.5" y="63.5" text-anchor="middle">★</text>
+              <text class="seal-star" x="110.5" y="63.5" text-anchor="middle">★</text>
+              <path class="seal-check" d="M 49 59 l 6.5 6.5 l 14 -15.5" fill="none" />
+              <text class="seal-star seal-star--sm" x="52" y="80" text-anchor="middle">★</text>
+              <text class="seal-star seal-star--sm" x="60" y="82" text-anchor="middle">★</text>
+              <text class="seal-star seal-star--sm" x="68" y="80" text-anchor="middle">★</text>
             </svg>
           </span>
           <figure class="photo hero-photo" style="margin:0">
