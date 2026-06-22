@@ -190,6 +190,24 @@
     /* Hero photo + número flutuante */
     .hero-photo { aspect-ratio: 1 / 1; }
     .hero-photo img { object-position: center 42%; }
+    /* Selo "carimbo" 100% grátis — FLUTUA sobre o canto da foto (parte pra fora), nos tons do app */
+    .hero-visual { position: relative; }
+    .hero-seal { --lite: #3ECF8E; --dark: #15976A; position: absolute; top: -28px; right: -24px; z-index: 6; width: 150px; height: 150px; border-radius: 50%;
+      background: rgba(8,10,12,.5); -webkit-backdrop-filter: blur(9px) saturate(1.1); backdrop-filter: blur(9px) saturate(1.1);
+      box-shadow: 0 18px 44px -12px rgba(0,0,0,.6), 0 0 30px -10px rgba(62,207,142,.45);
+      animation: sealIn .7s cubic-bezier(.2,.9,.2,1) both; }
+    .hero-seal svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .hero-seal .seal-disc { fill: #ffffff; }
+    .hero-seal .seal-ring { fill: none; stroke: var(--lite); stroke-width: 2; }
+    .hero-seal .seal-ring--in { stroke: var(--dark); stroke-width: 1.5; }
+    .hero-seal .seal-arc { fill: var(--lite); font-family: var(--font-mono); font-weight: 700; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; }
+    .hero-seal .seal-check { fill: none; stroke: var(--dark); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+    .hero-seal .seal-star { fill: var(--lite); font-size: 9.5px; }
+    .hero-seal .seal-star--sm { fill: var(--dark); font-size: 7px; }
+    @keyframes sealIn { from { opacity: 0; transform: scale(.55) rotate(-14deg); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .hero-seal { animation: none; } }
+    @media (max-width: 1000px) { .hero-seal { top: -22px; right: -14px; width: 128px; height: 128px; } }
+    @media (max-width: 480px) { .hero-seal { width: 108px; height: 108px; top: -16px; right: 4px; } }
     .floatcard { position: absolute; left: 16px; bottom: 16px; z-index: 4; max-width: min(82%, 320px); background: color-mix(in oklab, var(--card) 92%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border-strong); border-radius: 16px; box-shadow: var(--shadow-float); padding: 15px 17px; }
     .floatcard .lbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .floatcard .big { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: clamp(1.7rem, 3vw, 2.2rem); line-height: 1; margin-top: 7px; color: var(--text); }
@@ -416,17 +434,17 @@
             <span class="hero-rot">
               <span class="rot-item is-on grad" aria-hidden="false" data-i18n="hero.rot1">finalmente claro.</span>
               <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot2">num lugar só.</span>
-              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">à sua altura.</span>
+              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">de graça e só seu.</span>
             </span>
           </h1>
-          <p class="sub" data-i18n="hero.sub">Você mudou de país — ou está prestes a mudar. Tem conta aqui e lá, recebe numa moeda e gasta noutra, e toda vez que o câmbio mexe bate a dúvida: afinal, quanto eu tenho? Nossas Finanças junta tudo num só lugar, na moeda que você entende, com privacidade de verdade. Construído por quem está vivendo essa mudança na pele.</p>
+          <p class="sub" data-i18n="hero.sub">Você mudou de país — ou está prestes a mudar. Tem conta aqui e lá, recebe numa moeda e gasta noutra, e toda vez que o câmbio mexe bate a dúvida: afinal, quanto eu tenho? Nossas Finanças junta tudo num só lugar, na moeda que você entende — de graça, e com privacidade de verdade: nem a gente vê os seus números. Construído por quem está vivendo essa mudança na pele.</p>
           <div class="ctas">
-            <a class="btn btn-primary btn-lg" href="/app" data-i18n="hero.cta1">Quero ser um dos primeiros</a>
+            <a class="btn btn-primary btn-lg" href="/app" data-i18n="hero.cta1">Quero meu acesso — é grátis</a>
             <a class="btn btn-ghost btn-lg" href="#como-funciona" data-i18n="hero.cta2">Ver como funciona</a>
           </div>
           <div class="meta">
-            <span><span class="dot"></span> <span data-i18n="hero.m1">Grátis</span></span>
-            <span><span class="dot"></span> <span data-i18n="hero.m2">Por convite</span></span>
+            <span><span class="dot"></span> <span data-i18n="hero.m1">Sem cartão, sem pegadinha</span></span>
+            <span><span class="dot"></span> <span data-i18n="hero.m2">Multimoeda de verdade</span></span>
             <span><span class="dot"></span> <span data-i18n="hero.m3">Criptografado ponta a ponta</span></span>
             <span><span class="dot"></span> <span data-i18n="hero.m4">Funciona offline</span></span>
           </div>
@@ -443,6 +461,25 @@
           </div>
         </div>
         <div class="hero-visual reveal from-r">
+          <span class="hero-seal" role="img" aria-label="100% grátis, 100% privado">
+            <svg viewBox="0 0 120 120">
+              <defs>
+                <path id="sealTop" d="M 14 60 A 46 46 0 0 1 106 60" fill="none" />
+                <path id="sealBot" d="M 9 60 A 51 51 0 0 0 111 60" fill="none" />
+              </defs>
+              <circle class="seal-disc" cx="60" cy="60" r="39" />
+              <circle class="seal-ring" cx="60" cy="60" r="58" />
+              <circle class="seal-ring seal-ring--in" cx="60" cy="60" r="39" />
+              <text class="seal-arc"><textPath href="#sealTop" startOffset="50%" text-anchor="middle" data-i18n="hero.badge">100% GRÁTIS</textPath></text>
+              <text class="seal-arc"><textPath href="#sealBot" startOffset="50%" text-anchor="middle" data-i18n="hero.badge2">100% PRIVADO</textPath></text>
+              <text class="seal-star" x="11.5" y="63.5" text-anchor="middle">★</text>
+              <text class="seal-star" x="108.5" y="63.5" text-anchor="middle">★</text>
+              <path class="seal-check" d="M 49 60 l 7 7 l 15 -17" fill="none" />
+              <text class="seal-star seal-star--sm" x="52" y="75" text-anchor="middle">★</text>
+              <text class="seal-star seal-star--sm" x="60" y="77" text-anchor="middle">★</text>
+              <text class="seal-star seal-star--sm" x="68" y="75" text-anchor="middle">★</text>
+            </svg>
+          </span>
           <figure class="photo hero-photo" style="margin:0">
             <img src="/img/v2/hero.jpg" alt="Viajante caminhando por uma ruela na Itália, mochila nas costas" fetchpriority="high" width="640" height="800" />
             <figcaption class="floatcard">
