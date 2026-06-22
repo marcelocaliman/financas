@@ -133,7 +133,6 @@
     "applied": "Valor aplicado",
     "tickerHint": "Preencha Ticker, Qtd e Preço médio — o valor atualiza sozinho pela cotação do dia e mostra a rentabilidade.",
     "allocation": "Alocação",
-    "refreshQuotes": "Atualizar cotações",
     "classTotal": "Total da classe",
     "share": "% dos ativos",
     "assetCount": "Ativos",
