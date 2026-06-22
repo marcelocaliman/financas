@@ -199,9 +199,9 @@
     .hero-seal svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .hero-seal .seal-ring { fill: none; stroke: rgba(62,207,142,.55); stroke-width: 1.4; }
     .hero-seal .seal-ring--in { stroke: rgba(62,207,142,.3); stroke-width: 1; }
-    .hero-seal .seal-arc { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-    .hero-seal .seal-center { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; }
-    .hero-seal .seal-star { fill: var(--accent); font-size: 9px; opacity: .9; }
+    .hero-seal .seal-arc { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
+    .hero-seal .seal-center { fill: var(--accent); font-family: var(--font-mono); font-weight: 700; font-size: 14px; letter-spacing: .03em; text-transform: uppercase; }
+    .hero-seal .seal-star { fill: var(--accent); font-size: 7px; opacity: .9; }
     @keyframes sealIn { from { opacity: 0; transform: scale(.55) rotate(-14deg); } to { opacity: 1; transform: none; } }
     @media (prefers-reduced-motion: reduce) { .hero-seal { animation: none; } }
     @media (max-width: 1000px) { .hero-seal { top: -18px; right: -10px; width: 94px; height: 94px; } }
@@ -461,12 +461,12 @@
         <div class="hero-visual reveal from-r">
           <span class="hero-seal" role="img" aria-label="100% grátis">
             <svg viewBox="0 0 104 104">
-              <defs><path id="sealTop" d="M 7 52 a 45 45 0 0 1 90 0" fill="none" /></defs>
+              <defs><path id="sealTop" d="M 11 52 a 41 41 0 0 1 82 0" fill="none" /></defs>
               <circle class="seal-ring" cx="52" cy="52" r="49.5" />
-              <circle class="seal-ring seal-ring--in" cx="52" cy="52" r="40" />
+              <circle class="seal-ring seal-ring--in" cx="52" cy="52" r="37" />
               <text class="seal-arc"><textPath href="#sealTop" startOffset="50%" text-anchor="middle" data-i18n="hero.badge">100% GRÁTIS</textPath></text>
-              <text class="seal-star" x="52" y="40.5" text-anchor="middle">★</text>
-              <text class="seal-center" x="52" y="66" text-anchor="middle" data-i18n="hero.badge2">grátis</text>
+              <text class="seal-star" x="52" y="41" text-anchor="middle">★</text>
+              <text class="seal-center" x="52" y="59" text-anchor="middle" data-i18n="hero.badge2">grátis</text>
             </svg>
           </span>
           <figure class="photo hero-photo" style="margin:0">
