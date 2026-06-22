@@ -39,20 +39,24 @@ async function sbFetch(path, opts = {}, ms = 4000) {
 
 /** Caller é o super-admin? Valida o JWT do usuário e checa a tabela `admins` (= /api/ticket). */
 async function isAdminRequest(req) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return false;
+  // LOG TEMPORÁRIO DE DIAGNÓSTICO (remover depois): só rótulos da decisão, sem segredos.
+  if (!SUPABASE_URL || !SERVICE_ROLE) { console.log("[quote-gate] env-missing", { url: !!SUPABASE_URL, svc: !!SERVICE_ROLE }); return false; }
   const h = req.headers.authorization || req.headers.Authorization || "";
   const m = /^Bearer\s+(.+)$/i.exec(h);
-  if (!m) return false;
+  if (!m) { console.log("[quote-gate] no-jwt"); return false; }
   try {
     const ur = await sbFetch(`/auth/v1/user`, { headers: { Authorization: `Bearer ${m[1]}` } });
-    if (!ur.ok) return false;
+    if (!ur.ok) { console.log("[quote-gate] jwt-invalid", ur.status); return false; }
     const u = await ur.json();
-    if (!u || !u.id) return false;
+    if (!u || !u.id) { console.log("[quote-gate] no-user-id"); return false; }
     const ar = await sbFetch(`/rest/v1/admins?user_id=eq.${encodeURIComponent(u.id)}&select=user_id`);
-    if (!ar.ok) return false;
+    if (!ar.ok) { console.log("[quote-gate] admins-query-failed", ar.status); return false; }
     const rows = await ar.json();
-    return Array.isArray(rows) && rows.length > 0;
-  } catch {
+    const ok = Array.isArray(rows) && rows.length > 0;
+    console.log("[quote-gate]", ok ? "admin-ok" : "not-in-admins");
+    return ok;
+  } catch (e) {
+    console.log("[quote-gate] error", String(e && e.message ? e.message : e));
     return false;
   }
 }

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronDown, TrendingDown } from "lucide-react";
+import { Plus, ChevronDown, TrendingDown, RefreshCw } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -41,6 +41,7 @@ export default function Patrimonio() {
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
   const prices = useQuotes((s) => s.prices);
+  const quotesStatus = useQuotes((s) => s.status);
   // Cotação automática (brapi) é exclusiva do super-admin — uso pessoal do tier free.
   const { isAdmin } = useIsAdmin();
 
@@ -282,7 +283,20 @@ export default function Patrimonio() {
       <section>
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="eyebrow">{t("patrimonio.assets")}</h3>
-          <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
+          <div className="flex items-center gap-3">
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => void useQuotes.getState().refresh(data.assets, true)}
+                disabled={quotesStatus === "loading"}
+                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] border border-border bg-card2 text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw size={13} className={cn(quotesStatus === "loading" && "animate-spin")} />
+                {t("patrimonio.refreshQuotes")}
+              </button>
+            ) : null}
+            <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
+          </div>
         </div>
 
         {/* Barra de abas + "adicionar classe" */}

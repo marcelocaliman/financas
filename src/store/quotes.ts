@@ -34,6 +34,12 @@ export const useQuotes = create<QuotesState>()(
         try {
           const quotes = await fetchQuotes(quotable.map((a) => a.ticker));
           const now = Date.now();
+          // Vazio (fonte caiu, gate, fim de semana) NÃO marca updatedAt — senão a agenda acha que
+          // "já atualizou" e trava até a próxima janela. Sem cotação = próxima sincronização re-tenta.
+          if (Object.keys(quotes).length === 0) {
+            set({ status: "idle" });
+            return;
+          }
           const prices: QuotesState["prices"] = { ...get().prices };
           for (const [k, q] of Object.entries(quotes)) prices[k] = { ...q, at: now };
           set({ prices, updatedAt: now, status: "idle" });

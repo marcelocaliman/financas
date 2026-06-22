@@ -43,12 +43,19 @@ export async function fetchQuotes(
   if (list.length === 0) return {};
   const { data: sess } = await supabase.auth.getSession();
   const token = sess.session?.access_token;
-  const res = await fetch(`${ENDPOINT}?tickers=${encodeURIComponent(list.join(","))}`, {
-    signal,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!res.ok) throw new Error(`quote HTTP ${res.status}`);
-  return parseQuotes((await res.json()) as { results?: BrapiResult[] });
+  // Timeout próprio quando o caller não passa signal — nunca deixa o store preso em "loading".
+  const ctrl = signal ? null : new AbortController();
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 12000) : null;
+  try {
+    const res = await fetch(`${ENDPOINT}?tickers=${encodeURIComponent(list.join(","))}`, {
+      signal: signal ?? ctrl?.signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (!res.ok) throw new Error(`quote HTTP ${res.status}`);
+    return parseQuotes((await res.json()) as { results?: BrapiResult[] });
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 /**
