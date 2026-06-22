@@ -108,8 +108,13 @@ export default function Projecao() {
       {/* Número FIRE — independência financeira */}
       <FireCard />
 
-      {/* Curva determinística + Monte Carlo (acumulação) lado a lado — mesmo horizonte */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 items-start">
+      {/* Monte Carlo — acumulação (chance de atingir o número FIRE) */}
+      <MonteCarloAccumCard />
+
+      {/* Monte Carlo — aposentadoria (sustentabilidade na decumulação) */}
+      <MonteCarloRetireCard />
+
+      {/* Curva da projeção (cenários determinísticos) */}
       <Tile className="p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <Eyebrow>{t("projecao.curve")}</Eyebrow>
@@ -147,11 +152,6 @@ export default function Projecao() {
           </ResponsiveContainer>
         </div>
       </Tile>
-        <MonteCarloAccumCard />
-      </div>
-
-      {/* Monte Carlo — aposentadoria (sustentabilidade na decumulação) */}
-      <MonteCarloRetireCard />
 
       {/* Tabela ano a ano (3 cenários) */}
       <section>
@@ -440,7 +440,7 @@ function MonteCard({
         {headline}
       </p>
       <p className="mt-1 text-[11.5px] text-faint leading-relaxed">{note}</p>
-      <div className="w-full h-[210px] mt-4">
+      <div className="w-full h-[240px] mt-4">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
             <XAxis dataKey="year" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
