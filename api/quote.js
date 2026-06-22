@@ -12,7 +12,10 @@
  * UMA REQUISIÇÃO POR TICKER, em paralelo, e mescla os resultados. O tier FREE da brapi
  * devolve VAZIO para o endpoint multi-ticker (quote/A,B,C) — só o single-ticker funciona.
  */
-const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  "https://rudpurnhqoffwjaackka.supabase.co";
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 async function sbFetch(path, opts = {}, ms = 4000) {
