@@ -131,6 +131,7 @@
     "currentValue": "Current value",
     "applied": "Amount invested",
     "tickerHint": "Fill in Ticker, Qty and Avg. price — the value auto-updates from the daily quote and shows your return.",
+    "allocation": "Allocation",
     "classTotal": "Class total",
     "share": "% of assets",
     "assetCount": "Assets",

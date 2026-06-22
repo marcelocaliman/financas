@@ -11,6 +11,7 @@ import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
+import { categoryColors } from "@/money/composition";
 import { CLASS, isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
@@ -35,6 +36,7 @@ export default function Patrimonio() {
   const { t } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const base = useUI((s) => s.baseCurrency);
+  const theme = useUI((s) => s.theme);
   const data = usePatrimonio();
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
@@ -221,8 +223,61 @@ export default function Patrimonio() {
 
   const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
 
+  // Alocação por classe (todas de uma vez) — diversificação à primeira vista, sem entrar em cada aba.
+  const ramp = categoryColors(theme === "dark" ? "dark" : "light");
+  const alloc = [...view.groups]
+    .filter((g) => g.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .map((g) => ({ ...g, pct: (g.total / view.totalAssets) * 100 }));
+
   return (
     <div className="space-y-8">
+      {/* Alocação — diversificação por classe num relance (barra + KPIs clicáveis que levam à aba) */}
+      {alloc.length >= 2 ? (
+        <section>
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <h3 className="eyebrow">{t("patrimonio.allocation")}</h3>
+            <Money value={view.totalAssets} currency={disp} className="text-[12px] text-faint" />
+          </div>
+          <div className="flex h-[10px] rounded-full overflow-hidden bg-card2">
+            {alloc.map((a, i) => (
+              <div
+                key={a.classId}
+                className="h-full transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                style={{ width: `${a.pct}%`, background: ramp[i % ramp.length] }}
+                title={`${a.name} · ${a.pct.toFixed(1)}%`}
+              />
+            ))}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-4">
+            {alloc.map((a, i) => (
+              <button
+                key={a.classId}
+                type="button"
+                onClick={() => {
+                  setTab(a.classId);
+                  setExtra(null);
+                }}
+                aria-label={`${a.name} ${a.pct.toFixed(1)}%`}
+                className={cn(
+                  "flex items-start gap-2.5 rounded-[12px] border px-3 py-2.5 text-left transition-colors",
+                  a.classId === activeId ? "border-border-strong bg-card2" : "border-border hover:bg-card-hover",
+                )}
+              >
+                <span className="w-2.5 h-2.5 rounded-[3px] shrink-0 mt-1" style={{ background: ramp[i % ramp.length] }} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12px] text-muted truncate">{a.name}</span>
+                  <span className="block text-[17px] font-semibold tracking-[-0.02em] tabular leading-tight mt-0.5">
+                    <Hidden>{a.pct.toFixed(1) + "%"}</Hidden>
+                  </span>
+                  <Money value={a.total} currency={disp} className="block text-[11.5px] text-faint mt-0.5" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {/* Ativos por classe (abas) */}
       <section>
         <div className="flex items-center justify-between mb-4 gap-3">
