@@ -209,7 +209,14 @@ export function DashboardDetail() {
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
-  const topAssets = [...view.assetsDisp].sort((a, b) => b.disp - a.disp).slice(0, 4);
+  // Alocação por classe (TODAS) — donut + legenda; substitui a lista das "maiores posições".
+  const allocMap = new Map<string, number>();
+  for (const a of view.assetsDisp) allocMap.set(a.classId, (allocMap.get(a.classId) ?? 0) + a.disp);
+  const alloc = [...allocMap.entries()]
+    .map(([classId, value]) => ({ classId, name: nameById(tax.assetClasses, classId), value }))
+    .filter((c) => c.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .map((c) => ({ ...c, pct: view.totalAssets > 0 ? (c.value / view.totalAssets) * 100 : 0 }));
 
   return (
     <>
@@ -313,36 +320,51 @@ export function DashboardDetail() {
 
         <div className={cn("lg:col-span-2 p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
-            <Eyebrow>{t("dashboard.topPositions")}</Eyebrow>
+            <Eyebrow>{t("dashboard.allocation")}</Eyebrow>
             <Eyebrow>
               {view.assetsDisp.length} {t(view.assetsDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
             </Eyebrow>
           </div>
-          <div className="overflow-x-auto">
-            <div className="min-w-[440px]">
-              <div className="grid grid-cols-[1.6fr_1fr_1fr] pb-2 border-b border-border">
-                <Eyebrow>{t("patrimonio.name")}</Eyebrow>
-                <Eyebrow>{t("patrimonio.class")}</Eyebrow>
-                <Eyebrow className="text-right">{t("patrimonio.amount")}</Eyebrow>
-              </div>
-              {topAssets.map((a, i) => (
-                <div
-                  key={a.id}
-                  className={cn(
-                    "grid grid-cols-[1.6fr_1fr_1fr] items-center py-[11px]",
-                    i < topAssets.length - 1 && "border-b border-border",
-                  )}
-                >
-                  <span className="flex items-center gap-2.5 min-w-0">
-                    <span className={cn("chip", `chip-${a.currency}`)}>{a.currency}</span>
-                    <span className="text-[13.5px] truncate">{a.name}</span>
-                  </span>
-                  <span className="text-[13px] text-muted truncate">{nameById(tax.assetClasses, a.classId)}</span>
-                  <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular text-right" />
+          {alloc.length > 0 ? (
+            <div className="flex items-center gap-5 sm:gap-6">
+              {/* Donut (anel) por classe, com o total no centro — estilo dos anéis de Liberdade/Saúde */}
+              <div className="w-[132px] h-[132px] shrink-0 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={alloc} dataKey="value" nameKey="name" innerRadius={45} outerRadius={65} paddingAngle={2} stroke="none">
+                      {alloc.map((a, i) => (
+                        <Cell key={a.classId} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                  <div className="text-center leading-none">
+                    <div className="eyebrow mb-1">{t("dashboard.assets")}</div>
+                    <Money value={view.totalAssets} currency={disp} className="text-[13.5px] font-semibold tracking-[-0.02em]" />
+                  </div>
                 </div>
-              ))}
+              </div>
+              {/* Legenda = todas as classes: cor · nome · % · valor */}
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                {alloc.map((a, i) => (
+                  <div key={a.classId} className="flex items-center justify-between gap-3 text-[12.5px] min-w-0">
+                    <span className="flex items-center gap-2 text-muted truncate min-w-0">
+                      <span className="w-[8px] h-[8px] rounded-[2px] shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
+                      <span className="truncate">{a.name}</span>
+                    </span>
+                    <span className="flex items-baseline gap-1.5 shrink-0">
+                      <span className="font-semibold tabular text-text"><Hidden>{a.pct.toFixed(1) + "%"}</Hidden></span>
+                      <Money value={a.value} currency={disp} className="text-[11px] text-faint" />
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <p className="text-[13px] text-faint py-6">{t("patrimonio.emptyAssets")}</p>
+          )}
         </div>
       </div>
     </>
