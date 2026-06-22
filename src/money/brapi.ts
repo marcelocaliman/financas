@@ -1,8 +1,10 @@
 /**
  * Cotação de ATIVOS — via NOSSO proxy serverless (/api/quote), que guarda o token brapi
- * do dono como variável de ambiente do servidor. O usuário não configura nada; o app já
- * vem com cotação funcionando. Parser PURO/testável; o fetch só monta a URL e delega.
+ * do dono como variável de ambiente do servidor. O endpoint é EXCLUSIVO do super-admin
+ * (uso pessoal do tier free); por isso o fetch envia o JWT da sessão pro servidor confirmar
+ * quem é admin. Parser PURO/testável; o fetch monta a URL, anexa o token e delega.
  */
+import { supabase } from "@/lib/supabase";
 
 export interface Quote {
   price: number;
@@ -39,7 +41,12 @@ export async function fetchQuotes(
 ): Promise<Record<string, Quote>> {
   const list = normalizeTickers(tickers);
   if (list.length === 0) return {};
-  const res = await fetch(`${ENDPOINT}?tickers=${encodeURIComponent(list.join(","))}`, { signal });
+  const { data: sess } = await supabase.auth.getSession();
+  const token = sess.session?.access_token;
+  const res = await fetch(`${ENDPOINT}?tickers=${encodeURIComponent(list.join(","))}`, {
+    signal,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
   if (!res.ok) throw new Error(`quote HTTP ${res.status}`);
   return parseQuotes((await res.json()) as { results?: BrapiResult[] });
 }

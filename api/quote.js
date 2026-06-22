@@ -3,13 +3,64 @@
  * do SERVIDOR (BRAPI_TOKEN na Vercel) — nunca vai pro bundle do front nem é configurado
  * pelo usuário. O app chama /api/quote?tickers=BBAS3,PETR4 e recebe só preço/moeda.
  *
+ * EXCLUSIVO DO SUPER-ADMIN (dono): a cotação automática é uso PESSOAL do tier free da
+ * brapi. Os demais usuários ficam manuais — o produto NÃO serve cotação a usuário final
+ * (o free da brapi não licencia uso comercial/redistribuição). O endpoint valida o JWT e
+ * checa a tabela `admins`; quem não for admin recebe vazio. Sem cache compartilhado na
+ * edge (resposta é por-usuário). Para abrir a todos no futuro: provedor pago com licença.
+ *
  * UMA REQUISIÇÃO POR TICKER, em paralelo, e mescla os resultados. O tier FREE da brapi
- * devolve VAZIO para o endpoint multi-ticker (quote/A,B,C) — só o single-ticker funciona;
- * por isso quebrávamos as cotações de quase tudo (só sobrava o ticker que tinha sido
- * adicionado sozinho, do cache). O custo é N chamadas por cache-miss, mas o cache na edge
- * (5 min, compartilhado) segura o volume. Para escalar a muitos usuários, subir o plano.
+ * devolve VAZIO para o endpoint multi-ticker (quote/A,B,C) — só o single-ticker funciona.
  */
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+async function sbFetch(path, opts = {}, ms = 4000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(`${SUPABASE_URL}${path}`, {
+      ...opts,
+      headers: {
+        apikey: SERVICE_ROLE,
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        "Content-Type": "application/json",
+        ...(opts.headers || {}),
+      },
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Caller é o super-admin? Valida o JWT do usuário e checa a tabela `admins` (= /api/ticket). */
+async function isAdminRequest(req) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return false;
+  const h = req.headers.authorization || req.headers.Authorization || "";
+  const m = /^Bearer\s+(.+)$/i.exec(h);
+  if (!m) return false;
+  try {
+    const ur = await sbFetch(`/auth/v1/user`, { headers: { Authorization: `Bearer ${m[1]}` } });
+    if (!ur.ok) return false;
+    const u = await ur.json();
+    if (!u || !u.id) return false;
+    const ar = await sbFetch(`/rest/v1/admins?user_id=eq.${encodeURIComponent(u.id)}&select=user_id`);
+    if (!ar.ok) return false;
+    const rows = await ar.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
+  // Cotação automática é só do super-admin (uso pessoal do free brapi). Outros → vazio (manual).
+  if (!(await isAdminRequest(req))) {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ results: [] });
+    return;
+  }
   const raw = String((req.query && req.query.tickers) || "").trim();
   if (!raw) {
     res.status(400).json({ results: [] });
@@ -54,13 +105,10 @@ export default async function handler(req, res) {
   try {
     const settled = await Promise.all(tickers.map(fetchOne));
     const results = settled.filter(Boolean);
-    // Só cacheia SUCESSO (preços) — um vazio transitório (cota/erro) não pode ficar
-    // preso na edge por minutos e mascarar a cotação. Vazio re-tenta na próxima.
-    if (results.length > 0) {
-      res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
-    } else {
-      res.setHeader("Cache-Control", "no-store");
-    }
+    // Sem cache compartilhado na edge: a resposta é por-usuário (só admin) e não pode ser
+    // servida do CDN a outro usuário pela mesma URL. O store do cliente já faz cache + agenda
+    // (≤4×/dia em dia útil), e o volume é mínimo (só o dono).
+    res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ results });
   } catch {
     res.status(200).json({ results: [] });
