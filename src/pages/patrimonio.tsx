@@ -347,8 +347,13 @@ export default function Patrimonio() {
         )}
       </section>
 
-      {/* Passivos — colapsável: KPIs sempre visíveis no cabeçalho; detalhe + cronograma só ao abrir */}
-      <section>
+      {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
+      <div className="border-t border-border pt-6">
+        <Investimentos />
+      </div>
+
+      {/* Passivos — ÚLTIMO item da aba; colapsável: KPIs no cabeçalho; detalhe + cronograma só ao abrir */}
+      <section className="border-t border-border pt-6">
         <button
           type="button"
           onClick={() => setLiabOpen((o) => !o)}
@@ -390,11 +395,6 @@ export default function Patrimonio() {
           </div>
         ) : null}
       </section>
-
-      {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
-      <div className="border-t border-border pt-6">
-        <Investimentos />
-      </div>
     </div>
   );
 }
