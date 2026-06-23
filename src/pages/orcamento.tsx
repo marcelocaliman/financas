@@ -252,7 +252,7 @@ export default function Orcamento() {
       {view.expByCat.length > 0 ? (
         <Tile className="p-6 md:p-7">
           <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-6">
             <div className="w-[128px] h-[128px] shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -268,14 +268,14 @@ export default function Orcamento() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 grid sm:grid-cols-2 gap-x-8 gap-y-1.5 min-w-0">
+            {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. Com 1
+                item fica organizado, sem o valor jogado no meio do card; com vários, preenche a largura. */}
+            <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
               {view.expByCat.map((e, i) => (
-                <div key={e.id} className="flex items-center justify-between text-[12.5px] gap-3">
-                  <span className="flex items-center gap-2 text-muted truncate">
-                    <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
-                    {e.name}
-                  </span>
-                  <Money value={e.value} currency={disp} className="font-medium tabular" />
+                <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
+                  <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
+                  <span className="text-muted">{e.name}</span>
+                  <Money value={e.value} currency={disp} className="font-semibold tabular" />
                 </div>
               ))}
             </div>

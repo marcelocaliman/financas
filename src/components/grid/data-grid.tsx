@@ -330,6 +330,7 @@ function DayCell({
     setOpen(false);
     btnRef.current?.focus();
   };
+  const today = new Date().getDate(); // dia do mês de hoje — marcado p/ achar rápido (não pré-seleciona)
   return (
     <>
       <button
@@ -372,11 +373,14 @@ function DayCell({
                       // Não roubar o foco do gatilho (mesma razão do CurrencyPicker).
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => pick(d)}
+                      aria-current={d === today ? "date" : undefined}
                       className={cn(
                         "h-[28px] grid place-items-center rounded-[7px] text-[12.5px] tabular outline-none transition-colors",
                         d === value
                           ? "bg-accent text-[#0A0B0D] font-semibold"
-                          : "text-muted hover:bg-card-hover hover:text-text",
+                          : d === today
+                            ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
+                            : "text-muted hover:bg-card-hover hover:text-text",
                       )}
                     >
                       {d}
