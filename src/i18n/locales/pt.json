@@ -267,6 +267,7 @@
     "passiveNow": "Renda passiva hoje",
     "mo": "mês",
     "covers": "cobre {{pct}}% dos gastos",
+    "passiveBreakdown": "{{portfolio}} carteira + {{rent}} aluguel",
     "remaining": "Falta juntar",
     "annualExpenses": "Gastos anuais",
     "fromBudget": "do orçamento",

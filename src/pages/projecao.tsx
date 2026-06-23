@@ -265,9 +265,15 @@ function FireCard() {
       ? yearsToFI({ portfolio, monthlyContribution: base.monthly, realAnnualReturn: realRet, target })
       : null;
   const progress = coveredByPassive ? 100 : targetOk ? (portfolio / target) * 100 : 0;
-  const safeMonthly = safeMonthlyIncome(portfolio, swr);
+  // Renda passiva HOJE = o que a carteira sustenta com segurança (regra dos X%) + o aluguel
+  // recebido (renda externa, que já abate o alvo). Juntos é o que cobre os gastos hoje — e fica
+  // coerente com o progresso (a 100% do alvo, carteira+aluguel = gastos). Dividendos/juros NÃO
+  // entram: já estão DENTRO da carteira (a regra dos X% os assume) — somá-los duplicaria.
+  const portfolioMonthly = safeMonthlyIncome(portfolio, swr);
+  const rentMonthly = (fire?.passiveAnnual ?? 0) / 12;
+  const passiveMonthly = portfolioMonthly + rentMonthly;
   const monthlyExp = annualExp / 12;
-  const coverage = monthlyExp > 0 ? (safeMonthly / monthlyExp) * 100 : 0;
+  const coverage = monthlyExp > 0 ? (passiveMonthly / monthlyExp) * 100 : 0;
   const mult = swr > 0 ? 100 / swr : 0;
   const multLabel = mult % 1 === 0 ? mult.toFixed(0) : mult.toFixed(1);
   const remaining = coveredByPassive ? 0 : targetOk ? Math.max(0, target - portfolio) : 0;
@@ -358,11 +364,23 @@ function FireCard() {
           label={t("fire.passiveNow")}
           value={
             <>
-              <Money value={safeMonthly} currency={disp} />
+              <Money value={passiveMonthly} currency={disp} />
               <span className="text-faint">/{t("fire.mo")}</span>
             </>
           }
-          sub={<Hidden>{t("fire.covers", { pct: Math.round(coverage) })}</Hidden>}
+          sub={
+            <Hidden>
+              <span className="block">{t("fire.covers", { pct: Math.round(coverage) })}</span>
+              {rentMonthly > 0 ? (
+                <span className="block text-faint">
+                  {t("fire.passiveBreakdown", {
+                    portfolio: formatMoney(portfolioMonthly, disp),
+                    rent: formatMoney(rentMonthly, disp),
+                  })}
+                </span>
+              ) : null}
+            </Hidden>
+          }
           subTone={coverage >= 100 ? "accent" : undefined}
         />
         <Stat label={t("fire.remaining")} value={remaining > 0 ? <Money value={remaining} currency={disp} /> : t("fire.reached")} />

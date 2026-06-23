@@ -70,3 +70,19 @@ describe("yearsToFI", () => {
     expect(y).toBeNull();
   });
 });
+
+describe("renda passiva = carteira + aluguel (cobertura coerente com o alvo)", () => {
+  // O alvo FIRE usa o custo LÍQUIDO (bruto − aluguel). Logo, no número FIRE, a renda segura da
+  // carteira (regra dos X%) MAIS o aluguel recebido têm de fechar exatamente os gastos BRUTOS —
+  // é o que faz "cobre 100%" bater com 100% do progresso (sem o aluguel daria < 100%).
+  it.each([
+    [4, 120000, 24000],
+    [8, 240000, 48000],
+    [4, 90000, 0],
+  ])("swr=%i%%, custo bruto %i, aluguel %i → cobertura 100%% no alvo", (swr, grossAnnual, rentAnnual) => {
+    const target = fireNumber(grossAnnual - rentAnnual, swr); // alvo sobre o custo líquido
+    const portfolioMonthly = safeMonthlyIncome(target, swr);
+    const rentMonthly = rentAnnual / 12;
+    expect(portfolioMonthly + rentMonthly).toBeCloseTo(grossAnnual / 12, 6);
+  });
+});

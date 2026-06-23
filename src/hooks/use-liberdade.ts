@@ -45,7 +45,11 @@ export interface LiberdadeView {
   /** % rumo à independência (NÃO capado — pode passar de 100). */
   freedomPct: number;
   yearsOfFreedom: number | null;
+  /** Renda passiva mensal HOJE = renda segura da carteira (regra dos X%) + aluguel recebido. */
   safeMonthly: number;
+  /** Parcelas do safeMonthly: carteira (regra dos X%) e aluguel — p/ a quebra na UI. */
+  portfolioMonthly: number;
+  rentMonthly: number;
   coverage: number;
   remaining: number;
   reached: boolean;
@@ -91,7 +95,12 @@ export function useLiberdade(): LiberdadeView | null {
     const reached = coveredByPassive || (finiteTarget && eligibleWealth >= independenceNumber);
     const remaining = reached || !finiteTarget ? 0 : Math.max(0, independenceNumber - eligibleWealth);
     const yearsOfFreedom = calcYearsOfFreedom(eligibleWealth, netAnnualCost); // null se custo líquido 0 (∞)
-    const safeMonthly = safeMonthlyIncome(eligibleWealth, swr);
+    // Renda passiva HOJE = renda segura da carteira (regra dos X%) + aluguel recebido (renda
+    // externa que já abate o alvo). Coerente com a Projeção e com o progresso. Dividendos/juros
+    // já estão DENTRO da carteira (a regra dos X% os assume) — não somar, senão duplica.
+    const portfolioMonthly = safeMonthlyIncome(eligibleWealth, swr);
+    const rentMonthly = passiveAnnual / 12;
+    const safeMonthly = portfolioMonthly + rentMonthly;
     const coverage = monthlyCost > 0 ? (safeMonthly / monthlyCost) * 100 : 0;
 
     // Data de chegada (ritmo atual): retorno REAL do cenário-base + aporte base.
@@ -146,7 +155,7 @@ export function useLiberdade(): LiberdadeView | null {
 
     return {
       ready, disp, eligibleWealth, netWorth, monthlyCost, annualCost, costFromTarget,
-      withdrawalRate: swr, independenceNumber, freedomPct, yearsOfFreedom, safeMonthly, coverage,
+      withdrawalRate: swr, independenceNumber, freedomPct, yearsOfFreedom, safeMonthly, portfolioMonthly, rentMonthly, coverage,
       remaining, reached, arrival, streak, reserve, milestones,
       passiveAnnual, netAnnualCost, coveredByPassive,
     };

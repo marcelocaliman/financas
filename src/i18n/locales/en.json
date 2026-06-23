@@ -267,6 +267,7 @@
     "passiveNow": "Passive income now",
     "mo": "mo",
     "covers": "covers {{pct}}% of expenses",
+    "passiveBreakdown": "{{portfolio}} portfolio + {{rent}} rent",
     "remaining": "Still to go",
     "annualExpenses": "Annual expenses",
     "fromBudget": "from budget",

@@ -5,6 +5,7 @@ import { useLiberdade, type Milestone } from "@/hooks/use-liberdade";
 import { useHealth, type HealthDimView } from "@/hooks/use-health";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
+import { formatMoney } from "@/money/currency";
 import { Hidden } from "@/components/common/hidden";
 import { ProgressRing } from "@/components/common/progress-ring";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
@@ -114,7 +115,16 @@ export default function Liberdade() {
           <Stat
             label={t("liberdade.passive")}
             value={<><Money value={v.safeMonthly} currency={disp} /><span className="text-faint">/{t("liberdade.mo")}</span></>}
-            sub={<Hidden>{t("liberdade.covers", { pct: Math.round(v.coverage) })}</Hidden>}
+            sub={
+              <Hidden>
+                <span className="block">{t("liberdade.covers", { pct: Math.round(v.coverage) })}</span>
+                {v.rentMonthly > 0 ? (
+                  <span className="block text-faint">
+                    {t("fire.passiveBreakdown", { portfolio: formatMoney(v.portfolioMonthly, disp), rent: formatMoney(v.rentMonthly, disp) })}
+                  </span>
+                ) : null}
+              </Hidden>
+            }
             subTone={v.coverage >= 100 ? "accent" : undefined}
           />
           <Stat
