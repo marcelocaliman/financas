@@ -10,7 +10,7 @@ import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { categoryColors } from "@/money/composition";
+import { expenseColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
@@ -70,7 +70,7 @@ export default function Orcamento() {
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const data = useBudget();
-  const CAT = categoryColors(theme);
+  const CAT = expenseColors(theme); // gastos = rampa quente/vermelha (oposto ao verde das receitas)
   const viewerMode = useViewer((s) => s.viewerMode);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axis = theme === "dark" ? "#5f646c" : "#8a8f98";

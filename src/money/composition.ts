@@ -21,11 +21,19 @@ export function currencyColors(theme: "light" | "dark"): Record<Currency, string
   return theme === "dark" ? CUR_COLOR_DARK : CUR_COLOR_LIGHT;
 }
 
-/** Rampa coesa verde→cinza pra donuts/categorias (alocação, orçamento). */
+/** Rampa coesa verde→cinza pra donuts/categorias (alocação de patrimônio/investimentos). */
 export function categoryColors(theme: "light" | "dark"): string[] {
   return theme === "dark"
     ? ["#3ECF8E", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#5B6A74", "#3A4046", "#7E8A95"]
     : ["#15976A", "#2E9E73", "#6B7280", "#878E98", "#A6ACB5", "#8A95A0", "#A1A1AA", "#5D7184"];
+}
+
+/** Rampa QUENTE (vermelho→âmbar→rosa) pra gastos — dinheiro que SAI lê como negativo,
+ *  coerente com a barra de gastos (#f1746a) e oposto ao verde das receitas. */
+export function expenseColors(theme: "light" | "dark"): string[] {
+  return theme === "dark"
+    ? ["#F1746A", "#E89A5E", "#DFB85F", "#D886A4", "#C96E61", "#B5847C", "#CC9A54", "#9E6B72"]
+    : ["#D85F54", "#CC7E45", "#BE9636", "#BE6E90", "#B0564A", "#9C766C", "#AC8638", "#8C5258"];
 }
 
 export interface CurrencySlice {

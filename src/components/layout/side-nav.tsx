@@ -46,7 +46,9 @@ function useGlance() {
   return useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const bills = upcomingBills(data.expenses, todayISO());
+    // Alerta do menu = só o que precisa de AÇÃO: vencidas + a vencer em ≤3 dias (não 45 dias
+    // como o planejamento do Orçamento). Evita avisar uma conta que só vence daqui a semanas.
+    const bills = upcomingBills(data.expenses, todayISO(), 3);
     const billTotal = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
     return { billCount: bills.length, billTotal, disp };
   }, [data, disp, rates]);
