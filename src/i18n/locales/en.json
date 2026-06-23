@@ -171,6 +171,7 @@
     "detailPlaceholder": "e.g. Apartment rent",
     "uncategorized": "Uncategorized",
     "byCategory": "Expenses by category",
+    "incomeByCategory": "Income by category",
     "savingsRate": "Savings",
     "vsPrev": "vs. last month",
     "recurring": "Recurring",
@@ -191,7 +192,6 @@
     "history": "Monthly history",
     "historyHint": "Tap a bar to open that month",
     "alongYear": "Over the year",
-    "monthSummary": "Month summary",
     "prevYear": "Previous year",
     "nextYear": "Next year"
   },

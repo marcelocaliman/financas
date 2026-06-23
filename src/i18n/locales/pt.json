@@ -171,6 +171,7 @@
     "detailPlaceholder": "Ex.: Aluguel do apê",
     "uncategorized": "Sem categoria",
     "byCategory": "Gastos por categoria",
+    "incomeByCategory": "Receitas por categoria",
     "savingsRate": "Poupança",
     "vsPrev": "vs. mês anterior",
     "recurring": "Recorrente",
@@ -191,7 +192,6 @@
     "history": "Histórico mensal",
     "historyHint": "Toque numa barra pra abrir o mês",
     "alongYear": "Ao longo do ano",
-    "monthSummary": "Resumo do mês",
     "prevYear": "Ano anterior",
     "nextYear": "Próximo ano"
   },

@@ -10,7 +10,7 @@ import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { expenseColors } from "@/money/composition";
+import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
@@ -70,7 +70,8 @@ export default function Orcamento() {
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const data = useBudget();
-  const CAT = expenseColors(theme); // gastos = rampa quente/vermelha (oposto ao verde das receitas)
+  const CAT_EXP = expenseColors(theme); // gastos = rampa quente/vermelha
+  const CAT_INC = categoryColors(theme); // receitas = rampa verde (oposto aos gastos)
   const viewerMode = useViewer((s) => s.viewerMode);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
@@ -92,6 +93,12 @@ export default function Orcamento() {
       .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
+    const byCatInc = new Map<string, number>();
+    for (const i of monthInc) byCatInc.set(i.categoryId, (byCatInc.get(i.categoryId) ?? 0) + conv(i.amount, i.currency));
+    const incByCat = [...byCatInc.entries()]
+      .map(([id, value]) => ({ id, name: nameById(tax.incomeCategories, id) || t("orcamento.uncategorized"), value }))
+      .filter((e) => e.value > 0)
+      .sort((a, b) => b.value - a.value);
     const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
 
@@ -103,6 +110,7 @@ export default function Orcamento() {
       monthExp,
       monthInc,
       expByCat,
+      incByCat,
       totalExp,
       totalInc,
       saldo: totalInc - totalExp,
@@ -144,13 +152,9 @@ export default function Orcamento() {
   }
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-  // Mês selecionado: resumo (receita vs gasto) + categorias, lado a lado.
-  const showDonut = view.expByCat.length > 0;
-  const showResumo = view.totalInc > 0 || view.totalExp > 0;
-  const monthBars = [
-    { key: "income", label: t("orcamento.income"), value: view.totalInc, fill: accent },
-    { key: "expenses", label: t("orcamento.expenses"), value: view.totalExp, fill: "#f1746a" },
-  ];
+  // Mês selecionado: receitas por categoria + gastos por categoria, lado a lado.
+  const showInc = view.incByCat.length > 0;
+  const showExp = view.expByCat.length > 0;
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
@@ -240,7 +244,7 @@ export default function Orcamento() {
         </div>
         <div className="w-full h-[210px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={annual} margin={{ top: 4, right: 6, bottom: 0, left: 6 }} barGap={2}>
+            <BarChart data={annual} margin={{ top: 4, right: 6, bottom: 0, left: 6 }} barGap={1} barCategoryGap="28%">
               <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: axis }} axisLine={false} tickLine={false} dy={4} />
               <Tooltip
                 cursor={{ fill: "var(--card-2)" }}
@@ -271,63 +275,11 @@ export default function Orcamento() {
       {/* Contas a pagar / próximos vencimentos */}
       <UpcomingBillsTile />
 
-      {/* Mês selecionado: resumo (receita vs gasto) + gastos por categoria, lado a lado */}
-      {showResumo || showDonut ? (
-        <div className={cn("grid gap-6", showResumo && showDonut ? "lg:grid-cols-2" : "")}>
-          {showResumo ? (
-            <Tile className="p-6 md:p-7">
-              <Eyebrow className="mb-4">{t("orcamento.monthSummary")}</Eyebrow>
-              <div className="w-full h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthBars} margin={{ top: 4, right: 6, bottom: 0, left: 6 }}>
-                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
-                    <Tooltip cursor={{ fill: "var(--card-2)" }} formatter={(val) => [formatMoney(Number(val), disp), ""]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
-                    <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={56}>
-                      {monthBars.map((b) => (
-                        <Cell key={b.key} fill={b.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex items-center justify-between mt-3 text-[12.5px]">
-                <span className="text-muted">{t("orcamento.balance")}</span>
-                <Money value={view.saldo} currency={disp} className={cn("font-semibold tabular", view.saldo >= 0 ? "text-accent" : "text-neg")} />
-              </div>
-            </Tile>
-          ) : null}
-          {showDonut ? (
-            <Tile className="p-6 md:p-7">
-              <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
-              <div className="flex items-center gap-6">
-                <div className="w-[128px] h-[128px] shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={view.expByCat} dataKey="value" nameKey="name" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
-                        {view.expByCat.map((e, i) => (
-                          <Cell key={e.id} fill={CAT[i % CAT.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(v) => formatMoney(Number(v), disp)}
-                        contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. */}
-                <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
-                  {view.expByCat.map((e, i) => (
-                    <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
-                      <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
-                      <span className="text-muted">{e.name}</span>
-                      <Money value={e.value} currency={disp} className="font-semibold tabular" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Tile>
-          ) : null}
+      {/* Mês selecionado: receitas por categoria + gastos por categoria, lado a lado */}
+      {showInc || showExp ? (
+        <div className={cn("grid gap-6", showInc && showExp ? "lg:grid-cols-2" : "")}>
+          {showInc ? <CategoryDonut title={t("orcamento.incomeByCategory")} data={view.incByCat} palette={CAT_INC} disp={disp} /> : null}
+          {showExp ? <CategoryDonut title={t("orcamento.byCategory")} data={view.expByCat} palette={CAT_EXP} disp={disp} /> : null}
         </div>
       ) : null}
 
@@ -377,6 +329,53 @@ export default function Orcamento() {
         {t("orcamento.recurringHint")}
       </p>
     </div>
+  );
+}
+
+/** Donut de categorias (mês): rosca + legenda em pares compactos. Reusado por receitas (verde)
+ *  e gastos (quente) — só muda título, dados e paleta. */
+function CategoryDonut({
+  title,
+  data,
+  palette,
+  disp,
+}: {
+  title: string;
+  data: { id: string; name: string; value: number }[];
+  palette: string[];
+  disp: Currency;
+}) {
+  return (
+    <Tile className="p-6 md:p-7">
+      <Eyebrow className="mb-4">{title}</Eyebrow>
+      <div className="flex items-center gap-6">
+        <div className="w-[128px] h-[128px] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
+                {data.map((e, i) => (
+                  <Cell key={e.id} fill={palette[i % palette.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(v) => formatMoney(Number(v), disp)}
+                contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. */}
+        <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
+          {data.map((e, i) => (
+            <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
+              <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
+              <span className="text-muted">{e.name}</span>
+              <Money value={e.value} currency={disp} className="font-semibold tabular" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </Tile>
   );
 }
 
