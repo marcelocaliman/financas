@@ -333,7 +333,6 @@ export default function Patrimonio() {
                 <Kpi label={t("patrimonio.applied")} value={<Money value={classReturn.applied} currency={disp} />} />
               ) : null}
               <Kpi label={classReturn.has ? t("patrimonio.currentValue") : t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
-              <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
               {classReturn.has ? (
                 <Kpi
                   label={t("investimentos.profitability")}
@@ -341,6 +340,7 @@ export default function Patrimonio() {
                   value={<Hidden>{`${classReturn.pct >= 0 ? "+" : ""}${classReturn.pct.toFixed(1)}%`}</Hidden>}
                 />
               ) : null}
+              <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" ring={sharePct} />
               <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
             </div>
 

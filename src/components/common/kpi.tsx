@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Eyebrow } from "./tile";
 import { MONEY_MASK } from "./money";
+import { ProgressRing } from "./progress-ring";
 import { useUI } from "@/store/ui";
 import { cn } from "@/lib/utils";
 
@@ -26,31 +27,39 @@ export function Kpi({
   sub,
   tone = "text",
   bar,
+  ring,
   raw,
 }: {
   label: ReactNode;
   value: ReactNode;
   sub?: ReactNode;
   tone?: Tone;
-  /** 0–100: desenha uma barra fina de proporção. */
+  /** 0–100: desenha uma barra fina de proporção (rodapé do card). */
   bar?: number;
+  /** 0–100: anel circular INLINE ao lado do número (mantém o número alinhado com os demais KPIs). */
+  ring?: number;
   /** Só para o painel admin (metadado, não dado do usuário): mantém visível em modo privado. */
   raw?: boolean;
 }) {
   const hidden = useUI((s) => s.numbersHidden);
+  const valueCls = cn(
+    "font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(19px,2.1vw,25px)] leading-none",
+    TONE[tone],
+  );
+  const rendered = hidden && !raw ? MONEY_MASK : value;
   return (
     <div className="rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between">
       <Eyebrow>{label}</Eyebrow>
-      <div
-        className={cn(
-          "font-numeric font-semibold tabular tracking-[-0.02em] text-[clamp(19px,2.1vw,25px)] mt-1.5 leading-none",
-          TONE[tone],
-        )}
-      >
-        {hidden && !raw ? MONEY_MASK : value}
-      </div>
+      {typeof ring === "number" ? (
+        <div className="flex items-center gap-2.5 mt-1.5">
+          <ProgressRing pct={ring} size={28} stroke={3.5} />
+          <span className={valueCls}>{rendered}</span>
+        </div>
+      ) : (
+        <div className={cn(valueCls, "mt-1.5")}>{rendered}</div>
+      )}
       {sub != null ? <div className="text-[11.5px] text-faint mt-1.5 leading-tight">{sub}</div> : null}
-      {typeof bar === "number" ? (
+      {typeof bar === "number" && typeof ring !== "number" ? (
         <div className="mt-2.5 h-[4px] rounded-full bg-card2 overflow-hidden">
           <div
             className="h-full rounded-full bg-accent transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
