@@ -153,7 +153,7 @@ export default function Orcamento() {
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
     if (withDueDay) {
-      columns.push({ key: "dueDay", type: "number", header: t("orcamento.dueDay"), width: "72px", align: "right", decimals: 0 });
+      columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
     if (rows.some((r) => r.currency !== disp)) {

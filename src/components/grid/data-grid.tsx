@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Repeat, Trash2 } from "lucide-react";
+import { ChevronDown, Repeat, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -11,7 +11,7 @@ import { useViewer } from "@/store/viewer";
 const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
-export type ColType = "currency" | "text" | "select" | "money" | "number" | "computed" | "toggle";
+export type ColType = "currency" | "text" | "select" | "money" | "number" | "day" | "computed" | "toggle";
 
 export type SelectOption = { value: string; label: string };
 
@@ -280,6 +280,127 @@ function NumberCell({
   );
 }
 
+/**
+ * Seletor de DIA (1–31) — para o dia de vencimento. Em vez de digitar (e errar, ex.: "2026"),
+ * o usuário escolhe num grid flutuante; o valor é sempre válido (1–31 ou vazio). Mesmo padrão
+ * do CurrencyPicker (portal + Escape + sem roubar o foco do input em edição). Opcional: "—" limpa.
+ */
+function DayCell({
+  value,
+  rowId,
+  colKey,
+  align,
+  onCommit,
+}: {
+  value: number | undefined;
+  rowId: string;
+  colKey: string;
+  align?: "left" | "right";
+  onCommit: (v: number | undefined) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const MENU_W = 236;
+  const MENU_H = 220;
+  const openMenu = () => {
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      // Alinha a borda direita do menu à do gatilho (coluna é à direita) e prende na viewport.
+      const left = Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8));
+      const below = r.bottom + 6;
+      const top = below + MENU_H > window.innerHeight ? Math.max(8, r.top - MENU_H - 6) : below;
+      setPos({ top, left });
+    }
+    setOpen(true);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        btnRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+  const pick = (d: number | undefined) => {
+    if (d !== value) onCommit(d);
+    setOpen(false);
+    btnRef.current?.focus();
+  };
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        data-rowid={rowId}
+        data-col={colKey}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            openMenu();
+          }
+        }}
+        className={cn(
+          CELL_INPUT,
+          "flex items-center gap-1 tabular cursor-pointer hover:bg-card-hover",
+          align === "right" ? "justify-end" : "justify-start",
+          value == null && "text-faint",
+        )}
+      >
+        <span>{value != null ? value : "—"}</span>
+        <ChevronDown size={13} className="text-faint shrink-0" />
+      </button>
+      {open && pos
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+              <div
+                className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]"
+                style={{ top: pos.top, left: pos.left, width: MENU_W }}
+              >
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      // Não roubar o foco do gatilho (mesma razão do CurrencyPicker).
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => pick(d)}
+                      className={cn(
+                        "h-[28px] grid place-items-center rounded-[7px] text-[12.5px] tabular outline-none transition-colors",
+                        d === value
+                          ? "bg-accent text-[#0A0B0D] font-semibold"
+                          : "text-muted hover:bg-card-hover hover:text-text",
+                      )}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Sem dia"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(undefined)}
+                  className="mt-1.5 w-full h-[28px] grid place-items-center rounded-[7px] border-t border-border text-[12px] text-faint hover:text-text hover:bg-card-hover transition-colors"
+                >
+                  —
+                </button>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
 /** Seletor de moeda: o gatilho (badge/símbolo) abre um menu flutuante com as moedas. */
 function CurrencyPicker({
   value,
@@ -392,6 +513,8 @@ function ReadOnlyCell<T extends { id: string }>({ col, row }: { col: GridColumn<
       const cur = get(row, col.currencyKey ?? "currency") as Currency;
       return <div className="px-2 tabular text-text text-[13.5px]">{formatNumberEdit(v as number | undefined, cur, col.decimals) || "—"}</div>;
     }
+    case "day":
+      return <div className="px-2 tabular text-text text-[13.5px]">{(v as number | undefined) ?? "—"}</div>;
     case "select": {
       const opts = col.optionsFor ? col.optionsFor(row) : col.options ?? [];
       return <div className="px-2 text-[13.5px] text-text">{opts.find((o) => o.value === v)?.label ?? "—"}</div>;
@@ -503,6 +626,16 @@ export function DataGrid<T extends { id: string }>({
             colKey={col.key}
             onCommit={commit}
             onEnter={onEnter}
+          />
+        );
+      case "day":
+        return (
+          <DayCell
+            value={get(row, col.key) as number | undefined}
+            rowId={rowId}
+            colKey={col.key}
+            align={col.align}
+            onCommit={commit}
           />
         );
       case "money": {
