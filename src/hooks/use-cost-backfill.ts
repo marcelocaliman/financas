@@ -4,26 +4,21 @@ import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
 
 /**
- * Backfill ÚNICO por dispositivo: ativos vindos do modelo antigo (cotável) guardam
- * `quantity` + `avgPrice` mas NÃO têm `cost` (valor aplicado). Agora que tudo é VALOR
- * MANUAL por classe, o "valor aplicado" precisa estar preenchido p/ a rentabilidade
- * aparecer. Calcula `cost = quantidade × preço médio` para esses legados sem custo.
- * Idempotente (só preenche quando cost está vazio); roda 1× (flag em localStorage) e
- * respeita o usuário (se ele zerar o cost depois, a flag já marcada não refaz).
+ * Backfill do "valor aplicado": ativos vindos do modelo antigo (cotável) guardam
+ * `quantity` + `avgPrice` mas NÃO têm `cost`. Agora que tudo é VALOR MANUAL por classe,
+ * o "valor aplicado" precisa estar preenchido p/ a rentabilidade aparecer. Calcula
+ * `cost = quantidade × preço médio` para esses legados sem custo.
+ * IDEMPOTENTE (só preenche quando cost está vazio E há qtd × preço médio salvos); roda 1×
+ * por SESSÃO e RE-TENTA a cada carregamento até preencher (sem trava permanente) — assim
+ * funciona mesmo se rodou antes do vault carregar. Tudo no cliente (o dado é E2EE).
  */
-const FLAG = "cost_backfill_qty_avgprice_v1";
 let ran = false;
 
 export function useCostBackfill(): void {
   const assets = useLiveQuery(() => repository.listAssets());
   useEffect(() => {
     if (ran || assets === undefined) return; // undefined = ainda carregando
-    if (localStorage.getItem(FLAG)) {
-      ran = true;
-      return;
-    }
     ran = true;
-    localStorage.setItem(FLAG, "1");
     for (const a of assets) {
       const q = a.quantity ?? 0;
       const avg = a.avgPrice ?? 0;
