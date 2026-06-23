@@ -371,10 +371,10 @@ function CategoryDonut({
             </PieChart>
           </ResponsiveContainer>
         </div>
-        {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. */}
-        <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
+        {/* Legenda: itens SEMPRE empilhados (um embaixo do outro) — padrão consistente entre os cards. */}
+        <div className="flex flex-col gap-y-2 min-w-0">
           {data.map((e, i) => (
-            <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
+            <div key={e.id} className="flex items-center gap-2.5 text-[12.5px]">
               <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
               <span className="text-muted">{e.name}</span>
               <Money value={e.value} currency={disp} className="font-semibold tabular" />
