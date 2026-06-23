@@ -20,7 +20,6 @@ import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
-import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import Investimentos from "./investimentos";
 import { cn } from "@/lib/utils";
@@ -75,6 +74,7 @@ export default function Patrimonio() {
 
   const [tab, setTab] = useState("");
   const [extra, setExtra] = useState<string | null>(null);
+  const [liabOpen, setLiabOpen] = useState(false); // Passivos colapsados por padrão (encurta a aba)
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -347,33 +347,49 @@ export default function Patrimonio() {
         )}
       </section>
 
-      {/* Passivos */}
+      {/* Passivos — colapsável: KPIs sempre visíveis no cabeçalho; detalhe + cronograma só ao abrir */}
       <section>
-        <SectionHead title={t("patrimonio.liabilities")} count={data.liabilities.length} />
-        {data.liabilities.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-            <Kpi label={t("patrimonio.totalDebt")} value={<Money value={view.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} tone="neg" />
-            <Kpi label={t("patrimonio.liabilities")} value={<span className="tabular">{data.liabilities.length}</span>} />
+        <button
+          type="button"
+          onClick={() => setLiabOpen((o) => !o)}
+          aria-expanded={liabOpen}
+          className="w-full flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[10px] py-1"
+        >
+          <span className="flex items-center gap-2.5">
+            <ChevronDown size={18} className={cn("text-muted transition-transform", liabOpen && "rotate-180")} />
+            <span className="eyebrow">{t("patrimonio.liabilities")}</span>
+          </span>
+          <span className="flex items-center gap-5 sm:gap-7 text-[13px]">
+            <span className="inline-flex items-center gap-2">
+              <span className="eyebrow">{t("patrimonio.totalDebt")}</span>
+              <Money value={view.totalLiab} currency={disp} className="font-semibold text-neg tabular" options={{ signDisplay: "never" }} />
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="eyebrow">{t("patrimonio.liabilities")}</span>
+              <span className="font-semibold tabular">{data.liabilities.length}</span>
+            </span>
+          </span>
+        </button>
+        {liabOpen ? (
+          <div className="mt-4 space-y-7">
+            <div className="overflow-x-auto">
+              <div className="min-w-[760px]">
+                <DataGrid<Liability>
+                  columns={liabCols}
+                  rows={data.liabilities}
+                  blank={newLiab}
+                  isComplete={(r) => r.name.trim().length > 0 && r.typeId.length > 0 && r.amount > 0}
+                  onCommit={(r) => void actions.putLiability(r)}
+                  onDelete={(id) => void actions.removeLiability(id)}
+                  addPlaceholder={t("patrimonio.addLiability")}
+                  total={<Money value={view.totalLiab} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
+                />
+              </div>
+            </div>
+            <DebtScheduleTile />
           </div>
         ) : null}
-        <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
-            <DataGrid<Liability>
-              columns={liabCols}
-              rows={data.liabilities}
-              blank={newLiab}
-              isComplete={(r) => r.name.trim().length > 0 && r.typeId.length > 0 && r.amount > 0}
-              onCommit={(r) => void actions.putLiability(r)}
-              onDelete={(id) => void actions.removeLiability(id)}
-              addPlaceholder={t("patrimonio.addLiability")}
-              total={<Money value={view.totalLiab} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
-            />
-          </div>
-        </div>
       </section>
-
-      {/* Cronograma de dívidas */}
-      <DebtScheduleTile />
 
       {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
       <div className="border-t border-border pt-6">
