@@ -289,13 +289,15 @@ export function DashboardDetail() {
         <div className={cn("p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
             <Eyebrow>{t("dashboard.budget")}</Eyebrow>
-            <Money value={view.totalExp} currency={disp} className="text-[13px] text-muted" />
+            <Eyebrow>
+              {view.expDisp.length} {t(view.expDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
+            </Eyebrow>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="w-[116px] h-[116px] shrink-0">
+          <div className="flex items-center gap-5 sm:gap-6">
+            <div className="w-[132px] h-[132px] shrink-0 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={36} outerRadius={56} paddingAngle={2} stroke="none">
+                  <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={45} outerRadius={65} paddingAngle={2} stroke="none">
                     {view.expDisp.map((e, i) => (
                       <Cell key={e.id} fill={CAT_COLORS[i % CAT_COLORS.length]} />
                     ))}
@@ -303,6 +305,12 @@ export function DashboardDetail() {
                   <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
                 </PieChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                <div className="text-center leading-none">
+                  <div className="eyebrow mb-1">{t("orcamento.expenses")}</div>
+                  <Money value={view.totalExp} currency={disp} className="text-[13.5px] font-semibold tracking-[-0.02em]" />
+                </div>
+              </div>
             </div>
             <div className="flex-1 space-y-1.5 min-w-0">
               {view.expDisp.map((e, i) => (
