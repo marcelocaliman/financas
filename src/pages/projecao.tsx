@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, ReferenceLine } from "recharts";
+import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
 import { Flame, Dices } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -8,7 +8,7 @@ import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projecti
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useFireTarget } from "@/hooks/use-fire-target";
 import { actions } from "@/data/actions";
-import { convert, formatMoney, groupNumber, parseNumber, type Currency } from "@/money/currency";
+import { convert, formatMoney, compactMoney, groupNumber, parseNumber, type Currency } from "@/money/currency";
 import { projectBalance, realValue } from "@/finance/projection";
 import { realReturn, safeMonthlyIncome, yearsToFI } from "@/finance/fire";
 import { simulateAccumulation, simulateDecumulation, type MonteCarloBand } from "@/finance/montecarlo";
@@ -45,16 +45,28 @@ export default function Projecao() {
   const theme = useUI((s) => s.theme);
   const dark = theme === "dark";
   const axis = dark ? "#5f646c" : "#8a8f98";
+  const rates = useRates((s) => s.rates);
   const p = useProjection();
   const netWorth = useNetWorth();
+  const fire = useFireTarget();
 
   const override = p.initialOverride;
-  // Trocar a moeda de exibição reseta o saldo inicial customizado (vive na moeda atual; o
-  // custo-alvo NÃO precisa — fica salvo em moeda principal).
+  // Ao trocar a moeda de exibição, CONVERTE o saldo inicial customizado (ele vive na moeda da
+  // sessão) em vez de zerá-lo — preserva a intenção do usuário. A guarda de convert protege
+  // contra taxa ausente. (initialOverride é só-memória; nunca vai ao servidor.)
+  const prevDisp = useRef(disp);
   useEffect(() => {
-    p.setInitialOverride(null);
+    if (prevDisp.current === disp) return;
+    const from = prevDisp.current;
+    prevDisp.current = disp;
+    const o = useProjection.getState().initialOverride;
+    if (o != null) p.setInitialOverride(convert(o, from, disp, rates));
   }, [disp]); // eslint-disable-line react-hooks/exhaustive-deps
-  const initial = override ?? netWorth;
+  // Base da projeção = patrimônio INVESTÍVEL (só o que rende ao retorno assumido; casa/bens não
+  // compõem a juros compostos). É a MESMA base do FIRE → editar o Inicial move a curva, a tabela,
+  // os KPIs E o FIRE/Monte Carlo juntos. Cai no patrimônio líquido total só se o FIRE ainda não carregou.
+  const startWealth = fire?.eligibleWealth ?? netWorth;
+  const initial = override ?? startWealth;
   const years = Math.max(1, Math.min(60, Math.round(p.years)));
   const sc = p.scenarios;
 
@@ -130,7 +142,7 @@ export default function Projecao() {
         </div>
         <div className="w-full h-[240px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+            <ComposedChart data={series} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
               <defs>
                 <linearGradient id="projGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={scenarioColor("base", dark)} stopOpacity={0.14} />
@@ -138,6 +150,14 @@ export default function Projecao() {
                 </linearGradient>
               </defs>
               <XAxis dataKey="year" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+              <YAxis
+                width={64}
+                tick={{ fontSize: 10.5, fill: axis }}
+                axisLine={false}
+                tickLine={false}
+                domain={[0, "auto"]}
+                tickFormatter={(v) => compactMoney(Number(v), disp)}
+              />
               <Tooltip
                 formatter={(v, name) => [fmt(Number(v)), t(`projecao.${name as string}`)]}
                 labelFormatter={(y) => `${t("projecao.year")} ${y}`}
@@ -191,15 +211,16 @@ export function ProjecaoSummary() {
   const netWorth = useNetWorth();
   const fire = useFireTarget();
   const v = useMemo(() => {
-    const initial = p.initialOverride ?? netWorth;
+    // Mesma base unificada da página: patrimônio INVESTÍVEL (ou o "Inicial" customizado).
+    const initial = p.initialOverride ?? fire?.eligibleWealth ?? netWorth;
     const years = Math.max(1, Math.min(60, Math.round(p.years)));
     const b = p.scenarios.base;
     const nominal = projectBalance(initial, b.monthly, b.annualReturn / 100, years);
     // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório).
     const target = fire?.independenceNumber ?? Infinity;
-    // % FIRE mede sobre o patrimônio INVESTÍVEL (= Liberdade), não o total da projeção.
+    // % FIRE = ponto de partida (investível ou Inicial customizado) sobre o alvo → reflete o Inicial.
     const fireProgress =
-      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (fire.eligibleWealth / target) * 100 : null;
+      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
     return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years), fireProgress };
   }, [netWorth, fire, p.initialOverride, p.scenarios, p.annualInflation, p.years]);
   return (
@@ -223,9 +244,10 @@ function FireCard() {
   // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório): usa o
   // custo LÍQUIDO (gastos − renda passiva durável) e a mesma janela/taxa.
   const fire = useFireTarget();
-  // FIRE (%, tempo até a IF) mede sobre o patrimônio INVESTÍVEL — igual à Liberdade. A regra dos
-  // 4% só vale sobre o que dá pra sacar; por isso difere do patrimônio total da curva de projeção.
-  const portfolio = fire?.eligibleWealth ?? 0;
+  // FIRE (%, tempo até a IF) mede sobre o patrimônio INVESTÍVEL. A regra dos 4% só vale sobre o
+  // que dá pra sacar. O "Inicial" da projeção (se o usuário customizou) substitui o ponto de
+  // partida → editar o Inicial move tempo até IF, progresso e Monte Carlo junto com a curva.
+  const portfolio = p.initialOverride ?? fire?.eligibleWealth ?? 0;
   const annualExp = fire?.annualCost ?? 0;
   const monthlyPlan = fire?.monthlyCost ?? 0;       // custo de PLANEJAMENTO (alvo ou orçamento)
   const budgetMonthly = fire?.budgetMonthlyCost ?? 0; // custo ATUAL do orçamento (referência)
@@ -442,8 +464,16 @@ function MonteCard({
       <p className="mt-1 text-[11.5px] text-faint leading-relaxed">{note}</p>
       <div className="w-full h-[240px] mt-4">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
+          <ComposedChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
             <XAxis dataKey="year" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+            <YAxis
+              width={64}
+              tick={{ fontSize: 10.5, fill: axis }}
+              axisLine={false}
+              tickLine={false}
+              domain={[0, "auto"]}
+              tickFormatter={(v) => compactMoney(Number(v), disp)}
+            />
             <Tooltip
               formatter={(v) => [fmt(Number(v)), t("montecarlo.median")]}
               labelFormatter={(y) => `${t("montecarlo.year")} ${y}`}
@@ -491,7 +521,8 @@ function MonteCarloAccumCard() {
   const years = Math.max(1, Math.min(60, Math.round(p.years)));
   const target = fire?.independenceNumber ?? Infinity;
   const targetOk = !!fire && Number.isFinite(target) && target > 0;
-  const eligible = Math.max(0, fire?.eligibleWealth ?? 0);
+  // Mesma base unificada do FireCard: o "Inicial" customizado vence o investível atual.
+  const eligible = Math.max(0, p.initialOverride ?? fire?.eligibleWealth ?? 0);
   const accum = useMemo(
     () =>
       targetOk

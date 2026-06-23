@@ -82,6 +82,17 @@ export function formatMoney(
   }).format(amount);
 }
 
+/** Valor monetário COMPACTO (ex.: "R$ 1,2 mi", "€ 605 mil") — p/ eixos/rótulos de gráfico. */
+export function compactMoney(amount: number, currency: Currency): string {
+  return new Intl.NumberFormat(LOCALE[currency], {
+    style: "currency",
+    currency,
+    notation: "compact",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
 /** Percentual no estilo numérico do locale da moeda (ex.: 14,25% em BRL, 3.63% em USD). */
 export function formatPercent(value: number, currency: Currency): string {
   return new Intl.NumberFormat(LOCALE[currency], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) + "%";
