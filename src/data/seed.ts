@@ -64,9 +64,10 @@ export function buildSeed(main: Currency): SeedData {
       { id: "a2", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(32000), cost: m(30000), indexerId: "cdi", institution: "Banco digital" },
       { id: "a3", name: "Imóvel", classId: CLASS.imoveis, subtypeId: "imoveis-4", currency: main, amount: m(150000) },
       { id: "a4", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(25000) },
-      // Itens "do exterior" — demonstram o multimoeda sem dominar a tela.
+      // Item "do exterior" — demonstra o multimoeda sem dominar a tela.
       { id: "a5", name: "Conta no exterior", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: ab, amount: a(12000), institution: "Conta internacional" },
-      { id: "a6", name: "Ações", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: "brasil", currency: "BRL", amount: 2500, ticker: "BBAS3", quantity: 100, avgPrice: 25, institution: "Corretora" },
+      // Ações/ETF na MOEDA PRINCIPAL (não travado em ação BR), com valor aplicado p/ a rentabilidade aparecer.
+      { id: "a6", name: "Ações / ETF", classId: CLASS.acoes, subtypeId: "acoes-1", currency: main, amount: m(8000), cost: m(6500), institution: "Corretora" },
     ],
     liabilities: [
       { id: "l1", name: "Financiamento imóvel", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(32000), interestRate: 9.5, installments: 180 },
@@ -74,15 +75,14 @@ export function buildSeed(main: Currency): SeedData {
     ],
     expenses,
     incomes,
-    // Proventos recebidos (ações BBAS3, em BRL) — renda passiva dos últimos meses.
-    dividends: [
-      { id: "d1", month: pastMonth(5), source: "BBAS3", currency: "BRL", amount: 22 },
-      { id: "d2", month: pastMonth(4), source: "BBAS3", currency: "BRL", amount: 18 },
-      { id: "d3", month: pastMonth(3), source: "BBAS3", currency: "BRL", amount: 41 },
-      { id: "d4", month: pastMonth(2), source: "BBAS3", currency: "BRL", amount: 20 },
-      { id: "d5", month: pastMonth(1), source: "BBAS3", currency: "BRL", amount: 35 },
-      { id: "d6", month: pastMonth(0), source: "BBAS3", currency: "BRL", amount: 26 },
-    ],
+    // Proventos das ações/ETF — renda passiva dos últimos meses, na MOEDA PRINCIPAL (não em BRL fixo).
+    dividends: [5, 4, 7, 4, 6, 5].map((eur, i) => ({
+      id: `d${i + 1}`,
+      month: pastMonth(5 - i),
+      source: "Ações / ETF",
+      currency: main,
+      amount: m(eur),
+    })),
     // SÓ meses passados — o mês corrente é COMPUTADO do patrimônio (useAutoSnapshot),
     // então Painel (herói) = última ponta da tendência = Histórico (atual), sempre.
     snapshots: [

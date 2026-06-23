@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Currency } from "@/money/currency";
+import { detectDefaultCurrency } from "@/money/locale-default";
+
+/** Moeda inicial do usuário NOVO: detectada pelo locale do navegador (fallback BRL). Avaliada
+ *  1× no load; só vale antes de o usuário escolher — depois a preferência persistida/vault manda. */
+const DEFAULT_CURRENCY = detectDefaultCurrency();
 
 export type Theme = "light" | "dark";
 /** Posição do menu: painel lateral flutuante à esquerda (padrão) ou barra no topo. */
@@ -40,10 +45,10 @@ interface UIState {
 export const useUI = create<UIState>()(
   persist(
     (set) => ({
-      baseCurrency: "BRL",
+      baseCurrency: DEFAULT_CURRENCY,
       // Trocar a principal leva a visão junto (o switcher do topo continua livre na sessão).
       setBaseCurrency: (baseCurrency) => set({ baseCurrency, displayCurrency: baseCurrency }),
-      displayCurrency: "BRL",
+      displayCurrency: DEFAULT_CURRENCY,
       setDisplayCurrency: (displayCurrency) => set({ displayCurrency }),
       theme: "dark",
       setTheme: (theme) => set({ theme }),
@@ -69,8 +74,8 @@ export const useUI = create<UIState>()(
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout; navCollapsed?: boolean; numbersHidden?: boolean };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
-        // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro).
-        const baseCurrency = version < 3 ? "BRL" : s.baseCurrency ?? "BRL";
+        // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro). Cai no default por locale.
+        const baseCurrency = version < 3 ? DEFAULT_CURRENCY : s.baseCurrency ?? DEFAULT_CURRENCY;
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
         return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "side", navCollapsed: s.navCollapsed ?? false, numbersHidden: s.numbersHidden ?? false };
       },
