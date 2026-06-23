@@ -236,7 +236,7 @@ export default function Patrimonio() {
       cost += conv(c, a.currency);
       value += conv(a.amount, a.currency);
     }
-    return cost > 0 ? { has: true, pct: ((value - cost) / cost) * 100 } : { has: false, pct: 0 };
+    return cost > 0 ? { has: true, applied: cost, pct: ((value - cost) / cost) * 100 } : { has: false, applied: 0, pct: 0 };
   })();
 
   // Alocação por classe (todas de uma vez) — diversificação à primeira vista, sem entrar em cada aba.
@@ -328,8 +328,11 @@ export default function Patrimonio() {
         {activeId ? (
           <>
             {/* KPIs da classe ativa */}
-            <div className={cn("grid grid-cols-2 gap-3 mb-5", classReturn.has ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
-              <Kpi label={t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
+            <div className={cn("grid grid-cols-2 gap-3 mb-5", classReturn.has ? "sm:grid-cols-3 lg:grid-cols-5" : "sm:grid-cols-3")}>
+              {classReturn.has ? (
+                <Kpi label={t("patrimonio.applied")} value={<Money value={classReturn.applied} currency={disp} />} />
+              ) : null}
+              <Kpi label={classReturn.has ? t("patrimonio.currentValue") : t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
               <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
               {classReturn.has ? (
                 <Kpi
