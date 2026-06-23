@@ -87,17 +87,15 @@ export default function Orcamento() {
     const monthExp = data.expenses.filter((e) => e.month === month);
     const monthInc = data.incomes.filter((i) => i.month === month);
 
-    const byCat = new Map<string, number>();
-    for (const e of monthExp) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
-    const expByCat = [...byCat.entries()]
-      .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
-      .filter((e) => e.value > 0)
+    // Donut: UMA fatia por lançamento (não agrupa por categoria). Rótulo = detalhe (ou a
+    // categoria, se sem detalhe) → duas receitas "Salário" aparecem separadas, com cores próprias.
+    const expSlices = monthExp
+      .map((e) => ({ id: e.id, name: e.name || nameById(tax.expenseCategories, e.categoryId) || t("orcamento.uncategorized"), value: conv(e.amount, e.currency) }))
+      .filter((s) => s.value > 0)
       .sort((a, b) => b.value - a.value);
-    const byCatInc = new Map<string, number>();
-    for (const i of monthInc) byCatInc.set(i.categoryId, (byCatInc.get(i.categoryId) ?? 0) + conv(i.amount, i.currency));
-    const incByCat = [...byCatInc.entries()]
-      .map(([id, value]) => ({ id, name: nameById(tax.incomeCategories, id) || t("orcamento.uncategorized"), value }))
-      .filter((e) => e.value > 0)
+    const incSlices = monthInc
+      .map((i) => ({ id: i.id, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), value: conv(i.amount, i.currency) }))
+      .filter((s) => s.value > 0)
       .sort((a, b) => b.value - a.value);
     const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
@@ -109,8 +107,8 @@ export default function Orcamento() {
     return {
       monthExp,
       monthInc,
-      expByCat,
-      incByCat,
+      expSlices,
+      incSlices,
       totalExp,
       totalInc,
       saldo: totalInc - totalExp,
@@ -274,8 +272,8 @@ export default function Orcamento() {
 
       {/* Mês selecionado: receitas e gastos por categoria — SEMPRE lado a lado (ghost quando vazio) */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <CategoryDonut title={t("orcamento.incomeByCategory")} data={view.incByCat} palette={CAT_INC} disp={disp} emptyLabel={t("orcamento.noIncomeMonth")} />
-        <CategoryDonut title={t("orcamento.byCategory")} data={view.expByCat} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
+        <CategoryDonut title={t("orcamento.incomeBreakdown")} data={view.incSlices} palette={CAT_INC} disp={disp} emptyLabel={t("orcamento.noIncomeMonth")} />
+        <CategoryDonut title={t("orcamento.expenseBreakdown")} data={view.expSlices} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
       </div>
 
       {/* Receitas (mês) */}
