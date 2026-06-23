@@ -134,11 +134,11 @@ export default function Liberdade() {
         </div>
       </Tile>
 
-      {/* Constância + Marcos + Saúde */}
-      <div className="grid lg:grid-cols-2 gap-6 items-start">
+      {/* Constância + Marcos lado a lado (mesma altura); Saúde ocupa a largura toda embaixo. */}
+      <div className="grid lg:grid-cols-2 gap-6">
         <StreakCard current={v.streak.current} record={v.streak.record} />
         <MilestonesCard milestones={v.milestones} />
-        <HealthCard />
+        <HealthCard className="lg:col-span-2" />
       </div>
     </div>
   );
@@ -151,12 +151,12 @@ function gradeKey(score: number): string {
   return "weak";
 }
 
-function HealthCard() {
+function HealthCard({ className }: { className?: string }) {
   const { t } = useTranslation();
   const h = useHealth();
-  if (!h) return <div className="rounded-[16px] bg-card border border-border h-44 animate-pulse" />;
+  if (!h) return <div className={cn("rounded-[16px] bg-card border border-border h-44 animate-pulse", className)} />;
   return (
-    <Tile className="p-6">
+    <Tile className={cn("p-6", className)}>
       <div className="flex items-center gap-2">
         <HeartPulse size={15} className="text-accent shrink-0" />
         <Eyebrow>{t("health.title")}</Eyebrow>
@@ -165,16 +165,19 @@ function HealthCard() {
         <p className="mt-3 text-[12.5px] text-muted leading-relaxed">{t("health.empty")}</p>
       ) : (
         <>
-          <div className="flex items-end gap-3 mt-3">
-            <div className="text-[clamp(2.2rem,6vw,3rem)] font-semibold tabular leading-none">
-              <Hidden>{Math.round(h.score)}</Hidden>
+          {/* Largura cheia: a nota à esquerda e as 5 dimensões em 2 colunas à direita. */}
+          <div className="mt-3 grid gap-x-12 gap-y-5 items-center lg:grid-cols-[auto_1fr]">
+            <div className="flex items-end gap-3">
+              <div className="text-[clamp(2.4rem,6vw,3.2rem)] font-semibold tabular leading-none">
+                <Hidden>{Math.round(h.score)}</Hidden>
+              </div>
+              <span className="text-[12.5px] text-faint mb-1">/ 100 · {t(`health.grade.${gradeKey(h.score)}`)}</span>
             </div>
-            <span className="text-[12.5px] text-faint mb-1">/ 100 · {t(`health.grade.${gradeKey(h.score)}`)}</span>
-          </div>
-          <div className="mt-5 space-y-3">
-            {h.dims.map((d) => (
-              <HealthBar key={d.dim} dim={d} />
-            ))}
+            <div className="grid gap-x-12 gap-y-3.5 sm:grid-cols-2">
+              {h.dims.map((d) => (
+                <HealthBar key={d.dim} dim={d} />
+              ))}
+            </div>
           </div>
           <p className="mt-5 text-[11px] text-faint leading-relaxed">{t("health.hint")}</p>
         </>
@@ -214,7 +217,7 @@ function Stat({ label, value, sub, subTone }: { label: string; value: React.Reac
 function StreakCard({ current, record }: { current: number; record: number }) {
   const { t } = useTranslation();
   return (
-    <Tile className="p-6">
+    <Tile className="p-6 flex flex-col">
       <div className="flex items-center gap-2">
         <Flame size={15} className={cn("shrink-0", current > 0 ? "text-accent" : "text-faint")} />
         <Eyebrow>{t("liberdade.streakTitle")}</Eyebrow>
@@ -229,7 +232,7 @@ function StreakCard({ current, record }: { current: number; record: number }) {
           <span className="eyebrow block mt-2">{t("liberdade.streakRecord")}</span>
         </div>
       </div>
-      <p className="mt-5 text-[11.5px] text-faint leading-relaxed">
+      <p className="mt-auto pt-5 text-[11.5px] text-faint leading-relaxed">
         {current > 0 ? t("liberdade.streakHint") : t("liberdade.streakEmpty")}
       </p>
     </Tile>
