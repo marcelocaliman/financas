@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Wallet,
-  TrendingUp,
   PiggyBank,
   LineChart,
   Target,
@@ -30,7 +29,6 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { id: "painel", key: "painel", icon: LayoutDashboard },
   { id: "patrimonio", key: "patrimonio", icon: Wallet },
-  { id: "investimentos", key: "investimentos", icon: TrendingUp },
   { id: "orcamento", key: "orcamento", icon: PiggyBank },
   { id: "historico", key: "historico", icon: LineChart },
   { id: "objetivos", key: "objetivos", icon: Target },

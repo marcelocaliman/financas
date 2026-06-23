@@ -22,6 +22,7 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
+import Investimentos from "./investimentos";
 import { cn } from "@/lib/utils";
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
@@ -373,6 +374,11 @@ export default function Patrimonio() {
 
       {/* Cronograma de dívidas */}
       <DebtScheduleTile />
+
+      {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
+      <div className="border-t border-border pt-6">
+        <Investimentos />
+      </div>
     </div>
   );
 }

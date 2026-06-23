@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
@@ -18,7 +18,6 @@ import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
-import { cn } from "@/lib/utils";
 
 export default function Investimentos() {
   const { t } = useTranslation();
@@ -85,7 +84,6 @@ export default function Investimentos() {
   }
 
   const colorOf = (id: string) => CAT[view.rows.findIndex((r) => r.id === id) % CAT.length];
-  const donut = view.rows.filter((r) => r.value > 0).map((r) => ({ name: r.name, value: r.value, id: r.id }));
 
   const setTarget = (classId: string, pct: number) => {
     // Lê o mapa mais fresco no repo (não o snapshot do React) — preserva os outros
@@ -95,6 +93,7 @@ export default function Investimentos() {
 
   return (
     <div className="space-y-7">
+      <h3 className="eyebrow">{t("nav.investimentos")}</h3>
       {/* Rentabilidade (só posições com preço médio) */}
       {view.hasCostBasis ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -112,26 +111,8 @@ export default function Investimentos() {
 
       {/* Alocação × Alvo */}
       <Tile className="p-6 md:p-7">
-        <div className="flex flex-col lg:flex-row items-start gap-7">
-          {donut.length > 0 ? (
-            <div className="w-[150px] h-[150px] shrink-0 mx-auto lg:mx-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={donut} dataKey="value" nameKey="name" innerRadius={48} outerRadius={74} paddingAngle={2} stroke="none">
-                    {donut.map((d) => (
-                      <Cell key={d.id} fill={colorOf(d.id)} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v) => formatMoney(Number(v), disp)}
-                    contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : null}
-
-          <div className="flex-1 min-w-0 w-full overflow-x-auto">
+        <Eyebrow className="mb-4">{t("investimentos.target")}</Eyebrow>
+        <div className="overflow-x-auto">
             <div className="min-w-[520px]">
               <div className="grid grid-cols-[1.4fr_1fr_0.8fr_1.1fr] pb-2 border-b border-border">
                 <Eyebrow>{t("patrimonio.class")}</Eyebrow>
@@ -171,38 +152,9 @@ export default function Investimentos() {
                 <p className="text-[13px] text-faint py-4">{t("investimentos.empty")}</p>
               ) : null}
             </div>
-          </div>
         </div>
         <p className="text-[11.5px] text-faint mt-4 leading-relaxed">{t("investimentos.hint")}</p>
       </Tile>
-
-      {/* Posições */}
-      {view.positions.length > 0 ? (
-        <Tile className="p-6 md:p-7">
-          <Eyebrow>{t("dashboard.positionsTitle")}</Eyebrow>
-          <div className="mt-3 grid sm:grid-cols-2 gap-x-8">
-            {view.positions.map((a) => (
-              <div key={a.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-border last:border-0 sm:[&:nth-last-child(2)]:border-0">
-                <span className="flex items-center gap-2.5 min-w-0">
-                  <span className={cn("chip", `chip-${a.currency}`)}>{a.currency}</span>
-                  <span className="text-[13.5px] truncate">{a.name}</span>
-                  <span className="text-[11.5px] text-faint truncate hidden sm:inline">
-                    {nameById(tax.assetClasses, a.classId)}
-                  </span>
-                </span>
-                <span className="flex items-center gap-3 shrink-0">
-                  {a.retPct != null ? (
-                    <span className={cn("text-[11.5px] tabular", a.retPct >= 0 ? "text-accent" : "text-neg")}>
-                      <Hidden>{(a.retPct >= 0 ? "+" : "") + a.retPct.toFixed(1) + "%"}</Hidden>
-                    </span>
-                  ) : null}
-                  <Money value={a.disp} currency={disp} className="text-[13.5px] font-semibold tabular" />
-                </span>
-              </div>
-            ))}
-          </div>
-        </Tile>
-      ) : null}
 
       {/* Proventos / dividendos (renda passiva) */}
       <Proventos invested={view.total} />

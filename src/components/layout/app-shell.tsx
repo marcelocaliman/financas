@@ -8,7 +8,6 @@ import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
 import { SupportView } from "@/app/support-app";
 import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-scroll-spy";
-import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
@@ -32,7 +31,6 @@ export function AppShell() {
   const active = useScrollSpy(
     (configOpen ? CONFIG_NAV_ITEMS : NAV_ITEMS).map((n) => n.id),
   );
-  useQuotesSync();
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
   useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)

@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 import { Footer } from "@/components/layout/footer";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
-import Investimentos, { InvestimentosSummary } from "@/pages/investimentos";
 import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
 import Historico, { HistoricoSummary } from "@/pages/historico";
 import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
@@ -18,7 +17,6 @@ import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
 /** id → { detalhe (corpo do accordion), summary (KPIs do header) }. */
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
   patrimonio: { detail: <Patrimonio />, summary: <PatrimonioSummary /> },
-  investimentos: { detail: <Investimentos />, summary: <InvestimentosSummary /> },
   orcamento: { detail: <Orcamento />, summary: <OrcamentoSummary /> },
   historico: { detail: <Historico />, summary: <HistoricoSummary /> },
   objetivos: { detail: <Objetivos />, summary: <ObjetivosSummary /> },

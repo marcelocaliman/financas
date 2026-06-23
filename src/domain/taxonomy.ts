@@ -180,18 +180,12 @@ export function isInvestedClass(classId: string): boolean {
 }
 
 /**
- * Classes COTÁVEIS (têm ticker → valor = qtd × cotação; custo = qtd × preço médio).
- * As demais classes investidas (renda fixa, outros) usam "valor aplicado" manual.
+ * Modelo "cotável" (ticker × qtd × preço) APOSENTADO: agora TODA classe investida usa VALOR
+ * MANUAL por categoria — o usuário digita o total que tem (ex.: "Ações = R$ X"); o detalhe
+ * posição-a-posição fica na corretora. Conjunto vazio = isQuotableClass sempre false; o helper
+ * fica só pra não quebrar referências (o ramo cotável vira código inerte).
  */
-const QUOTABLE_CLASSES = new Set<string>([
-  CLASS.acoes,
-  CLASS.fiis,
-  CLASS.cripto,
-  CLASS.commodities,
-  CLASS.multimercado,
-  CLASS.previdencia,
-  CLASS.privateEquity,
-]);
+const QUOTABLE_CLASSES = new Set<string>();
 export function isQuotableClass(classId: string): boolean {
   return QUOTABLE_CLASSES.has(classId);
 }
