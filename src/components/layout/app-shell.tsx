@@ -11,6 +11,7 @@ import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-sc
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
+import { useCostBackfill } from "@/hooks/use-cost-backfill";
 import { useUI } from "@/store/ui";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ export function AppShell() {
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
   useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)
+  useCostBackfill(); // preenche "valor aplicado" (qtd × preço médio) dos ativos legados (1×)
 
   // Analytics próprio: 1 evento "app_open" por sessão de app (anônimo, sem dado financeiro).
   useEffect(() => {
