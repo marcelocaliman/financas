@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { CalendarClock, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
@@ -492,45 +492,61 @@ function UpcomingBillsTile() {
   const shown = view.bills.slice(0, 8);
   const extra = view.bills.length - shown.length;
 
+  const TPL = "44px minmax(150px,1.8fr) minmax(130px,1fr) minmax(110px,0.8fr)";
+  const headCls = "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted";
   return (
-    <Tile className="p-6 md:p-7">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <CalendarClock size={16} className="text-muted shrink-0" />
-          <Eyebrow>{t("orcamento.upcomingBills")}</Eyebrow>
-        </div>
-        <Money value={view.total} currency={disp} className="text-[13px] font-semibold tabular text-neg" options={{ signDisplay: "never" }} />
-      </div>
-      <ul className="divide-y divide-[var(--grid-line)]">
-        {shown.map((b) => (
-          <li key={b.id} className="flex items-center gap-3 py-2.5">
-            {viewerMode ? (
-              <Circle size={18} className="text-faint shrink-0" />
-            ) : (
-              <button
-                type="button"
-                onClick={() => pay(b.id)}
-                title={t("orcamento.markPaid")}
-                aria-label={t("orcamento.markPaid")}
-                className="text-faint hover:text-accent transition-colors shrink-0 p-1 -m-1 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-              >
-                <Circle size={18} />
-              </button>
-            )}
-            <div className="min-w-0 flex-1">
-              <div className="text-[13.5px] text-text truncate">
+    <section>
+      <SectionHead title={t("orcamento.upcomingBills")} count={view.bills.length} />
+      <div className="overflow-x-auto">
+        <div className="min-w-[480px] rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">
+          {/* Cabeçalho */}
+          <div className="grid items-center bg-card2 border-b border-border" style={{ gridTemplateColumns: TPL }}>
+            <div className="px-2 py-2.5" />
+            <div className={headCls}>{t("orcamento.detail")}</div>
+            <div className={headCls}>{t("orcamento.dueColumn")}</div>
+            <div className={cn(headCls, "text-right")}>{t("orcamento.amount")}</div>
+          </div>
+          {/* Linhas */}
+          {shown.map((b) => (
+            <div key={b.id} className="group grid items-center border-b border-[var(--grid-line)] hover:bg-card-hover transition-colors" style={{ gridTemplateColumns: TPL }}>
+              <div className="flex justify-center py-1.5">
+                {viewerMode ? (
+                  <Circle size={17} className="text-faint shrink-0" />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => pay(b.id)}
+                    title={t("orcamento.markPaid")}
+                    aria-label={t("orcamento.markPaid")}
+                    className="grid place-items-center w-7 h-7 rounded-full text-faint hover:text-accent hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    <Circle size={17} />
+                  </button>
+                )}
+              </div>
+              <div className="px-3 py-2.5 text-[13.5px] text-text truncate">
                 {b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized")}
               </div>
-              <div className={`text-[11.5px] tabular ${STATUS_TONE[b.status]}`}>
+              <div className={cn("px-3 py-2.5 text-[12.5px] tabular", STATUS_TONE[b.status])}>
                 {dueDateLabel(b.dueDate, lang)} · {daysLabel(b.status, b.daysUntil)}
               </div>
+              <div className="px-3 py-2.5 text-right">
+                <Money value={conv(b.amount, b.currency)} currency={disp} className="text-[13.5px] font-medium tabular" />
+              </div>
             </div>
-            <Money value={conv(b.amount, b.currency)} currency={disp} className="text-[13.5px] font-medium tabular shrink-0" />
-          </li>
-        ))}
-      </ul>
-      {extra > 0 ? <p className="text-[11.5px] text-faint mt-3">{t("orcamento.moreBills", { n: extra })}</p> : null}
-    </Tile>
+          ))}
+          {/* Rodapé: +N mais (esq.) + total (dir.) */}
+          <div className="grid items-center bg-card2 border-t border-border" style={{ gridTemplateColumns: TPL }}>
+            <div className="px-3 py-2.5 text-[11px] text-faint" style={{ gridColumn: "1 / -2" }}>
+              {extra > 0 ? t("orcamento.moreBills", { n: extra }) : null}
+            </div>
+            <div className="px-3 py-2.5 text-right">
+              <Money value={view.total} currency={disp} className="text-[13px] font-semibold tabular text-neg" options={{ signDisplay: "never" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

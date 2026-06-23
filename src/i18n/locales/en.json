@@ -181,6 +181,8 @@
     "recurringShort": "Fixed",
     "recurringHint": "Mark fixed entries (rent, salary, subscriptions) with ↻ — they flow into the next months on their own.",
     "dueDay": "Day",
+    "dueColumn": "Due date",
+    "amount": "Amount",
     "upcomingBills": "Upcoming bills",
     "markPaid": "Mark as paid",
     "overdueDays": "{{n}}d overdue",
