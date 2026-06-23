@@ -285,7 +285,7 @@ export function DashboardDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 items-stretch">
         <div className={cn("p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
             <Eyebrow>{t("dashboard.budget")}</Eyebrow>
@@ -318,7 +318,7 @@ export function DashboardDetail() {
           </div>
         </div>
 
-        <div className={cn("lg:col-span-2 p-6", CARD)}>
+        <div className={cn("p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
             <Eyebrow>{t("dashboard.allocation")}</Eyebrow>
             <Eyebrow>
@@ -346,8 +346,8 @@ export function DashboardDetail() {
                   </div>
                 </div>
               </div>
-              {/* Legenda = todas as classes: cor · nome · % · valor */}
-              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+              {/* Legenda = todas as classes (empilhadas, um embaixo do outro): cor · nome · % · valor */}
+              <div className="flex-1 min-w-0 flex flex-col gap-y-2">
                 {alloc.map((a, i) => (
                   <div key={a.classId} className="flex items-center justify-between gap-3 text-[12.5px] min-w-0">
                     <span className="flex items-center gap-2 text-muted truncate min-w-0">
