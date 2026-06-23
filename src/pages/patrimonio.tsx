@@ -224,6 +224,21 @@ export default function Patrimonio() {
 
   const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
 
+  // Rentabilidade PONDERADA da classe ativa = (Σ valor atual − Σ valor aplicado) / Σ valor aplicado,
+  // só sobre os ativos COM valor aplicado (custo). Proporcional ao valor, não média simples dos %.
+  // Some um KPI só quando faz sentido (há custo) — exclui Caixa/Bens naturalmente.
+  const classReturn = (() => {
+    let cost = 0;
+    let value = 0;
+    for (const a of activeAssets) {
+      const c = a.cost ?? 0;
+      if (c <= 0) continue;
+      cost += conv(c, a.currency);
+      value += conv(a.amount, a.currency);
+    }
+    return cost > 0 ? { has: true, pct: ((value - cost) / cost) * 100 } : { has: false, pct: 0 };
+  })();
+
   // Alocação por classe (todas de uma vez) — diversificação à primeira vista, sem entrar em cada aba.
   const ramp = categoryColors(theme === "dark" ? "dark" : "light");
   const alloc = [...view.groups]
@@ -313,9 +328,16 @@ export default function Patrimonio() {
         {activeId ? (
           <>
             {/* KPIs da classe ativa */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+            <div className={cn("grid grid-cols-2 gap-3 mb-5", classReturn.has ? "sm:grid-cols-4" : "sm:grid-cols-3")}>
               <Kpi label={t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
               <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" bar={sharePct} />
+              {classReturn.has ? (
+                <Kpi
+                  label={t("investimentos.profitability")}
+                  tone={classReturn.pct >= 0 ? "accent" : "neg"}
+                  value={<Hidden>{`${classReturn.pct >= 0 ? "+" : ""}${classReturn.pct.toFixed(1)}%`}</Hidden>}
+                />
+              ) : null}
               <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
             </div>
 
