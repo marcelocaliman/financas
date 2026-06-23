@@ -76,6 +76,9 @@ export default function Orcamento() {
   const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
   const month = useBudgetMonth((s) => s.month);
   const setMonth = useBudgetMonth((s) => s.setMonth);
+  // Ano do gráfico anual: segue o mês selecionado; o usuário navega outros anos com ◀ ▶.
+  const [year, setYear] = useState(() => Number(month.slice(0, 4)));
+  useEffect(() => setYear(Number(month.slice(0, 4))), [month]);
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -92,23 +95,6 @@ export default function Orcamento() {
     const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
 
-    // Histórico: todos os meses com lançamento, últimos 12.
-    const hist = new Map<string, { receitas: number; gastos: number }>();
-    for (const e of data.expenses) {
-      const h = hist.get(e.month) ?? { receitas: 0, gastos: 0 };
-      h.gastos += conv(e.amount, e.currency);
-      hist.set(e.month, h);
-    }
-    for (const i of data.incomes) {
-      const h = hist.get(i.month) ?? { receitas: 0, gastos: 0 };
-      h.receitas += conv(i.amount, i.currency);
-      hist.set(i.month, h);
-    }
-    const history = [...hist.entries()]
-      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .slice(-12)
-      .map(([mo, h]) => ({ month: mo, label: monthLabel(mo, lang, true), receitas: h.receitas, gastos: h.gastos, saldo: h.receitas - h.gastos }));
-
     // Variação vs o mês anterior.
     const pm = shiftMonth(month, -1);
     const prevExp = data.expenses.filter((e) => e.month === pm).reduce((s, e) => s + conv(e.amount, e.currency), 0);
@@ -120,11 +106,24 @@ export default function Orcamento() {
       totalExp,
       totalInc,
       saldo: totalInc - totalExp,
-      history,
       incDelta: prevInc > 0 ? ((totalInc - prevInc) / prevInc) * 100 : null,
       expDelta: prevExp > 0 ? ((totalExp - prevExp) / prevExp) * 100 : null,
     };
   }, [data, disp, rates, tax, t, month, lang]);
+
+  // Gráfico ANUAL: 12 meses (jan→dez) do ano exibido, receitas/gastos por mês (0 onde não há).
+  const annual = useMemo(() => {
+    if (!data) return [];
+    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+    const rows = Array.from({ length: 12 }, (_, m) => {
+      const mo = `${year}-${String(m + 1).padStart(2, "0")}`;
+      return { month: mo, label: monthLabel(mo, lang, true), receitas: 0, gastos: 0 };
+    });
+    const pfx = `${year}-`;
+    for (const e of data.expenses) if (e.month.startsWith(pfx)) rows[Number(e.month.slice(5, 7)) - 1].gastos += conv(e.amount, e.currency);
+    for (const i of data.incomes) if (i.month.startsWith(pfx)) rows[Number(i.month.slice(5, 7)) - 1].receitas += conv(i.amount, i.currency);
+    return rows;
+  }, [data, year, disp, rates, lang]);
 
   // Recorrências: ao abrir um mês NOVO/futuro ainda sem fixos, trazê-los sozinhos do mês
   // anterior. Idempotente e dedupado na action; nunca reescreve o passado. UMA tentativa por
@@ -145,6 +144,13 @@ export default function Orcamento() {
   }
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
+  // Mês selecionado: resumo (receita vs gasto) + categorias, lado a lado.
+  const showDonut = view.expByCat.length > 0;
+  const showResumo = view.totalInc > 0 || view.totalExp > 0;
+  const monthBars = [
+    { key: "income", label: t("orcamento.income"), value: view.totalInc, fill: accent },
+    { key: "expenses", label: t("orcamento.expenses"), value: view.totalExp, fill: "#f1746a" },
+  ];
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
@@ -218,69 +224,111 @@ export default function Orcamento() {
         </div>
       ) : null}
 
+      {/* Ao longo do ano — barras dos 12 meses do ano exibido (seletor de ano; clique abre o mês) */}
+      <Tile className="p-6 md:p-7">
+        <div className="flex items-center justify-between mb-4">
+          <Eyebrow>{t("orcamento.alongYear")}</Eyebrow>
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setYear((y) => y - 1)} aria-label={t("orcamento.prevYear")} className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[14px] font-semibold tabular w-[52px] text-center">{year}</span>
+            <button type="button" onClick={() => setYear((y) => y + 1)} aria-label={t("orcamento.nextYear")} className="grid place-items-center w-8 h-8 rounded-[8px] text-muted hover:text-text hover:bg-card-hover transition-colors">
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+        <div className="w-full h-[210px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={annual} margin={{ top: 4, right: 6, bottom: 0, left: 6 }} barGap={2}>
+              <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+              <Tooltip
+                cursor={{ fill: "var(--card-2)" }}
+                formatter={(val, name) => [formatMoney(Number(val), disp), t(`orcamento.${name as string}` as string)]}
+                contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
+              />
+              <Bar dataKey="receitas" name="income" fill={accent} radius={[3, 3, 0, 0]} maxBarSize={16} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)}>
+                {annual.map((r) => (
+                  <Cell key={r.month} fillOpacity={r.month === month ? 1 : 0.38} />
+                ))}
+              </Bar>
+              <Bar dataKey="gastos" name="expenses" fill="#f1746a" radius={[3, 3, 0, 0]} maxBarSize={16} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)}>
+                {annual.map((r) => (
+                  <Cell key={r.month} fillOpacity={r.month === month ? 1 : 0.38} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex items-center gap-5 mt-3 text-[11.5px] text-muted">
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: accent }} />{t("orcamento.income")}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] bg-[#f1746a]" />{t("orcamento.expenses")}</span>
+          <span className="text-faint">{t("orcamento.historyHint")}</span>
+        </div>
+      </Tile>
+
       {/* Contas a pagar / próximos vencimentos */}
       <UpcomingBillsTile />
 
-      {/* Histórico mensal */}
-      {view.history.length > 1 ? (
-        <Tile className="p-6 md:p-7">
-          <Eyebrow className="mb-4">{t("orcamento.history")}</Eyebrow>
-          <div className="w-full h-[180px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={view.history} margin={{ top: 4, right: 6, bottom: 0, left: 6 }} barGap={2}>
-                <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: axis }} axisLine={false} tickLine={false} dy={4} />
-                <Tooltip
-                  cursor={{ fill: "var(--card-2)" }}
-                  formatter={(val, name) => [formatMoney(Number(val), disp), t(`orcamento.${name as string}` as string)]}
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                  labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
-                />
-                <Bar dataKey="receitas" name="income" fill={accent} radius={[3, 3, 0, 0]} maxBarSize={18} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)} />
-                <Bar dataKey="gastos" name="expenses" fill="#f1746a" radius={[3, 3, 0, 0]} maxBarSize={18} cursor="pointer" onClick={(d: { payload?: { month?: string } }) => d?.payload?.month && setMonth(d.payload.month)} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex items-center gap-5 mt-3 text-[11.5px] text-muted">
-            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: accent }} />{t("orcamento.income")}</span>
-            <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-[3px] bg-[#f1746a]" />{t("orcamento.expenses")}</span>
-            <span className="text-faint">{t("orcamento.historyHint")}</span>
-          </div>
-        </Tile>
-      ) : null}
-
-      {/* Gastos por categoria (mês selecionado) */}
-      {view.expByCat.length > 0 ? (
-        <Tile className="p-6 md:p-7">
-          <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
-          <div className="flex items-center gap-6">
-            <div className="w-[128px] h-[128px] shrink-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={view.expByCat} dataKey="value" nameKey="name" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
-                    {view.expByCat.map((e, i) => (
-                      <Cell key={e.id} fill={CAT[i % CAT.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(v) => formatMoney(Number(v), disp)}
-                    contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. Com 1
-                item fica organizado, sem o valor jogado no meio do card; com vários, preenche a largura. */}
-            <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
-              {view.expByCat.map((e, i) => (
-                <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
-                  <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
-                  <span className="text-muted">{e.name}</span>
-                  <Money value={e.value} currency={disp} className="font-semibold tabular" />
+      {/* Mês selecionado: resumo (receita vs gasto) + gastos por categoria, lado a lado */}
+      {showResumo || showDonut ? (
+        <div className={cn("grid gap-6", showResumo && showDonut ? "lg:grid-cols-2" : "")}>
+          {showResumo ? (
+            <Tile className="p-6 md:p-7">
+              <Eyebrow className="mb-4">{t("orcamento.monthSummary")}</Eyebrow>
+              <div className="w-full h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthBars} margin={{ top: 4, right: 6, bottom: 0, left: 6 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: axis }} axisLine={false} tickLine={false} dy={4} />
+                    <Tooltip cursor={{ fill: "var(--card-2)" }} formatter={(val) => [formatMoney(Number(val), disp), ""]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
+                    <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={56}>
+                      {monthBars.map((b) => (
+                        <Cell key={b.key} fill={b.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex items-center justify-between mt-3 text-[12.5px]">
+                <span className="text-muted">{t("orcamento.balance")}</span>
+                <Money value={view.saldo} currency={disp} className={cn("font-semibold tabular", view.saldo >= 0 ? "text-accent" : "text-neg")} />
+              </div>
+            </Tile>
+          ) : null}
+          {showDonut ? (
+            <Tile className="p-6 md:p-7">
+              <Eyebrow className="mb-4">{t("orcamento.byCategory")}</Eyebrow>
+              <div className="flex items-center gap-6">
+                <div className="w-[128px] h-[128px] shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={view.expByCat} dataKey="value" nameKey="name" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
+                        {view.expByCat.map((e, i) => (
+                          <Cell key={e.id} fill={CAT[i % CAT.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v) => formatMoney(Number(v), disp)}
+                        contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))}
-            </div>
-          </div>
-        </Tile>
+                {/* Legenda: pares compactos (categoria + valor colados), que fluem em colunas. */}
+                <div className="flex flex-wrap content-center gap-x-7 gap-y-2.5 min-w-0">
+                  {view.expByCat.map((e, i) => (
+                    <div key={e.id} className="inline-flex items-center gap-2.5 text-[12.5px]">
+                      <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT[i % CAT.length] }} />
+                      <span className="text-muted">{e.name}</span>
+                      <Money value={e.value} currency={disp} className="font-semibold tabular" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Tile>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Receitas (mês) */}

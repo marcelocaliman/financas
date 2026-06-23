@@ -189,7 +189,11 @@
     "thisMonth": "This month",
     "copyPrev": "Copy from previous month",
     "history": "Monthly history",
-    "historyHint": "Tap a bar to open that month"
+    "historyHint": "Tap a bar to open that month",
+    "alongYear": "Over the year",
+    "monthSummary": "Month summary",
+    "prevYear": "Previous year",
+    "nextYear": "Next year"
   },
   "historico": {
     "month": "Month",

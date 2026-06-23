@@ -189,7 +189,11 @@
     "thisMonth": "Mês atual",
     "copyPrev": "Copiar do mês anterior",
     "history": "Histórico mensal",
-    "historyHint": "Toque numa barra pra abrir o mês"
+    "historyHint": "Toque numa barra pra abrir o mês",
+    "alongYear": "Ao longo do ano",
+    "monthSummary": "Resumo do mês",
+    "prevYear": "Ano anterior",
+    "nextYear": "Próximo ano"
   },
   "historico": {
     "month": "Mês",
