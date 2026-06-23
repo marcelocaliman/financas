@@ -5,6 +5,7 @@ import { CalendarClock, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
+import { useBudgetMonth } from "@/store/budget-month";
 import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
@@ -73,7 +74,8 @@ export default function Orcamento() {
   const viewerMode = useViewer((s) => s.viewerMode);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axis = theme === "dark" ? "#5f646c" : "#8a8f98";
-  const [month, setMonth] = useState(currentMonth());
+  const month = useBudgetMonth((s) => s.month);
+  const setMonth = useBudgetMonth((s) => s.setMonth);
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -480,24 +482,29 @@ function UpcomingBillsTile() {
 
 /** KPIs do cabeçalho do accordion de Orçamento — sempre o MÊS CORRENTE. */
 export function OrcamentoSummary() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
   const rates = useRates((s) => s.rates);
   const data = useBudget();
+  const month = useBudgetMonth((s) => s.month); // sincronizado com o seletor da página
   const v = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const mo = currentMonth();
+    const mo = month;
     const totalExp = data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
     const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const saldo = totalInc - totalExp;
     const bills = upcomingBills(data.expenses, todayISO());
     const duePayable = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
     return { totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0, duePayable, dueCount: bills.length };
-  }, [data, disp, rates]);
+  }, [data, disp, rates, month]);
   if (!v) return null;
+  const ml = monthLabel(month, lang, true).replace(/\.$/, "");
+  const monthLbl = `${ml.charAt(0).toUpperCase()}${ml.slice(1)} ${month.slice(0, 4)}`;
   return (
     <HeaderKpis>
+      <HeaderKpi raw label={t("historico.month")} value={monthLbl} />
       <HeaderKpi label={t("orcamento.balance")} tone={v.saldo >= 0 ? "text" : "neg"} value={<Money value={v.saldo} currency={disp} />} />
       {v.totalInc > 0 ? (
         <HeaderKpi secondary label={t("orcamento.savingsRate")} tone={v.savingsRate >= 0 ? "accent" : "neg"} value={`${Math.round(v.savingsRate)}%`} />
