@@ -172,6 +172,8 @@
     "uncategorized": "Sem categoria",
     "byCategory": "Gastos por categoria",
     "incomeByCategory": "Receitas por categoria",
+    "noIncomeMonth": "Sem receitas neste mês",
+    "noExpenseMonth": "Sem gastos neste mês",
     "savingsRate": "Poupança",
     "vsPrev": "vs. mês anterior",
     "recurring": "Recorrente",

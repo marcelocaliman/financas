@@ -172,6 +172,8 @@
     "uncategorized": "Uncategorized",
     "byCategory": "Expenses by category",
     "incomeByCategory": "Income by category",
+    "noIncomeMonth": "No income this month",
+    "noExpenseMonth": "No expenses this month",
     "savingsRate": "Savings",
     "vsPrev": "vs. last month",
     "recurring": "Recurring",

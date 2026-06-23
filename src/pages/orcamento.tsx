@@ -152,9 +152,6 @@ export default function Orcamento() {
   }
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-  // Mês selecionado: receitas por categoria + gastos por categoria, lado a lado.
-  const showInc = view.incByCat.length > 0;
-  const showExp = view.expByCat.length > 0;
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
@@ -275,13 +272,11 @@ export default function Orcamento() {
       {/* Contas a pagar / próximos vencimentos */}
       <UpcomingBillsTile />
 
-      {/* Mês selecionado: receitas por categoria + gastos por categoria, lado a lado */}
-      {showInc || showExp ? (
-        <div className={cn("grid gap-6", showInc && showExp ? "lg:grid-cols-2" : "")}>
-          {showInc ? <CategoryDonut title={t("orcamento.incomeByCategory")} data={view.incByCat} palette={CAT_INC} disp={disp} /> : null}
-          {showExp ? <CategoryDonut title={t("orcamento.byCategory")} data={view.expByCat} palette={CAT_EXP} disp={disp} /> : null}
-        </div>
-      ) : null}
+      {/* Mês selecionado: receitas e gastos por categoria — SEMPRE lado a lado (ghost quando vazio) */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <CategoryDonut title={t("orcamento.incomeByCategory")} data={view.incByCat} palette={CAT_INC} disp={disp} emptyLabel={t("orcamento.noIncomeMonth")} />
+        <CategoryDonut title={t("orcamento.byCategory")} data={view.expByCat} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
+      </div>
 
       {/* Receitas (mês) */}
       <section>
@@ -339,12 +334,26 @@ function CategoryDonut({
   data,
   palette,
   disp,
+  emptyLabel,
 }: {
   title: string;
   data: { id: string; name: string; value: number }[];
   palette: string[];
   disp: Currency;
+  emptyLabel: string;
 }) {
+  // Vazio: mantém o card visível com um anel "fantasma" + dica, em vez de sumir (layout estável).
+  if (data.length === 0) {
+    return (
+      <Tile className="p-6 md:p-7">
+        <Eyebrow className="mb-4">{title}</Eyebrow>
+        <div className="flex items-center gap-6">
+          <div className="w-[128px] h-[128px] shrink-0 rounded-full border-[21px] border-card2" aria-hidden />
+          <span className="text-[12.5px] text-faint">{emptyLabel}</span>
+        </div>
+      </Tile>
+    );
+  }
   return (
     <Tile className="p-6 md:p-7">
       <Eyebrow className="mb-4">{title}</Eyebrow>
