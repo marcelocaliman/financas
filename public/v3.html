@@ -287,6 +287,17 @@
     .hero-mock .hm-icon { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); flex: none; }
     .hero-mock .hm-icon svg { width: 15px; height: 15px; }
     .hero-mock .hm-months { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 8px; }
+    /* celular (o que a família vê) */
+    .phone { width: min(266px, 100%); margin: 0 auto; border-radius: 40px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card-2) 0%, var(--card) 100%); box-shadow: var(--shadow-float); padding: 11px; }
+    .phone-notch { width: 70px; height: 5px; border-radius: 99px; background: var(--border-strong); margin: 3px auto 12px; }
+    .phone-screen { border-radius: 30px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; padding: 18px 16px 16px; }
+    .phone .ph-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .phone .ph-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 12.5px; letter-spacing: -0.01em; }
+    .phone .ph-title svg { width: 14px; height: 14px; color: var(--accent); flex: none; }
+    .phone .ph-lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .phone .ph-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: 1.95rem; line-height: 1; margin: 7px 0 0; color: var(--text); }
+    .phone .ph-locked { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11.5px; margin-top: 15px; padding-top: 13px; border-top: 1px solid var(--border); }
+    .phone .ph-locked svg { width: 14px; height: 14px; color: var(--accent); flex: none; }
     .band .band-bg .band-gfx { position: absolute; inset: 0; background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 100%); }
     .band .band-bg .band-gfx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(85% 65% at 50% -8%, rgba(62,207,142,.16), transparent 60%); }
     .band .band-bg:has(.band-gfx)::after { background: linear-gradient(180deg, rgba(10,11,13,.32) 0%, rgba(10,11,13,.64) 100%); }
@@ -792,46 +803,31 @@
   <section id="familia">
     <div class="wrap">
       <div class="feature">
-        <div class="reveal from-l">
-          <div class="hero-mock">
-            <div class="hm-top">
-              <span class="hm-brand"><span class="hm-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span> <span data-i18n="fm.mocktitle">Painel compartilhado</span></span>
-              <span class="badge"><span class="dot" style="background:var(--accent)"></span> <span data-i18n="fm.badge3">Somente leitura</span></span>
-            </div>
-            <div class="mk-card">
-              <div class="mk-head"><span class="mk-eyebrow" data-i18n="fm.mocktrend">Evolução do patrimônio</span><span class="pos" style="font-size:12px;font-weight:600">+4,2%</span></div>
-              <svg class="spark" style="height:74px;margin-top:0" viewBox="0 0 320 74" preserveAspectRatio="none" aria-hidden="true">
-                <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-                <path d="M0,58 L40,52 L80,55 L120,42 L160,45 L200,33 L240,35 L280,19 L320,13 L320,74 L0,74 Z" fill="url(#fg)"/>
-                <path d="M0,58 L40,52 L80,55 L120,42 L160,45 L200,33 L240,35 L280,19 L320,13" fill="none" stroke="var(--accent)" stroke-width="2"/>
-              </svg>
-              <div class="mk-eyebrow" style="margin-top:9px" data-i18n="fm.mock6m">Últimos 6 meses</div>
-            </div>
-            <div class="mk-statgrid" style="margin-top:12px">
-              <div class="mk-stat"><span class="k" data-i18n="fm.mockst1">Patrimônio líquido</span><span class="v tabular">R$ 1.284.500</span></div>
-              <div class="mk-stat"><span class="k" data-i18n="fm.mockst2">Investido</span><span class="v tabular">R$ 880 mil</span></div>
-              <div class="mk-stat"><span class="k" data-i18n="fm.mockst3">Renda do mês</span><span class="v tabular" style="color:var(--accent)">R$ 12.300</span></div>
-              <div class="mk-stat"><span class="k" data-i18n="fm.mockst4">Saldo do mês</span><span class="v tabular" style="color:var(--accent)">R$ 4.060</span></div>
-            </div>
-            <div class="mk-card" style="margin-top:12px">
-              <div class="mk-head"><span class="mk-eyebrow" data-i18n="fm.mockbudget">Orçamento do mês</span><span class="mk-eyebrow">5 itens</span></div>
-              <div style="display:flex;align-items:center;gap:16px">
-                <div class="mk-donut">
-                  <div class="mk-donut-ring" style="background:conic-gradient(#3ECF8E 0 34%, #5FB394 34% 58%, #8A8F98 58% 78%, #6E7682 78% 91%, #4B5159 91% 100%)"></div>
-                  <div class="mk-donut-hole"><div><div class="mk-eyebrow" data-i18n="fm.mockspent">Gastos</div><b class="tabular" style="font-size:13.5px;font-weight:600;letter-spacing:-0.02em">R$ 8.240</b></div></div>
-                </div>
-                <div class="mk-legend">
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#3ECF8E"></span><span data-i18n="fm.cat1">Moradia</span></span><span class="vl tabular">R$ 2.800</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#5FB394"></span><span data-i18n="fm.cat2">Mercado</span></span><span class="vl tabular">R$ 1.950</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#8A8F98"></span><span data-i18n="fm.cat3">Transporte</span></span><span class="vl tabular">R$ 1.640</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#6E7682"></span><span data-i18n="fm.cat4">Lazer</span></span><span class="vl tabular">R$ 1.100</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#4B5159"></span><span data-i18n="fm.cat5">Outros</span></span><span class="vl tabular">R$ 750</span></div>
-                </div>
+        <div class="reveal from-l" style="display:flex;justify-content:center">
+          <div class="phone">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="ph-top">
+                <span class="ph-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span data-i18n="fm.mocktitle">Painel da família</span></span>
+                <span class="badge"><span class="dot" style="background:var(--accent)"></span> <span data-i18n="fm.badge3">Só-leitura</span></span>
               </div>
-            </div>
-            <div class="hm-locked">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              <span data-i18n="fm.mocklocked">Edição bloqueada — ninguém mexe nos seus números.</span>
+              <div class="ph-lbl" data-i18n="fm.mocklbl">Patrimônio líquido</div>
+              <div class="ph-num tabular">R$ 1.284.500</div>
+              <div style="margin-top:8px"><span class="pos" style="font-size:12.5px;font-weight:600" data-i18n="fm.mockvar">▲ 4,2% no mês</span></div>
+              <svg class="spark" style="height:64px;margin-top:16px" viewBox="0 0 280 64" preserveAspectRatio="none" aria-hidden="true">
+                <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+                <path d="M0,50 L35,45 L70,47 L105,36 L140,38 L175,28 L210,30 L245,16 L280,11 L280,64 L0,64 Z" fill="url(#fg)"/>
+                <path d="M0,50 L35,45 L70,47 L105,36 L140,38 L175,28 L210,30 L245,16 L280,11" fill="none" stroke="var(--accent)" stroke-width="2"/>
+              </svg>
+              <div style="display:flex;gap:7px;align-items:center;margin-top:14px;flex-wrap:wrap">
+                <span class="comp" aria-hidden="true"><span style="width:62%;background:var(--accent)"></span><span style="width:38%;background:var(--eur)"></span></span>
+                <span class="chip chip-BRL">BRL 62%</span>
+                <span class="chip chip-EUR">EUR 38%</span>
+              </div>
+              <div class="ph-locked">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span data-i18n="fm.mocklocked">Edição bloqueada — ela só acompanha.</span>
+              </div>
             </div>
           </div>
         </div>
