@@ -302,6 +302,13 @@
     .phone .ph-stat .v { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; font-size: 14.5px; margin-top: 4px; display: block; letter-spacing: -0.02em; color: var(--text); }
     .phone .ph-locked { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
     .phone .ph-locked svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
+    /* variante tablet (preenche a coluna larga; a "tela da família") */
+    .phone.tablet { width: min(460px, 100%); border-radius: 30px; padding: 16px; position: relative; }
+    .phone.tablet .phone-notch { display: none; }
+    .phone.tablet .phone-screen { border-radius: 18px; padding: 27px 28px 25px; }
+    .phone.tablet::after { content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); }
+    .phone.tablet .ph-top { margin-bottom: 22px; }
+    .phone.tablet .ph-num { font-size: 2.85rem; }
     .band .band-bg .band-gfx { position: absolute; inset: 0; background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 100%); }
     .band .band-bg .band-gfx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(85% 65% at 50% -8%, rgba(62,207,142,.16), transparent 60%); }
     .band .band-bg:has(.band-gfx)::after { background: linear-gradient(180deg, rgba(10,11,13,.32) 0%, rgba(10,11,13,.64) 100%); }
@@ -806,9 +813,9 @@
   <!-- 7 · ACESSO DA FAMÍLIA -->
   <section id="familia">
     <div class="wrap">
-      <div class="feature" style="grid-template-columns:0.74fr 1.26fr">
+      <div class="feature">
         <div class="reveal from-l" style="display:flex;justify-content:center">
-          <div class="phone">
+          <div class="phone tablet">
             <div class="phone-notch"></div>
             <div class="phone-screen">
               <div class="ph-top">
@@ -818,12 +825,12 @@
               <div class="ph-lbl" data-i18n="fm.mocklbl">Patrimônio líquido</div>
               <div class="ph-num tabular">R$ 1.284.500</div>
               <div style="margin-top:8px"><span class="pos" style="font-size:12.5px;font-weight:600" data-i18n="fm.mockvar">▲ 4,2% no mês</span></div>
-              <svg class="spark" style="height:82px;margin-top:18px" viewBox="0 0 300 82" preserveAspectRatio="none" aria-hidden="true">
+              <svg class="spark" style="height:104px;margin-top:18px" viewBox="0 0 300 104" preserveAspectRatio="none" aria-hidden="true">
                 <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-                <path d="M0,64 L37,58 L75,61 L112,46 L150,49 L187,35 L225,38 L262,20 L300,14 L300,82 L0,82 Z" fill="url(#fg)"/>
-                <path d="M0,64 L37,58 L75,61 L112,46 L150,49 L187,35 L225,38 L262,20 L300,14" fill="none" stroke="var(--accent)" stroke-width="2"/>
+                <path d="M0,81 L37,73 L75,77 L112,58 L150,62 L187,44 L225,48 L262,25 L300,17 L300,104 L0,104 Z" fill="url(#fg)"/>
+                <path d="M0,81 L37,73 L75,77 L112,58 L150,62 L187,44 L225,48 L262,25 L300,17" fill="none" stroke="var(--accent)" stroke-width="2"/>
               </svg>
-              <div style="display:flex;gap:7px;align-items:center;margin-top:15px;flex-wrap:wrap">
+              <div style="display:flex;gap:7px;align-items:center;margin-top:16px;flex-wrap:wrap">
                 <span class="comp" aria-hidden="true"><span style="width:62%;background:var(--accent)"></span><span style="width:38%;background:var(--eur)"></span></span>
                 <span class="chip chip-BRL">BRL 62%</span>
                 <span class="chip chip-EUR">EUR 38%</span>
@@ -831,6 +838,8 @@
               <div class="ph-statrow">
                 <div class="ph-stat"><span class="k" data-i18n="fm.phst1">Renda do mês</span><span class="v tabular" style="color:var(--accent)">R$ 12.300</span></div>
                 <div class="ph-stat"><span class="k" data-i18n="fm.phst2">Saldo do mês</span><span class="v tabular" style="color:var(--accent)">R$ 4.060</span></div>
+                <div class="ph-stat"><span class="k" data-i18n="fm.phst3">Investido</span><span class="v tabular">R$ 880 mil</span></div>
+                <div class="ph-stat"><span class="k" data-i18n="fm.phst4">Reserva</span><span class="v tabular">6,2 meses</span></div>
               </div>
               <div class="ph-locked">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
