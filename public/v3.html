@@ -251,6 +251,9 @@
     .photo .on-photo { position: relative; z-index: 3; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
     /* Foco visível por teclado (a11y) — não aparece no clique de mouse. */
     a:focus-visible, button:focus-visible, summary:focus-visible, .btn:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+    /* Colagem de fotos flutuantes (seção "Quem construiu") */
+    .collage { position: relative; aspect-ratio: 1 / 1; max-width: 520px; margin: 0 auto; }
+    .collage img { position: absolute; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: var(--card-2); box-shadow: 0 16px 46px rgba(0,0,0,0.5); }
 
     /* Avatares — naturais */
     .avatars { display: inline-flex; align-items: center; }
@@ -568,14 +571,23 @@
     </div>
   </section>
 
-  <!-- 3 · QUEM CONSTRUIU (nota do fundador, compacta) -->
+  <!-- 3 · QUEM CONSTRUIU (texto + colagem de 3 fotos flutuantes) -->
   <section id="porque" style="background:var(--bg-2);border-block:1px solid var(--border)">
-    <div class="wrap" style="max-width:720px;text-align:center">
-      <div class="reveal">
-        <div class="eyebrow accent" style="justify-content:center" data-i18n="hist.eyebrow">Quem construiu</div>
-        <img src="/img/v3/founder.jpg" alt="Marcelo, o dev que criou o Nossas Finanças, e a companheira" loading="lazy" width="200" height="200" style="width:96px;height:96px;border-radius:50%;object-fit:cover;display:block;margin:24px auto 0;box-shadow:0 0 0 1px var(--border), 0 0 0 7px var(--card-2), 0 18px 44px rgba(0,0,0,0.5)" />
-        <blockquote style="margin:24px auto 0;max-width:40ch;padding:0;border:0;font-size:clamp(19px,2.6vw,25px);font-weight:500;letter-spacing:-0.015em;line-height:1.38;color:var(--text)" data-i18n="hist.p">“Sou dev e vivo entre moedas. Construí a ferramenta que eu mesmo precisava — multimoeda de verdade, e tão privada que nem eu vejo os seus números.”</blockquote>
-        <div class="eyebrow" style="justify-content:center;margin-top:20px"><span data-i18n="hist.sig">Marcelo · dev, construindo em aberto</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></div>
+    <div class="wrap">
+      <div class="feature">
+        <div class="reveal from-l">
+          <div class="collage">
+            <img src="/img/v3/founder.jpg" alt="Marcelo, o dev que criou o Nossas Finanças, e a companheira" loading="lazy" width="600" height="600" style="width:66%; left:17%; top:4%; z-index:2" />
+            <img src="/img/v3/dev.jpg" alt="Código do app numa tela" loading="lazy" width="700" height="700" style="width:40%; right:0; top:0; z-index:3" />
+            <img src="/img/v3/currencies.jpg" alt="Notas de várias moedas" loading="lazy" width="700" height="700" style="width:44%; left:0; bottom:2%; z-index:3" />
+          </div>
+        </div>
+        <div class="copy reveal from-r">
+          <div class="eyebrow accent" data-i18n="hist.eyebrow">Quem construiu</div>
+          <h2 data-i18n="hist.h2">Um dev que construiu a ferramenta que ele mesmo precisava.</h2>
+          <p data-i18n="hist.p">Sou o Marcelo, desenvolvedor. Vivo a vida dividida entre moedas e países e cansei da pergunta que não larga — quanto eu realmente tenho, somando tudo? Planilha não dava conta; os apps só falavam uma moeda. Nenhum falava as duas línguas do meu dinheiro. Então construí o que faltava: simples, completo, multimoeda de verdade, e privado a ponto de nem eu conseguir ver os seus números. Uso todo dia — e construo em aberto, ouvindo quem chega primeiro.</p>
+          <div class="eyebrow" style="margin-top:20px"><span data-i18n="hist.sig">Marcelo · dev, construindo em aberto</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></div>
+        </div>
       </div>
     </div>
   </section>
