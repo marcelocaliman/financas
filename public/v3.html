@@ -311,15 +311,15 @@
     .phone.tablet .ph-num { font-size: 2.85rem; }
     /* composição em camadas — tela compartilhada, vista a dois */
     .fam-stage { position: relative; }
-    .fam-back { position: absolute; z-index: 0; top: -30px; left: -52px; width: 252px; border-radius: 36px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card-2), var(--card)); box-shadow: var(--shadow-float); padding: 11px; }
+    .fam-back { position: absolute; z-index: 0; top: -46px; left: -120px; width: 256px; border-radius: 36px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card-2), var(--card)); box-shadow: var(--shadow-float); padding: 11px; }
     .fam-back-screen { position: relative; border-radius: 27px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; padding: 18px 16px 20px; }
-    .fam-back-screen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(125deg, rgba(10,11,13,.10) 0%, rgba(10,11,13,.52) 72%); }
+    .fam-back-screen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(125deg, rgba(10,11,13,.04) 0%, rgba(10,11,13,.30) 78%); }
     .fam-back .fb-lbl { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .fam-back .fb-num { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: -0.03em; font-size: 1.55rem; line-height: 1; margin-top: 6px; color: var(--muted); }
-    .fam-users { position: absolute; z-index: 5; top: 122px; right: -62px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .fam-users { position: absolute; z-index: 5; bottom: 34px; right: -68px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .fam-users .fu-avs { display: inline-flex; }
-    .fam-users .fu-avs img { width: 62px; height: 62px; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg); box-shadow: var(--shadow-float); }
-    .fam-users .fu-avs img:not(:first-child) { margin-left: -22px; }
+    .fam-users .fu-avs img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid var(--bg); box-shadow: var(--shadow-float); }
+    .fam-users .fu-avs img:not(:first-child) { margin-left: -26px; }
     .fam-users .fu-cap { font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
     @media (max-width: 820px) { .fam-back, .fam-users { display: none; } }
     .band .band-bg .band-gfx { position: absolute; inset: 0; background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 100%); }
