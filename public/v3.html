@@ -266,7 +266,7 @@
     .hero-mock .hm-locked svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
     .hero-mock .hm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
     .hero-mock .mk-ringwrap { text-align: center; flex: none; }
-    .hero-mock .mk-ring { position: relative; width: 66px; height: 66px; margin: 0 auto; }
+    .hero-mock .mk-ring { position: relative; width: 66px; height: 66px; }
     .hero-mock .mk-ring .mk-ring-v { position: absolute; inset: 0; display: grid; place-items: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; color: var(--text); }
     .hero-mock .mk-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .hero-mock .mk-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-2); padding: 15px 16px; }
@@ -283,6 +283,10 @@
     .hero-mock .mk-leg .nm { display: flex; align-items: center; gap: 7px; color: var(--muted); min-width: 0; }
     .hero-mock .mk-leg .nm .dt { width: 8px; height: 8px; border-radius: 2px; flex: none; }
     .hero-mock .mk-leg .vl { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); flex: none; }
+    .hero-mock .hm-hero-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.045em; font-size: clamp(2.3rem, 3.6vw, 3.1rem); line-height: 1; margin: 8px 0 0; color: var(--text); }
+    .hero-mock .hm-icon { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); flex: none; }
+    .hero-mock .hm-icon svg { width: 15px; height: 15px; }
+    .hero-mock .hm-months { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 8px; }
     .band .band-bg .band-gfx { position: absolute; inset: 0; background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 100%); }
     .band .band-bg .band-gfx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(85% 65% at 50% -8%, rgba(62,207,142,.16), transparent 60%); }
     .band .band-bg:has(.band-gfx)::after { background: linear-gradient(180deg, rgba(10,11,13,.32) 0%, rgba(10,11,13,.64) 100%); }
@@ -525,32 +529,56 @@
             </svg>
           </span>
           <div class="hero-mock">
-            <div class="hm-top" style="justify-content:flex-start;gap:11px">
+            <div class="hm-top" style="justify-content:flex-start;gap:9px">
               <span class="hm-brand"><span class="hm-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"/><path d="M16 8h3v3"/></svg></span> Nossas Finanças</span>
               <span class="hm-pill">BRL ▾</span>
+              <span class="hm-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
             </div>
-            <div class="hm-lbl" data-i18n="hero.fclbl">Patrimônio líquido</div>
-            <div class="hm-big tabular">R$ 1.284.500</div>
-            <div style="margin-top:9px"><span class="pos" style="font-size:13px;font-weight:600" data-i18n="hero.fcvar">▲ 4,2% no mês</span></div>
-            <svg class="spark hm-spark" viewBox="0 0 320 84" preserveAspectRatio="none" aria-hidden="true">
-              <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-              <path d="M0,70 L40,62 L80,66 L120,46 L160,50 L200,32 L240,36 L280,17 L320,11 L320,84 L0,84 Z" fill="url(#hg)"/>
-              <path d="M0,70 L40,62 L80,66 L120,46 L160,50 L200,32 L240,36 L280,17 L320,11" fill="none" stroke="var(--accent)" stroke-width="2"/>
+            <div class="hm-lbl" data-i18n="hero.fclbl" style="margin-top:4px">Patrimônio líquido</div>
+            <div class="hm-hero-num tabular">R$ 1.284.500</div>
+            <div style="margin-top:9px"><span class="pos" style="font-size:13px;font-weight:600" data-i18n="hero.fcvar">▲ 4,2%</span><span style="color:var(--faint);font-size:12.5px"> no mês · +R$ 51.380</span></div>
+            <svg class="spark" style="height:98px;margin-top:18px" viewBox="0 0 320 98" preserveAspectRatio="none" aria-hidden="true">
+              <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.24"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0,82 L32,76 L64,79 L96,60 L128,64 L160,46 L192,50 L224,30 L256,34 L288,16 L320,12 L320,98 L0,98 Z" fill="url(#hg)"/>
+              <path d="M0,82 L32,76 L64,79 L96,60 L128,64 L160,46 L192,50 L224,30 L256,34 L288,16 L320,12" fill="none" stroke="var(--accent)" stroke-width="2"/>
             </svg>
-            <div class="hm-chips">
+            <div class="hm-months"><span>JAN</span><span>FEV</span><span>MAR</span><span>ABR</span><span>MAI</span><span>JUN</span></div>
+            <div class="hm-chips" style="margin-top:16px">
               <span class="comp" aria-hidden="true"><span style="width:62%;background:var(--accent)"></span><span style="width:38%;background:var(--eur)"></span></span>
               <span class="chip chip-BRL">BRL 62%</span>
               <span class="chip chip-EUR">EUR 38%</span>
             </div>
-            <div class="hm-statgrid" style="margin-top:18px">
+            <div class="hm-statgrid" style="margin-top:16px">
               <div class="mk-stat" style="display:flex;align-items:center;gap:11px">
-                <div class="mk-ring" style="width:44px;height:44px;flex:none">
-                  <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--card-2)" stroke-width="5"/><circle cx="22" cy="22" r="18" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="66.7" transform="rotate(-90 22 22)"/></svg>
+                <div class="mk-ring" style="width:46px;height:46px;flex:none">
+                  <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="var(--card-2)" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="70.4" transform="rotate(-90 23 23)"/></svg>
                   <div class="mk-ring-v" style="font-size:11px">41%</div>
                 </div>
                 <div><span class="k" data-i18n="hero.tile1">Liberdade</span><span class="v tabular">12,4 anos</span></div>
               </div>
-              <div class="mk-stat"><span class="k" data-i18n="hero.tile2">Renda do mês</span><span class="v tabular" style="color:var(--accent)">R$ 12.300</span></div>
+              <div class="mk-stat" style="display:flex;align-items:center;gap:11px">
+                <div class="mk-ring" style="width:46px;height:46px;flex:none">
+                  <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="var(--card-2)" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="33.4" transform="rotate(-90 23 23)"/></svg>
+                  <div class="mk-ring-v" style="font-size:11px">72</div>
+                </div>
+                <div><span class="k" data-i18n="hero.tile2">Saúde</span><span class="v tabular">Boa</span></div>
+              </div>
+            </div>
+            <div class="mk-card" style="margin-top:12px">
+              <div class="mk-head"><span class="mk-eyebrow" data-i18n="hero.alloc">Alocação por classe</span><span class="mk-eyebrow">5 classes</span></div>
+              <div style="display:flex;align-items:center;gap:16px">
+                <div class="mk-donut">
+                  <div class="mk-donut-ring" style="background:conic-gradient(#3ECF8E 0 38%, #5FB394 38% 60%, #8A8F98 60% 78%, #6E7682 78% 92%, #4B5159 92% 100%)"></div>
+                  <div class="mk-donut-hole"><div><div class="mk-eyebrow" data-i18n="hero.assets">Ativos</div><b class="tabular" style="font-size:13.5px;font-weight:600;letter-spacing:-0.02em">R$ 1,42M</b></div></div>
+                </div>
+                <div class="mk-legend">
+                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#3ECF8E"></span><span data-i18n="hero.cl1">Ações &amp; FIIs</span></span><span class="vl tabular">38%</span></div>
+                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#5FB394"></span><span data-i18n="hero.cl2">Caixa</span></span><span class="vl tabular">22%</span></div>
+                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#8A8F98"></span><span data-i18n="hero.cl3">Imóveis</span></span><span class="vl tabular">18%</span></div>
+                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#6E7682"></span><span data-i18n="hero.cl4">Renda fixa</span></span><span class="vl tabular">14%</span></div>
+                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#4B5159"></span><span data-i18n="hero.cl5">Cripto</span></span><span class="vl tabular">8%</span></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
