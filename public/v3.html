@@ -251,9 +251,11 @@
     .photo .on-photo { position: relative; z-index: 3; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
     /* Foco visível por teclado (a11y) — não aparece no clique de mouse. */
     a:focus-visible, button:focus-visible, summary:focus-visible, .btn:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-    /* Colagem de fotos flutuantes (seção "Quem construiu") */
-    .collage { position: relative; aspect-ratio: 1 / 1; max-width: 520px; margin: 0 auto; }
-    .collage img { position: absolute; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: var(--card-2); box-shadow: 0 16px 46px rgba(0,0,0,0.5); }
+    /* Colagem de fotos (seção "Quem construiu") — grid CONTIDO, sem overflow */
+    .collage { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; max-width: 470px; margin: 0 auto; }
+    .collage img { display: block; width: 100%; height: auto; object-fit: cover; border-radius: 16px; border: 1px solid var(--border); background: var(--card-2); box-shadow: 0 12px 34px rgba(0,0,0,0.42); }
+    .collage .main { grid-column: 1 / 3; aspect-ratio: 16 / 10; }
+    .collage .sq { aspect-ratio: 1 / 1; }
 
     /* Avatares — naturais */
     .avatars { display: inline-flex; align-items: center; }
@@ -577,9 +579,9 @@
       <div class="feature">
         <div class="reveal from-l">
           <div class="collage">
-            <img src="/img/v3/founder.jpg" alt="Marcelo, o dev que criou o Nossas Finanças, e a companheira" loading="lazy" width="600" height="600" style="width:66%; left:17%; top:4%; z-index:2" />
-            <img src="/img/v3/dev.jpg" alt="Código do app numa tela" loading="lazy" width="700" height="700" style="width:40%; right:0; top:0; z-index:3" />
-            <img src="/img/v3/currencies.jpg" alt="Notas de várias moedas" loading="lazy" width="700" height="700" style="width:44%; left:0; bottom:2%; z-index:3" />
+            <img class="main" src="/img/v3/founder.jpg" alt="Marcelo, o dev que criou o Nossas Finanças, e a companheira" loading="lazy" width="1600" height="1000" />
+            <img class="sq" src="/img/v3/dev.jpg" alt="Código do app numa tela" loading="lazy" width="700" height="700" />
+            <img class="sq" src="/img/v3/currencies.jpg" alt="Notas de várias moedas" loading="lazy" width="700" height="700" />
           </div>
         </div>
         <div class="copy reveal from-r">
