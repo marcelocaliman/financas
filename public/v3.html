@@ -316,6 +316,9 @@
     .fam-card .ic svg { width: 15px; height: 15px; }
     .fam-card .t1 { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.2; letter-spacing: -0.01em; }
     .fam-card .t2 { display: block; font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 3px; }
+    .fam-card .fam-avs { display: inline-flex; flex: none; }
+    .fam-card .fam-avs img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--card); }
+    .fam-card .fam-avs img:not(:first-child) { margin-left: -11px; }
     .fam-card-tl { top: -28px; left: -52px; }
     .fam-card-br { bottom: -26px; right: -46px; }
     @media (max-width: 760px) { .fam-card { display: none; } }
@@ -859,8 +862,8 @@
             </div>
           </div>
           <div class="fam-card fam-card-tl">
-            <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-            <span><span class="t1" data-i18n="fm.cardwho">Quem você escolher</span><span class="t2" data-i18n="fm.cardwhosub">parceiro · pai · mãe</span></span>
+            <span class="fam-avs"><img src="/img/v2/avatar-1.jpg" alt="" loading="lazy" width="30" height="30" /><img src="/img/v2/avatar-2.jpg" alt="" loading="lazy" width="30" height="30" /></span>
+            <span><span class="t1" data-i18n="fm.cardwho">Acompanham juntos</span><span class="t2" data-i18n="fm.cardwhosub">os dois, na mesma tela</span></span>
           </div>
           <div class="fam-card fam-card-br">
             <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span>
