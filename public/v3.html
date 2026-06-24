@@ -52,7 +52,7 @@
       { "@type": "SoftwareApplication", "name": "Nossas Finanças", "applicationCategory": "FinanceApplication", "operatingSystem": "Web, iOS, Android (PWA)", "url": "https://nossasfinancas.com.br/app", "inLanguage": ["pt-BR", "en"], "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }, "featureList": ["Multimoeda (BRL, EUR, USD, GBP)", "Criptografia ponta a ponta (E2EE)", "Local-first e offline (PWA)", "Patrimônio e investimentos", "Orçamento mensal multimoeda", "Projeção e independência financeira (FIRE)", "Acesso da família (só-leitura)"] },
       { "@type": "FAQPage", "inLanguage": "pt-BR", "mainEntity": [
         { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar." } },
-        { "@type": "Question", "name": "Por que é por convite?", "acceptedAnswer": { "@type": "Answer", "text": "Porque é novo e estamos construindo com cuidado, ouvindo os primeiros de perto antes de abrir pra todo mundo. Entrar agora é estar entre os primeiros — e ajudar a moldar o que vem." } },
+        { "@type": "Question", "name": "Posso me cadastrar agora?", "acceptedAnswer": { "@type": "Answer", "text": "Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem." } },
         { "@type": "Question", "name": "Vocês conseguem ver os meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler." } },
         { "@type": "Question", "name": "E se eu perder a senha?", "acceptedAnswer": { "@type": "Answer", "text": "Você recebe um código de recuperação no cadastro — guarde bem. Sem a senha e sem esse código, nem nós conseguimos abrir seus dados. É o preço justo da privacidade de verdade." } },
         { "@type": "Question", "name": "Funciona com quais moedas?", "acceptedAnswer": { "@type": "Answer", "text": "Cada item guarda a sua própria moeda, e você escolhe em qual ver o conjunto. Real, euro, dólar e outras — com câmbio automático e ajuste manual." } },
@@ -68,7 +68,7 @@
   <style>
     :root {
       --bg: #0a0b0d; --bg-2: #0f1013; --card: #131418; --card-2: #191b20;
-      --text: #f3f4f6; --muted: #9ca2ac; --faint: #5f646c;
+      --text: #f3f4f6; --muted: #a9b1bd; --faint: #7a8290;
       --border: rgba(255, 255, 255, 0.08); --border-strong: rgba(255, 255, 255, 0.12);
       --accent: #3ecf8e; --accent-press: #2c9e6c; --accent-soft: rgba(62, 207, 142, 0.1);
       --neg: #f1746a; --eur: #8a8f98;
@@ -83,7 +83,7 @@
     }
     html.light {
       --bg: #ecedef; --bg-2: #ffffff; --card: #ffffff; --card-2: #f4f4f5;
-      --text: #18181b; --muted: #52525b; --faint: #8a8f98;
+      --text: #18181b; --muted: #52525b; --faint: #6e727a;
       --border: #e6e6e9; --border-strong: #d6d6da;
       --accent: #15976a; --accent-press: #0f7e57; --accent-soft: rgba(21, 151, 106, 0.1);
       --neg: #dc5a4e; --eur: #6b7280;
@@ -249,6 +249,8 @@
     .photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
     .photo .veil { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(10,11,13,0) 48%, rgba(10,11,13,0.5) 80%, rgba(10,11,13,0.88) 100%); }
     .photo .on-photo { position: relative; z-index: 3; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
+    /* Foco visível por teclado (a11y) — não aparece no clique de mouse. */
+    a:focus-visible, button:focus-visible, summary:focus-visible, .btn:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
     /* Avatares — naturais */
     .avatars { display: inline-flex; align-items: center; }
@@ -431,14 +433,14 @@
       <div class="hero-grid">
         <div class="hero-copy reveal">
           <div class="eyebrow" data-i18n="hero.eyebrow">Para quem vive entre países</div>
-          <h1><span data-i18n="hero.h1a">Seu dinheiro, em duas moedas,</span><br />
+          <h1><span data-i18n="hero.h1a">Seu dinheiro em várias moedas —</span><br />
             <span class="hero-rot">
-              <span class="rot-item is-on grad" aria-hidden="false" data-i18n="hero.rot1">finalmente claro.</span>
-              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot2">num lugar só.</span>
-              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">de graça e só seu.</span>
+              <span class="rot-item is-on grad" aria-hidden="false" data-i18n="hero.rot1">junto, claro e só seu.</span>
+              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot2">criptografado de ponta a ponta.</span>
+              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">num lugar só, de graça.</span>
             </span>
           </h1>
-          <p class="sub" data-i18n="hero.sub">Você tem conta aqui e lá, recebe numa moeda e gasta noutra, e toda vez que o câmbio mexe bate a dúvida: afinal, quanto eu tenho, somando tudo? Nossas Finanças junta o seu dinheiro num lugar só, na moeda que você entende — de graça, e com privacidade de verdade: nem a gente vê os seus números.</p>
+          <p class="sub" data-i18n="hero.sub">Um painel que junta o seu dinheiro — em qualquer moeda — num lugar só: patrimônio, orçamento e investimentos, na moeda que você entende, com criptografia de ponta a ponta (nem a gente vê os seus números). Recebe numa moeda e gasta noutra? Aqui você enfim vê quanto tem, somando tudo. De graça.</p>
           <div class="ctas">
             <a class="btn btn-primary btn-lg" href="/app" data-i18n="hero.cta1">Quero meu acesso — é grátis</a>
             <a class="btn btn-ghost btn-lg" href="#como-funciona" data-i18n="hero.cta2">Ver como funciona</a>
@@ -524,7 +526,7 @@
           <span class="more" data-i18n="av.more">+ você</span>
         </div>
       </div>
-      <p class="honesty" style="text-align:center;margin:16px auto 0" data-i18n="pq.honesty">As pessoas aqui representam para quem o app é feito — não são clientes nem depoimentos. O produto é novo e por convite.</p>
+      <p class="honesty" style="text-align:center;margin:16px auto 0" data-i18n="pq.honesty">As pessoas aqui representam para quem o app é feito — não são clientes nem depoimentos. O produto é novo, em acesso antecipado.</p>
 
       <div class="persona-grid stagger reveal">
         <div class="persona">
@@ -566,20 +568,20 @@
     </div>
   </section>
 
-  <!-- 3 · POR QUE EXISTE -->
+  <!-- 3 · QUEM CONSTRUIU -->
   <section id="porque" style="background:var(--bg-2);border-block:1px solid var(--border)">
     <div class="wrap">
-      <div class="feature" style="align-items:stretch">
+      <div class="feature">
         <div class="reveal from-l">
-          <figure class="photo" style="margin:0;height:100%;min-height:300px">
-            <img src="/img/v3/why.jpg" alt="Notas de várias moedas — dinheiro que vive em mais de um país" loading="lazy" width="1600" height="900" />
+          <figure class="photo" style="margin:0;aspect-ratio:4/5">
+            <img src="/img/v2/marcelo.jpg" alt="Marcelo, o dev que criou o Nossas Finanças" loading="lazy" width="600" height="750" />
           </figure>
         </div>
         <div class="copy reveal from-r">
-          <div class="eyebrow accent" data-i18n="hist.eyebrow">Por que existe</div>
-          <h2 data-i18n="hist.h2">Nasceu de um problema real.</h2>
-          <p data-i18n="hist.p">Quem tem a vida dividida entre moedas e países conhece a pergunta que não larga — afinal, quanto eu realmente tenho, somando tudo? Planilha não dá conta. Os apps só falam uma moeda: o daqui não entende a de fora, o de fora não entende a daqui. Nenhum fala as duas línguas do seu dinheiro. Então construímos a ferramenta que faltava: simples, completa, multimoeda de verdade, e privada a ponto de nem a gente conseguir ver os seus números.</p>
-          <p style="color:var(--text);font-size:17px;font-style:italic;margin-top:22px" data-i18n="hist.quote">“Multimoeda de verdade. Privado de verdade.”</p>
+          <div class="eyebrow accent" data-i18n="hist.eyebrow">Quem construiu</div>
+          <h2 data-i18n="hist.h2">Um dev que construiu a ferramenta que ele mesmo precisava.</h2>
+          <p data-i18n="hist.p">Sou o Marcelo, desenvolvedor. Vivo a vida dividida entre moedas e países e cansei da pergunta que não larga — quanto eu realmente tenho, somando tudo? Planilha não dava conta; os apps só falavam uma moeda. Nenhum falava as duas línguas do meu dinheiro. Então construí o que faltava: simples, completo, multimoeda de verdade, e privado a ponto de nem eu conseguir ver os seus números. Uso todo dia — e construo em aberto, ouvindo quem chega primeiro.</p>
+          <div class="eyebrow" style="margin-top:18px"><span data-i18n="hist.sig">Marcelo · dev</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:22px">
             <span class="chip chip-neutral" data-i18n="hist.chip1">Multimoeda · BRL · EUR · USD · GBP</span>
             <span class="chip chip-neutral" data-i18n="hist.chip2">Câmbio ao vivo</span>
@@ -849,10 +851,10 @@
       <h2 style="font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600;letter-spacing:-0.04em;line-height:1.05;margin:14px auto 0;max-width:20ch;color:#fff" data-i18n="ct.h2">Seu dinheiro já vive em mais de uma moeda. Aqui ele finalmente faz sentido.</h2>
       <p style="font-size:clamp(15px,1.7vw,18px);margin:18px auto 0;max-width:54ch;line-height:1.6;color:#cfd3da" data-i18n="ct.p">Clareza pra enxergar tudo, privacidade pra dormir tranquilo, e uma comunidade que entende a sua jornada. Entre agora, enquanto é o começo — e ajude a construir a ferramenta que você sempre quis ter.</p>
       <div class="ctas" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px">
-        <a class="btn btn-primary btn-lg" href="/app" data-i18n="ct.cta1">Quero meu convite</a>
+        <a class="btn btn-primary btn-lg" href="/app" data-i18n="ct.cta1">Criar minha conta grátis</a>
         <a class="btn btn-ghost btn-lg" href="https://discord.gg/J3yzjQVw3v" target="_blank" rel="noopener" data-i18n="ct.cta2">Entrar na comunidade</a>
       </div>
-      <div class="eyebrow" style="justify-content:center;margin-top:18px;color:#9ca2ac" data-i18n="ct.micro">Grátis · Por convite · Privacidade em primeiro lugar</div>
+      <div class="eyebrow" style="justify-content:center;margin-top:18px;color:#9ca2ac" data-i18n="ct.micro">Grátis · Acesso antecipado · Privacidade em primeiro lugar</div>
     </div>
   </section>
 
@@ -866,7 +868,7 @@
       <div class="faq reveal">
         <div class="faq-col">
           <details><summary data-i18n="faq.q1">É grátis mesmo? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar.</div></details>
-          <details><summary data-i18n="faq.q2">Por que é “por convite”? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Porque é novo e estamos construindo com cuidado, ouvindo os primeiros de perto antes de abrir pra todo mundo. Entrar agora é estar entre os primeiros — e ajudar a moldar o que vem.</div></details>
+          <details><summary data-i18n="faq.q2">Posso me cadastrar agora? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem.</div></details>
           <details><summary data-i18n="faq.q3">Vocês conseguem ver os meus dados? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a3">Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler.</div></details>
         </div>
         <div class="faq-col">
@@ -885,7 +887,7 @@
       <div class="foot">
         <div style="max-width:38ch">
           <a class="brand" href="#top" style="margin-bottom:12px"><img class="mark" src="/icon.svg" alt="" width="30" height="30" /> Nossas Finanças</a>
-          <div style="font-size:13px;line-height:1.6;margin-top:10px" data-i18n="foot.tag">Seu dinheiro entre moedas, finalmente claro. Produto novo, por convite. Sem rastreamento, sem anúncios. Multimoeda de verdade, com privacidade ponta a ponta.</div>
+          <div style="font-size:13px;line-height:1.6;margin-top:10px" data-i18n="foot.tag">Seu dinheiro em várias moedas, junto e só seu. Produto novo, em acesso antecipado. Sem rastreamento, sem anúncios. Multimoeda de verdade, com privacidade ponta a ponta.</div>
         </div>
         <div class="foot-links">
           <a href="#para-quem" data-i18n="foot.l1">Para quem é</a>
