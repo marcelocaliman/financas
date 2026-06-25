@@ -183,6 +183,19 @@
     "fm.phst2": "Balance this month",
     "fm.phst3": "Invested",
     "fm.phst4": "Reserve",
-    "fm.mocklocked": "Editing locked — they only follow along."
+    "fm.mocklocked": "Editing locked — they only follow along.",
+    "hero.fcsub": " this month · +R$ 51.380",
+    "hero.moFev": "FEB",
+    "hero.moAbr": "APR",
+    "hero.moMai": "MAY",
+    "hero.libyears": "12.4 years",
+    "hero.healthval": "Good",
+    "hero.assetval": "R$ 1.42M",
+    "m1.var": "▲ 4.2%",
+    "lb.kpi1v": "12.4",
+    "lb.kpi2v": "R$ 3.1M",
+    "lb.kpi3v": "8 wks",
+    "fm.invval": "R$ 880k",
+    "fm.resval": "6.2 months"
   }
 }
