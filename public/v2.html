@@ -6,10 +6,9 @@
   <title>Nossas Finanças — patrimônio multimoeda, privado e cross-border</title>
   <meta name="description" content="O painel completo pra quem vive entre países: patrimônio, orçamento, investimentos e a sua independência financeira — multimoeda e com criptografia ponta a ponta. O servidor nunca vê seus números. Grátis, privado e local-first." />
   <link rel="canonical" href="https://nossasfinancas.com.br/" />
-  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-
+  <meta name="robots" content="noindex, nofollow" /><!-- /v2 = landing anterior, arquivo provisorio; nao indexar -->
   <meta name="author" content="Nossas Finanças" />
-  <meta name="keywords" content="finanças multimoeda, gestão patrimonial, orçamento, investimentos, cross-border, nômade digital, freelancer internacional, expatriados, imigrantes, câmbio, criptografia ponta a ponta, E2EE, finanças privadas, independência financeira, FIRE, BRL, EUR, USD, GBP, PWA, local-first" />
+  <meta name="keywords" content="finanças multimoeda, gestão patrimonial, orçamento, investimentos, expatriados, cross-border, criptografia ponta a ponta, E2EE, finanças privadas, independência financeira, FIRE, BRL, EUR, USD, GBP, Brasil, Itália, PWA, local-first" />
   <meta name="theme-color" content="#0a0b0d" />
   <!-- Aplica o tema salvo antes da pintura (sem flash). Bloqueante, externo (CSP). -->
   <script src="/theme-init.js"></script>
@@ -52,7 +51,7 @@
       { "@type": "SoftwareApplication", "name": "Nossas Finanças", "applicationCategory": "FinanceApplication", "operatingSystem": "Web, iOS, Android (PWA)", "url": "https://nossasfinancas.com.br/app", "inLanguage": ["pt-BR", "en"], "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }, "featureList": ["Multimoeda (BRL, EUR, USD, GBP)", "Criptografia ponta a ponta (E2EE)", "Local-first e offline (PWA)", "Patrimônio e investimentos", "Orçamento mensal multimoeda", "Projeção e independência financeira (FIRE)", "Acesso da família (só-leitura)"] },
       { "@type": "FAQPage", "inLanguage": "pt-BR", "mainEntity": [
         { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar." } },
-        { "@type": "Question", "name": "Posso me cadastrar agora?", "acceptedAnswer": { "@type": "Answer", "text": "Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem." } },
+        { "@type": "Question", "name": "Por que é por convite?", "acceptedAnswer": { "@type": "Answer", "text": "Porque é novo e estamos construindo com cuidado, ouvindo os primeiros de perto antes de abrir pra todo mundo. Entrar agora é estar entre os primeiros — e ajudar a moldar o que vem." } },
         { "@type": "Question", "name": "Vocês conseguem ver os meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler." } },
         { "@type": "Question", "name": "E se eu perder a senha?", "acceptedAnswer": { "@type": "Answer", "text": "Você recebe um código de recuperação no cadastro — guarde bem. Sem a senha e sem esse código, nem nós conseguimos abrir seus dados. É o preço justo da privacidade de verdade." } },
         { "@type": "Question", "name": "Funciona com quais moedas?", "acceptedAnswer": { "@type": "Answer", "text": "Cada item guarda a sua própria moeda, e você escolhe em qual ver o conjunto. Real, euro, dólar e outras — com câmbio automático e ajuste manual." } },
@@ -68,7 +67,7 @@
   <style>
     :root {
       --bg: #0a0b0d; --bg-2: #0f1013; --card: #131418; --card-2: #191b20;
-      --text: #f3f4f6; --muted: #a9b1bd; --faint: #7a8290;
+      --text: #f3f4f6; --muted: #9ca2ac; --faint: #5f646c;
       --border: rgba(255, 255, 255, 0.08); --border-strong: rgba(255, 255, 255, 0.12);
       --accent: #3ecf8e; --accent-press: #2c9e6c; --accent-soft: rgba(62, 207, 142, 0.1);
       --neg: #f1746a; --eur: #8a8f98;
@@ -83,7 +82,7 @@
     }
     html.light {
       --bg: #ecedef; --bg-2: #ffffff; --card: #ffffff; --card-2: #f4f4f5;
-      --text: #18181b; --muted: #52525b; --faint: #6e727a;
+      --text: #18181b; --muted: #52525b; --faint: #8a8f98;
       --border: #e6e6e9; --border-strong: #d6d6da;
       --accent: #15976a; --accent-press: #0f7e57; --accent-soft: rgba(21, 151, 106, 0.1);
       --neg: #dc5a4e; --eur: #6b7280;
@@ -247,91 +246,8 @@
     /* Fotos — NATURAIS (sem duotone). Véu só onde há texto sobreposto. */
     .photo { position: relative; overflow: hidden; border-radius: 16px; border: 1px solid var(--border); background: var(--card-2); }
     .photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
-    /* mockups de produto (no lugar de fotos de stock) */
-    .hero-mock { position: relative; border-radius: 18px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card) 0%, var(--card-2) 140%); box-shadow: var(--shadow-float); padding: clamp(18px, 2.5vw, 26px); overflow: hidden; }
-    .hero-mock .hm-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
-    .hero-mock .hm-brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 13.5px; letter-spacing: -0.01em; color: var(--text); }
-    .hero-mock .hm-logo { width: 24px; height: 24px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
-    .hero-mock .hm-logo svg { width: 14px; height: 14px; }
-    .hero-mock .hm-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .06em; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
-    .hero-mock .hm-lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .hero-mock .hm-big { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: clamp(2.05rem, 4vw, 2.85rem); line-height: 1; margin: 9px 0 0; color: var(--text); }
-    .hero-mock .hm-spark { width: 100%; height: 84px; margin-top: 16px; display: block; }
-    .hero-mock .hm-chips { display: flex; gap: 8px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
-    .hero-mock .hm-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; }
-    .hero-mock .hm-tile { border: 1px solid var(--border); border-radius: 13px; padding: 13px 14px; background: var(--bg-2); }
-    .hero-mock .hm-tile .k { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); display: block; }
-    .hero-mock .hm-tile .v { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; font-size: 17px; margin-top: 5px; display: block; letter-spacing: -0.02em; color: var(--text); }
-    .hero-mock .hm-locked { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12.5px; margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--border); }
-    .hero-mock .hm-locked svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
-    .hero-mock .hm-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
-    .hero-mock .mk-ringwrap { text-align: center; flex: none; }
-    .hero-mock .mk-ring { position: relative; width: 66px; height: 66px; }
-    .hero-mock .mk-ring .mk-ring-v { position: absolute; inset: 0; display: grid; place-items: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; color: var(--text); }
-    .hero-mock .mk-eyebrow { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .hero-mock .mk-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-2); padding: 15px 16px; }
-    .hero-mock .mk-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-    .hero-mock .mk-statgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .hero-mock .mk-stat { border: 1px solid var(--border); border-radius: 12px; background: var(--bg-2); padding: 12px 13px; }
-    .hero-mock .mk-stat .k { font-family: var(--font-mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); display: block; }
-    .hero-mock .mk-stat .v { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; font-size: 15.5px; margin-top: 4px; display: block; letter-spacing: -0.02em; color: var(--text); }
-    .hero-mock .mk-donut { position: relative; width: 116px; height: 116px; flex: none; }
-    .hero-mock .mk-donut-ring { position: absolute; inset: 0; border-radius: 50%; -webkit-mask: radial-gradient(circle, transparent 34px, #000 35px); mask: radial-gradient(circle, transparent 34px, #000 35px); }
-    .hero-mock .mk-donut-hole { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1.15; }
-    .hero-mock .mk-legend { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
-    .hero-mock .mk-leg { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
-    .hero-mock .mk-leg .nm { display: flex; align-items: center; gap: 7px; color: var(--muted); min-width: 0; }
-    .hero-mock .mk-leg .nm .dt { width: 8px; height: 8px; border-radius: 2px; flex: none; }
-    .hero-mock .mk-leg .vl { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--text); flex: none; }
-    .hero-mock .hm-hero-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.045em; font-size: clamp(2.3rem, 3.6vw, 3.1rem); line-height: 1; margin: 8px 0 0; color: var(--text); }
-    .hero-mock .hm-icon { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); flex: none; }
-    .hero-mock .hm-icon svg { width: 15px; height: 15px; }
-    .hero-mock .hm-months { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 8px; }
-    /* celular (o que a família vê) */
-    .phone { width: min(330px, 100%); margin: 0 auto; border-radius: 48px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card-2) 0%, var(--card) 100%); box-shadow: var(--shadow-float); padding: 13px; }
-    .phone-notch { width: 80px; height: 5px; border-radius: 99px; background: var(--border-strong); margin: 3px auto 14px; }
-    .phone-screen { border-radius: 36px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; padding: 22px 20px 20px; }
-    .phone .ph-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
-    .phone .ph-title { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
-    .phone .ph-title svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
-    .phone .ph-lbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .phone .ph-num { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; letter-spacing: -0.04em; font-size: 2.4rem; line-height: 1; margin: 8px 0 0; color: var(--text); }
-    .phone .ph-statrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
-    .phone .ph-stat { border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 11px 12px; }
-    .phone .ph-stat .k { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); display: block; }
-    .phone .ph-stat .v { font-variant-numeric: tabular-nums slashed-zero; font-weight: 600; font-size: 14.5px; margin-top: 4px; display: block; letter-spacing: -0.02em; color: var(--text); }
-    .phone .ph-locked { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
-    .phone .ph-locked svg { width: 15px; height: 15px; color: var(--accent); flex: none; }
-    /* variante tablet (preenche a coluna larga; a "tela da família") */
-    .phone.tablet { width: min(460px, 100%); border-radius: 30px; padding: 16px; position: relative; }
-    .phone.tablet .phone-notch { display: none; }
-    .phone.tablet .phone-screen { border-radius: 18px; padding: 27px 28px 25px; }
-    .phone.tablet::after { content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); }
-    .phone.tablet .ph-top { margin-bottom: 22px; }
-    .phone.tablet .ph-num { font-size: 2.85rem; }
-    /* composição em camadas — tela compartilhada, vista a dois */
-    .phone.tablet.fam-tablet { width: min(496px, 100%); }
-    .fam-tablet .phone-screen { padding: 28px 30px 26px; position: relative; }
-    .fam-tablet .ph-num { font-size: 3rem; }
-    .fam-tablet .ph-top { margin-bottom: 16px; }
-    .fam-sharebar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--border); }
-    .fsb-who { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-    .fsb-lbl { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .fsb-people { display: inline-flex; align-items: center; gap: 12px; }
-    .fsb-avs { display: inline-flex; }
-    .fsb-avs img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 3px solid var(--card); box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-float); }
-    .fsb-avs img:not(:first-child) { margin-left: -16px; }
-    .fsb-names { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; white-space: nowrap; }
-    .fam-locked { position: relative; }
-    .fam-locked::before { content: ""; position: absolute; left: -30px; top: 14px; bottom: -2px; width: 2px; border-radius: 99px; background: linear-gradient(180deg, var(--accent), transparent); opacity: .35; pointer-events: none; }
-    @media (max-width: 860px) { .phone.tablet.fam-tablet { width: 100%; } .fam-tablet .phone-screen { padding: 24px 22px 22px; } .fam-locked::before { display: none; } }
-    .band .band-bg .band-gfx { position: absolute; inset: 0; background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 100%); }
-    .band .band-bg .band-gfx::before { content: ""; position: absolute; inset: 0; background: radial-gradient(85% 65% at 50% -8%, rgba(62,207,142,.16), transparent 60%); }
-    .band .band-bg:has(.band-gfx)::after { background: linear-gradient(180deg, rgba(10,11,13,.32) 0%, rgba(10,11,13,.64) 100%); }
     .photo .veil { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(180deg, rgba(10,11,13,0) 48%, rgba(10,11,13,0.5) 80%, rgba(10,11,13,0.88) 100%); }
     .photo .on-photo { position: relative; z-index: 3; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
-    /* Foco visível por teclado (a11y) — não aparece no clique de mouse. */
-    a:focus-visible, button:focus-visible, summary:focus-visible, .btn:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 
     /* Avatares — naturais */
     .avatars { display: inline-flex; align-items: center; }
@@ -341,8 +257,6 @@
     .avatars-label { display: inline-flex; flex-direction: column; gap: 2px; margin-left: 16px; text-align: left; }
     .avatars-label .l1 { font-size: 13.5px; color: var(--text); font-weight: 500; }
     .avatars-label .l2 { font-size: 12px; color: var(--muted); }
-    .hist-quote { margin: 22px 0 0; padding-left: 16px; border-left: 2px solid var(--accent); font-size: clamp(16px, 2.1vw, 18.5px); line-height: 1.45; font-weight: 500; color: var(--text); font-style: italic; }
-    .hist-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 
     /* Persona */
     .persona-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 38px; }
@@ -516,14 +430,14 @@
       <div class="hero-grid">
         <div class="hero-copy reveal">
           <div class="eyebrow" data-i18n="hero.eyebrow">Para quem vive entre países</div>
-          <h1><span data-i18n="hero.h1a">Seu dinheiro em várias moedas —</span><br />
+          <h1><span data-i18n="hero.h1a">Seu dinheiro, em duas moedas,</span><br />
             <span class="hero-rot">
-              <span class="rot-item is-on grad" aria-hidden="false" data-i18n="hero.rot1">junto, claro e só seu.</span>
-              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot2">criptografado de ponta a ponta.</span>
-              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">num lugar só, de graça.</span>
+              <span class="rot-item is-on grad" aria-hidden="false" data-i18n="hero.rot1">finalmente claro.</span>
+              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot2">num lugar só.</span>
+              <span class="rot-item grad" aria-hidden="true" data-i18n="hero.rot3">de graça e só seu.</span>
             </span>
           </h1>
-          <p class="sub" data-i18n="hero.sub">Um painel que junta o seu dinheiro — em qualquer moeda — num lugar só: patrimônio, orçamento e investimentos, na moeda que você entende, com criptografia de ponta a ponta (nem a gente vê os seus números). Recebe numa moeda e gasta noutra? Aqui você enfim vê quanto tem, somando tudo. De graça.</p>
+          <p class="sub" data-i18n="hero.sub">Você mudou de país — ou está prestes a mudar. Tem conta aqui e lá, recebe numa moeda e gasta noutra, e toda vez que o câmbio mexe bate a dúvida: afinal, quanto eu tenho? Nossas Finanças junta tudo num só lugar, na moeda que você entende — de graça, e com privacidade de verdade: nem a gente vê os seus números. Construído por quem está vivendo essa mudança na pele.</p>
           <div class="ctas">
             <a class="btn btn-primary btn-lg" href="/app" data-i18n="hero.cta1">Quero meu acesso — é grátis</a>
             <a class="btn btn-ghost btn-lg" href="#como-funciona" data-i18n="hero.cta2">Ver como funciona</a>
@@ -539,10 +453,10 @@
             <img class="av" src="/img/v2/avatar-4.jpg" alt="" loading="lazy" width="40" height="40" />
             <img class="av" src="/img/v2/avatar-3.jpg" alt="" loading="lazy" width="40" height="40" />
             <img class="av" src="/img/v2/avatar-5.jpg" alt="" loading="lazy" width="40" height="40" />
-            <img class="av" src="/img/v2/avatar-7.jpg" alt="Marcelo" loading="lazy" width="40" height="40" />
+            <span class="more" data-i18n="av.more">+ você</span>
             <span class="avatars-label">
               <span class="l1" data-i18n="hero.avl1">Feito para gente como você</span>
-              <span class="l2" data-i18n="hero.avl2">Quem ganha numa moeda e gasta em outra</span>
+              <span class="l2" data-i18n="hero.avl2">Expatriados, famílias e nômades entre países</span>
             </span>
           </div>
         </div>
@@ -566,59 +480,24 @@
               <text class="seal-star seal-star--sm" x="68" y="75" text-anchor="middle">★</text>
             </svg>
           </span>
-          <div class="hero-mock">
-            <div class="hm-top" style="justify-content:flex-start;gap:9px">
-              <span class="hm-brand"><span class="hm-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"/><path d="M16 8h3v3"/></svg></span> Nossas Finanças</span>
-              <span class="hm-pill">BRL ▾</span>
-              <span class="hm-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></span>
-            </div>
-            <div class="hm-lbl" data-i18n="hero.fclbl" style="margin-top:4px">Patrimônio líquido</div>
-            <div class="hm-hero-num tabular">R$ 1.284.500</div>
-            <div style="margin-top:9px"><span class="pos" style="font-size:13px;font-weight:600" data-i18n="hero.fcvar">▲ 4,2%</span><span style="color:var(--faint);font-size:12.5px"> no mês · +R$ 51.380</span></div>
-            <svg class="spark" style="height:98px;margin-top:18px" viewBox="0 0 320 98" preserveAspectRatio="none" aria-hidden="true">
-              <defs><linearGradient id="hg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.24"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-              <path d="M0,82 L32,76 L64,79 L96,60 L128,64 L160,46 L192,50 L224,30 L256,34 L288,16 L320,12 L320,98 L0,98 Z" fill="url(#hg)"/>
-              <path d="M0,82 L32,76 L64,79 L96,60 L128,64 L160,46 L192,50 L224,30 L256,34 L288,16 L320,12" fill="none" stroke="var(--accent)" stroke-width="2"/>
-            </svg>
-            <div class="hm-months"><span>JAN</span><span>FEV</span><span>MAR</span><span>ABR</span><span>MAI</span><span>JUN</span></div>
-            <div class="hm-chips" style="margin-top:16px">
-              <span class="comp" aria-hidden="true"><span style="width:62%;background:var(--accent)"></span><span style="width:38%;background:var(--eur)"></span></span>
-              <span class="chip chip-BRL">BRL 62%</span>
-              <span class="chip chip-EUR">EUR 38%</span>
-            </div>
-            <div class="hm-statgrid" style="margin-top:16px">
-              <div class="mk-stat" style="display:flex;align-items:center;gap:11px">
-                <div class="mk-ring" style="width:46px;height:46px;flex:none">
-                  <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="var(--card-2)" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="70.4" transform="rotate(-90 23 23)"/></svg>
-                  <div class="mk-ring-v" style="font-size:11px">41%</div>
-                </div>
-                <div><span class="k" data-i18n="hero.tile1">Liberdade</span><span class="v tabular">12,4 anos</span></div>
+          <figure class="photo hero-photo" style="margin:0">
+            <img src="/img/v2/hero.jpg" alt="Viajante caminhando por uma ruela na Itália, mochila nas costas" fetchpriority="high" width="640" height="800" />
+            <figcaption class="floatcard">
+              <div class="lbl" data-i18n="hero.fclbl">Patrimônio líquido</div>
+              <div class="big tabular">R$ 1.284.500</div>
+              <div class="frow">
+                <span class="pos" style="font-size:12.5px;font-weight:600" data-i18n="hero.fcvar">▲ 4,2% no mês</span>
+                <span class="comp" aria-hidden="true">
+                  <span style="width:62%;background:var(--accent)"></span>
+                  <span style="width:38%;background:var(--eur)"></span>
+                </span>
               </div>
-              <div class="mk-stat" style="display:flex;align-items:center;gap:11px">
-                <div class="mk-ring" style="width:46px;height:46px;flex:none">
-                  <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="var(--card-2)" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="33.4" transform="rotate(-90 23 23)"/></svg>
-                  <div class="mk-ring-v" style="font-size:11px">72</div>
-                </div>
-                <div><span class="k" data-i18n="hero.tile2">Saúde</span><span class="v tabular">Boa</span></div>
+              <div class="frow" style="margin-top:9px">
+                <span class="chip chip-BRL">BRL 62%</span>
+                <span class="chip chip-EUR">EUR 38%</span>
               </div>
-            </div>
-            <div class="mk-card" style="margin-top:12px">
-              <div class="mk-head"><span class="mk-eyebrow" data-i18n="hero.alloc">Alocação por classe</span><span class="mk-eyebrow">5 classes</span></div>
-              <div style="display:flex;align-items:center;gap:16px">
-                <div class="mk-donut">
-                  <div class="mk-donut-ring" style="background:conic-gradient(#3ECF8E 0 38%, #5FB394 38% 60%, #8A8F98 60% 78%, #6E7682 78% 92%, #4B5159 92% 100%)"></div>
-                  <div class="mk-donut-hole"><div><div class="mk-eyebrow" data-i18n="hero.assets">Ativos</div><b class="tabular" style="font-size:13.5px;font-weight:600;letter-spacing:-0.02em">R$ 1,42M</b></div></div>
-                </div>
-                <div class="mk-legend">
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#3ECF8E"></span><span data-i18n="hero.cl1">Ações &amp; FIIs</span></span><span class="vl tabular">38%</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#5FB394"></span><span data-i18n="hero.cl2">Caixa</span></span><span class="vl tabular">22%</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#8A8F98"></span><span data-i18n="hero.cl3">Imóveis</span></span><span class="vl tabular">18%</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#6E7682"></span><span data-i18n="hero.cl4">Renda fixa</span></span><span class="vl tabular">14%</span></div>
-                  <div class="mk-leg"><span class="nm"><span class="dt" style="background:#4B5159"></span><span data-i18n="hero.cl5">Cripto</span></span><span class="vl tabular">8%</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </figcaption>
+          </figure>
         </div>
       </div>
     </div>
@@ -641,10 +520,10 @@
           <img class="av" src="/img/v2/avatar-4.jpg" alt="" loading="lazy" width="40" height="40" />
           <img class="av" src="/img/v2/avatar-5.jpg" alt="" loading="lazy" width="40" height="40" />
           <img class="av" src="/img/v2/avatar-6.jpg" alt="" loading="lazy" width="40" height="40" />
-          <img class="av" src="/img/v2/avatar-7.jpg" alt="Marcelo" loading="lazy" width="40" height="40" />
+          <span class="more" data-i18n="av.more">+ você</span>
         </div>
       </div>
-      <p class="honesty" style="text-align:center;margin:16px auto 0" data-i18n="pq.honesty">As pessoas aqui representam para quem o app é feito — não são clientes nem depoimentos. O produto é novo, em acesso antecipado.</p>
+      <p class="honesty" style="text-align:center;margin:16px auto 0" data-i18n="pq.honesty">As pessoas aqui representam para quem o app é feito — não são clientes nem depoimentos. O produto é novo e por convite.</p>
 
       <div class="persona-grid stagger reveal">
         <div class="persona">
@@ -668,7 +547,7 @@
           <div>
             <div class="pn" data-i18n="persona3.n">O freelancer que recebe lá e gasta cá</div>
             <div class="pd" data-i18n="persona3.d">Fatura em euro ou dólar, vive o dia a dia em real.</div>
-            <span class="chip chip-BRL pchip" data-i18n="persona3.chip">câmbio do dia</span>
+            <span class="chip chip-BRL pchip" data-i18n="persona3.chip">câmbio ao vivo</span>
           </div>
         </div>
         <div class="persona">
@@ -681,33 +560,34 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:34px" class="reveal">
-        <a class="link-accent" href="#porque" data-i18n="pq.link">Essa é a sua história? Veja por que isso existe →</a>
+        <a class="link-accent" href="#historia" data-i18n="pq.link">Essa é a sua história? Veja por que isso existe →</a>
       </div>
     </div>
   </section>
 
-  <!-- 3 · QUEM CONSTRUIU (texto + colagem de 3 fotos flutuantes) -->
-  <section id="porque" style="background:var(--bg-2);border-block:1px solid var(--border)">
+  <!-- 3 · HISTÓRIA DO FUNDADOR -->
+  <section id="historia" style="background:var(--bg-2);border-block:1px solid var(--border)">
     <div class="wrap">
       <div class="feature">
         <div class="reveal from-l">
-          <figure class="photo" style="margin:0;aspect-ratio:1/1">
-            <img src="/img/v2/marcelo.jpg" alt="Marcelo, o dev que criou o Nossas Finanças, e a esposa" loading="lazy" width="1200" height="1500" style="object-position:center 46%" />
+          <!-- Foto do fundador: para trocar, substitua o arquivo public/img/v2/marcelo.jpg pela sua foto -->
+          <figure class="photo" style="margin:0;aspect-ratio:4/5">
+            <img src="/img/v2/marcelo.jpg" alt="Marcelo, fundador do Nossas Finanças" loading="lazy" width="600" height="750" />
           </figure>
         </div>
         <div class="copy reveal from-r">
           <div class="eyebrow accent" data-i18n="hist.eyebrow">Construído por quem vive isso</div>
           <h2 data-i18n="hist.h2">Eu construí isso porque eu precisava disso.</h2>
-          <p data-i18n="hist.p">Sou o Marcelo, desenvolvedor. Estou fazendo a mudança do Brasil pra Itália — não no papel, na vida real: conta nova lá, dinheiro entrando em moedas diferentes, remessa, Regime Forfettario, imposto dos dois lados, e a pergunta que não me largava — quanto eu realmente tenho, somando tudo? Tentei planilha, que não acompanhava. Tentei app gringo, que não entende real. Tentei app brasileiro, que não entende euro. Nenhum falava as duas línguas do meu dinheiro. Então parei de procurar e construí o que faltava: simples, completo, multimoeda de verdade, e privado a ponto de nem eu conseguir ver os seus números. A minha mudança é Brasil↔Itália — mas a dor é a mesma pra qualquer um cuja vida acontece entre moedas e países. Uso todo dia, e construo em aberto, ouvindo quem chega primeiro.</p>
-          <blockquote class="hist-quote" data-i18n="hist.quote">Nenhum falava as duas línguas do meu dinheiro.</blockquote>
-          <div class="hist-chips">
-            <span class="chip chip-neutral" data-i18n="hist.c1">Vida em duas moedas</span>
-            <span class="chip chip-neutral" data-i18n="hist.c2">Multimoeda de verdade</span>
-            <span class="chip chip-neutral" data-i18n="hist.c3">Imposto nos 2 lados</span>
-            <span class="chip chip-neutral" data-i18n="hist.c4">Privado por E2EE</span>
+          <p data-i18n="hist.p">Meu nome é Marcelo, e há um tempo estou fazendo a mudança do Brasil pra Itália — não no papel, mas na vida real: abrindo conta lá, recebendo em moedas diferentes, lidando com remessa, com o Regime Forfettario, com imposto de um lado e do outro, e com aquela pergunta que não me largava — quanto eu realmente tenho, somando tudo? Tentei planilha, tentei app gringo que não entende real, tentei app brasileiro que não entende euro. Nenhum falava as duas línguas do meu dinheiro. Então parei de procurar e comecei a construir a ferramenta que eu queria ter no bolso: simples, completa, multimoeda de verdade, e privada a ponto de nem eu conseguir ver os seus números. Nossas Finanças é isso — e eu uso todo dia, porque a minha vida também depende dele.</p>
+          <p style="color:var(--text);font-size:17px;font-style:italic;margin-top:22px" data-i18n="hist.quote">“Construído por quem está vivendo a mudança.”</p>
+          <div class="eyebrow" style="margin-top:18px" data-i18n="hist.sig">Marcelo — Fundador · Brasil → Itália</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:22px">
+            <span class="chip chip-neutral" data-i18n="hist.chip1">Regime Forfettario</span>
+            <span class="chip chip-neutral" data-i18n="hist.chip2">Remessas BR→IT</span>
+            <span class="chip chip-BRL" data-i18n="hist.chip3">Câmbio EUR/BRL</span>
+            <span class="chip chip-neutral" data-i18n="hist.chip4">Imposto nos 2 lados</span>
           </div>
-          <div class="eyebrow" style="margin-top:22px"><span data-i18n="hist.sig">Marcelo · dev e fundador · Brasil → Itália</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></div>
-          <div style="margin-top:16px"><a class="link-accent" href="#como-funciona" data-i18n="hist.cta">Veja como funciona →</a></div>
+          <div style="margin-top:28px"><a class="btn btn-ghost" href="#como-funciona" data-i18n="hist.cta">Veja como funciona →</a></div>
         </div>
       </div>
     </div>
@@ -830,48 +710,10 @@
   <section id="familia">
     <div class="wrap">
       <div class="feature">
-        <div class="reveal from-l" style="display:flex;justify-content:center">
-          <div class="phone tablet fam-tablet">
-            <div class="phone-notch"></div>
-            <div class="phone-screen">
-              <div class="fam-sharebar">
-                <div class="fsb-who">
-                  <span class="fsb-lbl" data-i18n="fm.sharedwith">Compartilhado com</span>
-                  <span class="fsb-people">
-                    <span class="fsb-avs"><img src="/img/v2/avatar-1.jpg" alt="" width="52" height="52" loading="lazy" /><img src="/img/v2/avatar-2.jpg" alt="" width="52" height="52" loading="lazy" /></span>
-                    <span class="fsb-names" data-i18n="fm.couple">Você e Ana</span>
-                  </span>
-                </div>
-                <span class="badge"><span class="dot" style="background:var(--accent)"></span> <span data-i18n="fm.badge3">Só-leitura</span></span>
-              </div>
-              <div class="ph-top">
-                <span class="ph-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span data-i18n="fm.mocktitle">Painel da família</span></span>
-              </div>
-              <div class="ph-lbl" data-i18n="fm.mocklbl">Patrimônio líquido</div>
-              <div class="ph-num tabular">R$ 1.284.500</div>
-              <div style="margin-top:8px"><span class="pos" style="font-size:12.5px;font-weight:600" data-i18n="fm.mockvar">▲ 4,2% no mês</span></div>
-              <svg class="spark" style="height:108px;margin-top:18px" viewBox="0 0 300 108" preserveAspectRatio="none" aria-hidden="true">
-                <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-                <path d="M0,84 L37,76 L75,80 L112,60 L150,64 L187,46 L225,50 L262,26 L300,18 L300,108 L0,108 Z" fill="url(#fg)"/>
-                <path d="M0,84 L37,76 L75,80 L112,60 L150,64 L187,46 L225,50 L262,26 L300,18" fill="none" stroke="var(--accent)" stroke-width="2"/>
-              </svg>
-              <div style="display:flex;gap:7px;align-items:center;margin-top:16px;flex-wrap:wrap">
-                <span class="comp" aria-hidden="true"><span style="width:62%;background:var(--accent)"></span><span style="width:38%;background:var(--eur)"></span></span>
-                <span class="chip chip-BRL">BRL 62%</span>
-                <span class="chip chip-EUR">EUR 38%</span>
-              </div>
-              <div class="ph-statrow">
-                <div class="ph-stat"><span class="k" data-i18n="fm.phst1">Renda do mês</span><span class="v tabular" style="color:var(--accent)">R$ 12.300</span></div>
-                <div class="ph-stat"><span class="k" data-i18n="fm.phst2">Saldo do mês</span><span class="v tabular" style="color:var(--accent)">R$ 4.060</span></div>
-                <div class="ph-stat"><span class="k" data-i18n="fm.phst3">Investido</span><span class="v tabular">R$ 880 mil</span></div>
-                <div class="ph-stat"><span class="k" data-i18n="fm.phst4">Reserva</span><span class="v tabular">6,2 meses</span></div>
-              </div>
-              <div class="ph-locked fam-locked">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span data-i18n="fm.mocklocked">Edição bloqueada — ela só acompanha.</span>
-              </div>
-            </div>
-          </div>
+        <div class="reveal from-l">
+          <figure class="photo" style="margin:0;aspect-ratio:1/1">
+            <img src="/img/v2/scene-family.jpg" alt="Casal acompanhando junto a vida financeira" loading="lazy" />
+          </figure>
         </div>
         <div class="copy reveal from-r">
           <div class="eyebrow accent" data-i18n="fm.eyebrow">Acompanhem juntos</div>
@@ -942,9 +784,9 @@
         <div class="copy reveal from-l">
           <div class="eyebrow" style="color:#8b96f5" data-i18n="cm.eyebrow">Você não está sozinho</div>
           <h2 data-i18n="cm.h2">Tem gente vivendo exatamente o que você vive.</h2>
-          <p data-i18n="cm.p">Gerir dinheiro entre moedas e países tem mil detalhes: câmbio, taxas, contas espalhadas, impostos, a vontade de acertar. No nosso Discord, quem vive isso troca o que aprendeu na prática — sem manual. Entre, faça perguntas, conte a sua história.</p>
+          <p data-i18n="cm.p">Mudar de país é técnico e emocional ao mesmo tempo: câmbio, remessa, imposto dos dois lados, a saudade, a papelada, a vontade de acertar. No nosso Discord, expatriados e gente em movimento trocam o que aprenderam na prática — sem manual. Entre, faça perguntas, conte a sua história.</p>
           <ul class="checks" style="margin-top:22px">
-            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="cm.l1">Tire dúvidas e mande suas ideias</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="cm.l1">Tire dúvidas direto comigo</span></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="cm.l2">Trocas reais de quem vive entre países</span></li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="cm.l3">Você ajuda a decidir o próximo passo do app</span></li>
           </ul>
@@ -1002,16 +844,16 @@
 
   <!-- 10 · CTA FINAL -->
   <section class="band" id="comecar" style="padding:0">
-    <div class="band-bg" aria-hidden="true"><div class="band-gfx"></div></div>
+    <div class="band-bg" aria-hidden="true"><img src="/img/v2/scene-cta.jpg" alt="" loading="lazy" /></div>
     <div class="wrap band-content" style="padding-block:clamp(84px,12vw,156px);text-align:center">
       <div class="eyebrow accent" style="justify-content:center" data-i18n="ct.eyebrow">Seja um dos primeiros</div>
-      <h2 style="font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600;letter-spacing:-0.04em;line-height:1.05;margin:14px auto 0;max-width:20ch;color:#fff" data-i18n="ct.h2">Seu dinheiro já vive em mais de uma moeda. Aqui ele finalmente faz sentido.</h2>
+      <h2 style="font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600;letter-spacing:-0.04em;line-height:1.05;margin:14px auto 0;max-width:20ch;color:#fff" data-i18n="ct.h2">A sua vida já é entre dois países. Seu dinheiro também pode fazer sentido.</h2>
       <p style="font-size:clamp(15px,1.7vw,18px);margin:18px auto 0;max-width:54ch;line-height:1.6;color:#cfd3da" data-i18n="ct.p">Clareza pra enxergar tudo, privacidade pra dormir tranquilo, e uma comunidade que entende a sua jornada. Entre agora, enquanto é o começo — e ajude a construir a ferramenta que você sempre quis ter.</p>
       <div class="ctas" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px">
-        <a class="btn btn-primary btn-lg" href="/app" data-i18n="ct.cta1">Criar minha conta grátis</a>
+        <a class="btn btn-primary btn-lg" href="/app" data-i18n="ct.cta1">Quero meu convite</a>
         <a class="btn btn-ghost btn-lg" href="https://discord.gg/J3yzjQVw3v" target="_blank" rel="noopener" data-i18n="ct.cta2">Entrar na comunidade</a>
       </div>
-      <div class="eyebrow" style="justify-content:center;margin-top:18px;color:#9ca2ac" data-i18n="ct.micro">Grátis · Acesso antecipado · Privacidade em primeiro lugar</div>
+      <div class="eyebrow" style="justify-content:center;margin-top:18px;color:#9ca2ac" data-i18n="ct.micro">Grátis · Por convite · Construído por quem está vivendo isso</div>
     </div>
   </section>
 
@@ -1025,7 +867,7 @@
       <div class="faq reveal">
         <div class="faq-col">
           <details><summary data-i18n="faq.q1">É grátis mesmo? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar.</div></details>
-          <details><summary data-i18n="faq.q2">Posso me cadastrar agora? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem.</div></details>
+          <details><summary data-i18n="faq.q2">Por que é “por convite”? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Porque é novo e estamos construindo com cuidado, ouvindo os primeiros de perto antes de abrir pra todo mundo. Entrar agora é estar entre os primeiros — e ajudar a moldar o que vem.</div></details>
           <details><summary data-i18n="faq.q3">Vocês conseguem ver os meus dados? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a3">Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler.</div></details>
         </div>
         <div class="faq-col">
@@ -1044,7 +886,7 @@
       <div class="foot">
         <div style="max-width:38ch">
           <a class="brand" href="#top" style="margin-bottom:12px"><img class="mark" src="/icon.svg" alt="" width="30" height="30" /> Nossas Finanças</a>
-          <div style="font-size:13px;line-height:1.6;margin-top:10px" data-i18n="foot.tag">Seu dinheiro em várias moedas, junto e só seu. Produto novo, em acesso antecipado. Sem rastreamento, sem anúncios. Multimoeda de verdade, com privacidade ponta a ponta.</div>
+          <div style="font-size:13px;line-height:1.6;margin-top:10px" data-i18n="foot.tag">Seu dinheiro entre países, finalmente claro. Produto novo, por convite. Sem rastreamento, sem anúncios. Construído por quem está vivendo a mudança Brasil→Itália.</div>
         </div>
         <div class="foot-links">
           <a href="#para-quem" data-i18n="foot.l1">Para quem é</a>

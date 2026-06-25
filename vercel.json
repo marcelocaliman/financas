@@ -10,6 +10,7 @@
     { "source": "/share", "destination": "/share.html" },
     { "source": "/en", "destination": "/en.html" },
     { "source": "/v1", "destination": "/v1.html" },
+    { "source": "/v2", "destination": "/v2.html" },
     { "source": "/v3", "destination": "/v3.html" }
   ],
   "headers": [
@@ -64,6 +65,10 @@
     },
     {
       "source": "/v1",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    },
+    {
+      "source": "/v2",
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     },
     {
