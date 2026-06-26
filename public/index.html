@@ -51,7 +51,7 @@
       { "@type": "WebSite", "@id": "https://nossasfinancas.com.br/#website", "url": "https://nossasfinancas.com.br/", "name": "Nossas Finanças", "inLanguage": "pt-BR", "publisher": { "@id": "https://nossasfinancas.com.br/#org" } },
       { "@type": "SoftwareApplication", "name": "Nossas Finanças", "applicationCategory": "FinanceApplication", "operatingSystem": "Web, iOS, Android (PWA)", "url": "https://nossasfinancas.com.br/app", "inLanguage": ["pt-BR", "en"], "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }, "featureList": ["Multimoeda (BRL, EUR, USD, GBP)", "Criptografia ponta a ponta (E2EE)", "Local-first e offline (PWA)", "Patrimônio e investimentos", "Orçamento mensal multimoeda", "Projeção e independência financeira (FIRE)", "Acesso da família (só-leitura)"] },
       { "@type": "FAQPage", "inLanguage": "pt-BR", "mainEntity": [
-        { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar." } },
+        { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "O núcleo é grátis pra sempre: patrimônio, orçamento, investimentos, projeção e independência. O Pro opcional (R$ 24,90/mês ou R$ 249/ano, com 14 dias grátis) desbloqueia Acesso da Família, relatório completo em PDF e cotação da B3. Sem cartão pra começar." } },
         { "@type": "Question", "name": "Posso me cadastrar agora?", "acceptedAnswer": { "@type": "Answer", "text": "Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem." } },
         { "@type": "Question", "name": "Vocês conseguem ver os meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler." } },
         { "@type": "Question", "name": "E se eu perder a senha?", "acceptedAnswer": { "@type": "Answer", "text": "Você recebe um código de recuperação no cadastro — guarde bem. Sem a senha e sem esse código, nem nós conseguimos abrir seus dados. É o preço justo da privacidade de verdade." } },
@@ -470,6 +470,19 @@
     .stagger.armed.in > *:nth-child(3) { transition-delay: .14s; }
     .stagger.armed.in > *:nth-child(4) { transition-delay: .21s; }
     @media (prefers-reduced-motion: reduce) { .reveal, .stagger > * { transition: none; } }
+    /* Planos (freemium) */
+    #planos .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:880px;margin:38px auto 0}
+    #planos .plan{border:1px solid var(--border);background:var(--card);border-radius:18px;padding:26px 24px;display:flex;flex-direction:column}
+    #planos .plan-pro{border-color:var(--accent);box-shadow:0 22px 60px -30px rgba(0,0,0,.55)}
+    #planos .plan .price{font-size:30px;font-weight:600;letter-spacing:-.03em;margin:14px 0 2px;font-variant-numeric:tabular-nums}
+    #planos .plan .per{font-size:14px;font-weight:500;color:var(--muted)}
+    #planos .plan .annual{font-size:12.5px;color:var(--accent);font-weight:600;margin-bottom:6px}
+    #planos .plan>p{font-size:13.5px;color:var(--muted);line-height:1.55;margin:10px 0 16px}
+    #planos .plan ul{list-style:none;padding:0;margin:2px 0 22px;display:flex;flex-direction:column;gap:10px}
+    #planos .plan li{font-size:13.5px;color:var(--text);padding-left:22px;position:relative;line-height:1.4}
+    #planos .plan li::before{content:"✓";position:absolute;left:0;top:0;color:var(--accent);font-weight:700}
+    #planos .plan .btn{margin-top:auto;width:100%;justify-content:center}
+    @media (max-width:760px){#planos .plans{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -486,6 +499,7 @@
           <a href="#familia" data-i18n="nav.compartilhar">Compartilhar</a>
           <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
           <a href="#comunidade" data-i18n="nav.comunidade">Comunidade</a>
+          <a href="#planos" data-i18n="nav.planos">Planos</a>
           <a href="#faq" data-i18n="nav.faq">FAQ</a>
         </nav>
         <div class="nav-right">
@@ -547,7 +561,7 @@
           </div>
         </div>
         <div class="hero-visual reveal from-r">
-          <span class="hero-seal" role="img" aria-label="100% grátis, 100% privado">
+          <span class="hero-seal" role="img" aria-label="Comece grátis, 100% privado">
             <svg viewBox="0 0 120 120">
               <defs>
                 <path id="sealTop" d="M 14 60 A 46 46 0 0 1 106 60" fill="none" />
@@ -556,7 +570,7 @@
               <circle class="seal-disc" cx="60" cy="60" r="39" />
               <circle class="seal-ring" cx="60" cy="60" r="58" />
               <circle class="seal-ring seal-ring--in" cx="60" cy="60" r="39" />
-              <text class="seal-arc"><textPath href="#sealTop" startOffset="50%" text-anchor="middle" data-i18n="hero.badge">100% GRÁTIS</textPath></text>
+              <text class="seal-arc"><textPath href="#sealTop" startOffset="50%" text-anchor="middle" data-i18n="hero.badge">COMECE GRÁTIS</textPath></text>
               <text class="seal-arc"><textPath href="#sealBot" startOffset="50%" text-anchor="middle" data-i18n="hero.badge2">100% PRIVADO</textPath></text>
               <text class="seal-star" x="11.5" y="63.5" text-anchor="middle">★</text>
               <text class="seal-star" x="108.5" y="63.5" text-anchor="middle">★</text>
@@ -1001,6 +1015,45 @@
   </section>
 
   <!-- 10 · CTA FINAL -->
+  <!-- Planos -->
+  <section id="planos">
+    <div class="wrap">
+      <div class="section-head center reveal">
+        <div class="eyebrow accent" data-i18n="planos.eyebrow">Planos</div>
+        <h2 data-i18n="planos.h2">Grátis pra começar. Pro quando quiser mais.</h2>
+        <p style="max-width:56ch;margin:14px auto 0;color:var(--muted);font-size:clamp(15px,1.7vw,17px);line-height:1.6" data-i18n="planos.sub">O essencial é grátis pra sempre — sem anúncios e sem vender seus dados. O Pro é opcional e banca o que custa pra manter o app no ar.</p>
+      </div>
+      <div class="plans reveal">
+        <div class="plan">
+          <div class="eyebrow" data-i18n="planos.freeTitle">Grátis</div>
+          <div class="price"><span data-i18n="planos.freePrice">R$ 0</span> <span class="per" data-i18n="planos.freePer">pra sempre</span></div>
+          <p data-i18n="planos.freeDesc">Tudo pra organizar a vida financeira multimoeda, com privacidade total.</p>
+          <ul>
+            <li data-i18n="planos.f1">Patrimônio, orçamento e investimentos</li>
+            <li data-i18n="planos.f2">Projeção e independência financeira (FIRE)</li>
+            <li data-i18n="planos.f3">Multimoeda + criptografia ponta a ponta</li>
+            <li data-i18n="planos.f4">Sincroniza cifrado, funciona offline</li>
+          </ul>
+          <a class="btn btn-ghost" href="/app" data-i18n="planos.freeCta">Começar grátis</a>
+        </div>
+        <div class="plan plan-pro">
+          <div class="eyebrow accent" data-i18n="planos.proTitle">Pro</div>
+          <div class="price"><span data-i18n="planos.proPrice">R$ 24,90</span><span class="per" data-i18n="planos.proPer">/mês</span></div>
+          <div class="annual" data-i18n="planos.proAnnual">ou R$ 249/ano · 14 dias grátis</div>
+          <p data-i18n="planos.proDesc">Desbloqueia o que vai além do básico — e mantém o app vivo e independente.</p>
+          <ul>
+            <li data-i18n="planos.p1">Acesso da Família: painel só-leitura por link + PIN</li>
+            <li data-i18n="planos.p2">Relatório completo em PDF</li>
+            <li data-i18n="planos.p3">Sensibilidade + exportar a projeção</li>
+            <li data-i18n="planos.p4">Cotação de ativos da B3</li>
+          </ul>
+          <a class="btn btn-primary" href="/app" data-i18n="planos.proCta">Testar o Pro grátis</a>
+        </div>
+      </div>
+      <div class="eyebrow" style="justify-content:center;margin-top:20px;color:var(--faint)" data-i18n="planos.note">Tudo do grátis continua grátis · Cancele quando quiser</div>
+    </div>
+  </section>
+
   <section class="band" id="comecar" style="padding:0">
     <div class="band-bg" aria-hidden="true"><div class="band-gfx"></div></div>
     <div class="wrap band-content" style="padding-block:clamp(84px,12vw,156px);text-align:center">
@@ -1024,7 +1077,7 @@
       </div>
       <div class="faq reveal">
         <div class="faq-col">
-          <details><summary data-i18n="faq.q1">É grátis mesmo? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">É. Você usa o app de graça, incluindo o Acesso da Família. Sem pegadinha, sem cartão na hora de entrar.</div></details>
+          <details><summary data-i18n="faq.q1">É grátis mesmo? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a1">O núcleo é grátis pra sempre: patrimônio, orçamento, investimentos, projeção e independência. O Pro (opcional) desbloqueia Acesso da Família, relatório completo em PDF e cotação da B3 — com 14 dias grátis. Sem cartão pra começar.</div></details>
           <details><summary data-i18n="faq.q2">Posso me cadastrar agora? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a2">Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem.</div></details>
           <details><summary data-i18n="faq.q3">Vocês conseguem ver os meus dados? <span class="plus">+</span></summary><div class="ans" data-i18n="faq.a3">Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler.</div></details>
         </div>
