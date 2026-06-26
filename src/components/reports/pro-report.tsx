@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
+import { useVault } from "@/vault/vault-store";
 import { useRates } from "@/store/rates";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
@@ -46,6 +47,30 @@ function monthLabel(month: string, lang: string): string {
   const [y, m] = month.split("-").map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "short", year: "2-digit" });
 }
+function monthLong(month: string, lang: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "long", year: "numeric" });
+}
+
+/** Deriva um nome legível do email (não há campo de nome). ex.: marcelo.salgado → "Marcelo Salgado". */
+export function reportName(email: string | null | undefined): string {
+  if (!email) return "";
+  const local = email.split("@")[0];
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Arredonda pra cima a um número "redondo" (p/ rótulos da grade do gráfico). */
+function niceCeil(n: number): number {
+  if (n <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(n)));
+  const f = n / mag;
+  const nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return nice * mag;
+}
 
 /** Relatório Pro completo — imprimível/PDF, 100% no cliente (E2EE-safe). Invisível na
  *  tela; via portal no body. Impresso quando o body tem a classe `print-pro`. */
@@ -53,6 +78,7 @@ export function ProReport() {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage ?? "pt";
   const disp = useUI((s) => s.displayCurrency);
+  const who = reportName(useVault((s) => s.email));
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const pat = usePatrimonio();
@@ -162,14 +188,23 @@ export function ProReport() {
     <div id="pro-report" className="print-only">
       <div style={{ background: "#fff", color: INK, fontFamily: "Inter, system-ui, sans-serif", maxWidth: "760px", margin: "0 auto", fontSize: "13px", lineHeight: 1.5 }}>
         {/* Capa / cabeçalho */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderBottom: `2px solid ${INK}`, paddingBottom: "10px", marginBottom: "20px" }}>
-          <div>
-            <div style={{ fontSize: "19px", fontWeight: 700, letterSpacing: "-0.02em" }}>{t("report.appName")}</div>
-            <div style={{ color: MUTED, fontSize: "12px", marginTop: "2px" }}>{t("report.proTitle")}</div>
+        <div style={{ marginBottom: "22px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "20px" }}>
+            <div>
+              <div style={{ fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.16em", color: POS, fontWeight: 700 }}>{t("report.appName")}</div>
+              <div style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", marginTop: "5px", lineHeight: 1.05 }}>{t("report.proTitle")}</div>
+              <div style={{ color: MUTED, fontSize: "12px", marginTop: "6px" }}>
+                {who ? <>{t("report.preparedFor")} <span style={{ color: INK, fontWeight: 600 }}>{who}</span> · </> : null}
+                <span style={{ textTransform: "capitalize" }}>{t("report.position", { date: monthLong(currentMonth(), lang) })}</span>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", color: FAINT, fontSize: "10.5px", lineHeight: 1.7, whiteSpace: "nowrap", paddingTop: "2px" }}>
+              <div>{t("report.generatedOn", { date: dateLabel(todayISO(), lang) })}</div>
+              <span style={{ display: "inline-block", marginTop: "4px", padding: "1px 8px", border: `1px solid ${LINE}`, borderRadius: "5px", color: MUTED, fontWeight: 700, letterSpacing: "0.06em" }}>{disp}</span>
+            </div>
           </div>
-          <div style={{ textAlign: "right", color: FAINT, fontSize: "11px" }}>
-            {t("report.generatedOn", { date: dateLabel(todayISO(), lang) })}
-            <div>{disp}</div>
+          <div style={{ marginTop: "13px", height: "2px", background: LINE, position: "relative" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, width: "68px", height: "2px", background: POS }} />
           </div>
         </div>
 
@@ -283,11 +318,15 @@ export function ProReport() {
 
             {/* Projeção (3 cenários) */}
             <Section title={`${t("nav.projecao")} · ${t("report.projectionHorizon", { n: v.proj.years })}`}>
-              <MultiLine series={[
-                { color: FAINT, data: v.proj.pSeries.map((p) => p.nominal) },
-                { color: POS, data: v.proj.bSeries.map((p) => p.nominal) },
-                { color: "#2E9E73", data: v.proj.oSeries.map((p) => p.nominal) },
-              ]} years={v.proj.years} />
+              <MultiLine
+                series={[
+                  { color: FAINT, data: v.proj.pSeries.map((p) => p.nominal) },
+                  { color: POS, data: v.proj.bSeries.map((p) => p.nominal) },
+                  { color: "#2E9E73", data: v.proj.oSeries.map((p) => p.nominal) },
+                ]}
+                years={v.proj.years}
+                fmt={(nn) => compactMoney(nn, disp)}
+              />
               <div style={{ display: "flex", gap: "16px", margin: "4px 0 8px", fontSize: "10.5px", color: MUTED }}>
                 <Legend color={FAINT} label={t("report.scenarioPess")} />
                 <Legend color={POS} label={t("report.scenarioBase")} />
@@ -351,7 +390,10 @@ function Metric({ label, value, tone, big }: { label: string; value: string; ton
 function Section({ title, children, breakBefore }: { title: string; children: ReactNode; breakBefore?: boolean }) {
   return (
     <div style={{ marginBottom: "20px", breakInside: "avoid", breakBefore: breakBefore ? "page" : undefined }}>
-      <div style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.1em", color: MUTED, fontWeight: 600, marginBottom: "8px" }}>{title}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "9px" }}>
+        <span style={{ width: "3px", height: "11px", background: POS, borderRadius: "1.5px", display: "inline-block", flexShrink: 0 }} />
+        <span style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.1em", color: MUTED, fontWeight: 700 }}>{title}</span>
+      </div>
       <div>{children}</div>
     </div>
   );
@@ -397,7 +439,7 @@ function LegendRow({ color, label, value }: { color: string; label: string; valu
 function Legend({ color, label }: { color: string; label: string }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-      <span style={{ width: "12px", height: "2.5px", borderRadius: "2px", background: color }} />
+      <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: color, flexShrink: 0 }} />
       {label}
     </span>
   );
@@ -424,32 +466,53 @@ function DataRow({ cols }: { cols: ReactNode[] }) {
 }
 
 // ── mini-gráficos SVG (print-safe, sem medição/Recharts) ─────────────────────
-function AreaChart({ data, w = 720, h = 120, color = POS }: { data: number[]; w?: number; h?: number; color?: string }) {
+function AreaChart({ data, w = 672, h = 120, color = POS }: { data: number[]; w?: number; h?: number; color?: string }) {
   if (data.length < 2) return null;
-  const min = Math.min(...data), max = Math.max(...data), range = max - min || 1, pad = 6;
+  const min = Math.min(...data, 0), max = Math.max(...data), range = max - min || 1, pad = 6;
   const x = (i: number) => pad + (i / (data.length - 1)) * (w - 2 * pad);
   const y = (val: number) => pad + (1 - (val - min) / range) * (h - 2 * pad);
   const line = data.map((val, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(val).toFixed(1)}`).join(" ");
   const area = `${line} L${x(data.length - 1).toFixed(1)},${(h - pad).toFixed(1)} L${x(0).toFixed(1)},${(h - pad).toFixed(1)} Z`;
   return (
-    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
-      <path d={area} fill={color} fillOpacity={0.08} />
-      <path d={line} fill="none" stroke={color} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block", maxWidth: "100%" }}>
+      <path d={area} fill={color} fillOpacity={0.09} />
+      <path d={line} fill="none" stroke={color} strokeWidth={1.8} />
+      <circle cx={x(data.length - 1)} cy={y(data[data.length - 1])} r={2.4} fill={color} />
     </svg>
   );
 }
 
-function MultiLine({ series, years, w = 720, h = 150 }: { series: { color: string; data: number[] }[]; years: number; w?: number; h?: number }) {
+/** Gráfico de linhas com grade, rótulos de valor no eixo e pontas marcadas. */
+function MultiLine({ series, years, fmt, w = 672, h = 172 }: { series: { color: string; data: number[] }[]; years: number; fmt: (n: number) => string; w?: number; h?: number }) {
   const all = series.flatMap((s) => s.data);
-  const max = Math.max(...all, 1), pad = 6, padB = 4;
+  const max = niceCeil(Math.max(...all, 1));
+  const padT = 10, padB = 18, padR = 52, padL = 2;
   const n = series[0]?.data.length ?? 0;
-  const x = (i: number) => pad + (i / Math.max(1, n - 1)) * (w - 2 * pad);
-  const y = (val: number) => pad + (1 - val / max) * (h - pad - padB);
+  const x = (i: number) => padL + (i / Math.max(1, n - 1)) * (w - padL - padR);
+  const y = (val: number) => padT + (1 - val / max) * (h - padT - padB);
+  const grid = [0, 0.25, 0.5, 0.75, 1];
   return (
-    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
-      {series.map((s, si) => (
-        <path key={si} d={s.data.map((val, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(val).toFixed(1)}`).join(" ")} fill="none" stroke={s.color} strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-      ))}
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: "block", maxWidth: "100%" }}>
+      {grid.map((g, i) => {
+        const gy = padT + (1 - g) * (h - padT - padB);
+        return (
+          <g key={i}>
+            <line x1={padL} y1={gy} x2={w - padR} y2={gy} stroke={g === 0 ? FAINT : LINE} strokeWidth={1} />
+            {g > 0 ? <text x={w - padR + 5} y={gy + 3} fontSize="8.5" fill={FAINT}>{fmt(max * g)}</text> : null}
+          </g>
+        );
+      })}
+      {series.map((s, si) => {
+        const last = s.data.length - 1;
+        return (
+          <g key={si}>
+            <path d={s.data.map((val, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(val).toFixed(1)}`).join(" ")} fill="none" stroke={s.color} strokeWidth={1.8} />
+            <circle cx={x(last)} cy={y(s.data[last])} r={2.4} fill={s.color} />
+          </g>
+        );
+      })}
+      <text x={padL} y={h - 5} fontSize="8.5" fill={FAINT}>0</text>
+      <text x={w - padR} y={h - 5} fontSize="8.5" fill={FAINT} textAnchor="end">{years}a</text>
     </svg>
   );
 }

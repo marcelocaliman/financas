@@ -8,7 +8,7 @@ import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
 import { exportBackupJSON, importBackupJSON, exportCSV } from "@/data/backup";
 import { MonthlyReport, currentMonthStr, shiftReportMonth, reportMonthLabel } from "@/components/monthly-report";
-import { ProReport } from "@/components/reports/pro-report";
+import { ProReport, reportName } from "@/components/reports/pro-report";
 import { useIsPro } from "@/hooks/use-pro";
 import { ProUpsell } from "@/components/pro/pro-upsell";
 import { Button } from "@/components/common/button";
@@ -268,6 +268,7 @@ function DataSection() {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage ?? "pt";
   const { isPro } = useIsPro();
+  const email = useVault((s) => s.email);
   const [confirmReset, setConfirmReset] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -294,9 +295,14 @@ function DataSection() {
     }
   };
 
-  // Imprime o Relatório Pro (marca o body p/ a CSS de print mostrar #pro-report).
+  // Imprime o Relatório Pro: marca o body (CSS mostra #pro-report) e troca o título
+  // da aba pelo nome do usuário (o cabeçalho automático do navegador usa o document.title).
   const printPro = () => {
+    const prevTitle = document.title;
+    const who = reportName(email);
+    if (who) document.title = who;
     const cleanup = () => {
+      document.title = prevTitle;
       document.body.classList.remove("print-pro");
       window.removeEventListener("afterprint", cleanup);
     };

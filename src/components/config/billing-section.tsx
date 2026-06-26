@@ -16,7 +16,7 @@ export function BillingSummary() {
 
 /** Seção de Config: estado do plano + iniciar teste / assinar / cancelar. */
 export function BillingSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isPro } = useIsPro();
   const sub = useProStore((s) => s.sub);
   const openPaywall = useProStore((s) => s.openPaywall);
@@ -27,6 +27,14 @@ export function BillingSection() {
   const canceling = active && !!sub?.cancel_at_period_end;
   const trialUsed = !!sub?.trial_started;
   const stateKey = active ? (canceling ? "canceling" : "active") : trialing ? "trialing" : "free";
+
+  const fmtDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString(i18n.language || "pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+    } catch {
+      return iso;
+    }
+  };
 
   const run = (fn: () => Promise<unknown>) => async () => {
     setBusy(true);
@@ -50,9 +58,19 @@ export function BillingSection() {
           <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">{t(`billing.state.${stateKey}`)}</span>
         </div>
 
-        <p className="mt-2 text-[13px] leading-relaxed text-muted">{t(active ? "billing.activeDesc" : "billing.freeDesc")}</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-muted">
+          {t(canceling ? "billing.cancelingDesc" : active ? "billing.activeDesc" : "billing.freeDesc")}
+        </p>
         {trialing && sub?.trial_ends_at ? (
-          <p className="mt-1 text-[12px] text-faint">{t("billing.trialUntil", { date: new Date(sub.trial_ends_at).toLocaleDateString() })}</p>
+          <p className="mt-1 text-[12px] text-faint">{t("billing.trialUntil", { date: fmtDate(sub.trial_ends_at) })}</p>
+        ) : null}
+        {canceling && sub?.current_period_end ? (
+          <p className="mt-2 rounded-[8px] border border-amber-500/30 bg-amber-500/[0.06] px-3 py-2 text-[12.5px] font-medium text-amber-600 dark:text-amber-400">
+            {t("billing.proUntil", { date: fmtDate(sub.current_period_end) })}
+          </p>
+        ) : null}
+        {active && !canceling && sub?.current_period_end ? (
+          <p className="mt-1 text-[12px] text-faint">{t("billing.renewsOn", { date: fmtDate(sub.current_period_end) })}</p>
         ) : null}
 
         <div className="mt-4 flex flex-wrap gap-2">
