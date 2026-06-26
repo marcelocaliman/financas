@@ -24,10 +24,12 @@ export function TermsOfUseContent() {
 
       <Section title="O que é o serviço">
         <p>
-          O <b className="text-text">Nossas Finanças</b> (nossasfinancas.com.br) é um app{" "}
-          <b className="text-text">gratuito</b> de organização financeira pessoal multimoeda, com
-          criptografia ponta a ponta (E2EE). Ao criar uma conta e usar o app, você concorda com
-          estes Termos. Se não concordar, não use o serviço.
+          O <b className="text-text">Nossas Finanças</b> (nossasfinancas.com.br) é um app de
+          organização financeira pessoal multimoeda, com criptografia ponta a ponta (E2EE).
+          Oferecemos um <b className="text-text">núcleo gratuito</b> e um{" "}
+          <b className="text-text">plano Pro pago opcional</b> com recursos avançados (ver
+          “Plano Pro e assinatura”). Ao criar uma conta e usar o app, você concorda com estes
+          Termos. Se não concordar, não use o serviço.
         </p>
       </Section>
 
@@ -87,6 +89,32 @@ export function TermsOfUseContent() {
           Conta), o que apaga o cofre cifrado de forma definitiva. Podemos encerrar contas em caso de
           violação destes Termos.
         </p>
+      </Section>
+
+      <Section title="Plano Pro e assinatura">
+        <p>
+          • O núcleo do app é <b className="text-text">gratuito</b>. O <b className="text-text">plano Pro</b>{" "}
+          (opcional) desbloqueia recursos avançados, com assinatura <b className="text-text">mensal (R$ 24,90)</b> ou{" "}
+          <b className="text-text">anual (R$ 249)</b>, processada pela <b className="text-text">Stripe</b>.
+        </p>
+        <p>
+          • <b className="text-text">Teste grátis</b>: uma vez por conta, você pode iniciar 14 dias de teste do Pro.
+          Ao fim do teste, a cobrança é automática, salvo cancelamento antes.
+        </p>
+        <p>
+          • <b className="text-text">Cancelamento</b>: a qualquer momento em Config → Plano. O acesso Pro continua
+          até o fim do período já pago; <b className="text-text">não há cobranças futuras</b> após o cancelamento.
+        </p>
+        <p>
+          • <b className="text-text">Reembolso</b>: períodos já pagos não são reembolsados — o cancelamento apenas
+          interrompe as cobranças seguintes. Dúvidas pontuais: <b className="text-text">contato@nossasfinancas.com.br</b>.
+        </p>
+        <p>
+          • <b className="text-text">Falha de pagamento</b>: se o cartão for recusado, a Stripe tenta de novo;
+          persistindo, a assinatura fica suspensa e o Pro é desativado até a regularização — <b className="text-text">sem perder
+          seus dados</b>.
+        </p>
+        <p>• Os preços podem mudar; alterações valem para ciclos futuros, com aviso prévio razoável.</p>
       </Section>
 
       <Section title="Privacidade">

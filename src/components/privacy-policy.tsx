@@ -64,6 +64,11 @@ export function PrivacyPolicyContent() {
           números de conta nessas mensagens. Imagens que você anexar ficam acessíveis por um link
           não-listado (não-adivinhável) — evite anexar conteúdo sensível.
         </p>
+        <p>
+          • <b className="text-text">Assinatura Pro</b> (se você assina) — status, plano e datas da
+          assinatura, mais identificadores da Stripe. <b className="text-text">Nunca os dados do
+          cartão</b> (esses ficam só na Stripe). É metadado, não o dado financeiro do cofre.
+        </p>
       </Section>
 
       <Section title="Base legal e finalidade">
@@ -88,8 +93,15 @@ export function PrivacyPolicyContent() {
           de senha e notificações de suporte). Recebe só o seu e-mail e o conteúdo da mensagem.
         </p>
         <p>
-          • <b className="text-text">APIs de câmbio/cotação</b> (Frankfurter, brapi) — recebem só
-          pares de moeda e tickers, nunca dados pessoais ou financeiros. Não vendemos seus dados.
+          • <b className="text-text">APIs de câmbio/cotação</b> (Frankfurter, brapi, Finnhub) —
+          recebem só pares de moeda e tickers, nunca dados pessoais ou financeiros. Não vendemos seus dados.
+        </p>
+        <p>
+          • <b className="text-text">Stripe</b> — processa os pagamentos do plano Pro. Os dados do
+          seu cartão vão <b className="text-text">direto pra Stripe</b> (criptografados); nós{" "}
+          <b className="text-text">nunca os vemos nem armazenamos</b>. Do nosso lado fica só o{" "}
+          <b className="text-text">status da assinatura</b> (ativa/cancelada) e identificadores da
+          Stripe — metadado, não dado financeiro do cofre.
         </p>
       </Section>
 
@@ -104,7 +116,10 @@ export function PrivacyPolicyContent() {
       <Section title="Por quanto tempo guardamos">
         <p>
           Enquanto a sua conta existir. Ao <b className="text-text">excluir a conta</b>, o cofre
-          cifrado e o cadastro são apagados; backups dos provedores expiram nos ciclos deles.
+          cifrado e o cadastro são apagados; backups dos provedores expiram nos ciclos deles.{" "}
+          <b className="text-text">Registros de pagamento/assinatura</b> (na Stripe e os
+          identificadores do nosso lado) podem ser mantidos pelo prazo legal/fiscal aplicável,
+          mesmo após o cancelamento.
         </p>
       </Section>
 
