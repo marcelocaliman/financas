@@ -339,7 +339,11 @@ summary {
   body > * {
     display: none !important;
   }
-  #monthly-report {
+  /* Padrão = resumo mensal; com .print-pro no body, imprime o Relatório Pro. */
+  body:not(.print-pro) #monthly-report {
+    display: block !important;
+  }
+  body.print-pro #pro-report {
     display: block !important;
   }
   @page {

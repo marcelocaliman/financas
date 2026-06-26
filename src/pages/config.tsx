@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Printer, ChevronLeft, ChevronRight } from "lucide-react";
+import { Printer, ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { useUI, type Theme } from "@/store/ui";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { CURRENCIES, CURRENCY_SYMBOL } from "@/money/currency";
@@ -8,6 +8,9 @@ import { SUPPORTED_LANGS } from "@/i18n";
 import { actions } from "@/data/actions";
 import { exportBackupJSON, importBackupJSON, exportCSV } from "@/data/backup";
 import { MonthlyReport, currentMonthStr, shiftReportMonth, reportMonthLabel } from "@/components/monthly-report";
+import { ProReport } from "@/components/reports/pro-report";
+import { useIsPro } from "@/hooks/use-pro";
+import { ProUpsell } from "@/components/pro/pro-upsell";
 import { Button } from "@/components/common/button";
 import { Dialog } from "@/components/common/dialog";
 import { Eyebrow } from "@/components/common/tile";
@@ -264,6 +267,7 @@ function DataCard({ title, desc, children }: { title: string; desc: string; chil
 function DataSection() {
   const { t, i18n } = useTranslation();
   const lang = i18n.resolvedLanguage ?? "pt";
+  const { isPro } = useIsPro();
   const [confirmReset, setConfirmReset] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -288,6 +292,17 @@ function DataSection() {
     } catch {
       setMsg({ kind: "err", text: t("data.importError") });
     }
+  };
+
+  // Imprime o Relatório Pro (marca o body p/ a CSS de print mostrar #pro-report).
+  const printPro = () => {
+    const cleanup = () => {
+      document.body.classList.remove("print-pro");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    document.body.classList.add("print-pro");
+    window.print();
   };
 
   return (
@@ -354,6 +369,17 @@ function DataSection() {
           </div>
         </DataCard>
 
+        <DataCard title={t("report.proTitle")} desc={t("report.proDesc")}>
+          {!isPro ? (
+            <ProUpsell title={t("pro.benefit2")} desc={t("pro.benefit2Desc")} feature="relatorio" />
+          ) : (
+            <Button variant="secondary" onClick={printPro}>
+              <FileText size={15} className="mr-1.5" />
+              {t("report.proBtn")}
+            </Button>
+          )}
+        </DataCard>
+
         <DataCard title={t("data.sample")} desc={t("data.sampleDesc")}>
           <Button variant="secondary" onClick={() => void actions.loadSample()}>
             {t("data.loadSample")}
@@ -407,6 +433,7 @@ function DataSection() {
       </Dialog>
 
       <MonthlyReport month={reportMonth} />
+      {isPro ? <ProReport /> : null}
     </div>
   );
 }

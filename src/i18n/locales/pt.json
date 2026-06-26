@@ -444,15 +444,7 @@
     "exportCsvDesc": "Planilha achatada (ativos, gastos, receitas…) pra abrir no Excel/Sheets.",
     "exportCsvBtn": "Exportar CSV"
   },
-  "report": {
-    "appName": "Nossas Finanças",
-    "title": "Resumo mensal",
-    "desc": "Gere um resumo do mês para imprimir ou salvar em PDF (pelo navegador).",
-    "print": "Imprimir / PDF",
-    "netWorth": "Patrimônio líquido",
-    "generatedOn": "gerado em {{date}}",
-    "footer": "Privado · cifrado de ponta a ponta"
-  },
+  "report": {"appName": "Nossas Finanças", "title": "Resumo mensal", "desc": "Gere um resumo do mês para imprimir ou salvar em PDF (pelo navegador).", "print": "Imprimir / PDF", "netWorth": "Patrimônio líquido", "generatedOn": "gerado em {{date}}", "footer": "Privado · cifrado de ponta a ponta", "proTitle": "Relatório completo", "proDesc": "Relatório completo em PDF — patrimônio, orçamento, projeção e independência.", "proBtn": "Baixar relatório (PDF)", "eligibleWealth": "Patrimônio investível", "savingsRate": "Taxa de poupança", "byCurrency": "Por moeda", "composition": "Composição", "evolution": "Evolução do patrimônio", "month": "Mês", "value": "Valor", "variation": "Variação", "contribution": "Aporte", "passiveIncome": "Renda passiva", "dividends": "Dividendos (12m)", "rent": "Aluguéis / passiva", "passiveTotal": "Total no ano", "independence": "Independência financeira", "independenceNumber": "Número da independência", "freedom": "Liberdade", "coverage": "Cobertura dos gastos", "safeMonthly": "Renda mensal segura", "yearsOfFreedom": "Anos de liberdade", "eta": "Previsão de chegada", "status": "Situação", "projectionHorizon": "{{n}} anos", "scenarioPess": "Pessimista", "scenarioBase": "Base", "scenarioOpt": "Otimista", "year": "Ano", "real": "Real (hoje)"},
   "menu": {
     "position": "Posição do menu",
     "top": "Topo",
