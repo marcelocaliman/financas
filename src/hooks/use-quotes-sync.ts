@@ -15,6 +15,9 @@ export function useQuotesSync(): void {
   const { isAdmin } = useIsAdmin();
 
   useEffect(() => {
+    // COTAÇÃO-PRO (gancho): ao ligar o plano PAGO da brapi, trocar `isAdmin` → `isPro`
+    // (useIsPro) aqui, em api/quote.js (gate) e em patrimonio.tsx (colunas price/ret).
+    // Cadência por tier: admin = 4×/dia (free); Pro pagante = ~15min (ver isQuoteRefreshDue).
     if (!data || !isAdmin) return;
     const run = () => void useQuotes.getState().refresh(data.assets);
     run();

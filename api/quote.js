@@ -59,6 +59,8 @@ async function isAdminRequest(req) {
 
 export default async function handler(req, res) {
   // Cotação automática é só do super-admin (uso pessoal do free brapi). Outros → vazio (manual).
+  // COTAÇÃO-PRO (gancho): ao assinar o plano PAGO da brapi (licença comercial), trocar a guarda
+  // por `isAdmin OR is_pro(user)` — aí Pro pagante recebe cotação; free segue manual.
   if (!(await isAdminRequest(req))) {
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ results: [] });

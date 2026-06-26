@@ -180,12 +180,13 @@ export function isInvestedClass(classId: string): boolean {
 }
 
 /**
- * Modelo "cotável" (ticker × qtd × preço) APOSENTADO: agora TODA classe investida usa VALOR
- * MANUAL por categoria — o usuário digita o total que tem (ex.: "Ações = R$ X"); o detalhe
- * posição-a-posição fica na corretora. Conjunto vazio = isQuotableClass sempre false; o helper
- * fica só pra não quebrar referências (o ramo cotável vira código inerte).
+ * Modelo "cotável" (ticker · qtd · preço médio) REATIVADO (jun/2026) para as classes negociadas
+ * por UNIDADE/cota — valor = qtd × (cotação do dia, se houver; senão preço médio). As demais
+ * investidas (renda fixa, fundos) seguem no modelo de VALOR (aplicado → atual → rentabilidade),
+ * que é melhor pra elas. A COTAÇÃO ao vivo segue exclusiva do super-admin (brapi free, 4×/dia);
+ * vira Pro (refresh ~15min) quando o plano PAGO da brapi entrar — ver api/quote.js + use-quotes-sync.
  */
-const QUOTABLE_CLASSES = new Set<string>();
+const QUOTABLE_CLASSES = new Set<string>([CLASS.acoes, CLASS.fiis, CLASS.cripto, CLASS.commodities]);
 export function isQuotableClass(classId: string): boolean {
   return QUOTABLE_CLASSES.has(classId);
 }
