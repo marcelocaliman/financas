@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Line, Area, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from "recharts";
-import { Flame, Dices } from "lucide-react";
+import { Flame, Dices, Download } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
@@ -16,6 +16,7 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
+import { ProGate } from "@/components/pro/pro-gate";
 import { cn } from "@/lib/utils";
 
 /** Cor de cada cenário (otimista = acento; base = neutro; pessimista = negativo). */
@@ -199,7 +200,111 @@ export default function Projecao() {
           </div>
         </div>
       </section>
+
+      {/* Pro: análise de sensibilidade + exportar projeção (CSV) */}
+      <ProGate title={t("pro.benefit2")} desc={t("pro.benefit2Desc")} feature="projecao">
+        <SensitivityCard />
+      </ProGate>
     </div>
+  );
+}
+
+function downloadCsv(name: string, content: string) {
+  const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function csvStamp(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Pro: sensibilidade (anos até a independência variando retorno × aporte) + export CSV da projeção. */
+function SensitivityCard() {
+  const { t } = useTranslation();
+  const disp = useUI((s) => s.displayCurrency);
+  const dark = useUI((s) => s.theme) === "dark";
+  const netWorth = useNetWorth();
+  const fire = useFireTarget();
+  const p = useProjection();
+  const base = p.scenarios.base;
+  const initial = Math.max(0, p.initialOverride ?? fire?.eligibleWealth ?? netWorth);
+  const target = fire?.independenceNumber ?? Infinity;
+  const inflation = p.annualInflation;
+  const ready = !!fire && Number.isFinite(target) && target > 0;
+
+  const returns = [-2, -1, 0, 1, 2].map((d) => Math.max(0, base.annualReturn + d));
+  const mults = [0.5, 1, 1.5, 2];
+  const accentRGB = dark ? "62,207,142" : "21,151,106";
+
+  const exportCsv = () => {
+    const years = Math.max(1, Math.min(60, Math.round(p.years)));
+    const head = [t("projecao.year"), ...SCENARIO_KEYS.map((k) => t(`projecao.${k}`)), `${t("projecao.base")} (${t("projecao.realToday")})`].join(",");
+    const lines: string[] = [];
+    for (let yr = 0; yr <= years; yr++) {
+      const vals = SCENARIO_KEYS.map((k) => Math.round(projectBalance(initial, p.scenarios[k].monthly, p.scenarios[k].annualReturn / 100, yr)));
+      const real = Math.round(realValue(projectBalance(initial, base.monthly, base.annualReturn / 100, yr), inflation / 100, yr));
+      lines.push([yr, ...vals, real].join(","));
+    }
+    downloadCsv(`projecao-${csvStamp()}.csv`, head + "\n" + lines.join("\n"));
+  };
+
+  return (
+    <Tile className="p-6 md:p-7">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Eyebrow>{t("projecao.sensitivity")}</Eyebrow>
+          <p className="mt-1.5 max-w-md text-[12.5px] text-muted">{t("projecao.sensitivityDesc")}</p>
+        </div>
+        <button
+          type="button"
+          onClick={exportCsv}
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[8px] border border-border text-[13px] font-medium text-muted transition-colors hover:bg-card-hover hover:text-text"
+        >
+          <Download size={15} /> {t("projecao.exportCsv")}
+        </button>
+      </div>
+
+      {!ready ? (
+        <p className="mt-5 text-[13px] text-faint">{t("projecao.sensitivityEmpty")}</p>
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <div className="min-w-[480px]">
+            <div className="mb-1.5 grid grid-cols-[64px_repeat(4,1fr)] gap-1.5">
+              <div className="self-end pb-1 font-mono text-[9px] uppercase leading-tight tracking-[0.08em] text-faint">{t("projecao.annualReturn")} ↓<br />{t("projecao.monthly")} →</div>
+              {mults.map((m) => (
+                <div key={m} className="pb-1 text-right text-[11px] tabular text-muted">{compactMoney(base.monthly * m, disp)}</div>
+              ))}
+            </div>
+            {returns.map((ret) => (
+              <div key={ret} className="mb-1.5 grid grid-cols-[64px_repeat(4,1fr)] items-center gap-1.5">
+                <div className="w-[64px] pr-2 text-[12px] tabular text-muted">{ret.toFixed(0)}%</div>
+                {mults.map((m) => {
+                  const yrs = yearsToFI({ portfolio: initial, monthlyContribution: base.monthly * m, realAnnualReturn: realReturn(ret, inflation), target });
+                  const op = yrs == null ? 0 : Math.max(0.05, Math.min(0.3, (Math.max(1, p.years) / Math.max(0.5, yrs)) * 0.16));
+                  return (
+                    <div
+                      key={m}
+                      className="rounded-[8px] py-2 text-center text-[13px] font-medium tabular"
+                      style={{ background: yrs == null ? "transparent" : `rgba(${accentRGB},${op})`, color: yrs == null ? "var(--faint)" : "var(--text)" }}
+                      title={yrs == null ? t("projecao.unreachable") : t("projecao.yearsToFi", { n: yrs.toFixed(1) })}
+                    >
+                      {yrs == null ? "—" : `${yrs.toFixed(yrs < 10 ? 1 : 0)}${t("projecao.yearSuffix")}`}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Tile>
   );
 }
 
