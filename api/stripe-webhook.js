@@ -60,12 +60,35 @@ async function updateFromSubscription(sub) {
       headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
       body: JSON.stringify({ user_id: userId, ...fields }),
     });
-  } else if (customerId) {
-    await sbFetch(`/rest/v1/pro_subscriptions?stripe_customer_id=eq.${encodeURIComponent(customerId)}`, {
+    return;
+  }
+  if (customerId) {
+    // Tenta atualizar a linha existente por customer; pede representação p/ saber se casou.
+    const r = await sbFetch(`/rest/v1/pro_subscriptions?stripe_customer_id=eq.${encodeURIComponent(customerId)}`, {
       method: "PATCH",
-      headers: { Prefer: "return=minimal" },
+      headers: { Prefer: "return=representation" },
       body: JSON.stringify(fields),
     });
+    const patched = r.ok ? await r.json().catch(() => []) : [];
+    if (Array.isArray(patched) && patched.length > 0) return;
+    // 0 linhas (sub criada fora do app, sem metadata.user_id) → resolve user_id pelo customer.
+    let uid = null;
+    try {
+      const c = await stripe.customers.retrieve(customerId);
+      uid = c && !c.deleted ? c.metadata && c.metadata.user_id : null;
+    } catch {
+      /* segue pro throw abaixo */
+    }
+    if (uid) {
+      await sbFetch(`/rest/v1/pro_subscriptions?on_conflict=user_id`, {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ user_id: uid, ...fields }),
+      });
+      return;
+    }
+    // Sem como firmar → 500 (via throw) pro Stripe re-tentar, em vez de engolir o evento.
+    throw new Error("unmapped_subscription_event");
   }
 }
 
@@ -91,11 +114,23 @@ export default async function handler(req, res) {
 
   try {
     const t = event.type;
-    if (t.startsWith("customer.subscription.")) {
+    if (t === "customer.subscription.deleted") {
+      // Downgrade: usa o PRÓPRIO payload (status canceled). Não depende do re-fetch,
+      // que pode dar 404 justo no .deleted (o objeto está sumindo) e travar is_pro em Pro.
+      await updateFromSubscription(event.data.object);
+    } else if (t.startsWith("customer.subscription.")) {
       // Re-busca via API (pinada) em vez de usar o payload do evento — garante
       // current_period_end e formato consistentes, independentemente da versão do endpoint.
       const subId = event.data.object && event.data.object.id;
-      if (subId) await updateFromSubscription(await stripe.subscriptions.retrieve(subId));
+      if (subId) {
+        try {
+          await updateFromSubscription(await stripe.subscriptions.retrieve(subId));
+        } catch (e) {
+          // sub sumiu (404/resource_missing) → firma o downgrade pelo payload do evento.
+          if (e && (e.code === "resource_missing" || e.statusCode === 404)) await updateFromSubscription(event.data.object);
+          else throw e;
+        }
+      }
     } else if (t === "invoice.paid" || t === "invoice.payment_failed") {
       const inv = event.data.object;
       const ref =

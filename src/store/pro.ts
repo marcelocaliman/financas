@@ -3,7 +3,8 @@ import type { ProSubscription } from "@/lib/pro-api";
 
 /** Estado Pro (sessão) + controle do diálogo de assinatura (paywall).
  *  isPro vem do servidor (is_pro RPC; admin é sempre Pro). É METADADO — sem dado financeiro.
- *  O gate é validado também no servidor em cada feature paga; isto é só a UI. */
+ *  Features com efeito no servidor (ex.: Acesso da Família) validam is_pro() no próprio
+ *  RPC; as de cálculo são locais. Esta store é só a UI/gate visual. */
 interface ProState {
   resolved: boolean; // já checou no servidor nesta sessão
   isPro: boolean;

@@ -41,9 +41,11 @@ export async function startProTrial(): Promise<void> {
   useProStore.getState().setPro(isPro, sub);
 }
 
-/** Revalida o estado Pro no servidor (poll curto — o webhook pode levar 1-2s pra firmar). */
+/** Revalida o estado Pro no servidor com backoff (o webhook do Stripe pode demorar
+ *  bem mais que 1-2s em cauda — retries/fila). ~22s no total antes de desistir. */
 export async function refreshPro(): Promise<boolean> {
-  for (let i = 0; i < 6; i++) {
+  const delays = [600, 800, 1000, 1500, 2000, 2500, 3500, 4500, 6000]; // ~22s acumulados
+  for (let i = 0; i <= delays.length; i++) {
     try {
       const [isPro, sub] = await Promise.all([proApi.isPro(), proApi.getSubscription()]);
       useProStore.getState().setPro(isPro, sub);
@@ -51,7 +53,7 @@ export async function refreshPro(): Promise<boolean> {
     } catch {
       /* ignora; tenta de novo */
     }
-    await new Promise((r) => setTimeout(r, 800));
+    if (i < delays.length) await new Promise((r) => setTimeout(r, delays[i]));
   }
   return false;
 }

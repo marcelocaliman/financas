@@ -36,7 +36,16 @@ function PayForm({ mode, onDone }: { mode: "payment" | "setup"; onDone: () => vo
       setBusy(false);
       return;
     }
-    onDone();
+    // Só é sucesso se o intent REALMENTE avançou. Com redirect:"if_required" o Stripe
+    // resolve sem erro mesmo em status pendente — não confiar na ausência de erro.
+    const r2 = result as { paymentIntent?: { status?: string }; setupIntent?: { status?: string } };
+    const st = (mode === "setup" ? r2.setupIntent : r2.paymentIntent)?.status;
+    if (st === "succeeded" || st === "processing") {
+      onDone();
+      return;
+    }
+    setErr(t("pro.errGeneric"));
+    setBusy(false);
   }
 
   return (
@@ -86,7 +95,7 @@ export function UpgradeDialog() {
   const theme = useUI((s) => s.theme);
 
   const [plan, setPlan] = useState<CheckoutPlan>("monthly");
-  const [step, setStep] = useState<"plan" | "pay" | "done">("plan");
+  const [step, setStep] = useState<"plan" | "pay" | "pending" | "done">("plan");
   const [data, setData] = useState<CreateSubResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -110,8 +119,8 @@ export function UpgradeDialog() {
     try {
       const r = await billing.createSubscription(plan);
       if (r.alreadyActive) {
-        await refreshPro();
-        setStep("done");
+        const ok = await refreshPro();
+        setStep(ok ? "done" : "pending");
         return;
       }
       if (r.clientSecret) {
@@ -126,6 +135,14 @@ export function UpgradeDialog() {
     } finally {
       setLoading(false);
     }
+  }
+
+  /** Re-checa is_pro (passo "liberando…") — o webhook pode firmar depois da janela. */
+  async function recheck() {
+    setLoading(true);
+    const ok = await refreshPro();
+    setLoading(false);
+    if (ok) setStep("done");
   }
 
   const appearance: Appearance = {
@@ -220,11 +237,24 @@ export function UpgradeDialog() {
               <PayForm
                 mode={data.mode === "setup" ? "setup" : "payment"}
                 onDone={async () => {
-                  await refreshPro();
-                  setStep("done");
+                  const ok = await refreshPro();
+                  setStep(ok ? "done" : "pending");
                 }}
               />
             </Elements>
+          </div>
+        ) : null}
+
+        {step === "pending" ? (
+          <div className="p-6 pt-5 text-center">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent-soft text-accent">
+              <Sparkles size={22} />
+            </div>
+            <div className="mt-3 text-[16px] font-semibold">{t("pro.pending")}</div>
+            <p className="mx-auto mt-1.5 max-w-xs text-[13px] leading-relaxed text-muted">{t("pro.pendingDesc")}</p>
+            <Button className="mt-5" onClick={recheck} disabled={loading}>
+              {loading ? t("pro.processing") : t("pro.recheck")}
+            </Button>
           </div>
         ) : null}
 

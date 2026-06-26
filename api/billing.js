@@ -45,7 +45,9 @@ async function userFromJwt(req) {
 
 async function getSubRow(userId) {
   const r = await sbFetch(`/rest/v1/pro_subscriptions?user_id=eq.${encodeURIComponent(userId)}&select=*`);
-  if (!r.ok) return null;
+  // FAIL-CLOSED: erro de leitura NÃO pode virar "usuário sem assinatura" — isso
+  // levaria a criar customer+assinatura duplicados (cobrança dupla). Propaga o erro.
+  if (!r.ok) throw new Error("subrow_read_failed");
   const rows = await r.json();
   return Array.isArray(rows) && rows[0] ? rows[0] : null;
 }
@@ -81,20 +83,41 @@ export default async function handler(req, res) {
       const price = PRICES[plan];
       if (!price) return json(res, 500, { error: "price_not_configured" });
 
-      const existing = await getSubRow(user.id);
-      // Só bloqueia se já é PAGANTE ativo (o nosso trial NÃO bloqueia — converter = pagar agora).
-      if (existing?.stripe_subscription_id && existing.status === "active") {
-        return json(res, 200, { mode: "none", alreadyActive: true, status: "active" });
+      let existing;
+      try {
+        existing = await getSubRow(user.id);
+      } catch {
+        return json(res, 503, { error: "read_failed" }); // não seguir e arriscar duplicar cobrança
+      }
+
+      // Já tem assinatura VIVA no Stripe? Não recriar — recriar cancelaria a legítima.
+      if (existing?.stripe_subscription_id && (existing.status === "active" || existing.status === "trialing")) {
+        return json(res, 200, { mode: "none", alreadyActive: true, status: existing.status });
+      }
+      // past_due = renovação falhou: deixa PAGAR a fatura em aberto (nunca recriar/cancelar).
+      if (existing?.stripe_subscription_id && existing.status === "past_due") {
+        try {
+          const cur = await stripe.subscriptions.retrieve(existing.stripe_subscription_id, { expand: ["latest_invoice.payment_intent"] });
+          const dpi = cur.latest_invoice && cur.latest_invoice.payment_intent;
+          if (dpi && dpi.client_secret) return json(res, 200, { mode: "payment", clientSecret: dpi.client_secret, subscriptionId: cur.id });
+        } catch {
+          /* cai pro erro abaixo — nunca recriar */
+        }
+        return json(res, 409, { error: "past_due_unresolved" });
       }
 
       let customerId = existing?.stripe_customer_id;
       if (!customerId) {
-        const c = await stripe.customers.create({ email: user.email || undefined, metadata: { user_id: user.id } });
+        // idempotencyKey por-usuário → POSTs concorrentes não criam customers duplicados.
+        const c = await stripe.customers.create(
+          { email: user.email || undefined, metadata: { user_id: user.id } },
+          { idempotencyKey: `cust:${user.id}` },
+        );
         customerId = c.id;
       }
 
-      // Limpa assinatura anterior NÃO-ativa (tentativa incompleta/sem cartão) pra não duplicar.
-      if (existing?.stripe_subscription_id) {
+      // Limpa SÓ assinatura incompleta/cancelada (tentativa sem cartão) — nunca uma paga/trial/past_due.
+      if (existing?.stripe_subscription_id && ["incomplete", "canceled"].includes(existing.status)) {
         try {
           await stripe.subscriptions.cancel(existing.stripe_subscription_id);
         } catch {
@@ -103,14 +126,19 @@ export default async function handler(req, res) {
       }
 
       // Cobrança IMEDIATA na conversão → sempre gera PaymentIntent (o cartão sempre aparece).
-      const sub = await stripe.subscriptions.create({
-        customer: customerId,
-        items: [{ price }],
-        payment_behavior: "default_incomplete",
-        payment_settings: { save_default_payment_method: "on_subscription" },
-        expand: ["latest_invoice.payment_intent"],
-        metadata: { user_id: user.id },
-      });
+      // idempotencyKey por janela curta (10s) → clique-duplo/2 abas não criam 2 assinaturas.
+      const idemWindow = Math.floor(Date.now() / 10000);
+      const sub = await stripe.subscriptions.create(
+        {
+          customer: customerId,
+          items: [{ price }],
+          payment_behavior: "default_incomplete",
+          payment_settings: { save_default_payment_method: "on_subscription" },
+          expand: ["latest_invoice.payment_intent"],
+          metadata: { user_id: user.id },
+        },
+        { idempotencyKey: `sub:${user.id}:${plan}:${idemWindow}` },
+      );
 
       await upsertSub({
         user_id: user.id,
@@ -119,6 +147,7 @@ export default async function handler(req, res) {
         status: ["active", "trialing", "past_due", "incomplete"].includes(sub.status) ? sub.status : "incomplete",
         price_id: price,
         plan,
+        trial_started: true, // converter pelo checkout QUEIMA o direito ao trial grátis (anti-abuso)
         current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       });
