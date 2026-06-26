@@ -26,6 +26,7 @@ import { countShares } from "@/lib/shares";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { TermsLink } from "@/components/terms-of-use";
 import { Accordion } from "@/components/common/accordion";
+import { BillingSection, BillingSummary } from "@/components/config/billing-section";
 import { CONFIG_NAV_ITEMS } from "@/components/layout/nav-items";
 import { useSections } from "@/store/sections";
 import { useVault } from "@/vault/vault-store";
@@ -107,6 +108,10 @@ export default function Config({ onClose }: { onClose?: () => void }) {
             </Card>
             <DangerZone />
           </div>
+        </Accordion>
+
+        <Accordion id="cfg-billing" title={t("billing.title")} summary={<CfgPreview><BillingSummary /></CfgPreview>}>
+          <BillingSection />
         </Accordion>
 
         <Accordion id="cfg-security" title={t("config.security")} summary={<CfgPreview>{t("config.kpiSecurity")}</CfgPreview>}>

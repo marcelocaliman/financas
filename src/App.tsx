@@ -9,6 +9,7 @@ import { usePresenceTracker, markSeen } from "@/lib/presence";
 import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { RecoveryCodeDialog } from "@/components/auth/recovery-code-dialog";
+import { UpgradeDialog } from "@/components/pro/upgrade-dialog";
 import { AppShell } from "@/components/layout/app-shell";
 
 function Splash() {
@@ -84,6 +85,7 @@ export default function App() {
     <>
       <AppShell />
       <RecoveryCodeDialog />
+      <UpgradeDialog />
     </>
   );
 }

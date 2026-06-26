@@ -14,6 +14,7 @@ import {
   Palette,
   Database,
   Lock,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,6 +49,7 @@ export interface ConfigNavItem {
 /** Seções da página de Configurações — a nav lateral troca pra esta lista quando a Config abre. */
 export const CONFIG_NAV_ITEMS: ConfigNavItem[] = [
   { id: "cfg-account", labelKey: "config.account", icon: User },
+  { id: "cfg-billing", labelKey: "billing.title", icon: Sparkles },
   { id: "cfg-security", labelKey: "config.security", icon: ShieldCheck },
   { id: "cfg-family", labelKey: "config.family", icon: Users },
   { id: "cfg-categories", labelKey: "config.categories", icon: Tags },

@@ -40,3 +40,18 @@ export async function startProTrial(): Promise<void> {
   const isPro = await proApi.isPro();
   useProStore.getState().setPro(isPro, sub);
 }
+
+/** Revalida o estado Pro no servidor (poll curto — o webhook pode levar 1-2s pra firmar). */
+export async function refreshPro(): Promise<boolean> {
+  for (let i = 0; i < 6; i++) {
+    try {
+      const [isPro, sub] = await Promise.all([proApi.isPro(), proApi.getSubscription()]);
+      useProStore.getState().setPro(isPro, sub);
+      if (isPro) return true;
+    } catch {
+      /* ignora; tenta de novo */
+    }
+    await new Promise((r) => setTimeout(r, 800));
+  }
+  return false;
+}
