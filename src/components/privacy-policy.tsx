@@ -21,10 +21,11 @@ export function PrivacyPolicyContent() {
 
       <Section title="Quem é o responsável">
         <p>
-          O <b className="text-text">Nossas Finanças</b> (nossasfinancas.com.br) é o responsável
-          (controlador) pelo tratamento dos seus dados pessoais. Você pode falar com o nosso{" "}
-          <b className="text-text">Encarregado pela Proteção de Dados (DPO)</b> — e exercer qualquer
-          direito abaixo — pelo e-mail <b className="text-text">privacidade@nossasfinancas.com.br</b>.
+          O <b className="text-text">Nossas Finanças</b> (nossasfinancas.com.br), operado por{" "}
+          <b className="text-text">Marcelo Salgado Caliman</b> (pessoa física), é o responsável
+          (controlador) pelo tratamento dos seus dados pessoais. Para exercer qualquer direito
+          abaixo ou falar sobre privacidade, escreva para{" "}
+          <b className="text-text">contato@nossasfinancas.com.br</b>.
         </p>
       </Section>
 

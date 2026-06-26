@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Check, ShieldCheck, Sparkles, LineChart, Users, FileBarChart } from "lucide-react";
+import { X, Check, ShieldCheck, Sparkles, Users, FileBarChart, BarChart3, TrendingUp } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { Appearance } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe";
@@ -94,7 +95,9 @@ export function UpgradeDialog() {
   const close = useProStore((s) => s.closePaywall);
   const theme = useUI((s) => s.theme);
 
-  const [plan, setPlan] = useState<CheckoutPlan>("monthly");
+  const [cycle, setCycle] = useState<"monthly" | "annual">("monthly");
+  const [tier, setTier] = useState<"pro" | "investidor">("pro");
+  const [showInvestidor, setShowInvestidor] = useState(false);
   const [step, setStep] = useState<"plan" | "pay" | "pending" | "done">("plan");
   const [data, setData] = useState<CreateSubResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -105,19 +108,31 @@ export function UpgradeDialog() {
       setStep("plan");
       setData(null);
       setErr(null);
-      setPlan("monthly");
+      setCycle("monthly");
+      setTier("pro");
+      // Mostra o tier "Pro Investidor" só quando a cotação paga está ligada (flag quotes_live).
+      void (async () => {
+        try {
+          const { data } = await supabase.rpc("flag_on", { p_key: "quotes_live" });
+          setShowInvestidor(!!data);
+        } catch {
+          setShowInvestidor(false);
+        }
+      })();
     }
   }, [open]);
 
   if (!open) return null;
 
   const wide = step === "plan";
+  const checkoutPlan: CheckoutPlan =
+    tier === "investidor" ? (cycle === "annual" ? "investor_annual" : "investor_monthly") : cycle;
 
   async function start() {
     setLoading(true);
     setErr(null);
     try {
-      const r = await billing.createSubscription(plan);
+      const r = await billing.createSubscription(checkoutPlan);
       if (r.alreadyActive) {
         const ok = await refreshPro();
         setStep(ok ? "done" : "pending");
@@ -153,7 +168,10 @@ export function UpgradeDialog() {
   const benefits = [
     { Icon: Users, title: t("pro.benefit1"), desc: t("pro.benefit1Desc") },
     { Icon: FileBarChart, title: t("pro.benefit2"), desc: t("pro.benefit2Desc") },
-    { Icon: LineChart, title: t("pro.benefit3"), desc: t("pro.benefit3Desc") },
+    { Icon: BarChart3, title: t("pro.benefitProj"), desc: t("pro.benefitProjDesc") },
+    ...(tier === "investidor"
+      ? [{ Icon: TrendingUp, title: t("pro.benefitQuotes"), desc: t("pro.benefitQuotesDesc") }]
+      : []),
   ];
   const trust = [t("pro.trust1"), t("pro.trust2"), t("pro.trust3")];
 
@@ -215,10 +233,27 @@ export function UpgradeDialog() {
 
             {/* Direita — planos + CTA */}
             <div className="flex flex-col rounded-[16px] border border-border bg-card2 p-4">
+              {showInvestidor ? (
+                <div className="mb-3 grid grid-cols-2 gap-1 rounded-[10px] border border-border bg-card p-1">
+                  {(["pro", "investidor"] as const).map((tk) => (
+                    <button
+                      key={tk}
+                      type="button"
+                      onClick={() => setTier(tk)}
+                      className={cn(
+                        "h-8 rounded-[7px] text-[12px] font-medium transition",
+                        tier === tk ? "bg-accent text-[#0A0B0D]" : "text-muted hover:text-text",
+                      )}
+                    >
+                      {tk === "pro" ? t("pro.tierPro") : t("pro.tierInvestidor")}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
               <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{t("pro.choosePlan")}</div>
               <div className="mt-3 space-y-2.5">
-                <PlanRow active={plan === "monthly"} onClick={() => setPlan("monthly")} label={t("pro.monthly")} price="R$ 24,90" per={t("pro.perMonth")} />
-                <PlanRow active={plan === "annual"} onClick={() => setPlan("annual")} label={t("pro.annual")} price="R$ 249" per={t("pro.perYear")} hint={t("pro.annualHint")} />
+                <PlanRow active={cycle === "monthly"} onClick={() => setCycle("monthly")} label={t("pro.monthly")} price={tier === "investidor" ? "R$ 44,90" : "R$ 24,90"} per={t("pro.perMonth")} />
+                <PlanRow active={cycle === "annual"} onClick={() => setCycle("annual")} label={t("pro.annual")} price={tier === "investidor" ? "R$ 449" : "R$ 249"} per={t("pro.perYear")} hint={t("pro.annualHint")} />
               </div>
               {err ? <p className="mt-2 text-[12.5px] text-neg">{err}</p> : null}
               <div className="mt-auto pt-4">

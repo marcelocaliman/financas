@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-export type CheckoutPlan = "monthly" | "annual";
+export type CheckoutPlan = "monthly" | "annual" | "investor_monthly" | "investor_annual";
 
 export interface CreateSubResult {
   mode: "payment" | "setup" | "none";

@@ -86,15 +86,21 @@ function brtClock(ts: number): Date {
  * Deve atualizar agora? Verdadeiro se nunca buscou (bootstrap) ou se, num dia de pregão,
  * já passou uma janela do dia ainda não coberta por `updatedAt`. Caps: ≤4/dia útil, 0 no fds.
  */
-export function isQuoteRefreshDue(updatedAt: number | null, now: number): boolean {
+export function isQuoteRefreshDue(updatedAt: number | null, now: number, mode: "admin" | "live" = "admin"): boolean {
   if (updatedAt == null) return true; // 1º carregamento: pega o último fechamento
   const b = brtClock(now);
   const weekday = b.getUTCDay(); // 0=Dom … 6=Sáb (em Brasília)
   if (weekday === 0 || weekday === 6) return false; // sem fins de semana
+  const mins = b.getUTCHours() * 60 + b.getUTCMinutes();
+  // Pro Investidor (provedor PAGO): ~15 min durante o pregão (10:00–18:15 BRT).
+  if (mode === "live") {
+    if (mins < 10 * 60 || mins > 18 * 60 + 15) return false;
+    return now - updatedAt >= 15 * 60 * 1000;
+  }
+  // admin (brapi FREE): no máximo 4×/dia, nas janelas.
   const y = b.getUTCFullYear();
   const mo = b.getUTCMonth();
   const d = b.getUTCDate();
-  const mins = b.getUTCHours() * 60 + b.getUTCMinutes();
   let latest: number | null = null;
   for (const [h, m] of REFRESH_WINDOWS_BRT) {
     if (h * 60 + m <= mins) latest = Date.UTC(y, mo, d, h, m) + BRT_OFFSET_MS;
