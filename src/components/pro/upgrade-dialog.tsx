@@ -153,6 +153,13 @@ export function UpgradeDialog() {
               <PlanCard active={plan === "monthly"} onClick={() => setPlan("monthly")} label={t("pro.monthly")} price="R$ 24,90" per={t("pro.perMonth")} />
               <PlanCard active={plan === "annual"} onClick={() => setPlan("annual")} label={t("pro.annual")} price="R$ 249" per={t("pro.perYear")} hint={t("pro.annualHint")} />
             </div>
+            <ul className="mt-4 space-y-1.5">
+              {[t("pro.benefit1"), t("pro.benefit2"), t("pro.benefit3")].map((b) => (
+                <li key={b} className="flex items-center gap-2 text-[12.5px] text-muted">
+                  <Check size={14} className="shrink-0 text-accent" /> {b}
+                </li>
+              ))}
+            </ul>
             {trialing ? <p className="mt-3 text-[12px] leading-relaxed text-muted">{t("pro.trialKept")}</p> : null}
             {err ? <p className="mt-3 text-[12.5px] text-neg">{err}</p> : null}
             <Button className="mt-5 h-10 w-full" onClick={start} disabled={loading}>

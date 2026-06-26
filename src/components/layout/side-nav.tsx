@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
+import { ProNavCard } from "@/components/pro/pro-nav-card";
 import { CurrencyMenu } from "./currency-toggle";
 import { LanguageMenu } from "./language-toggle";
 import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
@@ -259,6 +260,7 @@ export function SideNav({ active }: { active: string }) {
                 <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
+                  <ProNavCard collapsed />
                   <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                     {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
                   </IconBtn>
@@ -283,6 +285,7 @@ export function SideNav({ active }: { active: string }) {
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
               ) : (
                 <>
+                  <ProNavCard collapsed={false} />
                   {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
                   {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
 
