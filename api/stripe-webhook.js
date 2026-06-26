@@ -12,7 +12,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL |
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET) : null;
+// Mesma versão pinada do billing — assim re-buscamos a subscription em formato
+// estável (current_period_end no objeto; versões 2025+ moveram p/ items.data[].).
+const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-06-20" }) : null;
 
 async function rawBody(req) {
   const chunks = [];
@@ -90,13 +92,18 @@ export default async function handler(req, res) {
   try {
     const t = event.type;
     if (t.startsWith("customer.subscription.")) {
-      await updateFromSubscription(event.data.object);
+      // Re-busca via API (pinada) em vez de usar o payload do evento — garante
+      // current_period_end e formato consistentes, independentemente da versão do endpoint.
+      const subId = event.data.object && event.data.object.id;
+      if (subId) await updateFromSubscription(await stripe.subscriptions.retrieve(subId));
     } else if (t === "invoice.paid" || t === "invoice.payment_failed") {
       const inv = event.data.object;
-      if (inv.subscription) {
-        const sub = await stripe.subscriptions.retrieve(typeof inv.subscription === "string" ? inv.subscription : inv.subscription.id);
-        await updateFromSubscription(sub);
-      }
+      const ref =
+        inv.subscription ||
+        (inv.parent && inv.parent.subscription_details && inv.parent.subscription_details.subscription) ||
+        null;
+      const subId = typeof ref === "string" ? ref : ref && ref.id;
+      if (subId) await updateFromSubscription(await stripe.subscriptions.retrieve(subId));
     }
     res.status(200).json({ received: true });
   } catch (e) {

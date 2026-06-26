@@ -11,7 +11,9 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL |
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const PRICES = { monthly: process.env.STRIPE_PRICE_MONTHLY, annual: process.env.STRIPE_PRICE_ANNUAL };
-const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET) : null;
+// Pina uma versão de API estável: o fluxo embutido usa latest_invoice.payment_intent
+// e subscription.current_period_end (versões 2025+ moveram esses campos → quebrava o checkout).
+const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-06-20" }) : null;
 
 async function sbFetch(path, opts = {}, ms = 6000) {
   const ctrl = new AbortController();
@@ -121,9 +123,14 @@ export default async function handler(req, res) {
         updated_at: new Date().toISOString(),
       });
 
-      const pi = sub.latest_invoice && sub.latest_invoice.payment_intent;
-      if (pi && pi.client_secret) return json(res, 200, { mode: "payment", clientSecret: pi.client_secret, subscriptionId: sub.id });
-      return json(res, 200, { mode: "none", subscriptionId: sub.id, status: sub.status });
+      const inv = sub.latest_invoice;
+      const clientSecret =
+        (inv && inv.payment_intent && inv.payment_intent.client_secret) ||
+        (inv && inv.confirmation_secret && inv.confirmation_secret.client_secret) ||
+        null;
+      if (clientSecret) return json(res, 200, { mode: "payment", clientSecret, subscriptionId: sub.id });
+      // Sem client secret → FALHA explícita (nunca fingir que virou Pro).
+      return json(res, 500, { error: "no_client_secret", status: sub.status });
     }
 
     if (action === "cancel") {

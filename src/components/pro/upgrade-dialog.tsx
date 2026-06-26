@@ -109,13 +109,18 @@ export function UpgradeDialog() {
     setErr(null);
     try {
       const r = await billing.createSubscription(plan);
-      if (r.alreadyActive || r.mode === "none") {
+      if (r.alreadyActive) {
         await refreshPro();
         setStep("done");
         return;
       }
-      setData(r);
-      setStep("pay");
+      if (r.clientSecret) {
+        setData(r);
+        setStep("pay");
+        return;
+      }
+      // Sem client secret → não fingir sucesso; mostra erro.
+      setErr(t("pro.errGeneric"));
     } catch {
       setErr(t("pro.errGeneric"));
     } finally {
@@ -201,7 +206,7 @@ export function UpgradeDialog() {
               {err ? <p className="mt-2 text-[12.5px] text-neg">{err}</p> : null}
               <div className="mt-auto pt-4">
                 <Button className="h-10 w-full" onClick={start} disabled={loading}>
-                  {loading ? t("pro.processing") : t("pro.continue")}
+                  {loading ? t("pro.preparing") : t("pro.continue")}
                 </Button>
                 <p className="mt-2.5 text-center text-[11px] leading-relaxed text-faint">{t("pro.allFree")}</p>
               </div>
