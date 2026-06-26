@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/common/logo";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
-import { ProNavCard } from "@/components/pro/pro-nav-card";
+import { ProNavCard, PlanChip } from "@/components/pro/pro-nav-card";
 import { CurrencyMenu } from "./currency-toggle";
 import { LanguageMenu } from "./language-toggle";
 import { goToSection, scrollToSection } from "@/hooks/use-scroll-spy";
@@ -315,6 +315,7 @@ export function SideNav({ active }: { active: string }) {
                     <div className="text-[13px] font-semibold truncate leading-tight">{name || t("menu.account")}</div>
                     {email ? <div className="text-[11px] text-faint truncate mt-0.5">{email}</div> : null}
                   </div>
+                  <PlanChip />
                 </div>
                 <div className="flex gap-2 mt-3">
                   <button
@@ -532,7 +533,7 @@ function AdminPresence({ collapsed, onOpenAdmin }: { collapsed: boolean; onOpenA
         role="img"
         aria-label={`Online agora — ${p.app} no app, ${p.landing} na landing`}
         title={`Online agora — app ${p.app} · landing ${p.landing}`}
-        className="flex flex-col items-center gap-1 w-11 py-1.5 rounded-[11px] border border-border bg-card2"
+        className="flex flex-col items-center gap-1 w-11 py-1.5 rounded-[11px] border border-amber-500/30 bg-amber-500/5"
       >
         <LiveDot size="h-1.5 w-1.5" />
         <span aria-hidden className="text-[12px] font-semibold tabular text-accent leading-none">{p.app}</span>
@@ -542,14 +543,14 @@ function AdminPresence({ collapsed, onOpenAdmin }: { collapsed: boolean; onOpenA
   }
 
   return (
-    <div className="rounded-[12px] border border-border bg-card2 overflow-hidden">
+    <div className="rounded-[12px] border border-amber-500/30 bg-amber-500/5 overflow-hidden">
       {onOpenAdmin ? (
         <button
           type="button"
           onClick={onOpenAdmin}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
         >
-          <ShieldCheck size={16} className="shrink-0" />
+          <ShieldCheck size={16} className="shrink-0 text-amber-400" />
           <span className="text-[13px] font-medium flex-1 truncate">Painel admin</span>
           {unread > 0 ? (
             <span className="grid place-items-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-[#0A0B0D] text-[11px] font-bold tabular shrink-0">{unread}</span>
