@@ -131,9 +131,9 @@ export function UpgradeDialog() {
   };
 
   const benefits = [
-    { Icon: LineChart, title: t("pro.benefit1"), desc: t("pro.benefit1Desc") },
-    { Icon: Users, title: t("pro.benefit2"), desc: t("pro.benefit2Desc") },
-    { Icon: FileBarChart, title: t("pro.benefit3"), desc: t("pro.benefit3Desc") },
+    { Icon: Users, title: t("pro.benefit1"), desc: t("pro.benefit1Desc") },
+    { Icon: FileBarChart, title: t("pro.benefit2"), desc: t("pro.benefit2Desc") },
+    { Icon: LineChart, title: t("pro.benefit3"), desc: t("pro.benefit3Desc") },
   ];
   const trust = [t("pro.trust1"), t("pro.trust2"), t("pro.trust3")];
 
