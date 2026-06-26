@@ -142,23 +142,25 @@ export default async function handler(req, res) {
     }
   };
 
-  // Finnhub (internacional): /quote traz o preço (c); /stock/profile2 traz a moeda (USD/EUR/GBP…).
+  // Finnhub (internacional): /quote traz o preço (c). A moeda vem do /stock/profile2 como
+  // BEST-EFFORT — se falhar (rate limit/símbolo sem perfil), assume USD e a cotação segue
+  // (igual ao brapi: uma chamada crítica + uma opcional que nunca derruba o preço).
   const fetchFinnhub = async (t) => {
     if (!finnhubKey) return null;
     try {
-      const [qr, pr] = await Promise.all([
-        fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`),
-        fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`),
-      ]);
+      const qr = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`);
       if (!qr.ok) return null;
       const d = await qr.json();
       if (!(d && typeof d.c === "number" && d.c > 0)) return null;
       let currency = "USD";
       try {
-        const p = await pr.json();
-        if (p && p.currency) currency = String(p.currency).toUpperCase();
+        const pr = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`);
+        if (pr.ok) {
+          const p = await pr.json();
+          if (p && p.currency) currency = String(p.currency).toUpperCase();
+        }
       } catch {
-        /* sem profile → assume USD */
+        /* profile opcional — mantém USD */
       }
       return { symbol: t, regularMarketPrice: d.c, currency };
     } catch {
