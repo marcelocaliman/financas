@@ -5,8 +5,10 @@ import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
+import { useBudget } from "@/hooks/use-budget";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
+import { budgetSaldoForMonth } from "@/finance/budget-saldo";
 import type { NetWorthSnapshot } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -32,6 +34,7 @@ export default function Historico() {
   const theme = useUI((s) => s.theme);
   const rates = useRates((s) => s.rates);
   const data = useHistorico();
+  const budget = useBudget();
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
 
   const view = useMemo(() => {
@@ -140,7 +143,15 @@ export default function Historico() {
               rows={view.sorted}
               blank={newSnap}
               isComplete={(r) => r.month.trim().length > 0 && r.amount > 0}
-              onCommit={(r) => void actions.putSnapshot({ ...r, auto: false })}
+              onCommit={(r) => {
+                const next: NetWorthSnapshot = { ...r, auto: false };
+                // Ponte com o orçamento: aporte em branco → sugere o saldo (poupança) do mês.
+                if (next.contribution == null) {
+                  const saldo = budgetSaldoForMonth(next.month, budget, next.currency, rates);
+                  if (saldo != null) next.contribution = saldo;
+                }
+                void actions.putSnapshot(next);
+              }}
               onDelete={(id) => void actions.removeSnapshot(id)}
               addPlaceholder={t("historico.addSnapshot")}
             />

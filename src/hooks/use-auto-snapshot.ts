@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useHistorico } from "@/hooks/use-historico";
+import { useBudget } from "@/hooks/use-budget";
 import { useRates } from "@/store/rates";
 import { useUI } from "@/store/ui";
 import { actions } from "@/data/actions";
 import { convert } from "@/money/currency";
+import { budgetSaldoForMonth } from "@/finance/budget-saldo";
 
 /** Mês atual em "AAAA-MM" no horário LOCAL (UTC erraria a virada num app cross-border). */
 function currentMonth(): string {
@@ -22,6 +24,7 @@ function currentMonth(): string {
 export function useAutoSnapshot(): void {
   const data = usePatrimonio();
   const snapshots = useHistorico();
+  const budget = useBudget();
   const rates = useRates((s) => s.rates);
   const base = useUI((s) => s.baseCurrency);
 
@@ -33,6 +36,9 @@ export function useAutoSnapshot(): void {
     const nw =
       data.assets.reduce((s, a) => s + convert(a.amount, a.currency, base, rates), 0) -
       data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, base, rates), 0);
+    // Ponte com o orçamento: o aporte do mês corrente = saldo (poupança) do orçamento, na
+    // moeda principal. null = sem orçamento no mês → não preenche (deixa o usuário decidir).
+    const saldo = budgetSaldoForMonth(month, budget, base, rates);
 
     const rows = snapshots.filter((s) => s.month === month);
     const manual = rows.find((s) => s.auto !== true);
@@ -43,11 +49,16 @@ export function useAutoSnapshot(): void {
       return;
     }
     const auto = rows.find((s) => s.auto === true);
+    const contribution = saldo != null ? saldo : auto?.contribution;
     if (!auto) {
-      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, auto: true });
-    } else if (auto.currency !== base || Math.abs(auto.amount - nw) > 0.5) {
-      // Mantém o snapshot AUTO do mês corrente alinhado ao patrimônio E à moeda principal.
-      void actions.putSnapshot({ ...auto, currency: base, amount: nw });
+      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, contribution, auto: true });
+    } else if (
+      auto.currency !== base ||
+      Math.abs(auto.amount - nw) > 0.5 ||
+      (saldo != null && Math.abs((auto.contribution ?? 0) - saldo) > 0.5)
+    ) {
+      // Mantém o snapshot AUTO do mês corrente alinhado ao patrimônio, à moeda principal e ao saldo do orçamento.
+      void actions.putSnapshot({ ...auto, currency: base, amount: nw, contribution });
     }
-  }, [data, snapshots, rates, base]);
+  }, [data, snapshots, budget, rates, base]);
 }
