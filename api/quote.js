@@ -102,8 +102,9 @@ export default async function handler(req, res) {
     res.status(400).json({ results: [] });
     return;
   }
-  const token = process.env.BRAPI_TOKEN;
-  if (!token) {
+  const brapiToken = process.env.BRAPI_TOKEN;
+  const finnhubKey = process.env.FINNHUB_API_KEY;
+  if (!brapiToken && !finnhubKey) {
     res.status(200).json({ results: [] });
     return;
   }
@@ -121,11 +122,14 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Uma chamada single-ticker por símbolo (o único formato que o tier free atende), em paralelo.
-  const fetchOne = async (t) => {
+  // Roteamento: tickers da B3 terminam em dígito (PETR4, HGLG11) → brapi; o resto (AAPL, MSFT) → Finnhub.
+  const isB3 = (t) => /\d$/.test(t);
+
+  // brapi: uma chamada single-ticker (único formato do tier free).
+  const fetchBrapi = async (t) => {
+    if (!brapiToken) return null;
     try {
-      const url = `https://brapi.dev/api/quote/${encodeURIComponent(t)}?token=${encodeURIComponent(token)}`;
-      const r = await fetch(url);
+      const r = await fetch(`https://brapi.dev/api/quote/${encodeURIComponent(t)}?token=${encodeURIComponent(brapiToken)}`);
       if (!r.ok) return null;
       const data = await r.json();
       const x = Array.isArray(data?.results) ? data.results[0] : null;
@@ -138,12 +142,34 @@ export default async function handler(req, res) {
     }
   };
 
+  // Finnhub (internacional): /quote traz o preço (c); /stock/profile2 traz a moeda (USD/EUR/GBP…).
+  const fetchFinnhub = async (t) => {
+    if (!finnhubKey) return null;
+    try {
+      const [qr, pr] = await Promise.all([
+        fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`),
+        fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`),
+      ]);
+      if (!qr.ok) return null;
+      const d = await qr.json();
+      if (!(d && typeof d.c === "number" && d.c > 0)) return null;
+      let currency = "USD";
+      try {
+        const p = await pr.json();
+        if (p && p.currency) currency = String(p.currency).toUpperCase();
+      } catch {
+        /* sem profile → assume USD */
+      }
+      return { symbol: t, regularMarketPrice: d.c, currency };
+    } catch {
+      return null;
+    }
+  };
+
   try {
-    const settled = await Promise.all(tickers.map(fetchOne));
+    const settled = await Promise.all(tickers.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t))));
     const results = settled.filter(Boolean);
-    // Sem cache compartilhado na edge: a resposta é por-usuário (só admin) e não pode ser
-    // servida do CDN a outro usuário pela mesma URL. O store do cliente já faz cache + agenda
-    // (≤4×/dia em dia útil), e o volume é mínimo (só o dono).
+    // Resposta por-usuário (gate), sem cache compartilhado na edge. O store do cliente já agenda.
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ results });
   } catch {
