@@ -300,7 +300,7 @@ function DataSection() {
   const printPro = () => {
     const prevTitle = document.title;
     const who = reportName(email);
-    if (who) document.title = who;
+    document.title = who ? `${t("report.proTitle")} — ${who}` : `${t("report.proTitle")} · ${t("report.appName")}`;
     const cleanup = () => {
       document.title = prevTitle;
       document.body.classList.remove("print-pro");

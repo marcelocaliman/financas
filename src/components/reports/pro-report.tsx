@@ -27,6 +27,9 @@ const FAINT = "#9aa0a8";
 const LINE = "#e4e6ea";
 const POS = "#15976a";
 const NEG = "#c0473d";
+// Micro-labels em mono — espelha os eyebrows do app (JetBrains Mono), pra o relatório
+// ler como a mesma marca da tela.
+const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, monospace";
 // Rampa coesa verde→cinza p/ classes/alocação (espelha categoryColors, em HEX fixos).
 const RAMP = ["#15976A", "#2E9E73", "#5B6A74", "#878E98", "#A6ACB5", "#6B7280", "#3A4046", "#9AA6B0"];
 const CUR_RAMP: Record<Currency, string> = { BRL: "#15976A", EUR: "#6B7280", USD: "#878E98", GBP: "#52525B" };
@@ -191,16 +194,16 @@ export function ProReport() {
         <div style={{ marginBottom: "22px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "20px" }}>
             <div>
-              <div style={{ fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.16em", color: POS, fontWeight: 700 }}>{t("report.appName")}</div>
-              <div style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.03em", marginTop: "5px", lineHeight: 1.05 }}>{t("report.proTitle")}</div>
-              <div style={{ color: MUTED, fontSize: "12px", marginTop: "6px" }}>
+              <div style={{ fontFamily: MONO, fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.18em", color: POS, fontWeight: 700 }}>{t("report.appName")}</div>
+              <div style={{ fontSize: "27px", fontWeight: 700, letterSpacing: "-0.035em", marginTop: "6px", lineHeight: 1.04 }}>{t("report.proTitle")}</div>
+              <div style={{ color: MUTED, fontSize: "12px", marginTop: "7px" }}>
                 {who ? <>{t("report.preparedFor")} <span style={{ color: INK, fontWeight: 600 }}>{who}</span> · </> : null}
-                <span style={{ textTransform: "capitalize" }}>{t("report.position", { date: monthLong(currentMonth(), lang) })}</span>
+                {t("report.position", { date: monthLong(currentMonth(), lang) })}
               </div>
             </div>
             <div style={{ textAlign: "right", color: FAINT, fontSize: "10.5px", lineHeight: 1.7, whiteSpace: "nowrap", paddingTop: "2px" }}>
               <div>{t("report.generatedOn", { date: dateLabel(todayISO(), lang) })}</div>
-              <span style={{ display: "inline-block", marginTop: "4px", padding: "1px 8px", border: `1px solid ${LINE}`, borderRadius: "5px", color: MUTED, fontWeight: 700, letterSpacing: "0.06em" }}>{disp}</span>
+              <span style={{ display: "inline-block", fontFamily: MONO, marginTop: "4px", padding: "1px 8px", border: `1px solid ${LINE}`, borderRadius: "5px", color: MUTED, fontWeight: 700, letterSpacing: "0.06em" }}>{disp}</span>
             </div>
           </div>
           <div style={{ marginTop: "13px", height: "2px", background: LINE, position: "relative" }}>
@@ -298,7 +301,7 @@ export function ProReport() {
 
             {/* Independência financeira */}
             {lib && lib.ready ? (
-              <Section title={t("report.independence")} breakBefore>
+              <Section title={t("report.independence")}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", alignItems: "start" }}>
                   <div>
                     <Row label={t("report.independenceNumber")} value={money(lib.independenceNumber)} strong />
@@ -381,8 +384,8 @@ export function ProReport() {
 function Metric({ label, value, tone, big }: { label: string; value: string; tone?: string; big?: boolean }) {
   return (
     <div style={{ border: `1px solid ${LINE}`, borderRadius: "8px", padding: "10px 12px" }}>
-      <div style={{ fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.08em", color: FAINT }}>{label}</div>
-      <div style={{ fontSize: big ? "18px" : "15px", fontWeight: 600, marginTop: "3px", color: tone ?? INK, fontVariantNumeric: "tabular-nums", letterSpacing: big ? "-0.02em" : undefined }}>{value}</div>
+      <div style={{ fontFamily: MONO, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.1em", color: FAINT }}>{label}</div>
+      <div style={{ fontSize: big ? "18px" : "15px", fontWeight: 600, marginTop: "4px", color: tone ?? INK, fontVariantNumeric: "tabular-nums", letterSpacing: big ? "-0.02em" : undefined }}>{value}</div>
     </div>
   );
 }
@@ -392,7 +395,7 @@ function Section({ title, children, breakBefore }: { title: string; children: Re
     <div style={{ marginBottom: "20px", breakInside: "avoid", breakBefore: breakBefore ? "page" : undefined }}>
       <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "9px" }}>
         <span style={{ width: "3px", height: "11px", background: POS, borderRadius: "1.5px", display: "inline-block", flexShrink: 0 }} />
-        <span style={{ fontSize: "10.5px", textTransform: "uppercase", letterSpacing: "0.1em", color: MUTED, fontWeight: 700 }}>{title}</span>
+        <span style={{ fontFamily: MONO, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.12em", color: MUTED, fontWeight: 700 }}>{title}</span>
       </div>
       <div>{children}</div>
     </div>
@@ -400,7 +403,7 @@ function Section({ title, children, breakBefore }: { title: string; children: Re
 }
 
 function Caption({ children }: { children: ReactNode }) {
-  return <div style={{ fontSize: "9.5px", textTransform: "uppercase", letterSpacing: "0.08em", color: FAINT, marginBottom: "5px" }}>{children}</div>;
+  return <div style={{ fontFamily: MONO, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.1em", color: FAINT, marginBottom: "6px" }}>{children}</div>;
 }
 
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
@@ -449,7 +452,7 @@ function HeadRow({ cols }: { cols: string[] }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: `1.3fr repeat(${cols.length - 1}, 1fr)`, gap: "8px", padding: "4px 0", borderBottom: `1px solid ${LINE}` }}>
       {cols.map((c, i) => (
-        <span key={i} style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.06em", color: FAINT, textAlign: i === 0 ? "left" : "right" }}>{c}</span>
+        <span key={i} style={{ fontFamily: MONO, fontSize: "8.5px", textTransform: "uppercase", letterSpacing: "0.08em", color: FAINT, textAlign: i === 0 ? "left" : "right" }}>{c}</span>
       ))}
     </div>
   );
