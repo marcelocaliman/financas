@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Copy, Check, Trash2, Loader2, ShieldAlert, Link2, KeyRound, Users } from "lucide-react";
 import { useVault } from "@/vault/vault-store";
 import { createShare, listShares, revokeShare, type ShareRow } from "@/lib/shares";
+import { useIsPro } from "@/hooks/use-pro";
+import { ProUpsell } from "@/components/pro/pro-upsell";
 import { cn } from "@/lib/utils";
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -131,10 +133,11 @@ function ShareCard({ row, onRevoke, highlight }: { row: ShareRow; onRevoke: () =
 }
 
 export function FamilyAccess() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const meta = useVault((s) => s.meta);
   const keys = useVault((s) => s.keys);
   const userId = useVault((s) => s.userId);
+  const { isPro } = useIsPro();
 
   const [rows, setRows] = useState<ShareRow[] | null>(null);
   const [label, setLabel] = useState("");
@@ -195,6 +198,9 @@ export function FamilyAccess() {
           </p>
         </div>
 
+        {!isPro ? (
+          <ProUpsell title={t("pro.benefit1")} desc={t("pro.benefit1Desc")} feature="familia" />
+        ) : (
         <div className="rounded-[14px] border border-border bg-bg2 p-5 space-y-3">
           <div className="flex items-center gap-2 text-[14px] font-semibold text-text">
             <Users size={16} className="text-muted" /> Novo acesso
@@ -222,6 +228,7 @@ export function FamilyAccess() {
             O segredo do link nunca chega ao servidor — fica só no link. O PIN é um 2º fator com bloqueio por tentativas.
           </p>
         </div>
+        )}
       </div>
 
       {/* Coluna direita: acessos ativos */}

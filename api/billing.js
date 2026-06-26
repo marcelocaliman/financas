@@ -80,9 +80,9 @@ export default async function handler(req, res) {
       if (!price) return json(res, 500, { error: "price_not_configured" });
 
       const existing = await getSubRow(user.id);
-      // Já tem assinatura viva? não cria outra.
-      if (existing?.stripe_subscription_id && ["active", "trialing", "past_due"].includes(existing.status)) {
-        return json(res, 200, { mode: "none", alreadyActive: true, status: existing.status });
+      // Só bloqueia se já é PAGANTE ativo (o nosso trial NÃO bloqueia — converter = pagar agora).
+      if (existing?.stripe_subscription_id && existing.status === "active") {
+        return json(res, 200, { mode: "none", alreadyActive: true, status: "active" });
       }
 
       let customerId = existing?.stripe_customer_id;
@@ -91,20 +91,22 @@ export default async function handler(req, res) {
         customerId = c.id;
       }
 
-      // Mantém os dias restantes do trial: cobra só quando o nosso trial acabar (SetupIntent).
-      let trialEnd;
-      if (existing?.trial_ends_at) {
-        const ts = Math.floor(new Date(existing.trial_ends_at).getTime() / 1000);
-        if (ts > Math.floor(Date.now() / 1000) + 120) trialEnd = ts;
+      // Limpa assinatura anterior NÃO-ativa (tentativa incompleta/sem cartão) pra não duplicar.
+      if (existing?.stripe_subscription_id) {
+        try {
+          await stripe.subscriptions.cancel(existing.stripe_subscription_id);
+        } catch {
+          /* já cancelada/inexistente — ok */
+        }
       }
 
+      // Cobrança IMEDIATA na conversão → sempre gera PaymentIntent (o cartão sempre aparece).
       const sub = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price }],
         payment_behavior: "default_incomplete",
         payment_settings: { save_default_payment_method: "on_subscription" },
-        ...(trialEnd ? { trial_end: trialEnd } : {}),
-        expand: ["latest_invoice.payment_intent", "pending_setup_intent"],
+        expand: ["latest_invoice.payment_intent"],
         metadata: { user_id: user.id },
       });
 
@@ -120,9 +122,7 @@ export default async function handler(req, res) {
       });
 
       const pi = sub.latest_invoice && sub.latest_invoice.payment_intent;
-      const si = sub.pending_setup_intent;
       if (pi && pi.client_secret) return json(res, 200, { mode: "payment", clientSecret: pi.client_secret, subscriptionId: sub.id });
-      if (si && si.client_secret) return json(res, 200, { mode: "setup", clientSecret: si.client_secret, subscriptionId: sub.id });
       return json(res, 200, { mode: "none", subscriptionId: sub.id, status: sub.status });
     }
 

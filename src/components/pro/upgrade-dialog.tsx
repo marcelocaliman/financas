@@ -83,7 +83,6 @@ export function UpgradeDialog() {
   const { t } = useTranslation();
   const open = useProStore((s) => s.paywallOpen);
   const close = useProStore((s) => s.closePaywall);
-  const sub = useProStore((s) => s.sub);
   const theme = useUI((s) => s.theme);
 
   const [plan, setPlan] = useState<CheckoutPlan>("monthly");
@@ -103,7 +102,6 @@ export function UpgradeDialog() {
 
   if (!open) return null;
 
-  const trialing = !!sub?.trial_ends_at && new Date(sub.trial_ends_at).getTime() > Date.now();
   const wide = step === "plan";
 
   async function start() {
@@ -194,18 +192,19 @@ export function UpgradeDialog() {
             </div>
 
             {/* Direita — planos + CTA */}
-            <div className="self-start rounded-[16px] border border-border bg-card2 p-4">
+            <div className="flex flex-col rounded-[16px] border border-border bg-card2 p-4">
               <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{t("pro.choosePlan")}</div>
               <div className="mt-3 space-y-2.5">
                 <PlanRow active={plan === "monthly"} onClick={() => setPlan("monthly")} label={t("pro.monthly")} price="R$ 24,90" per={t("pro.perMonth")} />
                 <PlanRow active={plan === "annual"} onClick={() => setPlan("annual")} label={t("pro.annual")} price="R$ 249" per={t("pro.perYear")} hint={t("pro.annualHint")} />
               </div>
-              {trialing ? <p className="mt-3 text-[12px] leading-relaxed text-muted">{t("pro.trialKept")}</p> : null}
               {err ? <p className="mt-2 text-[12.5px] text-neg">{err}</p> : null}
-              <Button className="mt-4 h-10 w-full" onClick={start} disabled={loading}>
-                {loading ? t("pro.processing") : t("pro.continue")}
-              </Button>
-              <p className="mt-2.5 text-center text-[11px] leading-relaxed text-faint">{t("pro.allFree")}</p>
+              <div className="mt-auto pt-4">
+                <Button className="h-10 w-full" onClick={start} disabled={loading}>
+                  {loading ? t("pro.processing") : t("pro.continue")}
+                </Button>
+                <p className="mt-2.5 text-center text-[11px] leading-relaxed text-faint">{t("pro.allFree")}</p>
+              </div>
             </div>
           </div>
         ) : null}
