@@ -7,6 +7,25 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL |
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export default async function handler(req, res) {
+  // DIAGNÓSTICO TEMPORÁRIO: testa o Finnhub com a chave de PRODUÇÃO (sem expor a chave).
+  if (req.query && req.query.diag === "finnhub") {
+    const fk = process.env.FINNHUB_API_KEY;
+    const out = { hasKey: !!fk, keyLen: fk ? fk.length : 0 };
+    if (fk) {
+      try {
+        const r = await fetch(`https://finnhub.io/api/v1/quote?symbol=AAPL&token=${encodeURIComponent(fk)}`);
+        out.status = r.status;
+        const d = await r.json().catch(() => null);
+        out.price = d && d.c;
+        out.err = d && d.error;
+      } catch (e) {
+        out.fetchError = String((e && e.message) || e).slice(0, 120);
+      }
+    }
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json(out);
+  }
+
   let quotesLive = false;
   if (SERVICE_ROLE) {
     try {
