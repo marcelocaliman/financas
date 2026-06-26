@@ -27,9 +27,15 @@ export const useQuotes = create<QuotesState>()(
         if (get().status === "loading") return;
         const quotable = assets.filter((a) => a.ticker && (a.quantity ?? 0) > 0);
         if (quotable.length === 0) return;
-        // Agenda: dia de pregão; admin ≤4×/dia, live ~15min (ver isQuoteRefreshDue). Incluir/editar
-        // ticker chega com `force` (precifica na hora), então a posição nova não espera a janela.
-        if (!force && !isQuoteRefreshDue(get().updatedAt, Date.now(), mode)) return;
+        const prices = get().prices;
+        const updatedAt = get().updatedAt;
+        // Há ticker SEM cotação ainda (ex.: ativo recém-adicionado)? Busca sem esperar a janela —
+        // com throttle de 10min pra não martelar o free tier se um ticker nunca retornar.
+        const missing = quotable.some((a) => !prices[(a.ticker ?? "").toUpperCase()]);
+        const missingDue = missing && (updatedAt == null || Date.now() - updatedAt > 10 * 60 * 1000);
+        // Agenda: dia de pregão; admin ≤4×/dia, live ~15min (ver isQuoteRefreshDue). `force` precifica
+        // na hora (incluir/editar ticker), então a posição nova não espera a janela.
+        if (!force && !missingDue && !isQuoteRefreshDue(updatedAt, Date.now(), mode)) return;
         set({ status: "loading" });
         try {
           const quotes = await fetchQuotes(quotable.map((a) => a.ticker));
