@@ -1,4 +1,5 @@
 {
+  "pro": { "badge": "Pro", "title": "Pro feature", "lockedDesc": "Available on the Pro plan.", "startTrial": "Start 14-day free trial", "subscribe": "Get Pro", "trialActive": "Pro trial active" },
   "app": { "name": "Finanças", "tagline": "(name TBD)" },
   "hero": {
     "phrases": [

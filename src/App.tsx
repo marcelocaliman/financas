@@ -4,6 +4,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
+import { useProSync } from "@/hooks/use-pro";
 import { usePresenceTracker, markSeen } from "@/lib/presence";
 import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
@@ -25,6 +26,7 @@ export default function App() {
   const adminOpen = useAdminUI((s) => s.adminOpen);
   const syncFromPath = useAdminUI((s) => s.syncFromPath);
   const { isAdmin, resolving: adminResolving } = useIsAdmin();
+  useProSync(); // carrega o estado Pro após o unlock (metadado; gate validado no servidor)
 
   // URL própria do painel (/app/admin): mantém o estado em sincronia com voltar/avançar.
   useEffect(() => {
