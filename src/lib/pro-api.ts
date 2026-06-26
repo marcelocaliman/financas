@@ -19,6 +19,12 @@ export const proApi = {
     if (error) throw error;
     return !!data;
   },
+  /** Pode receber cotação ao vivo? admin sempre; Pro Investidor só com a flag 'quotes_live' ON. */
+  canLiveQuotes: async (): Promise<boolean> => {
+    const { data, error } = await supabase.rpc("can_live_quotes");
+    if (error) throw error;
+    return !!data;
+  },
   /** Concede o trial de 14 dias (1× por conta). Retorna a linha resultante. */
   startTrial: async (): Promise<ProSubscription | null> => {
     const { data, error } = await supabase.rpc("start_trial");

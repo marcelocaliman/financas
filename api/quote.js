@@ -37,32 +37,62 @@ async function sbFetch(path, opts = {}, ms = 4000) {
   }
 }
 
-/** Caller é o super-admin? Valida o JWT do usuário e checa a tabela `admins` (= /api/ticket). */
-async function isAdminRequest(req) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return false;
+async function userIdFromJwt(req) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return null;
   const h = req.headers.authorization || req.headers.Authorization || "";
   const m = /^Bearer\s+(.+)$/i.exec(h);
-  if (!m) return false;
+  if (!m) return null;
   try {
     const ur = await sbFetch(`/auth/v1/user`, { headers: { Authorization: `Bearer ${m[1]}` } });
-    if (!ur.ok) return false;
+    if (!ur.ok) return null;
     const u = await ur.json();
-    if (!u || !u.id) return false;
-    const ar = await sbFetch(`/rest/v1/admins?user_id=eq.${encodeURIComponent(u.id)}&select=user_id`);
-    if (!ar.ok) return false;
-    const rows = await ar.json();
-    return Array.isArray(rows) && rows.length > 0;
+    return u && u.id ? u.id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pode receber cotação ao vivo? admin SEMPRE (brapi free); assinante do Pro Investidor só
+ *  com a flag 'quotes_live' ON. Espelha public.can_live_quotes() via service_role. */
+async function canLiveQuotes(req) {
+  const userId = await userIdFromJwt(req);
+  if (!userId) return false;
+  try {
+    const ar = await sbFetch(`/rest/v1/admins?user_id=eq.${encodeURIComponent(userId)}&select=user_id`);
+    if (ar.ok) {
+      const rows = await ar.json();
+      if (Array.isArray(rows) && rows.length > 0) return true; // admin sempre
+    }
+  } catch {
+    /* segue pra checagem de assinante */
+  }
+  try {
+    const fr = await sbFetch(`/rest/v1/app_flags?key=eq.quotes_live&select=enabled`);
+    if (!fr.ok) return false;
+    const f = await fr.json();
+    if (!(Array.isArray(f) && f[0] && f[0].enabled === true)) return false; // flag OFF → nada além do admin
+  } catch {
+    return false;
+  }
+  try {
+    const pr = await sbFetch(`/rest/v1/pro_subscriptions?user_id=eq.${encodeURIComponent(userId)}&select=plan,status,trial_ends_at,current_period_end,cancel_at_period_end`);
+    if (!pr.ok) return false;
+    const s = (await pr.json())[0];
+    if (!s || !["investor_monthly", "investor_annual"].includes(s.plan)) return false;
+    const now = Date.now();
+    if (s.status === "active" || s.status === "trialing") return true;
+    if (s.trial_ends_at && new Date(s.trial_ends_at).getTime() > now) return true;
+    if (s.status === "canceled" && s.cancel_at_period_end && s.current_period_end && new Date(s.current_period_end).getTime() > now) return true;
+    return false;
   } catch {
     return false;
   }
 }
 
 export default async function handler(req, res) {
-  // Cotação automática é só do super-admin (uso pessoal do free brapi). Outros → vazio (manual).
-  // COTAÇÃO-PRO (gancho): ao assinar o plano PAGO da brapi (licença comercial), trocar a guarda
-  // por `is_investor(user)` (RPC já existe; inclui admin) — aí o Pro Investidor recebe cotação;
-  // Pro base e free seguem manuais.
-  if (!(await isAdminRequest(req))) {
+  // Gate: admin sempre (brapi free, uso pessoal); assinante do Pro Investidor só com a flag
+  // 'quotes_live' ON (super-admin liga depois de assinar o brapi pago). Outros → vazio (manual).
+  if (!(await canLiveQuotes(req))) {
     res.setHeader("Cache-Control", "no-store");
     res.status(200).json({ results: [] });
     return;

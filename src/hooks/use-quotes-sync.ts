@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useQuotes } from "@/store/quotes";
-import { useIsAdmin } from "@/admin/use-admin";
+import { useCanLiveQuotes } from "@/hooks/use-live-quotes";
 
 /**
  * Mantém o valor dos ativos com ticker atualizado pela cotação do dia (via /api/quote).
@@ -12,14 +12,13 @@ import { useIsAdmin } from "@/admin/use-admin";
  */
 export function useQuotesSync(): void {
   const data = usePatrimonio();
-  const { isAdmin } = useIsAdmin();
+  const canQuote = useCanLiveQuotes();
 
   useEffect(() => {
-    // COTAÇÃO-PRO (gancho): ao ligar o plano PAGO da brapi, trocar `isAdmin` → `isInvestor`
-    // (criar useIsInvestor sobre a RPC is_investor) aqui, em api/quote.js (gate) e em
-    // patrimonio.tsx (colunas price/ret). Cadência por tier: admin = 4×/dia (free);
-    // Pro Investidor pagante = ~15min (parametrizar isQuoteRefreshDue).
-    if (!data || !isAdmin) return;
+    // Quem sincroniza: admin sempre (brapi free, 4×/dia); assinante do Pro Investidor só
+    // quando a flag 'quotes_live' está ON (ver can_live_quotes / painel super-admin).
+    // TODO cadência por tier: hoje todos em 4×/dia; quando ligar, dar ~15min ao Investidor.
+    if (!data || !canQuote) return;
     const run = () => void useQuotes.getState().refresh(data.assets);
     run();
     const onVisible = () => {
@@ -31,5 +30,5 @@ export function useQuotesSync(): void {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", run);
     };
-  }, [data, isAdmin]);
+  }, [data, canQuote]);
 }

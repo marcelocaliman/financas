@@ -6,7 +6,7 @@ import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useQuotes } from "@/store/quotes";
-import { useIsAdmin } from "@/admin/use-admin";
+import { useCanLiveQuotes } from "@/hooks/use-live-quotes";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
@@ -42,7 +42,7 @@ export default function Patrimonio() {
   const rates = useRates((s) => s.rates);
   const prices = useQuotes((s) => s.prices);
   // Cotação automática (brapi) é exclusiva do super-admin — uso pessoal do tier free.
-  const { isAdmin } = useIsAdmin();
+  const canQuote = useCanLiveQuotes();
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -121,7 +121,7 @@ export default function Patrimonio() {
       cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(88px,0.8fr)", placeholder: "—" });
       cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(72px,0.6fr)", align: "right" });
       cols.push({ key: "avgPrice", type: "number", decimals: 2, header: t("patrimonio.avgPrice"), width: "minmax(96px,0.8fr)", align: "right" });
-      if (isAdmin) cols.push({
+      if (canQuote) cols.push({
         key: "price",
         type: "computed",
         header: t("patrimonio.price"),
@@ -132,7 +132,7 @@ export default function Patrimonio() {
           return q ? formatMoney(q.price, r.currency, { maximumFractionDigits: 2 }) : "—";
         },
       });
-      if (isAdmin) cols.push({
+      if (canQuote) cols.push({
         key: "ret",
         type: "computed",
         header: t("patrimonio.return"),
@@ -203,7 +203,7 @@ export default function Patrimonio() {
     void actions.putAsset(next);
     // Ticker novo/alterado → busca a cotação NA HORA (force ignora o TTL). Só pro super-admin;
     // não-admin mantém o valor manual (qtd × preço médio).
-    if (isAdmin && next.ticker) {
+    if (canQuote && next.ticker) {
       const assets = [...data.assets.filter((x) => x.id !== next.id), next];
       void useQuotes.getState().refresh(assets, true);
     }
@@ -363,7 +363,7 @@ export default function Patrimonio() {
                 />
               </div>
             </div>
-            {isQuotableClass(activeId) && isAdmin ? (
+            {isQuotableClass(activeId) && canQuote ? (
               <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
             ) : null}
           </>
