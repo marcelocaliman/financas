@@ -10,7 +10,14 @@ import Stripe from "stripe";
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://rudpurnhqoffwjaackka.supabase.co";
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
-const PRICES = { monthly: process.env.STRIPE_PRICE_MONTHLY, annual: process.env.STRIPE_PRICE_ANNUAL };
+const PRICES = {
+  monthly: process.env.STRIPE_PRICE_MONTHLY,
+  annual: process.env.STRIPE_PRICE_ANNUAL,
+  // Tier "Pro Investidor" (cotação ao vivo) — estrutura pronta, DESLIGADA até a UI oferecer.
+  investor_monthly: process.env.STRIPE_PRICE_INVESTOR_MONTHLY,
+  investor_annual: process.env.STRIPE_PRICE_INVESTOR_ANNUAL,
+};
+const ALLOWED_PLANS = ["monthly", "annual", "investor_monthly", "investor_annual"];
 // Pina uma versão de API estável: o fluxo embutido usa latest_invoice.payment_intent
 // e subscription.current_period_end (versões 2025+ moveram esses campos → quebrava o checkout).
 const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-06-20" }) : null;
@@ -79,7 +86,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === "create-subscription") {
-      const plan = body.plan === "annual" ? "annual" : "monthly";
+      const plan = ALLOWED_PLANS.includes(body.plan) ? body.plan : "monthly";
       const price = PRICES[plan];
       if (!price) return json(res, 500, { error: "price_not_configured" });
 
