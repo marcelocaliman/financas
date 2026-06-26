@@ -377,3 +377,19 @@
   });
   window.addEventListener("appinstalled", function () { bar.hidden = true; });
 })();
+
+/* Pro Investidor na landing: aparece sozinho quando a flag quotes_live está ON
+   (lida via /api/public-config). Enquanto OFF, o card fica escondido por CSS. */
+(function () {
+  try {
+    fetch("/api/public-config")
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (c) {
+        if (c && c.quotesLive) {
+          var grid = document.querySelector("#planos .plans");
+          if (grid) grid.classList.add("has-inv");
+        }
+      })
+      .catch(function () {});
+  } catch (e) {}
+})();

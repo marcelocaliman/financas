@@ -220,6 +220,16 @@
     "planos.p3": "Sensitivity + export your projection",
     "planos.p4": "B3 asset quotes",
     "planos.proCta": "Try Pro free",
-    "planos.note": "Everything free stays free · Cancel anytime"
+    "planos.note": "Everything free stays free · Cancel anytime",
+    "planos.invTitle": "Pro Investor",
+    "planos.invPrice": "R$ 44.90",
+    "planos.invPer": "/mo",
+    "planos.invAnnual": "or R$ 449/yr · 14-day free trial",
+    "planos.invDesc": "Everything in Pro + live quotes for your assets.",
+    "planos.iAll": "Everything in the Pro plan",
+    "planos.i1": "Live B3 quotes",
+    "planos.i2": "International quotes (US, Europe)",
+    "planos.i3": "Value and returns updated automatically",
+    "planos.invCta": "Try Pro Investor"
   }
 }

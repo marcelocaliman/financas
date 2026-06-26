@@ -482,6 +482,11 @@
     #planos .plan li{font-size:13.5px;color:var(--text);padding-left:22px;position:relative;line-height:1.4}
     #planos .plan li::before{content:"✓";position:absolute;left:0;top:0;color:var(--accent);font-weight:700}
     #planos .plan .btn{margin-top:auto;width:100%;justify-content:center}
+    /* Pro Investidor: escondido por padrão; o landing.js adiciona .has-inv quando a flag quotes_live está ON. */
+    #planos .plan-inv{display:none}
+    #planos .plans.has-inv{grid-template-columns:1fr 1fr 1fr;max-width:1140px}
+    #planos .plans.has-inv .plan-inv{display:flex}
+    @media (max-width:980px){#planos .plans.has-inv{grid-template-columns:1fr}}
     @media (max-width:760px){#planos .plans{grid-template-columns:1fr}}
   </style>
 </head>
@@ -1047,6 +1052,19 @@
             <li data-i18n="planos.p3">Sensibilidade + exportar a projeção</li>
           </ul>
           <a class="btn btn-primary" href="/app" data-i18n="planos.proCta">Testar o Pro grátis</a>
+        </div>
+        <div class="plan plan-pro plan-inv">
+          <div class="eyebrow accent" data-i18n="planos.invTitle">Pro Investidor</div>
+          <div class="price"><span data-i18n="planos.invPrice">R$ 44,90</span><span class="per" data-i18n="planos.invPer">/mês</span></div>
+          <div class="annual" data-i18n="planos.invAnnual">ou R$ 449/ano · 14 dias grátis</div>
+          <p data-i18n="planos.invDesc">Tudo do Pro + cotação ao vivo dos seus ativos.</p>
+          <ul>
+            <li data-i18n="planos.iAll">Tudo do plano Pro</li>
+            <li data-i18n="planos.i1">Cotação ao vivo da B3</li>
+            <li data-i18n="planos.i2">Cotação internacional (US, Europa)</li>
+            <li data-i18n="planos.i3">Valor e rentabilidade atualizados sozinhos</li>
+          </ul>
+          <a class="btn btn-primary" href="/app" data-i18n="planos.invCta">Testar o Investidor</a>
         </div>
       </div>
       <div class="eyebrow" style="text-align:center;margin-top:20px;color:var(--faint)" data-i18n="planos.note">Tudo do grátis continua grátis · Cancele quando quiser</div>
