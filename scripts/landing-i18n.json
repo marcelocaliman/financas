@@ -225,9 +225,9 @@
     "planos.invPrice": "R$ 44.90",
     "planos.invPer": "/mo",
     "planos.invAnnual": "or R$ 449/yr · 14-day free trial",
-    "planos.invDesc": "Everything in Pro + live quotes for your assets.",
+    "planos.invDesc": "Everything in Pro + automatic quotes for your assets.",
     "planos.iAll": "Everything in the Pro plan, included",
-    "planos.i1": "Live B3 quotes (~15min)",
+    "planos.i1": "Automatic B3 quotes",
     "planos.i2": "International quotes (US, Europe) via Finnhub",
     "planos.i3": "Value and returns updated automatically",
     "planos.invCta": "Try Pro Investor",
@@ -235,6 +235,11 @@
     "planos.f6": "Offline (PWA), encrypted sync, export to JSON/CSV",
     "planos.p5": "Export the projection to CSV (year by year + scenarios)",
     "planos.p6": "Support an independent app — no ads, no selling your data",
-    "planos.i4": "For those who invest in Brazil and abroad"
+    "planos.i4": "For those who invest in Brazil and abroad",
+    "planos.invSoon": "Coming soon",
+    "planos.invWaitLead": "Want this plan? Leave your email and we'll let you know when it launches.",
+    "planos.invWaitPlaceholder": "you@email.com",
+    "planos.invWaitCta": "Notify me",
+    "planos.invWaitConsent": "Just to announce the launch. No spam, unsubscribe anytime."
   }
 }

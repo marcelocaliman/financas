@@ -3,7 +3,7 @@ import type {
   AdminOverview, SignupsDay, UserRow, UserDetail, AuditEntry, AdminRow,
   AnalyticsOverview, EventsDay, TopEvent, UserSort,
   RecentEvent, CountryCount, DeviceCount, OnlinePresence,
-  AdminTicketRow, AdminTicketThread, AdminTicketCounts,
+  AdminTicketRow, AdminTicketThread, AdminTicketCounts, WaitlistRow,
 } from "./types";
 
 /** Wrappers tipados dos RPCs de admin. Cada um exige is_admin() no servidor. */
@@ -29,6 +29,8 @@ export const adminApi = {
   // Feature flags (só admin alterna). Hoje: 'quotes_live' (liga a cotação paga do Pro Investidor).
   getFlag: (key: string) => rpc<boolean>("flag_on", { p_key: key }),
   setFlag: (key: string, enabled: boolean) => rpc<boolean>("set_flag", { p_key: key, p_enabled: enabled }),
+  // Lista de espera do Pro Investidor (sinal de demanda + emails pra notificar no lançamento).
+  investorWaitlist: () => rpc<WaitlistRow[]>("admin_investor_waitlist"),
   analyticsOverview: (days = 30) => rpc<AnalyticsOverview>("admin_analytics_overview", { p_days: days }),
   eventsDaily: (days = 30) => rpc<EventsDay[]>("admin_events_daily", { p_days: days }),
   topEvents: (days = 30) => rpc<TopEvent[]>("admin_top_events", { p_days: days }),

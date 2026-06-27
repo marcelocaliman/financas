@@ -5,7 +5,7 @@ import { AdminCard, StateBlock } from "../components";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
-/** Flags de funcionalidade (só admin). Hoje: cotação ao vivo paga (Pro Investidor). */
+/** Flags de funcionalidade (só admin): toggle da cotação paga + lista de espera do Pro Investidor. */
 export function FlagsSection() {
   const { data, error, loading, reload } = useAsync(() => adminApi.getFlag("quotes_live"), []);
   const [busy, setBusy] = useState(false);
@@ -22,15 +22,16 @@ export function FlagsSection() {
   };
 
   return (
-    <AdminCard title="Cotação ao vivo (paga)">
+    <AdminCard title="Cotação automática (paga) + lista de espera">
       <StateBlock loading={loading} error={error}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="text-[13.5px] font-medium">Cotação automática pros assinantes do Pro Investidor</div>
             <p className="mt-1 max-w-md text-[11.5px] leading-relaxed text-faint">
               Uma só chave liga as DUAS fontes: <b className="text-muted">B3 (brapi)</b> + <b className="text-muted">internacional (Finnhub)</b>.
-              {" "}<b className="text-muted">OFF</b>: cotação automática só na sua conta (free). <b className="text-muted">ON</b>: quem assina o Pro
-              Investidor também recebe. <b className="text-muted">Só ligue depois de assinar os planos PAGOS</b> da brapi e do Finnhub (licença comercial).
+              {" "}<b className="text-muted">OFF</b>: cotação automática só na sua conta (free) — e o card na landing fica em
+              {" "}<b className="text-muted">“Em breve”</b> captando interesse. <b className="text-muted">ON</b>: o card vira “Assinar” e quem assina
+              o Pro Investidor recebe. <b className="text-muted">Só ligue depois de assinar os planos PAGOS</b> da brapi e do Finnhub (licença comercial).
             </p>
           </div>
           <button
@@ -49,16 +50,77 @@ export function FlagsSection() {
           </button>
         </div>
       </StateBlock>
+      <WaitlistBlock live={on} />
     </AdminCard>
+  );
+}
+
+/** Demanda do Pro Investidor: quantos deixaram email na landing ("Em breve") + a lista pra notificar. */
+function WaitlistBlock({ live }: { live: boolean }) {
+  const { data, error, loading } = useAsync(() => adminApi.investorWaitlist(), []);
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const list = data ?? [];
+  const n = list.length;
+
+  const copyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(list.map((w) => w.email).join(", "));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard indisponível — ignora */
+    }
+  };
+
+  return (
+    <div className="mt-4 border-t border-border pt-4">
+      <StateBlock loading={loading} error={error}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[13.5px] font-medium">
+              Lista de espera · <span className="tabular text-accent">{n}</span> {n === 1 ? "interessado" : "interessados"}
+            </div>
+            <p className="mt-0.5 text-[11.5px] text-faint">
+              {live
+                ? "Plano ligado — avise estas pessoas que já dá pra assinar."
+                : "Quem clicou “Quero ser avisado” no card “Em breve”. Quando der ~5, vale assinar as APIs e ligar a flag."}
+            </p>
+          </div>
+          {n > 0 ? (
+            <div className="flex shrink-0 gap-2">
+              <button type="button" onClick={() => setShow((s) => !s)} className="rounded-[8px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-card-hover hover:text-text">
+                {show ? "Ocultar" : "Ver emails"}
+              </button>
+              <button type="button" onClick={() => void copyAll()} className="rounded-[8px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-card-hover hover:text-text">
+                {copied ? "Copiado!" : "Copiar todos"}
+              </button>
+            </div>
+          ) : null}
+        </div>
+        {show && n > 0 ? (
+          <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto">
+            {list.map((w) => (
+              <li key={w.email} className="flex items-center justify-between gap-3 rounded-[8px] bg-card2 px-2.5 py-1.5 text-[12px]">
+                <span className="truncate text-text">{w.email}</span>
+                <span className="shrink-0 tabular text-faint">{new Date(w.created_at).toLocaleDateString("pt-BR")}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </StateBlock>
+    </div>
   );
 }
 
 /** Resumo p/ o cabeçalho do accordion. */
 export function FlagsSummary() {
   const { data } = useAsync(() => adminApi.getFlag("quotes_live"), []);
+  const { data: wl } = useAsync(() => adminApi.investorWaitlist(), []);
   return (
     <HeaderKpis>
-      <HeaderKpi label="cotação ao vivo" value={data ? "ON" : "OFF"} raw />
+      <HeaderKpi label="cotação automática" value={data ? "ON" : "OFF"} raw />
+      <HeaderKpi label="lista de espera" value={String((wl ?? []).length)} raw secondary />
     </HeaderKpis>
   );
 }

@@ -378,8 +378,8 @@
   window.addEventListener("appinstalled", function () { bar.hidden = true; });
 })();
 
-/* Pro Investidor na landing: aparece sozinho quando a flag quotes_live está ON
-   (lida via /api/public-config). Enquanto OFF, o card fica escondido por CSS. */
+/* Pro Investidor na landing: o card é SEMPRE visível. Por padrão fica em modo "Em breve" (lista
+   de espera). Quando a flag quotes_live está ON (/api/public-config), o card vira "Assinar". */
 (function () {
   try {
     fetch("/api/public-config")
@@ -387,9 +387,86 @@
       .then(function (c) {
         if (c && c.quotesLive) {
           var grid = document.querySelector("#planos .plans");
-          if (grid) grid.classList.add("has-inv");
+          if (grid) grid.classList.add("inv-live");
         }
       })
       .catch(function () {});
   } catch (e) {}
+})();
+
+/* Lista de espera do Pro Investidor (modo "Em breve"): capta email → /api/waitlist, com Turnstile
+   invisível carregado SOB DEMANDA (o formulário de contato não existe nesta página). */
+(function () {
+  var form = document.getElementById("invWaitForm");
+  if (!form) return;
+  var SITE_KEY = "0x4AAAAAADnX32Qstm3PaHoz";
+  var emailEl = document.getElementById("invWaitEmail");
+  var btn = document.getElementById("invWaitBtn");
+  var statusEl = document.getElementById("invWaitStatus");
+  var tsId = null, tsReady = false, resolveToken = null;
+
+  function ensureTurnstile(cb) {
+    if (window.turnstile) return cb();
+    if (document.querySelector('script[src*="turnstile/v0/api.js"]')) {
+      var iv = setInterval(function () { if (window.turnstile) { clearInterval(iv); cb(); } }, 120);
+      setTimeout(function () { clearInterval(iv); }, 8000);
+      return;
+    }
+    var s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+    s.async = true; s.defer = true;
+    s.onload = cb;
+    document.head.appendChild(s);
+  }
+  ensureTurnstile(function () {
+    try {
+      tsId = window.turnstile.render("#invTs", {
+        sitekey: SITE_KEY, size: "invisible",
+        callback: function (tok) { if (resolveToken) resolveToken(tok); },
+        "error-callback": function () { if (resolveToken) resolveToken(null); },
+        "timeout-callback": function () { if (resolveToken) resolveToken(null); },
+      });
+      tsReady = true;
+    } catch (e) {}
+  });
+  function getToken() {
+    return new Promise(function (resolve) {
+      if (!tsReady || !window.turnstile || tsId == null) return resolve(null);
+      resolveToken = resolve;
+      try { window.turnstile.reset(tsId); window.turnstile.execute(tsId); }
+      catch (e) { resolveToken = null; return resolve(null); }
+      setTimeout(function () { if (resolveToken === resolve) { resolveToken = null; resolve(null); } }, 9000);
+    });
+  }
+
+  var l = (document.documentElement.lang || "pt").toLowerCase();
+  var lang = l.indexOf("en") === 0 ? "en" : "pt";
+  var MSG = {
+    sending: { pt: "Enviando…", en: "Sending…" },
+    ok: { pt: "Pronto! A gente te avisa quando lançar.", en: "Done! We'll let you know when it launches." },
+    err: { pt: "Não foi possível enviar. Tente de novo.", en: "Couldn't send. Try again." },
+    invalid: { pt: "Confira o email.", en: "Check the email." },
+  };
+  function msg(k) { return (MSG[k] && MSG[k][lang]) || MSG[k].pt; }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = (emailEl.value || "").trim();
+    if (!email || email.indexOf("@") < 1) { statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("invalid"); return; }
+    btn.disabled = true;
+    statusEl.className = "inv-wait-status";
+    statusEl.textContent = msg("sending");
+    getToken().then(function (token) {
+      return fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, ts: token, lang: lang }),
+      });
+    }).then(function (r) {
+      if (r && r.ok) { statusEl.className = "inv-wait-status ok"; statusEl.textContent = msg("ok"); form.reset(); }
+      else { statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("err"); btn.disabled = false; }
+    }).catch(function () {
+      statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("err"); btn.disabled = false;
+    });
+  });
 })();

@@ -70,6 +70,12 @@ export function PrivacyPolicyContent() {
           assinatura, mais identificadores da Stripe. <b className="text-text">Nunca os dados do
           cartão</b> (esses ficam só na Stripe). É metadado, não o dado financeiro do cofre.
         </p>
+        <p>
+          • <b className="text-text">Lista de espera</b> — se você deixa seu e-mail no card “Pro
+          Investidor — em breve”, guardamos só esse <b className="text-text">e-mail</b>, com o seu
+          consentimento, para <b className="text-text">avisar você quando o plano lançar</b>. Nada
+          além disso — você pode pedir a remoção a qualquer momento.
+        </p>
       </Section>
 
       <Section title="Base legal e finalidade">
