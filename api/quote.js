@@ -32,6 +32,11 @@ const CACHE_TTL_MS = 55 * 60 * 1000;
 // o custo mesmo se o cliente re-disparar a cada alt-tab/evento online. Passada a janela, re-tenta.
 const NEG_TTL_MS = 10 * 60 * 1000;
 
+// Single-flight: janela de dedup do claim atômico. Concorrentes que pedem o mesmo símbolo vencido
+// dentro desses segundos NÃO re-buscam (um ganha a linha, os outros servem o cache). Só precisa
+// cobrir a duração de uma busca upstream; depois dela o símbolo volta a parecer fresco/negativo.
+const CLAIM_DEDUP_SECONDS = 30;
+
 async function sbFetch(path, opts = {}, ms = 4000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -220,23 +225,41 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3. Busca upstream SÓ os vencidos (B3 → brapi; resto → Finnhub, reusando a moeda cacheada).
+  // 3. SINGLE-FLIGHT: claim ATÔMICO dos vencidos. Só quem ganha a linha busca upstream; concorrentes
+  //    que pedem o mesmo símbolo no mesmo instante perdem a corrida e servem o último valor do cache
+  //    (stale-while-revalidate). Degrada com segurança: se o claim falhar, busca todos (sem dedup).
+  let won = stale;
+  if (stale.length > 0) {
+    try {
+      const cl = await sbFetch(`/rest/v1/rpc/claim_quote_symbols`, {
+        method: "POST",
+        body: JSON.stringify({ syms: stale, dedup_seconds: CLAIM_DEDUP_SECONDS }),
+      });
+      if (cl.ok) {
+        const rows = await cl.json();
+        won = Array.isArray(rows) ? rows.map((r) => r.sym).filter(Boolean) : [];
+      }
+    } catch {
+      /* claim indisponível → won = stale (busca todos, ainda correto) */
+    }
+  }
+
+  // 4. Busca upstream SÓ os GANHOS (B3 → brapi; resto → Finnhub, reusando a moeda cacheada).
   const fetched = [];
   const failed = [];
   try {
-    const settled = await Promise.all(stale.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t, cached[t]?.currency))));
-    for (let i = 0; i < stale.length; i++) {
+    const settled = await Promise.all(won.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t, cached[t]?.currency))));
+    for (let i = 0; i < won.length; i++) {
       const r = settled[i];
-      if (r) fetched.push({ symbol: stale[i], regularMarketPrice: r.regularMarketPrice, currency: r.currency });
-      else failed.push(stale[i]);
+      if (r) fetched.push({ symbol: won[i], regularMarketPrice: r.regularMarketPrice, currency: r.currency });
+      else failed.push(won[i]);
     }
   } catch {
     /* fetchBrapi/fetchFinnhub já capturam seus erros; mantém o que veio */
   }
 
-  // 4. Grava no cache compartilhado (upsert por símbolo): preços reais + marcas NEGATIVAS dos que
-  //    falharam (sentinela price=-1, preservando a moeda conhecida) — ambos resetam updated_at e
-  //    blindam o upstream contra re-tentativa imediata do cliente. Best-effort.
+  // 5. Grava os GANHOS no cache: preços reais + marcas NEGATIVAS dos que falharam (sentinela
+  //    price=-1, preservando a moeda conhecida). Quem perdeu a corrida NÃO grava (o vencedor cuida).
   const iso = new Date(now).toISOString();
   const rows = [
     ...fetched.map((x) => ({ symbol: x.symbol, price: x.regularMarketPrice, currency: x.currency, updated_at: iso })),
@@ -254,7 +277,20 @@ export default async function handler(req, res) {
     }
   }
 
-  // 5. Resposta = frescos do cache + recém-buscados (marcas negativas não entram).
+  // 6. Resposta = frescos + ganhos buscados + (perdeu a corrida OU falhou) servindo o último valor
+  //    bom do cache, se houver (stale-while-revalidate). Marcas negativas/sem valor não entram.
+  const fetchedBySym = Object.create(null);
+  for (const x of fetched) fetchedBySym[x.symbol] = x;
+  const results = [...fresh];
+  for (const t of stale) {
+    const f = fetchedBySym[t];
+    if (f) {
+      results.push({ symbol: t, regularMarketPrice: f.regularMarketPrice, currency: f.currency });
+    } else {
+      const c = cached[t];
+      if (c && c.price > 0) results.push({ symbol: t, regularMarketPrice: c.price, currency: c.currency });
+    }
+  }
   res.setHeader("Cache-Control", "no-store");
-  res.status(200).json({ results: [...fresh, ...fetched] });
+  res.status(200).json({ results });
 }
