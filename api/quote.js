@@ -1,22 +1,31 @@
 /**
- * Proxy de cotação de ativos (brapi). O token do dono vive como variável de ambiente
- * do SERVIDOR (BRAPI_TOKEN na Vercel) — nunca vai pro bundle do front nem é configurado
- * pelo usuário. O app chama /api/quote?tickers=BBAS3,PETR4 e recebe só preço/moeda.
+ * Proxy de cotação de ativos. Os tokens do dono (BRAPI_TOKEN / FINNHUB_API_KEY) vivem como
+ * variáveis de ambiente do SERVIDOR — nunca vão pro bundle nem são configurados pelo usuário.
+ * O app chama /api/quote?tickers=PETR4,AAPL e recebe só preço/moeda.
  *
- * EXCLUSIVO DO SUPER-ADMIN (dono): a cotação automática é uso PESSOAL do tier free da
- * brapi. Os demais usuários ficam manuais — o produto NÃO serve cotação a usuário final
- * (o free da brapi não licencia uso comercial/redistribuição). O endpoint valida o JWT e
- * checa a tabela `admins`; quem não for admin recebe vazio. Sem cache compartilhado na
- * edge (resposta é por-usuário). Para abrir a todos no futuro: provedor pago com licença.
+ * GATE (can_live_quotes): super-admin SEMPRE (uso pessoal do tier free); assinante do Pro
+ * Investidor só com a flag 'quotes_live' ON (provedor PAGO). Quem não passa recebe vazio (manual).
  *
- * UMA REQUISIÇÃO POR TICKER, em paralelo, e mescla os resultados. O tier FREE da brapi
- * devolve VAZIO para o endpoint multi-ticker (quote/A,B,C) — só o single-ticker funciona.
+ * CACHE COMPARTILHADO (quote_cache, por símbolo): todos os usuários dividem UMA busca upstream
+ * por símbolo por janela — o custo escala com "símbolos distintos", não com "usuários". O
+ * `updated_at` do cache é também a TRAVA DE CADÊNCIA no servidor (CACHE_TTL_MS): por mais que o
+ * cliente peça, a brapi/Finnhub só é consultada quando o valor cacheado vence. E2EE intacto: o
+ * cache guarda só símbolo→preço (dado público de mercado), nunca quem possui o quê.
+ *
+ * Roteamento: ticker B3 termina em dígito (PETR4) → brapi single-ticker (único formato do tier
+ * free); o resto (AAPL) → Finnhub. Uma requisição por ticker VENCIDO, em paralelo.
  */
 const SUPABASE_URL =
   process.env.SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
   "https://rudpurnhqoffwjaackka.supabase.co";
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Janela do cache compartilhado = trava de cadência no servidor. ~55 min: um pouco abaixo da
+// cadência horária do cliente, então a atualização agendada pega valor fresco, mas qualquer
+// chamada extra/concorrente dentro da janela é servida do cache (1 busca upstream/símbolo/hora,
+// dividida entre TODOS os usuários — admin 4×/dia já fica bem abaixo disso).
+const CACHE_TTL_MS = 55 * 60 * 1000;
 
 async function sbFetch(path, opts = {}, ms = 4000) {
   const ctrl = new AbortController();
@@ -114,7 +123,8 @@ export default async function handler(req, res) {
       raw
         .split(",")
         .map((t) => t.trim().toUpperCase())
-        .filter(Boolean),
+        // Só símbolos válidos (letras/dígitos/ponto) — descarta lixo e protege o filtro in() do cache.
+        .filter((t) => /^[A-Z0-9.]{1,12}$/.test(t)),
     ),
   ].slice(0, 40);
   if (tickers.length === 0) {
@@ -168,13 +178,64 @@ export default async function handler(req, res) {
     }
   };
 
+  const now = Date.now();
+
+  // 1. Cache COMPARTILHADO: lê numa query só os símbolos pedidos. Quem está fresco (< TTL) é
+  //    servido daqui — todos os usuários dividem a MESMA busca upstream (custo por símbolo, não
+  //    por usuário). Falha de leitura → trata tudo como vencido e busca upstream.
+  const cached = Object.create(null);
   try {
-    const settled = await Promise.all(tickers.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t))));
-    const results = settled.filter(Boolean);
-    // Resposta por-usuário (gate), sem cache compartilhado na edge. O store do cliente já agenda.
-    res.setHeader("Cache-Control", "no-store");
-    res.status(200).json({ results });
+    const cr = await sbFetch(`/rest/v1/quote_cache?symbol=in.(${tickers.join(",")})&select=symbol,price,currency,updated_at`);
+    if (cr.ok) {
+      for (const r of await cr.json()) {
+        cached[r.symbol] = { price: Number(r.price), currency: r.currency, age: now - new Date(r.updated_at).getTime() };
+      }
+    }
   } catch {
-    res.status(200).json({ results: [] });
+    /* sem cache → busca tudo */
   }
+
+  // 2. Separa fresco (serve do cache) de vencido/ausente (busca upstream).
+  const fresh = [];
+  const stale = [];
+  for (const t of tickers) {
+    const c = cached[t];
+    if (c && c.age < CACHE_TTL_MS && typeof c.price === "number" && c.price > 0) {
+      fresh.push({ symbol: t, regularMarketPrice: c.price, currency: c.currency });
+    } else {
+      stale.push(t);
+    }
+  }
+
+  // 3. Busca upstream SÓ os vencidos (B3 → brapi; resto → Finnhub), em paralelo.
+  let fetched = [];
+  try {
+    const settled = await Promise.all(stale.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t))));
+    for (let i = 0; i < stale.length; i++) {
+      const r = settled[i];
+      if (r) fetched.push({ symbol: stale[i], regularMarketPrice: r.regularMarketPrice, currency: r.currency });
+    }
+  } catch {
+    fetched = [];
+  }
+
+  // 4. Grava os recém-buscados no cache compartilhado (upsert por símbolo) — best-effort.
+  if (fetched.length > 0) {
+    try {
+      const iso = new Date(now).toISOString();
+      await sbFetch(`/rest/v1/quote_cache`, {
+        method: "POST",
+        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify(
+          fetched.map((x) => ({ symbol: x.symbol, price: x.regularMarketPrice, currency: x.currency, updated_at: iso })),
+        ),
+      });
+    } catch {
+      /* cache é best-effort; a resposta já tem o preço */
+    }
+  }
+
+  // 5. Resposta = frescos do cache + recém-buscados.
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).json({ results: [...fresh, ...fetched] });
 }

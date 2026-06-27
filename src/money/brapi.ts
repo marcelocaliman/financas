@@ -92,10 +92,11 @@ export function isQuoteRefreshDue(updatedAt: number | null, now: number, mode: "
   const weekday = b.getUTCDay(); // 0=Dom … 6=Sáb (em Brasília)
   if (weekday === 0 || weekday === 6) return false; // sem fins de semana
   const mins = b.getUTCHours() * 60 + b.getUTCMinutes();
-  // Pro Investidor (provedor PAGO): ~15 min durante o pregão (10:00–18:15 BRT).
+  // Pro Investidor (provedor PAGO): cadência automática HORÁRIA durante o pregão (10:00–18:15 BRT).
+  // Interno (custo) — a UI jamais expõe frequência; a cotação é descrita só como "automática".
   if (mode === "live") {
     if (mins < 10 * 60 || mins > 18 * 60 + 15) return false;
-    return now - updatedAt >= 15 * 60 * 1000;
+    return now - updatedAt >= 60 * 60 * 1000;
   }
   // admin (brapi FREE): no máximo 4×/dia, nas janelas.
   const y = b.getUTCFullYear();
