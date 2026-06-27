@@ -26,6 +26,7 @@ import { convert, formatPercent, type Currency } from "@/money/currency";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
 import { Eyebrow } from "@/components/common/tile";
+import { Tooltip } from "@/components/common/tooltip";
 import { cn } from "@/lib/utils";
 
 function nameFromEmail(email: string | null): string {
@@ -380,24 +381,24 @@ export function NavList({
         const handleClick = () => (sectionOpen && on ? onToggle(id, false) : onNavigate(id));
         if (collapsed) {
           return (
-            <button
-              key={id}
-              type="button"
-              onClick={handleClick}
-              title={label}
-              aria-label={label}
-              className={cn(
-                "relative grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
-              )}
-            >
-              <Icon size={17} />
-              {badge > 0 ? (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
-              ) : sectionOpen ? (
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
-              ) : null}
-            </button>
+            <Tooltip key={id} label={label}>
+              <button
+                type="button"
+                onClick={handleClick}
+                aria-label={label}
+                className={cn(
+                  "relative grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                  on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+                )}
+              >
+                <Icon size={17} />
+                {badge > 0 ? (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
+                ) : sectionOpen ? (
+                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-accent" />
+                ) : null}
+              </button>
+            </Tooltip>
           );
         }
         return (
@@ -443,19 +444,20 @@ export function NavList({
 
 function IconBtn({ onClick, label, active, badge = 0, children }: { onClick: () => void; label: string; active?: boolean; badge?: number; children: React.ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={badge > 0 ? `${label} (${badge})` : label}
-      title={label}
-      className={cn(
-        "relative grid place-items-center w-9 h-9 rounded-[10px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-        active ? "border-border-strong bg-card2 text-text" : "border-border text-muted hover:text-text hover:bg-card-hover",
-      )}
-    >
-      {children}
-      {badge > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" /> : null}
-    </button>
+    <Tooltip label={label}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={badge > 0 ? `${label} (${badge})` : label}
+        className={cn(
+          "relative grid place-items-center w-9 h-9 rounded-[10px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          active ? "border-border-strong bg-card2 text-text" : "border-border text-muted hover:text-text hover:bg-card-hover",
+        )}
+      >
+        {children}
+        {badge > 0 ? <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" /> : null}
+      </button>
+    </Tooltip>
   );
 }
 
