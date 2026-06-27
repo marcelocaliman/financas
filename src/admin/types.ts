@@ -177,4 +177,5 @@ export interface WaitlistRow {
   email: string;
   lang: string | null;
   created_at: string;
+  confirmed_at: string | null;
 }

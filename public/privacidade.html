@@ -1,0 +1,129 @@
+<!doctype html>
+<!--
+  PÁGINA LEGAL ESTÁTICA — espelha src/components/privacy-policy.tsx (versão da landing, pra quem
+  ainda não tem conta, ex.: lista de espera). MANTENHA EM SINCRONIA: ao mudar a política no app
+  (privacy-policy.tsx), atualize este arquivo também (e a data "Última atualização").
+-->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Política de Privacidade — Nossas Finanças</title>
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="Política de privacidade do Nossas Finanças — LGPD/GDPR, criptografia ponta a ponta e os limites honestos." />
+  <link rel="icon" href="/favicon.svg" />
+  <style>
+    :root{
+      --bg:#0A0B0D; --card:#131418; --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+      --text:#F3F4F6; --muted:#9CA2AC; --faint:#5F646C; --accent:#3ECF8E;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      -webkit-font-smoothing:antialiased;line-height:1.6}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:760px;margin:0 auto;padding:48px 22px 80px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
+    .brand{display:inline-flex;align-items:center;gap:9px;color:var(--text);font-weight:600;font-size:15px;letter-spacing:-.02em}
+    .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(62,207,142,.14)}
+    .back{font-size:13px;color:var(--muted)}
+    h1{font-size:clamp(26px,4vw,34px);letter-spacing:-.03em;margin:26px 0 4px}
+    .updated{font-size:12px;color:var(--faint);margin:0 0 28px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px 24px}
+    section{padding:20px 0;border-top:1px solid var(--border)}
+    section:first-child{border-top:0}
+    h2{font-size:15px;font-weight:600;color:var(--text);margin:0 0 8px}
+    p{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+    p:last-child{margin-bottom:0}
+    b{color:var(--text);font-weight:600}
+    .foot{margin-top:30px;font-size:12.5px;color:var(--faint);text-align:center}
+    .foot a{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="/"><span class="dot"></span> Nossas Finanças</a>
+      <a class="back" href="/">← Voltar ao site</a>
+    </div>
+
+    <h1>Política de Privacidade</h1>
+    <p class="updated">Última atualização: Junho de 2026</p>
+
+    <div class="card">
+      <section>
+        <h2>Quem é o responsável</h2>
+        <p>O <b>Nossas Finanças</b> (nossasfinancas.com.br), operado por <b>Marcelo Salgado Caliman</b> (pessoa física), é o responsável (controlador) pelo tratamento dos seus dados pessoais. Para exercer qualquer direito abaixo ou falar sobre privacidade, escreva para <b>contato@nossasfinancas.com.br</b>.</p>
+      </section>
+
+      <section>
+        <h2>Como protegemos seus dados</h2>
+        <p>Seus dados financeiros são <b>cifrados no seu aparelho</b> (E2EE) com uma chave derivada da sua senha. O servidor recebe e guarda apenas <b>texto cifrado</b> — nunca os seus valores em claro, nem a sua senha, nem a chave.</p>
+      </section>
+
+      <section>
+        <h2>Que dados tratamos</h2>
+        <p>• <b>E-mail</b> — para criar a conta, autenticar e enviar e-mails essenciais (confirmação, redefinição de senha).</p>
+        <p>• <b>Cofre cifrado</b> — o blob com seus dados financeiros, já criptografado no seu aparelho. Para nós é texto ilegível.</p>
+        <p>• <b>Metadados técnicos mínimos</b> — tamanho aproximado do cofre, datas/versões de sincronização e logs de segurança do provedor. Sem perfis de comportamento, sem cookies de rastreio, sem anúncios.</p>
+        <p>• <b>Tickers de ativos</b> — se você usa cotação de ações, os códigos dos papéis (ex.: PETR4) passam pelo nosso servidor só para buscar o preço do dia. Não associamos isso às suas quantidades/valores (que seguem cifrados) e não os guardamos.</p>
+        <p>• <b>Mensagens de suporte</b> — se você abre um ticket (no app ou pelo formulário de contato), guardamos o seu e-mail e o conteúdo da mensagem em <b>texto legível</b> (não são cifradas como o cofre), porque precisamos lê-las para responder. Por isso, não inclua senha, código de recuperação nem números de conta nessas mensagens.</p>
+        <p>• <b>Assinatura Pro</b> (se você assina) — status, plano e datas da assinatura, mais identificadores da Stripe. <b>Nunca os dados do cartão</b> (esses ficam só na Stripe). É metadado, não o dado financeiro do cofre.</p>
+        <p>• <b>Lista de espera</b> — se você deixa seu e-mail no card “Pro Investidor — em breve”, guardamos só esse <b>e-mail</b>, com o seu consentimento, para <b>avisar você quando o plano lançar</b>. Usamos confirmação por e-mail (double opt-in): só entra na lista quem clica no link de confirmação. Nada além disso — você pode pedir a remoção a qualquer momento em contato@nossasfinancas.com.br.</p>
+      </section>
+
+      <section>
+        <h2>Base legal e finalidade</h2>
+        <p>Tratamos seu e-mail e o cofre cifrado para <b>executar o serviço</b> que você contratou ao criar a conta (LGPD art. 7º, V / GDPR art. 6(1)(b)) e, quando você consente (ex.: lista de espera, métricas), com base no seu <b>consentimento</b>. A finalidade é só fazer o app funcionar e sincronizar — nada além disso.</p>
+      </section>
+
+      <section>
+        <h2>Com quem compartilhamos</h2>
+        <p>Usamos prestadores que operam só para entregar o serviço, sob contrato:</p>
+        <p>• <b>Supabase</b> — autenticação e armazenamento do cofre cifrado.</p>
+        <p>• <b>Vercel</b> — hospedagem do app e a função que busca cotações.</p>
+        <p>• <b>Resend</b> — envio dos nossos e-mails (confirmação, redefinição de senha, lista de espera e notificações de suporte). Recebe só o seu e-mail e o conteúdo da mensagem.</p>
+        <p>• <b>Cloudflare Turnstile</b> — verificação anti-spam nos formulários públicos (contato e lista de espera). Não usamos cookies de rastreio.</p>
+        <p>• <b>APIs de câmbio/cotação</b> (Frankfurter, brapi, Finnhub) — recebem só pares de moeda e tickers, nunca dados pessoais ou financeiros. Não vendemos seus dados.</p>
+        <p>• <b>Stripe</b> — processa os pagamentos do plano Pro. Os dados do seu cartão vão <b>direto pra Stripe</b> (criptografados); nós <b>nunca os vemos nem armazenamos</b>. Do nosso lado fica só o <b>status da assinatura</b> e identificadores da Stripe — metadado, não dado financeiro do cofre.</p>
+      </section>
+
+      <section>
+        <h2>Transferência internacional</h2>
+        <p>Esses provedores podem processar dados em servidores fora do Brasil/UE. Como o conteúdo financeiro vai sempre <b>cifrado</b>, ele permanece ilegível onde quer que esteja armazenado.</p>
+      </section>
+
+      <section>
+        <h2>Por quanto tempo guardamos</h2>
+        <p>Enquanto a sua conta existir. Ao <b>excluir a conta</b>, o cofre cifrado e o cadastro são apagados; backups dos provedores expiram nos ciclos deles. O e-mail da <b>lista de espera</b> é apagado quando o plano lança (ou a pedido). <b>Registros de pagamento/assinatura</b> podem ser mantidos pelo prazo legal/fiscal aplicável.</p>
+      </section>
+
+      <section>
+        <h2>Cookies</h2>
+        <p>Só o <b>essencial</b> para manter você logado (sessão de autenticação). Não usamos cookies de marketing, analytics invasivo ou rastreio entre sites.</p>
+      </section>
+
+      <section>
+        <h2>Métricas de uso (anônimas)</h2>
+        <p>Para entender o uso e melhorar o produto, registramos <b>eventos não-identificáveis</b> (ex.: visita à landing, cadastro, abertura do app), o <b>país</b> aproximado (o <b>IP nunca é armazenado</b>) e o <b>tipo de dispositivo</b>. É analytics de 1ª-parte, <b>sem cookies</b> e <b>nunca ligado à sua conta</b>. Base legal: legítimo interesse (LGPD art. 7º, IX / GDPR art. 6(1)(f)); você pode se opor.</p>
+      </section>
+
+      <section>
+        <h2>Seus direitos (LGPD/GDPR)</h2>
+        <p>Você é dono dos seus dados e pode, a qualquer momento: <b>acessar e portar</b> (Config → Dados → Exportar/CSV), <b>corrigir</b> (editando no app), <b>excluir a conta</b> (Config → Conta, apaga o cofre para sempre) e <b>revogar consentimento</b>. Para os demais direitos ou dúvidas, escreva para <b>contato@nossasfinancas.com.br</b> — respondemos nos prazos da lei. Você também pode reclamar à <b>ANPD</b> (Brasil) ou, na União Europeia, à autoridade do seu país.</p>
+      </section>
+
+      <section>
+        <h2>Limites honestos (leia)</h2>
+        <p>• O E2EE protege a cópia no <b>servidor</b>, não o seu aparelho: no seu navegador os dados ficam legíveis enquanto o cofre está destravado.</p>
+        <p>• A senha de login trafega ao provedor de autenticação por TLS (modelo padrão).</p>
+        <p>• Risco residual de código malicioso no navegador (XSS) — mitigado por uma política de segurança estrita, não eliminado.</p>
+        <p>• <b>Perder a senha E o código de recuperação = dados irrecuperáveis.</b> É o que torna o app privado de verdade — não há recuperação por e-mail do dado cifrado.</p>
+      </section>
+    </div>
+
+    <p class="foot">© 2026 Nossas Finanças · <a href="/">nossasfinancas.com.br</a></p>
+  </main>
+</body>
+</html>

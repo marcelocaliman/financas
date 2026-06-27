@@ -61,11 +61,13 @@ function WaitlistBlock({ live }: { live: boolean }) {
   const [show, setShow] = useState(false);
   const [copied, setCopied] = useState(false);
   const list = data ?? [];
-  const n = list.length;
+  const confirmed = list.filter((w) => w.confirmed_at);
+  const n = confirmed.length;
+  const pending = list.length - n;
 
   const copyAll = async () => {
     try {
-      await navigator.clipboard.writeText(list.map((w) => w.email).join(", "));
+      await navigator.clipboard.writeText(confirmed.map((w) => w.email).join(", "));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -79,31 +81,36 @@ function WaitlistBlock({ live }: { live: boolean }) {
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[13.5px] font-medium">
-              Lista de espera · <span className="tabular text-accent">{n}</span> {n === 1 ? "interessado" : "interessados"}
+              Lista de espera · <span className="tabular text-accent">{n}</span> {n === 1 ? "confirmado" : "confirmados"}
+              {pending > 0 ? <span className="text-faint"> · {pending} pendente{pending === 1 ? "" : "s"}</span> : null}
             </div>
             <p className="mt-0.5 text-[11.5px] text-faint">
               {live
-                ? "Plano ligado — avise estas pessoas que já dá pra assinar."
-                : "Quem clicou “Quero ser avisado” no card “Em breve”. Quando der ~5, vale assinar as APIs e ligar a flag."}
+                ? "Plano ligado — avise os confirmados que já dá pra assinar."
+                : "Confirmados via double opt-in (email validado). Quando der ~5, vale assinar as APIs e ligar a flag."}
             </p>
           </div>
-          {n > 0 ? (
+          {list.length > 0 ? (
             <div className="flex shrink-0 gap-2">
               <button type="button" onClick={() => setShow((s) => !s)} className="rounded-[8px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-card-hover hover:text-text">
-                {show ? "Ocultar" : "Ver emails"}
+                {show ? "Ocultar" : "Ver lista"}
               </button>
-              <button type="button" onClick={() => void copyAll()} className="rounded-[8px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-card-hover hover:text-text">
-                {copied ? "Copiado!" : "Copiar todos"}
-              </button>
+              {n > 0 ? (
+                <button type="button" onClick={() => void copyAll()} className="rounded-[8px] border border-border px-2.5 py-1.5 text-[11.5px] text-muted transition-colors hover:bg-card-hover hover:text-text">
+                  {copied ? "Copiado!" : "Copiar confirmados"}
+                </button>
+              ) : null}
             </div>
           ) : null}
         </div>
-        {show && n > 0 ? (
+        {show && list.length > 0 ? (
           <ul className="mt-3 max-h-52 space-y-1 overflow-y-auto">
             {list.map((w) => (
               <li key={w.email} className="flex items-center justify-between gap-3 rounded-[8px] bg-card2 px-2.5 py-1.5 text-[12px]">
                 <span className="truncate text-text">{w.email}</span>
-                <span className="shrink-0 tabular text-faint">{new Date(w.created_at).toLocaleDateString("pt-BR")}</span>
+                <span className={cn("shrink-0 text-[10.5px] tabular", w.confirmed_at ? "text-accent" : "text-faint")}>
+                  {w.confirmed_at ? "confirmado" : "pendente"}
+                </span>
               </li>
             ))}
           </ul>
@@ -117,10 +124,11 @@ function WaitlistBlock({ live }: { live: boolean }) {
 export function FlagsSummary() {
   const { data } = useAsync(() => adminApi.getFlag("quotes_live"), []);
   const { data: wl } = useAsync(() => adminApi.investorWaitlist(), []);
+  const confirmed = (wl ?? []).filter((w) => w.confirmed_at).length;
   return (
     <HeaderKpis>
       <HeaderKpi label="cotação automática" value={data ? "ON" : "OFF"} raw />
-      <HeaderKpi label="lista de espera" value={String((wl ?? []).length)} raw secondary />
+      <HeaderKpi label="lista (confirmados)" value={String(confirmed)} raw secondary />
     </HeaderKpis>
   );
 }

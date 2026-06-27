@@ -8,6 +8,7 @@
     { "source": "/app/(.*)", "destination": "/app.html" },
     { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/share", "destination": "/share.html" },
+    { "source": "/privacidade", "destination": "/privacidade.html" },
     { "source": "/en", "destination": "/en.html" },
     { "source": "/v1", "destination": "/v1.html" },
     { "source": "/v2", "destination": "/v2.html" },

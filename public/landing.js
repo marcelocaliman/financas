@@ -453,7 +453,8 @@
   var lang = l.indexOf("en") === 0 ? "en" : "pt";
   var MSG = {
     sending: { pt: "Enviando…", en: "Sending…" },
-    ok: { pt: "Pronto! A gente te avisa quando lançar.", en: "Done! We'll let you know when it launches." },
+    ok: { pt: "Quase lá! Confirme pelo link que enviamos no seu email.", en: "Almost there! Confirm via the link we emailed you." },
+    already: { pt: "Você já está na lista. 🎉", en: "You're already on the list. 🎉" },
     err: { pt: "Não foi possível enviar. Tente de novo.", en: "Couldn't send. Try again." },
     invalid: { pt: "Confira o email.", en: "Check the email." },
   };
@@ -473,8 +474,12 @@
         body: JSON.stringify({ email: email, ts: token, lang: lang }),
       });
     }).then(function (r) {
-      if (r && r.ok) { statusEl.className = "inv-wait-status ok"; statusEl.textContent = msg("ok"); form.reset(); }
-      else { statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("err"); btn.disabled = false; }
+      if (!r || !r.ok) { statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("err"); btn.disabled = false; return; }
+      return r.json().then(function (d) {
+        statusEl.className = "inv-wait-status ok";
+        statusEl.textContent = (d && d.confirmed) ? msg("already") : msg("ok");
+        form.reset();
+      });
     }).catch(function () {
       statusEl.className = "inv-wait-status err"; statusEl.textContent = msg("err"); btn.disabled = false;
     });

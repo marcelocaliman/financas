@@ -496,6 +496,7 @@
     #planos .inv-wait-status.ok{color:var(--accent)}
     #planos .inv-wait-status.err{color:#f1746a}
     #planos .inv-wait-consent{font-size:11px;color:var(--faint);margin:0;line-height:1.4}
+    #planos .inv-wait-policy{font-size:11px;color:var(--faint);text-decoration:underline;align-self:flex-start}
     #planos .plan-inv .inv-live-cta{display:none}
     #planos .plans.inv-live .plan-inv .inv-soon,
     #planos .plans.inv-live .plan-inv .inv-wait{display:none}
@@ -1094,6 +1095,7 @@
             </div>
             <p class="inv-wait-status" id="invWaitStatus" role="status"></p>
             <p class="inv-wait-consent" data-i18n="planos.invWaitConsent">Guardamos só seu email pra avisar do lançamento — sem spam. Remoção quando quiser: contato@nossasfinancas.com.br.</p>
+            <a class="inv-wait-policy" href="/privacidade" data-i18n="planos.invWaitPolicy">Política de privacidade</a>
             <div id="invTs"></div>
           </form>
           <a class="btn btn-primary inv-live-cta" href="/app#signup" data-i18n="planos.invCta">Testar o Investidor</a>
@@ -1152,13 +1154,14 @@
           <a href="#para-quem" data-i18n="foot.l1">Para quem é</a>
           <a href="#como-funciona" data-i18n="foot.l2">Como funciona</a>
           <a href="#privacidade" data-i18n="foot.l3">Privacidade</a>
+          <a href="/privacidade" data-i18n="foot.lpriv">Política de privacidade</a>
           <a href="#comunidade" data-i18n="foot.l4">Comunidade</a>
           <a href="/app" data-i18n="foot.l5">Entrar</a>
         </div>
       </div>
       <div style="margin-top:32px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--faint)">
         <span>© <span id="year">2026</span> Nossas Finanças</span>
-        <span data-i18n="foot.legal">Privacidade por criptografia ponta a ponta · LGPD/GDPR</span>
+        <a href="/privacidade" style="color:inherit"><span data-i18n="foot.legal">Privacidade por criptografia ponta a ponta · LGPD/GDPR</span></a>
       </div>
     </div>
   </footer>
