@@ -45,9 +45,10 @@ function esc(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 function genToken() {
+  // Sempre CSPRNG. Se faltar (não acontece em runtime serverless Node 18+/Edge), lança e o handler
+  // devolve 502 — fail-closed, jamais um token fraco de Math.random.
   const a = new Uint8Array(24);
-  if (globalThis.crypto && globalThis.crypto.getRandomValues) globalThis.crypto.getRandomValues(a);
-  else for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256);
+  globalThis.crypto.getRandomValues(a);
   return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 const sbHeaders = {
@@ -154,15 +155,16 @@ export default async function handler(req, res) {
 
   const confirmToken = genToken();
   try {
-    // Upsert por email (merge-duplicates): grava/atualiza com novo token, PRESERVANDO confirmed_at
-    // (não vai no corpo). return=representation devolve a linha p/ sabermos se já estava confirmada.
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/investor_waitlist`, {
+    // Inscrição ATÔMICA via RPC (1 round-trip): INSERT/atualiza condicional — regenera o token só se
+    // PENDENTE, nunca rotaciona o de quem já confirmou, nunca zera confirmed_at. Devolve was_confirmed
+    // (p/ a mensagem do cliente) e send_token (null = não enviar email).
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/waitlist_signup`, {
       method: "POST",
-      headers: { ...sbHeaders, Prefer: "resolution=merge-duplicates,return=representation" },
-      body: JSON.stringify({ email, lang, confirm_token: confirmToken }),
+      headers: { ...sbHeaders },
+      body: JSON.stringify({ p_email: email, p_lang: lang, p_token: confirmToken }),
     });
-    if (!r.ok && r.status !== 409) {
-      console.warn("waitlist upsert failed:", r.status);
+    if (!r.ok) {
+      console.warn("waitlist signup failed:", r.status);
       return json(res, 502, { ok: false, error: "store" });
     }
     let row = null;
@@ -170,18 +172,18 @@ export default async function handler(req, res) {
       const rows = await r.json();
       row = Array.isArray(rows) ? rows[0] : null;
     } catch {
-      /* return=minimal/erro de parse — segue como pendente */
+      /* erro de parse — não envia email (mas não finge falha de store) */
     }
-    const alreadyConfirmed = !!(row && row.confirmed_at);
-    if (!alreadyConfirmed) {
-      const url = `${SITE}/api/waitlist?confirm=${confirmToken}&lang=${langKey}`;
+    const sendToken = row && row.send_token;
+    if (sendToken) {
+      const url = `${SITE}/api/waitlist?confirm=${sendToken}&lang=${langKey}`;
       await sendEmail(
         email,
         langKey === "en" ? "Confirm your spot — Pro Investor" : "Confirme sua vaga — Pro Investidor",
         confirmEmailHtml(url, langKey),
       );
     }
-    return json(res, 200, { ok: true, confirmed: alreadyConfirmed });
+    return json(res, 200, { ok: true, confirmed: !!(row && row.was_confirmed) });
   } catch (e) {
     console.warn("waitlist error:", e && e.name);
     return json(res, 502, { ok: false, error: "store" });
