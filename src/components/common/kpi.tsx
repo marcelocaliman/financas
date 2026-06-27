@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { Eyebrow } from "./tile";
 import { MONEY_MASK } from "./money";
 import { ProgressRing } from "./progress-ring";
@@ -30,6 +31,7 @@ export function Kpi({
   ring,
   raw,
   title,
+  onClick,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -43,6 +45,8 @@ export function Kpi({
   raw?: boolean;
   /** Dica em hover (desktop): explicação extra sem poluir o card. SEM números (respeita privacidade). */
   title?: string;
+  /** Torna o card um ATALHO: cursor, hover, seta no canto e acessível por teclado. */
+  onClick?: () => void;
 }) {
   const hidden = useUI((s) => s.numbersHidden);
   const valueCls = cn(
@@ -50,8 +54,30 @@ export function Kpi({
     TONE[tone],
   );
   const rendered = hidden && !raw ? MONEY_MASK : value;
+  const interactive = typeof onClick === "function";
   return (
-    <div title={title} className="rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between">
+    <div
+      title={title}
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        "relative rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between",
+        interactive &&
+          "cursor-pointer hover:border-border-strong hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+      )}
+    >
+      {interactive ? <ArrowUpRight size={14} className="absolute top-3 right-3 text-faint" /> : null}
       <Eyebrow>{label}</Eyebrow>
       {typeof ring === "number" ? (
         <div className="flex items-center gap-2.5 mt-1.5">

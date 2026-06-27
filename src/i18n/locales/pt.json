@@ -193,7 +193,7 @@
     "return": "Rendimento",
     "returnSub": "trabalho do dinheiro",
     "unapplied": "A aplicar",
-    "unappliedSub": "sobra do orçamento, ainda não aplicada",
+    "unappliedSub": "sobra do orçamento",
     "reconcileHint": "Você poupou mais no orçamento do que o patrimônio cresceu. Essa sobra ainda não entrou nos seus ativos — provavelmente falta aplicar nos investimentos ou registrar onde o dinheiro está. Some sozinho quando o patrimônio refletir o valor.",
     "contributionsSub": "do seu bolso",
     "period": "Período",

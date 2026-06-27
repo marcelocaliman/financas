@@ -6,6 +6,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
 import { useBudget } from "@/hooks/use-budget";
+import { goToSection } from "@/hooks/use-scroll-spy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { budgetSaldoForMonth } from "@/finance/budget-saldo";
@@ -92,7 +93,7 @@ export default function Historico() {
     <div className="space-y-7">
       {/* Indicadores da evolução: atual · crescimento · aporte vs rendimento · período */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} />
+        <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} sub={view.last?.label} />
         <Kpi
           label={t("historico.growth")}
           value={<Money value={view.growth} currency={disp} options={{ signDisplay: "always" }} />}
@@ -116,6 +117,8 @@ export default function Historico() {
           tone={view.unreconciled ? "text" : yieldUp ? "accent" : "neg"}
           sub={view.unreconciled ? t("historico.unappliedSub") : t("historico.returnSub")}
           title={view.unreconciled ? t("historico.reconcileHint") : undefined}
+          // Atalho: leva ao Patrimônio pra registrar/aplicar a sobra que ficou de fora.
+          onClick={view.unreconciled ? () => goToSection("patrimonio") : undefined}
         />
         <Kpi label={t("historico.period")} value={t("historico.monthsValue", { n: view.months })} sub={view.first && view.last ? `${view.first.label} → ${view.last.label}` : "—"} />
       </div>
