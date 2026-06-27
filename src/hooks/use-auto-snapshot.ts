@@ -36,9 +36,12 @@ export function useAutoSnapshot(): void {
     const nw =
       data.assets.reduce((s, a) => s + convert(a.amount, a.currency, base, rates), 0) -
       data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, base, rates), 0);
-    // Ponte com o orçamento: o aporte do mês corrente = saldo (poupança) do orçamento, na
-    // moeda principal. null = sem orçamento no mês → não preenche (deixa o usuário decidir).
+    // Ponte com o orçamento: o aporte do mês = saldo (poupança) do orçamento, na moeda principal.
     const saldo = budgetSaldoForMonth(month, budget, base, rates);
+    // Mas o aporte só faz sentido com um mês ANTERIOR pra comparar (decompõe o crescimento). No 1º
+    // mês (sem anterior), o aporte fica VAZIO — senão vira um número solto que confunde.
+    const hasPrior = snapshots.some((s) => s.month < month);
+    const want = hasPrior && saldo != null ? saldo : undefined;
 
     const rows = snapshots.filter((s) => s.month === month);
     const manual = rows.find((s) => s.auto !== true);
@@ -49,16 +52,16 @@ export function useAutoSnapshot(): void {
       return;
     }
     const auto = rows.find((s) => s.auto === true);
-    const contribution = saldo != null ? saldo : auto?.contribution;
     if (!auto) {
-      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, contribution, auto: true });
-    } else if (
-      auto.currency !== base ||
-      Math.abs(auto.amount - nw) > 0.5 ||
-      (saldo != null && Math.abs((auto.contribution ?? 0) - saldo) > 0.5)
-    ) {
-      // Mantém o snapshot AUTO do mês corrente alinhado ao patrimônio, à moeda principal e ao saldo do orçamento.
-      void actions.putSnapshot({ ...auto, currency: base, amount: nw, contribution });
+      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, contribution: want, auto: true });
+    } else {
+      const cur = auto.contribution ?? null;
+      const tgt = want ?? null;
+      const contribChanged = cur === null ? tgt !== null : tgt === null || Math.abs(cur - tgt) > 0.5;
+      if (auto.currency !== base || Math.abs(auto.amount - nw) > 0.5 || contribChanged) {
+        // Mantém o AUTO do mês corrente alinhado ao patrimônio, à moeda principal e ao saldo do orçamento.
+        void actions.putSnapshot({ ...auto, currency: base, amount: nw, contribution: want });
+      }
     }
   }, [data, snapshots, budget, rates, base]);
 }

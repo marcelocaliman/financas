@@ -47,7 +47,8 @@ export default function Historico() {
     const current = last?.v ?? 0;
     const growth = first && last ? last.v - first.v : 0;
     const change = first && last && first.v !== 0 ? (growth / first.v) * 100 : 0;
-    const contributions = sorted.reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
+    // Aporte do 1º mês NÃO entra: ele é o ponto de partida (o crescimento é medido A PARTIR dele).
+    const contributions = sorted.slice(1).reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
     // Rendimento = crescimento que NÃO veio de aporte (o "trabalho do dinheiro").
     const yieldGain = growth - contributions;
     return { sorted, series, current, growth, change, contributions, yieldGain, months: series.length, first, last, hasTrend: series.length >= 2 };
@@ -91,10 +92,10 @@ export default function Historico() {
           tone={up ? "accent" : "neg"}
           sub={view.hasTrend ? <Hidden>{`${up ? "+" : ""}${view.change.toFixed(1)}%`}</Hidden> : "—"}
         />
-        <Kpi label={t("historico.contributions")} value={<Money value={view.contributions} currency={disp} />} sub={t("historico.contributionsSub")} />
+        <Kpi label={t("historico.contributions")} value={view.hasTrend ? <Money value={view.contributions} currency={disp} /> : "—"} sub={t("historico.contributionsSub")} />
         <Kpi
           label={t("historico.return")}
-          value={<Money value={view.yieldGain} currency={disp} options={{ signDisplay: "always" }} />}
+          value={view.hasTrend ? <Money value={view.yieldGain} currency={disp} options={{ signDisplay: "always" }} /> : "—"}
           tone={yieldUp ? "accent" : "neg"}
           sub={t("historico.returnSub")}
         />
@@ -145,8 +146,9 @@ export default function Historico() {
               isComplete={(r) => r.month.trim().length > 0 && r.amount > 0}
               onCommit={(r) => {
                 const next: NetWorthSnapshot = { ...r, auto: false };
-                // Ponte com o orçamento: aporte em branco → sugere o saldo (poupança) do mês.
-                if (next.contribution == null) {
+                // Ponte com o orçamento: aporte em branco → sugere o saldo do mês — mas só se houver
+                // um mês ANTERIOR (o aporte decompõe o crescimento; no 1º mês não faz sentido).
+                if (next.contribution == null && data.some((s) => s.id !== next.id && s.month < next.month)) {
                   const saldo = budgetSaldoForMonth(next.month, budget, next.currency, rates);
                   if (saldo != null) next.contribution = saldo;
                 }
@@ -177,7 +179,8 @@ export function HistoricoSummary() {
     const first = series[0];
     const last = series.at(-1) ?? 0;
     const change = first && first !== 0 ? ((last - first) / first) * 100 : 0;
-    const contributions = sorted.reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
+    // Aporte do 1º mês NÃO entra: ele é o ponto de partida (o crescimento é medido A PARTIR dele).
+    const contributions = sorted.slice(1).reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
     return { current: last, change, contributions };
   }, [data, disp, rates]);
   if (!v) return null;
