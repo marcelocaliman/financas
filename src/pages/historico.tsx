@@ -68,8 +68,10 @@ export default function Historico() {
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
 
+  // Histórico é passado/presente: o seletor de mês não deixa escolher mês futuro.
+  const thisMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const cols: GridColumn<NetWorthSnapshot>[] = [
-    { key: "month", type: "month", header: t("historico.month"), width: "minmax(120px,1fr)" },
+    { key: "month", type: "month", header: t("historico.month"), width: "minmax(120px,1fr)", maxMonth: thisMonth },
     { key: "amount", type: "money", header: t("historico.networth"), width: "minmax(160px,1.2fr)", align: "right", currencyKey: "currency" },
     { key: "contribution", type: "number", decimals: 2, header: t("historico.contribution"), width: "minmax(100px,0.9fr)", align: "right" },
   ];

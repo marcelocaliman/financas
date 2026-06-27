@@ -39,6 +39,9 @@ export interface GridColumn<T> {
   currencyKey?: string; // money/number: campo da moeda p/ o locale (default "currency")
   /** number: casas decimais FIXAS (ex.: preço médio = 2). Indefinido = flexível (qtd). */
   decimals?: number;
+  /** month: maior mês selecionável ("AAAA-MM"). Meses depois disso ficam desabilitados
+   *  (ex.: histórico de patrimônio é só passado/presente — mês futuro não faz sentido). */
+  maxMonth?: string;
   placeholder?: string;
   compute?: (row: T) => ReactNode;
 }
@@ -426,6 +429,7 @@ function MonthCell({
   rowId,
   colKey,
   align,
+  max,
   onCommit,
 }: {
   value: string;
@@ -433,6 +437,8 @@ function MonthCell({
   rowId: string;
   colKey: string;
   align?: "left" | "right";
+  /** maior mês selecionável ("AAAA-MM"); meses depois ficam desabilitados. */
+  max?: string;
   onCommit: (v: string) => void;
 }) {
   const { i18n } = useTranslation();
@@ -535,22 +541,27 @@ function MonthCell({
                 <div className="grid grid-cols-3 gap-1">
                   {months.map((name, i) => {
                     const m = i + 1;
+                    const ym = `${navYear}-${String(m).padStart(2, "0")}`;
+                    const disabled = max ? ym > max : false; // mês futuro: não selecionável
                     const selected = navYear === vy && m === vm;
                     const isToday = navYear === today.getFullYear() && m === today.getMonth() + 1;
                     return (
                       <button
                         key={m}
                         type="button"
+                        disabled={disabled}
                         onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => pick(m)}
+                        onClick={disabled ? undefined : () => pick(m)}
                         aria-current={isToday ? "date" : undefined}
                         className={cn(
                           "grid h-[30px] place-items-center rounded-[7px] text-[12.5px] capitalize outline-none transition-colors",
-                          selected
-                            ? "bg-accent font-semibold text-[#0A0B0D]"
-                            : isToday
-                              ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
-                              : "text-muted hover:bg-card-hover hover:text-text",
+                          disabled
+                            ? "text-faint opacity-40 cursor-not-allowed"
+                            : selected
+                              ? "bg-accent font-semibold text-[#0A0B0D]"
+                              : isToday
+                                ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
+                                : "text-muted hover:bg-card-hover hover:text-text",
                         )}
                       >
                         {name}
@@ -814,6 +825,7 @@ export function DataGrid<T extends { id: string }>({
             rowId={rowId}
             colKey={col.key}
             align={col.align}
+            max={col.maxMonth}
             onCommit={commit}
           />
         );
