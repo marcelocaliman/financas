@@ -29,6 +29,7 @@ export function Kpi({
   bar,
   ring,
   raw,
+  title,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -40,6 +41,8 @@ export function Kpi({
   ring?: number;
   /** Só para o painel admin (metadado, não dado do usuário): mantém visível em modo privado. */
   raw?: boolean;
+  /** Dica em hover (desktop): explicação extra sem poluir o card. SEM números (respeita privacidade). */
+  title?: string;
 }) {
   const hidden = useUI((s) => s.numbersHidden);
   const valueCls = cn(
@@ -48,7 +51,7 @@ export function Kpi({
   );
   const rendered = hidden && !raw ? MONEY_MASK : value;
   return (
-    <div className="rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between">
+    <div title={title} className="rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between">
       <Eyebrow>{label}</Eyebrow>
       {typeof ring === "number" ? (
         <div className="flex items-center gap-2.5 mt-1.5">
