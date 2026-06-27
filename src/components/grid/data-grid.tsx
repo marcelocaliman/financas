@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Repeat, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -11,7 +12,16 @@ import { useViewer } from "@/store/viewer";
 const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
-export type ColType = "currency" | "text" | "select" | "money" | "number" | "day" | "computed" | "toggle";
+export type ColType = "currency" | "text" | "select" | "money" | "number" | "day" | "month" | "computed" | "toggle";
+
+const MONTH_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
+/** "AAAA-MM" → "jun/26" no locale dado. */
+function monthLabel(ym: string, locale: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return "";
+  const mon = new Date(y, m - 1, 1).toLocaleDateString(locale, { month: "short" }).replace(".", "");
+  return `${mon}/${String(y).slice(-2)}`;
+}
 
 export type SelectOption = { value: string; label: string };
 
@@ -405,6 +415,158 @@ function DayCell({
   );
 }
 
+/**
+ * Seletor de MÊS (ano + grade de 12 meses) — em vez de digitar "2026-06" e errar. Valor = "AAAA-MM".
+ * Mesmo padrão flutuante do DayCell (portal + Escape + sem roubar o foco do gatilho). As setas trocam
+ * de ano SEM fechar o menu; clicar num mês confirma e fecha. O mês corrente fica marcado p/ achar rápido.
+ */
+function MonthCell({
+  value,
+  placeholder,
+  rowId,
+  colKey,
+  align,
+  onCommit,
+}: {
+  value: string;
+  placeholder?: string;
+  rowId: string;
+  colKey: string;
+  align?: "left" | "right";
+  onCommit: (v: string) => void;
+}) {
+  const { i18n } = useTranslation();
+  const locale = MONTH_LOCALE[(i18n.resolvedLanguage ?? "pt").slice(0, 2)] ?? "pt-BR";
+  const today = new Date();
+  const vy = value ? Number(value.split("-")[0]) : undefined;
+  const vm = value ? Number(value.split("-")[1]) : undefined;
+  const [open, setOpen] = useState(false);
+  const [navYear, setNavYear] = useState(vy ?? today.getFullYear());
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const MENU_W = 236;
+  const MENU_H = 248;
+  const openMenu = () => {
+    setNavYear(vy ?? today.getFullYear()); // reabre sempre no ano do valor (ou no atual)
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - MENU_W - 8));
+      const below = r.bottom + 6;
+      const top = below + MENU_H > window.innerHeight ? Math.max(8, r.top - MENU_H - 6) : below;
+      setPos({ top, left });
+    }
+    setOpen(true);
+  };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        btnRef.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+  const pick = (m: number) => {
+    onCommit(`${navYear}-${String(m).padStart(2, "0")}`);
+    setOpen(false);
+    btnRef.current?.focus();
+  };
+  const months = Array.from({ length: 12 }, (_, i) =>
+    new Date(2000, i, 1).toLocaleDateString(locale, { month: "short" }).replace(".", ""),
+  );
+  const label = value ? monthLabel(value, locale) : placeholder ?? "—";
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        data-rowid={rowId}
+        data-col={colKey}
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+            e.preventDefault();
+            openMenu();
+          }
+        }}
+        className={cn(
+          CELL_INPUT,
+          "flex items-center gap-1 cursor-pointer hover:bg-card-hover capitalize",
+          align === "right" ? "justify-end" : "justify-start",
+          !value && "text-faint",
+        )}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDown size={13} className="text-faint shrink-0" />
+      </button>
+      {open && pos
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+              <div
+                className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]"
+                style={{ top: pos.top, left: pos.left, width: MENU_W }}
+              >
+                <div className="mb-2 flex items-center justify-between px-0.5">
+                  <button
+                    type="button"
+                    aria-label="Ano anterior"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setNavYear((y) => y - 1)}
+                    className="grid h-7 w-7 place-items-center rounded-[7px] text-muted hover:bg-card-hover hover:text-text"
+                  >
+                    <ChevronLeft size={15} />
+                  </button>
+                  <span className="text-[13px] font-semibold tabular text-text">{navYear}</span>
+                  <button
+                    type="button"
+                    aria-label="Próximo ano"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => setNavYear((y) => y + 1)}
+                    className="grid h-7 w-7 place-items-center rounded-[7px] text-muted hover:bg-card-hover hover:text-text"
+                  >
+                    <ChevronRight size={15} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {months.map((name, i) => {
+                    const m = i + 1;
+                    const selected = navYear === vy && m === vm;
+                    const isToday = navYear === today.getFullYear() && m === today.getMonth() + 1;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pick(m)}
+                        aria-current={isToday ? "date" : undefined}
+                        className={cn(
+                          "grid h-[30px] place-items-center rounded-[7px] text-[12.5px] capitalize outline-none transition-colors",
+                          selected
+                            ? "bg-accent font-semibold text-[#0A0B0D]"
+                            : isToday
+                              ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
+                              : "text-muted hover:bg-card-hover hover:text-text",
+                        )}
+                      >
+                        {name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
+    </>
+  );
+}
+
 /** Seletor de moeda: o gatilho (badge/símbolo) abre um menu flutuante com as moedas. */
 function CurrencyPicker({
   value,
@@ -519,6 +681,8 @@ function ReadOnlyCell<T extends { id: string }>({ col, row }: { col: GridColumn<
     }
     case "day":
       return <div className="px-2 tabular text-text text-[13.5px]">{(v as number | undefined) ?? "—"}</div>;
+    case "month":
+      return <div className="px-2 text-[13.5px] text-text capitalize">{(v as string) ? monthLabel(v as string, "pt-BR") : "—"}</div>;
     case "select": {
       const opts = col.optionsFor ? col.optionsFor(row) : col.options ?? [];
       return <div className="px-2 text-[13.5px] text-text">{opts.find((o) => o.value === v)?.label ?? "—"}</div>;
@@ -636,6 +800,17 @@ export function DataGrid<T extends { id: string }>({
         return (
           <DayCell
             value={get(row, col.key) as number | undefined}
+            rowId={rowId}
+            colKey={col.key}
+            align={col.align}
+            onCommit={commit}
+          />
+        );
+      case "month":
+        return (
+          <MonthCell
+            value={(get(row, col.key) as string) ?? ""}
+            placeholder={ghostRow && col.key === firstTextKey ? addPlaceholder : col.placeholder}
             rowId={rowId}
             colKey={col.key}
             align={col.align}

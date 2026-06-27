@@ -61,7 +61,7 @@ export default function Historico() {
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
 
   const cols: GridColumn<NetWorthSnapshot>[] = [
-    { key: "month", type: "text", header: t("historico.month"), width: "minmax(110px,1fr)", placeholder: t("historico.monthPlaceholder") },
+    { key: "month", type: "month", header: t("historico.month"), width: "minmax(120px,1fr)" },
     { key: "amount", type: "money", header: t("historico.networth"), width: "minmax(160px,1.2fr)", align: "right", currencyKey: "currency" },
     { key: "contribution", type: "number", decimals: 2, header: t("historico.contribution"), width: "minmax(100px,0.9fr)", align: "right" },
   ];
