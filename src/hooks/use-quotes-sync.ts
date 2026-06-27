@@ -5,11 +5,12 @@ import { useCanLiveQuotes } from "@/hooks/use-live-quotes";
 import { useIsAdmin } from "@/admin/use-admin";
 
 /**
- * Mantém o valor dos ativos com ticker atualizado pela cotação do dia (via /api/quote).
- * EXCLUSIVO DO SUPER-ADMIN: a cotação automática é uso pessoal do tier free da brapi; os
- * demais usuários ficam manuais (o produto não serve cotação comercial). Roda no unlock,
- * ao focar a aba e a cada mudança de ativos, mas a atualização real é AGENDADA: só em dia
- * de pregão e no máximo 4×/dia (ver isQuoteRefreshDue). Chamadas extras caem na guarda da agenda.
+ * Mantém o valor dos ativos com ticker atualizado pela cotação automática (via /api/quote, que
+ * tem cache COMPARTILHADO por símbolo). Quem sincroniza: super-admin sempre (uso pessoal do tier
+ * free) e assinante do Pro Investidor quando a flag 'quotes_live' está ON. Roda no unlock, ao focar
+ * a aba e a cada mudança de ativos, mas a atualização real é AGENDADA (ver isQuoteRefreshDue):
+ * admin 4×/dia, Investidor de hora em hora, só em dia de pregão. Chamadas extras caem na guarda
+ * da agenda — e, no servidor, o TTL do cache blinda o upstream independente do cliente.
  */
 export function useQuotesSync(): void {
   const data = usePatrimonio();
@@ -19,7 +20,7 @@ export function useQuotesSync(): void {
   useEffect(() => {
     // Quem sincroniza: admin sempre (brapi free, 4×/dia); assinante do Pro Investidor só
     // quando a flag 'quotes_live' está ON (can_live_quotes / painel super-admin).
-    // Cadência por tier: admin = 4×/dia (free); Pro Investidor pagante = ~15min.
+    // Cadência por tier: admin = 4×/dia (free); Pro Investidor pagante = de hora em hora.
     if (!data || !canQuote) return;
     const mode = isAdmin ? "admin" : "live";
     const run = () => void useQuotes.getState().refresh(data.assets, false, mode);

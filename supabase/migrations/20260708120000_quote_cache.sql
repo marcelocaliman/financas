@@ -18,3 +18,5 @@ create table if not exists public.quote_cache (
 );
 
 alter table public.quote_cache enable row level security;
+alter table public.quote_cache force row level security;
+revoke all on public.quote_cache from anon, authenticated;

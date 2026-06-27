@@ -27,6 +27,11 @@ const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // dividida entre TODOS os usuários — admin 4×/dia já fica bem abaixo disso).
 const CACHE_TTL_MS = 55 * 60 * 1000;
 
+// Cache NEGATIVO: quando a fonte volta vazia/erro pra um símbolo, marca a tentativa por ~10 min
+// (preço sentinela ≤ 0). Enquanto vale, o servidor NÃO re-bate no upstream desse símbolo — blinda
+// o custo mesmo se o cliente re-disparar a cada alt-tab/evento online. Passada a janela, re-tenta.
+const NEG_TTL_MS = 10 * 60 * 1000;
+
 async function sbFetch(path, opts = {}, ms = 4000) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -154,23 +159,28 @@ export default async function handler(req, res) {
 
   // Finnhub (internacional): /quote traz o preço (c). A moeda vem do /stock/profile2 como
   // BEST-EFFORT — se falhar (rate limit/símbolo sem perfil), assume USD e a cotação segue
-  // (igual ao brapi: uma chamada crítica + uma opcional que nunca derruba o preço).
-  const fetchFinnhub = async (t) => {
+  // (igual ao brapi: uma chamada crítica + uma opcional que nunca derruba o preço). A moeda é
+  // praticamente IMUTÁVEL: se já a conhecemos (do cache), reusa e PULA o profile2 — corta ~metade
+  // das chamadas Finnhub por ticker intl (só resolve no 1º encontro do símbolo).
+  const fetchFinnhub = async (t, knownCurrency) => {
     if (!finnhubKey) return null;
     try {
       const qr = await fetch(`https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`);
       if (!qr.ok) return null;
       const d = await qr.json();
       if (!(d && typeof d.c === "number" && d.c > 0)) return null;
-      let currency = "USD";
-      try {
-        const pr = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`);
-        if (pr.ok) {
-          const p = await pr.json();
-          if (p && p.currency) currency = String(p.currency).toUpperCase();
+      const known = knownCurrency && knownCurrency.length >= 3;
+      let currency = known ? knownCurrency : "USD";
+      if (!known) {
+        try {
+          const pr = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${encodeURIComponent(t)}&token=${encodeURIComponent(finnhubKey)}`);
+          if (pr.ok) {
+            const p = await pr.json();
+            if (p && p.currency) currency = String(p.currency).toUpperCase();
+          }
+        } catch {
+          /* profile opcional — mantém USD */
         }
-      } catch {
-        /* profile opcional — mantém USD */
       }
       return { symbol: t, regularMarketPrice: d.c, currency };
     } catch {
@@ -195,47 +205,56 @@ export default async function handler(req, res) {
     /* sem cache → busca tudo */
   }
 
-  // 2. Separa fresco (serve do cache) de vencido/ausente (busca upstream).
+  // 2. Separa: FRESCO (serve do cache) · NEGATIVO recente (fonte sem preço agora → não re-bate,
+  //    não serve; cliente mantém o último valor local) · VENCIDO/ausente (busca upstream).
   const fresh = [];
   const stale = [];
   for (const t of tickers) {
     const c = cached[t];
-    if (c && c.age < CACHE_TTL_MS && typeof c.price === "number" && c.price > 0) {
+    if (c && typeof c.price === "number" && c.price > 0 && c.age < CACHE_TTL_MS) {
       fresh.push({ symbol: t, regularMarketPrice: c.price, currency: c.currency });
+    } else if (c && !(c.price > 0) && c.age < NEG_TTL_MS) {
+      /* marca negativa recente: pula (blinda o upstream) */
     } else {
       stale.push(t);
     }
   }
 
-  // 3. Busca upstream SÓ os vencidos (B3 → brapi; resto → Finnhub), em paralelo.
-  let fetched = [];
+  // 3. Busca upstream SÓ os vencidos (B3 → brapi; resto → Finnhub, reusando a moeda cacheada).
+  const fetched = [];
+  const failed = [];
   try {
-    const settled = await Promise.all(stale.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t))));
+    const settled = await Promise.all(stale.map((t) => (isB3(t) ? fetchBrapi(t) : fetchFinnhub(t, cached[t]?.currency))));
     for (let i = 0; i < stale.length; i++) {
       const r = settled[i];
       if (r) fetched.push({ symbol: stale[i], regularMarketPrice: r.regularMarketPrice, currency: r.currency });
+      else failed.push(stale[i]);
     }
   } catch {
-    fetched = [];
+    /* fetchBrapi/fetchFinnhub já capturam seus erros; mantém o que veio */
   }
 
-  // 4. Grava os recém-buscados no cache compartilhado (upsert por símbolo) — best-effort.
-  if (fetched.length > 0) {
+  // 4. Grava no cache compartilhado (upsert por símbolo): preços reais + marcas NEGATIVAS dos que
+  //    falharam (sentinela price=-1, preservando a moeda conhecida) — ambos resetam updated_at e
+  //    blindam o upstream contra re-tentativa imediata do cliente. Best-effort.
+  const iso = new Date(now).toISOString();
+  const rows = [
+    ...fetched.map((x) => ({ symbol: x.symbol, price: x.regularMarketPrice, currency: x.currency, updated_at: iso })),
+    ...failed.map((s) => ({ symbol: s, price: -1, currency: cached[s]?.currency || "", updated_at: iso })),
+  ];
+  if (rows.length > 0) {
     try {
-      const iso = new Date(now).toISOString();
       await sbFetch(`/rest/v1/quote_cache`, {
         method: "POST",
         headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body: JSON.stringify(
-          fetched.map((x) => ({ symbol: x.symbol, price: x.regularMarketPrice, currency: x.currency, updated_at: iso })),
-        ),
+        body: JSON.stringify(rows),
       });
     } catch {
       /* cache é best-effort; a resposta já tem o preço */
     }
   }
 
-  // 5. Resposta = frescos do cache + recém-buscados.
+  // 5. Resposta = frescos do cache + recém-buscados (marcas negativas não entram).
   res.setHeader("Cache-Control", "no-store");
   res.status(200).json({ results: [...fresh, ...fetched] });
 }

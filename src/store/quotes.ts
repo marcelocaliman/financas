@@ -33,7 +33,7 @@ export const useQuotes = create<QuotesState>()(
         // com throttle de 10min pra não martelar o free tier se um ticker nunca retornar.
         const missing = quotable.some((a) => !prices[(a.ticker ?? "").toUpperCase()]);
         const missingDue = missing && (updatedAt == null || Date.now() - updatedAt > 10 * 60 * 1000);
-        // Agenda: dia de pregão; admin ≤4×/dia, live ~15min (ver isQuoteRefreshDue). `force` precifica
+        // Agenda: dia de pregão; admin ≤4×/dia, live de hora em hora (ver isQuoteRefreshDue). `force` precifica
         // na hora (incluir/editar ticker), então a posição nova não espera a janela.
         if (!force && !missingDue && !isQuoteRefreshDue(updatedAt, Date.now(), mode)) return;
         set({ status: "loading" });
