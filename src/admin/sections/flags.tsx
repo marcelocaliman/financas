@@ -26,11 +26,11 @@ export function FlagsSection() {
       <StateBlock loading={loading} error={error}>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[13.5px] font-medium">Cotação ao vivo pros assinantes do Pro Investidor</div>
+            <div className="text-[13.5px] font-medium">Cotação automática pros assinantes do Pro Investidor</div>
             <p className="mt-1 max-w-md text-[11.5px] leading-relaxed text-faint">
               Uma só chave liga as DUAS fontes: <b className="text-muted">B3 (brapi)</b> + <b className="text-muted">internacional (Finnhub)</b>.
-              {" "}<b className="text-muted">OFF</b>: cotação só na sua conta (free, 4×/dia). <b className="text-muted">ON</b>: quem assina o Pro
-              Investidor recebe cotação ao vivo. <b className="text-muted">Só ligue depois de assinar os planos PAGOS</b> da brapi e do Finnhub (licença comercial).
+              {" "}<b className="text-muted">OFF</b>: cotação automática só na sua conta (free). <b className="text-muted">ON</b>: quem assina o Pro
+              Investidor também recebe. <b className="text-muted">Só ligue depois de assinar os planos PAGOS</b> da brapi e do Finnhub (licença comercial).
             </p>
           </div>
           <button

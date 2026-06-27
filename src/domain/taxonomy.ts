@@ -183,8 +183,8 @@ export function isInvestedClass(classId: string): boolean {
  * Modelo "cotável" (ticker · qtd · preço médio) REATIVADO (jun/2026) para as classes negociadas
  * por UNIDADE/cota — valor = qtd × (cotação do dia, se houver; senão preço médio). As demais
  * investidas (renda fixa, fundos) seguem no modelo de VALOR (aplicado → atual → rentabilidade),
- * que é melhor pra elas. A COTAÇÃO ao vivo segue exclusiva do super-admin (brapi free, 4×/dia);
- * vira Pro (refresh ~15min) quando o plano PAGO da brapi entrar — ver api/quote.js + use-quotes-sync.
+ * que é melhor pra elas. A COTAÇÃO automática é do super-admin (brapi free) e do Pro Investidor
+ * quando a flag 'quotes_live' estiver ON — ver api/quote.js + use-quotes-sync.
  */
 const QUOTABLE_CLASSES = new Set<string>([CLASS.acoes, CLASS.fiis, CLASS.cripto, CLASS.commodities]);
 export function isQuotableClass(classId: string): boolean {

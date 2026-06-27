@@ -14,7 +14,7 @@ interface QuotesState {
    * Busca cotações (via /api/quote) dos ativos com ticker e atualiza o valor
    * (amount = quantidade × cotação) só quando muda. `force` ignora o TTL.
    */
-  refresh: (assets: Asset[], force?: boolean, mode?: "admin" | "live") => Promise<void>;
+  refresh: (assets: Asset[], force?: boolean) => Promise<void>;
 }
 
 export const useQuotes = create<QuotesState>()(
@@ -23,7 +23,7 @@ export const useQuotes = create<QuotesState>()(
       prices: {},
       updatedAt: null,
       status: "idle",
-      refresh: async (assets, force, mode) => {
+      refresh: async (assets, force) => {
         if (get().status === "loading") return;
         const quotable = assets.filter((a) => a.ticker && (a.quantity ?? 0) > 0);
         if (quotable.length === 0) return;
@@ -33,9 +33,9 @@ export const useQuotes = create<QuotesState>()(
         // com throttle de 10min pra não martelar o free tier se um ticker nunca retornar.
         const missing = quotable.some((a) => !prices[(a.ticker ?? "").toUpperCase()]);
         const missingDue = missing && (updatedAt == null || Date.now() - updatedAt > 10 * 60 * 1000);
-        // Agenda: dia de pregão; admin ≤4×/dia, live de hora em hora (ver isQuoteRefreshDue). `force` precifica
-        // na hora (incluir/editar ticker), então a posição nova não espera a janela.
-        if (!force && !missingDue && !isQuoteRefreshDue(updatedAt, Date.now(), mode)) return;
+        // Agenda: dia de pregão, de hora em hora (ver isQuoteRefreshDue). `force` precifica na hora
+        // (incluir/editar ticker), então a posição nova não espera a janela.
+        if (!force && !missingDue && !isQuoteRefreshDue(updatedAt, Date.now())) return;
         set({ status: "loading" });
         try {
           const quotes = await fetchQuotes(quotable.map((a) => a.ticker));

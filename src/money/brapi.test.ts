@@ -32,7 +32,7 @@ describe("normalizeTickers", () => {
   });
 });
 
-describe("isQuoteRefreshDue", () => {
+describe("isQuoteRefreshDue (horária, em dia de pregão)", () => {
   // 2026-06-15 é uma segunda-feira; 2026-06-13 sábado; 2026-06-14 domingo.
   it("nunca buscado (bootstrap) sempre atualiza", () => {
     expect(isQuoteRefreshDue(null, brt(2026, 6, 13, 12, 0))).toBe(true); // até no sábado
@@ -44,35 +44,20 @@ describe("isQuoteRefreshDue", () => {
     expect(isQuoteRefreshDue(fri, brt(2026, 6, 14, 15, 0))).toBe(false); // domingo
   });
 
-  it("dia de pregão, antes da 1ª janela (10:30): não atualiza", () => {
+  it("fora do pregão não atualiza (antes das 10:00 / depois das 18:15)", () => {
     const prev = brt(2026, 6, 12, 18, 0);
-    expect(isQuoteRefreshDue(prev, brt(2026, 6, 15, 9, 0))).toBe(false);
+    expect(isQuoteRefreshDue(prev, brt(2026, 6, 15, 9, 30))).toBe(false); // antes da abertura
+    expect(isQuoteRefreshDue(prev, brt(2026, 6, 15, 18, 30))).toBe(false); // depois do fechamento
   });
 
-  it("atualiza uma vez por janela que passou (cap 4/dia)", () => {
-    let last = brt(2026, 6, 12, 18, 0); // última = sexta
-    // 10:31 → passou a janela das 10:30 → atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 10, 31))).toBe(true);
-    last = brt(2026, 6, 15, 10, 31); // marcou
-    // 11:00 → ainda na mesma janela → NÃO atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 11, 0))).toBe(false);
-    // 12:31 → janela das 12:30 → atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 12, 31))).toBe(true);
-    last = brt(2026, 6, 15, 14, 31); // marcou na janela das 14:30
-    // 18:01 → janela do fechamento (18h) → atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 1))).toBe(true);
-    last = brt(2026, 6, 15, 18, 5); // pegou o fechamento
-    // 18:30 → sem mais janelas → NÃO atualiza
-    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 30))).toBe(false);
+  it("durante o pregão, atualiza só depois de passar 1h da última", () => {
+    const last = brt(2026, 6, 15, 11, 0); // marcou às 11:00
+    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 11, 45))).toBe(false); // 45min → ainda não
+    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 12, 1))).toBe(true); // 1h01 → atualiza
   });
 
-  it("abrindo no meio do dia, faz só UMA atualização (não uma por janela perdida)", () => {
-    const prev = brt(2026, 6, 12, 18, 0);
-    // 13:00 (passaram 10:30 e 12:30): due=true (uma busca cobre a última janela)
-    expect(isQuoteRefreshDue(prev, brt(2026, 6, 15, 13, 0))).toBe(true);
-    const after = brt(2026, 6, 15, 13, 0);
-    // mesma sessão, 13:30: já cobriu a janela das 12:30 → não busca de novo até 14:30
-    expect(isQuoteRefreshDue(after, brt(2026, 6, 15, 13, 30))).toBe(false);
-    expect(isQuoteRefreshDue(after, brt(2026, 6, 15, 14, 31))).toBe(true);
+  it("captura o fechamento (18:00–18:15) se passou 1h da última", () => {
+    const last = brt(2026, 6, 15, 16, 50); // marcou às 16:50
+    expect(isQuoteRefreshDue(last, brt(2026, 6, 15, 18, 5))).toBe(true); // 18:05, >1h → atualiza
   });
 });

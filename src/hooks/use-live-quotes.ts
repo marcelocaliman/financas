@@ -5,9 +5,9 @@ import { proApi } from "@/lib/pro-api";
 let cached: boolean | null = null;
 
 /**
- * Pode receber cotação ao vivo? admin SEMPRE (brapi free, 4×/dia); assinante do Pro
- * Investidor só quando a flag 'quotes_live' estiver ON. Espelha o cache-por-sessão do
- * useIsAdmin/useIsPro (resolve no unlock, zera ao travar).
+ * Pode receber cotação automática? admin SEMPRE (brapi free); assinante do Pro Investidor
+ * só quando a flag 'quotes_live' estiver ON. Espelha o cache-por-sessão do useIsAdmin/useIsPro
+ * (resolve no unlock, zera ao travar).
  */
 export function useCanLiveQuotes(): boolean {
   const status = useVault((s) => s.status);
