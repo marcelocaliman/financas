@@ -343,13 +343,6 @@
     .avatars-label .l2 { font-size: 12px; color: var(--muted); }
     .hist-quote { margin: 22px 0 0; padding-left: 16px; border-left: 2px solid var(--accent); font-size: clamp(16px, 2.1vw, 18.5px); line-height: 1.45; font-weight: 500; color: var(--text); font-style: italic; }
     .hist-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-    /* Nota do fundador SEM rosto: carta assinada (monograma + nome + site), num bloco legível. */
-    #porque .founder-note { max-width: 680px; margin: 0 auto; }
-    #porque .founder-note h2 { font-size: clamp(1.7rem, 3.5vw, 2.6rem); font-weight: 600; letter-spacing: -0.035em; line-height: 1.07; margin: 12px 0 0; }
-    #porque .founder-note > p { color: var(--muted); font-size: clamp(15px, 1.6vw, 17px); line-height: 1.62; margin: 18px 0 0; }
-    #porque .sig-card { display: inline-flex; align-items: center; gap: 12px; margin-top: 26px; padding: 11px 16px 11px 12px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
-    #porque .sig-mono { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 15px; flex-shrink: 0; font-family: var(--font-mono); }
-    #porque .sig-meta { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
 
     /* Persona */
     .persona-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 38px; }
@@ -729,22 +722,26 @@
   <!-- 3 · QUEM CONSTRUIU (texto + colagem de 3 fotos flutuantes) -->
   <section id="porque" style="background:var(--bg-2);border-block:1px solid var(--border)">
     <div class="wrap">
-      <div class="founder-note reveal">
-        <div class="eyebrow accent" data-i18n="hist.eyebrow">Construído por quem vive isso</div>
-        <h2 data-i18n="hist.h2">Eu construí isso porque eu precisava disso.</h2>
-        <p data-i18n="hist.p">Sou o Marcelo, desenvolvedor. Estou fazendo a mudança do Brasil pra Itália — não no papel, na vida real: conta nova lá, dinheiro entrando em moedas diferentes, remessa, Regime Forfettario, imposto dos dois lados, e a pergunta que não me largava — quanto eu realmente tenho, somando tudo? Tentei planilha, que não acompanhava. Tentei app gringo, que não entende real. Tentei app brasileiro, que não entende euro. Nenhum falava as duas línguas do meu dinheiro. Então parei de procurar e construí o que faltava: simples, completo, multimoeda de verdade, e privado a ponto de nem eu conseguir ver os seus números. A minha mudança é Brasil↔Itália — mas a dor é a mesma pra qualquer um cuja vida acontece entre moedas e países. Uso todo dia, e construo em aberto, ouvindo quem chega primeiro.</p>
-        <blockquote class="hist-quote" data-i18n="hist.quote">Nenhum falava as duas línguas do meu dinheiro.</blockquote>
-        <div class="hist-chips">
-          <span class="chip chip-neutral" data-i18n="hist.c1">Vida em duas moedas</span>
-          <span class="chip chip-neutral" data-i18n="hist.c2">Multimoeda de verdade</span>
-          <span class="chip chip-neutral" data-i18n="hist.c3">Imposto nos 2 lados</span>
-          <span class="chip chip-neutral" data-i18n="hist.c4">Privado por E2EE</span>
+      <div class="feature">
+        <div class="reveal from-l">
+          <figure class="photo" style="margin:0;aspect-ratio:1/1">
+            <img src="/img/v2/scene-global.jpg" alt="Um globo iluminado — a vida e o dinheiro acontecendo entre países" loading="lazy" width="959" height="639" style="object-position:center" />
+          </figure>
         </div>
-        <div class="sig-card">
-          <span class="sig-mono">M</span>
-          <span class="sig-meta"><span data-i18n="hist.sig">Marcelo · dev e fundador · Brasil → Itália</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></span>
+        <div class="copy reveal from-r">
+          <div class="eyebrow accent" data-i18n="hist.eyebrow">Construído por quem vive isso</div>
+          <h2 data-i18n="hist.h2">Eu construí isso porque eu precisava disso.</h2>
+          <p data-i18n="hist.p">Sou o Marcelo, desenvolvedor. Estou fazendo a mudança do Brasil pra Itália — não no papel, na vida real: conta nova lá, dinheiro entrando em moedas diferentes, remessa, Regime Forfettario, imposto dos dois lados, e a pergunta que não me largava — quanto eu realmente tenho, somando tudo? Tentei planilha, que não acompanhava. Tentei app gringo, que não entende real. Tentei app brasileiro, que não entende euro. Nenhum falava as duas línguas do meu dinheiro. Então parei de procurar e construí o que faltava: simples, completo, multimoeda de verdade, e privado a ponto de nem eu conseguir ver os seus números. A minha mudança é Brasil↔Itália — mas a dor é a mesma pra qualquer um cuja vida acontece entre moedas e países. Uso todo dia, e construo em aberto, ouvindo quem chega primeiro.</p>
+          <blockquote class="hist-quote" data-i18n="hist.quote">Nenhum falava as duas línguas do meu dinheiro.</blockquote>
+          <div class="hist-chips">
+            <span class="chip chip-neutral" data-i18n="hist.c1">Vida em duas moedas</span>
+            <span class="chip chip-neutral" data-i18n="hist.c2">Multimoeda de verdade</span>
+            <span class="chip chip-neutral" data-i18n="hist.c3">Imposto nos 2 lados</span>
+            <span class="chip chip-neutral" data-i18n="hist.c4">Privado por E2EE</span>
+          </div>
+          <div class="eyebrow" style="margin-top:22px"><span data-i18n="hist.sig">Marcelo · dev e fundador · Brasil → Itália</span> · <a class="link-accent" href="https://mcaliman.com" target="_blank" rel="noopener">mcaliman.com</a></div>
+          <div style="margin-top:16px"><a class="link-accent" href="#como-funciona" data-i18n="hist.cta">Veja como funciona →</a></div>
         </div>
-        <div style="margin-top:18px"><a class="link-accent" href="#como-funciona" data-i18n="hist.cta">Veja como funciona →</a></div>
       </div>
     </div>
   </section>
