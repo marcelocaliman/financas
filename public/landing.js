@@ -395,7 +395,7 @@
 })();
 
 /* Lista de espera do Pro Investidor (modo "Em breve"): capta email → /api/waitlist, com Turnstile
-   invisível carregado SOB DEMANDA (o formulário de contato não existe nesta página). */
+   invisível carregado SÓ na 1ª interação (não pesa terceiro em quem só passa, nem no modo "Assinar"). */
 (function () {
   var form = document.getElementById("invWaitForm");
   if (!form) return;
@@ -405,7 +405,7 @@
   var statusEl = document.getElementById("invWaitStatus");
   var tsId = null, tsReady = false, resolveToken = null;
 
-  function ensureTurnstile(cb) {
+  function loadScript(cb) {
     if (window.turnstile) return cb();
     if (document.querySelector('script[src*="turnstile/v0/api.js"]')) {
       var iv = setInterval(function () { if (window.turnstile) { clearInterval(iv); cb(); } }, 120);
@@ -414,30 +414,40 @@
     }
     var s = document.createElement("script");
     s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-    s.async = true; s.defer = true;
-    s.onload = cb;
+    s.async = true; s.defer = true; s.onload = cb;
     document.head.appendChild(s);
   }
-  ensureTurnstile(function () {
-    try {
-      tsId = window.turnstile.render("#invTs", {
-        sitekey: SITE_KEY, size: "invisible",
-        callback: function (tok) { if (resolveToken) resolveToken(tok); },
-        "error-callback": function () { if (resolveToken) resolveToken(null); },
-        "timeout-callback": function () { if (resolveToken) resolveToken(null); },
-      });
-      tsReady = true;
-    } catch (e) {}
-  });
-  function getToken() {
-    return new Promise(function (resolve) {
-      if (!tsReady || !window.turnstile || tsId == null) return resolve(null);
-      resolveToken = resolve;
-      try { window.turnstile.reset(tsId); window.turnstile.execute(tsId); }
-      catch (e) { resolveToken = null; return resolve(null); }
-      setTimeout(function () { if (resolveToken === resolve) { resolveToken = null; resolve(null); } }, 9000);
+  /* Lazy: carrega o script e renderiza o widget invisível só quando o usuário interage. */
+  function ensureWidget(cb) {
+    if (tsReady) return cb();
+    loadScript(function () {
+      if (tsId == null && window.turnstile) {
+        try {
+          tsId = window.turnstile.render("#invTs", {
+            sitekey: SITE_KEY, size: "invisible",
+            callback: function (tok) { if (resolveToken) resolveToken(tok); },
+            "error-callback": function () { if (resolveToken) resolveToken(null); },
+            "timeout-callback": function () { if (resolveToken) resolveToken(null); },
+          });
+        } catch (e) {}
+      }
+      tsReady = !!(window.turnstile && tsId != null);
+      cb();
     });
   }
+  function getToken() {
+    return new Promise(function (resolve) {
+      ensureWidget(function () {
+        if (!tsReady) return resolve(null);
+        resolveToken = resolve;
+        try { window.turnstile.reset(tsId); window.turnstile.execute(tsId); }
+        catch (e) { resolveToken = null; return resolve(null); }
+        setTimeout(function () { if (resolveToken === resolve) { resolveToken = null; resolve(null); } }, 9000);
+      });
+    });
+  }
+  // Pré-aquece o widget quando o usuário foca o campo (fica pronto no envio), uma vez só.
+  emailEl.addEventListener("focus", function () { ensureWidget(function () {}); }, { once: true });
 
   var l = (document.documentElement.lang || "pt").toLowerCase();
   var lang = l.indexOf("en") === 0 ? "en" : "pt";

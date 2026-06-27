@@ -78,12 +78,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({ email, lang }),
     });
-    if (!r.ok && r.status !== 409) {
-      // Não vaza erro interno; trata como sucesso best-effort (o usuário não precisa saber).
-      return json(res, 200, { ok: true });
-    }
-    return json(res, 200, { ok: true });
-  } catch {
-    return json(res, 200, { ok: true });
+    // 2xx = inserido (ou no-op idempotente do ignore-duplicates); 409 = duplicado bruto. Ambos OK.
+    if (r.ok || r.status === 409) return json(res, 200, { ok: true });
+    // Falha REAL (5xx/RLS/schema): NÃO finge sucesso — senão o email some e o contador de demanda
+    // (a razão da feature) corrompe. Loga só o STATUS (nunca corpo/segredo) e devolve erro genérico
+    // pro cliente reabilitar o botão e pedir pra tentar de novo.
+    console.warn("waitlist insert failed:", r.status);
+    return json(res, 502, { ok: false, error: "store" });
+  } catch (e) {
+    console.warn("waitlist insert error:", e && e.name);
+    return json(res, 502, { ok: false, error: "store" });
   }
 }
