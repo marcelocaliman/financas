@@ -51,7 +51,12 @@ export default function Historico() {
     const contributions = sorted.slice(1).reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
     // Rendimento = crescimento que NÃO veio de aporte (o "trabalho do dinheiro").
     const yieldGain = growth - contributions;
-    return { sorted, series, current, growth, change, contributions, yieldGain, months: series.length, first, last, hasTrend: series.length >= 2 };
+    const hasTrend = series.length >= 2;
+    // "Não reconciliado": você poupou (aporte > 0) MAIS do que o patrimônio capturado cresceu.
+    // Aí o rendimento negativo seria só o aporte que ainda não apareceu nos ativos — não uma
+    // perda de mercado. Não dá pra separar aporte de rendimento com honestidade; sinalizamos.
+    const unreconciled = hasTrend && contributions > 0.5 && contributions > growth + 0.5;
+    return { sorted, series, current, growth, change, contributions, yieldGain, months: series.length, first, last, hasTrend, unreconciled };
   }, [data, disp, rates, lang]);
 
   if (!data || !view) {
@@ -95,12 +100,19 @@ export default function Historico() {
         <Kpi label={t("historico.contributions")} value={view.hasTrend ? <Money value={view.contributions} currency={disp} /> : "—"} sub={t("historico.contributionsSub")} />
         <Kpi
           label={t("historico.return")}
-          value={view.hasTrend ? <Money value={view.yieldGain} currency={disp} options={{ signDisplay: "always" }} /> : "—"}
-          tone={yieldUp ? "accent" : "neg"}
-          sub={t("historico.returnSub")}
+          // Não reconciliado → "—" neutro (não pinta de vermelho um resíduo que não é perda de mercado).
+          value={view.hasTrend && !view.unreconciled ? <Money value={view.yieldGain} currency={disp} options={{ signDisplay: "always" }} /> : "—"}
+          tone={view.unreconciled ? "text" : yieldUp ? "accent" : "neg"}
+          sub={view.unreconciled ? t("historico.returnPendingSub") : t("historico.returnSub")}
         />
         <Kpi label={t("historico.period")} value={t("historico.monthsValue", { n: view.months })} sub={view.first && view.last ? `${view.first.label} → ${view.last.label}` : "—"} />
       </div>
+
+      {view.unreconciled ? (
+        <div className="rounded-[14px] border border-border bg-card2 px-4 py-3 text-[12.5px] text-muted leading-relaxed">
+          {t("historico.reconcileHint")}
+        </div>
+      ) : null}
 
       {view.hasTrend ? (
         <Tile className="p-6 md:p-7">

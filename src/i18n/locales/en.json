@@ -192,6 +192,8 @@
     "growth": "Total growth",
     "return": "Return",
     "returnSub": "money at work",
+    "returnPendingSub": "contribution not yet reflected",
+    "reconcileHint": "You saved more in your budget than your captured net worth grew — so this month's return can't be computed yet. The gap may sit in an account that isn't in Net Worth, the snapshot may have been taken before the money landed, or there was market/FX movement.",
     "contributionsSub": "out of pocket",
     "period": "Period",
     "monthsValue": "{{n}} months",

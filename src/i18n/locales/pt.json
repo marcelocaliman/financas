@@ -192,6 +192,8 @@
     "growth": "Crescimento total",
     "return": "Rendimento",
     "returnSub": "trabalho do dinheiro",
+    "returnPendingSub": "aporte ainda não refletido",
+    "reconcileHint": "Você poupou mais no orçamento do que o patrimônio capturado cresceu — então o rendimento do mês ainda não dá pra calcular. A diferença pode estar numa conta que não está no Patrimônio, o registro pode ter sido tirado antes do dinheiro entrar, ou houve variação de mercado/câmbio.",
     "contributionsSub": "do seu bolso",
     "period": "Período",
     "monthsValue": "{{n}} meses",
