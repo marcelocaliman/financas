@@ -158,21 +158,83 @@
     requestAnimationFrame(step);
   }
 
+  // ── EXTRAS DO HERO (extensão): gráfico, alocação por CLASSE (donut) e por MOEDA (BRL/EUR), e os
+  //    anéis Liberdade/Saúde — COUPLED (cada alocação soma 100%) e mais devagar que os números. Lê
+  //    a base do DOM e oscila PERTO dela (mean-revert): não foge, não dessincroniza, pausa junto.
+  var lastExtras = 0;
+  var heroExtras = (function () {
+    var mock = document.querySelector(".hero-mock");
+    if (!mock || reduceMotion) return null;
+    function rw(cur, base, amp, lo, hi) {
+      cur += (Math.random() - 0.5) * amp + (base - cur) * 0.1; // ruído + puxão de volta à base
+      return cur < lo ? lo : cur > hi ? hi : cur;
+    }
+    var COLS = ["#3ECF8E", "#5FB394", "#8A8F98", "#6E7682", "#4B5159"];
+    var donutEl = mock.querySelector(".mk-donut-ring");
+    var legVals = [].slice.call(mock.querySelectorAll(".mk-legend .vl"));
+    var clsBase = legVals.map(function (v) { return parseFloat(v.textContent) || 0; }), clsCur = clsBase.slice();
+    var comp = mock.querySelector(".comp"), compSpans = comp ? [].slice.call(comp.children) : [];
+    var chipNs = [].slice.call(mock.querySelectorAll(".chip .hx-n"));
+    var curBase = chipNs.map(function (n) { return parseFloat(n.textContent) || 0; }), curCur = curBase.slice();
+    compSpans.forEach(function (s) { s.style.transition = "width 1.2s ease"; });
+    var gauges = [].slice.call(mock.querySelectorAll(".hm-statgrid .mk-stat")).map(function (st) {
+      var cs = st.querySelectorAll("circle"), ring = cs[cs.length - 1], txt = st.querySelector(".mk-ring-v");
+      var dash = parseFloat(ring.getAttribute("stroke-dasharray")) || 119.4;
+      var base = (1 - parseFloat(ring.getAttribute("stroke-dashoffset")) / dash) * 100;
+      ring.style.transition = "stroke-dashoffset 1.2s ease";
+      return { ring: ring, txt: txt, dash: dash, base: base, cur: base, pct: !!(txt && txt.textContent.indexOf("%") >= 0) };
+    });
+    var spark = mock.querySelector(".spark"), paths = spark ? spark.querySelectorAll("path") : [], baseY = [];
+    if (paths.length) { var mm, re = /[ML]\s*[\d.]+,([\d.]+)/g, dl = paths[paths.length - 1].getAttribute("d"); while ((mm = re.exec(dl))) baseY.push(parseFloat(mm[1])); }
+    var curY = baseY.slice();
+    function tick() {
+      if (donutEl && legVals.length) {
+        for (var i = 0; i < clsCur.length; i++) clsCur[i] = rw(clsCur[i], clsBase[i], clsBase[i] * 0.1, 2, 60);
+        var s = 0; for (var a = 0; a < clsCur.length; a++) s += clsCur[a];
+        var acc = 0, stops = [];
+        for (var j = 0; j < clsCur.length; j++) { var p = clsCur[j] / s * 100, from = acc; acc += p; stops.push(COLS[j] + " " + from.toFixed(1) + "% " + (j === clsCur.length - 1 ? "100" : acc.toFixed(1)) + "%"); legVals[j].textContent = Math.round(p) + "%"; }
+        donutEl.style.background = "conic-gradient(" + stops.join(", ") + ")";
+      }
+      if (chipNs.length === 2) {
+        curCur[0] = rw(curCur[0], curBase[0], 1.6, 52, 74);
+        var brl = Math.round(curCur[0]), eur = 100 - brl;
+        chipNs[0].textContent = brl; chipNs[1].textContent = eur;
+        if (compSpans.length >= 2) { compSpans[0].style.width = brl + "%"; compSpans[1].style.width = eur + "%"; }
+      }
+      for (var g = 0; g < gauges.length; g++) {
+        var gg = gauges[g];
+        gg.cur = rw(gg.cur, gg.base, gg.base * 0.06, Math.max(3, gg.base - 7), Math.min(99, gg.base + 7));
+        if (gg.ring) gg.ring.setAttribute("stroke-dashoffset", (gg.dash * (1 - gg.cur / 100)).toFixed(1));
+        if (gg.txt) gg.txt.textContent = gg.pct ? Math.round(gg.cur) + "%" : String(Math.round(gg.cur));
+      }
+      if (paths.length && baseY.length) {
+        for (var k = 0; k < curY.length; k++) curY[k] = rw(curY[k], baseY[k], 2.2, 8, 92);
+        var ln = "M0," + curY[0].toFixed(1);
+        for (var x = 1; x < curY.length; x++) ln += " L" + (x * 32) + "," + curY[x].toFixed(1);
+        if (paths[1]) paths[1].setAttribute("d", ln);
+        if (paths[0]) paths[0].setAttribute("d", ln + " L320,98 L0,98 Z");
+      }
+    }
+    return { tick: tick };
+  })();
+
   function liveLoop() {
     if (livePaused) { liveRunning = false; return; } // fica IDLE enquanto pausado (sem timer girando)
     for (var i = 0; i < liveEls.length; i++) {
       var o = liveEls[i], amp = o.grow ? 1 : 0.5;
       o.vel += (Math.random() - 0.5) * o.base * 0.0001 * amp;       // ruído
-      if (o.grow) o.vel += o.base * 0.000006;                       // viés de alta (só patrimônio)
+      if (o.grow) o.vel += o.base * 0.0000045;                      // viés de alta SUAVE (só patrimônio)
       o.vel *= 0.86;                                                 // amortecimento
-      if (Math.random() < 0.03) o.vel += Math.random() * o.base * 0.0008 * amp; // rajada ocasional
+      // rajada ocasional BIDIRECIONAL: na maioria sobe, mas ÀS VEZES CAI um pouco (mais realista).
+      if (Math.random() < 0.045) o.vel += (Math.random() - 0.42) * o.base * 0.0016 * amp;
       o.value += o.vel;
-      var floor = o.base * (o.grow ? 0.997 : 0.985);
+      var floor = o.base * (o.grow ? 0.982 : 0.985);                // grow pode recuar até ~-1,8%
       var ceil = o.base * (o.grow ? 1.08 : 1.02);
       if (o.value < floor) { o.value = floor; o.vel = Math.abs(o.vel) * 0.4; }
       if (o.value > ceil) { o.value = ceil; o.vel = -Math.abs(o.vel) * 0.4; }
       o.el.textContent = fmtNum(o.value, o.dec);
     }
+    if (heroExtras) { var te = Date.now(); if (te - lastExtras > 1600) { lastExtras = te; heroExtras.tick(); } }
     setTimeout(liveLoop, 70 + Math.random() * 150); // ritmo variável
   }
 
