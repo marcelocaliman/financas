@@ -115,6 +115,7 @@
     .pos { color: var(--accent); } .negc { color: var(--neg); }
 
     /* Header */
+    html { scroll-padding-top: 90px; } /* âncoras (#seção) caem ABAIXO do header sticky, não atrás */
     header.site { position: sticky; top: 0; z-index: 50; padding: 14px var(--gutter) 0; }
     .headrow { max-width: var(--maxw-wide); margin: 0 auto; display: flex; align-items: center; gap: 12px; }
     .nav { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 58px; padding: 0 10px 0 18px;

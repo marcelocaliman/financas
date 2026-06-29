@@ -24,11 +24,18 @@
   function closeMenu() { if (drop) drop.classList.remove("open"); if (menu) menu.hidden = true; if (lbtn) lbtn.setAttribute("aria-expanded", "false"); }
   function openMenu() { if (drop) drop.classList.add("open"); if (menu) menu.hidden = false; if (lbtn) lbtn.setAttribute("aria-expanded", "true"); }
   if (lbtn) lbtn.addEventListener("click", function (e) { e.stopPropagation(); (menu && menu.hidden) ? openMenu() : closeMenu(); });
+  // Seção em vista (última cujo topo já passou o header) — pra trocar de idioma SEM perder o lugar:
+  // a outra URL (/, /en) abre na MESMA seção, não no topo. Só client-side (âncora #) → zero SEO.
+  function sectionHash() {
+    var secs = document.querySelectorAll("section[id]"), id = "";
+    for (var i = 0; i < secs.length; i++) { if (secs[i].getBoundingClientRect().top - 90 <= 0) id = secs[i].id; }
+    return id && id !== "topo" ? "#" + id : "";
+  }
   [].forEach.call(document.querySelectorAll(".langmenu button"), function (b) {
     b.addEventListener("click", function () {
       var to = b.getAttribute("data-lang");
       try { localStorage.setItem("nf_lang", to); } catch (e) {}
-      if (to !== lang) window.location.href = URLS[to] || "/"; else closeMenu();
+      if (to !== lang) window.location.href = (URLS[to] || "/") + sectionHash(); else closeMenu();
     });
   });
   document.addEventListener("click", function (e) { if (drop && !drop.contains(e.target)) closeMenu(); });
@@ -40,7 +47,7 @@
   if (lang === "pt" && location.pathname === "/") {
     var saved = null;
     try { saved = localStorage.getItem("nf_lang"); } catch (e) {}
-    if (saved === "en") location.replace(URLS.en);
+    if (saved === "en") location.replace(URLS.en + location.hash);
   }
 
   var y = document.getElementById("year");
