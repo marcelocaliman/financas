@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useVault } from "@/vault/vault-store";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -35,6 +35,13 @@ export default function App() {
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, [syncFromPath]);
+
+  // Ao VOLTAR do painel admin pro app, sempre começa no topo (não herda o scroll do admin).
+  const prevAdminOpen = useRef(adminOpen);
+  useEffect(() => {
+    if (prevAdminOpen.current && !adminOpen) window.scrollTo({ top: 0 });
+    prevAdminOpen.current = adminOpen;
+  }, [adminOpen]);
 
   // "Online agora": pinga enquanto houver sessão AUTENTICADA (travada ou destravada),
   // não só no app destravado — assim o contador acusa quem está logado de verdade.

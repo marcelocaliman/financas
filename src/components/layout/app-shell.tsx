@@ -58,17 +58,6 @@ export function AppShell() {
   const [pageShow, setPageShow] = useState(!configOpen);
   const [cfgShow, setCfgShow] = useState(configOpen);
   const first = useRef(true);
-  // Última posição de rolagem da PÁGINA (só rastreada enquanto a Config está fechada). Ao abrir
-  // a Config vamos pro topo; ao fechar (sem navegação) voltamos exatamente pra onde o usuário estava.
-  const pageScroll = useRef(0);
-  useEffect(() => {
-    if (configOpen) return;
-    const onScroll = () => {
-      pageScroll.current = window.scrollY;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [configOpen]);
 
   useEffect(() => {
     if (first.current) {
@@ -78,12 +67,12 @@ export function AppShell() {
     // Ao fechar vindo da navegação, a seção pendente é consumida uma vez (decide o destino do scroll).
     const pending = configOpen ? null : consumePendingNav();
     // Reset de scroll INSTANTÂNEO (ignora o scroll-behavior:smooth global) pra não brigar com o
-    // slide: abrir → topo (Config começa do topo); fechar c/ navegação → topo (rola pra seção
-    // depois); fechar simples → restaura a posição anterior da página.
+    // slide: abrir → topo; fechar c/ navegação → topo (rola pra seção depois); fechar simples
+    // (Voltar ao app) → topo também. Ao trocar entre app e Config sempre começamos no topo.
     const html = document.documentElement;
     const prevSB = html.style.scrollBehavior;
     html.style.scrollBehavior = "auto";
-    window.scrollTo({ top: configOpen || pending ? 0 : pageScroll.current });
+    window.scrollTo({ top: 0 });
     html.style.scrollBehavior = prevSB;
 
     // No próximo frame, viramos os transforms: o alvo entra, o outro sai.
