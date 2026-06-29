@@ -6,7 +6,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
-import { currencyBreakdown, currencyColors, categoryColors } from "@/money/composition";
+import { currencyBreakdown, currencyColors, categoryColors, expenseColors } from "@/money/composition";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useLiberdade } from "@/hooks/use-liberdade";
 import { useHealth } from "@/hooks/use-health";
@@ -45,7 +45,8 @@ function usePainelView() {
   const colors = currencyColors(theme);
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
   const axisColor = theme === "dark" ? "#5f646c" : "#8a8f98";
-  const CAT_COLORS = categoryColors(theme);
+  const CAT_COLORS = categoryColors(theme); // alocação/patrimônio = rampa verde→cinza
+  const EXP_COLORS = expenseColors(theme); // gastos = rampa quente/vermelha (dinheiro que SAI)
 
   const monthLabel = useMemo(() => {
     const m = new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date());
@@ -108,7 +109,7 @@ function usePainelView() {
     };
   }, [data, disp, rates, tax, t]);
 
-  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, monthLabel, view, health };
+  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, EXP_COLORS, monthLabel, view, health };
 }
 
 /** Faixa qualitativa do score de saúde (mesma régua do card da Liberdade). */
@@ -205,7 +206,7 @@ export function DashboardHero() {
 
 /** Dashboard (abaixo do hero): gráfico + stats, depois orçamento + posições. */
 export function DashboardDetail() {
-  const { t, disp, tax, accent, CAT_COLORS, monthLabel, view } = usePainelView();
+  const { t, disp, tax, accent, CAT_COLORS, EXP_COLORS, monthLabel, view } = usePainelView();
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
@@ -275,8 +276,8 @@ export function DashboardDetail() {
           <StatTile label={t("dashboard.assets")} value={money(view.totalAssets)} sub={t("dashboard.positionsCount", { count: view.assetsDisp.length })} />
           <StatTile label={t("dashboard.invested")} value={money(view.invested)} sub={t("dashboard.financial")} />
           <StatTile label={t("dashboard.monthlyIncome")} value={money(view.totalInc)} sub={t("dashboard.sources", { count: view.incomeCount })} positive />
-          <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes >= 0} />
-          <StatTile label={t("dashboard.savingsRate")} value={`${Math.round(view.savingsRate)}%`} sub={t("dashboard.savingsRateSub")} positive={view.savingsRate >= 0} />
+          <StatTile label={t("dashboard.monthlyBalance")} value={money(view.saldoMes)} sub={monthLabel} positive={view.saldoMes > 0} negative={view.saldoMes < 0} />
+          <StatTile label={t("dashboard.savingsRate")} value={`${Math.round(view.savingsRate)}%`} sub={t("dashboard.savingsRateSub")} positive={view.savingsRate > 0} negative={view.savingsRate < 0} />
           <StatTile
             label={t("dashboard.reserve")}
             value={view.reserveMonths != null ? t("dashboard.reserveMonths", { n: view.reserveMonths.toFixed(1) }) : "—"}
@@ -299,7 +300,7 @@ export function DashboardDetail() {
                 <PieChart>
                   <Pie data={view.expDisp} dataKey="value" nameKey="name" innerRadius={45} outerRadius={65} paddingAngle={2} stroke="none">
                     {view.expDisp.map((e, i) => (
-                      <Cell key={e.id} fill={CAT_COLORS[i % CAT_COLORS.length]} />
+                      <Cell key={e.id} fill={EXP_COLORS[i % EXP_COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }} />
@@ -316,7 +317,7 @@ export function DashboardDetail() {
               {view.expDisp.map((e, i) => (
                 <div key={e.id} className="flex items-center justify-between text-[12.5px]">
                   <span className="flex items-center gap-2 text-muted truncate">
-                    <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: CAT_COLORS[i % CAT_COLORS.length] }} />
+                    <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: EXP_COLORS[i % EXP_COLORS.length] }} />
                     {e.name}
                   </span>
                   <Money value={e.value} currency={disp} className="font-medium" />
@@ -425,12 +426,12 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
   );
 }
 
-function StatTile({ label, value, sub, positive, wide }: { label: string; value: string; sub?: string; positive?: boolean; wide?: boolean }) {
+function StatTile({ label, value, sub, positive, negative, wide }: { label: string; value: string; sub?: string; positive?: boolean; negative?: boolean; wide?: boolean }) {
   const hidden = useUI((s) => s.numbersHidden);
   return (
     <div className={cn("p-5", CARD, wide && "col-span-2")}>
       <Eyebrow>{label}</Eyebrow>
-      <div className={cn("font-numeric font-semibold text-[22px] tracking-[-0.02em] tabular mt-2", positive ? "text-accent" : "text-text")}>
+      <div className={cn("font-numeric font-semibold text-[22px] tracking-[-0.02em] tabular mt-2", negative ? "text-neg" : positive ? "text-accent" : "text-text")}>
         {hidden ? "••••" : value}
       </div>
       {sub ? <div className="text-[11.5px] text-faint mt-1">{sub}</div> : null}
