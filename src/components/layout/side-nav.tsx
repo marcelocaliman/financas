@@ -103,7 +103,8 @@ export function SideNav({ active }: { active: string }) {
   const sectionIds = configOpen
     ? CONFIG_NAV_ITEMS.map((c) => c.id)
     : NAV_ITEMS.slice(1).map((n) => n.id);
-  const allOpen = sectionIds.length > 0 && sectionIds.every((id) => openSections[id]);
+  // "anyOpen": alguma seção aberta? Se SIM, o botão fecha TUDO (e sobe ao topo); se nenhuma, abre TUDO.
+  const anyOpen = sectionIds.some((id) => openSections[id]);
 
   // Itens normalizados das duas listas (página × Config) — renderizadas em cross-slide.
   const pageItems = NAV_ITEMS.map((n) => ({
@@ -221,12 +222,15 @@ export function SideNav({ active }: { active: string }) {
           {!collapsed ? <Eyebrow>{t("menu.sections")}</Eyebrow> : null}
           <button
             type="button"
-            onClick={() => setManySections(sectionIds, !allOpen)}
-            aria-label={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
-            title={allOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            onClick={() => {
+              setManySections(sectionIds, !anyOpen);
+              if (anyOpen) window.scrollTo({ top: 0, behavior: "smooth" }); // fechou tudo → volta ao início
+            }}
+            aria-label={anyOpen ? t("menu.collapseAll") : t("menu.expandAll")}
+            title={anyOpen ? t("menu.collapseAll") : t("menu.expandAll")}
             className="grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
-            {allOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
+            {anyOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
           </button>
         </div>
 
