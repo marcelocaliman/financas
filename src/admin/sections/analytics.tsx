@@ -52,12 +52,28 @@ export function AnalyticsSection({ days }: { days: number }) {
         {ov.data ? (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Stat label={<><Eye size={11} className="inline mr-1 -mt-0.5" />Visitas (landing)</>} value={fmtInt(ov.data.landing_views)} sub={`${fmtInt(ov.data.unique_visitors)} visitantes únicos`} />
+              <Stat label={<><Eye size={11} className="inline mr-1 -mt-0.5" />Visitas (landing)</>} value={fmtInt(ov.data.landing_views)} sub="acessos (com repetições)" />
               <Stat label={<><MousePointerClick size={11} className="inline mr-1 -mt-0.5" />Cliques CTA</>} value={fmtInt(ov.data.cta_clicks)} />
               <Stat label={<><UserPlus size={11} className="inline mr-1 -mt-0.5" />Cadastros</>} value={fmtInt(ov.data.signups)} tone="accent" />
               <Stat label={<><LogIn size={11} className="inline mr-1 -mt-0.5" />Logins</>} value={fmtInt(ov.data.logins)} />
               <Stat label={<><Smartphone size={11} className="inline mr-1 -mt-0.5" />Aberturas do app</>} value={fmtInt(ov.data.app_opens)} />
             </div>
+
+            <AdminCard title="Visitantes" className="mt-5">
+              <div className="flex items-baseline gap-2">
+                <span className="font-numeric font-semibold tabular text-[26px] leading-none">{fmtInt(ov.data.unique_visitors)}</span>
+                <span className="text-[12px] text-muted">pessoas únicas no período</span>
+              </div>
+              <SplitBar
+                parts={[
+                  { label: "Novos", value: ov.data.new_visitors, color: "var(--accent)" },
+                  { label: "Recorrentes", value: ov.data.returning_visitors, color: "var(--eur, #8a8f98)" },
+                ]}
+              />
+              <p className="text-[11px] text-faint mt-3 leading-relaxed">
+                Cada pessoa conta uma vez (por navegador, sem cookie). <b className="text-muted">Novo</b> = 1ª visita no período; <b className="text-muted">recorrente</b> = já tinha vindo antes.
+              </p>
+            </AdminCard>
 
             <AdminCard title="Funil de conversão" className="mt-5">
               <Funnel
@@ -207,6 +223,35 @@ function RankList({ rows }: { rows: { key: string; label: ReactNode; count: numb
           <span className="w-[44px] text-right text-[12px] font-semibold tabular">{fmtInt(r.count)}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Barra dividida (stacked) — proporção entre N partes, com legenda. Usada p/ novos × recorrentes. */
+function SplitBar({ parts }: { parts: { label: string; value: number; color: string }[] }) {
+  const total = Math.max(1, parts.reduce((s, p) => s + p.value, 0));
+  return (
+    <div className="mt-3.5">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-card2">
+        {parts.map((p, i) => (
+          <div
+            key={i}
+            className="h-full transition-[width] duration-700"
+            style={{ width: `${(p.value / total) * 100}%`, background: p.color }}
+            title={`${p.label}: ${fmtInt(p.value)}`}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+        {parts.map((p, i) => (
+          <span key={i} className="flex items-center gap-1.5 text-[12.5px]">
+            <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: p.color }} />
+            <span className="text-muted">{p.label}</span>
+            <span className="tabular font-semibold text-text">{fmtInt(p.value)}</span>
+            <span className="tabular text-faint">({Math.round((p.value / total) * 100)}%)</span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

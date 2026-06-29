@@ -78,6 +78,8 @@ export interface AnalyticsOverview {
   events_total: number;
   landing_views: number;
   unique_visitors: number;
+  new_visitors: number;
+  returning_visitors: number;
   cta_clicks: number;
   signups: number;
   logins: number;
