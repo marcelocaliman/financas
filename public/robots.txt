@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 Disallow: /app
+Disallow: /share
+Disallow: /ticket
 Disallow: /api/
 
 Sitemap: https://nossasfinancas.com.br/sitemap.xml
