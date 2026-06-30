@@ -24,6 +24,7 @@ import { Button } from "@/components/common/button";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { DailyFxLine } from "@/components/painel/daily-fx-line";
+import { NetWorthInCurrencies } from "@/components/painel/networth-in-currencies";
 import { cn } from "@/lib/utils";
 
 function firstName(email: string | null): string {
@@ -95,6 +96,7 @@ function usePainelView() {
       totalLiab,
       netWorth: totalAssets - totalLiab,
       curSegments: currencyBreakdown(data.assets, disp, rates),
+      currencies: [...new Set<Currency>([...data.assets, ...data.liabilities].map((x) => x.currency))],
       invested,
       expDisp,
       totalExp,
@@ -151,6 +153,7 @@ export function DashboardHero() {
             </div>
           ) : null}
           <DailyFxLine />
+          <NetWorthInCurrencies netWorth={view.netWorth} currencies={view.currencies} />
         </div>
         {lib?.ready ? (
           <button
