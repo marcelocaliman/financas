@@ -16,8 +16,8 @@ const I18N = JSON.parse(
 const META = {
   en: {
     lang: "en", ogLocale: "en_US", url: "/en", og: "/og-en.png",
-    title: "Nossas Finanças — multicurrency wealth, private & cross-border",
-    desc: "The complete dashboard to manage your wealth in any currency and country, with end-to-end encryption. The server never sees your numbers. Free, private and local-first.",
+    title: "Nossas Finanças — multicurrency wealth, private",
+    desc: "Your money in any currency, in one dashboard: net worth, budget and investments with end-to-end encryption — the server never sees your numbers.",
   },
 };
 
