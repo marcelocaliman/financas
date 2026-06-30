@@ -96,7 +96,6 @@ function usePainelView() {
       totalLiab,
       netWorth: totalAssets - totalLiab,
       curSegments: currencyBreakdown(data.assets, disp, rates),
-      currencies: [...new Set<Currency>([...data.assets, ...data.liabilities].map((x) => x.currency))],
       invested,
       expDisp,
       totalExp,
@@ -153,7 +152,7 @@ export function DashboardHero() {
             </div>
           ) : null}
           <DailyFxLine />
-          <NetWorthInCurrencies netWorth={view.netWorth} currencies={view.currencies} />
+          <NetWorthInCurrencies netWorth={view.netWorth} />
         </div>
         {lib?.ready ? (
           <button

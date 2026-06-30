@@ -1,19 +1,19 @@
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
-import { convert, CURRENCIES, type Currency } from "@/money/currency";
+import { convert, CURRENCIES } from "@/money/currency";
 import { Money } from "@/components/common/money";
 
 /**
- * O MESMO patrimônio líquido expresso nas OUTRAS moedas em que o usuário tem exposição (≈, pois é
- * conversão pela taxa do dia). Logo abaixo do número-herói, discreto e alinhado. Some quando não há
- * outra moeda. Valor financeiro → respeita o modo privado (<Money> mascara).
+ * O MESMO patrimônio líquido expresso nas OUTRAS moedas principais (≈, conversão pela taxa do dia)
+ * — "quanto eu valho em euro/dólar/libra", mesmo com tudo em uma moeda só. Logo abaixo do número-
+ * herói, discreto e alinhado. Valor financeiro → respeita o modo privado (<Money> mascara).
  */
-export function NetWorthInCurrencies({ netWorth, currencies }: { netWorth: number; currencies: Currency[] }) {
+export function NetWorthInCurrencies({ netWorth }: { netWorth: number }) {
   const display = useUI((s) => s.displayCurrency);
   const rates = useRates((s) => s.rates);
 
-  // Moedas com exposição real, exceto a de exibição (já é o número grande), em ordem estável.
-  const others = CURRENCIES.filter((c) => c !== display && currencies.includes(c));
+  // Todas as moedas principais, exceto a de exibição (que já é o número grande), em ordem estável.
+  const others = CURRENCIES.filter((c) => c !== display);
   if (others.length === 0) return null;
 
   return (
