@@ -138,7 +138,8 @@ export function DashboardHero() {
       </div>
       <RotatingPhrase />
 
-      <div className="flex flex-wrap items-end gap-x-14 gap-y-7 mt-10 lg:mt-11">
+      {/* Faixa 1 — patrimônio (esquerda) + conversões nas outras moedas (direita) */}
+      <div className="mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
         <div>
           <Eyebrow className="mb-2.5">{t("dashboard.netWorth")}</Eyebrow>
           <HeroNumber
@@ -152,8 +153,12 @@ export function DashboardHero() {
             </div>
           ) : null}
           <DailyFxLine />
-          <NetWorthInCurrencies netWorth={view.netWorth} />
         </div>
+        <NetWorthInCurrencies netWorth={view.netWorth} />
+      </div>
+
+      {/* Faixa 2 — Liberdade + Saúde + Composição, tudo numa linha */}
+      <div className="mt-8 flex flex-wrap items-center gap-x-12 gap-y-6">
         {lib?.ready ? (
           <button
             type="button"
