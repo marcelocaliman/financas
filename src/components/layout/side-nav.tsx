@@ -22,6 +22,7 @@ import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useRates } from "@/store/rates";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
+import { FxRatesCard } from "@/components/layout/fx-rates-card";
 import { convert, formatPercent, type Currency } from "@/money/currency";
 import { upcomingBills } from "@/domain/bills";
 import { Money } from "@/components/common/money";
@@ -95,7 +96,6 @@ export function SideNav({ active }: { active: string }) {
   const macro = useMacro(macroCountry); // o que está sendo EXIBIDO
   const macroMeta = MACRO_META[macroCountry];
   const hasMacro = !!(dispMacro && (dispMacro.rate != null || dispMacro.inflation != null));
-  const hasBills = !!g && g.billCount > 0;
   const suporteUnread = useMyTicketStats().unread;
 
   // Seções da VISÃO ativa: na página, todas menos o Painel (que é hero); na Config, as 6 (todas
@@ -158,9 +158,9 @@ export function SideNav({ active }: { active: string }) {
           </button>
         </div>
 
-        {/* Relance (só expandido): contas a vencer + juros/inflação. (O patrimônio líquido saiu —
-            redundante com o herói do Painel.) */}
-        {!collapsed && (hasBills || hasMacro) ? (
+        {/* Relance (só expandido): contas a vencer + juros/inflação + câmbio das moedas. (O
+            patrimônio líquido saiu — redundante com o herói do Painel.) */}
+        {!collapsed ? (
           <div className="px-3.5 pb-3.5 shrink-0 space-y-2.5">
             {g && g.billCount > 0 ? (
               <button
@@ -214,6 +214,9 @@ export function SideNav({ active }: { active: string }) {
                 </div>
               </div>
             ) : null}
+
+            {/* Câmbio das principais moedas contra a moeda PRINCIPAL do usuário, com a variação do dia */}
+            <FxRatesCard />
           </div>
         ) : null}
 

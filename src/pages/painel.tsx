@@ -23,6 +23,7 @@ import { ProgressRing } from "@/components/common/progress-ring";
 import { Button } from "@/components/common/button";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
+import { DailyFxLine } from "@/components/painel/daily-fx-line";
 import { cn } from "@/lib/utils";
 
 function firstName(email: string | null): string {
@@ -149,6 +150,7 @@ export function DashboardHero() {
               <Delta pct={view.nwChange} suffix={` ${t("dashboard.vsMonth")}`} />
             </div>
           ) : null}
+          <DailyFxLine />
         </div>
         {lib?.ready ? (
           <button
