@@ -270,8 +270,9 @@ export default function Orcamento() {
       {/* Contas a pagar / próximos vencimentos */}
       <UpcomingBillsTile />
 
-      {/* Mês selecionado: receitas e gastos por categoria — SEMPRE lado a lado (ghost quando vazio) */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      {/* Mês selecionado: receitas e gastos por categoria — SEMPRE lado a lado (ghost quando vazio).
+          items-start: cada card com altura NATURAL (não estica pra igualar o outro → sem vão). */}
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
         <CategoryDonut title={t("orcamento.incomeBreakdown")} data={view.incSlices} palette={CAT_INC} disp={disp} emptyLabel={t("orcamento.noIncomeMonth")} />
         <CategoryDonut title={t("orcamento.expenseBreakdown")} data={view.expSlices} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
       </div>
@@ -352,10 +353,13 @@ function CategoryDonut({
       </Tile>
     );
   }
+  // Legenda mais alta que o donut (>~5 itens) → alinha o donut ao TOPO (não flutua no meio);
+  // legenda curta → centraliza (fica mais equilibrado). Donut ≈ 5–6 linhas de legenda.
+  const align = data.length > 5 ? "items-start" : "items-center";
   return (
     <Tile className="p-6 md:p-7">
       <Eyebrow className="mb-4">{title}</Eyebrow>
-      <div className="flex items-center gap-6">
+      <div className={`flex ${align} gap-6`}>
         <div className="w-[128px] h-[128px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
