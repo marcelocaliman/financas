@@ -353,13 +353,10 @@ function CategoryDonut({
       </Tile>
     );
   }
-  // Legenda mais alta que o donut (>~5 itens) → alinha o donut ao TOPO (não flutua no meio);
-  // legenda curta → centraliza (fica mais equilibrado). Donut ≈ 5–6 linhas de legenda.
-  const align = data.length > 5 ? "items-start" : "items-center";
   return (
     <Tile className="p-6 md:p-7">
       <Eyebrow className="mb-4">{title}</Eyebrow>
-      <div className={`flex ${align} gap-6`}>
+      <div className="flex items-center gap-6">
         <div className="w-[128px] h-[128px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -375,8 +372,9 @@ function CategoryDonut({
             </PieChart>
           </ResponsiveContainer>
         </div>
-        {/* Legenda: itens SEMPRE empilhados (um embaixo do outro) — padrão consistente entre os cards. */}
-        <div className="flex flex-col gap-y-2 min-w-0">
+        {/* Legenda com altura FIXA (= a do donut) + rolagem sutil: o card fica do MESMO tamanho
+            com 3 ou 100 itens, e os dois cards (receitas/gastos) sempre alinhados. */}
+        <div className="flex flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1">
           {data.map((e, i) => (
             <div key={e.id} className="flex items-center gap-2.5 text-[12.5px]">
               <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
