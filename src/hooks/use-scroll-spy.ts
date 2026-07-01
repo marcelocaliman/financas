@@ -30,6 +30,10 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
         const el = document.getElementById(id);
         if (el && el.getBoundingClientRect().top - offsetTop <= 0) current = id;
       }
+      // No FIM da página, a última seção é a ativa — mesmo que ela não tenha altura suficiente
+      // pra cruzar a linha de offset (senão a penúltima fica "acesa" ao clicar na última).
+      const doc = document.documentElement;
+      if (window.innerHeight + window.scrollY >= doc.scrollHeight - 2) current = ids[ids.length - 1];
       setActive(current);
     };
     update();
