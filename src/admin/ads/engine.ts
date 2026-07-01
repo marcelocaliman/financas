@@ -20,6 +20,13 @@ const GLOW: Record<string, [number, number]> = {
   orcamento: [0.5, 0.4],
 };
 
+/** Textura de fundo temática por story ("currency" = símbolos de moeda; "dots" = dados cifrados). */
+const MOTIF: Record<string, "currency" | "dots"> = {
+  patrimonio: "currency",
+  privacidade: "dots",
+  orcamento: "currency",
+};
+
 export interface Scene {
   kind: "hook" | "networth" | "budget" | "privacy" | "cta";
   eyebrow?: string;
@@ -311,6 +318,43 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
   }
   ctx.restore();
   ctx.globalAlpha = 1;
+}
+
+/** Textura de fundo temática: campo de símbolos de moeda (ou "••••" cifrados) em baixa opacidade,
+ *  com leve deriva pra cima — dá vida ao frame sem competir com o conteúdo. */
+function drawMotif(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, t: number, kind: "currency" | "dots") {
+  const cols = 3, rows = 7, cw = W / cols, chh = H / (rows - 1);
+  const drift = t * 12 * s; // sobe devagar (num story não chega a repetir → sem "salto")
+  const glyphs = ["R$", "$", "€", "£"];
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  for (let r = 0; r <= rows + 1; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const px = c * cw + cw / 2 + (((idx * 53) % 70) - 35) * s;
+      const py = r * chh + chh / 2 - drift;
+      const rot = ((((idx * 41) % 36) - 18) * Math.PI) / 180;
+      const sz = (56 + ((idx * 23) % 46)) * s;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(rot);
+      if (kind === "currency") {
+        ctx.font = fontSans(sz, 700);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(glyphs[idx % glyphs.length], 0, 0);
+      } else {
+        const dr = sz * 0.1, gap = sz * 0.3;
+        for (let k = 0; k < 4; k++) {
+          ctx.beginPath();
+          ctx.arc((k - 1.5) * gap, 0, dr, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
 }
 
 /** Fundo persistente: quase-preto + glow verde suave que respira. */
@@ -611,6 +655,8 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   const s = W / 1080;
   const glow = GLOW[story.id] ?? [0.32, 0.22];
   drawBg(ctx, W, H, t, glow[0], glow[1]);
+  const motif = MOTIF[story.id];
+  if (motif) drawMotif(ctx, s, W, H, t, motif);
   const n = story.scenes.length;
   const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
   const lt = t - idx * SCENE_DUR;
