@@ -161,7 +161,6 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
   ctx.save();
   ctx.globalAlpha = a;
   ctx.translate(cx, cy);
-  ctx.rotate((-3 * Math.PI) / 180);
   const x = -w / 2, y = -h / 2;
   ctx.shadowColor = "rgba(0,0,0,0.55)";
   ctx.shadowBlur = 70 * s;
@@ -444,8 +443,11 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
     if (sc.mock) {
       // O APP: mockup em cima + legenda (título menor + sub) embaixo.
       const pop = easeOut(clamp01((lt - 0.15) / 0.85));
-      const cardY = H * 0.32 + (1 - pop) * 30 * s;
-      drawMockCard(ctx, s, W / 2, cardY, 540 * s, sc.mock, a * (0.3 + 0.7 * pop), lt);
+      const cardY = H * 0.31 + (1 - pop) * 30 * s;
+      // Card maior e RETO. Largura de design 700 (era 540); passo o s proporcional pra o conteúdo
+      // (números, barras, donut) escalar junto e manter o mesmo preenchimento do card.
+      const D = 700;
+      drawMockCard(ctx, s * (D / 540), W / 2, cardY, D * s, sc.mock, a * (0.3 + 0.7 * pop), lt);
       drawEyebrow(ctx, s, x, H * 0.6, sc.eyebrow || "", a);
       const tb = drawTitle(ctx, s, x, H * 0.6 + 78 * s, sc.title || [], a, rise, 74);
       if (sc.sub) drawSub(ctx, s, x, tb + 22 * s, W, sc.sub, a);
