@@ -4,24 +4,30 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useFxHistory } from "@/store/fx-history";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
-import { convert, formatMoney, formatPercent, CURRENCIES, type Currency } from "@/money/currency";
+import { convert, formatMoney, formatPercent, CURRENCIES } from "@/money/currency";
 import { pairChangePct } from "@/money/fx-daily";
 import { currencyColors } from "@/money/composition";
 import { cn } from "@/lib/utils";
 
 interface TickerItem {
   key: string;
+  kind: "rate" | "fx";
+  /** Região (BR/EU/US/UK) p/ os juros; código da moeda p/ o câmbio. */
+  tag: string;
+  /** Nome da taxa (Selic) ou código da moeda (EUR). */
   label: string;
   value: string;
   pct?: number | null;
-  color?: string;
+  /** Cor da moeda/região (selo dos juros · pontinho do câmbio). */
+  color: string;
 }
 
 /**
- * Barra de cotações rolando no topo do conteúdo (marquee) — juros dos principais BCs + inflação
- * local + câmbio das moedas contra a principal, com variação do dia. Dá o "ar de app financeiro"
- * e libera os cards do menu. Só dado PÚBLICO de mercado (não esconde no modo privado). Ligável em
- * Configurações → Aparência (interruptor reversível).
+ * Barra de cotações rolando no topo do conteúdo (marquee, pílula flutuante) — juros dos principais
+ * BCs + inflação local + câmbio das moedas contra a principal, com variação do dia. Cada item traz
+ * a REGIÃO destacada (selo colorido nos juros: BR verde, resto cinza; pontinho no câmbio) pra
+ * diferenciar de relance. Só dado PÚBLICO de mercado (não esconde no modo privado). Ligável em
+ * Configurações → Aparência.
  */
 export function RatesTicker() {
   const theme = useUI((s) => s.theme);
@@ -37,20 +43,22 @@ export function RatesTicker() {
   const gbp = useMacro("GBP");
 
   const items = useMemo<TickerItem[]>(() => {
-    const macros: Record<Currency, ReturnType<typeof useMacro>> = { BRL: brl, USD: usd, EUR: eur, GBP: gbp };
+    const macros = { BRL: brl, USD: usd, EUR: eur, GBP: gbp } as const;
     const out: TickerItem[] = [];
     // Juros de política dos principais bancos centrais (pula os sem dado).
     for (const c of CURRENCIES) {
       const m = macros[c];
-      if (m?.rate != null) out.push({ key: `rate-${c}`, label: MACRO_META[c].rateName, value: formatPercent(m.rate, c) });
+      if (m?.rate != null) out.push({ key: `rate-${c}`, kind: "rate", tag: MACRO_META[c].tag, label: MACRO_META[c].rateName, value: formatPercent(m.rate, c), color: colors[c] });
     }
     // Inflação da moeda principal.
     const local = macros[base];
-    if (local?.inflation != null) out.push({ key: "cpi", label: MACRO_META[base].cpiName, value: formatPercent(local.inflation, base) });
+    if (local?.inflation != null) out.push({ key: "cpi", kind: "rate", tag: MACRO_META[base].tag, label: MACRO_META[base].cpiName, value: formatPercent(local.inflation, base), color: colors[base] });
     // Câmbio das outras moedas contra a principal, com a variação do dia.
     for (const c of CURRENCIES.filter((x) => x !== base)) {
       out.push({
         key: `fx-${c}`,
+        kind: "fx",
+        tag: c,
         label: c,
         value: formatMoney(convert(1, c, base, rates), base, { minimumFractionDigits: 2, maximumFractionDigits: 4 }),
         pct: today && prev ? pairChangePct(c, base, today, prev) : null,
@@ -83,8 +91,17 @@ function TickerRow({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: bo
       {items.map((it) => {
         const up = (it.pct ?? 0) >= 0;
         return (
-          <span key={it.key} className="inline-flex items-center gap-2 px-5 py-2 whitespace-nowrap text-[12px]">
-            {it.color ? <span className="w-[6px] h-[6px] rounded-[2px] shrink-0" style={{ background: it.color }} /> : null}
+          <span key={it.key} className="inline-flex items-center gap-2 px-4 py-2 whitespace-nowrap text-[12px]">
+            {it.kind === "rate" ? (
+              <span
+                className="rounded-[5px] px-1.5 py-[3px] font-mono text-[9.5px] font-bold uppercase tracking-[0.06em] leading-none"
+                style={{ color: it.color, background: `${it.color}22` }}
+              >
+                {it.tag}
+              </span>
+            ) : (
+              <span className="w-[6px] h-[6px] rounded-[2px] shrink-0" style={{ background: it.color }} />
+            )}
             <span className="font-mono uppercase tracking-[0.08em] text-faint text-[10.5px]">{it.label}</span>
             <span className="tabular font-semibold text-text">{it.value}</span>
             {it.pct != null ? (
@@ -93,7 +110,7 @@ function TickerRow({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: bo
                 {Math.abs(it.pct).toFixed(2)}%
               </span>
             ) : null}
-            <span className="px-1 text-faint/40">·</span>
+            <span className="px-1.5 text-faint/40">·</span>
           </span>
         );
       })}
