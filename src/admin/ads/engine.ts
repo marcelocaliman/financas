@@ -3,7 +3,7 @@
 // render serve pra prévia (loop) e pra exportar MP4 (grava o canvas com MediaRecorder). Resolução-
 // independente: tudo escala por s = W/1080, então preview pequena e export grande usam o MESMO código.
 
-export const SCENE_DUR = 3; // segundos por "página" do story
+export const SCENE_DUR = 4; // segundos por "página" do story (ritmo calmo, dá tempo de ler)
 const LAST_HOLD = 2.5; // segundos EXTRAS na última cena (CTA): fica parada, sem fade, pra dar tempo de clicar
 const BG = "#0A0B0D";
 const TEXT = "#F3F4F6";
@@ -81,7 +81,7 @@ const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x 
 
 /** Opacidade da cena: fade-in nos 1ºs 0.45s, fade-out nos últimos 0.35s (sobre o bg persistente). */
 function sceneAlpha(lt: number, dur: number) {
-  return Math.min(clamp01(lt / 0.45), clamp01((dur - lt) / 0.35));
+  return Math.min(clamp01(lt / 0.6), clamp01((dur - lt) / 0.5));
 }
 
 function fontSans(px: number, weight = 600) {
@@ -399,12 +399,12 @@ function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number,
 function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, sc: Scene, lt: number, a: number) {
   const x = 90 * s;
   const midY = H * 0.5;
-  const rise = (1 - easeOut(lt / 0.6)) * 40 * s; // sobe ao entrar
+  const rise = (1 - easeOut(lt / 0.85)) * 40 * s; // sobe ao entrar (mais suave)
 
   if (sc.kind === "hook") {
     if (sc.mock) {
       // O APP: mockup em cima + legenda (título menor + sub) embaixo.
-      const pop = easeOut(clamp01((lt - 0.1) / 0.6));
+      const pop = easeOut(clamp01((lt - 0.15) / 0.85));
       const cardY = H * 0.32 + (1 - pop) * 30 * s;
       drawMockCard(ctx, s, W / 2, cardY, 540 * s, sc.mock, a * (0.3 + 0.7 * pop));
       drawEyebrow(ctx, s, x, H * 0.6, sc.eyebrow || "", a);
@@ -576,7 +576,7 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   const sc = story.scenes[idx];
   // Última cena (CTA): só fade-IN, sem fade-out — fica visível até o fim pro usuário clicar.
   const isLast = idx === n - 1;
-  const a = isLast ? clamp01(lt / 0.45) : sceneAlpha(lt, SCENE_DUR);
+  const a = isLast ? clamp01(lt / 0.6) : sceneAlpha(lt, SCENE_DUR);
   // marca no topo — desce um pouco quando NÃO há barra de progresso (export), pra não colar no topo
   if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46);
   sceneContent(ctx, s, W, H, sc, lt, a);
