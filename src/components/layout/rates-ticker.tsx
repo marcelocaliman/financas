@@ -66,7 +66,7 @@ export function RatesTicker() {
   return (
     <div className="hidden lg:block sticky top-4 z-30 mt-4">
       <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14">
-        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-card2/85 backdrop-blur-md shadow-[var(--shadow-float)]">
+        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-card2/85 backdrop-blur-md shadow-[0_12px_22px_-16px_rgba(0,0,0,0.65)]">
           <div className="ticker-track flex w-max" style={{ ["--ticker-duration" as string]: `${duration}s` }}>
             <TickerRow items={items} />
             <TickerRow items={items} ariaHidden />
