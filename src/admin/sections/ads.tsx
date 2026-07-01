@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Download, Film, Loader2 } from "lucide-react";
-import { STORIES, drawStory, storyDuration, type Story } from "@/admin/ads/engine";
-import { exportStory, downloadBlob, canExport } from "@/admin/ads/export";
+import { STORIES, drawStory, storyDuration, PHOTO_SRC, type Story } from "@/admin/ads/engine";
+import { exportStory, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_W = 330;
@@ -18,11 +18,12 @@ function StoryPreview({ story }: { story: Story }) {
     let last = 0;
     const dur = storyDuration(story);
     const start = performance.now();
+    void loadPhoto(PHOTO_SRC[story.id]).catch(() => {}); // pré-carrega (getPhoto vira não-null quando pronta)
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       if (now - last < 33) return; // ~30fps (poupa CPU com 3 prévias juntas)
       last = now;
-      drawStory(ctx, story, ((now - start) / 1000) % dur, PREVIEW_W, PREVIEW_H);
+      drawStory(ctx, story, ((now - start) / 1000) % dur, PREVIEW_W, PREVIEW_H, true, getPhoto(story.id));
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);

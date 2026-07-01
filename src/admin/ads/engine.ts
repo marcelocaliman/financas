@@ -20,11 +20,12 @@ const GLOW: Record<string, [number, number]> = {
   orcamento: [0.5, 0.4],
 };
 
-/** Textura de fundo temática por story ("currency" = símbolos de moeda; "dots" = dados cifrados). */
-const MOTIF: Record<string, "currency" | "dots"> = {
-  patrimonio: "currency",
-  privacidade: "dots",
-  orcamento: "currency",
+/** Foto de fundo temática por story (bem sutil + filtrada) — dá calor humano. Servida same-origin
+ *  (/img/ads) → sem taint no canvas/MP4. A foto é carregada pelo chamador e passada ao drawStory. */
+export const PHOTO_SRC: Record<string, string> = {
+  patrimonio: "/img/ads/global.jpg",
+  privacidade: "/img/ads/person.jpg",
+  orcamento: "/img/ads/life.jpg",
 };
 
 export interface Scene {
@@ -320,40 +321,33 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
   ctx.globalAlpha = 1;
 }
 
-/** Textura de fundo temática: campo de símbolos de moeda (ou "••••" cifrados) em baixa opacidade,
- *  com leve deriva pra cima — dá vida ao frame sem competir com o conteúdo. */
-function drawMotif(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, t: number, kind: "currency" | "dots") {
-  const cols = 3, rows = 7, cw = W / cols, chh = H / (rows - 1);
-  const drift = t * 12 * s; // sobe devagar (num story não chega a repetir → sem "salto")
-  const glyphs = ["R$", "$", "€", "£"];
+/** Fundo-foto temático, BEM sutil e filtrado (dessaturado + tinte verde + escurecido) + zoom
+ *  Ken-Burns lento pra dar vida. `photo` já carregada (same-origin → sem taint). `t` = tempo. */
+function drawPhotoBg(ctx: CanvasRenderingContext2D, photo: CanvasImageSource, W: number, H: number, t: number) {
+  const p = photo as unknown as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
+  const iw = p.naturalWidth || p.width || 0, ih = p.naturalHeight || p.height || 0;
+  if (!iw || !ih) return;
   ctx.save();
-  ctx.fillStyle = "rgba(255,255,255,0.05)";
-  for (let r = 0; r <= rows + 1; r++) {
-    for (let c = 0; c < cols; c++) {
-      const idx = r * cols + c;
-      const px = c * cw + cw / 2 + (((idx * 53) % 70) - 35) * s;
-      const py = r * chh + chh / 2 - drift;
-      const rot = ((((idx * 41) % 36) - 18) * Math.PI) / 180;
-      const sz = (56 + ((idx * 23) % 46)) * s;
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.rotate(rot);
-      if (kind === "currency") {
-        ctx.font = fontSans(sz, 700);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(glyphs[idx % glyphs.length], 0, 0);
-      } else {
-        const dr = sz * 0.1, gap = sz * 0.3;
-        for (let k = 0; k < 4; k++) {
-          ctx.beginPath();
-          ctx.arc((k - 1.5) * gap, 0, dr, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-      ctx.restore();
-    }
-  }
+  // foto cover-fit + zoom lento (5% ao longo do story) — dessaturada e escura, BEM opaca
+  const zoom = 1 + 0.05 * clamp01(t / 16);
+  const scale = Math.max(W / iw, H / ih) * zoom;
+  const dw = iw * scale, dh = ih * scale;
+  ctx.globalAlpha = 0.17;
+  ctx.filter = "grayscale(0.9) brightness(0.85) contrast(1.05)";
+  ctx.drawImage(photo, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  ctx.filter = "none";
+  // tinte verde sutil (mantém a marca)
+  ctx.globalAlpha = 0.05;
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(0, 0, W, H);
+  // vinheta escura (topo/base) pra o texto respirar
+  ctx.globalAlpha = 1;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "rgba(10,11,13,0.55)");
+  g.addColorStop(0.45, "rgba(10,11,13,0.28)");
+  g.addColorStop(1, "rgba(10,11,13,0.72)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 
@@ -651,12 +645,17 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 }
 
 /** Desenha o story inteiro no instante t (segundos, 0..duração). W×H = tamanho do canvas. */
-export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number, showProgress = true) {
+export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number, showProgress = true, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
-  const glow = GLOW[story.id] ?? [0.32, 0.22];
-  drawBg(ctx, W, H, t, glow[0], glow[1]);
-  const motif = MOTIF[story.id];
-  if (motif) drawMotif(ctx, s, W, H, t, motif);
+  if (photo) {
+    ctx.fillStyle = BG;
+    ctx.fillRect(0, 0, W, H);
+    drawPhotoBg(ctx, photo, W, H, t);
+  } else {
+    // fallback (foto ainda carregando): glow verde
+    const glow = GLOW[story.id] ?? [0.32, 0.22];
+    drawBg(ctx, W, H, t, glow[0], glow[1]);
+  }
   const n = story.scenes.length;
   const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
   const lt = t - idx * SCENE_DUR;

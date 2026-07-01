@@ -1,7 +1,30 @@
 // Grava um story (canvas 1080×1920) em VÍDEO via MediaRecorder — MP4 quando o navegador suporta
 // (Chrome recente, Safari), senão WebM. Captura em tempo real (captureStream do canvas). Só o dono
 // usa isso (aba Ads do super-admin), então rodar ~9s de gravação na máquina dele é aceitável.
-import { drawStory, storyDuration, type Story } from "./engine";
+import { drawStory, storyDuration, PHOTO_SRC, type Story } from "./engine";
+
+// ── fotos de fundo (carregadas same-origin → sem taint no canvas) ──
+const photoCache = new Map<string, HTMLImageElement>();
+export function loadPhoto(src: string): Promise<HTMLImageElement> {
+  const cached = photoCache.get(src);
+  if (cached && cached.complete && cached.naturalWidth) return Promise.resolve(cached);
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      photoCache.set(src, img);
+      resolve(img);
+    };
+    img.onerror = () => reject(new Error("falha ao carregar foto: " + src));
+    img.src = src;
+  });
+}
+/** Foto já carregada do story (ou null). Usado pela prévia (síncrono no rAF). */
+export function getPhoto(storyId: string): HTMLImageElement | null {
+  const src = PHOTO_SRC[storyId];
+  if (!src) return null;
+  const c = photoCache.get(src);
+  return c && c.complete && c.naturalWidth ? c : null;
+}
 
 const MIME_CANDS = [
   "video/mp4;codecs=avc1.640028",
@@ -57,6 +80,15 @@ export interface ExportResult {
 
 export async function exportStory(story: Story): Promise<ExportResult> {
   await ensureFonts();
+  let photo: HTMLImageElement | null = null;
+  const src = PHOTO_SRC[story.id];
+  if (src) {
+    try {
+      photo = await loadPhoto(src);
+    } catch {
+      /* segue sem foto (cai no glow) */
+    }
+  }
   const W = 1080, H = 1920;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -64,7 +96,7 @@ export async function exportStory(story: Story): Promise<ExportResult> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D indisponível");
 
-  drawStory(ctx, story, 0, W, H, false); // 1º quadro antes de gravar (evita frame preto); sem barras (Instagram põe as dele)
+  drawStory(ctx, story, 0, W, H, false, photo); // 1º quadro antes de gravar (evita frame preto); sem barras (Instagram põe as dele)
   const mime = pickMime();
   const stream = canvas.captureStream(30);
   const rec = new MediaRecorder(stream, {
@@ -86,11 +118,11 @@ export async function exportStory(story: Story): Promise<ExportResult> {
     const loop = () => {
       const t = (performance.now() - start) / 1000;
       if (t >= dur) {
-        drawStory(ctx, story, dur - 0.01, W, H, false);
+        drawStory(ctx, story, dur - 0.01, W, H, false, photo);
         resolve();
         return;
       }
-      drawStory(ctx, story, t, W, H, false);
+      drawStory(ctx, story, t, W, H, false, photo);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
