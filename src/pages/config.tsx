@@ -25,6 +25,7 @@ import { FamilyAccess } from "@/components/config/family-access";
 import { LiberdadeSettings } from "@/components/config/liberdade-settings";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { countShares } from "@/lib/shares";
 import { PrivacyLink, PrivacyPolicyContent } from "@/components/privacy-policy";
 import { TermsLink } from "@/components/terms-of-use";
@@ -49,6 +50,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
   const theme = useUI((s) => s.theme);
   const navLayout = useUI((s) => s.navLayout);
   const configOpen = useUI((s) => s.configOpen);
+  const stickyTop = useStickyOffset();
 
   useEffect(() => {
     if (!onClose) return;
@@ -103,6 +105,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
       </section>
 
       {/* Seções — mesmos accordions/gutters/fontes da página inicial */}
+      <StickyOffsetContext.Provider value={stickyTop}>
       <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
         <Accordion id="cfg-account" title={t("config.account")} summary={<CfgPreview>{email}</CfgPreview>}>
           <div className="grid gap-5 sm:grid-cols-2 items-start">
@@ -170,6 +173,7 @@ export default function Config({ onClose }: { onClose?: () => void }) {
           </div>
         </Accordion>
       </div>
+      </StickyOffsetContext.Provider>
     </div>
   );
 }

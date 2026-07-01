@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
-import { scrollToSection } from "@/hooks/use-scroll-spy";
+import { scrollToSection, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -9,6 +9,11 @@ import { cn } from "@/lib/utils";
  * Expand/colapso suave (grid-rows 0fr→1fr + fade). Estado no store useSections, com
  * fallback `defaultOpen`. A âncora (id) fica no header, que não se move ao expandir.
  * Várias seções podem ficar abertas ao mesmo tempo (cada uma é independente).
+ *
+ * Sticky: quando a seção está ABERTA e é mais alta que a tela, o cabeçalho gruda no topo (logo
+ * abaixo do ticker/barra) enquanto se rola o conteúdo dela — e ao chegar a próxima seção, o
+ * cabeçalho dela empurra este pra cima (sticky empilhado). O offset vem do StickyOffsetContext
+ * que a página provê (o Accordion não adivinha o layout). Sem provider (ex.: admin), não gruda.
  */
 export function Accordion({
   id,
@@ -29,6 +34,7 @@ export function Accordion({
   const stored = useSections((s) => s.open[id]);
   const setOpen = useSections((s) => s.setOpen);
   const open = stored ?? defaultOpen;
+  const stickyTop = useContext(StickyOffsetContext);
 
   // Reflete o `defaultOpen` no STORE na 1ª montagem. Sem isto, a seção aparece aberta (via
   // fallback) mas o store fica `undefined` — e o menu a enxerga como "fechada", então clicar
@@ -53,8 +59,31 @@ export function Accordion({
     setExpanded(false);
   }, [open]);
 
+  // Cabeçalho grudado só faz sentido com a seção ABERTA (tem conteúdo pra rolar).
+  const isSticky = stickyTop != null && open;
+  // "stuck": o cabeçalho ATINGIU o topo (gruda) — aí ganha uma sombra-hairline pra separar do
+  // conteúdo que passa por baixo. Uma sentinela (0px, acima do header) sai da viewport na linha
+  // do offset; o IntersectionObserver com rootMargin negativo detecta exatamente esse momento.
+  const [stuck, setStuck] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!isSticky || !el) {
+      setStuck(false);
+      return;
+    }
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting), {
+      rootMargin: `-${stickyTop! + 1}px 0px 0px 0px`,
+      threshold: [0],
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [isSticky, stickyTop]);
+
   return (
     <section id={id} className={cn("scroll-mt-24", !bare && "border-t border-border")}>
+      {/* Sentinela da detecção "stuck" (altura líquida 0 com -mb-px). */}
+      <div ref={sentinelRef} aria-hidden className="h-px -mb-px" />
       <button
         type="button"
         onClick={() => {
@@ -65,7 +94,13 @@ export function Accordion({
         }}
         aria-expanded={open}
         aria-controls={`${id}-body`}
-        className="group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]"
+        style={isSticky ? { top: stickyTop } : undefined}
+        className={cn(
+          "group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]",
+          // Gruda no topo (abaixo do ticker/barra) e ocluí o conteúdo que rola por baixo (bg-bg).
+          isSticky && "sticky z-20 bg-bg transition-shadow duration-200 motion-reduce:transition-none",
+          isSticky && stuck && "shadow-[0_1px_0_0_var(--border),0_10px_20px_-18px_rgba(0,0,0,0.55)]",
+        )}
       >
         <h2 id={`${id}-title`} className="font-semibold text-[clamp(22px,3vw,34px)] tracking-[-0.03em] leading-none truncate min-w-0">
           {title}

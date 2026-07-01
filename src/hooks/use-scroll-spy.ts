@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { useSections } from "@/store/sections";
 import { useUI } from "@/store/ui";
+
+/** Offset (px) que as páginas PROVÊEM p/ os cabeçalhos sticky das seções; undefined = não gruda
+ *  (ex.: admin, que não passa provider). Evita o Accordion adivinhar o layout. */
+export const StickyOffsetContext = createContext<number | undefined>(undefined);
 
 /** Navegação pendente: quando se sai da Config rumo a uma seção, o AppShell rola até ela
  *  assim que o conteúdo principal volta (a Config fica por cima e some com transição). */
@@ -95,6 +99,41 @@ export function toggleSection(id: string, active: boolean): void {
   } else {
     goToSection(id);
   }
+}
+
+/**
+ * Offset (px) onde o CABEÇALHO STICKY de uma seção deve parar — a altura da barra realmente
+ * VISÍVEL fixada no topo daquele layout/breakpoint, SEM folga (o cabeçalho encosta logo abaixo
+ * dela): lateral no desktop = só o ticker (a sidebar é à esquerda); lateral no mobile = MobileBar(60);
+ * top-nav = header fixo(72) — o ticker fica ATRÁS dele, então não soma.
+ *
+ * Relação com topBarOffset() (onde o clique de menu ANCORA a seção): PROPOSITALMENTE separados.
+ * topBarOffset embute uma FOLGA de respiro no clique (e o tuck de 1px atrás do ticker), enquanto o
+ * sticky encosta rente à barra (sem folga = sem conteúdo vazando acima do header grudado). No layout
+ * do usuário (lateral+ticker) batem em ~1px; a divergência maior é só em top-nav (que ele não usa).
+ * Se um dia unificar, derive AMBOS de uma mesma altura-por-layout — não copie um no outro às cegas.
+ */
+export function stickyTopOffset(): number {
+  if (typeof window === "undefined") return 0;
+  const ui = useUI.getState();
+  const desktop = window.innerWidth >= 1024;
+  if (ui.navLayout !== "side") return 72; // top-nav: header fixo (o ticker fica atrás dele)
+  if (!desktop) return 60; // lateral no mobile: MobileBar
+  return ui.ratesTicker ? 62 : 0; // lateral no desktop: só o ticker (0 se desligado)
+}
+
+/** Offset sticky reativo: recalcula em resize e ao trocar de layout/ticker. */
+export function useStickyOffset(): number {
+  const navLayout = useUI((s) => s.navLayout);
+  const ratesTicker = useUI((s) => s.ratesTicker);
+  const [offset, setOffset] = useState(stickyTopOffset);
+  useEffect(() => {
+    const apply = () => setOffset(stickyTopOffset());
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [navLayout, ratesTicker]);
+  return offset;
 }
 
 /** True quando a página foi rolada além do limite (header transparente → sólido). */

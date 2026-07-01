@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { Accordion } from "@/components/common/accordion";
+import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 import { useUI } from "@/store/ui";
 import { Footer } from "@/components/layout/footer";
@@ -33,6 +34,7 @@ const CONTAINER = "max-w-[1280px] mx-auto";
 export function OnePage() {
   const { t } = useTranslation();
   const ratesTicker = useUI((s) => s.ratesTicker);
+  const stickyTop = useStickyOffset();
   const rest = NAV_ITEMS.slice(1);
 
   return (
@@ -52,17 +54,20 @@ export function OnePage() {
         </div>
       </section>
 
-      {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro) */}
-      <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
-        {rest.map((item) => {
-          const sec = SECTIONS[item.id];
-          return (
-            <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary}>
-              {sec?.detail ?? <ComingSoon />}
-            </Accordion>
-          );
-        })}
-      </div>
+      {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro). O cabeçalho de cada
+          seção aberta gruda no topo enquanto ela rola — offset do layout via StickyOffsetContext. */}
+      <StickyOffsetContext.Provider value={stickyTop}>
+        <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
+          {rest.map((item) => {
+            const sec = SECTIONS[item.id];
+            return (
+              <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary}>
+                {sec?.detail ?? <ComingSoon />}
+              </Accordion>
+            );
+          })}
+        </div>
+      </StickyOffsetContext.Provider>
 
       <Footer />
     </div>
