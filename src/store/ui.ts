@@ -39,6 +39,9 @@ interface UIState {
   /** Menu lateral recolhido (só ícones). Persiste. */
   navCollapsed: boolean;
   setNavCollapsed: (v: boolean) => void;
+  /** Barra de cotações (juros + câmbio) rolando no topo do conteúdo, no lugar dos cards do menu. Persiste. */
+  ratesTicker: boolean;
+  setRatesTicker: (v: boolean) => void;
 }
 
 /** Preferências de UI. Persistem moeda PRINCIPAL + tema + menu + modo privacidade; a exibição é por-sessão. */
@@ -64,20 +67,22 @@ export const useUI = create<UIState>()(
       setNavLayout: (navLayout) => set({ navLayout }),
       navCollapsed: false,
       setNavCollapsed: (navCollapsed) => set({ navCollapsed }),
+      ratesTicker: true,
+      setRatesTicker: (ratesTicker) => set({ ratesTicker }),
     }),
     {
       name: "financas-ui",
       version: 3,
       // Persistir a moeda PRINCIPAL + tema + posição/estado do menu + modo privacidade. A exibição
       // é por-sessão (sempre nasce na principal) — o switcher do topo é prévia temporária, não salvo.
-      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout, navCollapsed: s.navCollapsed, numbersHidden: s.numbersHidden, configOpen: s.configOpen }),
+      partialize: (s) => ({ baseCurrency: s.baseCurrency, theme: s.theme, navLayout: s.navLayout, navCollapsed: s.navCollapsed, numbersHidden: s.numbersHidden, configOpen: s.configOpen, ratesTicker: s.ratesTicker }),
       migrate: (persisted, version) => {
-        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout; navCollapsed?: boolean; numbersHidden?: boolean };
+        const s = (persisted ?? {}) as { baseCurrency?: Currency; theme?: Theme; navLayout?: NavLayout; navCollapsed?: boolean; numbersHidden?: boolean; ratesTicker?: boolean };
         // v<3: reseta a moeda principal — a v2 herdava a visão temporária por engano,
         // podendo fixar uma moeda que o usuário nunca escolheu (ex.: euro). Cai no default por locale.
         const baseCurrency = version < 3 ? DEFAULT_CURRENCY : s.baseCurrency ?? DEFAULT_CURRENCY;
         // v0→v1: o redesign nasce no ESCURO (força dark p/ quem tinha "claro").
-        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "side", navCollapsed: s.navCollapsed ?? false, numbersHidden: s.numbersHidden ?? false };
+        return { baseCurrency, theme: version < 1 ? "dark" : s.theme ?? "dark", navLayout: s.navLayout ?? "side", navCollapsed: s.navCollapsed ?? false, numbersHidden: s.numbersHidden ?? false, ratesTicker: s.ratesTicker ?? true };
       },
       // A exibição SEMPRE nasce na principal (não persiste) — coerência total no boot.
       onRehydrateStorage: () => (state) => {

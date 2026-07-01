@@ -463,6 +463,10 @@
     "kpiPrivacy": "End-to-end encryption",
     "categories": "Categories",
     "appearance": "Appearance",
+    "tickerTitle": "Market rates",
+    "tickerBar": "Top ticker",
+    "tickerCards": "Menu cards",
+    "tickerHint": "A scrolling ticker of rates and FX at the top, market-style — or the cards in the side menu.",
     "liberdade": "Freedom",
     "privacy": "Privacy"
   },

@@ -4,6 +4,7 @@ import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { Accordion } from "@/components/common/accordion";
 import { cn } from "@/lib/utils";
+import { useUI } from "@/store/ui";
 import { Footer } from "@/components/layout/footer";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
@@ -31,6 +32,7 @@ const CONTAINER = "max-w-[1280px] mx-auto";
 /** Página editorial única: hero full-bleed + seções em accordions (KPIs no header). */
 export function OnePage() {
   const { t } = useTranslation();
+  const ratesTicker = useUI((s) => s.ratesTicker);
   const rest = NAV_ITEMS.slice(1);
 
   return (
@@ -40,7 +42,7 @@ export function OnePage() {
         {/* Título estável da página (outline do documento) — visível só p/ leitores de tela. */}
         <h1 className="sr-only">{t("app.name")}</h1>
         <div className="hero-bg w-full overflow-hidden">
-          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14")}>
+          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14", ratesTicker && "lg:pt-14")}>
             <DashboardHero />
           </div>
         </div>

@@ -83,6 +83,7 @@ export function SideNav({ active }: { active: string }) {
   const setSectionOpen = useSections((s) => s.setOpen);
   const setManySections = useSections((s) => s.setMany);
   const g = useGlance();
+  const ratesTicker = useUI((s) => s.ratesTicker);
   const disp = useUI((s) => s.displayCurrency);
   // Juros/inflação: por padrão segue a moeda de exibição; o usuário pode trocar p/ ver as outras
   // praças de referência (EUA/Europa são as principais). Reseta p/ a moeda local ao trocar de disp.
@@ -160,7 +161,7 @@ export function SideNav({ active }: { active: string }) {
 
         {/* Relance (só expandido): contas a vencer + juros/inflação + câmbio das moedas. (O
             patrimônio líquido saiu — redundante com o herói do Painel.) */}
-        {!collapsed ? (
+        {!collapsed && (!ratesTicker || (g && g.billCount > 0)) ? (
           <div className="px-3.5 pb-3.5 shrink-0 space-y-2.5">
             {g && g.billCount > 0 ? (
               <button
@@ -180,7 +181,7 @@ export function SideNav({ active }: { active: string }) {
 
             {/* Juros + inflação (referência pública) — compacto. Switch p/ trocar a praça:
                 local (moeda de exibição) + EUA/Europa, as principais. */}
-            {hasMacro ? (
+            {!ratesTicker && hasMacro ? (
               <div className="rounded-[14px] bg-card2 border border-border px-3.5 py-3">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Landmark size={11} className="text-faint shrink-0" />
@@ -216,7 +217,7 @@ export function SideNav({ active }: { active: string }) {
             ) : null}
 
             {/* Câmbio das principais moedas contra a moeda PRINCIPAL do usuário, com a variação do dia */}
-            <FxRatesCard />
+            {!ratesTicker ? <FxRatesCard /> : null}
           </div>
         ) : null}
 

@@ -197,6 +197,8 @@ function Appearance() {
   const setTheme = useUI((s) => s.setTheme);
   const navLayout = useUI((s) => s.navLayout);
   const setNavLayout = useUI((s) => s.setNavLayout);
+  const ratesTicker = useUI((s) => s.ratesTicker);
+  const setRatesTicker = useUI((s) => s.setRatesTicker);
   const { baseCurrency, setMainCurrency } = useMainCurrency();
   return (
     <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 [&>*]:mb-5 [&>*]:break-inside-avoid">
@@ -211,6 +213,18 @@ function Appearance() {
           </Pill>
         </div>
         <p className="text-[12px] text-muted leading-relaxed mt-3">{t("menu.hint")}</p>
+      </Card>
+      <Card>
+        <SubHeading>{t("config.tickerTitle")}</SubHeading>
+        <div className="flex gap-2">
+          <Pill active={ratesTicker} onClick={() => setRatesTicker(true)}>
+            {t("config.tickerBar")}
+          </Pill>
+          <Pill active={!ratesTicker} onClick={() => setRatesTicker(false)}>
+            {t("config.tickerCards")}
+          </Pill>
+        </div>
+        <p className="text-[12px] text-muted leading-relaxed mt-3">{t("config.tickerHint")}</p>
       </Card>
       <Card>
         <SubHeading>{t("common.baseCurrency")}</SubHeading>

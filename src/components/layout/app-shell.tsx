@@ -13,6 +13,7 @@ import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useCostBackfill } from "@/hooks/use-cost-backfill";
 import { useUI } from "@/store/ui";
+import { RatesTicker } from "@/components/layout/rates-ticker";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +27,7 @@ export function AppShell() {
   const configOpen = useUI((s) => s.configOpen);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const supportOpen = useUI((s) => s.supportOpen);
+  const ratesTicker = useUI((s) => s.ratesTicker);
   // O spy segue o conjunto de seções da VISÃO ativa: as da Config quando ela está aberta
   // (a página fica fora da tela), as da página quando fechada. Assim a nav lateral destaca a
   // seção correta nos dois modos e nunca acende uma seção "fantasma" da outra visão.
@@ -105,6 +107,7 @@ export function AppShell() {
         <TopNav active={active} />
       )}
       <main className={side ? (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]") : undefined}>
+        {ratesTicker ? <RatesTicker /> : null}
         {supportOpen ? (
           <SupportView />
         ) : (

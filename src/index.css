@@ -350,3 +350,29 @@ summary {
     margin: 14mm;
   }
 }
+
+/* Ticker de cotações — marquee contínuo. O conteúdo é DUPLICADO no track; -50% fecha o loop
+   sem emenda. Pausa no hover; imóvel em prefers-reduced-motion. */
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track {
+  animation: ticker-scroll var(--ticker-duration, 40s) linear infinite;
+}
+.ticker-viewport:hover .ticker-track {
+  animation-play-state: paused;
+}
+.ticker-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
