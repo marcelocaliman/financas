@@ -44,10 +44,14 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
  *  (com uma folga pequena) em vez de ficar atrás da barra ou com um vão grande. */
 function topBarOffset(): number {
   if (typeof window === "undefined") return 24;
-  const side = useUI.getState().navLayout === "side";
+  const ui = useUI.getState();
+  const side = ui.navLayout === "side";
   const desktop = window.innerWidth >= 1024;
-  if (side) return desktop ? 20 : 72; // lateral: desktop sem barra (só folga); mobile MobileBar(60)+folga
-  return 88; // TopNav (72) + folga
+  // Ticker de cotações (pílula flutuante, só desktop) ocupa ~48px no topo — empurra a âncora pra
+  // baixo pra a seção parar ABAIXO dele, com folga, em vez de encostar/ficar atrás.
+  const ticker = desktop && ui.ratesTicker ? 64 : 0;
+  if (side) return (desktop ? 20 : 72) + ticker; // lateral: desktop sem barra (só folga); mobile MobileBar(60)+folga
+  return 88 + ticker; // TopNav (72) + folga
 }
 
 /** Rola suavemente até a seção, parando logo abaixo da barra fixa (ancora no topo, sem vão).
