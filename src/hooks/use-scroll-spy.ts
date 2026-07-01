@@ -47,9 +47,10 @@ function topBarOffset(): number {
   const ui = useUI.getState();
   const side = ui.navLayout === "side";
   const desktop = window.innerWidth >= 1024;
-  // Ticker de cotações (pílula flutuante, só desktop) ocupa ~48px no topo — empurra a âncora pra
-  // baixo pra a seção parar ABAIXO dele, com folga, em vez de encostar/ficar atrás.
-  const ticker = desktop && ui.ratesTicker ? 64 : 0;
+  // Ticker de cotações (faixa que oculta, 62px, só desktop): a seção para 1px ABAIXO da faixa —
+  // o cabeçalho encosta logo abaixo do ticker e a borda-divisória da seção fica escondida ATRÁS
+  // da faixa (nada da tab anterior vaza). base(20) + 41 = 61 = altura da faixa − 1.
+  const ticker = desktop && ui.ratesTicker ? 41 : 0;
   if (side) return (desktop ? 20 : 72) + ticker; // lateral: desktop sem barra (só folga); mobile MobileBar(60)+folga
   return 88 + ticker; // TopNav (72) + folga
 }

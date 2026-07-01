@@ -42,7 +42,7 @@ export function OnePage() {
         {/* Título estável da página (outline do documento) — visível só p/ leitores de tela. */}
         <h1 className="sr-only">{t("app.name")}</h1>
         <div className="hero-bg w-full overflow-hidden">
-          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14", ratesTicker && "lg:pt-16")}>
+          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14", ratesTicker && "lg:pt-12")}>
             <DashboardHero />
           </div>
         </div>

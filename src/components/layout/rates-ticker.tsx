@@ -84,9 +84,9 @@ export function RatesTicker() {
   const duration = Math.max(28, content * 7); // rolagem ~constante independente do nº de itens
 
   return (
-    <div className="hidden lg:block sticky top-4 z-30 mt-4">
-      <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14">
-        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-card2/85 backdrop-blur-md shadow-[0_12px_22px_-16px_rgba(0,0,0,0.65)]">
+    <div className="hidden lg:flex sticky top-0 z-30 h-[62px] items-center bg-bg">
+      <div className="w-full max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14">
+        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-card2 shadow-[0_12px_22px_-16px_rgba(0,0,0,0.65)]">
           <div className="ticker-track flex w-max" style={{ ["--ticker-duration" as string]: `${duration}s` }}>
             <TickerRow items={items} />
             <TickerRow items={items} ariaHidden />
