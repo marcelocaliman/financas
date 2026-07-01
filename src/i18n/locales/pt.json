@@ -167,7 +167,7 @@
     "recurringHint": "Marque com ↻ os lançamentos fixos (aluguel, salário, assinaturas) — eles entram sozinhos nos próximos meses.",
     "dueDay": "Dia",
     "dueColumn": "Vencimento",
-    "insideOf": "Dentro de",
+    "insideOf": "Na fatura",
     "statement": "Fatura",
     "notItemized": "não discriminado",
     "amount": "Valor",

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Circle, Copy, CreditCard, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
@@ -191,13 +191,13 @@ export default function Orcamento() {
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // "Fatura": marca o item como guarda-chuva (o total dele já inclui outros itens, ex.: cartão).
-      columns.push({ key: "isStatement", type: "toggle", header: t("orcamento.statement"), width: "72px" });
-      // "Dentro de": marca o item como PARTE de uma fatura (o valor já está nela → não soma de novo).
-      // Candidatos = SÓ as faturas (não todos os itens). 1 fatura → vira um CHECK; 2+ → dropdown só
-      // das faturas. Uma fatura não entra em outra (candidatos vazios pra ela).
       // Fatura = marcada como Fatura OU já tem itens dentro (cobre vínculos do fluxo antigo).
       const isFatura = (r: BudgetRow) => !!r.isStatement || rows.some((x) => x.parentId === r.id);
+      // "Fatura": marca o item como guarda-chuva (cartão) — ÍCONE DE CARTÃO, distinto do "Fixo" (↻).
+      // isOn reflete "é fatura" (marcada OU com itens dentro) pra o toggle não mentir em dados migrados.
+      columns.push({ key: "isStatement", type: "toggle", header: t("orcamento.statement"), width: "72px", icon: CreditCard, isOn: isFatura });
+      // "Na fatura": marca o item como PARTE de uma fatura (o valor já está nela → não soma de novo).
+      // Candidatos = SÓ as faturas (não todos os itens). 1 fatura → CHECK; 2+ → dropdown só das faturas.
       columns.push({
         key: "parentId",
         type: "insideStatement",

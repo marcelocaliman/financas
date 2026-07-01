@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -44,6 +44,10 @@ export interface GridColumn<T> {
   maxMonth?: string;
   placeholder?: string;
   compute?: (row: T) => ReactNode;
+  /** toggle: ícone (default Repeat) — pra distinguir toggles diferentes (ex.: recorrente vs fatura). */
+  icon?: LucideIcon;
+  /** toggle: estado LIGADO derivado (default = o campo booleano da coluna). */
+  isOn?: (row: T) => boolean;
 }
 
 interface DataGridProps<T extends { id: string }> {
@@ -882,7 +886,8 @@ export function DataGrid<T extends { id: string }>({
       case "computed":
         return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
       case "toggle": {
-        const on = Boolean(get(row, col.key));
+        const on = col.isOn ? col.isOn(row) : Boolean(get(row, col.key));
+        const Icon = col.icon ?? Repeat;
         return (
           <div className="flex justify-center">
             <button
@@ -899,7 +904,7 @@ export function DataGrid<T extends { id: string }>({
                 on ? "text-accent bg-accent-soft" : "text-faint hover:text-muted hover:bg-card-hover",
               )}
             >
-              <Repeat size={14} />
+              <Icon size={14} />
             </button>
           </div>
         );
