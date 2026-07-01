@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Circle, Copy, CreditCard, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
@@ -23,7 +23,23 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean; statementRole?: string };
+
+/** Papel do lançamento na fatura, UMA coluna só (campo VIRTUAL só p/ o grid): "__self" = é a fatura;
+ *  um id = está DENTRO daquela fatura; "" = normal. Deriva de isStatement/parentId (+ tem filhos). */
+const SELF_ROLE = "__self";
+function withStatementRole(rows: BudgetRow[]): BudgetRow[] {
+  const isFatura = (r: BudgetRow) => !!r.isStatement || rows.some((x) => x.parentId === r.id);
+  return rows.map((r) => ({ ...r, statementRole: isFatura(r) ? SELF_ROLE : r.parentId ?? "" }));
+}
+/** Mapeia o papel escolhido de volta pros campos reais (mutuamente exclusivos) e tira o virtual. */
+function fromStatementRole(e: BudgetRow): Expense {
+  const { statementRole, ...rest } = e;
+  const base = rest as Expense;
+  if (statementRole === SELF_ROLE) return { ...base, isStatement: true, parentId: undefined };
+  if (statementRole) return { ...base, isStatement: false, parentId: statementRole };
+  return { ...base, isStatement: false, parentId: undefined };
+}
 
 /** Ordena os gastos agrupando cada FILHO logo abaixo da sua fatura (pai). */
 function groupExpenseRows(rows: BudgetRow[]): BudgetRow[] {
@@ -66,11 +82,6 @@ const STATUS_TONE: Record<BillStatus, string> = {
   soon: "text-text",
   later: "text-faint",
 };
-/** Uma FATURA não fica dentro de outra: marcar como fatura limpa o vínculo de pai (mutuamente
- *  exclusivos — ou é o guarda-chuva, ou está dentro de um). */
-function normalizeStatement(e: Expense): Expense {
-  return e.isStatement && e.parentId ? { ...e, parentId: undefined } : e;
-}
 /** Conta a pagar válida: dia 1–31 inteiro; 0/inválido limpa o vencimento (vira gasto comum). */
 function normalizeBill(e: Expense): Expense {
   if (e.dueDay == null) return e;
@@ -186,29 +197,28 @@ export default function Orcamento() {
   const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
       { key: "recurring", type: "toggle", header: t("orcamento.recurringShort"), width: "64px" },
-      { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories) },
+      { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories), indentable: true },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // Fatura = marcada como Fatura OU já tem itens dentro (cobre vínculos do fluxo antigo).
-      const isFatura = (r: BudgetRow) => !!r.isStatement || rows.some((x) => x.parentId === r.id);
-      // "Fatura": marca o item como guarda-chuva (cartão) — ÍCONE DE CARTÃO, distinto do "Fixo" (↻).
-      // isOn reflete "é fatura" (marcada OU com itens dentro) pra o toggle não mentir em dados migrados.
-      columns.push({ key: "isStatement", type: "toggle", header: t("orcamento.statement"), width: "72px", icon: CreditCard, isOn: isFatura });
-      // "Na fatura": marca o item como PARTE de uma fatura (o valor já está nela → não soma de novo).
-      // Candidatos = SÓ as faturas (não todos os itens). 1 fatura → CHECK; 2+ → dropdown só das faturas.
+      // UMA coluna "Fatura" (seletor): "—" normal · "É a fatura" (o guarda-chuva/cartão) · dentro de
+      // uma fatura. Os 3 estados são mutuamente exclusivos → cabem numa coluna só (campo VIRTUAL
+      // statementRole, mapeado no commit). Candidatos "dentro de" = SÓ as faturas (não todos os itens).
       columns.push({
-        key: "parentId",
-        type: "insideStatement",
-        header: t("orcamento.insideOf"),
-        width: "minmax(104px,0.9fr)",
-        optionsFor: (r) =>
-          isFatura(r)
-            ? []
-            : rows
-                .filter((x) => isFatura(x) && x.id !== r.id)
-                .map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
+        key: "statementRole",
+        type: "select",
+        optional: true,
+        header: t("orcamento.statement"),
+        width: "minmax(128px,1.1fr)",
+        optionsFor: (r) => {
+          const selfOpt = { value: SELF_ROLE, label: t("orcamento.isStatement") };
+          if (r.statementRole === SELF_ROLE) return [selfOpt]; // já é fatura: continua sendo (ou "—" p/ desfazer)
+          const faturas = rows
+            .filter((x) => x.statementRole === SELF_ROLE && x.id !== r.id)
+            .map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") }));
+          return [selfOpt, ...faturas];
+        },
       });
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
@@ -222,8 +232,10 @@ export default function Orcamento() {
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
   const isCurrent = month === currentMonth();
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
-  // Filhos REAIS (pai existe) — pra tingir só quem não soma. Órfão (fatura apagada) fica sem tint.
+  // Filhos REAIS (pai existe) — pra tingir/recuar só quem não soma. Órfão (fatura apagada) fica normal.
   const expChildIds = childExpenseIds(view.monthExp);
+  // Linhas do grid: papel na fatura (statementRole) + agrupadas com os filhos aninhados sob a fatura.
+  const gridRows = groupExpenseRows(withStatementRole(view.monthExp as BudgetRow[]));
   const prev = shiftMonth(month, -1);
 
   return (
@@ -357,12 +369,13 @@ export default function Orcamento() {
           <div className="min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.expenseCategories, view.monthExp as BudgetRow[], true)}
-              rows={groupExpenseRows(view.monthExp as BudgetRow[])}
-              rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40" : undefined)}
+              columns={cols(tax.expenseCategories, gridRows, true)}
+              rows={gridRows}
+              rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40 shadow-[inset_3px_0_0_0_var(--accent)]" : undefined)}
+              indentRow={(r) => expChildIds.has(r.id)}
               blank={blank}
               isComplete={complete}
-              onCommit={(r) => void actions.putExpense(normalizeStatement(normalizeBill(r as Expense)))}
+              onCommit={(r) => void actions.putExpense(normalizeBill(fromStatementRole(r as BudgetRow)))}
               onDelete={(id) => void actions.removeExpense(id)}
               addPlaceholder={t("orcamento.detailPlaceholder")}
               total={<Money value={view.totalExp} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}

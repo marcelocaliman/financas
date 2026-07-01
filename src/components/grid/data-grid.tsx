@@ -48,6 +48,8 @@ export interface GridColumn<T> {
   icon?: LucideIcon;
   /** toggle: estado LIGADO derivado (default = o campo booleano da coluna). */
   isOn?: (row: T) => boolean;
+  /** Esta é a coluna recuada quando a linha é aninhada (ver indentRow). */
+  indentable?: boolean;
 }
 
 interface DataGridProps<T extends { id: string }> {
@@ -61,6 +63,8 @@ interface DataGridProps<T extends { id: string }> {
   total?: ReactNode;
   /** Classe extra por linha (ex.: tingir os itens DENTRO de uma fatura). */
   rowClass?: (row: T) => string | undefined;
+  /** Recua a coluna marcada com `indentable` desta linha (ex.: itens aninhados sob a fatura). */
+  indentRow?: (row: T) => boolean;
 }
 
 const CELL_INPUT =
@@ -725,6 +729,7 @@ export function DataGrid<T extends { id: string }>({
   addPlaceholder,
   total,
   rowClass,
+  indentRow,
 }: DataGridProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<T>(() => blank());
@@ -945,7 +950,7 @@ export function DataGrid<T extends { id: string }>({
           style={{ gridTemplateColumns: template }}
         >
           {columns.map((c) => (
-            <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
+            <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right", indentRow?.(row) && c.indentable && "pl-6")}>
               {renderCell(c, row, false)}
             </div>
           ))}
