@@ -6,6 +6,7 @@ import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
 import { AccessLogSection, AccessSummary } from "./sections/access-log";
 import { AdminsSection, AdminsSummary } from "./sections/admins";
 import { FlagsSection, FlagsSummary } from "./sections/flags";
+import { AdsSection, AdsSummary } from "./sections/ads";
 import { SectionErrorBoundary } from "./error-boundary";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +74,9 @@ export function AdminPage() {
         </Accordion>
         <Accordion id="adm-flags" title="Flags de funcionalidade" summary={<FlagsSummary />}>
           <SectionErrorBoundary name="Flags"><FlagsSection /></SectionErrorBoundary>
+        </Accordion>
+        <Accordion id="adm-ads" title="Ads" summary={<AdsSummary />}>
+          <SectionErrorBoundary name="Ads"><AdsSection /></SectionErrorBoundary>
         </Accordion>
       </div>
     </div>

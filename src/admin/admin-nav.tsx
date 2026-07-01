@@ -21,6 +21,7 @@ const LABEL: Record<string, string> = {
   analytics: "Analytics",
   access: "Acessos & logs",
   admins: "Administradores",
+  ads: "Ads",
 };
 
 function nameFromEmail(email: string | null): string {
