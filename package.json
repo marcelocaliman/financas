@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/gen-i18n-landing.mjs",
     "preview": "vite preview",
+    "og": "node scripts/gen-og.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -32,11 +33,13 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^25.9.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
+    "satori": "^0.26.0",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
