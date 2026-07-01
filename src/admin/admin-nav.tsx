@@ -17,10 +17,10 @@ import { cn } from "@/lib/utils";
 const LABEL: Record<string, string> = {
   overview: "Visão geral",
   users: "Usuários",
-  tickets: "Tickets",
   analytics: "Analytics",
   access: "Acessos & logs",
   admins: "Administradores",
+  flags: "Flags",
   ads: "Ads",
 };
 

@@ -440,7 +440,9 @@ export function NavList({
                 aria-expanded={sectionOpen}
                 className="grid place-items-center w-8 h-10 shrink-0 rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
               >
-                <ChevronDown size={15} className={cn("transition-transform duration-200", sectionOpen ? "text-accent" : "-rotate-90 text-faint")} />
+                {/* ROTAÇÃO = aberto/fechado; COR = ativo. Verde só no item ATIVO — seção aberta-mas-
+                    inativa fica neutra (senão o chevron verde parece "selecionado", ver adm-overview). */}
+                <ChevronDown size={15} className={cn("transition-transform duration-200", !sectionOpen && "-rotate-90", on ? "text-accent" : "text-faint")} />
               </button>
             ) : null}
           </div>
