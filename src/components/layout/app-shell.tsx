@@ -106,7 +106,11 @@ export function AppShell() {
       ) : (
         <TopNav active={active} />
       )}
-      <main className={side ? (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]") : undefined}>
+      <main className={cn("relative", side && (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]"))}>
+        {/* Glow verde do TOPO — vive AQUI no <main> (fora do wrapper com overflow-clip) pra cobrir
+            atrás do ticker E do topo do conteúdo de forma CONTÍNUA. Fica atrás de tudo (1º filho,
+            posicionado) e o ticker transparente deixa ele aparecer. Só quando o ticker está ligado. */}
+        {ratesTicker ? <div aria-hidden className="app-topglow pointer-events-none absolute inset-x-0 top-0 h-[220px]" /> : null}
         {ratesTicker ? <RatesTicker /> : null}
         {supportOpen ? (
           <SupportView />

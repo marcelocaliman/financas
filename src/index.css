@@ -262,14 +262,14 @@ body {
   z-index: 1;
 }
 
-/* Fundo da faixa do ticker: glow verde SUTIL (casando com o hero) sobre o --bg — em vez de um
-   preto chapado. O --bg mantém a oclusão (o conteúdo não vaza atrás do ticker); o glow deixa o
-   ticker "flutuar" sobre o verde, sem a prateleira preta. Theme-aware. */
-.ticker-bg {
-  background: radial-gradient(130% 200% at 50% -60%, rgba(21, 151, 106, 0.06), transparent 56%), var(--bg);
+/* Glow verde do TOPO do app: vive no <main> (FORA do wrapper com overflow-clip), então cobre
+   ATRÁS do ticker E do topo do conteúdo de forma CONTÍNUA — o glow do hero fica preso no clip.
+   É um overlay TRANSPARENTE (só o brilho radial); o ticker fica transparente por cima. Theme-aware. */
+.app-topglow {
+  background: radial-gradient(70% 90% at 45% -15%, rgba(21, 151, 106, 0.08), transparent 70%);
 }
-.dark .ticker-bg {
-  background: radial-gradient(130% 200% at 50% -60%, rgba(62, 207, 142, 0.1), transparent 56%), var(--bg);
+.dark .app-topglow {
+  background: radial-gradient(70% 90% at 45% -15%, rgba(62, 207, 142, 0.14), transparent 70%);
 }
 
 /* Selos de moeda (mono): BRL verde-claro, demais neutras. */
