@@ -266,10 +266,10 @@ body {
    preto chapado. O --bg mantém a oclusão (o conteúdo não vaza atrás do ticker); o glow deixa o
    ticker "flutuar" sobre o verde, sem a prateleira preta. Theme-aware. */
 .ticker-bg {
-  background: radial-gradient(120% 320% at 34% -30%, rgba(21, 151, 106, 0.1), transparent 62%), var(--bg);
+  background: radial-gradient(130% 200% at 50% -60%, rgba(21, 151, 106, 0.06), transparent 56%), var(--bg);
 }
 .dark .ticker-bg {
-  background: radial-gradient(120% 320% at 34% -30%, rgba(62, 207, 142, 0.18), transparent 62%), var(--bg);
+  background: radial-gradient(130% 200% at 50% -60%, rgba(62, 207, 142, 0.1), transparent 56%), var(--bg);
 }
 
 /* Selos de moeda (mono): BRL verde-claro, demais neutras. */
