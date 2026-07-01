@@ -602,7 +602,30 @@
     .appmock .am-screen.is-active .am-vbar:nth-child(7){ animation-delay: .64s; }
     .appmock .am-year { font-family: var(--font-mono); font-size: clamp(9px,2.3cqw,11px); letter-spacing: .1em; color: var(--faint); margin-top: clamp(10px,3.4cqw,16px); }
 
+    /* S2 — donut de composição (preenche o miolo) */
+    .appmock .am-donutwrap { flex: 1 1 auto; min-height: 0; display: grid; place-items: center; margin-top: clamp(8px,3cqw,16px); }
+    .appmock .am-donut { width: clamp(84px, 38cqw, 190px); aspect-ratio: 1/1; border-radius: 50%;
+      background: conic-gradient(var(--accent) 0 var(--s1), #8a8f98 var(--s1) var(--s2), var(--card-2) var(--s2) 100%);
+      -webkit-mask: radial-gradient(circle, transparent 54%, #000 55%); mask: radial-gradient(circle, transparent 54%, #000 55%); }
+    .appmock .am-screen.is-active .am-donut { animation: amPop .6s cubic-bezier(.2,.8,.3,1.2) both .32s; }
+    .appmock .am-dlegend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; margin-top: clamp(10px,3.4cqw,16px); }
+
+    /* S3 — lista de posições (preenche a metade de baixo) */
+    .appmock .am-holds { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; margin-top: clamp(10px,3.6cqw,18px); }
+    .appmock .am-hrow { display: flex; align-items: center; gap: 10px; }
+    .appmock .am-tk { font-family: var(--font-mono); font-size: clamp(9px,2.4cqw,12px); font-weight: 600; color: var(--muted); letter-spacing: .04em; min-width: clamp(42px,14cqw,60px); }
+    .appmock .am-htrack { flex: 1 1 auto; height: clamp(5px,1.6cqw,8px); border-radius: 999px; background: var(--card-2); overflow: hidden; }
+    .appmock .am-hbar { display: block; height: 100%; width: var(--w); border-radius: 999px; background: var(--accent); transform-origin: left; }
+    .appmock .am-hret { font-size: clamp(9px,2.4cqw,12px); font-weight: 600; font-variant-numeric: tabular-nums; min-width: clamp(40px,13cqw,56px); text-align: right; }
+    .appmock .am-hret.pos { color: var(--accent); }
+    .appmock .am-hret.neg { color: var(--neg); }
+    .appmock .am-screen.is-active .am-hrow:nth-child(1) .am-hbar { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .34s; }
+    .appmock .am-screen.is-active .am-hrow:nth-child(2) .am-hbar { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .44s; }
+    .appmock .am-screen.is-active .am-hrow:nth-child(3) .am-hbar { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .54s; }
+    .appmock .am-screen.is-active .am-hrow:nth-child(4) .am-hbar { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .64s; }
+
     @keyframes amRise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+    @keyframes amPop { from{opacity:0;transform:scale(.82)} to{opacity:1;transform:none} }
     @keyframes amGrowX { from{transform:scaleX(0)} to{transform:scaleX(1)} }
     @keyframes amGrowY { from{transform:scaleY(0)} to{transform:scaleY(1)} }
     @keyframes amDraw { from{stroke-dashoffset:1} to{stroke-dashoffset:0} }
@@ -862,19 +885,19 @@
                   <div class="am-badges"><span class="am-badge am-b-brl">BRL</span><span class="am-badge am-b-eur">EUR</span></div>
                 </div>
 
-                <!-- Tela 2 · Orçamento (categorias) -->
+                <!-- Tela 2 · Orçamento (composição em donut) -->
                 <div class="am-screen">
                   <div class="am-eyebrow" data-i18n="mock.budget">Orçamento</div>
                   <div class="am-hero"><span class="am-num">R$ 2.140</span><span class="am-delta" style="margin:0 0 0 10px">▲ 12%</span></div>
-                  <div class="am-bars">
-                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:84%;--c:var(--accent)"></span></span><span class="am-bval">R$ 3.200</span></div>
-                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:62%;--c:#8a8f98"></span></span><span class="am-bval">R$ 1.850</span></div>
-                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:41%;--c:#8a8f98"></span></span><span class="am-bval">R$ 980</span></div>
-                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:28%;--c:var(--card-2)"></span></span><span class="am-bval">R$ 640</span></div>
+                  <div class="am-donutwrap"><div class="am-donut" style="--s1:53%;--s2:84%"></div></div>
+                  <div class="am-dlegend">
+                    <span class="am-li"><i style="background:var(--accent)"></i>R$ 3.200</span>
+                    <span class="am-li"><i style="background:#8a8f98"></i>R$ 1.850</span>
+                    <span class="am-li"><i style="background:var(--card-2)"></i>R$ 980</span>
                   </div>
                 </div>
 
-                <!-- Tela 3 · Investimentos (alocação) -->
+                <!-- Tela 3 · Investimentos (alocação + posições) -->
                 <div class="am-screen">
                   <div class="am-eyebrow" data-i18n="mock.invest">Investimentos</div>
                   <div class="am-big">+18,6%</div>
@@ -885,12 +908,11 @@
                     <span class="am-aseg" style="flex:14;background:#6b7280"></span>
                     <span class="am-aseg" style="flex:10;background:var(--card-2)"></span>
                   </div>
-                  <div class="am-alegend">
-                    <span class="am-li"><i style="background:var(--accent)"></i>34%</span>
-                    <span class="am-li"><i style="background:color-mix(in oklab,var(--accent) 60%,var(--card-2))"></i>24%</span>
-                    <span class="am-li"><i style="background:#8a8f98"></i>18%</span>
-                    <span class="am-li"><i style="background:#6b7280"></i>14%</span>
-                    <span class="am-li"><i style="background:var(--card-2)"></i>10%</span>
+                  <div class="am-holds">
+                    <div class="am-hrow"><span class="am-tk">VWCE</span><span class="am-htrack"><span class="am-hbar" style="--w:90%"></span></span><span class="am-hret pos">+2,1%</span></div>
+                    <div class="am-hrow"><span class="am-tk">AAPL</span><span class="am-htrack"><span class="am-hbar" style="--w:72%"></span></span><span class="am-hret pos">+1,4%</span></div>
+                    <div class="am-hrow"><span class="am-tk">PETR4</span><span class="am-htrack"><span class="am-hbar" style="--w:54%"></span></span><span class="am-hret neg">−0,8%</span></div>
+                    <div class="am-hrow"><span class="am-tk">BTC</span><span class="am-htrack"><span class="am-hbar" style="--w:38%"></span></span><span class="am-hret pos">+3,6%</span></div>
                   </div>
                 </div>
 
