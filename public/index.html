@@ -602,12 +602,16 @@
     .appmock .am-screen.is-active .am-vbar:nth-child(7){ animation-delay: .64s; }
     .appmock .am-year { font-family: var(--font-mono); font-size: clamp(9px,2.3cqw,11px); letter-spacing: .1em; color: var(--faint); margin-top: clamp(10px,3.4cqw,16px); }
 
-    /* S2 — donut de composição (preenche o miolo) */
+    /* S2 — donut de composição em SVG: os arcos se DESENHAM em sequência (stroke-dasharray 0→len) */
     .appmock .am-donutwrap { flex: 1 1 auto; min-height: 0; display: grid; place-items: center; margin-top: clamp(8px,3cqw,16px); }
-    .appmock .am-donut { width: clamp(84px, 38cqw, 190px); aspect-ratio: 1/1; border-radius: 50%;
-      background: conic-gradient(var(--accent) 0 var(--s1), #8a8f98 var(--s1) var(--s2), var(--card-2) var(--s2) 100%);
-      -webkit-mask: radial-gradient(circle, transparent 54%, #000 55%); mask: radial-gradient(circle, transparent 54%, #000 55%); }
-    .appmock .am-screen.is-active .am-donut { animation: amPop .6s cubic-bezier(.2,.8,.3,1.2) both .32s; }
+    .appmock .am-donut { width: clamp(84px, 38cqw, 188px); height: auto; }
+    .appmock .am-dseg { stroke-linecap: butt; }
+    .appmock .am-d1 { stroke-dasharray: 53 47; }
+    .appmock .am-d2 { stroke-dasharray: 31 69; }
+    .appmock .am-d3 { stroke-dasharray: 16 84; }
+    .appmock .am-screen.is-active .am-d1 { animation: amDseg1 .7s ease both .30s; }
+    .appmock .am-screen.is-active .am-d2 { animation: amDseg2 .7s ease both .52s; }
+    .appmock .am-screen.is-active .am-d3 { animation: amDseg3 .7s ease both .74s; }
     .appmock .am-dlegend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; margin-top: clamp(10px,3.4cqw,16px); }
 
     /* S3 — lista de posições (preenche a metade de baixo) */
@@ -625,7 +629,9 @@
     .appmock .am-screen.is-active .am-hrow:nth-child(4) .am-hbar { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .64s; }
 
     @keyframes amRise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
-    @keyframes amPop { from{opacity:0;transform:scale(.82)} to{opacity:1;transform:none} }
+    @keyframes amDseg1 { from{stroke-dasharray:0 100} to{stroke-dasharray:53 47} }
+    @keyframes amDseg2 { from{stroke-dasharray:0 100} to{stroke-dasharray:31 69} }
+    @keyframes amDseg3 { from{stroke-dasharray:0 100} to{stroke-dasharray:16 84} }
     @keyframes amGrowX { from{transform:scaleX(0)} to{transform:scaleX(1)} }
     @keyframes amGrowY { from{transform:scaleY(0)} to{transform:scaleY(1)} }
     @keyframes amDraw { from{stroke-dashoffset:1} to{stroke-dashoffset:0} }
@@ -889,11 +895,17 @@
                 <div class="am-screen">
                   <div class="am-eyebrow" data-i18n="mock.budget">Orçamento</div>
                   <div class="am-hero"><span class="am-num">R$ 2.140</span><span class="am-delta" style="margin:0 0 0 10px">▲ 12%</span></div>
-                  <div class="am-donutwrap"><div class="am-donut" style="--s1:53%;--s2:84%"></div></div>
+                  <div class="am-donutwrap">
+                    <svg class="am-donut" viewBox="0 0 44 44">
+                      <circle class="am-dseg am-d1" cx="22" cy="22" r="16" fill="none" stroke="var(--accent)" stroke-width="7" pathLength="100" transform="rotate(-90 22 22)" />
+                      <circle class="am-dseg am-d2" cx="22" cy="22" r="16" fill="none" stroke="#8a8f98" stroke-width="7" pathLength="100" transform="rotate(100.8 22 22)" />
+                      <circle class="am-dseg am-d3" cx="22" cy="22" r="16" fill="none" stroke="#6b7280" stroke-width="7" pathLength="100" transform="rotate(212.4 22 22)" />
+                    </svg>
+                  </div>
                   <div class="am-dlegend">
                     <span class="am-li"><i style="background:var(--accent)"></i>R$ 3.200</span>
                     <span class="am-li"><i style="background:#8a8f98"></i>R$ 1.850</span>
-                    <span class="am-li"><i style="background:var(--card-2)"></i>R$ 980</span>
+                    <span class="am-li"><i style="background:#6b7280"></i>R$ 980</span>
                   </div>
                 </div>
 
