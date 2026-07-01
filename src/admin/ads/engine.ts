@@ -135,23 +135,28 @@ function badge(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, c
   return w;
 }
 
-/** Donut (arcos) — composição do orçamento. */
-function drawDonut(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, th: number, segs: [number, string][]) {
+/** Donut (arcos) — composição do orçamento. `reveal` (0..1) desenha só até essa fração (animação). */
+function drawDonut(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, th: number, segs: [number, string][], reveal = 1) {
   ctx.lineWidth = th;
   ctx.lineCap = "butt";
-  let start = -Math.PI / 2;
+  let cum = 0;
   for (const [frac, color] of segs) {
-    const end = start + frac * Math.PI * 2;
+    if (reveal <= cum) break;
+    const visEnd = Math.min(cum + frac, reveal);
+    const a0 = -Math.PI / 2 + cum * 2 * Math.PI;
+    const a1 = -Math.PI / 2 + visEnd * 2 * Math.PI;
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.arc(cx, cy, r, start, end);
+    ctx.arc(cx, cy, r, a0, a1);
     ctx.stroke();
-    start = end;
+    cum += frac;
   }
 }
 
-/** Card-mockup do app (screenshot estilizado) pro hook — preenche o vazio e VARIA por tema. */
-function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut", a: number) {
+/** Card-mockup do app (screenshot estilizado): os elementos se CONSTROEM ao longo da cena (número
+ *  conta, linhas/legenda em cascata, dots um a um, donut desenhando), como o mock da landing.
+ *  `a` = alpha da cena/pop; `lt` = tempo local da cena (dispara as animações internas). */
+function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut", a: number, lt: number) {
   const h = w * (kind === "donut" ? 1.05 : 0.84); // altura ajustada ao conteúdo de cada mockup
   ctx.save();
   ctx.globalAlpha = a;
@@ -175,6 +180,7 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
   const px = x + 42 * s, py = y + 62 * s, iw = w - 84 * s;
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
+  const fade = (delay: number, dur = 0.45) => clamp01((lt - delay) / dur); // progresso de 1 elemento
   const eyebrow = (txt: string) => {
     ctx.fillStyle = FAINT;
     ctx.font = fontMono(20 * s, 600);
@@ -185,14 +191,22 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
 
   if (kind === "currencies") {
     eyebrow("PATRIMÔNIO LÍQUIDO");
+    // número contando de 0 até o valor
+    const n = Math.round(1284500 * easeOut(clamp01((lt - 0.5) / 1.3)));
     ctx.fillStyle = TEXT;
     ctx.font = fontSans(56 * s, 600);
-    ctx.fillText("R$ 1.284.500", px, py + 66 * s);
+    ctx.fillText("R$ " + n.toLocaleString("pt-BR"), px, py + 66 * s);
+    ctx.globalAlpha = a * fade(1.0);
     ctx.fillStyle = ACCENT;
     ctx.font = fontSans(24 * s, 600);
     ctx.fillText("▲ 2,4% no mês", px, py + 108 * s);
+    ctx.globalAlpha = a;
+    // linhas de moeda entram em cascata
     const rows: [string, string, boolean][] = [["BRL", "R$ 1.284.500", true], ["EUR", "€ 214.900", false], ["USD", "$ 236.200", false]];
     rows.forEach((r, i) => {
+      const rp = fade(1.25 + i * 0.22);
+      if (rp <= 0) return;
+      ctx.globalAlpha = a * rp;
       const ry = py + 190 * s + i * 76 * s;
       badge(ctx, s, px, ry - 30 * s, r[0], r[2]);
       ctx.fillStyle = TEXT;
@@ -210,52 +224,76 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
         ctx.lineTo(px + iw, ry + 32 * s);
         ctx.stroke();
       }
+      ctx.globalAlpha = a;
     });
   } else if (kind === "masked") {
     eyebrow("PATRIMÔNIO LÍQUIDO");
+    // dots cifrando um a um
+    const shown = Math.floor(easeOut(clamp01((lt - 0.5) / 1.2)) * 7 + 1e-4);
     ctx.fillStyle = TEXT;
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < shown; i++) {
       ctx.beginPath();
       ctx.arc(px + 22 * s + i * 46 * s, py + 48 * s, 15 * s, 0, Math.PI * 2);
       ctx.fill();
     }
-    const ct = "Só você vê", chipY = py + 108 * s, chH = 56 * s;
-    ctx.font = fontSans(26 * s, 600);
-    const cw = ctx.measureText(ct).width + 92 * s;
-    ctx.fillStyle = "rgba(62,207,142,0.14)";
-    roundRect(ctx, px, chipY, cw, chH, chH / 2);
-    ctx.fill();
-    const lx = px + 30 * s, lyc = chipY + chH / 2;
-    ctx.strokeStyle = ACCENT;
-    ctx.lineWidth = 4 * s;
-    ctx.beginPath();
-    ctx.arc(lx, lyc - 5 * s, 9 * s, Math.PI, 0);
-    ctx.stroke();
-    ctx.fillStyle = ACCENT;
-    roundRect(ctx, lx - 12 * s, lyc - 3 * s, 24 * s, 19 * s, 4 * s);
-    ctx.fill();
-    ctx.textBaseline = "middle";
-    ctx.fillText(ct, px + 62 * s, lyc + 1 * s);
-    ctx.textBaseline = "alphabetic";
-    // "gráfico" fantasma
+    // chip "🔒 Só você vê" aparece depois
+    const chp = fade(1.3);
+    if (chp > 0) {
+      ctx.globalAlpha = a * chp;
+      const ct = "Só você vê", chipY = py + 108 * s, chH = 56 * s;
+      ctx.font = fontSans(26 * s, 600);
+      const cw = ctx.measureText(ct).width + 92 * s;
+      ctx.fillStyle = "rgba(62,207,142,0.14)";
+      roundRect(ctx, px, chipY, cw, chH, chH / 2);
+      ctx.fill();
+      const lx = px + 30 * s, lyc = chipY + chH / 2;
+      ctx.strokeStyle = ACCENT;
+      ctx.lineWidth = 4 * s;
+      ctx.beginPath();
+      ctx.arc(lx, lyc - 5 * s, 9 * s, Math.PI, 0);
+      ctx.stroke();
+      ctx.fillStyle = ACCENT;
+      roundRect(ctx, lx - 12 * s, lyc - 3 * s, 24 * s, 19 * s, 4 * s);
+      ctx.fill();
+      ctx.textBaseline = "middle";
+      ctx.fillText(ct, px + 62 * s, lyc + 1 * s);
+      ctx.textBaseline = "alphabetic";
+      ctx.globalAlpha = a;
+    }
+    // "gráfico" fantasma se desenhando
     ctx.strokeStyle = "rgba(255,255,255,0.08)";
     ctx.lineWidth = 8 * s;
     ctx.lineCap = "round";
-    const gy = py + 250 * s;
-    const pts = [0.7, 0.55, 0.62, 0.4, 0.5, 0.3, 0.22];
+    const gy = py + 250 * s, pts = [0.7, 0.55, 0.62, 0.4, 0.5, 0.3, 0.22], seg = pts.length - 1;
+    const cp = clamp01((lt - 0.8) / 1.4) * seg;
     ctx.beginPath();
-    pts.forEach((p, i) => {
-      const gx = px + (iw * i) / (pts.length - 1);
-      const gyy = gy + 130 * s * p;
-      i === 0 ? ctx.moveTo(gx, gyy) : ctx.lineTo(gx, gyy);
-    });
+    for (let i = 0; i <= seg; i++) {
+      const gx = px + (iw * i) / seg, gyy = gy + 130 * s * pts[i];
+      if (i === 0) {
+        ctx.moveTo(gx, gyy);
+        continue;
+      }
+      if (cp >= i) ctx.lineTo(gx, gyy);
+      else {
+        const tt = cp - (i - 1);
+        if (tt > 0) {
+          const gx0 = px + (iw * (i - 1)) / seg, gy0 = gy + 130 * s * pts[i - 1];
+          ctx.lineTo(gx0 + (gx - gx0) * tt, gy0 + (gyy - gy0) * tt);
+        }
+        break;
+      }
+    }
     ctx.stroke();
   } else {
     eyebrow("ORÇAMENTO DO MÊS");
     const dcx = x + w / 2, dcy = py + 175 * s, dr = 118 * s;
-    drawDonut(ctx, dcx, dcy, dr, 46 * s, [[0.53, ACCENT], [0.31, "#8A8F98"], [0.16, CARD2]]);
+    // donut se desenhando (sweep)
+    drawDonut(ctx, dcx, dcy, dr, 46 * s, [[0.53, ACCENT], [0.31, "#8A8F98"], [0.16, CARD2]], easeInOut(clamp01((lt - 0.5) / 1.4)));
     const legs: [string, string, string][] = [["Moradia", ACCENT, "R$ 3.2k"], ["Alimentação", "#8A8F98", "R$ 1.9k"], ["Outros", CARD2, "R$ 980"]];
     legs.forEach((l, i) => {
+      const lp = fade(1.3 + i * 0.2);
+      if (lp <= 0) return;
+      ctx.globalAlpha = a * lp;
       const ly = py + 350 * s + i * 62 * s;
       ctx.fillStyle = l[1];
       roundRect(ctx, px, ly - 15 * s, 20 * s, 20 * s, 5 * s);
@@ -269,6 +307,7 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
       ctx.fillText(l[2], px + iw, ly - 4 * s);
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
+      ctx.globalAlpha = a;
     });
   }
   ctx.restore();
@@ -406,7 +445,7 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       // O APP: mockup em cima + legenda (título menor + sub) embaixo.
       const pop = easeOut(clamp01((lt - 0.15) / 0.85));
       const cardY = H * 0.32 + (1 - pop) * 30 * s;
-      drawMockCard(ctx, s, W / 2, cardY, 540 * s, sc.mock, a * (0.3 + 0.7 * pop));
+      drawMockCard(ctx, s, W / 2, cardY, 540 * s, sc.mock, a * (0.3 + 0.7 * pop), lt);
       drawEyebrow(ctx, s, x, H * 0.6, sc.eyebrow || "", a);
       const tb = drawTitle(ctx, s, x, H * 0.6 + 78 * s, sc.title || [], a, rise, 74);
       if (sc.sub) drawSub(ctx, s, x, tb + 22 * s, W, sc.sub, a);
