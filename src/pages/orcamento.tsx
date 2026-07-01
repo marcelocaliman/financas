@@ -373,8 +373,19 @@ function CategoryDonut({
           </ResponsiveContainer>
         </div>
         {/* Legenda com altura FIXA (= a do donut) + rolagem sutil: o card fica do MESMO tamanho
-            com 3 ou 100 itens, e os dois cards (receitas/gastos) sempre alinhados. */}
-        <div className="flex flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1">
+            com 3 ou 100 itens, e os dois cards (receitas/gastos) sempre alinhados. Fade na base
+            só quando há mais itens do que cabem (dica de "role pra ver mais"; não corta lista curta). */}
+        <div
+          className="flex flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1"
+          style={
+            data.length > 5
+              ? {
+                  maskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)",
+                  WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)",
+                }
+              : undefined
+          }
+        >
           {data.map((e, i) => (
             <div key={e.id} className="flex items-center gap-2.5 text-[12.5px]">
               <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
