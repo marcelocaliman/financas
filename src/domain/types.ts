@@ -51,6 +51,9 @@ export interface Expense {
   /** DENTRO de outro gasto (a fatura do cartão) — id do lançamento "pai". Um filho é DISCRIMINADO
    *  mas NÃO soma no total (já está no valor da fatura) — evita dupla contagem. Ver finance/statement. */
   parentId?: string;
+  /** É uma FATURA/cartão (um guarda-chuva): outros itens podem ser marcados como DENTRO dele. Só
+   *  marcador de UI (define quem pode ser "pai"); a regra de soma é sempre por parentId. */
+  isStatement?: boolean;
 }
 
 export interface Income {

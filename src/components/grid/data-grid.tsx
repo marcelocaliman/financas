@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -12,7 +12,7 @@ import { useViewer } from "@/store/viewer";
 const MASK = "••••";
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
-export type ColType = "currency" | "text" | "select" | "money" | "number" | "day" | "month" | "computed" | "toggle";
+export type ColType = "currency" | "text" | "select" | "money" | "number" | "day" | "month" | "computed" | "toggle" | "insideStatement";
 
 const MONTH_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 /** "AAAA-MM" → "jun/26" no locale dado. */
@@ -798,6 +798,37 @@ export function DataGrid<T extends { id: string }>({
             onCommit={commit}
           />
         );
+      // "Dentro de" (fatura): 0 faturas → "—"; 1 fatura → CHECK que liga/desliga na única fatura;
+      // 2+ faturas → select só das faturas. As faturas candidatas vêm de col.optionsFor.
+      case "insideStatement": {
+        const faturas = col.optionsFor ? col.optionsFor(row) : [];
+        const current = (get(row, col.key) as string) ?? "";
+        if (faturas.length === 0) return <div className="px-2 py-1.5 text-[13px] text-faint text-center">—</div>;
+        if (faturas.length === 1) {
+          const f = faturas[0];
+          const on = current === f.value;
+          return (
+            <div className="flex justify-center">
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                aria-label={col.header}
+                title={f.label}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => commit(on ? "" : f.value)}
+                className={cn(
+                  "grid place-items-center w-6 h-6 rounded-[7px] border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                  on ? "text-[#0A0B0D] bg-accent border-accent" : "text-transparent border-border hover:border-border-strong hover:bg-card-hover",
+                )}
+              >
+                <Check size={13} strokeWidth={3} />
+              </button>
+            </div>
+          );
+        }
+        return <SelectCell value={current} options={faturas} optional placeholder={col.placeholder} rowId={rowId} colKey={col.key} onCommit={commit} />;
+      }
       case "number":
         return (
           <NumberCell

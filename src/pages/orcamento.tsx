@@ -23,7 +23,7 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean };
 
 /** Ordena os gastos agrupando cada FILHO logo abaixo da sua fatura (pai). */
 function groupExpenseRows(rows: BudgetRow[]): BudgetRow[] {
@@ -66,6 +66,11 @@ const STATUS_TONE: Record<BillStatus, string> = {
   soon: "text-text",
   later: "text-faint",
 };
+/** Uma FATURA não fica dentro de outra: marcar como fatura limpa o vínculo de pai (mutuamente
+ *  exclusivos — ou é o guarda-chuva, ou está dentro de um). */
+function normalizeStatement(e: Expense): Expense {
+  return e.isStatement && e.parentId ? { ...e, parentId: undefined } : e;
+}
 /** Conta a pagar válida: dia 1–31 inteiro; 0/inválido limpa o vencimento (vira gasto comum). */
 function normalizeBill(e: Expense): Expense {
   if (e.dueDay == null) return e;
@@ -186,20 +191,23 @@ export default function Orcamento() {
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // "Dentro de" (fatura): vincula o item a um lançamento-pai. O valor do item JÁ está no total
-      // da fatura → o filho não soma de novo (sem duplicidade). Candidatos = itens top-level (exceto
-      // ele mesmo); uma fatura que já tem itens não pode entrar em outra (mantém 1 nível).
+      // "Fatura": marca o item como guarda-chuva (o total dele já inclui outros itens, ex.: cartão).
+      columns.push({ key: "isStatement", type: "toggle", header: t("orcamento.statement"), width: "72px" });
+      // "Dentro de": marca o item como PARTE de uma fatura (o valor já está nela → não soma de novo).
+      // Candidatos = SÓ as faturas (não todos os itens). 1 fatura → vira um CHECK; 2+ → dropdown só
+      // das faturas. Uma fatura não entra em outra (candidatos vazios pra ela).
+      // Fatura = marcada como Fatura OU já tem itens dentro (cobre vínculos do fluxo antigo).
+      const isFatura = (r: BudgetRow) => !!r.isStatement || rows.some((x) => x.parentId === r.id);
       columns.push({
         key: "parentId",
-        type: "select",
-        optional: true,
+        type: "insideStatement",
         header: t("orcamento.insideOf"),
-        width: "minmax(116px,1fr)",
+        width: "minmax(104px,0.9fr)",
         optionsFor: (r) =>
-          rows.some((x) => x.parentId === r.id)
+          isFatura(r)
             ? []
             : rows
-                .filter((x) => x.id !== r.id && !x.parentId)
+                .filter((x) => isFatura(x) && x.id !== r.id)
                 .map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
       });
     }
@@ -354,7 +362,7 @@ export default function Orcamento() {
               rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40" : undefined)}
               blank={blank}
               isComplete={complete}
-              onCommit={(r) => void actions.putExpense(normalizeBill(r as Expense))}
+              onCommit={(r) => void actions.putExpense(normalizeStatement(normalizeBill(r as Expense)))}
               onDelete={(id) => void actions.removeExpense(id)}
               addPlaceholder={t("orcamento.detailPlaceholder")}
               total={<Money value={view.totalExp} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
