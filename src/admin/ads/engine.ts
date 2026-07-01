@@ -418,6 +418,16 @@ function drawTitle(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
   return y + lines.length * lh;
 }
 
+/** Maior px (entre minPx e maxPx) que faz a LINHA MAIS LARGA caber em targetW (px de canvas).
+ *  Deixa o título preencher a largura: linhas curtas ficam grandes, linhas longas não estouram. */
+function fitTitlePx(ctx: CanvasRenderingContext2D, s: number, lines: string[], targetW: number, minPx: number, maxPx: number) {
+  ctx.font = fontSans(100 * s, 600);
+  let maxW = 1;
+  for (const ln of lines) maxW = Math.max(maxW, ctx.measureText(ln).width);
+  const px = (targetW / maxW) * 100;
+  return Math.max(minPx, Math.min(maxPx, px));
+}
+
 /** Pílulas de features (cena de amplitude) — quebra em linhas se não couber. */
 function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, chips: string[], a: number, maxW: number) {
   ctx.globalAlpha = a;
@@ -478,26 +488,37 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
   const rise = (1 - easeOut(lt / 0.85)) * 40 * s; // sobe ao entrar (mais suave)
 
   if (sc.kind === "hook") {
+    const availW = (W - x * 2) * 0.99; // largura útil (título preenche quase toda a coluna)
     if (sc.mock) {
-      // O APP: mockup em cima + legenda (título menor + sub) embaixo.
+      // O APP: mockup em cima + legenda (título + sub) embaixo, título auto-ajustado à largura.
       const pop = easeOut(clamp01((lt - 0.15) / 0.85));
-      const cardY = H * 0.31 + (1 - pop) * 30 * s;
+      const cardY = H * 0.29 + (1 - pop) * 30 * s;
       // Card maior e RETO. Largura de design 700 (era 540); passo o s proporcional pra o conteúdo
       // (números, barras, donut) escalar junto e manter o mesmo preenchimento do card.
       const D = 700;
       drawMockCard(ctx, s * (D / 540), W / 2, cardY, D * s, sc.mock, a * (0.3 + 0.7 * pop), lt);
-      drawEyebrow(ctx, s, x, H * 0.6, sc.eyebrow || "", a);
-      const tb = drawTitle(ctx, s, x, H * 0.6 + 78 * s, sc.title || [], a, rise, 74);
-      if (sc.sub) drawSub(ctx, s, x, tb + 22 * s, W, sc.sub, a);
+      const px = fitTitlePx(ctx, s, sc.title || [], availW, 84, 104);
+      const eyeY = H * 0.605;
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.82 + 20) * s, sc.title || [], a, rise, px);
+      if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a);
     } else {
-      // PROBLEMA / BENEFÍCIO: texto grande + sub/chips opcionais.
-      drawEyebrow(ctx, s, x, midY - 210 * s, sc.eyebrow || "", a);
-      let tb = drawTitle(ctx, s, x, midY - 110 * s, sc.title || [], a, rise, 90);
+      // PROBLEMA / BENEFÍCIO: título GRANDE que preenche a largura + sub/chips opcionais.
+      const lines = sc.title || [];
+      const px = fitTitlePx(ctx, s, lines, availW, 104, 150);
+      const lh = (px + 8) * s;
+      const eyeGap = (px * 0.5 + 44) * s; // do baseline do eyebrow ao 1º baseline do título
+      const titleH = lines.length * lh;
+      const extraH = sc.sub ? 150 * s : sc.chips ? 150 * s : 0;
+      const blockH = eyeGap + titleH + extraH;
+      const eyeY = (H - blockH) / 2 + px * 0.35 * s; // centraliza o bloco todo verticalmente
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a);
+      let tb = drawTitle(ctx, s, x, eyeY + eyeGap, lines, a, rise, px);
       if (sc.sub) {
-        drawSub(ctx, s, x, tb + 28 * s, W, sc.sub, a);
-        tb += 86 * s;
+        drawSub(ctx, s, x, tb + 34 * s, W, sc.sub, a);
+        tb += 90 * s;
       }
-      if (sc.chips) drawChips(ctx, s, x, tb + 40 * s, sc.chips, a, W - x * 2);
+      if (sc.chips) drawChips(ctx, s, x, tb + 46 * s, sc.chips, a, W - x * 2);
     }
     return;
   }
