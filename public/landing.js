@@ -554,3 +554,27 @@
     });
   });
 })();
+
+/* Mock do app (seção "quem construiu"): faz o TOUR das telas — troca a tela ativa a cada ~4.2s,
+   e cada uma remonta ao ativar (via CSS). Só roda quando visível na tela e com a aba ativa.
+   Respeita prefers-reduced-motion (aí fica só a 1ª tela, montada). */
+(function () {
+  var mock = document.querySelector(".appmock");
+  if (!mock) return;
+  var screens = mock.querySelectorAll(".am-screen");
+  if (screens.length < 2) return;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  var i = 0, timer = null, onscreen = true;
+  function show(n) {
+    screens[i].classList.remove("is-active");
+    i = (n + screens.length) % screens.length;
+    screens[i].classList.add("is-active");
+  }
+  function start() { if (!timer) timer = setInterval(function () { show(i + 1); }, 4200); }
+  function stop() { if (timer) { clearInterval(timer); timer = null; } }
+  function sync() { (onscreen && document.visibilityState === "visible") ? start() : stop(); }
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(function (es) { onscreen = es[0].isIntersecting; sync(); }, { threshold: 0.25 }).observe(mock);
+  } else { start(); }
+  document.addEventListener("visibilitychange", sync);
+})();

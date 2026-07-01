@@ -505,75 +505,115 @@
     #planos .plans.inv-live .plan-inv .inv-live-cta{display:flex}
     @media (max-width:980px){#planos .plans{grid-template-columns:1fr}}
 
-    /* ── Mock animado da UI (substitui a foto do fundador): o Painel do app se montando sozinho.
-         100% HTML/CSS/SVG, sem imagens. Usa os tokens (adapta ao tema claro). Loop calmo:
-         monta em cascata → segura ~7s → dissolve rápido → remonta. Respeita reduced-motion. ── */
+    /* ── Mock animado da UI: TOUR do app — 4 telas se montando em sequência (Painel → Orçamento →
+         Investimentos → Projeção). O landing.js troca a tela ativa a cada ~4.2s; cada uma REMONTA
+         ao ativar. 100% HTML/CSS/SVG, sem imagens; usa os tokens (tema claro incluso); respeita
+         reduced-motion. Padrão: bases VISÍVEIS + animação `both` traz do estado escondido —
+         assim ao desativar a tela some suave (fade do container), sem a barra/linha "colapsar". ── */
     .appmock { background: var(--bg); container-type: size; }
     .appmock .am-win { position: absolute; inset: 0; display: flex; flex-direction: column;
-      padding: clamp(15px, 6cqw, 28px);
+      padding: clamp(15px, 5.6cqw, 28px);
       background: radial-gradient(125% 80% at 12% -8%, rgba(62,207,142,.10), transparent 55%), var(--bg); }
-    .appmock .am-top { display: flex; align-items: center; gap: 10px; margin-bottom: clamp(14px, 5.5cqw, 26px); }
+    .appmock .am-top { display: flex; align-items: center; gap: 7px; flex: none; margin-bottom: clamp(12px, 4.4cqw, 22px); }
     .appmock .am-dots { display: inline-flex; gap: 6px; }
-    .appmock .am-dots i { width: clamp(7px,1.9cqw,9px); height: clamp(7px,1.9cqw,9px); border-radius: 50%; background: var(--card-2); display: block; }
-    .appmock .am-dots i:first-child { background: rgba(241,116,106,.5); }
-    .appmock .am-tab { margin-left: auto; font-family: var(--font-mono); font-size: clamp(8.5px,2.2cqw,11px);
-      letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
-      border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
-    .appmock .am-eyebrow { font-family: var(--font-mono); font-size: clamp(9px,2.6cqw,12px); font-weight: 600;
+    .appmock .am-dots i { width: clamp(7px,1.8cqw,9px); height: clamp(7px,1.8cqw,9px); border-radius: 50%; background: var(--card-2); display: block; }
+    .appmock .am-dots i:first-child { background: rgba(241,116,106,.55); }
+    .appmock .am-live { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+      animation: amPulse 2.2s ease-out infinite; }
+
+    /* palco + telas empilhadas (uma ATIVA por vez) */
+    .appmock .am-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+    .appmock .am-screen { position: absolute; inset: 0; display: flex; flex-direction: column; pointer-events: none;
+      opacity: 0; transform: translateY(12px) scale(.985); transition: opacity .5s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+    .appmock .am-screen.is-active { opacity: 1; transform: none; }
+    /* cascata: cada filho direto da tela ATIVA sobe em sequência (bases visíveis; `both` esconde no início) */
+    .appmock .am-screen.is-active > * { animation: amRise .6s cubic-bezier(.2,.7,.2,1) both; }
+    .appmock .am-screen.is-active > *:nth-child(1){ animation-delay: .05s; }
+    .appmock .am-screen.is-active > *:nth-child(2){ animation-delay: .14s; }
+    .appmock .am-screen.is-active > *:nth-child(3){ animation-delay: .23s; }
+    .appmock .am-screen.is-active > *:nth-child(4){ animation-delay: .32s; }
+    .appmock .am-screen.is-active > *:nth-child(5){ animation-delay: .41s; }
+    .appmock .am-screen.is-active > *:nth-child(6){ animation-delay: .50s; }
+
+    /* tipografia comum */
+    .appmock .am-eyebrow { font-family: var(--font-mono); font-size: clamp(9px,2.5cqw,12px); font-weight: 600;
       letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-    .appmock .am-hero { display: flex; align-items: center; margin-top: clamp(6px,2.4cqw,11px); }
-    .appmock .am-num { font-weight: 600; letter-spacing: -.035em; font-size: clamp(20px,9cqw,42px);
-      line-height: 1; color: var(--text); font-variant-numeric: tabular-nums slashed-zero; white-space: nowrap; }
-    .appmock .am-caret { width: clamp(2px,.6cqw,3px); height: clamp(20px,8cqw,38px); margin-left: 4px;
+    .appmock .am-hero { display: flex; align-items: center; margin-top: clamp(5px,2.2cqw,10px); }
+    .appmock .am-num { font-weight: 600; letter-spacing: -.035em; font-size: clamp(19px,8.4cqw,40px); line-height: 1;
+      color: var(--text); font-variant-numeric: tabular-nums slashed-zero; white-space: nowrap; }
+    .appmock .am-caret { width: clamp(2px,.55cqw,3px); height: clamp(18px,7.4cqw,36px); margin-left: 4px;
       background: var(--accent); border-radius: 1px; animation: amBlink 1.05s steps(1) infinite; }
-    .appmock .am-delta { margin-top: clamp(6px,2.4cqw,11px); font-size: clamp(11px,3.2cqw,14px); font-weight: 600;
+    .appmock .am-delta { margin-top: clamp(5px,2.2cqw,10px); font-size: clamp(11px,3cqw,14px); font-weight: 600;
       color: var(--accent); font-variant-numeric: tabular-nums; }
-    .appmock .am-comp { display: flex; gap: 4px; margin-top: clamp(12px,4.4cqw,20px);
-      height: clamp(6px,2cqw,9px); }
+    .appmock .am-big { font-weight: 600; letter-spacing: -.03em; font-size: clamp(22px,8.6cqw,40px); line-height: 1;
+      color: var(--accent); font-variant-numeric: tabular-nums; margin-top: clamp(5px,2.2cqw,10px); }
+
+    /* S1 — composição + gráfico de linha + selos */
+    .appmock .am-comp { display: flex; gap: 4px; margin-top: clamp(11px,4cqw,18px); height: clamp(6px,1.8cqw,9px); }
     .appmock .am-comp span { display: block; height: 100%; border-radius: 999px; transform-origin: left; }
     .appmock .am-brl { width: 60%; background: var(--accent); }
     .appmock .am-eur { width: 36%; background: var(--card-2); }
-    .appmock .am-chart { display: block; width: 100%; flex: 1 1 auto; min-height: clamp(48px,20cqw,110px); }
-    .appmock .am-line { stroke-dasharray: 1; stroke-dashoffset: 1; }
-    .appmock .am-badges { display: flex; gap: 8px; margin-top: clamp(12px,4.4cqw,18px); }
-    .appmock .am-badge { font-family: var(--font-mono); font-size: clamp(9px,2.4cqw,11px); font-weight: 600;
-      letter-spacing: .06em; padding: 4px 9px; border-radius: 7px; }
+    .appmock .am-screen.is-active .am-comp span { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both .35s; }
+    .appmock .am-chart { display: block; width: 100%; flex: 1 1 auto; min-height: clamp(42px,17cqw,96px); margin-top: clamp(10px,3.4cqw,16px); }
+    .appmock .am-line { stroke-dasharray: 1; stroke-dashoffset: 0; }
+    .appmock .am-screen.is-active .am-line { animation: amDraw 1.1s ease both .25s; }
+    .appmock .am-screen.is-active .am-area { animation: amFade .8s ease both .7s; }
+    .appmock .am-badges { display: flex; gap: 8px; margin-top: clamp(10px,3.4cqw,16px); }
+    .appmock .am-badge { font-family: var(--font-mono); font-size: clamp(9px,2.3cqw,11px); font-weight: 600; letter-spacing: .06em; padding: 4px 9px; border-radius: 7px; }
     .appmock .am-b-brl { color: var(--accent); background: var(--accent-soft); }
     .appmock .am-b-eur { color: var(--faint); background: var(--card-2); border: 1px solid var(--border); }
-    .appmock .am-scan { position: absolute; inset: 0; z-index: 4; pointer-events: none;
-      background: linear-gradient(100deg, transparent 42%, rgba(62,207,142,.07) 50%, transparent 58%);
-      transform: translateX(-120%); animation: amScan 9.5s ease-in-out infinite; }
 
-    /* cascata de montagem — um keyframe, fase deslocada por animation-delay (período igual = stagger estável) */
-    .appmock .am-top, .appmock .am-eyebrow, .appmock .am-hero, .appmock .am-delta,
-    .appmock .am-comp, .appmock .am-badges { animation: amEl 9.5s cubic-bezier(.2,.7,.2,1) infinite both; }
-    .appmock .am-eyebrow { animation-delay: .15s; }
-    .appmock .am-hero { animation-delay: .32s; }
-    .appmock .am-delta { animation-delay: .52s; }
-    .appmock .am-comp { animation-delay: .68s; }
-    .appmock .am-badges { animation-delay: .92s; }
-    .appmock .am-num { animation: amType 9.5s cubic-bezier(.2,.7,.2,1) infinite both; animation-delay: .32s; }
-    .appmock .am-brl { animation: amGrow 9.5s cubic-bezier(.2,.7,.2,1) infinite both; animation-delay: .70s; }
-    .appmock .am-eur { animation: amGrow 9.5s cubic-bezier(.2,.7,.2,1) infinite both; animation-delay: .80s; }
-    .appmock .am-line { animation: amDraw 9.5s ease infinite both; animation-delay: .55s; }
-    .appmock .am-area { animation: amArea 9.5s ease infinite both; animation-delay: .55s; }
+    /* S2 — barras de categoria (linhas que preenchem) */
+    .appmock .am-bars { display: flex; flex-direction: column; gap: clamp(9px,3.2cqw,15px); margin-top: clamp(13px,4.6cqw,22px); }
+    .appmock .am-brow { display: flex; align-items: center; gap: 10px; }
+    .appmock .am-btrack { flex: 1 1 auto; height: clamp(7px,2.1cqw,10px); border-radius: 999px; background: var(--card-2); overflow: hidden; }
+    .appmock .am-bfill { display: block; height: 100%; width: var(--w); border-radius: 999px; background: var(--c, var(--accent)); transform-origin: left; }
+    .appmock .am-bval { font-size: clamp(10px,2.6cqw,13px); font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: clamp(44px,15cqw,66px); text-align: right; }
+    .appmock .am-screen.is-active .am-brow:nth-child(1) .am-bfill { animation: amGrowX .75s cubic-bezier(.2,.7,.2,1) both .30s; }
+    .appmock .am-screen.is-active .am-brow:nth-child(2) .am-bfill { animation: amGrowX .75s cubic-bezier(.2,.7,.2,1) both .40s; }
+    .appmock .am-screen.is-active .am-brow:nth-child(3) .am-bfill { animation: amGrowX .75s cubic-bezier(.2,.7,.2,1) both .50s; }
+    .appmock .am-screen.is-active .am-brow:nth-child(4) .am-bfill { animation: amGrowX .75s cubic-bezier(.2,.7,.2,1) both .60s; }
 
-    @keyframes amEl { 0%{opacity:0;transform:translateY(10px)} 10%{opacity:1;transform:none}
-      84%{opacity:1;transform:none} 92%,100%{opacity:0;transform:translateY(-6px)} }
-    @keyframes amType { 0%,3%{clip-path:inset(0 100% 0 0)} 17%,84%{clip-path:inset(0 0 0 0)} 92%,100%{clip-path:inset(0 0 0 0)} }
-    @keyframes amGrow { 0%,8%{transform:scaleX(0)} 24%,84%{transform:scaleX(1)} 92%,100%{transform:scaleX(0)} }
-    @keyframes amDraw { 0%,6%{stroke-dashoffset:1} 24%,84%{stroke-dashoffset:0} 92%,100%{stroke-dashoffset:0} }
-    @keyframes amArea { 0%,20%{opacity:0} 40%,84%{opacity:1} 92%,100%{opacity:0} }
+    /* S3 — barra de alocação segmentada + legenda */
+    .appmock .am-alloc { display: flex; gap: 3px; margin-top: clamp(13px,4.6cqw,22px); height: clamp(10px,3cqw,15px); }
+    .appmock .am-aseg { display: block; height: 100%; border-radius: 4px; transform-origin: left; }
+    .appmock .am-screen.is-active .am-aseg { animation: amGrowX .7s cubic-bezier(.2,.7,.2,1) both; }
+    .appmock .am-screen.is-active .am-aseg:nth-child(1){ animation-delay: .30s; }
+    .appmock .am-screen.is-active .am-aseg:nth-child(2){ animation-delay: .40s; }
+    .appmock .am-screen.is-active .am-aseg:nth-child(3){ animation-delay: .50s; }
+    .appmock .am-screen.is-active .am-aseg:nth-child(4){ animation-delay: .60s; }
+    .appmock .am-screen.is-active .am-aseg:nth-child(5){ animation-delay: .70s; }
+    .appmock .am-alegend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: clamp(12px,4.2cqw,18px); }
+    .appmock .am-li { display: inline-flex; align-items: center; gap: 6px; font-size: clamp(9px,2.4cqw,12px); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .appmock .am-li i { width: 8px; height: 8px; border-radius: 2px; flex: none; }
+
+    /* S4 — barras verticais crescendo (projeção) + ano-alvo */
+    .appmock .am-vbars { display: flex; align-items: flex-end; gap: clamp(4px,1.5cqw,8px); flex: 1 1 auto; min-height: clamp(46px,18cqw,100px); margin-top: clamp(12px,4cqw,18px); }
+    .appmock .am-vbar { flex: 1 1 0; border-radius: 4px 4px 0 0; transform-origin: bottom;
+      background: linear-gradient(var(--accent), color-mix(in oklab, var(--accent) 40%, transparent)); }
+    .appmock .am-vbar:nth-last-child(-n+2) { background: var(--accent); }
+    .appmock .am-screen.is-active .am-vbar { animation: amGrowY .65s cubic-bezier(.2,.7,.2,1) both; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(1){ animation-delay: .28s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(2){ animation-delay: .34s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(3){ animation-delay: .40s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(4){ animation-delay: .46s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(5){ animation-delay: .52s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(6){ animation-delay: .58s; }
+    .appmock .am-screen.is-active .am-vbar:nth-child(7){ animation-delay: .64s; }
+    .appmock .am-year { font-family: var(--font-mono); font-size: clamp(9px,2.3cqw,11px); letter-spacing: .1em; color: var(--faint); margin-top: clamp(10px,3.4cqw,16px); }
+
+    @keyframes amRise { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:none} }
+    @keyframes amGrowX { from{transform:scaleX(0)} to{transform:scaleX(1)} }
+    @keyframes amGrowY { from{transform:scaleY(0)} to{transform:scaleY(1)} }
+    @keyframes amDraw { from{stroke-dashoffset:1} to{stroke-dashoffset:0} }
+    @keyframes amFade { from{opacity:0} to{opacity:1} }
     @keyframes amBlink { 0%,50%{opacity:1} 51%,100%{opacity:0} }
-    @keyframes amScan { 0%{transform:translateX(-120%)} 22%,100%{transform:translateX(120%)} }
+    @keyframes amPulse { 0%{box-shadow:0 0 0 0 rgba(62,207,142,.45)} 70%,100%{box-shadow:0 0 0 7px rgba(62,207,142,0)} }
 
+    /* sem JS: a 1ª tela já vem montada (is-active no HTML). Reduced-motion: tudo montado, sem animar. */
     @media (prefers-reduced-motion: reduce) {
-      .appmock .am-top, .appmock .am-eyebrow, .appmock .am-hero, .appmock .am-delta, .appmock .am-comp,
-      .appmock .am-badges, .appmock .am-num, .appmock .am-brl, .appmock .am-eur, .appmock .am-line,
-      .appmock .am-area, .appmock .am-caret, .appmock .am-scan { animation: none !important; }
-      .appmock .am-num { clip-path: none; } .appmock .am-line { stroke-dashoffset: 0; }
-      .appmock .am-brl, .appmock .am-eur { transform: none; } .appmock .am-caret { display: none; }
-      .appmock .am-scan { display: none; }
+      .appmock *, .appmock .am-screen { animation: none !important; transition: none !important; }
+      .appmock .am-caret, .appmock .am-live { display: none; }
     }
   </style>
 </head>
@@ -801,22 +841,76 @@
             <div class="am-win">
               <div class="am-top">
                 <span class="am-dots"><i></i><i></i><i></i></span>
-                <span class="am-tab" data-i18n="mock.dashboard">Painel</span>
+                <span class="am-live"></span>
               </div>
-              <div class="am-eyebrow" data-i18n="mock.networth">Patrimônio líquido</div>
-              <div class="am-hero"><span class="am-num">R$ 1.284.500</span><span class="am-caret"></span></div>
-              <div class="am-delta">▲ 2,4%</div>
-              <div class="am-comp"><span class="am-brl"></span><span class="am-eur"></span></div>
-              <svg class="am-chart" viewBox="0 0 300 96" preserveAspectRatio="none">
-                <defs><linearGradient id="amg" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="var(--accent)" stop-opacity=".22" />
-                  <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
-                </linearGradient></defs>
-                <path class="am-area" d="M0,74 L43,66 L86,70 L129,48 L172,54 L215,32 L258,40 L300,16 L300,96 L0,96 Z" fill="url(#amg)" />
-                <path class="am-line" pathLength="1" d="M0,74 L43,66 L86,70 L129,48 L172,54 L215,32 L258,40 L300,16" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />
-              </svg>
-              <div class="am-badges"><span class="am-badge am-b-brl">BRL</span><span class="am-badge am-b-eur">EUR</span></div>
-              <div class="am-scan"></div>
+              <div class="am-stage">
+
+                <!-- Tela 1 · Painel (patrimônio) -->
+                <div class="am-screen is-active">
+                  <div class="am-eyebrow" data-i18n="mock.networth">Patrimônio líquido</div>
+                  <div class="am-hero"><span class="am-num">R$ 1.284.500</span><span class="am-caret"></span></div>
+                  <div class="am-delta">▲ 2,4%</div>
+                  <div class="am-comp"><span class="am-brl"></span><span class="am-eur"></span></div>
+                  <svg class="am-chart" viewBox="0 0 300 90" preserveAspectRatio="none">
+                    <defs><linearGradient id="amg" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="var(--accent)" stop-opacity=".22" />
+                      <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
+                    </linearGradient></defs>
+                    <path class="am-area" d="M0,70 L43,62 L86,66 L129,44 L172,50 L215,28 L258,36 L300,14 L300,90 L0,90 Z" fill="url(#amg)" />
+                    <path class="am-line" pathLength="1" d="M0,70 L43,62 L86,66 L129,44 L172,50 L215,28 L258,36 L300,14" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" />
+                  </svg>
+                  <div class="am-badges"><span class="am-badge am-b-brl">BRL</span><span class="am-badge am-b-eur">EUR</span></div>
+                </div>
+
+                <!-- Tela 2 · Orçamento (categorias) -->
+                <div class="am-screen">
+                  <div class="am-eyebrow" data-i18n="mock.budget">Orçamento</div>
+                  <div class="am-hero"><span class="am-num">R$ 2.140</span><span class="am-delta" style="margin:0 0 0 10px">▲ 12%</span></div>
+                  <div class="am-bars">
+                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:84%;--c:var(--accent)"></span></span><span class="am-bval">R$ 3.200</span></div>
+                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:62%;--c:#8a8f98"></span></span><span class="am-bval">R$ 1.850</span></div>
+                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:41%;--c:#8a8f98"></span></span><span class="am-bval">R$ 980</span></div>
+                    <div class="am-brow"><span class="am-btrack"><span class="am-bfill" style="--w:28%;--c:var(--card-2)"></span></span><span class="am-bval">R$ 640</span></div>
+                  </div>
+                </div>
+
+                <!-- Tela 3 · Investimentos (alocação) -->
+                <div class="am-screen">
+                  <div class="am-eyebrow" data-i18n="mock.invest">Investimentos</div>
+                  <div class="am-big">+18,6%</div>
+                  <div class="am-alloc">
+                    <span class="am-aseg" style="flex:34;background:var(--accent)"></span>
+                    <span class="am-aseg" style="flex:24;background:color-mix(in oklab,var(--accent) 60%,var(--card-2))"></span>
+                    <span class="am-aseg" style="flex:18;background:#8a8f98"></span>
+                    <span class="am-aseg" style="flex:14;background:#6b7280"></span>
+                    <span class="am-aseg" style="flex:10;background:var(--card-2)"></span>
+                  </div>
+                  <div class="am-alegend">
+                    <span class="am-li"><i style="background:var(--accent)"></i>34%</span>
+                    <span class="am-li"><i style="background:color-mix(in oklab,var(--accent) 60%,var(--card-2))"></i>24%</span>
+                    <span class="am-li"><i style="background:#8a8f98"></i>18%</span>
+                    <span class="am-li"><i style="background:#6b7280"></i>14%</span>
+                    <span class="am-li"><i style="background:var(--card-2)"></i>10%</span>
+                  </div>
+                </div>
+
+                <!-- Tela 4 · Projeção (juros compostos) -->
+                <div class="am-screen">
+                  <div class="am-eyebrow" data-i18n="mock.projection">Projeção</div>
+                  <div class="am-hero"><span class="am-num">R$ 3,2M</span><span class="am-caret"></span></div>
+                  <div class="am-vbars">
+                    <span class="am-vbar" style="height:24%"></span>
+                    <span class="am-vbar" style="height:34%"></span>
+                    <span class="am-vbar" style="height:45%"></span>
+                    <span class="am-vbar" style="height:54%"></span>
+                    <span class="am-vbar" style="height:68%"></span>
+                    <span class="am-vbar" style="height:84%"></span>
+                    <span class="am-vbar" style="height:100%"></span>
+                  </div>
+                  <div class="am-year">2026 — 2038</div>
+                </div>
+
+              </div>
             </div>
           </figure>
         </div>
