@@ -10,6 +10,14 @@ const MUTED = "#9CA2AC";
 const FAINT = "#5F646C";
 const ACCENT = "#3ECF8E";
 const CARD2 = "#191B20";
+const CARD = "#131418";
+
+/** Posição do glow por story (x,y em fração) — dá ambiance diferente pra cada peça. */
+const GLOW: Record<string, [number, number]> = {
+  privacidade: [0.28, 0.2],
+  patrimonio: [0.74, 0.16],
+  orcamento: [0.5, 0.4],
+};
 
 export interface Scene {
   kind: "hook" | "networth" | "budget" | "privacy" | "cta";
@@ -20,6 +28,7 @@ export interface Scene {
   badges?: string[]; // moedas
   bars?: { label: string; w: number; c?: string }[];
   tagline?: string;
+  mock?: "currencies" | "masked" | "donut"; // mockup do app na cena de hook (preenche + varia)
 }
 export interface Story {
   id: string;
@@ -32,7 +41,7 @@ export const STORIES: Story[] = [
     id: "privacidade",
     name: "Privacidade",
     scenes: [
-      { kind: "hook", eyebrow: "PRIVACIDADE DE VERDADE", title: ["Seus números.", "Só seus."] },
+      { kind: "hook", eyebrow: "PRIVACIDADE DE VERDADE", title: ["Seus números.", "Só seus."], mock: "masked" },
       {
         kind: "privacy",
         eyebrow: "CRIPTOGRAFIA PONTA A PONTA",
@@ -46,7 +55,7 @@ export const STORIES: Story[] = [
     id: "patrimonio",
     name: "Patrimônio multimoeda",
     scenes: [
-      { kind: "hook", eyebrow: "DINHEIRO EM VÁRIAS MOEDAS?", title: ["Tudo num", "lugar só."] },
+      { kind: "hook", eyebrow: "DINHEIRO EM VÁRIAS MOEDAS?", title: ["Tudo num", "lugar só."], mock: "currencies" },
       {
         kind: "networth",
         eyebrow: "PATRIMÔNIO LÍQUIDO",
@@ -61,7 +70,7 @@ export const STORIES: Story[] = [
     id: "orcamento",
     name: "Orçamento & independência",
     scenes: [
-      { kind: "hook", eyebrow: "PRA ONDE VAI O SEU DINHEIRO?", title: ["Orçamento", "que faz sentido."] },
+      { kind: "hook", eyebrow: "PRA ONDE VAI O SEU DINHEIRO?", title: ["Orçamento", "que faz sentido."], mock: "donut" },
       {
         kind: "budget",
         eyebrow: "ORÇAMENTO DO MÊS",
@@ -141,12 +150,152 @@ function badge(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, c
   return w;
 }
 
+/** Donut (arcos) — composição do orçamento. */
+function drawDonut(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, th: number, segs: [number, string][]) {
+  ctx.lineWidth = th;
+  ctx.lineCap = "butt";
+  let start = -Math.PI / 2;
+  for (const [frac, color] of segs) {
+    const end = start + frac * Math.PI * 2;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, start, end);
+    ctx.stroke();
+    start = end;
+  }
+}
+
+/** Card-mockup do app (screenshot estilizado) pro hook — preenche o vazio e VARIA por tema. */
+function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut", a: number) {
+  const h = w * (kind === "donut" ? 1.05 : 0.84); // altura ajustada ao conteúdo de cada mockup
+  ctx.save();
+  ctx.globalAlpha = a;
+  ctx.translate(cx, cy);
+  ctx.rotate((-3 * Math.PI) / 180);
+  const x = -w / 2, y = -h / 2;
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 70 * s;
+  ctx.shadowOffsetY = 34 * s;
+  ctx.fillStyle = CARD;
+  roundRect(ctx, x, y, w, h, 30 * s);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  ctx.strokeStyle = "rgba(255,255,255,0.09)";
+  ctx.lineWidth = 2 * s;
+  roundRect(ctx, x, y, w, h, 30 * s);
+  ctx.stroke();
+
+  const px = x + 42 * s, py = y + 62 * s, iw = w - 84 * s;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  const eyebrow = (txt: string) => {
+    ctx.fillStyle = FAINT;
+    ctx.font = fontMono(20 * s, 600);
+    ctx.letterSpacing = `${2 * s}px`;
+    ctx.fillText(txt, px, py);
+    ctx.letterSpacing = "0px";
+  };
+
+  if (kind === "currencies") {
+    eyebrow("PATRIMÔNIO LÍQUIDO");
+    ctx.fillStyle = TEXT;
+    ctx.font = fontSans(56 * s, 600);
+    ctx.fillText("R$ 1.284.500", px, py + 66 * s);
+    ctx.fillStyle = ACCENT;
+    ctx.font = fontSans(24 * s, 600);
+    ctx.fillText("▲ 2,4% no mês", px, py + 108 * s);
+    const rows: [string, string, boolean][] = [["BRL", "R$ 1.284.500", true], ["EUR", "€ 214.900", false], ["USD", "$ 236.200", false]];
+    rows.forEach((r, i) => {
+      const ry = py + 190 * s + i * 76 * s;
+      badge(ctx, s, px, ry - 30 * s, r[0], r[2]);
+      ctx.fillStyle = TEXT;
+      ctx.font = fontSans(30 * s, 500);
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(r[1], px + iw, ry - 8 * s);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+      if (i < rows.length - 1) {
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 1.5 * s;
+        ctx.beginPath();
+        ctx.moveTo(px, ry + 32 * s);
+        ctx.lineTo(px + iw, ry + 32 * s);
+        ctx.stroke();
+      }
+    });
+  } else if (kind === "masked") {
+    eyebrow("PATRIMÔNIO LÍQUIDO");
+    ctx.fillStyle = TEXT;
+    for (let i = 0; i < 7; i++) {
+      ctx.beginPath();
+      ctx.arc(px + 22 * s + i * 46 * s, py + 48 * s, 15 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const ct = "Só você vê", chipY = py + 108 * s, chH = 56 * s;
+    ctx.font = fontSans(26 * s, 600);
+    const cw = ctx.measureText(ct).width + 92 * s;
+    ctx.fillStyle = "rgba(62,207,142,0.14)";
+    roundRect(ctx, px, chipY, cw, chH, chH / 2);
+    ctx.fill();
+    const lx = px + 30 * s, lyc = chipY + chH / 2;
+    ctx.strokeStyle = ACCENT;
+    ctx.lineWidth = 4 * s;
+    ctx.beginPath();
+    ctx.arc(lx, lyc - 5 * s, 9 * s, Math.PI, 0);
+    ctx.stroke();
+    ctx.fillStyle = ACCENT;
+    roundRect(ctx, lx - 12 * s, lyc - 3 * s, 24 * s, 19 * s, 4 * s);
+    ctx.fill();
+    ctx.textBaseline = "middle";
+    ctx.fillText(ct, px + 62 * s, lyc + 1 * s);
+    ctx.textBaseline = "alphabetic";
+    // "gráfico" fantasma
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 8 * s;
+    ctx.lineCap = "round";
+    const gy = py + 250 * s;
+    const pts = [0.7, 0.55, 0.62, 0.4, 0.5, 0.3, 0.22];
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const gx = px + (iw * i) / (pts.length - 1);
+      const gyy = gy + 130 * s * p;
+      i === 0 ? ctx.moveTo(gx, gyy) : ctx.lineTo(gx, gyy);
+    });
+    ctx.stroke();
+  } else {
+    eyebrow("ORÇAMENTO DO MÊS");
+    const dcx = x + w / 2, dcy = py + 175 * s, dr = 118 * s;
+    drawDonut(ctx, dcx, dcy, dr, 46 * s, [[0.53, ACCENT], [0.31, "#8A8F98"], [0.16, CARD2]]);
+    const legs: [string, string, string][] = [["Moradia", ACCENT, "R$ 3.2k"], ["Alimentação", "#8A8F98", "R$ 1.9k"], ["Outros", CARD2, "R$ 980"]];
+    legs.forEach((l, i) => {
+      const ly = py + 350 * s + i * 62 * s;
+      ctx.fillStyle = l[1];
+      roundRect(ctx, px, ly - 15 * s, 20 * s, 20 * s, 5 * s);
+      ctx.fill();
+      ctx.fillStyle = MUTED;
+      ctx.font = fontSans(28 * s, 500);
+      ctx.textBaseline = "middle";
+      ctx.fillText(l[0], px + 34 * s, ly - 4 * s);
+      ctx.fillStyle = TEXT;
+      ctx.textAlign = "right";
+      ctx.fillText(l[2], px + iw, ly - 4 * s);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    });
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
 /** Fundo persistente: quase-preto + glow verde suave que respira. */
-function drawBg(ctx: CanvasRenderingContext2D, W: number, H: number, t: number) {
+function drawBg(ctx: CanvasRenderingContext2D, W: number, H: number, t: number, gx = 0.32, gy = 0.22) {
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
   const breathe = 0.5 + 0.5 * Math.sin(t * 0.6);
-  const cx = W * 0.32, cy = H * 0.22, r = W * (0.9 + 0.06 * breathe);
+  const cx = W * gx, cy = H * gy, r = W * (0.9 + 0.06 * breathe);
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
   g.addColorStop(0, `rgba(62,207,142,${0.16 + 0.04 * breathe})`);
   g.addColorStop(0.55, "rgba(62,207,142,0.03)");
@@ -239,8 +388,17 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
   const rise = (1 - easeOut(lt / 0.6)) * 40 * s; // sobe ao entrar
 
   if (sc.kind === "hook") {
-    drawEyebrow(ctx, s, x, midY - 220 * s, sc.eyebrow || "", a);
-    drawTitle(ctx, s, x, midY - 130 * s, sc.title || [], a, rise);
+    if (sc.mock) {
+      // card-mockup entra com leve escala/subida; texto embaixo
+      const pop = easeOut(clamp01((lt - 0.1) / 0.6));
+      const cardY = H * 0.335 + (1 - pop) * 30 * s;
+      drawMockCard(ctx, s, W / 2, cardY, 560 * s, sc.mock, a * (0.3 + 0.7 * pop));
+      drawEyebrow(ctx, s, x, H * 0.655, sc.eyebrow || "", a);
+      drawTitle(ctx, s, x, H * 0.655 + 92 * s, sc.title || [], a, rise);
+    } else {
+      drawEyebrow(ctx, s, x, midY - 220 * s, sc.eyebrow || "", a);
+      drawTitle(ctx, s, x, midY - 130 * s, sc.title || [], a, rise);
+    }
     return;
   }
 
@@ -389,7 +547,8 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 /** Desenha o story inteiro no instante t (segundos, 0..duração). W×H = tamanho do canvas. */
 export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number) {
   const s = W / 1080;
-  drawBg(ctx, W, H, t);
+  const glow = GLOW[story.id] ?? [0.32, 0.22];
+  drawBg(ctx, W, H, t, glow[0], glow[1]);
   const n = story.scenes.length;
   const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
   const lt = t - idx * SCENE_DUR;
