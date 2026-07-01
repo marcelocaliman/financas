@@ -86,7 +86,7 @@ export function RatesTicker() {
   return (
     <div className="hidden lg:flex sticky top-0 z-30 h-[62px] items-center">
       <div className="w-full max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14">
-        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-card2 shadow-[0_12px_22px_-16px_rgba(0,0,0,0.65)]">
+        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-[color-mix(in_oklab,var(--card-2)_70%,transparent)] backdrop-blur-xl shadow-[0_6px_24px_-20px_rgba(0,0,0,0.35)]">
           <div className="ticker-track flex w-max" style={{ ["--ticker-duration" as string]: `${duration}s` }}>
             <TickerRow items={items} />
             <TickerRow items={items} ariaHidden />
