@@ -545,7 +545,7 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 }
 
 /** Desenha o story inteiro no instante t (segundos, 0..duração). W×H = tamanho do canvas. */
-export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number) {
+export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number, showProgress = true) {
   const s = W / 1080;
   const glow = GLOW[story.id] ?? [0.32, 0.22];
   drawBg(ctx, W, H, t, glow[0], glow[1]);
@@ -554,8 +554,9 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   const lt = t - idx * SCENE_DUR;
   const sc = story.scenes[idx];
   const a = sceneAlpha(lt, SCENE_DUR);
-  // marca no topo (some na cena de CTA, que já tem o logo grande)
-  if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, 92 * s, 46);
+  // marca no topo — desce um pouco quando NÃO há barra de progresso (export), pra não colar no topo
+  if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46);
   sceneContent(ctx, s, W, H, sc, lt, a);
-  drawProgress(ctx, s, W, n, t);
+  // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
+  if (showProgress) drawProgress(ctx, s, W, n, t);
 }

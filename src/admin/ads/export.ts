@@ -64,7 +64,7 @@ export async function exportStory(story: Story): Promise<ExportResult> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D indisponível");
 
-  drawStory(ctx, story, 0, W, H); // 1º quadro antes de gravar (evita frame preto)
+  drawStory(ctx, story, 0, W, H, false); // 1º quadro antes de gravar (evita frame preto); sem barras (Instagram põe as dele)
   const mime = pickMime();
   const stream = canvas.captureStream(30);
   const rec = new MediaRecorder(stream, {
@@ -86,11 +86,11 @@ export async function exportStory(story: Story): Promise<ExportResult> {
     const loop = () => {
       const t = (performance.now() - start) / 1000;
       if (t >= dur) {
-        drawStory(ctx, story, dur - 0.01, W, H);
+        drawStory(ctx, story, dur - 0.01, W, H, false);
         resolve();
         return;
       }
-      drawStory(ctx, story, t, W, H);
+      drawStory(ctx, story, t, W, H, false);
       requestAnimationFrame(loop);
     };
     requestAnimationFrame(loop);
