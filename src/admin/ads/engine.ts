@@ -4,6 +4,7 @@
 // independente: tudo escala por s = W/1080, então preview pequena e export grande usam o MESMO código.
 
 export const SCENE_DUR = 3; // segundos por "página" do story
+const LAST_HOLD = 2.5; // segundos EXTRAS na última cena (CTA): fica parada, sem fade, pra dar tempo de clicar
 const BG = "#0A0B0D";
 const TEXT = "#F3F4F6";
 const MUTED = "#9CA2AC";
@@ -87,7 +88,7 @@ export const STORIES: Story[] = [
   },
 ];
 
-export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR;
+export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
@@ -313,7 +314,7 @@ function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: nu
     ctx.fillStyle = "rgba(255,255,255,0.22)";
     roundRect(ctx, x, y, bw, h, h / 2);
     ctx.fill();
-    const fill = clamp01((t - i * SCENE_DUR) / SCENE_DUR);
+    const fill = clamp01((t - i * SCENE_DUR) / (i === n - 1 ? SCENE_DUR + LAST_HOLD : SCENE_DUR));
     if (fill > 0) {
       ctx.fillStyle = "#FFFFFF";
       roundRect(ctx, x, y, bw * fill, h, h / 2);
@@ -553,7 +554,9 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
   const lt = t - idx * SCENE_DUR;
   const sc = story.scenes[idx];
-  const a = sceneAlpha(lt, SCENE_DUR);
+  // Última cena (CTA): só fade-IN, sem fade-out — fica visível até o fim pro usuário clicar.
+  const isLast = idx === n - 1;
+  const a = isLast ? clamp01(lt / 0.45) : sceneAlpha(lt, SCENE_DUR);
   // marca no topo — desce um pouco quando NÃO há barra de progresso (export), pra não colar no topo
   if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46);
   sceneContent(ctx, s, W, H, sc, lt, a);
