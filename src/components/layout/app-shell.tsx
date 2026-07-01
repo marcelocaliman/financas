@@ -111,6 +111,9 @@ export function AppShell() {
         {supportOpen ? (
           <SupportView />
         ) : (
+        {/* overflow-CLIP (não hidden!) clipa o slide horizontal SEM criar scroll-container — assim os
+            cabeçalhos sticky das seções (Accordion) continuam grudando na viewport. Trocar por
+            overflow-hidden vira scroll-container e quebra o sticky. */}
         <div className="relative overflow-clip min-h-screen view-fade-in">
           {/* PÁGINA — pane da esquerda (sai pra esquerda ao abrir a Config) */}
           <div
