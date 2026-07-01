@@ -97,7 +97,7 @@
     html.light .hero::before { background: radial-gradient(ellipse, rgba(62, 207, 142, 0.12), transparent 64%); }
     html.light .liberdade { background: linear-gradient(180deg, rgba(62, 207, 142, 0.045), transparent 40%); }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: clip; }
     body {
       margin: 0; color: var(--text); font-family: var(--font-sans); line-height: 1.5;
       background: radial-gradient(120% 60% at 50% -14%, rgba(255,255,255,0.015), transparent 60%), var(--bg);
@@ -137,7 +137,17 @@
     html.light .themebtn .ic-moon { display: block; }
     /* Esconde os links quando não cabem com a marca + botões (evita a quebra/sobreposição). */
     @media (max-width: 1200px) { .nav-links { display: none; } }
-    @media (max-width: 480px) { .brand span.bn { display: none; } .btn-login { display: none; } }
+    /* Mobile: enxuga o header em camadas pra o CTA e o seletor de idioma NUNCA colidirem
+       (o .nav encolhe pra dividir a linha com o .langdrop; sem isto o .nav-right transborda). */
+    @media (max-width: 700px) {
+      .brand span.bn { display: none; }
+      .nav { padding: 0 8px 0 12px; gap: 10px; }
+      .nav-right { gap: 8px; }
+      .nav-right .btn-primary { padding: 0 13px; }
+      .langbtn { padding: 0 11px; gap: 6px; }
+    }
+    @media (max-width: 440px) { .nav-right .btn-login { display: none; } }
+    @media (max-width: 380px) { .nav-right .themebtn { display: none; } }
 
     /* Language dropdown */
     .langdrop { position: relative; flex: none; }
@@ -289,6 +299,9 @@
     .hero-mock .hm-icon { width: 30px; height: 30px; border-radius: 9px; border: 1px solid var(--border); display: grid; place-items: center; color: var(--muted); flex: none; }
     .hero-mock .hm-icon svg { width: 15px; height: 15px; }
     .hero-mock .hm-months { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin-top: 8px; }
+    /* Mobile: mock do hero ENXUTO — só o topo (patrimônio + gráfico + composição). Some com
+       Liberdade/Saúde e Alocação pra não empurrar o headline/CTA lá pra baixo no celular. */
+    @media (max-width: 600px) { .hero-mock .hm-statgrid, .hero-mock .mk-card { display: none; } }
     /* celular (o que a família vê) */
     .phone { width: min(330px, 100%); margin: 0 auto; border-radius: 48px; border: 1px solid var(--border-strong); background: linear-gradient(180deg, var(--card-2) 0%, var(--card) 100%); box-shadow: var(--shadow-float); padding: 13px; }
     .phone-notch { width: 80px; height: 5px; border-radius: 99px; background: var(--border-strong); margin: 3px auto 14px; }
