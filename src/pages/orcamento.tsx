@@ -12,6 +12,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
+import { topLevelExpenses, expenseTotal, expenseLeaves, childExpenseIds } from "@/finance/statement";
 import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,28 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string };
+
+/** Ordena os gastos agrupando cada FILHO logo abaixo da sua fatura (pai). */
+function groupExpenseRows(rows: BudgetRow[]): BudgetRow[] {
+  const ids = new Set(rows.map((r) => r.id));
+  const kids = new Map<string, BudgetRow[]>();
+  const top: BudgetRow[] = [];
+  for (const r of rows) {
+    if (r.parentId && ids.has(r.parentId)) {
+      const arr = kids.get(r.parentId);
+      if (arr) arr.push(r);
+      else kids.set(r.parentId, [r]);
+    } else top.push(r);
+  }
+  const out: BudgetRow[] = [];
+  for (const p of top) {
+    out.push(p);
+    const c = kids.get(p.id);
+    if (c) out.push(...c);
+  }
+  return out;
+}
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 
@@ -89,20 +111,25 @@ export default function Orcamento() {
 
     // Donut: UMA fatia por lançamento (não agrupa por categoria). Rótulo = detalhe (ou a
     // categoria, se sem detalhe) → duas receitas "Salário" aparecem separadas, com cores próprias.
-    const expSlices = monthExp
-      .map((e) => ({ id: e.id, name: e.name || nameById(tax.expenseCategories, e.categoryId) || t("orcamento.uncategorized"), value: conv(e.amount, e.currency) }))
+    // Composição DESMEMBRA as faturas: cada item (Claude, Amil…) vira fatia + a sobra "não
+    // discriminado" da fatura; a soma bate com o total top-level (sem dupla contagem).
+    const expSlices = expenseLeaves(monthExp, rates)
+      .map((l) => {
+        const base = l.name || nameById(tax.expenseCategories, l.categoryId) || t("orcamento.uncategorized");
+        return { id: l.id, name: l.residual ? `${base} · ${t("orcamento.notItemized")}` : base, value: conv(l.amount, l.currency) };
+      })
       .filter((s) => s.value > 0)
       .sort((a, b) => b.value - a.value);
     const incSlices = monthInc
       .map((i) => ({ id: i.id, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), value: conv(i.amount, i.currency) }))
       .filter((s) => s.value > 0)
       .sort((a, b) => b.value - a.value);
-    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
 
     // Variação vs o mês anterior.
     const pm = shiftMonth(month, -1);
-    const prevExp = data.expenses.filter((e) => e.month === pm).reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const prevExp = expenseTotal(data.expenses.filter((e) => e.month === pm), disp, rates);
     const prevInc = data.incomes.filter((i) => i.month === pm).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     return {
       monthExp,
@@ -126,7 +153,7 @@ export default function Orcamento() {
       return { month: mo, label: monthLabel(mo, lang, true), receitas: 0, gastos: 0 };
     });
     const pfx = `${year}-`;
-    for (const e of data.expenses) if (e.month.startsWith(pfx)) rows[Number(e.month.slice(5, 7)) - 1].gastos += conv(e.amount, e.currency);
+    for (const e of topLevelExpenses(data.expenses)) if (e.month.startsWith(pfx)) rows[Number(e.month.slice(5, 7)) - 1].gastos += conv(e.amount, e.currency);
     for (const i of data.incomes) if (i.month.startsWith(pfx)) rows[Number(i.month.slice(5, 7)) - 1].receitas += conv(i.amount, i.currency);
     return rows;
   }, [data, year, disp, rates, lang]);
@@ -159,6 +186,22 @@ export default function Orcamento() {
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
+      // "Dentro de" (fatura): vincula o item a um lançamento-pai. O valor do item JÁ está no total
+      // da fatura → o filho não soma de novo (sem duplicidade). Candidatos = itens top-level (exceto
+      // ele mesmo); uma fatura que já tem itens não pode entrar em outra (mantém 1 nível).
+      columns.push({
+        key: "parentId",
+        type: "select",
+        optional: true,
+        header: t("orcamento.insideOf"),
+        width: "minmax(116px,1fr)",
+        optionsFor: (r) =>
+          rows.some((x) => x.parentId === r.id)
+            ? []
+            : rows
+                .filter((x) => x.id !== r.id && !x.parentId)
+                .map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
+      });
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
     if (rows.some((r) => r.currency !== disp)) {
@@ -171,6 +214,8 @@ export default function Orcamento() {
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
   const isCurrent = month === currentMonth();
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
+  // Filhos REAIS (pai existe) — pra tingir só quem não soma. Órfão (fatura apagada) fica sem tint.
+  const expChildIds = childExpenseIds(view.monthExp);
   const prev = shiftMonth(month, -1);
 
   return (
@@ -305,7 +350,8 @@ export default function Orcamento() {
             <DataGrid<BudgetRow>
               key={month}
               columns={cols(tax.expenseCategories, view.monthExp as BudgetRow[], true)}
-              rows={view.monthExp as BudgetRow[]}
+              rows={groupExpenseRows(view.monthExp as BudgetRow[])}
+              rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40" : undefined)}
               blank={blank}
               isComplete={complete}
               onCommit={(r) => void actions.putExpense(normalizeBill(r as Expense))}
@@ -575,7 +621,7 @@ export function OrcamentoSummary() {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
     const mo = month;
-    const totalExp = data.expenses.filter((e) => e.month === mo).reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalExp = expenseTotal(data.expenses.filter((e) => e.month === mo), disp, rates); // só top-level (bate com a tabela)
     const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const saldo = totalInc - totalExp;
     const bills = upcomingBills(data.expenses, todayISO());

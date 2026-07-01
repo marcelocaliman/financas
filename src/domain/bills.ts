@@ -1,5 +1,6 @@
 import type { Currency } from "@/money/currency";
 import type { Expense } from "@/domain/types";
+import { topLevelExpenses } from "@/finance/statement";
 
 /**
  * Contas a pagar / vencimentos (lógica PURA e testável).
@@ -61,7 +62,8 @@ export function upcomingBills(
   pastDays = 90,
 ): UpcomingBill[] {
   const out: UpcomingBill[] = [];
-  for (const e of expenses) {
+  // A CONTA é a fatura (top-level); os itens DENTRO dela não são contas separadas.
+  for (const e of topLevelExpenses(expenses)) {
     if (e.dueDay == null || e.paid) continue;
     const dueDate = billDueDate(e.month, e.dueDay);
     const daysUntil = daysBetween(todayISO, dueDate);

@@ -8,6 +8,7 @@ import { useBudget } from "@/hooks/use-budget";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useFireTarget } from "@/hooks/use-fire-target";
 import { convert, formatMoney, type Currency } from "@/money/currency";
+import { expenseTotal, expenseLeaves } from "@/finance/statement";
 import { CLASS, nameById } from "@/domain/taxonomy";
 import { upcomingBills } from "@/domain/bills";
 
@@ -63,13 +64,13 @@ export function MonthlyReport({ month }: { month: string }) {
 
     const monthExp = bud.expenses.filter((e) => e.month === month);
     const monthInc = bud.incomes.filter((i) => i.month === month);
-    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const saldo = totalInc - totalExp;
     const savingsRate = totalInc > 0 ? (saldo / totalInc) * 100 : null;
 
     const byCatMap = new Map<string, number>();
-    for (const e of monthExp) byCatMap.set(e.categoryId, (byCatMap.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    for (const l of expenseLeaves(monthExp, rates)) byCatMap.set(l.categoryId, (byCatMap.get(l.categoryId) ?? 0) + conv(l.amount, l.currency));
     const byCat = [...byCatMap.entries()]
       .map(([id, value]) => ({ name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((c) => c.value > 0)

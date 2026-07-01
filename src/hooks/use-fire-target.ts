@@ -6,6 +6,7 @@ import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useBudget } from "@/hooks/use-budget";
 import { useSettings } from "@/hooks/use-settings";
 import { convert, type Currency } from "@/money/currency";
+import { topLevelExpenses } from "@/finance/statement";
 import { CLASS, defaultEligibleClass } from "@/domain/taxonomy";
 import { fireNumber } from "@/finance/fire";
 
@@ -80,7 +81,7 @@ export function useFireTarget(): FireTarget | null {
     // Custo de vida ATUAL (do orçamento): média móvel dos últimos N meses COM lançamento.
     const costMonths = Math.max(1, Math.round(cfg.costMonths ?? FIRE_DEFAULTS.costMonths));
     const expByMonth = new Map<string, number>();
-    for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
+    for (const e of topLevelExpenses(budget.expenses)) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
     const recentMonths = [...expByMonth.keys()].sort((a, b) => b.localeCompare(a)).slice(0, costMonths);
     const budgetMonthlyCost = recentMonths.length
       ? recentMonths.reduce((s, m) => s + (expByMonth.get(m) ?? 0), 0) / recentMonths.length

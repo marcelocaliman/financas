@@ -7,6 +7,7 @@ import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
 import { convert, formatMoney, CURRENCIES, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { currencyBreakdown, currencyColors, categoryColors, expenseColors } from "@/money/composition";
+import { expenseTotal, expenseLeaves } from "@/finance/statement";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { useLiberdade } from "@/hooks/use-liberdade";
 import { useHealth } from "@/hooks/use-health";
@@ -69,14 +70,15 @@ function usePainelView() {
     const mo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const monthExp = data.expenses.filter((e) => e.month === mo);
     const monthInc = data.incomes.filter((i) => i.month === mo);
-    // Gastos agrupados por CATEGORIA (mesmo critério do módulo Orçamento → bate).
+    // Gastos por CATEGORIA (mesmo critério do Orçamento → bate). DESMEMBRA as faturas via
+    // expenseLeaves (itens dentro + sobra "não discriminado") — sem dupla contagem.
     const byCat = new Map<string, number>();
-    for (const e of monthExp) byCat.set(e.categoryId, (byCat.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    for (const l of expenseLeaves(monthExp, rates)) byCat.set(l.categoryId, (byCat.get(l.categoryId) ?? 0) + conv(l.amount, l.currency));
     const expDisp = [...byCat.entries()]
       .map(([id, value]) => ({ id, name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((e) => e.value > 0)
       .sort((a, b) => b.value - a.value);
-    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const trend = [...data.snapshots]
       .sort((a, b) => a.month.localeCompare(b.month))

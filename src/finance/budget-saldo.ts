@@ -1,5 +1,6 @@
 import { convert, type Currency, type RateTable } from "@/money/currency";
 import type { Expense, Income } from "@/domain/types";
+import { topLevelExpenses } from "./statement";
 
 /**
  * Saldo (poupança) do mês = receitas − gastos do orçamento, convertido pra `currency`.
@@ -18,6 +19,6 @@ export function budgetSaldoForMonth(
   const exp = budget.expenses.filter((e) => e.month === month);
   if (inc.length === 0 && exp.length === 0) return null;
   const totalInc = inc.reduce((s, i) => s + convert(i.amount, i.currency, currency, rates), 0);
-  const totalExp = exp.reduce((s, e) => s + convert(e.amount, e.currency, currency, rates), 0);
+  const totalExp = topLevelExpenses(exp).reduce((s, e) => s + convert(e.amount, e.currency, currency, rates), 0);
   return totalInc - totalExp;
 }

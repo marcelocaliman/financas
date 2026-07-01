@@ -15,6 +15,7 @@ const exp = (p: Partial<Expense>): Expense => ({
   recurring: p.recurring,
   dueDay: p.dueDay,
   paid: p.paid,
+  parentId: p.parentId,
 });
 const inc = (p: Partial<Income>): Income => ({
   id: p.id ?? `i${++n}`,
@@ -41,6 +42,20 @@ describe("planRecurring", () => {
     expect(plan.incomes[0]).toMatchObject({ month: "2026-02", amount: 5000 });
     // não traz o lançamento avulso (não recorrente)
     expect(plan.expenses.find((e) => e.amount === 50)).toBeUndefined();
+  });
+
+  it("fatura recorrente arrasta o filho não-recorrente e religa ao cartão NOVO (sem órfão/dupla contagem)", () => {
+    const expenses = [
+      exp({ id: "card", month: "2026-01", amount: 1000, recurring: true }),
+      exp({ id: "kid", month: "2026-01", amount: 50, recurring: false, parentId: "card" }),
+    ];
+    const plan = planRecurring(expenses, [], "2026-02", newId);
+    expect(plan.expenses).toHaveLength(2); // cartão + o item dentro dele vêm juntos
+    const newCard = plan.expenses.find((e) => e.amount === 1000)!;
+    const newKid = plan.expenses.find((e) => e.amount === 50)!;
+    expect(newCard.id).not.toBe("card");
+    expect(newKid.parentId).toBe(newCard.id); // religado ao cartão do mês NOVO (não pendurado no antigo)
+    expect(newKid.month).toBe("2026-02");
   });
 
   it("é idempotente: não traz nada se o mês-alvo já tem um fixo", () => {

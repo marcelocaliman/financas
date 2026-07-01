@@ -115,8 +115,10 @@ export async function exportCSV(): Promise<void> {
     rows.push({ tipo: "ativo", nome: a.name, categoria: a.classId, moeda: a.currency, valor: a.amount, extra: a.ticker ?? a.subtypeId ?? "" });
   for (const l of liabilities)
     rows.push({ tipo: "passivo", nome: l.name, categoria: l.typeId, moeda: l.currency, valor: l.amount, extra: l.installments ? `${l.installments}x` : "" });
+  // Nome da fatura-pai, pra sinalizar itens DENTRO dela (senão um SUM ingênuo no Excel dupla-conta).
+  const expName = new Map(expenses.map((e) => [e.id, e.name || e.categoryId]));
   for (const e of expenses)
-    rows.push({ tipo: "gasto", nome: e.name, categoria: e.categoryId, moeda: e.currency, valor: e.amount, extra: e.month });
+    rows.push({ tipo: "gasto", nome: e.name, categoria: e.categoryId, moeda: e.currency, valor: e.amount, extra: e.parentId && expName.has(e.parentId) ? `${e.month} · dentro: ${expName.get(e.parentId)}` : e.month });
   for (const i of incomes)
     rows.push({ tipo: "receita", nome: i.name, categoria: i.categoryId, moeda: i.currency, valor: i.amount, extra: i.month });
   for (const s of snapshots)

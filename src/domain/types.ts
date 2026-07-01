@@ -48,6 +48,9 @@ export interface Expense {
   dueDay?: number;
   /** Conta já paga no mês? Cada mês tem a sua linha, então `paid` é por competência. */
   paid?: boolean;
+  /** DENTRO de outro gasto (a fatura do cartão) — id do lançamento "pai". Um filho é DISCRIMINADO
+   *  mas NÃO soma no total (já está no valor da fatura) — evita dupla contagem. Ver finance/statement. */
+  parentId?: string;
 }
 
 export interface Income {

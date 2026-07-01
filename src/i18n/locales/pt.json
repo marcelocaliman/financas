@@ -167,6 +167,8 @@
     "recurringHint": "Marque com ↻ os lançamentos fixos (aluguel, salário, assinaturas) — eles entram sozinhos nos próximos meses.",
     "dueDay": "Dia",
     "dueColumn": "Vencimento",
+    "insideOf": "Dentro de",
+    "notItemized": "não discriminado",
     "amount": "Valor",
     "upcomingBills": "Próximos vencimentos",
     "markPaid": "Marcar como paga",

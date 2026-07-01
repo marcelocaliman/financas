@@ -6,6 +6,7 @@ import { useBudget } from "@/hooks/use-budget";
 import { useSettings } from "@/hooks/use-settings";
 import { useFireTarget, FIRE_DEFAULTS } from "@/hooks/use-fire-target";
 import { convert, type Currency } from "@/money/currency";
+import { topLevelExpenses } from "@/finance/statement";
 import { realReturn, safeMonthlyIncome } from "@/finance/fire";
 import {
   freedomPct as calcFreedomPct,
@@ -114,7 +115,7 @@ export function useLiberdade(): LiberdadeView | null {
 
     // Streak de constância: saldo (receitas − gastos) por mês (TODOS os meses, não a janela).
     const expByMonth = new Map<string, number>();
-    for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
+    for (const e of topLevelExpenses(budget.expenses)) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
     const incByMonth = new Map<string, number>();
     for (const i of budget.incomes) incByMonth.set(i.month, (incByMonth.get(i.month) ?? 0) + conv(i.amount, i.currency));
     const allMonths = new Set<string>([...expByMonth.keys(), ...incByMonth.keys()]);

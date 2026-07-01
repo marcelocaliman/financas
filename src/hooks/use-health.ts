@@ -7,6 +7,7 @@ import { useObjetivos } from "@/hooks/use-objetivos";
 import { useLiberdade, LIBERDADE_DEFAULTS } from "@/hooks/use-liberdade";
 import { useSettings } from "@/hooks/use-settings";
 import { convert, type Currency } from "@/money/currency";
+import { topLevelExpenses } from "@/finance/statement";
 import { isInvestedClass } from "@/domain/taxonomy";
 import {
   savingsScore,
@@ -63,7 +64,7 @@ export function useHealth(): HealthView | null {
     const incByMonth = new Map<string, number>();
     const expByMonth = new Map<string, number>();
     for (const i of budget.incomes) incByMonth.set(i.month, (incByMonth.get(i.month) ?? 0) + conv(i.amount, i.currency));
-    for (const e of budget.expenses) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
+    for (const e of topLevelExpenses(budget.expenses)) expByMonth.set(e.month, (expByMonth.get(e.month) ?? 0) + conv(e.amount, e.currency));
     const months = [...new Set([...incByMonth.keys(), ...expByMonth.keys()])]
       .sort((a, b) => b.localeCompare(a))
       .slice(0, SAVINGS_WINDOW);

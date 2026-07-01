@@ -16,7 +16,7 @@ import type {
   NetWorthSnapshot,
 } from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
-import { planRecurring } from "@/domain/recurring";
+import { planRecurring, effectiveRecurringIds } from "@/domain/recurring";
 
 /**
  * Mutações do app. Escrevem PRIMEIRO no repositório local (instantâneo, offline),
@@ -153,8 +153,16 @@ export const actions = {
         repository.listExpenses(),
         repository.listIncomes(),
       ]);
-      for (const e of expenses.filter((x) => x.month === from && !x.recurring)) {
-        await repository.putExpense({ ...e, id: crypto.randomUUID(), month: to, paid: false });
+      // Copia os AVULSOS (efetivo): a recorrência de um filho segue o PAI, então a fatura vem numa
+      // passada só com os seus itens (nunca sobra filho órfão sobre a fatura → sem dupla contagem).
+      // Remapeia o vínculo de fatura (parentId) pros ids do novo mês.
+      const fromExp = expenses.filter((x) => x.month === from);
+      const eff = effectiveRecurringIds(fromExp);
+      const srcExp = fromExp.filter((x) => !eff.has(x.id));
+      const idMap = new Map<string, string>();
+      for (const e of srcExp) idMap.set(e.id, crypto.randomUUID());
+      for (const e of srcExp) {
+        await repository.putExpense({ ...e, id: idMap.get(e.id)!, month: to, paid: false, parentId: e.parentId ? idMap.get(e.parentId) : undefined });
       }
       for (const i of incomes.filter((x) => x.month === from && !x.recurring)) {
         await repository.putIncome({ ...i, id: crypto.randomUUID(), month: to });

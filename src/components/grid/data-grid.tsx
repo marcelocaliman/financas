@@ -55,6 +55,8 @@ interface DataGridProps<T extends { id: string }> {
   onDelete: (id: string) => void;
   addPlaceholder: string;
   total?: ReactNode;
+  /** Classe extra por linha (ex.: tingir os itens DENTRO de uma fatura). */
+  rowClass?: (row: T) => string | undefined;
 }
 
 const CELL_INPUT =
@@ -718,6 +720,7 @@ export function DataGrid<T extends { id: string }>({
   onDelete,
   addPlaceholder,
   total,
+  rowClass,
 }: DataGridProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<T>(() => blank());
@@ -902,7 +905,7 @@ export function DataGrid<T extends { id: string }>({
       {rows.map((row) => (
         <div
           key={row.id}
-          className="group grid items-center border-b border-[var(--grid-line)] hover:bg-card-hover transition-colors"
+          className={cn("group grid items-center border-b border-[var(--grid-line)] hover:bg-card-hover transition-colors", rowClass?.(row))}
           style={{ gridTemplateColumns: template }}
         >
           {columns.map((c) => (

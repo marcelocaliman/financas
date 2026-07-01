@@ -167,6 +167,8 @@
     "recurringHint": "Mark fixed entries (rent, salary, subscriptions) with ↻ — they flow into the next months on their own.",
     "dueDay": "Day",
     "dueColumn": "Due date",
+    "insideOf": "Part of",
+    "notItemized": "not itemized",
     "amount": "Amount",
     "upcomingBills": "Upcoming bills",
     "markPaid": "Mark as paid",

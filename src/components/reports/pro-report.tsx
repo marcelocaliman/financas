@@ -16,6 +16,7 @@ import { useProjection } from "@/store/projection";
 import { convert, formatMoney, compactMoney, type Currency } from "@/money/currency";
 import { currencyBreakdown } from "@/money/composition";
 import { projectionSeries } from "@/finance/projection";
+import { expenseTotal, expenseLeaves } from "@/finance/statement";
 import { nameById, CLASS } from "@/domain/taxonomy";
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
@@ -131,12 +132,12 @@ export function ProReport() {
     // Orçamento (mês atual)
     const monthExp = bud.expenses.filter((e) => e.month === month);
     const monthInc = bud.incomes.filter((iv) => iv.month === month);
-    const totalExp = monthExp.reduce((s, e) => s + conv(e.amount, e.currency), 0);
+    const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, iv) => s + conv(iv.amount, iv.currency), 0);
     const saldo = totalInc - totalExp;
     const savingsRate = totalInc > 0 ? (saldo / totalInc) * 100 : null;
     const expByCatMap = new Map<string, number>();
-    for (const e of monthExp) expByCatMap.set(e.categoryId, (expByCatMap.get(e.categoryId) ?? 0) + conv(e.amount, e.currency));
+    for (const l of expenseLeaves(monthExp, rates)) expByCatMap.set(l.categoryId, (expByCatMap.get(l.categoryId) ?? 0) + conv(l.amount, l.currency));
     const expByCat = [...expByCatMap.entries()]
       .map(([id, value]) => ({ name: nameById(tax.expenseCategories, id) || t("orcamento.uncategorized"), value }))
       .filter((c) => c.value > 0)
