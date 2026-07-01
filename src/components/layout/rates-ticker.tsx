@@ -17,22 +17,27 @@ interface MacroItem {
   color: string;
   metrics: { label: string; value: string }[];
 }
-/** Câmbio de uma moeda contra a principal, com a variação do dia. */
+/** Câmbio de uma moeda contra a principal, com a variação do dia. Selo = código da moeda. */
 interface FxItem {
   key: string;
   kind: "fx";
-  label: string; // código da moeda
+  tag: string; // EUR/USD/GBP
   value: string;
   pct: number | null;
   color: string;
 }
-type TickerItem = MacroItem | FxItem;
+/** Barra separando as seções (juros/inflação · câmbio). */
+interface DividerItem {
+  key: string;
+  kind: "divider";
+}
+type TickerItem = MacroItem | FxItem | DividerItem;
 
 /**
- * Barra de cotações rolando no topo (marquee, pílula flutuante) — cada PAÍS com seu juro +
- * inflação lado a lado sob um selo de região (BR verde, resto cinza), seguido do câmbio das moedas
- * contra a principal com variação do dia. Só dado PÚBLICO de mercado (não esconde no modo privado).
- * Ligável em Configurações → Aparência.
+ * Barra de cotações rolando no topo (marquee, pílula flutuante). Todos os itens padronizados por
+ * SELO colorido: juros+inflação de cada país sob o selo da região (BR verde, resto cinza), depois
+ * uma BARRA, depois o câmbio das moedas (selo = código) com variação do dia. Só dado PÚBLICO de
+ * mercado (não esconde no modo privado). Ligável em Configurações → Aparência.
  */
 export function RatesTicker() {
   const theme = useUI((s) => s.theme);
@@ -49,31 +54,34 @@ export function RatesTicker() {
 
   const items = useMemo<TickerItem[]>(() => {
     const macros = { BRL: brl, USD: usd, EUR: eur, GBP: gbp } as const;
-    const out: TickerItem[] = [];
     // Um grupo por país: juros + inflação juntos (pula métricas sem dado; pula o país sem nenhuma).
+    const macroItems: MacroItem[] = [];
     for (const c of CURRENCIES) {
       const m = macros[c];
       const metrics: { label: string; value: string }[] = [];
       if (m?.rate != null) metrics.push({ label: MACRO_META[c].rateName, value: formatPercent(m.rate, c) });
       if (m?.inflation != null) metrics.push({ label: MACRO_META[c].cpiName, value: formatPercent(m.inflation, c) });
-      if (metrics.length) out.push({ key: `macro-${c}`, kind: "macro", tag: MACRO_META[c].tag, color: colors[c], metrics });
+      if (metrics.length) macroItems.push({ key: `macro-${c}`, kind: "macro", tag: MACRO_META[c].tag, color: colors[c], metrics });
     }
     // Câmbio das outras moedas contra a principal.
-    for (const c of CURRENCIES.filter((x) => x !== base)) {
-      out.push({
-        key: `fx-${c}`,
-        kind: "fx",
-        label: c,
-        value: formatMoney(convert(1, c, base, rates), base, { minimumFractionDigits: 2, maximumFractionDigits: 4 }),
-        pct: today && prev ? pairChangePct(c, base, today, prev) : null,
-        color: colors[c],
-      });
+    const fxItems: FxItem[] = CURRENCIES.filter((x) => x !== base).map((c) => ({
+      key: `fx-${c}`,
+      kind: "fx",
+      tag: c,
+      value: formatMoney(convert(1, c, base, rates), base, { minimumFractionDigits: 2, maximumFractionDigits: 4 }),
+      pct: today && prev ? pairChangePct(c, base, today, prev) : null,
+      color: colors[c],
+    }));
+    // Barra entre as duas seções (e no começo, pra o loop separar câmbio→juros na virada).
+    if (macroItems.length && fxItems.length) {
+      return [{ key: "d0", kind: "divider" }, ...macroItems, { key: "d1", kind: "divider" }, ...fxItems];
     }
-    return out;
+    return [...macroItems, ...fxItems];
   }, [brl, usd, eur, gbp, base, rates, today, prev, colors]);
 
-  if (items.length === 0) return null;
-  const duration = Math.max(24, items.length * 6); // rolagem ~constante independente do nº de itens
+  const content = items.filter((i) => i.kind !== "divider").length;
+  if (content === 0) return null;
+  const duration = Math.max(28, content * 7); // rolagem ~constante independente do nº de itens
 
   return (
     <div className="hidden lg:block sticky top-4 z-30 mt-4">
@@ -89,42 +97,47 @@ export function RatesTicker() {
   );
 }
 
+/** Selo colorido com o código da região/moeda — padrão comum a juros e câmbio. */
+function Chip({ tag, color }: { tag: string; color: string }) {
+  return (
+    <span
+      className="rounded-[5px] px-1.5 py-[3px] font-mono text-[9.5px] font-bold uppercase tracking-[0.06em] leading-none shrink-0"
+      style={{ color, background: `${color}22` }}
+    >
+      {tag}
+    </span>
+  );
+}
+
 function TickerRow({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: boolean }) {
   return (
     <div className="flex items-center shrink-0" aria-hidden={ariaHidden}>
-      {items.map((it) => (
-        <span key={it.key} className="inline-flex items-center gap-2.5 px-4 py-2 whitespace-nowrap text-[12px]">
-          {it.kind === "macro" ? (
-            <>
-              <span
-                className="rounded-[5px] px-1.5 py-[3px] font-mono text-[9.5px] font-bold uppercase tracking-[0.06em] leading-none"
-                style={{ color: it.color, background: `${it.color}22` }}
-              >
-                {it.tag}
-              </span>
-              {it.metrics.map((mt) => (
+      {items.map((it) => {
+        if (it.kind === "divider") return <span key={it.key} className="mx-2 h-5 w-px shrink-0 bg-[var(--border-strong)]" />;
+        return (
+          <span key={it.key} className="inline-flex items-center gap-2.5 px-4 py-2 whitespace-nowrap text-[12px]">
+            <Chip tag={it.tag} color={it.color} />
+            {it.kind === "macro" ? (
+              it.metrics.map((mt) => (
                 <span key={mt.label} className="inline-flex items-center gap-1.5">
                   <span className="font-mono uppercase tracking-[0.08em] text-faint text-[10.5px]">{mt.label}</span>
                   <span className="tabular font-semibold text-text">{mt.value}</span>
                 </span>
-              ))}
-            </>
-          ) : (
-            <>
-              <span className="w-[6px] h-[6px] rounded-[2px] shrink-0" style={{ background: it.color }} />
-              <span className="font-mono uppercase tracking-[0.08em] text-faint text-[10.5px]">{it.label}</span>
-              <span className="tabular font-semibold text-text">{it.value}</span>
-              {it.pct != null ? (
-                <span className={cn("inline-flex items-center gap-0.5 tabular text-[11px]", it.pct >= 0 ? "text-accent" : "text-neg")}>
-                  {it.pct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                  {Math.abs(it.pct).toFixed(2)}%
-                </span>
-              ) : null}
-            </>
-          )}
-          <span className="pl-1 text-faint/40">·</span>
-        </span>
-      ))}
+              ))
+            ) : (
+              <>
+                <span className="tabular font-semibold text-text">{it.value}</span>
+                {it.pct != null ? (
+                  <span className={cn("inline-flex items-center gap-0.5 tabular text-[11px]", it.pct >= 0 ? "text-accent" : "text-neg")}>
+                    {it.pct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                    {Math.abs(it.pct).toFixed(2)}%
+                  </span>
+                ) : null}
+              </>
+            )}
+          </span>
+        );
+      })}
     </div>
   );
 }
