@@ -503,6 +503,13 @@
     #planos .plans.inv-live .plan-inv .inv-soon,
     #planos .plans.inv-live .plan-inv .inv-wait{display:none}
     #planos .plans.inv-live .plan-inv .inv-live-cta{display:flex}
+    /* Pro Investidor: acento DOURADO (tier premium) — distinto do verde do Pro, sem clonar a borda. */
+    #planos .plan-inv{border-color:rgba(201,154,78,.5);box-shadow:0 22px 60px -30px rgba(0,0,0,.55)}
+    #planos .plan-inv .eyebrow.accent,#planos .plan-inv .annual,#planos .plan-inv li::before,#planos .plan-inv .inv-wait-status.ok{color:#c99a4e}
+    #planos .plan-inv .inv-soon{color:#c99a4e;border-color:rgba(201,154,78,.6)}
+    #planos .plan-inv .inv-wait input:focus{border-color:#c99a4e}
+    #planos .plan-inv .btn-primary{background:#c99a4e;color:#160f04}
+    #planos .plan-inv .btn-primary:hover{background:#b98a3e}
     @media (max-width:980px){#planos .plans{grid-template-columns:1fr}}
 
     /* ── Mock animado da UI: TOUR do app — 4 telas se montando em sequência (Painel → Orçamento →
@@ -1292,7 +1299,7 @@
           </ul>
           <a class="btn btn-primary" href="/app" data-i18n="planos.proCta">Testar o Pro grátis</a>
         </div>
-        <div class="plan plan-pro plan-inv">
+        <div class="plan plan-inv">
           <div class="inv-head">
             <span class="eyebrow accent" data-i18n="planos.invTitle">Pro Investidor</span>
             <span class="inv-soon" data-i18n="planos.invSoon">Em breve</span>
