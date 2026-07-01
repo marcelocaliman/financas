@@ -30,6 +30,7 @@ export interface Scene {
   bars?: { label: string; w: number; c?: string }[];
   tagline?: string;
   mock?: "currencies" | "masked" | "donut"; // mockup do app na cena de hook (preenche + varia)
+  chips?: string[]; // pílulas de features (cena de amplitude/benefício)
 }
 export interface Story {
   id: string;
@@ -38,51 +39,34 @@ export interface Story {
 }
 
 export const STORIES: Story[] = [
-  {
-    id: "privacidade",
-    name: "Privacidade",
-    scenes: [
-      { kind: "hook", eyebrow: "PRIVACIDADE DE VERDADE", title: ["Seus números.", "Só seus."], mock: "masked" },
-      {
-        kind: "privacy",
-        eyebrow: "CRIPTOGRAFIA PONTA A PONTA",
-        title: ["Nem eu, no", "servidor, vejo."],
-        sub: "Seus dados vão cifrados. A chave nunca sai do seu aparelho.",
-      },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Grátis · Privado · Local-first", sub: "nossasfinancas.com.br" },
-    ],
-  },
+  // Arco de cada peça: PROBLEMA (a dor) → O APP (mockup + o que é) → AMPLITUDE/BENEFÍCIO → CTA.
   {
     id: "patrimonio",
-    name: "Patrimônio multimoeda",
+    name: "Quanto você tem",
     scenes: [
-      { kind: "hook", eyebrow: "DINHEIRO EM VÁRIAS MOEDAS?", title: ["Tudo num", "lugar só."], mock: "currencies" },
-      {
-        kind: "networth",
-        eyebrow: "PATRIMÔNIO LÍQUIDO",
-        value: "1284500",
-        badges: ["BRL", "EUR", "USD"],
-        sub: "Some tudo, em qualquer moeda — na cotação de hoje.",
-      },
+      { kind: "hook", eyebrow: "DINHEIRO EM MAIS DE UMA MOEDA?", title: ["Real, euro, dólar…", "quanto você tem", "somando tudo?"] },
+      { kind: "hook", mock: "currencies", eyebrow: "UM PAINEL SÓ", title: ["Tudo, em", "qualquer moeda."], sub: "Na cotação de hoje — sem planilha, sem abrir conta." },
+      { kind: "hook", eyebrow: "E VAI MUITO ALÉM", title: ["Sua vida", "financeira inteira."], chips: ["Patrimônio", "Orçamento", "Investimentos", "Metas", "Projeção"] },
       { kind: "cta", value: "Nossas Finanças", tagline: "Multimoeda de verdade", sub: "nossasfinancas.com.br" },
     ],
   },
   {
-    id: "orcamento",
-    name: "Orçamento & independência",
+    id: "privacidade",
+    name: "Privacidade",
     scenes: [
-      { kind: "hook", eyebrow: "PRA ONDE VAI O SEU DINHEIRO?", title: ["Orçamento", "que faz sentido."], mock: "donut" },
-      {
-        kind: "budget",
-        eyebrow: "ORÇAMENTO DO MÊS",
-        title: ["Veja cada real —", "e projete o futuro."],
-        bars: [
-          { label: "Moradia", w: 0.84 },
-          { label: "Alimentação", w: 0.62, c: "#8A8F98" },
-          { label: "Transporte", w: 0.41, c: "#8A8F98" },
-          { label: "Lazer", w: 0.28, c: CARD2 },
-        ],
-      },
+      { kind: "hook", eyebrow: "SOBRE OS APPS DE FINANÇAS", title: ["Eles veem tudo", "o que você tem.", "E lucram com isso."] },
+      { kind: "hook", mock: "masked", eyebrow: "CRIPTOGRAFIA PONTA A PONTA", title: ["O nosso não", "vê nada."], sub: "Tudo cifrado no seu aparelho. Nem eu, no servidor, vejo." },
+      { kind: "hook", eyebrow: "PRIVACIDADE DE VERDADE", title: ["Seus números.", "Só seus."], sub: "Sem anúncios e sem vender os seus dados." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Privado · Local-first", sub: "nossasfinancas.com.br" },
+    ],
+  },
+  {
+    id: "orcamento",
+    name: "Orçamento & liberdade",
+    scenes: [
+      { kind: "hook", eyebrow: "TODO FIM DE MÊS", title: ["Pra onde foi", "o seu dinheiro?"] },
+      { kind: "hook", mock: "donut", eyebrow: "ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Em qualquer moeda, com o gráfico do mês." },
+      { kind: "hook", eyebrow: "E O FUTURO?", title: ["Veja quando você", "fica livre."], sub: "Projeção de independência financeira, no seu ritmo." },
       { kind: "cta", value: "Nossas Finanças", tagline: "Planeje · Projete · Conquiste", sub: "nossasfinancas.com.br" },
     ],
   },
@@ -346,16 +330,45 @@ function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
   ctx.globalAlpha = 1;
 }
 
-function drawTitle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, lines: string[], a: number, dy: number) {
+function drawTitle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, lines: string[], a: number, dy: number, px = 96) {
   ctx.globalAlpha = a;
   ctx.fillStyle = TEXT;
-  ctx.font = fontSans(96 * s, 600);
+  ctx.font = fontSans(px * s, 600);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  const lh = 104 * s;
+  const lh = (px + 8) * s;
   lines.forEach((ln, i) => ctx.fillText(ln, x, y + i * lh + dy));
   ctx.globalAlpha = 1;
   return y + lines.length * lh;
+}
+
+/** Pílulas de features (cena de amplitude) — quebra em linhas se não couber. */
+function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, chips: string[], a: number, maxW: number) {
+  ctx.globalAlpha = a;
+  ctx.font = fontMono(24 * s, 500);
+  const h = 54 * s, padX = 24 * s, gap = 12 * s;
+  let cxp = x, cyp = y;
+  for (const c of chips) {
+    const w = ctx.measureText(c).width + padX * 2;
+    if (cxp + w > x + maxW) {
+      cxp = x;
+      cyp += h + gap;
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    roundRect(ctx, cxp, cyp, w, h, h / 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1.5 * s;
+    roundRect(ctx, cxp, cyp, w, h, h / 2);
+    ctx.stroke();
+    ctx.fillStyle = MUTED;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(c, cxp + padX, cyp + h / 2 + 1 * s);
+    cxp += w + gap;
+  }
+  ctx.textBaseline = "alphabetic";
+  ctx.globalAlpha = 1;
 }
 
 function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number) {
@@ -390,15 +403,22 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 
   if (sc.kind === "hook") {
     if (sc.mock) {
-      // card-mockup entra com leve escala/subida; texto embaixo
+      // O APP: mockup em cima + legenda (título menor + sub) embaixo.
       const pop = easeOut(clamp01((lt - 0.1) / 0.6));
-      const cardY = H * 0.335 + (1 - pop) * 30 * s;
-      drawMockCard(ctx, s, W / 2, cardY, 560 * s, sc.mock, a * (0.3 + 0.7 * pop));
-      drawEyebrow(ctx, s, x, H * 0.655, sc.eyebrow || "", a);
-      drawTitle(ctx, s, x, H * 0.655 + 92 * s, sc.title || [], a, rise);
+      const cardY = H * 0.32 + (1 - pop) * 30 * s;
+      drawMockCard(ctx, s, W / 2, cardY, 540 * s, sc.mock, a * (0.3 + 0.7 * pop));
+      drawEyebrow(ctx, s, x, H * 0.6, sc.eyebrow || "", a);
+      const tb = drawTitle(ctx, s, x, H * 0.6 + 78 * s, sc.title || [], a, rise, 74);
+      if (sc.sub) drawSub(ctx, s, x, tb + 22 * s, W, sc.sub, a);
     } else {
-      drawEyebrow(ctx, s, x, midY - 220 * s, sc.eyebrow || "", a);
-      drawTitle(ctx, s, x, midY - 130 * s, sc.title || [], a, rise);
+      // PROBLEMA / BENEFÍCIO: texto grande + sub/chips opcionais.
+      drawEyebrow(ctx, s, x, midY - 210 * s, sc.eyebrow || "", a);
+      let tb = drawTitle(ctx, s, x, midY - 110 * s, sc.title || [], a, rise, 90);
+      if (sc.sub) {
+        drawSub(ctx, s, x, tb + 28 * s, W, sc.sub, a);
+        tb += 86 * s;
+      }
+      if (sc.chips) drawChips(ctx, s, x, tb + 40 * s, sc.chips, a, W - x * 2);
     }
     return;
   }

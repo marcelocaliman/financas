@@ -94,9 +94,10 @@ export function AdsSection() {
   return (
     <div>
       <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-        Stories prontos pra divulgar (9:16, formato Instagram) — cada um com 3 páginas animadas e um
-        tema. Clique em <b className="text-text">Baixar MP4</b>: a gravação roda a animação em tempo real
-        (~{storyDuration(STORIES[0])}s) e o arquivo baixa sozinho. É só postar como Story ou Reels.
+        Stories prontos pra divulgar (9:16, formato Instagram) — cada um com um mini-roteiro
+        (dor → o app → benefício → CTA). Clique em <b className="text-text">Baixar MP4</b>: a gravação
+        roda a animação em tempo real (~{storyDuration(STORIES[0])}s) e o arquivo baixa sozinho. É só
+        postar como Story ou Reels.
       </p>
       {!supported ? (
         <div className="mb-4 rounded-[12px] border border-border bg-card2 p-3 text-[12.5px] text-muted">
