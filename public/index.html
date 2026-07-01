@@ -139,15 +139,21 @@
     @media (max-width: 1200px) { .nav-links { display: none; } }
     /* Mobile: enxuga o header em camadas pra o CTA e o seletor de idioma NUNCA colidirem
        (o .nav encolhe pra dividir a linha com o .langdrop; sem isto o .nav-right transborda). */
+    .nav-right .btn-cta-short { display: none; } /* CTA curto: só nas telas bem estreitas (troca o longo) */
     @media (max-width: 700px) {
       .brand span.bn { display: none; }
       .nav { padding: 0 8px 0 12px; gap: 10px; }
       .nav-right { gap: 8px; }
-      .nav-right .btn-primary { padding: 0 13px; }
+      .nav-right .btn { padding: 0 12px; font-size: 13px; }  /* aperta "Entrar" e o CTA */
+      .nav-right .themebtn { display: none; }                 /* mobile: sem seletor de tema — abre espaço p/ "Entrar" */
       .langbtn { padding: 0 11px; gap: 6px; }
     }
-    @media (max-width: 440px) { .nav-right .btn-login { display: none; } }
-    @media (max-width: 380px) { .nav-right .themebtn { display: none; } }
+    /* Telas bem estreitas: "Criar conta grátis" não cabe junto de "Entrar" — usa o rótulo curto. */
+    @media (max-width: 384px) {
+      .nav-right .btn { padding: 0 11px; font-size: 12.5px; }
+      .nav-right .btn-cta-full { display: none; }
+      .nav-right .btn-cta-short { display: inline-flex; }
+    }
 
     /* Language dropdown */
     .langdrop { position: relative; flex: none; }
@@ -689,7 +695,8 @@
             <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           </button>
           <a class="btn btn-ghost btn-login" href="/app" data-i18n="nav.entrar">Entrar</a>
-          <a class="btn btn-primary" href="/app#signup" data-i18n="nav.criar">Criar conta grátis</a>
+          <a class="btn btn-primary btn-cta-full" href="/app#signup" data-i18n="nav.criar">Criar conta grátis</a>
+          <a class="btn btn-primary btn-cta-short" href="/app#signup" data-i18n="nav.criarShort">Criar conta</a>
         </div>
       </div>
       <div class="langdrop" id="langdrop">
