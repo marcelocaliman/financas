@@ -168,8 +168,6 @@
     "dueDay": "Day",
     "dueColumn": "Due date",
     "insideOf": "In bill",
-    "statement": "Bill",
-    "isStatement": "Is the bill",
     "notItemized": "not itemized",
     "amount": "Amount",
     "upcomingBills": "Upcoming bills",

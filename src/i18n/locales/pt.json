@@ -168,8 +168,6 @@
     "dueDay": "Dia",
     "dueColumn": "Vencimento",
     "insideOf": "Na fatura",
-    "statement": "Fatura",
-    "isStatement": "É a fatura",
     "notItemized": "não discriminado",
     "amount": "Valor",
     "upcomingBills": "Próximos vencimentos",

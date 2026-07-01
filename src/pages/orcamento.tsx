@@ -11,7 +11,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors, expenseColors } from "@/money/composition";
-import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
+import { nameById, EXPENSE_CARD, type TaxonomyItem } from "@/domain/taxonomy";
 import { topLevelExpenses, expenseTotal, expenseLeaves, childExpenseIds } from "@/finance/statement";
 import { upcomingBills, type BillStatus } from "@/domain/bills";
 import type { Expense, Income } from "@/domain/types";
@@ -23,22 +23,19 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean; statementRole?: string };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean };
 
-/** Papel do lançamento na fatura, UMA coluna só (campo VIRTUAL só p/ o grid): "__self" = é a fatura;
- *  um id = está DENTRO daquela fatura; "" = normal. Deriva de isStatement/parentId (+ tem filhos). */
-const SELF_ROLE = "__self";
-function withStatementRole(rows: BudgetRow[]): BudgetRow[] {
-  const isFatura = (r: BudgetRow) => !!r.isStatement || rows.some((x) => x.parentId === r.id);
-  return rows.map((r) => ({ ...r, statementRole: isFatura(r) ? SELF_ROLE : r.parentId ?? "" }));
+/** É uma FATURA (guarda-chuva do cartão) se está na categoria "Cartão de Crédito" — OU, por
+ *  retrocompatibilidade, foi marcada no modelo antigo (isStatement) OU já tem itens dentro (filhos).
+ *  Só faturas podem receber outros lançamentos "na fatura" (a fatura entra no total; os itens, não). */
+function isFaturaRow(r: BudgetRow, rows: BudgetRow[]): boolean {
+  return r.categoryId === EXPENSE_CARD || !!r.isStatement || rows.some((x) => x.parentId === r.id);
 }
-/** Mapeia o papel escolhido de volta pros campos reais (mutuamente exclusivos) e tira o virtual. */
-function fromStatementRole(e: BudgetRow): Expense {
-  const { statementRole, ...rest } = e;
-  const base = rest as Expense;
-  if (statementRole === SELF_ROLE) return { ...base, isStatement: true, parentId: undefined };
-  if (statementRole) return { ...base, isStatement: false, parentId: statementRole };
-  return { ...base, isStatement: false, parentId: undefined };
+/** Normaliza o vínculo do lançamento no commit: "" (desmarcado) → undefined; e uma fatura
+ *  (categoria Cartão) nunca fica DENTRO de outra fatura (não faz sentido aninhar cartão em cartão). */
+function normalizeExpenseLink(e: Expense): Expense {
+  const parentId = e.categoryId === EXPENSE_CARD ? undefined : e.parentId || undefined;
+  return { ...e, parentId };
 }
 
 /** Ordena os gastos agrupando cada FILHO logo abaixo da sua fatura (pai). */
@@ -202,24 +199,25 @@ export default function Orcamento() {
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // UMA coluna "Fatura" (seletor): "—" normal · "É a fatura" (o guarda-chuva/cartão) · dentro de
-      // uma fatura. Os 3 estados são mutuamente exclusivos → cabem numa coluna só (campo VIRTUAL
-      // statementRole, mapeado no commit). Candidatos "dentro de" = SÓ as faturas (não todos os itens).
-      columns.push({
-        key: "statementRole",
-        type: "select",
-        optional: true,
-        header: t("orcamento.statement"),
-        width: "minmax(128px,1.1fr)",
-        optionsFor: (r) => {
-          const selfOpt = { value: SELF_ROLE, label: t("orcamento.isStatement") };
-          if (r.statementRole === SELF_ROLE) return [selfOpt]; // já é fatura: continua sendo (ou "—" p/ desfazer)
-          const faturas = rows
-            .filter((x) => x.statementRole === SELF_ROLE && x.id !== r.id)
-            .map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") }));
-          return [selfOpt, ...faturas];
-        },
-      });
+      // Coluna "Na fatura": marca um lançamento como DENTRO da fatura de um cartão (assim ele não soma
+      // de novo — a fatura já entra pelo total). A FATURA é identificada pela CATEGORIA "Cartão de
+      // Crédito" (sem marcador "é a fatura"). A coluna só aparece quando há ≥1 cartão no mês: 1 cartão
+      // → CHECK; 2+ → seletor de qual cartão. A própria fatura mostra "—" (cartão não fica em cartão).
+      const faturas = rows.filter((r) => isFaturaRow(r, rows));
+      if (faturas.length > 0) {
+        columns.push({
+          key: "parentId",
+          type: "insideStatement",
+          optional: true,
+          header: t("orcamento.insideOf"),
+          width: "minmax(120px,1fr)",
+          placeholder: t("orcamento.insideOf"),
+          optionsFor: (r) =>
+            isFaturaRow(r, rows)
+              ? []
+              : faturas.map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
+        });
+      }
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
     if (rows.some((r) => r.currency !== disp)) {
@@ -234,9 +232,18 @@ export default function Orcamento() {
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
   // Filhos REAIS (pai existe) — pra tingir/recuar só quem não soma. Órfão (fatura apagada) fica normal.
   const expChildIds = childExpenseIds(view.monthExp);
-  // Linhas do grid: papel na fatura (statementRole) + agrupadas com os filhos aninhados sob a fatura.
-  const gridRows = groupExpenseRows(withStatementRole(view.monthExp as BudgetRow[]));
+  // Linhas do grid: agrupadas com cada filho (item da fatura) aninhado logo abaixo do seu cartão.
+  const gridRows = groupExpenseRows(view.monthExp as BudgetRow[]);
   const prev = shiftMonth(month, -1);
+
+  // Apagar uma fatura SOLTA seus itens (parentId → undefined): voltam a ser lançamentos normais.
+  // Evita órfão preso a um cartão inexistente e a coluna "Na fatura" sumir com item ainda vinculado.
+  const removeExpenseAndDetach = async (id: string) => {
+    for (const c of view.monthExp.filter((e) => e.parentId === id)) {
+      await actions.putExpense({ ...c, parentId: undefined });
+    }
+    await actions.removeExpense(id);
+  };
 
   return (
     <div className="space-y-7">
@@ -375,8 +382,8 @@ export default function Orcamento() {
               indentRow={(r) => expChildIds.has(r.id)}
               blank={blank}
               isComplete={complete}
-              onCommit={(r) => void actions.putExpense(normalizeBill(fromStatementRole(r as BudgetRow)))}
-              onDelete={(id) => void actions.removeExpense(id)}
+              onCommit={(r) => void actions.putExpense(normalizeExpenseLink(normalizeBill(r as Expense)))}
+              onDelete={(id) => void removeExpenseAndDetach(id)}
               addPlaceholder={t("orcamento.detailPlaceholder")}
               total={<Money value={view.totalExp} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />}
             />

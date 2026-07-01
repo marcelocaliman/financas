@@ -36,7 +36,7 @@ export function AppShell() {
   );
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
-  useTaxonomyBackfill(); // garante a classe "Bens" nas taxonomias já existentes (1×)
+  useTaxonomyBackfill(); // garante defaults novos (classe "Bens", categoria "Cartão de Crédito") nas taxonomias já existentes (1×, respeitando exclusão)
   useCostBackfill(); // preenche "valor aplicado" (qtd × preço médio) dos ativos legados (1×)
 
   // Analytics próprio: 1 evento "app_open" por sessão de app (anônimo, sem dado financeiro).

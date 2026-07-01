@@ -29,6 +29,9 @@ export interface Taxonomy {
 /** Categoria-padrão "Outros" de cada lado do orçamento (fallback da migração). */
 export const INCOME_OTHER = "receita-outros";
 export const EXPENSE_OTHER = "gasto-outros";
+/** Categoria "Cartão de Crédito" — um gasto nela é uma FATURA (guarda-chuva); outros itens podem
+ *  ser marcados como DENTRO dela ("Na fatura"). Ver finance/statement + a UI do Orçamento. */
+export const EXPENSE_CARD = "gasto-cartao";
 
 export const TAXONOMY_ID = "taxonomy";
 
@@ -145,6 +148,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     { id: "vestuario", name: "Vestuário" },
     { id: "servicos", name: "Serviços e assinaturas" },
     { id: "impostos-gasto", name: "Impostos e taxas" },
+    { id: EXPENSE_CARD, name: "Cartão de Crédito" },
     { id: EXPENSE_OTHER, name: "Outros" },
   ],
 };
