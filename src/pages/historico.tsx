@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { AreaChart, Area, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { TrendArea } from "@/components/charts/trend-area";
+import { shortMonth } from "@/lib/chart";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
@@ -18,14 +19,6 @@ import { Kpi } from "@/components/common/kpi";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
-
-const LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
-/** "AAAA-MM" → "mmm/aa" no idioma corrente (rótulos discretos do eixo). */
-function shortMonth(ym: string, lang: string): string {
-  const [y, m] = ym.split("-").map(Number);
-  if (!y || !m) return ym;
-  return new Date(y, m - 1, 1).toLocaleDateString(LOCALE[lang] ?? "pt-BR", { month: "short", year: "2-digit" });
-}
 
 export default function Historico() {
   const { t, i18n } = useTranslation();
@@ -129,31 +122,7 @@ export default function Historico() {
         <Tile className="p-6 md:p-7">
           <Eyebrow className="mb-4">{t("dashboard.netWorthTrend")}</Eyebrow>
           <div className="w-full h-[230px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={view.series} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
-                <defs>
-                  <linearGradient id="histGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={accent} stopOpacity={0.16} />
-                    <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10.5, fill: "var(--faint)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={28}
-                  interval="preserveStartEnd"
-                />
-                <Tooltip
-                  formatter={(v) => formatMoney(Number(v), disp)}
-                  labelFormatter={(_l, p) => (p && p[0] ? p[0].payload.label : "")}
-                  contentStyle={{ background: "var(--card)", border: "1px solid var(--border-strong)", borderRadius: 12, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                  labelStyle={{ color: "var(--faint)", marginBottom: 2 }}
-                />
-                <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2} fill="url(#histGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <TrendArea data={view.series} xKey="m" yKey="v" color={accent} axisColor="var(--faint)" currency={disp} lang={lang} name={t("common.networth")} />
           </div>
         </Tile>
       ) : null}

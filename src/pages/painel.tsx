@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, LineChart } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { TrendArea } from "@/components/charts/trend-area";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useVault } from "@/vault/vault-store";
@@ -113,7 +114,7 @@ function usePainelView() {
     };
   }, [data, disp, rates, tax, t]);
 
-  return { t, disp, name, tax, colors, accent, axisColor, CAT_COLORS, EXP_COLORS, monthLabel, view, health };
+  return { t, i18n, disp, name, tax, colors, accent, axisColor, CAT_COLORS, EXP_COLORS, monthLabel, view, health };
 }
 
 /** Faixa qualitativa do score de saúde (mesma régua do card da Liberdade). */
@@ -217,7 +218,7 @@ export function DashboardHero() {
 
 /** Dashboard (abaixo do hero): gráfico + stats, depois orçamento + posições. */
 export function DashboardDetail() {
-  const { t, disp, tax, accent, CAT_COLORS, EXP_COLORS, monthLabel, view } = usePainelView();
+  const { t, i18n, disp, tax, accent, axisColor, CAT_COLORS, EXP_COLORS, monthLabel, view } = usePainelView();
   if (!view || view.isEmpty) return null;
   const money = (v: number) => formatMoney(v, disp);
   const hasTrend = view.trend.length >= 2;
@@ -244,24 +245,8 @@ export function DashboardDetail() {
           </div>
           {hasTrend ? (
             <>
-              <div className="w-full flex-1 min-h-[180px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={view.trend} margin={{ top: 6, right: 6, bottom: 0, left: 6 }}>
-                    <defs>
-                      <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={accent} stopOpacity={0.22} />
-                        <stop offset="100%" stopColor={accent} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip
-                      cursor={{ stroke: "var(--border-strong)", strokeWidth: 1 }}
-                      formatter={(v) => money(Number(v))}
-                      contentStyle={{ background: "var(--card-2)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12, boxShadow: "var(--shadow-float)", padding: "8px 12px" }}
-                      labelStyle={{ color: "var(--muted)", marginBottom: 2 }}
-                    />
-                    <Area type="monotone" dataKey="v" stroke={accent} strokeWidth={2} fill="url(#nwGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
+              <div className="w-full flex-1 min-h-[200px]">
+                <TrendArea data={view.trend} xKey="m" yKey="v" color={accent} axisColor={axisColor} currency={disp} lang={i18n.language} name={t("common.networth")} />
               </div>
               <div className="text-[11.5px] text-faint mt-3">{t("dashboard.last6months")}</div>
             </>

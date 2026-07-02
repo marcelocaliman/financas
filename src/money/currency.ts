@@ -82,14 +82,16 @@ export function formatMoney(
   }).format(amount);
 }
 
-/** Valor monetário COMPACTO (ex.: "R$ 1,2 mi", "€ 605 mil") — p/ eixos/rótulos de gráfico. */
-export function compactMoney(amount: number, currency: Currency): string {
+/** Valor monetário COMPACTO (ex.: "R$ 1,2 mi", "€ 605 mil") — p/ eixos/rótulos de gráfico.
+ *  `maxFrac` sobe a precisão quando os valores são próximos (evita rótulos de eixo repetidos,
+ *  ex.: 1,18 mi vs 1,25 mi que a 1 casa virariam ambos "1,2 mi"). */
+export function compactMoney(amount: number, currency: Currency, maxFrac = 1): string {
   return new Intl.NumberFormat(LOCALE[currency], {
     style: "currency",
     currency,
     notation: "compact",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
+    maximumFractionDigits: maxFrac,
   }).format(amount);
 }
 
