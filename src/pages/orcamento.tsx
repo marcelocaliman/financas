@@ -13,7 +13,8 @@ import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/cu
 import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, EXPENSE_CARD, type TaxonomyItem } from "@/domain/taxonomy";
 import { topLevelExpenses, expenseTotal, expenseLeaves, childExpenseIds } from "@/finance/statement";
-import { upcomingBills, type BillStatus } from "@/domain/bills";
+import { upcomingBills } from "@/domain/bills";
+import { BILL_STATUS_TONE, dueDateLabel, daysLabel } from "@/components/common/bill-format";
 import type { Expense, Income } from "@/domain/types";
 import { cn } from "@/lib/utils";
 import { Tile, Eyebrow } from "@/components/common/tile";
@@ -69,16 +70,6 @@ function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
-function dueDateLabel(dueDate: string, lang: string): string {
-  const [y, m, d] = dueDate.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { day: "2-digit", month: "short" });
-}
-const STATUS_TONE: Record<BillStatus, string> = {
-  overdue: "text-neg",
-  today: "text-neg",
-  soon: "text-text",
-  later: "text-faint",
-};
 /** Conta a pagar válida: dia 1–31 inteiro; 0/inválido limpa o vencimento (vira gasto comum). */
 function normalizeBill(e: Expense): Expense {
   if (e.dueDay == null) return e;
@@ -572,10 +563,6 @@ function UpcomingBillsTile() {
     const e = data?.expenses.find((x) => x.id === id);
     if (e) void actions.putExpense({ ...e, paid: true });
   };
-  const daysLabel = (status: BillStatus, daysUntil: number) =>
-    status === "overdue" ? t("orcamento.overdueDays", { n: -daysUntil })
-      : status === "today" ? t("orcamento.dueToday")
-        : t("orcamento.dueInDays", { n: daysUntil });
   const shown = view.bills.slice(0, 8);
   const extra = view.bills.length - shown.length;
 
@@ -614,8 +601,8 @@ function UpcomingBillsTile() {
               <div className="px-3 py-2.5 text-[13.5px] text-text truncate">
                 {b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized")}
               </div>
-              <div className={cn("px-3 py-2.5 text-[12.5px] tabular", STATUS_TONE[b.status])}>
-                {dueDateLabel(b.dueDate, lang)} · {daysLabel(b.status, b.daysUntil)}
+              <div className={cn("px-3 py-2.5 text-[12.5px] tabular", BILL_STATUS_TONE[b.status])}>
+                {dueDateLabel(b.dueDate, lang)} · {daysLabel(t, b.status, b.daysUntil)}
               </div>
               <div className="px-3 py-2.5 text-right">
                 <Money value={conv(b.amount, b.currency)} currency={disp} className="text-[13.5px] font-medium tabular" />

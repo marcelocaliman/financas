@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft, Eye, EyeOff, Sun, Moon,
@@ -20,6 +20,7 @@ import { useIsAdmin } from "@/admin/use-admin";
 import { useOnlinePresence, useTicketsCounts } from "@/admin/use-realtime";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useDueBills } from "@/hooks/use-due-bills";
+import { DueBillsTooltip } from "@/components/layout/due-bills-tooltip";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { FxRatesCard } from "@/components/layout/fx-rates-card";
 import { formatPercent, type Currency } from "@/money/currency";
@@ -210,7 +211,7 @@ export function SideNav({ active }: { active: string }) {
             style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
             <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
-              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ orcamento: due.count }} />
+              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ orcamento: due.count }} tooltips={due.count > 0 ? { orcamento: <DueBillsTooltip /> } : undefined} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
@@ -327,6 +328,7 @@ export function NavList({
   onNavigate,
   onToggle,
   badges,
+  tooltips,
 }: {
   items: NavListItem[];
   collapsed: boolean;
@@ -336,6 +338,8 @@ export function NavList({
   onToggle: (id: string, v: boolean) => void;
   /** Selo de notificação por item (ex.: tickets de suporte não lidos). */
   badges?: Record<string, number>;
+  /** Conteúdo RICO de tooltip por item (ex.: vencimentos no Orçamento). Só desktop (hover). */
+  tooltips?: Record<string, ReactNode>;
 }) {
   const { t } = useTranslation();
   return (
@@ -344,12 +348,13 @@ export function NavList({
         const on = active === id;
         const sectionOpen = isSection && !!openSections[id];
         const badge = badges?.[id] ?? 0;
+        const rich = tooltips?.[id]; // conteúdo rico de tooltip (ex.: vencimentos)
         // Clique no item ALTERNA: se já estamos na seção e ela está aberta, fecha; senão
         // navega (abre + rola). Dá pra abrir E fechar a aba pelo próprio menu.
         const handleClick = () => (sectionOpen && on ? onToggle(id, false) : onNavigate(id));
         if (collapsed) {
           return (
-            <Tooltip key={id} label={label}>
+            <Tooltip key={id} label={label} content={rich}>
               <button
                 type="button"
                 onClick={handleClick}
@@ -370,13 +375,13 @@ export function NavList({
           );
         }
         return (
-          <div
-            key={id}
-            className={cn(
-              "flex items-center rounded-[11px] transition-colors",
-              on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
-            )}
-          >
+          <Tooltip key={id} content={rich} className="w-full">
+            <div
+              className={cn(
+                "flex items-center rounded-[11px] w-full transition-colors",
+                on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
+              )}
+            >
             <button
               type="button"
               onClick={handleClick}
@@ -405,7 +410,8 @@ export function NavList({
                 <ChevronDown size={15} className={cn("transition-transform duration-200", !sectionOpen && "-rotate-90", on ? "text-accent" : "text-faint")} />
               </button>
             ) : null}
-          </div>
+            </div>
+          </Tooltip>
         );
       })}
     </nav>
