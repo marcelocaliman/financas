@@ -26,6 +26,7 @@ import { Button } from "@/components/common/button";
 import { HeroNumber } from "@/components/common/hero-number";
 import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { DailyFxLine } from "@/components/painel/daily-fx-line";
+import { WelcomeBack } from "@/components/painel/welcome-back";
 import { NetWorthInCurrencies } from "@/components/painel/networth-in-currencies";
 import { cn } from "@/lib/utils";
 
@@ -127,7 +128,7 @@ function gradeKey(score: number): string {
 
 /** HERO do dashboard — eyebrow mono + manchete + número-herói + composição. */
 export function DashboardHero() {
-  const { t, disp, colors, view, health } = usePainelView();
+  const { t, disp, colors, view, health, name } = usePainelView();
   const lib = useLiberdade();
   if (!view) return <div className="h-[40vh] rounded-[16px] bg-card/40 border border-border animate-pulse" />;
   if (view.isEmpty) return <PainelEmpty />;
@@ -136,6 +137,7 @@ export function DashboardHero() {
 
   return (
     <>
+      <WelcomeBack name={name} nwChange={view.nwChange} freedomPct={lib?.ready ? lib.freedomPct : null} hasTrend={hasTrend} />
       <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent mb-4">
         {t("dashboard.heroEyebrow")}
       </div>

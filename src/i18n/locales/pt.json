@@ -26,6 +26,14 @@
     "config": "Config"
   },
   "common": {"month": "Mês", "monthPlaceholder": "AAAA-MM", "networth": "Patrimônio", "contribution": "Aporte", "current": "Último registro", "totalChange": "Variação total", "contributions": "Aportes", "growth": "Crescimento total", "return": "Rendimento", "returnSub": "trabalho do dinheiro", "contributionsSub": "do seu bolso", "period": "Período", "monthsValue": "{{n}} meses", "snapshots": "Registros", "addSnapshot": "Adicionar registro", "autoHint": "O mês atual é capturado automaticamente do seu patrimônio — e o aporte vem do saldo (poupança) do seu orçamento. Edite qualquer linha pra assumir o controle dela."},
+  "welcome": {
+    "title": "Bem-vindo de volta",
+    "titleName": "Bem-vindo de volta, {{name}}",
+    "lastVisit": "Última visita {{rel}}",
+    "due": "a vencer",
+    "fire": "rumo à liberdade",
+    "dismiss": "Dispensar"
+  },
   "dashboard": {
     "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",
