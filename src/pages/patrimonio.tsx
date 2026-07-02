@@ -258,7 +258,12 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-8">
-      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
+      <CardSubNav
+        items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))}
+        onSelect={(id) => {
+          if (id === "pat-passivos") setLiabOpen(true); // abre o accordion de Passivos ao clicar na aba
+        }}
+      />
       {/* Alocação — diversificação por classe num relance (barra + KPIs clicáveis que levam à aba) */}
       {alloc.length >= 2 ? (
         <section id="pat-alocacao">

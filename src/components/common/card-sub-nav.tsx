@@ -14,7 +14,7 @@ export interface CardSubNavItem {
  * do SubStickyOffsetContext (provido pelo Accordion, que mede o header). Rola de lado se não couber.
  * Só mostra abas de cards que ESTÃO no DOM (cards condicionais aparecem/somem); some se sobra <2.
  */
-export function CardSubNav({ items }: { items: CardSubNavItem[] }) {
+export function CardSubNav({ items, onSelect }: { items: CardSubNavItem[]; onSelect?: (id: string) => void }) {
   const subTop = useContext(SubStickyOffsetContext);
   const ref = useRef<HTMLDivElement>(null);
   const [navH, setNavH] = useState(45);
@@ -78,7 +78,10 @@ export function CardSubNav({ items }: { items: CardSubNavItem[] }) {
           <button
             key={it.id}
             type="button"
-            onClick={() => scrollToCard(it.id, (subTop ?? 0) + navH)}
+            onClick={() => {
+              onSelect?.(it.id); // ex.: abrir um card colapsável antes de rolar
+              scrollToCard(it.id, (subTop ?? 0) + navH);
+            }}
             className={cn(
               "relative shrink-0 px-3 py-2.5 text-[12.5px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
               on ? "text-text" : "text-muted hover:text-text",
