@@ -21,6 +21,7 @@ import { useOnlinePresence, useTicketsCounts } from "@/admin/use-realtime";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useDueBills } from "@/hooks/use-due-bills";
 import { DueBillsTooltip } from "@/components/layout/due-bills-tooltip";
+import { PatrimonioTooltip, LiberdadeTooltip, ProjecaoTooltip } from "@/components/layout/section-tooltips";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { FxRatesCard } from "@/components/layout/fx-rates-card";
 import { formatPercent, type Currency } from "@/money/currency";
@@ -211,7 +212,21 @@ export function SideNav({ active }: { active: string }) {
             style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
             <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
-              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ orcamento: due.count }} tooltips={due.count > 0 ? { orcamento: <DueBillsTooltip /> } : undefined} />
+              <NavList
+                items={pageItems}
+                collapsed={collapsed}
+                active={active}
+                openSections={openSections}
+                onNavigate={goToSection}
+                onToggle={setSectionOpen}
+                badges={{ orcamento: due.count }}
+                tooltips={{
+                  patrimonio: <PatrimonioTooltip />,
+                  liberdade: <LiberdadeTooltip />,
+                  projecao: <ProjecaoTooltip />,
+                  ...(due.count > 0 ? { orcamento: <DueBillsTooltip /> } : {}),
+                }}
+              />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
