@@ -3,9 +3,14 @@ import { useTranslation } from "react-i18next";
 import { KpiStack } from "@/components/common/header-kpis";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useLiberdade } from "@/hooks/use-liberdade";
+import { useHistorico } from "@/hooks/use-historico";
+import { useObjetivos } from "@/hooks/use-objetivos";
 import { PatrimonioSummary } from "@/pages/patrimonio";
 import { LiberdadeSummary } from "@/pages/liberdade";
 import { ProjecaoSummary } from "@/pages/projecao";
+import { HistoricoSummary } from "@/pages/historico";
+import { ObjetivosSummary } from "@/pages/objetivos";
+import { CrossBorderSummary, useFxExposure } from "@/pages/cross-border";
 
 /**
  * Tooltips de RESUMO dos itens do menu (desktop) — reaproveitam os componentes *Summary das
@@ -63,6 +68,46 @@ export function ProjecaoTooltip() {
   return (
     <Shell title={t("nav.projecao")}>
       <ProjecaoSummary />
+    </Shell>
+  );
+}
+
+export function HistoricoTooltip() {
+  const { t } = useTranslation();
+  const data = useHistorico();
+  if (data && data.length === 0) {
+    return <Invite title={t("nav.historico")} text={t("historico.tipEmpty")} />;
+  }
+  return (
+    <Shell title={t("nav.historico")}>
+      <HistoricoSummary />
+    </Shell>
+  );
+}
+
+export function ObjetivosTooltip() {
+  const { t } = useTranslation();
+  const data = useObjetivos();
+  if (!data || data.length === 0) {
+    return <Invite title={t("nav.objetivos")} text={t("objetivos.tipEmpty")} />;
+  }
+  return (
+    <Shell title={t("nav.objetivos")}>
+      <ObjetivosSummary />
+    </Shell>
+  );
+}
+
+export function CrossborderTooltip() {
+  const { t } = useTranslation();
+  const fx = useFxExposure();
+  // Sem exposição estrangeira (tudo na moeda base) → convite, não "0 / 0%".
+  if (fx.foreign === 0) {
+    return <Invite title={t("nav.crossborder")} text={t("crossborder.tipEmpty")} />;
+  }
+  return (
+    <Shell title={t("nav.crossborder")}>
+      <CrossBorderSummary />
     </Shell>
   );
 }

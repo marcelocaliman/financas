@@ -21,7 +21,7 @@ import { useOnlinePresence, useTicketsCounts } from "@/admin/use-realtime";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
 import { useDueBills } from "@/hooks/use-due-bills";
 import { DueBillsTooltip } from "@/components/layout/due-bills-tooltip";
-import { PatrimonioTooltip, LiberdadeTooltip, ProjecaoTooltip } from "@/components/layout/section-tooltips";
+import { PatrimonioTooltip, LiberdadeTooltip, ProjecaoTooltip, HistoricoTooltip, ObjetivosTooltip, CrossborderTooltip } from "@/components/layout/section-tooltips";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { FxRatesCard } from "@/components/layout/fx-rates-card";
 import { formatPercent, type Currency } from "@/money/currency";
@@ -222,8 +222,11 @@ export function SideNav({ active }: { active: string }) {
                 badges={{ orcamento: due.count }}
                 tooltips={{
                   patrimonio: <PatrimonioTooltip />,
-                  liberdade: <LiberdadeTooltip />,
+                  historico: <HistoricoTooltip />,
+                  objetivos: <ObjetivosTooltip />,
                   projecao: <ProjecaoTooltip />,
+                  liberdade: <LiberdadeTooltip />,
+                  crossborder: <CrossborderTooltip />,
                   ...(due.count > 0 ? { orcamento: <DueBillsTooltip /> } : {}),
                 }}
               />

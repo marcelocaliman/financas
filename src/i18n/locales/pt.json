@@ -198,6 +198,7 @@
     "networth": "Patrimônio",
     "contribution": "Aporte",
     "current": "Último registro",
+    "tipEmpty": "Registre patrimônio pra acompanhar a evolução.",
     "totalChange": "Variação total",
     "contributions": "Aportes",
     "growth": "Crescimento total",
@@ -220,6 +221,7 @@
     "deadline": "Prazo",
     "addGoal": "Adicionar objetivo",
     "saved": "Guardado",
+    "tipEmpty": "Defina metas e acompanhe o progresso.",
     "avgProgress": "Progresso médio",
     "remaining": "Faltam"
   },
@@ -411,6 +413,7 @@
     "sensitivityHint": "Se as moedas estrangeiras valorizarem ou desvalorizarem {{pct}}% frente à sua principal.",
     "move": "Variação do câmbio",
     "foreignExposure": "Em moeda estrangeira",
+    "tipEmpty": "Adicione ativos em outra moeda pra ver a exposição cambial.",
     "foreignShare": "do patrimônio",
     "currencies": "Moedas",
     "swing": "Oscilação",

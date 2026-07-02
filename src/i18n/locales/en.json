@@ -198,6 +198,7 @@
     "networth": "Net worth",
     "contribution": "Contribution",
     "current": "Last snapshot",
+    "tipEmpty": "Track net worth to watch it evolve.",
     "totalChange": "Total change",
     "contributions": "Contributions",
     "growth": "Total growth",
@@ -220,6 +221,7 @@
     "deadline": "Deadline",
     "addGoal": "Add goal",
     "saved": "Saved",
+    "tipEmpty": "Set goals and track your progress.",
     "avgProgress": "Avg. progress",
     "remaining": "To go"
   },
@@ -411,6 +413,7 @@
     "sensitivityHint": "If foreign currencies appreciate or depreciate {{pct}}% against your main currency.",
     "move": "FX move",
     "foreignExposure": "In foreign currency",
+    "tipEmpty": "Add assets in another currency to see FX exposure.",
     "foreignShare": "of net worth",
     "currencies": "Currencies",
     "swing": "Swing",

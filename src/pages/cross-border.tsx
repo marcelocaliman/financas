@@ -12,7 +12,7 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
 /** Exposição cambial do patrimônio: líquido por moeda, convertido pra principal. */
-function useFxExposure() {
+export function useFxExposure() {
   const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const data = usePatrimonio();
