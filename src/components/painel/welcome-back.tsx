@@ -7,7 +7,11 @@ import { goToSection } from "@/hooks/use-scroll-spy";
 import { Hidden } from "@/components/common/hidden";
 import { cn } from "@/lib/utils";
 
-const SHOW_AFTER_MS = 6 * 60 * 60 * 1000; // só reaparece após 6h fora (não a cada reload)
+/** Chave do dia local (AAAA-M-D) — pra mostrar a faixa 1× por dia (na 1ª visita do dia). */
+function dayKey(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
 
 function relTime(gapMs: number, lang: string): string {
   const rtf = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
@@ -29,7 +33,7 @@ function Chip({ icon: Icon, tone, onClick, children }: { icon: typeof CalendarCl
 }
 
 /**
- * Container: decide se mostra (só ao VOLTAR, após 6h fora) e calcula o "há X" + contas a vencer.
+ * Container: decide se mostra (1× por dia, na 1ª visita do dia) e calcula o "há X" + contas a vencer.
  * Marca a visita no mount. A View é pura (fácil de prever isolada). Números respeitam privacidade.
  */
 export function WelcomeBack({ name, nwChange, freedomPct, hasTrend }: { name: string; nwChange: number; freedomPct: number | null; hasTrend: boolean }) {
@@ -45,8 +49,12 @@ export function WelcomeBack({ name, nwChange, freedomPct, hasTrend }: { name: st
     markVisit();
   }, [markVisit]);
 
-  const gapMs = firstSeen != null ? Date.now() - firstSeen : 0;
-  if (dismissed || firstSeen == null || gapMs < SHOW_AFTER_MS) return null; // 1ª visita ou volta rápida → nada
+  const now = Date.now();
+  const gapMs = firstSeen != null ? now - firstSeen : 0;
+  // Mostra só na 1ª visita de um DIA NOVO (última visita foi em outro dia). Assim aparece 1×/dia
+  // e some nos reloads seguintes do mesmo dia. 1ª visita de todas (firstSeen null) → nada.
+  const newDay = firstSeen != null && dayKey(firstSeen) !== dayKey(now);
+  if (dismissed || !newDay) return null;
 
   return (
     <WelcomeBackView
