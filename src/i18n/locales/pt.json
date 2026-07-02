@@ -43,6 +43,13 @@
   "tip": {
     "eyebrow": "Dica da semana"
   },
+  "wrap": {
+    "eyebrow": "Fechamento do mês",
+    "netWorth": "Patrimônio",
+    "saved": "Poupou",
+    "savingsRate": "de poupança",
+    "topSpend": "Maior gasto"
+  },
   "dashboard": {
     "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",

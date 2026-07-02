@@ -15,8 +15,11 @@ interface EngagementState {
   milestonesInitialized: boolean;
   /** Id da "dica da semana" dispensada (some até a próxima semana trazer outra). */
   dismissedTip: string | null;
+  /** Mês (AAAA-MM) em que já mostramos o fechamento — mostra o wrap 1× por mês. */
+  lastWrappedMonth: string | null;
   markVisit: () => void;
   dismissTip: (id: string) => void;
+  setWrapped: (month: string) => void;
   /** Semeia os marcos JÁ batidos sem comemorar (só na 1ª vez). */
   initMilestones: (keys: string[]) => void;
   /** Marca marcos como vistos (após comemorar). */
@@ -30,8 +33,10 @@ export const useEngagement = create<EngagementState>()(
       seenMilestones: [],
       milestonesInitialized: false,
       dismissedTip: null,
+      lastWrappedMonth: null,
       markVisit: () => set({ lastVisit: Date.now() }),
       dismissTip: (id) => set({ dismissedTip: id }),
+      setWrapped: (month) => set({ lastWrappedMonth: month }),
       initMilestones: (keys) =>
         set((s) => (s.milestonesInitialized ? s : { milestonesInitialized: true, seenMilestones: keys })),
       markMilestones: (keys) =>

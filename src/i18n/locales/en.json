@@ -43,6 +43,13 @@
   "tip": {
     "eyebrow": "Tip of the week"
   },
+  "wrap": {
+    "eyebrow": "Month in review",
+    "netWorth": "Net worth",
+    "saved": "Saved",
+    "savingsRate": "savings rate",
+    "topSpend": "Top spend"
+  },
   "dashboard": {
     "heroEyebrow": "Net worth · updated today",
     "netWorth": "Net worth",
