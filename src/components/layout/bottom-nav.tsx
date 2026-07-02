@@ -1,11 +1,13 @@
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "./nav-items";
 import { toggleSection } from "@/hooks/use-scroll-spy";
+import { useDueBills } from "@/hooks/use-due-bills";
 import { cn } from "@/lib/utils";
 
 /** Navegação inferior (mobile, < md) — âncoras, primeiras 5 seções. */
 export function BottomNav({ active }: { active: string }) {
   const { t } = useTranslation();
+  const dueCount = useDueBills().count; // vencimentos: badge no item Orçamento (persiste no mobile)
 
   return (
     <nav
@@ -14,6 +16,7 @@ export function BottomNav({ active }: { active: string }) {
     >
       {NAV_ITEMS.slice(0, 5).map(({ id, key, icon: Icon }) => {
         const on = active === id;
+        const badge = id === "orcamento" ? dueCount : 0;
         return (
           <button
             key={id}
@@ -27,11 +30,16 @@ export function BottomNav({ active }: { active: string }) {
           >
             <span
               className={cn(
-                "grid place-items-center w-9 h-7 rounded-[9px] transition-colors",
+                "relative grid place-items-center w-9 h-7 rounded-[9px] transition-colors",
                 on && "bg-accent-soft",
               )}
             >
               <Icon size={19} />
+              {badge > 0 ? (
+                <span className="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[9px] font-bold tabular leading-none ring-2 ring-[color-mix(in_oklab,var(--card)_92%,transparent)]">
+                  {badge}
+                </span>
+              ) : null}
             </span>
             <span className="whitespace-nowrap">{t(`nav.${key}`)}</span>
           </button>

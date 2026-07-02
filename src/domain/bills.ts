@@ -44,6 +44,12 @@ export function daysBetween(todayISO: string, dueISO: string): number {
   return Math.round((b - a) / 86400000);
 }
 
+/** Data de hoje "AAAA-MM-DD" no fuso local (base pra comparar vencimentos). */
+export function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function classifyBill(daysUntil: number, soonDays = 3): BillStatus {
   if (daysUntil < 0) return "overdue";
   if (daysUntil === 0) return "today";

@@ -7,6 +7,7 @@ import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/layout/footer";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
+import { DueAlertBar } from "@/components/layout/due-alert-bar";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
 import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
 import Historico, { HistoricoSummary } from "@/pages/historico";
@@ -42,8 +43,14 @@ export function OnePage() {
         {/* Título estável da página (outline do documento) — visível só p/ leitores de tela. */}
         <h1 className="sr-only">{t("app.name")}</h1>
         <div className="hero-bg w-full overflow-hidden">
-          <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-14")}>
-            <DashboardHero />
+          {/* pt-[68px] = folga do topo (ticker/MobileBar) + pt-10 do hero = 108px de antes.
+              A barra de vencidas entra no meio (só quando há vencida); sem ela, o espaçamento
+              fica idêntico ao anterior. */}
+          <div className={cn(CONTAINER, GUTTERS, "pt-[68px] pb-14")}>
+            <DueAlertBar />
+            <div className="pt-10">
+              <DashboardHero />
+            </div>
           </div>
         </div>
         <div className="border-t border-border" />

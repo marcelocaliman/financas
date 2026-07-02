@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft, Eye, EyeOff, Sun, Moon,
-  Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen, CalendarClock,
+  Settings, Lock, LogOut, PanelLeftClose, PanelLeftOpen,
   ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, ShieldCheck, Landmark,
   MonitorSmartphone, Globe, LifeBuoy, type LucideIcon,
 } from "lucide-react";
@@ -19,13 +19,10 @@ import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
 import { useOnlinePresence, useTicketsCounts } from "@/admin/use-realtime";
 import { useMyTicketStats } from "@/hooks/use-my-ticket-stats";
-import { useRates } from "@/store/rates";
-import { useDashboardData } from "@/hooks/use-dashboard-data";
+import { useDueBills } from "@/hooks/use-due-bills";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { FxRatesCard } from "@/components/layout/fx-rates-card";
-import { convert, formatPercent, type Currency } from "@/money/currency";
-import { upcomingBills } from "@/domain/bills";
-import { Money } from "@/components/common/money";
+import { formatPercent, type Currency } from "@/money/currency";
 import { Eyebrow } from "@/components/common/tile";
 import { Tooltip } from "@/components/common/tooltip";
 import { cn } from "@/lib/utils";
@@ -35,32 +32,11 @@ function nameFromEmail(email: string | null): string {
   const h = email.split("@")[0].split(/[._-]/)[0];
   return h ? h.charAt(0).toUpperCase() + h.slice(1) : "";
 }
-function todayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-/** Relance do menu: só contas a vencer (alerta compacto). O patrimônio líquido saiu daqui —
- *  era redundante com o número-herói do Painel, logo acima. */
-function useGlance() {
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const { data } = useDashboardData();
-  return useMemo(() => {
-    if (!data) return null;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    // Alerta do menu = só o que precisa de AÇÃO: vencidas + a vencer em ≤3 dias (não 45 dias
-    // como o planejamento do Orçamento). Evita avisar uma conta que só vence daqui a semanas.
-    const bills = upcomingBills(data.expenses, todayISO(), 3);
-    const billTotal = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
-    return { billCount: bills.length, billTotal, disp };
-  }, [data, disp, rates]);
-}
-
 /**
  * Menu LATERAL flutuante (lg+): painel à esquerda que acompanha a rolagem. Altura
- * automática (flutua), recolhível pra só ícones. Reúne tudo do header + um relance com
- * patrimônio/rentabilidade/saldo e alerta de vencimentos. Alterna com o topo na Config.
+ * automática (flutua), recolhível pra só ícones. Reúne tudo do header + juros/inflação e
+ * câmbio (quando o ticker está desligado). Vencimentos saíram daqui: vencidas viram barra
+ * no topo do conteúdo, e "a vencer" vira badge no item Orçamento. Alterna com o topo na Config.
  */
 export function SideNav({ active }: { active: string }) {
   const { t } = useTranslation();
@@ -82,7 +58,7 @@ export function SideNav({ active }: { active: string }) {
   const openSections = useSections((s) => s.open);
   const setSectionOpen = useSections((s) => s.setOpen);
   const setManySections = useSections((s) => s.setMany);
-  const g = useGlance();
+  const due = useDueBills();
   const ratesTicker = useUI((s) => s.ratesTicker);
   const disp = useUI((s) => s.displayCurrency);
   // Juros/inflação: por padrão segue a moeda de exibição; o usuário pode trocar p/ ver as outras
@@ -159,29 +135,13 @@ export function SideNav({ active }: { active: string }) {
           </button>
         </div>
 
-        {/* Relance (só expandido): contas a vencer + juros/inflação + câmbio das moedas. (O
-            patrimônio líquido saiu — redundante com o herói do Painel.) */}
-        {!collapsed && (!ratesTicker || (g && g.billCount > 0)) ? (
+        {/* Relance (só expandido, e só quando o ticker está DESLIGADO): juros/inflação + câmbio.
+            Vencimentos saíram daqui (viraram barra no topo + badge no Orçamento). */}
+        {!collapsed && !ratesTicker ? (
           <div className="px-3.5 pb-3.5 shrink-0 space-y-2.5">
-            {g && g.billCount > 0 ? (
-              <button
-                type="button"
-                onClick={() => goToSection("orcamento")}
-                className="w-full flex items-center gap-2.5 rounded-[12px] border border-border bg-[var(--neg-soft)] px-3 py-2.5 text-left hover:border-border-strong transition-colors"
-              >
-                <span className="grid place-items-center w-8 h-8 rounded-[10px] bg-card text-neg shrink-0">
-                  <CalendarClock size={16} />
-                </span>
-                <div className="min-w-0">
-                  <div className="text-[12.5px] font-medium leading-tight">{t("menu.billsDue", { n: g.billCount })}</div>
-                  <Money value={g.billTotal} currency={g.disp} className="text-[11.5px] text-muted tabular" options={{ signDisplay: "never" }} />
-                </div>
-              </button>
-            ) : null}
-
             {/* Juros + inflação (referência pública) — compacto. Switch p/ trocar a praça:
                 local (moeda de exibição) + EUA/Europa, as principais. */}
-            {!ratesTicker && hasMacro ? (
+            {hasMacro ? (
               <div className="rounded-[14px] bg-card2 border border-border px-3.5 py-3">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Landmark size={11} className="text-faint shrink-0" />
@@ -250,7 +210,7 @@ export function SideNav({ active }: { active: string }) {
             style={{ transform: configOpen ? "translateX(-100%)" : "translateX(0%)" }}
           >
             <div ref={pageRef} inert={configOpen} className="w-full shrink-0">
-              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} />
+              <NavList items={pageItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goToSection} onToggle={setSectionOpen} badges={{ orcamento: due.count }} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
