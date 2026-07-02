@@ -259,7 +259,16 @@
     "scenarios": "Scenarios",
     "pessimistic": "Pessimistic",
     "base": "Base",
-    "optimistic": "Optimistic"
+    "optimistic": "Optimistic",
+    "sensitivity": "Sensitivity analysis",
+    "sensitivityDesc": "Years to independence as you vary annual return and monthly contribution.",
+    "sensitivityEmpty": "Add your expenses in Budget to compute how far you are from independence.",
+    "sensitivityReached": "Your wealth already covers your independence number — nothing to project here.",
+    "yearSuffix": " yrs",
+    "yearsToFi": "{{n}} years to independence",
+    "unreachable": "Doesn't reach independence",
+    "realToday": "today's value",
+    "exportCsv": "Export CSV"
   },
   "fire": {
     "title": "Financial independence",

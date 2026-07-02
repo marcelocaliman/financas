@@ -259,7 +259,16 @@
     "scenarios": "Cenários",
     "pessimistic": "Pessimista",
     "base": "Base",
-    "optimistic": "Otimista"
+    "optimistic": "Otimista",
+    "sensitivity": "Análise de sensibilidade",
+    "sensitivityDesc": "Anos até a independência variando o retorno anual e o aporte mensal.",
+    "sensitivityEmpty": "Defina seus gastos no Orçamento pra calcular quanto falta até a independência.",
+    "sensitivityReached": "Seu patrimônio já cobre o número de independência — nada a projetar aqui.",
+    "yearSuffix": " anos",
+    "yearsToFi": "{{n}} anos até a independência",
+    "unreachable": "Não alcança a independência",
+    "realToday": "valor de hoje",
+    "exportCsv": "Exportar CSV"
   },
   "fire": {
     "title": "Independência financeira",

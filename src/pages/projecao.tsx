@@ -238,6 +238,9 @@ function SensitivityCard() {
   const target = fire?.independenceNumber ?? Infinity;
   const inflation = p.annualInflation;
   const ready = !!fire && Number.isFinite(target) && target > 0;
+  // Já atingiu o número de independência (patrimônio inicial ≥ alvo) → todas as células dariam
+  // "0 anos". Mostra uma mensagem clara em vez de uma matriz de zeros inútil.
+  const reached = ready && initial >= target;
 
   const returns = [-2, -1, 0, 1, 2].map((d) => Math.max(0, base.annualReturn + d));
   const mults = [0.5, 1, 1.5, 2];
@@ -273,6 +276,8 @@ function SensitivityCard() {
 
       {!ready ? (
         <p className="mt-5 text-[13px] text-faint">{t("projecao.sensitivityEmpty")}</p>
+      ) : reached ? (
+        <p className="mt-5 text-[13px] text-faint">{t("projecao.sensitivityReached")}</p>
       ) : (
         <div className="mt-5 overflow-x-auto">
           <div className="min-w-[480px]">
