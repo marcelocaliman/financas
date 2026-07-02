@@ -189,6 +189,9 @@
     "history": "Monthly history",
     "historyHint": "Tap a bar to open that month",
     "alongYear": "Over the year",
+    "tabYear": "Yearly",
+    "tabBills": "Bills",
+    "tabBreakdown": "Breakdown",
     "prevYear": "Previous year",
     "nextYear": "Next year"
   },
@@ -325,6 +328,8 @@
     "title": "Freedom",
     "short": "Freedom",
     "eyebrow": "Toward independence",
+    "tabIndependence": "Independence",
+    "tabHealth": "Health",
     "heroNote": "wealth on the way to your independence",
     "heroYears": "{{n}} years of freedom covered",
     "headline": "You're {{pct}}% of the way to freedom",

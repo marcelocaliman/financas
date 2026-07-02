@@ -4,6 +4,7 @@ import { useUI } from "@/store/ui";
 import { useLiberdade, type Milestone } from "@/hooks/use-liberdade";
 import { useHealth, type HealthDimView } from "@/hooks/use-health";
 import { Tile, Eyebrow } from "@/components/common/tile";
+import { CardSubNav } from "@/components/common/card-sub-nav";
 import { Money } from "@/components/common/money";
 import { formatMoney } from "@/money/currency";
 import { Hidden } from "@/components/common/hidden";
@@ -17,6 +18,15 @@ function monthLabel(ym: string, lang: string): string {
   const d = new Date(y, (m || 1) - 1, 1);
   return d.toLocaleDateString(lang, { month: "short", year: "numeric" });
 }
+
+/** Cards da aba Liberdade (âncoras + rótulos da sub-nav sticky). Constância/Marcos ficam lado a
+ *  lado no desktop (mesma linha) — as duas abas pulam pra lá; no mobile empilham e funcionam full. */
+const SUBNAV: { id: string; key: string }[] = [
+  { id: "lib-independencia", key: "liberdade.tabIndependence" },
+  { id: "lib-constancia", key: "liberdade.streakTitle" },
+  { id: "lib-marcos", key: "liberdade.milestonesTitle" },
+  { id: "lib-saude", key: "liberdade.tabHealth" },
+];
 
 export default function Liberdade() {
   const { t, i18n } = useTranslation();
@@ -46,7 +56,9 @@ export default function Liberdade() {
 
   return (
     <div className="space-y-6">
+      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Métrica principal: anel + % + número da independência + chegada */}
+      <div id="lib-independencia">
       <Tile className="p-6 md:p-8">
         <div className="flex flex-wrap items-center gap-x-9 gap-y-6">
           <ProgressRing pct={v.freedomPct} size={132} stroke={10}>
@@ -133,12 +145,14 @@ export default function Liberdade() {
           />
         </div>
       </Tile>
+      </div>
 
       {/* Constância + Marcos lado a lado (mesma altura); Saúde ocupa a largura toda embaixo. */}
       <div className="grid lg:grid-cols-2 gap-6">
-        <StreakCard current={v.streak.current} record={v.streak.record} />
-        <MilestonesCard milestones={v.milestones} />
-        <HealthCard className="lg:col-span-2" />
+        {/* wrappers com `grid` pra o card interno esticar até a altura da linha (mantém par de mesma altura) */}
+        <div id="lib-constancia" className="grid"><StreakCard current={v.streak.current} record={v.streak.record} /></div>
+        <div id="lib-marcos" className="grid"><MilestonesCard milestones={v.milestones} /></div>
+        <div id="lib-saude" className="grid lg:col-span-2"><HealthCard /></div>
       </div>
     </div>
   );

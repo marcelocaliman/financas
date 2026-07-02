@@ -19,6 +19,7 @@ import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { Tile, Eyebrow } from "@/components/common/tile";
+import { CardSubNav } from "@/components/common/card-sub-nav";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import Investimentos from "./investimentos";
@@ -31,6 +32,15 @@ function monthsAheadLabel(monthsAhead: number, lang: string): string {
   const target = new Date(d.getFullYear(), d.getMonth() + Math.round(monthsAhead), 1);
   return target.toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", { month: "short", year: "numeric" });
 }
+
+/** Cards da aba Patrimônio (âncoras + rótulos da sub-nav sticky). Alocação/Passivos são
+ *  condicionais — a CardSubNav omite a aba quando o card não está no DOM. */
+const SUBNAV: { id: string; key: string }[] = [
+  { id: "pat-alocacao", key: "patrimonio.allocation" },
+  { id: "pat-ativos", key: "patrimonio.assets" },
+  { id: "pat-investimentos", key: "nav.investimentos" },
+  { id: "pat-passivos", key: "patrimonio.liabilities" },
+];
 
 export default function Patrimonio() {
   const { t } = useTranslation();
@@ -248,9 +258,10 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-8">
+      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Alocação — diversificação por classe num relance (barra + KPIs clicáveis que levam à aba) */}
       {alloc.length >= 2 ? (
-        <section>
+        <section id="pat-alocacao">
           <div className="flex items-center justify-between mb-4 gap-3">
             <h3 className="eyebrow">{t("patrimonio.allocation")}</h3>
             <Money value={view.totalAssets} currency={disp} className="text-[12px] text-faint" />
@@ -295,7 +306,7 @@ export default function Patrimonio() {
       ) : null}
 
       {/* Ativos por classe (abas) */}
-      <section>
+      <section id="pat-ativos">
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="eyebrow">{t("patrimonio.assets")}</h3>
           <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
@@ -373,12 +384,12 @@ export default function Patrimonio() {
       </section>
 
       {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
-      <div className="border-t border-border pt-6">
+      <div id="pat-investimentos" className="border-t border-border pt-6">
         <Investimentos />
       </div>
 
       {/* Passivos — ÚLTIMO item da aba; colapsável: KPIs no cabeçalho; detalhe + cronograma só ao abrir */}
-      <section className="border-t border-border pt-6">
+      <section id="pat-passivos" className="border-t border-border pt-6">
         <button
           type="button"
           onClick={() => setLiabOpen((o) => !o)}

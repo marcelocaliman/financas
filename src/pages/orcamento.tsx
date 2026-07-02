@@ -22,6 +22,7 @@ import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
+import { CardSubNav } from "@/components/common/card-sub-nav";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
 type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean };
@@ -86,6 +87,16 @@ function monthLabel(month: string, lang: string, short = false): string {
   const [y, mm] = month.split("-").map(Number);
   return new Date(y, mm - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", short ? { month: "short" } : { month: "long", year: "numeric" });
 }
+
+/** Cards da aba Orçamento (âncoras + rótulos da sub-nav sticky). "Vencimentos" é condicional
+ *  (some sem contas a pagar) — a CardSubNav omite a aba quando o card não está no DOM. */
+const SUBNAV: { id: string; key: string }[] = [
+  { id: "orc-ano", key: "orcamento.tabYear" },
+  { id: "orc-vencimentos", key: "orcamento.tabBills" },
+  { id: "orc-composicao", key: "orcamento.tabBreakdown" },
+  { id: "orc-receitas", key: "orcamento.income" },
+  { id: "orc-gastos", key: "orcamento.expenses" },
+];
 
 export default function Orcamento() {
   const { t, i18n } = useTranslation();
@@ -238,6 +249,7 @@ export default function Orcamento() {
 
   return (
     <div className="space-y-7">
+      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Navegador de mês */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">
@@ -287,6 +299,7 @@ export default function Orcamento() {
       ) : null}
 
       {/* Ao longo do ano — barras dos 12 meses do ano exibido (seletor de ano; clique abre o mês) */}
+      <div id="orc-ano">
       <Tile className="p-6 md:p-7">
         <div className="flex items-center justify-between mb-4">
           <Eyebrow>{t("orcamento.alongYear")}</Eyebrow>
@@ -329,19 +342,20 @@ export default function Orcamento() {
           <span className="text-faint">{t("orcamento.historyHint")}</span>
         </div>
       </Tile>
+      </div>
 
       {/* Contas a pagar / próximos vencimentos */}
       <UpcomingBillsTile />
 
       {/* Mês selecionado: receitas e gastos por categoria — SEMPRE lado a lado (ghost quando vazio).
           items-start: cada card com altura NATURAL (não estica pra igualar o outro → sem vão). */}
-      <div className="grid lg:grid-cols-2 gap-6 items-start">
+      <div id="orc-composicao" className="grid lg:grid-cols-2 gap-6 items-start">
         <CategoryDonut title={t("orcamento.incomeBreakdown")} data={view.incSlices} palette={CAT_INC} disp={disp} emptyLabel={t("orcamento.noIncomeMonth")} />
         <CategoryDonut title={t("orcamento.expenseBreakdown")} data={view.expSlices} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
       </div>
 
       {/* Receitas (mês) */}
-      <section>
+      <section id="orc-receitas">
         <SectionHead title={t("orcamento.income")} count={view.monthInc.length} />
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
@@ -361,7 +375,7 @@ export default function Orcamento() {
       </section>
 
       {/* Gastos (mês) */}
-      <section>
+      <section id="orc-gastos">
         <SectionHead title={t("orcamento.expenses")} count={view.monthExp.length} />
         <div className="overflow-x-auto">
           <div className="min-w-[600px]">
@@ -569,7 +583,7 @@ function UpcomingBillsTile() {
   const TPL = "44px minmax(150px,1.8fr) minmax(130px,1fr) minmax(110px,0.8fr)";
   const headCls = "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted";
   return (
-    <section>
+    <section id="orc-vencimentos">
       <SectionHead title={t("orcamento.upcomingBills")} count={view.bills.length} />
       <div className="overflow-x-auto">
         <div className="min-w-[480px] rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">

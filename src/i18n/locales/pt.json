@@ -189,6 +189,9 @@
     "history": "Histórico mensal",
     "historyHint": "Toque numa barra pra abrir o mês",
     "alongYear": "Ao longo do ano",
+    "tabYear": "Anual",
+    "tabBills": "Vencimentos",
+    "tabBreakdown": "Composição",
     "prevYear": "Ano anterior",
     "nextYear": "Próximo ano"
   },
@@ -325,6 +328,8 @@
     "title": "Liberdade",
     "short": "Liberdade",
     "eyebrow": "Rumo à independência",
+    "tabIndependence": "Independência",
+    "tabHealth": "Saúde",
     "heroNote": "patrimônio rumo à sua independência",
     "heroYears": "{{n}} anos de liberdade cobertos",
     "headline": "Você está a {{pct}}% da liberdade",
