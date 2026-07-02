@@ -34,6 +34,12 @@
     "fire": "toward freedom",
     "dismiss": "Dismiss"
   },
+  "milestone": {
+    "title": "Milestone reached",
+    "passed": "You passed",
+    "reserve": "Your emergency fund is complete",
+    "next": "Next"
+  },
   "dashboard": {
     "heroEyebrow": "Net worth · updated today",
     "netWorth": "Net worth",

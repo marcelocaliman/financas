@@ -34,6 +34,12 @@
     "fire": "rumo à liberdade",
     "dismiss": "Dispensar"
   },
+  "milestone": {
+    "title": "Marco atingido",
+    "passed": "Você passou de",
+    "reserve": "Sua reserva de emergência está completa",
+    "next": "Próximo"
+  },
   "dashboard": {
     "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",
