@@ -13,7 +13,10 @@ interface EngagementState {
   seenMilestones: string[];
   /** 1ª rodada já semeada? Sem isto, comemoraríamos marcos batidos ANTES da feature existir. */
   milestonesInitialized: boolean;
+  /** Id da "dica da semana" dispensada (some até a próxima semana trazer outra). */
+  dismissedTip: string | null;
   markVisit: () => void;
+  dismissTip: (id: string) => void;
   /** Semeia os marcos JÁ batidos sem comemorar (só na 1ª vez). */
   initMilestones: (keys: string[]) => void;
   /** Marca marcos como vistos (após comemorar). */
@@ -26,7 +29,9 @@ export const useEngagement = create<EngagementState>()(
       lastVisit: null,
       seenMilestones: [],
       milestonesInitialized: false,
+      dismissedTip: null,
       markVisit: () => set({ lastVisit: Date.now() }),
+      dismissTip: (id) => set({ dismissedTip: id }),
       initMilestones: (keys) =>
         set((s) => (s.milestonesInitialized ? s : { milestonesInitialized: true, seenMilestones: keys })),
       markMilestones: (keys) =>

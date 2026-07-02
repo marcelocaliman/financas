@@ -40,6 +40,9 @@
     "reserve": "Your emergency fund is complete",
     "next": "Next"
   },
+  "tip": {
+    "eyebrow": "Tip of the week"
+  },
   "dashboard": {
     "heroEyebrow": "Net worth · updated today",
     "netWorth": "Net worth",

@@ -28,6 +28,7 @@ import { CompositionBar } from "@/components/patrimonio/composition-bar";
 import { DailyFxLine } from "@/components/painel/daily-fx-line";
 import { WelcomeBack } from "@/components/painel/welcome-back";
 import { MilestoneCelebration } from "@/components/painel/milestone-celebration";
+import { TipOfWeek } from "@/components/painel/tip-of-week";
 import { NetWorthInCurrencies } from "@/components/painel/networth-in-currencies";
 import { cn } from "@/lib/utils";
 
@@ -237,6 +238,7 @@ export function DashboardDetail() {
 
   return (
     <>
+      <TipOfWeek />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
         <div className={cn("lg:col-span-2 p-6 flex flex-col", CARD)}>
           <div className="flex items-center justify-between mb-5">

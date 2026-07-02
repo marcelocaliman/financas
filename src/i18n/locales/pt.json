@@ -40,6 +40,9 @@
     "reserve": "Sua reserva de emergência está completa",
     "next": "Próximo"
   },
+  "tip": {
+    "eyebrow": "Dica da semana"
+  },
   "dashboard": {
     "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",
