@@ -1,7 +1,7 @@
-import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { useSections } from "@/store/sections";
-import { scrollToSection, StickyOffsetContext } from "@/hooks/use-scroll-spy";
+import { scrollToSection, StickyOffsetContext, SubStickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,6 +61,19 @@ export function Accordion({
 
   // Cabeçalho grudado só faz sentido com a seção ABERTA (tem conteúdo pra rolar).
   const isSticky = stickyTop != null && open;
+  // Mede a altura do cabeçalho pra dizer aos filhos ONDE um sub-conteúdo sticky deve grudar
+  // (logo abaixo do header). Reativo a resize (o header muda de altura por breakpoint).
+  const headerRef = useRef<HTMLButtonElement>(null);
+  const [headerH, setHeaderH] = useState(0);
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const measure = () => setHeaderH(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   // "stuck": o cabeçalho ATINGIU o topo (gruda) — aí ganha uma sombra-hairline pra separar do
   // conteúdo que passa por baixo. Uma sentinela (0px, acima do header) sai da viewport na linha
   // do offset; o IntersectionObserver com rootMargin negativo detecta exatamente esse momento.
@@ -85,6 +98,7 @@ export function Accordion({
       {/* Sentinela da detecção "stuck" (altura líquida 0 com -mb-px). */}
       <div ref={sentinelRef} aria-hidden className="h-px -mb-px" />
       <button
+        ref={headerRef}
         type="button"
         onClick={() => {
           const next = !open;
@@ -127,8 +141,14 @@ export function Accordion({
           expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
-        <div className="overflow-hidden">
-          <div className="pb-10 lg:pb-14">{mounted ? children : null}</div>
+        {/* overflow-CLIP (não hidden!): clipa o corpo no colapso SEM virar scroll-container, então
+            um sub-conteúdo sticky (CardSubNav) gruda na viewport (hidden quebraria isso). `min-h-0`
+            é essencial: clip não zera o `min-height:auto` do grid-item (hidden zerava), então sem
+            ele a linha 0fr não colapsaria. Junto: colapsa E preserva o sticky. */}
+        <div className="overflow-clip min-h-0">
+          <SubStickyOffsetContext.Provider value={isSticky ? stickyTop! + headerH : undefined}>
+            <div className="pb-10 lg:pb-14">{mounted ? children : null}</div>
+          </SubStickyOffsetContext.Provider>
         </div>
       </div>
     </section>

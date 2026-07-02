@@ -6,6 +6,10 @@ import { useUI } from "@/store/ui";
  *  (ex.: admin, que não passa provider). Evita o Accordion adivinhar o layout. */
 export const StickyOffsetContext = createContext<number | undefined>(undefined);
 
+/** Offset (px) onde SUB-conteúdo sticky (ex.: sub-nav de cards) deve grudar = topo do layout +
+ *  altura do cabeçalho da seção. Provido pelo Accordion (que mede o header); undefined = não gruda. */
+export const SubStickyOffsetContext = createContext<number | undefined>(undefined);
+
 /** Navegação pendente: quando se sai da Config rumo a uma seção, o AppShell rola até ela
  *  assim que o conteúdo principal volta (a Config fica por cima e some com transição). */
 let pendingNav: string | null = null;
@@ -80,6 +84,21 @@ export function scrollToSection(id: string): void {
   once();
   setTimeout(once, 340); // após a transição do accordion (300ms)
   setTimeout(once, 640); // após o mount de gráficos pesados / reflow tardio
+}
+
+/** Rola até um CARD dentro de uma seção já aberta, parando `offset`px abaixo do topo (folga p/ os
+ *  cabeçalhos sticky). Re-afirma 1× após reflow (gráficos), como o scrollToSection. */
+export function scrollToCard(id: string, offset: number): void {
+  const token = ++scrollToken;
+  const once = () => {
+    if (token !== scrollToken) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - offset - 8;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  };
+  once();
+  setTimeout(once, 140);
 }
 
 /** Navega pra uma seção pela nav: ABRE o accordion e rola até o header (que não se move).

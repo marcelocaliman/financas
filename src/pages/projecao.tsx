@@ -16,7 +16,18 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
+import { CardSubNav } from "@/components/common/card-sub-nav";
 import { ProGate } from "@/components/pro/pro-gate";
+
+/** Cards da aba Projeção (âncoras + rótulos da sub-nav sticky). */
+const SUBNAV: { id: string; key: string }[] = [
+  { id: "proj-premissas", key: "projecao.assumptions" },
+  { id: "proj-liberdade", key: "projecao.tabFreedom" },
+  { id: "proj-montecarlo", key: "projecao.tabMonteCarlo" },
+  { id: "proj-curva", key: "projecao.tabCurve" },
+  { id: "proj-anoaano", key: "projecao.yearByYear" },
+  { id: "proj-sensibilidade", key: "projecao.tabSensitivity" },
+];
 import { cn } from "@/lib/utils";
 
 /** Cor de cada cenário (otimista = acento; base = neutro; pessimista = negativo). */
@@ -85,8 +96,11 @@ export default function Projecao() {
   const fmt = (v: number) => formatMoney(v, disp);
 
   return (
-    <div className="space-y-7">
+    <div>
+      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
+      <div className="space-y-7 pt-6">
       {/* Premissas */}
+      <div id="proj-premissas">
       <Tile className="p-6 md:p-7">
         <Eyebrow>{t("projecao.assumptions")}</Eyebrow>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5 mt-4 max-w-2xl">
@@ -117,17 +131,19 @@ export default function Projecao() {
           ))}
         </div>
       </Tile>
+      </div>
 
       {/* Número FIRE — independência financeira */}
-      <FireCard />
+      <div id="proj-liberdade"><FireCard /></div>
 
-      {/* Monte Carlo — acumulação (chance de atingir o número FIRE) */}
-      <MonteCarloAccumCard />
-
-      {/* Monte Carlo — aposentadoria (sustentabilidade na decumulação) */}
-      <MonteCarloRetireCard />
+      {/* Monte Carlo — acumulação (chance de atingir o número FIRE) + aposentadoria */}
+      <div id="proj-montecarlo" className="space-y-7">
+        <MonteCarloAccumCard />
+        <MonteCarloRetireCard />
+      </div>
 
       {/* Curva da projeção (cenários determinísticos) */}
+      <div id="proj-curva">
       <Tile className="p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <Eyebrow>{t("projecao.curve")}</Eyebrow>
@@ -173,9 +189,10 @@ export default function Projecao() {
           </ResponsiveContainer>
         </div>
       </Tile>
+      </div>
 
       {/* Tabela ano a ano (3 cenários) */}
-      <section>
+      <section id="proj-anoaano">
         <Eyebrow>{t("projecao.yearByYear")}</Eyebrow>
         <div className="mt-3 rounded-[16px] border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
@@ -202,9 +219,12 @@ export default function Projecao() {
       </section>
 
       {/* Pro: análise de sensibilidade + exportar projeção (CSV) */}
-      <ProGate title={t("pro.benefit2")} desc={t("pro.benefit2Desc")} feature="projecao">
-        <SensitivityCard />
-      </ProGate>
+      <div id="proj-sensibilidade">
+        <ProGate title={t("pro.benefit2")} desc={t("pro.benefit2Desc")} feature="projecao">
+          <SensitivityCard />
+        </ProGate>
+      </div>
+      </div>
     </div>
   );
 }

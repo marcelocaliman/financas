@@ -268,7 +268,11 @@
     "yearsToFi": "{{n}} anos até a independência",
     "unreachable": "Não alcança a independência",
     "realToday": "valor de hoje",
-    "exportCsv": "Exportar CSV"
+    "exportCsv": "Exportar CSV",
+    "tabFreedom": "Liberdade",
+    "tabMonteCarlo": "Monte Carlo",
+    "tabCurve": "Curva",
+    "tabSensitivity": "Sensibilidade"
   },
   "fire": {
     "title": "Independência financeira",
