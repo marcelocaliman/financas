@@ -9,6 +9,7 @@
     { "source": "/ticket", "destination": "/ticket.html" },
     { "source": "/share", "destination": "/share.html" },
     { "source": "/privacidade", "destination": "/privacidade.html" },
+    { "source": "/termos", "destination": "/termos.html" },
     { "source": "/en", "destination": "/en.html" }
   ],
   "headers": [
