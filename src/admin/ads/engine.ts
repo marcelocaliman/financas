@@ -58,6 +58,13 @@ export const PHOTO_SRC: Record<string, string> = {
   orcamento: "/img/ads/life.jpg",
   futuro: "/img/ads/horizon.jpg", // story "vivid" (foto vívida, não esmaecida)
   "app-tour": "/img/ads/horizon.jpg", // capa vívida do tour (as demais cenas ignoram a foto)
+  // Stories educativos — 1 foto TEMÁTICA e ÚNICA por peça (todas vívidas).
+  "edu-orcamento": "/img/ads/budget.jpg", // calculadora + contas
+  "edu-reserva": "/img/ads/savings.jpg", // cofrinho/dinheiro guardado
+  "edu-juros": "/img/ads/grow.jpg", // muda crescendo em moedas
+  "edu-diversificar": "/img/ads/spread.jpg", // gráfico subindo
+  "edu-cambio": "/img/ads/money.jpg", // notas (moeda estrangeira)
+  "edu-dividas": "/img/ads/plan.jpg", // planejando na mesa
 };
 
 export interface Scene {
@@ -172,25 +179,17 @@ export const EDU_STORIES: Story[] = [
   {
     id: "edu-orcamento",
     name: "Educativo · regra 50/30/20",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"] },
-      {
-        kind: "budget",
-        eyebrow: "COMO DIVIDIR A RENDA",
-        title: ["Cada real", "tem um lugar"],
-        bars: [
-          { label: "50% · Essenciais", w: 0.5 },
-          { label: "30% · Desejos", w: 0.3, c: "#8A8F98" },
-          { label: "20% · Poupar/investir", w: 0.2 },
-        ],
-      },
+      { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar"], chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
       { kind: "hook", eyebrow: "IMPORTANTE", title: ["É um ponto", "de partida."], sub: "Adapte aos seus números — o que importa é ter um plano e seguir." },
     ],
   },
   {
     id: "edu-reserva",
     name: "Educativo · reserva de emergência",
-    style: "light",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"] },
       { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "O suficiente pra respirar se a renda parar. Guarde onde dê pra sacar no mesmo dia." },
@@ -200,7 +199,7 @@ export const EDU_STORIES: Story[] = [
   {
     id: "edu-juros",
     name: "Educativo · juros compostos",
-    style: "color",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"] },
       { kind: "hook", eyebrow: "UM EXEMPLO", title: ["R$ 200/mês viram", "~R$ 280 mil."], sub: "Em 30 anos, a ~8% ao ano. Você põe R$ 72 mil; o resto é rendimento sobre rendimento." },
@@ -210,6 +209,7 @@ export const EDU_STORIES: Story[] = [
   {
     id: "edu-diversificar",
     name: "Educativo · diversificação",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."] },
       { kind: "hook", eyebrow: "POR QUÊ", title: ["Se um cai,", "os outros seguram."], sub: "Espalhar entre tipos de ativo (e moedas) reduz o risco de um tombo te pegar inteiro." },
@@ -219,7 +219,7 @@ export const EDU_STORIES: Story[] = [
   {
     id: "edu-cambio",
     name: "Educativo · câmbio no seu bolso",
-    style: "color",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."] },
       { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada, só pela cotação." },
@@ -229,7 +229,7 @@ export const EDU_STORIES: Story[] = [
   {
     id: "edu-dividas",
     name: "Educativo · sair das dívidas",
-    style: "light",
+    style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."] },
       { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Juros de cartão e cheque especial superam qualquer investimento. Quitar é lucro garantido." },
@@ -1039,8 +1039,12 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       const px = fitTitlePx(ctx, s, lines, availW, 70, 104);
       const eyeY = bandTop + 100 * s;
       drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
-      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, lines, a, rise, px, pal);
-      if (sc.sub) drawSub(ctx, s, x, tb + 28 * s, W, sc.sub, a, pal);
+      let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, lines, a, rise, px, pal);
+      if (sc.sub) {
+        drawSub(ctx, s, x, tb + 28 * s, W, sc.sub, a, pal);
+        tb += 96 * s;
+      }
+      if (sc.chips) drawChips(ctx, s, x, tb + 40 * s, sc.chips, a, W - x * 2, pal);
       return;
     }
     if (sc.mock) {
