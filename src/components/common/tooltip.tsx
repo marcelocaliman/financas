@@ -29,6 +29,7 @@ export function Tooltip({
   const ref = useRef<HTMLDivElement>(null);
   const popRef = useRef<HTMLDivElement>(null);
   const timer = useRef<number | null>(null);
+  const pointerAt = useRef(0); // instante do último clique/toque no gatilho
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const rich = content != null;
   const openDelay = delay ?? (rich ? 300 : 110);
@@ -46,6 +47,13 @@ export function Tooltip({
     }
     setPos(null);
   };
+  // Foco por TECLADO (Tab) abre o tooltip; foco vindo de um CLIQUE/toque NÃO — senão o balão fica
+  // "grudado" depois de clicar o botão (ex.: o olho de privacidade). Um clique dispara pointerdown
+  // logo ANTES do focus; se o focus vier <300ms depois, foi clique → ignora.
+  const showOnFocus = () => {
+    if (Date.now() - pointerAt.current < 300) return;
+    show();
+  };
 
   // Centraliza no gatilho, mas trava dentro da viewport (conteúdo alto não vaza no topo/base).
   // Imperativo (sem estado) pra não gerar re-render em loop; roda antes do paint (sem flash).
@@ -60,7 +68,18 @@ export function Tooltip({
   if (label == null && !rich) return <>{children}</>;
 
   return (
-    <div ref={ref} onMouseEnter={show} onMouseLeave={hide} onFocusCapture={show} onBlurCapture={hide} className={cn("flex", className)}>
+    <div
+      ref={ref}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onPointerDownCapture={() => {
+        pointerAt.current = Date.now();
+        hide(); // clicar o gatilho fecha o balão na hora (some o "grudado")
+      }}
+      onFocusCapture={showOnFocus}
+      onBlurCapture={hide}
+      className={cn("flex", className)}
+    >
       {children}
       {pos
         ? createPortal(
