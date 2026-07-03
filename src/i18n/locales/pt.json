@@ -525,7 +525,8 @@
     "tickerCards": "Cards no menu",
     "tickerHint": "Uma barra de juros e câmbio rolando no topo, estilo mercado — ou os cards no menu lateral.",
     "liberdade": "Liberdade",
-    "privacy": "Privacidade"
+    "privacy": "Privacidade",
+    "privacyDesc": "Seus dados financeiros são cifrados no seu aparelho — o servidor nunca vê seus valores. Leia os detalhes na Política de Privacidade e nos Termos de Serviço."
   },
   "footer": {
     "tagline": "Gestão patrimonial e orçamento multimoeda — local-first e cifrado de ponta a ponta.",

@@ -525,7 +525,8 @@
     "tickerCards": "Menu cards",
     "tickerHint": "A scrolling ticker of rates and FX at the top, market-style — or the cards in the side menu.",
     "liberdade": "Freedom",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "privacyDesc": "Your financial data is encrypted on your device — the server never sees your values. Read the details in the Privacy Policy and Terms of Service."
   },
   "footer": {
     "tagline": "Multicurrency wealth & budget — local-first and end-to-end encrypted.",
