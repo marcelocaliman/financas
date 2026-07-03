@@ -18,7 +18,7 @@ const CARD = "#131418";
 // da marca: CLARO (papel premium neutro, texto escuro, mesmo acento fechado do modo claro do app) e
 // SOBRE-COR (fundo verde profundo, texto claro). Cada primitivo de texto recebe uma paleta (default =
 // ESCURO) → a MESMA engine produz visuais bem distintos só trocando a paleta + o fundo.
-export type PieceStyle = "light" | "color" | "vivid";
+export type PieceStyle = "light" | "color" | "vivid" | "dark";
 interface Palette {
   text: string;
   muted: string;
@@ -57,6 +57,7 @@ export const PHOTO_SRC: Record<string, string> = {
   privacidade: "/img/ads/person.jpg",
   orcamento: "/img/ads/life.jpg",
   futuro: "/img/ads/horizon.jpg", // story "vivid" (foto vívida, não esmaecida)
+  "app-tour": "/img/ads/horizon.jpg", // capa vívida do tour (as demais cenas ignoram a foto)
 };
 
 export interface Scene {
@@ -70,12 +71,13 @@ export interface Scene {
   tagline?: string;
   mock?: "currencies" | "masked" | "donut"; // mockup do app na cena de hook (preenche + varia)
   chips?: string[]; // pílulas de features (cena de amplitude/benefício)
+  style?: PieceStyle; // clima DESTA cena (sobrescreve o do story) — deixa um mesmo story alternar templates
 }
 export interface Story {
   id: string;
   name: string; // rótulo no admin
   scenes: Scene[];
-  style?: PieceStyle; // clima alternativo (claro / sobre-cor / foto vívida); default = escuro padrão
+  style?: PieceStyle; // clima padrão do story (cada cena pode sobrescrever); default = escuro padrão
 }
 
 export const STORIES: Story[] = [
@@ -144,6 +146,20 @@ export const STORIES: Story[] = [
       { kind: "cta", value: "Nossas Finanças", tagline: "Comece hoje", sub: "nossasfinancas.com.br" },
     ],
   },
+
+  // ── TOUR COMPLETO: apresenta o app inteiro, alternando o TEMPLATE a cada cena (style por cena) ──
+  {
+    id: "app-tour",
+    name: "Tour do app · multi-template",
+    scenes: [
+      { kind: "hook", style: "vivid", eyebrow: "UM TOUR RÁPIDO", title: ["Conheça o Nossas", "Finanças."], sub: "Suas finanças multimoeda num app só — privado e simples." },
+      { kind: "hook", style: "dark", mock: "currencies", eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Real, euro, dólar — cada item na sua moeda, o total na cotação de hoje." },
+      { kind: "hook", style: "color", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
+      { kind: "hook", style: "dark", mock: "donut", eyebrow: "3 · ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
+      { kind: "hook", style: "light", eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], chips: ["Aportes", "Inflação real", "Ano a ano", "FIRE"] },
+      { kind: "cta", style: "color", value: "Nossas Finanças", tagline: "Tudo num app só · grátis", sub: "nossasfinancas.com.br" },
+    ],
+  },
 ];
 
 export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
@@ -151,13 +167,13 @@ export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_
 // ── POSTS ESTÁTICOS (feed 4:5, 1080×1350, exportados em PNG) ─────────────────
 // Mesma estética/engine dos stories, mas UM quadro parado por peça (sem animação/tempo). 6 peças
 // cobrindo os 4 pilares: multimoeda/cross-border, privacidade, organização/FIRE, build-in-public.
-export interface Post {
-  id: string;
-  name: string; // rótulo no admin
-  pillar: string; // pilar (rótulo no card)
+/** Campos VISUAIS de um quadro 4:5 — compartilhados por Post (feed) e Slide (carrossel):
+ *  drawPost lê só isto, então um post e um slide de carrossel são renderizados pela MESMA função. */
+export interface PieceVisual {
   glow?: [number, number]; // posição do brilho (fração de W,H)
   photo?: string; // foto de fundo (/img/ads/...) — dá variedade ao feed
   green?: boolean; // fundo verde PROFUNDO (variante esverdeada)
+  style?: PieceStyle; // clima (claro / sobre-cor / foto vívida / escuro); default = escuro padrão
   eyebrow: string;
   title: string[]; // linhas
   sub?: string;
@@ -165,9 +181,25 @@ export interface Post {
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
   stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
-  style?: PieceStyle; // clima alternativo (claro / sobre-cor / foto vívida); default = escuro padrão
+}
+export interface Post extends PieceVisual {
+  id: string;
+  name: string; // rótulo no admin
+  pillar: string; // pilar (rótulo no card)
   caption?: string; // legenda pronta pro Instagram (copiar e colar)
   tags?: string[]; // hashtags (sem #)
+}
+/** Um quadro do carrossel = os mesmos campos visuais de um post (sem os metadados do feed). */
+export type Slide = PieceVisual;
+/** Carrossel: várias imagens 4:5 numa mesma publicação (uma legenda só). Os slides VARIAM de
+ *  template pra ficar dinâmico. Exportado como N PNGs numerados. */
+export interface Carousel {
+  id: string;
+  name: string;
+  pillar: string;
+  slides: Slide[];
+  caption?: string;
+  tags?: string[];
 }
 
 export const POSTS: Post[] = [
@@ -298,6 +330,30 @@ export const POSTS: Post[] = [
     eyebrow: "SEUS OBJETIVOS",
     title: ["Cada meta,", "no seu ritmo."],
     sub: "Barra de progresso em qualquer moeda — veja o quanto já andou e o quanto falta.",
+  },
+];
+
+// ── CARROSSÉIS (feed 4:5, VÁRIAS imagens numa publicação) ────────────────────
+// Apresentação completa do app: cada slide VARIA o template (foto vívida / escuro-mockup / verde
+// bold / papel claro) pra ficar dinâmico. Exportado como N PNGs numerados; 1 legenda pro conjunto.
+export const CAROUSELS: Carousel[] = [
+  {
+    id: "tour",
+    name: "Conheça o app · 8 slides",
+    pillar: "Apresentação",
+    caption:
+      "Vem conhecer o Nossas Finanças. 👋\n\nÉ um app de finanças pessoais feito pra quem vive (ou vai viver) entre países — e pra qualquer um que queira controle simples e privado de verdade.\n\nO que ele faz:\n1️⃣ Multimoeda — real, euro, dólar num número só, na cotação de hoje\n2️⃣ Privacidade — tudo cifrado no seu aparelho; nem eu vejo\n3️⃣ Orçamento — pra onde vai cada real, por categoria\n4️⃣ Patrimônio — contas, investimentos e bens somados\n5️⃣ Metas — objetivos com barra de progresso em qualquer moeda\n6️⃣ Liberdade — projeção de independência financeira, ano a ano\n\nE o melhor: grátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\nArrasta pro lado pra ver tudo. 👉\n📲 Link na bio.",
+    tags: ["financaspessoais", "multimoeda", "privacidade", "controlefinanceiro", "expatriados", "brasileirosnoexterior", "organizacaofinanceira", "independenciafinanceira", "appdefinancas", "morarfora"],
+    slides: [
+      { style: "vivid", photo: "/img/ads/peaks.jpg", eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "sem fronteiras."], sub: "Um tour rápido pelo Nossas Finanças." },
+      { style: "dark", mock: "currencies", eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Cada item na sua moeda; o total na cotação de hoje." },
+      { style: "color", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado no seu", "aparelho. Só", "você vê."], sub: "Criptografia ponta a ponta — só você abre os seus números." },
+      { style: "dark", mock: "donut", eyebrow: "3 · ORÇAMENTO", title: ["Pra onde vai", "cada real."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
+      { style: "light", eyebrow: "4 · PATRIMÔNIO", title: ["Seu patrimônio,", "num número só."], stat: { value: "R$ 1,28 mi", label: "contas + investimentos + bens" }, sub: "Ativos, dívidas e composição — sempre atualizados." },
+      { style: "dark", eyebrow: "5 · METAS", title: ["Cada meta,", "no seu ritmo."], sub: "Objetivos com barra de progresso em qualquer moeda.", chips: ["Reserva", "Mudança", "Liberdade"] },
+      { style: "color", eyebrow: "6 · E O MELHOR", title: ["Grátis, offline", "e no navegador."], sub: "Sem instalar nada, sem cadastrar cartão. Seus dados ficam com você.", chips: ["Sem instalar", "Funciona offline", "Sem cartão"] },
+      { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "COMECE AGORA", title: ["Abra grátis", "e comece hoje."], sub: "É só entrar pelo navegador — nossasfinancas.com.br" },
+    ],
   },
 ];
 
@@ -985,7 +1041,8 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
   const lt = t - idx * SCENE_DUR;
   const sc = story.scenes[idx];
-  const style = story.style;
+  // Cada CENA pode ter o próprio clima (sobrescreve o do story) → um mesmo story alterna templates.
+  const style = sc.style ?? story.style;
 
   // Fundo + paleta por CENA (o vívido troca a foto pela cor no CTA; os demais são uniformes).
   let pal: Palette = DARK;
@@ -1005,6 +1062,10 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
     } else {
       drawBg(ctx, W, H, t);
     }
+  } else if (style === "dark") {
+    // escuro EXPLÍCITO: glow verde e ignora a foto do story (cenas de mockup num tour multi-template)
+    const glow = GLOW[story.id] ?? [0.32, 0.22];
+    drawBg(ctx, W, H, t, glow[0], glow[1]);
   } else if (photo) {
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
@@ -1129,7 +1190,7 @@ function drawCompare(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
 /** Desenha UM post estático 4:5 (1080×1350 no full). Compõe os mesmos primitivos dos stories, mas
  *  parado (alpha 1, sem rise, mock totalmente revelado com lt alto). 3 arranjos: mock / comparação /
  *  título-herói (com sub e/ou chips). Sempre marca no topo + @handle no rodapé. */
-export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H: number, photo: CanvasImageSource | null = null) {
+export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: number, H: number, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
   const style = post.style;
   const x = 90 * s;
@@ -1229,4 +1290,32 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H
     if (post.chips) drawChips(ctx, s, x, tb + 44 * s, post.chips, 1, W - x * 2, pal);
   }
   drawHandle(ctx, s, x, H - 64 * s, pal);
+}
+
+/** Um SLIDE do carrossel = um post 4:5 + indicador de página (n/total) e, no 1º, a dica "arraste".
+ *  O texto do slide vem do próprio Slide; a numeração é sobreposta aqui (não polui o drawPost). */
+export function drawCarouselSlide(ctx: CanvasRenderingContext2D, slide: Slide, W: number, H: number, i: number, total: number, photo: CanvasImageSource | null = null) {
+  drawPost(ctx, slide, W, H, photo);
+  const s = W / 1080;
+  // Só o topo do slide CLARO é claro; nos demais o topo é escuro/foto → texto do indicador claro.
+  const onLight = slide.style === "light";
+  ctx.save();
+  ctx.font = fontMono(24 * s, 600);
+  ctx.textBaseline = "alphabetic";
+  // indicador n/total (canto superior direito, alinhado com a marca)
+  ctx.textAlign = "right";
+  ctx.fillStyle = onLight ? "rgba(14,21,18,0.5)" : "rgba(244,251,247,0.72)";
+  ctx.letterSpacing = `${1 * s}px`;
+  ctx.fillText(`${i + 1} / ${total}`, W - 90 * s, 104 * s);
+  ctx.letterSpacing = "0px";
+  // dica "arraste" só no 1º slide (à direita, acima do rodapé)
+  if (i === 0) {
+    const hint = "arraste →";
+    const hy = H - 62 * s;
+    ctx.textAlign = "right";
+    ctx.fillStyle = onLight ? "#15976A" : ACCENT;
+    ctx.fillText(hint, W - 90 * s, hy);
+  }
+  ctx.restore();
+  ctx.textAlign = "left";
 }

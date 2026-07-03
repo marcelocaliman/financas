@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, Check, Copy, Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, POSTS, drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "@/admin/ads/engine";
-import { exportStory, exportPostPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
+import { CalendarCheck, Check, Copy, Download, Film, GalleryHorizontalEnd, Image as ImageIcon, Loader2 } from "lucide-react";
+import { STORIES, POSTS, CAROUSELS, drawStory, drawPost, drawCarouselSlide, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide } from "@/admin/ads/engine";
+import { exportStory, exportPostPNG, exportCarouselPNGs, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { cn } from "@/lib/utils";
@@ -219,6 +219,144 @@ function PostCard({ post }: { post: Post }) {
   );
 }
 
+const SLIDE_W = 264;
+const SLIDE_H = 330; // 4:5
+
+/** Miniatura de UM slide do carrossel (com o indicador n/total); recarrega quando a foto/fontes vêm. */
+function SlideThumb({ slide, index, total }: { slide: Slide; index: number; total: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    const ctx = cv?.getContext("2d");
+    if (!cv || !ctx) return;
+    let img: HTMLImageElement | null = null;
+    const draw = () => drawCarouselSlide(ctx, slide, SLIDE_W, SLIDE_H, index, total, img);
+    draw();
+    if (typeof document !== "undefined" && document.fonts) document.fonts.ready.then(draw).catch(() => {});
+    if (slide.photo)
+      loadPhoto(slide.photo)
+        .then((i) => {
+          img = i;
+          draw();
+        })
+        .catch(() => {});
+  }, [slide, index, total]);
+  return (
+    <canvas
+      ref={ref}
+      width={SLIDE_W}
+      height={SLIDE_H}
+      className="block h-auto w-[150px] shrink-0 snap-start rounded-[10px] border border-border"
+    />
+  );
+}
+
+function CarouselCard({ carousel }: { carousel: Carousel }) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [logged, setLogged] = useState(false);
+  const addCal = useAdsCalendar((s) => s.add);
+  const total = carousel.slides.length;
+
+  const markToday = () => {
+    addCal({ date: dateKey(new Date()), pieceId: `carousel:${carousel.id}`, status: "posted" });
+    setLogged(true);
+    setTimeout(() => setLogged(false), 1600);
+  };
+
+  const captionText = carousel.caption
+    ? carousel.caption + (carousel.tags?.length ? "\n\n" + carousel.tags.map((t) => "#" + t).join(" ") : "")
+    : "";
+
+  const run = async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      const blobs = await exportCarouselPNGs(carousel);
+      for (let i = 0; i < blobs.length; i++) {
+        downloadBlob(blobs[i], `nossas-financas-${carousel.id}-${String(i + 1).padStart(2, "0")}.png`);
+        await new Promise((r) => setTimeout(r, 350)); // espaça os downloads (o navegador pode pedir permissão p/ baixar vários)
+      }
+    } catch {
+      setNote("Falha ao gerar as imagens. Tente de novo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copyCaption = async () => {
+    try {
+      await navigator.clipboard.writeText(captionText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setNote("Não consegui copiar — selecione o texto e copie manual.");
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-border bg-card p-3.5">
+      <div className="flex gap-2.5 overflow-x-auto scrollbar-subtle snap-x pb-1">
+        {carousel.slides.map((sl, i) => (
+          <SlideThumb key={i} slide={sl} index={i} total={total} />
+        ))}
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-[13.5px] font-medium">{carousel.name}</div>
+          <div className="text-[11.5px] text-faint tabular">{carousel.pillar} · {total} imagens · PNG 4:5</div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={markToday}
+            title="Marcar como postado hoje (vai pro calendário)"
+            className={cn(
+              "inline-flex items-center gap-1 h-9 px-2.5 rounded-[9px] border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              logged ? "border-border text-accent" : "border-border text-muted hover:text-text hover:border-border-strong",
+            )}
+          >
+            {logged ? <Check size={14} /> : <CalendarCheck size={14} />} {logged ? "Marcado" : "Hoje"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={run}
+            className={cn(
+              "inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              busy ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+            )}
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {busy ? "Gerando…" : `${total} PNGs`}
+          </button>
+        </div>
+      </div>
+      {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
+      {captionText ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">Legenda</span>
+            <button
+              type="button"
+              onClick={copyCaption}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                copied ? "border border-border text-accent" : "border border-border text-muted hover:text-text hover:border-border-strong",
+              )}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+          <div className="max-h-44 overflow-y-auto scrollbar-subtle whitespace-pre-wrap rounded-[10px] border border-border bg-bg px-2.5 py-2 text-[12px] leading-relaxed text-muted">
+            {captionText}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Aba "Ads" (super-admin): stories animados (MP4 9:16) + posts estáticos (PNG 4:5) pra divulgar. */
 export function AdsSection() {
   const supported = canExport();
@@ -274,6 +412,24 @@ export function AdsSection() {
           ))}
         </div>
       </section>
+
+      <section>
+        <div className="mb-1.5 flex items-center gap-2">
+          <GalleryHorizontalEnd size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Carrosséis · PNG 4:5 (várias imagens)</h3>
+        </div>
+        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
+          Apresentação completa do app: cada slide muda de template pra ficar dinâmico. Clique em{" "}
+          <b className="text-text">Baixar PNGs</b> e o navegador salva uma imagem por slide, numeradas
+          na ordem — no Instagram, crie um post e selecione todas. Pode aparecer um aviso pra permitir
+          baixar vários arquivos.
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {CAROUSELS.map((c) => (
+            <CarouselCard key={c.id} carousel={c} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -282,7 +438,7 @@ export function AdsSummary() {
   return (
     <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
       <Film size={15} className="text-accent" />
-      <span className="tabular">{STORIES.length} stories · {POSTS.length} posts</span>
+      <span className="tabular">{STORIES.length} stories · {POSTS.length} posts · {CAROUSELS.length} carrossel</span>
     </span>
   );
 }

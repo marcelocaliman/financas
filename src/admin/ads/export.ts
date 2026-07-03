@@ -1,7 +1,7 @@
 // Grava um story (canvas 1080×1920) em VÍDEO via MediaRecorder — MP4 quando o navegador suporta
 // (Chrome recente, Safari), senão WebM. Captura em tempo real (captureStream do canvas). Só o dono
 // usa isso (aba Ads do super-admin), então rodar ~9s de gravação na máquina dele é aceitável.
-import { drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "./engine";
+import { drawStory, drawPost, drawCarouselSlide, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel } from "./engine";
 
 // ── fotos de fundo (carregadas same-origin → sem taint no canvas) ──
 const photoCache = new Map<string, HTMLImageElement>();
@@ -159,6 +159,37 @@ export async function exportPostPNG(post: Post): Promise<Blob> {
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
   });
+}
+
+/** Renderiza TODOS os slides de um carrossel (4:5, 1080×1350) e devolve um PNG por slide, na ordem.
+ *  A UI baixa em sequência (Instagram monta o carrossel com as imagens numeradas). */
+export async function exportCarouselPNGs(carousel: Carousel): Promise<Blob[]> {
+  await ensureFonts();
+  const W = 1080, H = 1350;
+  const total = carousel.slides.length;
+  const blobs: Blob[] = [];
+  for (let i = 0; i < total; i++) {
+    const slide = carousel.slides[i];
+    let img: HTMLImageElement | null = null;
+    if (slide.photo) {
+      try {
+        img = await loadPhoto(slide.photo);
+      } catch {
+        /* segue sem foto (cai no fundo) */
+      }
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D indisponível");
+    drawCarouselSlide(ctx, slide, W, H, i, total, img);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
+    });
+    blobs.push(blob);
+  }
+  return blobs;
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {
