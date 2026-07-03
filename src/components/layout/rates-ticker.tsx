@@ -1,11 +1,14 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useFxHistory } from "@/store/fx-history";
+import { useSpot } from "@/store/spot";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { convert, formatMoney, formatPercent, CURRENCIES } from "@/money/currency";
 import { pairChangePct } from "@/money/fx-daily";
+import { SPOT_ASSETS, ASSET_META, assetColor } from "@/money/spot";
 import { currencyColors } from "@/money/composition";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +29,22 @@ interface FxItem {
   pct: number | null;
   color: string;
 }
-/** Barra separando as seções (juros/inflação · câmbio). */
+/** Ouro (XAU/oz) ou bitcoin na moeda principal, com a variação do dia. Renderiza igual ao câmbio. */
+interface AssetItem {
+  key: string;
+  kind: "asset";
+  tag: string; // OURO / BTC
+  value: string;
+  unit: string | null; // ex.: "oz" pro ouro
+  pct: number | null;
+  color: string;
+}
+/** Barra separando as seções (juros/inflação · câmbio · ativos). */
 interface DividerItem {
   key: string;
   kind: "divider";
 }
-type TickerItem = MacroItem | FxItem | DividerItem;
+type TickerItem = MacroItem | FxItem | AssetItem | DividerItem;
 
 /**
  * Barra de cotações rolando no topo (marquee, pílula flutuante). Todos os itens padronizados por
@@ -40,12 +53,33 @@ type TickerItem = MacroItem | FxItem | DividerItem;
  * mercado (não esconde no modo privado). Ligável em Configurações → Aparência.
  */
 export function RatesTicker() {
+  const { t } = useTranslation();
   const theme = useUI((s) => s.theme);
   const base = useUI((s) => s.baseCurrency);
   const rates = useRates((s) => s.rates);
   const today = useFxHistory((s) => s.today);
   const prev = useFxHistory((s) => s.prev);
   const colors = currencyColors(theme);
+
+  const spotBase = useSpot((s) => s.base);
+  const spotPrices = useSpot((s) => s.prices);
+  const spotPrev = useSpot((s) => s.prevPrices);
+  const refreshSpot = useSpot((s) => s.refresh);
+
+  // Ouro/bitcoin só são buscados quando o ticker está montado (é opt-in) — nada de request à toa.
+  // Refaz no mount, ao trocar a moeda principal e ao voltar o foco/rede (paridade com o câmbio).
+  useEffect(() => {
+    refreshSpot(base);
+    const onWake = () => {
+      if (document.visibilityState === "visible") refreshSpot(base);
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", onWake);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", onWake);
+    };
+  }, [base, refreshSpot]);
 
   const brl = useMacro("BRL");
   const usd = useMacro("USD");
@@ -72,12 +106,35 @@ export function RatesTicker() {
       pct: today && prev ? pairChangePct(c, base, today, prev) : null,
       color: colors[c],
     }));
-    // Barra entre as duas seções (e no começo, pra o loop separar câmbio→juros na virada).
-    if (macroItems.length && fxItems.length) {
-      return [{ key: "d0", kind: "divider" }, ...macroItems, { key: "d1", kind: "divider" }, ...fxItems];
-    }
-    return [...macroItems, ...fxItems];
-  }, [brl, usd, eur, gbp, base, rates, today, prev, colors]);
+    // Ouro + bitcoin na moeda principal. Só mostra se os preços em cache batem com a moeda atual
+    // (spotBase === base) — evita exibir número da moeda antiga enquanto a troca não recarrega.
+    const assetItems: AssetItem[] =
+      spotBase === base
+        ? SPOT_ASSETS.filter((a) => spotPrices[a] != null).map((a) => {
+            const price = spotPrices[a]!;
+            const p = spotPrev[a];
+            return {
+              key: `spot-${a}`,
+              kind: "asset",
+              tag: a === "XAU" ? t("dashboard.gold") : "BTC",
+              value: formatMoney(price, base, { maximumFractionDigits: 0 }),
+              unit: ASSET_META[a].unit ?? null,
+              pct: p != null && p > 0 ? ((price - p) / p) * 100 : null,
+              color: assetColor(a, theme),
+            };
+          })
+        : [];
+    // Junta as seções não vazias com uma barra entre cada (e uma no começo, p/ o loop separar
+    // a virada do marquee). Ex.: | juros/inflação | câmbio | ouro/bitcoin |.
+    const sections = [macroItems, fxItems, assetItems].filter((s) => s.length > 0);
+    const out: TickerItem[] = [];
+    sections.forEach((sec, i) => {
+      if (i === 0 && sections.length > 1) out.push({ key: "d-start", kind: "divider" });
+      out.push(...sec);
+      if (i < sections.length - 1) out.push({ key: `d-${i}`, kind: "divider" });
+    });
+    return out;
+  }, [brl, usd, eur, gbp, base, rates, today, prev, colors, spotBase, spotPrices, spotPrev, t]);
 
   const content = items.filter((i) => i.kind !== "divider").length;
   if (content === 0) return null;
@@ -110,6 +167,7 @@ function Chip({ tag, color }: { tag: string; color: string }) {
 }
 
 function TickerRow({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: boolean }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center shrink-0" aria-hidden={ariaHidden}>
       {items.map((it) => {
@@ -127,6 +185,11 @@ function TickerRow({ items, ariaHidden }: { items: TickerItem[]; ariaHidden?: bo
             ) : (
               <>
                 <span className="tabular font-semibold text-text">{it.value}</span>
+                {it.kind === "asset" && it.unit ? (
+                  <span title={t("dashboard.perTroyOunce")} className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-faint">
+                    /{it.unit}
+                  </span>
+                ) : null}
                 {it.pct != null ? (
                   <span className={cn("inline-flex items-center gap-0.5 tabular text-[11px]", it.pct >= 0 ? "text-accent" : "text-neg")}>
                     {it.pct >= 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}

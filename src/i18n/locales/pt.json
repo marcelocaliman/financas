@@ -95,6 +95,8 @@
     "fxRates": "Câmbio",
     "fxManual": "manual",
     "fxStale": "desatualizada",
+    "gold": "Ouro",
+    "perTroyOunce": "por onça-troy",
     "alsoWorth": "Equivale a",
     "fxSince": "Variação de {{from}} para {{to}}",
     "scroll": "rolar",

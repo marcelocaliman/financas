@@ -95,6 +95,8 @@
     "fxRates": "Exchange",
     "fxManual": "manual",
     "fxStale": "outdated",
+    "gold": "Gold",
+    "perTroyOunce": "per troy ounce",
     "alsoWorth": "Also worth",
     "fxSince": "Change from {{from}} to {{to}}",
     "scroll": "scroll",
