@@ -90,6 +90,8 @@ export interface Post {
   name: string; // rótulo no admin
   pillar: string; // pilar (rótulo no card)
   glow?: [number, number]; // posição do brilho (fração de W,H)
+  photo?: string; // foto de fundo (/img/ads/...) — dá variedade ao feed
+  green?: boolean; // fundo verde PROFUNDO (variante esverdeada)
   eyebrow: string;
   title: string[]; // linhas
   sub?: string;
@@ -103,7 +105,7 @@ export const POSTS: Post[] = [
     id: "multimoeda",
     name: "Multimoeda · somando tudo",
     pillar: "Multimoeda",
-    glow: [0.74, 0.16],
+    photo: "/img/ads/global.jpg",
     eyebrow: "REAL, EURO, DÓLAR",
     title: ["Quanto você tem", "somando tudo?"],
     mock: "currencies",
@@ -131,7 +133,7 @@ export const POSTS: Post[] = [
     id: "privacidade",
     name: "Privacidade · eles lucram",
     pillar: "Privacidade",
-    glow: [0.28, 0.2],
+    photo: "/img/ads/person.jpg",
     eyebrow: "SOBRE OS APPS DE FINANÇAS",
     title: ["Eles veem tudo", "o que você tem.", "E lucram com isso."],
     mock: "masked",
@@ -151,7 +153,8 @@ export const POSTS: Post[] = [
     id: "liberdade",
     name: "Liberdade · quando fica livre",
     pillar: "Organização / FIRE",
-    glow: [0.72, 0.18],
+    green: true,
+    glow: [0.6, 0.32],
     eyebrow: "E O FUTURO?",
     title: ["Veja quando", "você fica livre."],
     sub: "Projeção de independência financeira com aportes e inflação real — no seu ritmo.",
@@ -161,7 +164,7 @@ export const POSTS: Post[] = [
     id: "build",
     name: "Build in public · dev",
     pillar: "Build in public",
-    glow: [0.32, 0.22],
+    photo: "/img/ads/life.jpg",
     eyebrow: "POR QUE EXISTE",
     title: ["Construí porque", "eu mesmo precisava."],
     sub: "Sou dev e me mudo do Brasil pra Itália. Fiz o app que eu queria — privado e multimoeda — e abri pra você.",
@@ -782,6 +785,51 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
 
 // ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────
 
+/** Fundo verde PROFUNDO (variante esverdeada): base quase-preta esverdeada + brilho do verde
+ *  fechado #15976A (não o acento aberto). Dá um clima diferente sem sair da marca. */
+function drawPostGreenBg(ctx: CanvasRenderingContext2D, W: number, H: number, gx: number, gy: number) {
+  const base = ctx.createLinearGradient(0, 0, 0, H);
+  base.addColorStop(0, "#0C1A14");
+  base.addColorStop(1, "#080F0B");
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, W, H);
+  const cx = W * gx, cy = H * gy, r = W * 0.95;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, "rgba(21,151,106,0.32)");
+  g.addColorStop(0.5, "rgba(21,151,106,0.06)");
+  g.addColorStop(1, "rgba(21,151,106,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** Fundo com FOTO (cover), mais presente que a dos stories (aqui ela é o fundo, não textura):
+ *  foto dessaturada/escura + tinte verde de marca + scrim vertical forte na base → texto sempre legível. */
+function drawPostPhotoBg(ctx: CanvasRenderingContext2D, photo: CanvasImageSource, W: number, H: number) {
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, W, H);
+  const p = photo as unknown as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
+  const iw = p.naturalWidth || p.width || 0, ih = p.naturalHeight || p.height || 0;
+  if (iw && ih) {
+    const scale = Math.max(W / iw, H / ih);
+    const dw = iw * scale, dh = ih * scale;
+    ctx.save();
+    ctx.globalAlpha = 0.52;
+    ctx.filter = "grayscale(0.4) brightness(0.72) contrast(1.03)";
+    ctx.drawImage(photo, (W - dw) / 2, (H - dh) / 2, dw, dh);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 0.06;
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 1;
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, "rgba(10,11,13,0.42)");
+  g.addColorStop(0.42, "rgba(10,11,13,0.5)");
+  g.addColorStop(1, "rgba(10,11,13,0.9)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
 /** Rodapé do post: @handle (acento, mono) + site (fraco). Assinatura discreta em toda peça. */
 function drawHandle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number) {
   ctx.textAlign = "left";
@@ -839,9 +887,11 @@ function drawCompare(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
 /** Desenha UM post estático 4:5 (1080×1350 no full). Compõe os mesmos primitivos dos stories, mas
  *  parado (alpha 1, sem rise, mock totalmente revelado com lt alto). 3 arranjos: mock / comparação /
  *  título-herói (com sub e/ou chips). Sempre marca no topo + @handle no rodapé. */
-export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H: number) {
+export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H: number, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
-  drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
+  if (post.photo && photo) drawPostPhotoBg(ctx, photo, W, H);
+  else if (post.green) drawPostGreenBg(ctx, W, H, post.glow?.[0] ?? 0.5, post.glow?.[1] ?? 0.3);
+  else drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
   drawBrand(ctx, s, 90 * s, 74 * s, 46);
   const x = 90 * s;
   const availW = (W - x * 2) * 0.99;

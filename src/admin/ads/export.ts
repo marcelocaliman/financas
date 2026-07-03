@@ -141,13 +141,21 @@ export async function exportStory(story: Story): Promise<ExportResult> {
  *  é um quadro só, então é instantâneo (ao contrário do MP4 dos stories). */
 export async function exportPostPNG(post: Post): Promise<Blob> {
   await ensureFonts();
+  let img: HTMLImageElement | null = null;
+  if (post.photo) {
+    try {
+      img = await loadPhoto(post.photo);
+    } catch {
+      /* segue sem foto (cai no fundo escuro) */
+    }
+  }
   const W = 1080, H = 1350;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D indisponível");
-  drawPost(ctx, post, W, H);
+  drawPost(ctx, post, W, H, img);
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
   });

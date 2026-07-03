@@ -91,17 +91,25 @@ function StoryCard({ story }: { story: Story }) {
   );
 }
 
-/** Prévia ESTÁTICA de um post (um quadro só; redesenha quando as fontes carregam). */
+/** Prévia ESTÁTICA de um post (um quadro só; redesenha quando as fontes E a foto de fundo carregam). */
 function PostPreview({ post }: { post: Post }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current;
     const ctx = cv?.getContext("2d");
     if (!cv || !ctx) return;
-    const draw = () => drawPost(ctx, post, POST_W, POST_H);
+    let img: HTMLImageElement | null = null;
+    const draw = () => drawPost(ctx, post, POST_W, POST_H, img);
     draw();
-    // as fontes (Inter/JetBrains) podem não estar prontas no 1º paint → redesenha quando ficarem
+    // as fontes (Inter/JetBrains) e a foto podem não estar prontas no 1º paint → redesenha quando ficarem
     if (typeof document !== "undefined" && document.fonts) document.fonts.ready.then(draw).catch(() => {});
+    if (post.photo)
+      loadPhoto(post.photo)
+        .then((i) => {
+          img = i;
+          draw();
+        })
+        .catch(() => {});
   }, [post]);
   return <canvas ref={ref} width={POST_W} height={POST_H} className="block w-full h-auto" />;
 }
