@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, POSTS, CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
+import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
@@ -496,6 +496,14 @@ export function AdsSection() {
             <StoryCard key={st.id} story={st} />
           ))}
         </div>
+        <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+          Educativos — conteúdo que ensina
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {EDU_STORIES.map((st) => (
+            <StoryCard key={st.id} story={st} />
+          ))}
+        </div>
       </section>
 
       <section>
@@ -510,6 +518,14 @@ export function AdsSection() {
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {POSTS.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+        <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+          Educativos — dica · passo a passo · mito × verdade · conceito
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {EDU_POSTS.map((p) => (
             <PostCard key={p.id} post={p} />
           ))}
         </div>
@@ -553,7 +569,9 @@ export function AdsSummary() {
   return (
     <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
       <Film size={15} className="text-accent" />
-      <span className="tabular">{STORIES.length} stories · {POSTS.length} posts · {CAROUSELS.length} carrossel</span>
+      <span className="tabular">
+        {STORIES.length + EDU_STORIES.length} stories · {POSTS.length + EDU_POSTS.length} posts · {CAROUSELS.length} carrosséis
+      </span>
     </span>
   );
 }

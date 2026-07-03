@@ -164,6 +164,80 @@ export const STORIES: Story[] = [
 
 export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
 
+// ── STORIES EDUCATIVOS ───────────────────────────────────────────────────────
+// Templates de conteúdo que ENSINA (não institucional): troque texto/estilo pra falar de qualquer
+// tema. Sem foto (usam claro/verde/escuro + a cena de barras) → nenhum asset novo. Arco: gancho →
+// conteúdo → lição.
+export const EDU_STORIES: Story[] = [
+  {
+    id: "edu-orcamento",
+    name: "Educativo · regra 50/30/20",
+    scenes: [
+      { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"] },
+      {
+        kind: "budget",
+        eyebrow: "COMO DIVIDIR A RENDA",
+        title: ["Cada real", "tem um lugar"],
+        bars: [
+          { label: "50% · Essenciais", w: 0.5 },
+          { label: "30% · Desejos", w: 0.3, c: "#8A8F98" },
+          { label: "20% · Poupar/investir", w: 0.2 },
+        ],
+      },
+      { kind: "hook", eyebrow: "IMPORTANTE", title: ["É um ponto", "de partida."], sub: "Adapte aos seus números — o que importa é ter um plano e seguir." },
+    ],
+  },
+  {
+    id: "edu-reserva",
+    name: "Educativo · reserva de emergência",
+    style: "light",
+    scenes: [
+      { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"] },
+      { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "O suficiente pra respirar se a renda parar. Guarde onde dê pra sacar no mesmo dia." },
+      { kind: "hook", eyebrow: "POR QUE IMPORTA", title: ["Ela evita", "a dívida."], sub: "Sem reserva, todo imprevisto vira cartão ou empréstimo caro." },
+    ],
+  },
+  {
+    id: "edu-juros",
+    name: "Educativo · juros compostos",
+    style: "color",
+    scenes: [
+      { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"] },
+      { kind: "hook", eyebrow: "UM EXEMPLO", title: ["R$ 200/mês viram", "~R$ 280 mil."], sub: "Em 30 anos, a ~8% ao ano. Você põe R$ 72 mil; o resto é rendimento sobre rendimento." },
+      { kind: "hook", eyebrow: "A LIÇÃO", title: ["Comece pequeno,", "mas comece já."], sub: "Tempo vale mais que valor. Cada ano a mais faz uma diferença enorme." },
+    ],
+  },
+  {
+    id: "edu-diversificar",
+    name: "Educativo · diversificação",
+    scenes: [
+      { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."] },
+      { kind: "hook", eyebrow: "POR QUÊ", title: ["Se um cai,", "os outros seguram."], sub: "Espalhar entre tipos de ativo (e moedas) reduz o risco de um tombo te pegar inteiro." },
+      { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Some, não", "concentre."], sub: "Diversificar não é ter mais risco — é não depender de uma aposta só." },
+    ],
+  },
+  {
+    id: "edu-cambio",
+    name: "Educativo · câmbio no seu bolso",
+    style: "color",
+    scenes: [
+      { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."] },
+      { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada, só pela cotação." },
+      { kind: "hook", eyebrow: "A DICA", title: ["Acompanhe em", "uma moeda só."], sub: "Ver tudo convertido evita susto — e mostra o efeito real do câmbio." },
+    ],
+  },
+  {
+    id: "edu-dividas",
+    name: "Educativo · sair das dívidas",
+    style: "light",
+    scenes: [
+      { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."] },
+      { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Juros de cartão e cheque especial superam qualquer investimento. Quitar é lucro garantido." },
+      { kind: "hook", eyebrow: "A ORDEM", title: ["Maior juro,", "não maior valor."], sub: "Liste as dívidas pela taxa e mate a de juro mais alto — nessa ordem." },
+    ],
+  },
+];
+
 // ── POSTS ESTÁTICOS (feed 4:5, 1080×1350, exportados em PNG) ─────────────────
 // Mesma estética/engine dos stories, mas UM quadro parado por peça (sem animação/tempo). 6 peças
 // cobrindo os 4 pilares: multimoeda/cross-border, privacidade, organização/FIRE, build-in-public.
@@ -181,6 +255,8 @@ export interface PieceVisual {
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
   stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
+  steps?: { title: string; desc?: string }[]; // lista/passo-a-passo (educativo)
+  stepMarker?: "number" | "check" | "dot"; // marcador da lista (default número)
 }
 export interface Post extends PieceVisual {
   id: string;
@@ -333,6 +409,100 @@ export const POSTS: Post[] = [
   },
 ];
 
+// ── POSTS EDUCATIVOS ─────────────────────────────────────────────────────────
+// Conteúdo que ENSINA (dica, passo-a-passo, checklist, mito×verdade, conceito, número). São TEMPLATES:
+// duplique um objeto e troque texto/estilo pra falar de outro tema. Legenda de cada um já ensina.
+export const EDU_POSTS: Post[] = [
+  {
+    id: "edu-reserva",
+    name: "Educativo · reserva (passo a passo)",
+    pillar: "Educativo",
+    style: "light",
+    caption:
+      "Reserva de emergência é o primeiro passo — antes de qualquer investimento. 🛟\n\nÉ o dinheiro que te protege de um imprevisto (perder a renda, uma emergência de saúde, um conserto) sem precisar recorrer a cartão ou empréstimo caro.\n\nComo montar:\n1. Alvo: 3 a 6 meses dos seus gastos essenciais\n2. Onde: algo seguro e com resgate no mesmo dia\n3. Como: um aporte fixo todo mês, no automático\n4. Uso: só emergência de verdade — e reponha depois\n\nNão precisa ser rápido. Precisa ser constante. 💪\n\n📲 Acompanhe isso no Nossas Finanças — link na bio.",
+    tags: ["reservadeemergencia", "educacaofinanceira", "financaspessoais", "planejamentofinanceiro", "organizacaofinanceira", "dinheiro", "poupar", "vidafinanceira", "investir", "passoapasso"],
+    eyebrow: "PASSO A PASSO",
+    title: ["Monte sua reserva", "de emergência"],
+    steps: [
+      { title: "Defina o alvo", desc: "3 a 6 meses dos seus gastos essenciais." },
+      { title: "Escolha onde guardar", desc: "Algo seguro e com resgate no mesmo dia." },
+      { title: "Automatize o aporte", desc: "Um valor fixo todo mês, assim que a renda cai." },
+      { title: "Só use em emergência", desc: "Imprevisto real — e reponha depois." },
+    ],
+  },
+  {
+    id: "edu-mito-investir",
+    name: "Educativo · mito (investir)",
+    pillar: "Educativo",
+    style: "color",
+    caption:
+      "“Investir é só pra quem tem muito dinheiro.” 🙅\n\nMito. Hoje dá pra começar com poucos reais e no automático. O que constrói patrimônio não é o valor inicial — é o TEMPO e a constância.\n\nR$ 100 por mês, todo mês, por anos, com juros compostos, viram muito mais do que um aporte grande e único lá na frente. Começar cedo (mesmo com pouco) vence começar tarde com muito.\n\nO melhor dia pra começar foi ontem. O segundo melhor é hoje. 🌱\n\n📲 Link na bio.",
+    tags: ["investimentos", "educacaofinanceira", "financaspessoais", "juroscompostos", "investirpouco", "liberdadefinanceira", "dinheiro", "investir", "comecaragora", "mentalidadefinanceira"],
+    eyebrow: "MITO OU VERDADE",
+    title: ["“Investir é só", "pra quem tem", "muito dinheiro.”"],
+    sub: "Mito. Dá pra começar com pouco e no automático — o que pesa é o tempo e a constância, não o valor inicial.",
+  },
+  {
+    id: "edu-juros",
+    name: "Educativo · juros compostos (número)",
+    pillar: "Educativo",
+    style: "light",
+    caption:
+      "Isso aqui é o efeito mais poderoso das finanças pessoais: juros compostos. 📈\n\nGuardando R$ 200 por mês, por 30 anos, a uns 8% ao ano, você chega em ~R$ 280 mil. Só que você depositou só R$ 72 mil no total — o resto (mais de R$ 200 mil!) é rendimento rendendo em cima de rendimento.\n\nÉ por isso que TEMPO importa mais que valor. Cada ano a mais na conta multiplica o resultado.\n\n(Exemplo ilustrativo, sem considerar impostos/inflação — a ideia é mostrar a lógica.)\n\n📲 Simule o seu no app — link na bio.",
+    tags: ["juroscompostos", "educacaofinanceira", "investimentos", "financaspessoais", "liberdadefinanceira", "aposentadoria", "investir", "longoprazo", "patrimonio", "dinheiro"],
+    eyebrow: "O PODER DO TEMPO",
+    title: ["Juros compostos", "trabalham por você"],
+    stat: { value: "≈ R$ 280 mil", label: "R$ 200/mês · 30 anos · ~8% ao ano" },
+    sub: "Você deposita R$ 72 mil; o resto é rendimento sobre rendimento. Começar cedo vale mais que aportar muito.",
+  },
+  {
+    id: "edu-checklist-investir",
+    name: "Educativo · checklist (investir)",
+    pillar: "Educativo",
+    style: "dark",
+    stepMarker: "check",
+    caption:
+      "Antes de comprar o primeiro investimento, confere se essas 4 bases estão de pé: ✅\n\n1. Reserva de emergência — pra não precisar resgatar na pior hora\n2. Dívidas caras quitadas — cartão e cheque especial rendem contra você\n3. Um objetivo e um prazo — pra quê e pra quando você investe\n4. Seu perfil de risco — quanta oscilação você aguenta sem pânico\n\nInvestir bem começa ANTES de investir. Base sólida primeiro, produto depois. 🧱\n\n📲 Link na bio.",
+    tags: ["investimentos", "educacaofinanceira", "checklist", "financaspessoais", "comecarainvestir", "reservadeemergencia", "perfilderisco", "planejamentofinanceiro", "investir", "dinheiro"],
+    eyebrow: "CHECKLIST",
+    title: ["Antes de investir,", "tenha isso pronto"],
+    steps: [
+      { title: "Reserva de emergência", desc: "O colchão pra não resgatar na pior hora." },
+      { title: "Dívidas caras quitadas", desc: "Cartão e cheque especial rendem contra você." },
+      { title: "Um objetivo e um prazo", desc: "Pra quê e pra quando você investe." },
+      { title: "Seu perfil de risco", desc: "Quanta oscilação você aguenta sem pânico." },
+    ],
+  },
+  {
+    id: "edu-inflacao",
+    name: "Educativo · conceito (inflação)",
+    pillar: "Educativo",
+    style: "light",
+    caption:
+      "Conceito em 1 minuto: inflação. 🎈\n\nÉ o encarecimento geral dos preços ao longo do tempo. Se a inflação do ano foi 5%, o que custava R$ 100 passa a custar R$ 105 — e o dinheiro parado na conta compra menos.\n\nNa prática: guardar embaixo do colchão (ou numa conta que não rende) é perder poder de compra todo ano, de forma silenciosa. Por isso o objetivo de investir é render ACIMA da inflação — é isso que protege (e aumenta) o seu de verdade.\n\n📲 No app dá pra projetar seu patrimônio já descontando a inflação — link na bio.",
+    tags: ["inflacao", "educacaofinanceira", "financaspessoais", "economia", "poderdecompra", "investir", "dinheiro", "planejamentofinanceiro", "conceitofinanceiro", "protejaseudinheiro"],
+    eyebrow: "CONCEITO EM 1 MINUTO",
+    title: ["O que é", "inflação?"],
+    sub: "O encarecimento geral dos preços com o tempo. R$ 100 hoje compram menos amanhã — por isso dinheiro parado perde valor, e render acima dela protege o seu.",
+  },
+  {
+    id: "edu-erros-orcamento",
+    name: "Educativo · 3 erros (orçamento)",
+    pillar: "Educativo",
+    style: "dark",
+    caption:
+      "3 erros que furam o orçamento de quase todo mundo (e como evitar): 🕳️\n\n1. Ignorar os pequenos — cafezinho, app, delivery. Sozinhos parecem nada; somados no mês, viram um rombo invisível.\n2. Esquecer os anuais — IPVA, seguro, matrícula. Divida por 12 e guarde todo mês pra não levar susto.\n3. Orçar sem folga — deixe uns 10% de respiro. O mês real nunca sai igual ao planejado no papel.\n\nOrçamento bom não é o perfeito — é o que você consegue manter. 🎯\n\n📲 Link na bio.",
+    tags: ["orcamento", "educacaofinanceira", "controlefinanceiro", "financaspessoais", "organizacaofinanceira", "planejamentofinanceiro", "gastos", "economia", "dinheiro", "dicasfinanceiras"],
+    eyebrow: "EVITE ESTES ERROS",
+    title: ["3 erros que furam", "o seu orçamento"],
+    steps: [
+      { title: "Ignorar os pequenos", desc: "Cafezinho, app, delivery viram rombo invisível." },
+      { title: "Esquecer os anuais", desc: "IPVA, seguro, matrícula: divida por 12." },
+      { title: "Orçar sem folga", desc: "Deixe ~10% de respiro pro mês real." },
+    ],
+  },
+];
+
 // ── CARROSSÉIS (feed 4:5, VÁRIAS imagens numa publicação) ────────────────────
 // Apresentação completa do app: cada slide VARIA o template (foto vívida / escuro-mockup / verde
 // bold / papel claro) pra ficar dinâmico. Exportado como N PNGs numerados; 1 legenda pro conjunto.
@@ -353,6 +523,23 @@ export const CAROUSELS: Carousel[] = [
       { style: "dark", eyebrow: "5 · METAS", title: ["Cada meta,", "no seu ritmo."], sub: "Objetivos com barra de progresso em qualquer moeda.", chips: ["Reserva", "Mudança", "Liberdade"] },
       { style: "color", eyebrow: "6 · E O MELHOR", title: ["Grátis, offline", "e no navegador."], sub: "Sem instalar nada, sem cadastrar cartão. Seus dados ficam com você.", chips: ["Sem instalar", "Funciona offline", "Sem cartão"] },
       { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "COMECE AGORA", title: ["Abra grátis", "e comece hoje."], sub: "É só entrar pelo navegador — nossasfinancas.com.br" },
+    ],
+  },
+  {
+    id: "edu-orcamento-passo",
+    name: "Educativo · seu 1º orçamento (7 slides)",
+    pillar: "Educativo",
+    caption:
+      "Quer se organizar mas não sabe por onde começar? Salva esse post — é o passo a passo do seu primeiro orçamento. 📌\n\n1. Anote tudo que entra (sua renda real)\n2. Liste os gastos fixos\n3. Estime os variáveis (olhe os últimos meses)\n4. Separe o quanto vai poupar ANTES de gastar\n5. Acompanhe e ajuste no fim do mês\n\nNão precisa ser perfeito no 1º mês. Precisa começar — cada mês fica mais fácil. 💪\n\n📲 No Nossas Finanças dá pra fazer tudo isso, em qualquer moeda. Link na bio.",
+    tags: ["orcamento", "passoapasso", "educacaofinanceira", "controlefinanceiro", "organizacaofinanceira", "financaspessoais", "planejamentofinanceiro", "comecaragora", "dinheiro", "vidafinanceira"],
+    slides: [
+      { style: "color", eyebrow: "PASSO A PASSO", title: ["Monte seu 1º", "orçamento"], sub: "Em 5 passos simples — sem planilha gigante." },
+      { style: "dark", eyebrow: "PASSO 1", title: ["Anote tudo", "que entra"], sub: "Salário, freelas, aluguéis. A sua renda real do mês." },
+      { style: "light", eyebrow: "PASSO 2", title: ["Liste os", "gastos fixos"], sub: "Moradia, contas, transporte, escola. O que se repete todo mês." },
+      { style: "dark", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
+      { style: "color", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
+      { style: "light", eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
+      { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda." },
     ],
   },
 ];
@@ -1187,9 +1374,77 @@ function drawCompare(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
   return ry;
 }
 
+/** Lista vertical (passo-a-passo / checklist / itens): marcador (número/check/ponto) + título + desc
+ *  (quebrada por largura). Base de todo post EDUCATIVO. Retorna o Y do fim da lista. */
+function drawSteps(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, items: { title: string; desc?: string }[], marker: "number" | "check" | "dot", pal: Palette) {
+  const mR = 30 * s; // raio do marcador
+  const textX = x + 92 * s;
+  const maxW = W - textX - 90 * s;
+  let yy = y;
+  ctx.textAlign = "left";
+  items.forEach((it, i) => {
+    const mcx = x + mR, mcy = yy + mR;
+    if (marker === "dot") {
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(mcx, mcy, 13 * s, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = pal.accent;
+      ctx.beginPath();
+      ctx.arc(mcx, mcy, mR, 0, Math.PI * 2);
+      ctx.fill();
+      if (marker === "check") {
+        ctx.strokeStyle = pal.onAccent;
+        ctx.lineWidth = 6 * s;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(mcx - 14 * s, mcy + 1 * s);
+        ctx.lineTo(mcx - 4 * s, mcy + 11 * s);
+        ctx.lineTo(mcx + 15 * s, mcy - 12 * s);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = pal.onAccent;
+        ctx.font = fontSans(34 * s, 700);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(i + 1), mcx, mcy + 2 * s);
+      }
+    }
+    // título do item
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = pal.text;
+    ctx.font = fontSans(42 * s, 600);
+    ctx.fillText(it.title, textX, yy + 42 * s);
+    let rowBottom = yy + 42 * s;
+    if (it.desc) {
+      ctx.fillStyle = pal.muted;
+      ctx.font = fontSans(30 * s, 400);
+      const lh = 42 * s;
+      let ly = yy + 42 * s + 44 * s;
+      const words = it.desc.split(" ");
+      let line = "";
+      for (const w of words) {
+        const test = line ? line + " " + w : w;
+        if (ctx.measureText(test).width > maxW && line) {
+          ctx.fillText(line, textX, ly);
+          line = w;
+          ly += lh;
+        } else line = test;
+      }
+      if (line) ctx.fillText(line, textX, ly);
+      rowBottom = ly;
+    }
+    yy = rowBottom + 48 * s; // respiro entre itens
+  });
+  return yy;
+}
+
 /** Desenha UM post estático 4:5 (1080×1350 no full). Compõe os mesmos primitivos dos stories, mas
- *  parado (alpha 1, sem rise, mock totalmente revelado com lt alto). 3 arranjos: mock / comparação /
- *  título-herói (com sub e/ou chips). Sempre marca no topo + @handle no rodapé. */
+ *  parado (alpha 1, sem rise, mock totalmente revelado com lt alto). Arranjos: mock / comparação /
+ *  estatística / passo-a-passo (steps) / título-herói (com sub e/ou chips). Marca no topo + @handle. */
 export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: number, H: number, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
   const style = post.style;
@@ -1250,6 +1505,21 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
     ctx.fillText(post.stat.label.toUpperCase(), x, statY + 46 * s);
     ctx.letterSpacing = "0px";
     if (post.sub) drawSub(ctx, s, x, statY + 96 * s, W, post.sub, 1, pal);
+    drawHandle(ctx, s, x, H - 64 * s, pal);
+    return;
+  }
+
+  // PASSO A PASSO / CHECKLIST / LISTA (educativo): eyebrow + título no alto + lista abaixo.
+  if (post.steps) {
+    const px = fitTitlePx(ctx, s, post.title, availW, 60, 84);
+    const eyeY = H * 0.115;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, post.title, 1, 0, px, pal);
+    if (post.sub) {
+      drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
+      tb += 96 * s;
+    }
+    drawSteps(ctx, s, x, tb + 62 * s, W, post.steps, post.stepMarker ?? "number", pal);
     drawHandle(ctx, s, x, H - 64 * s, pal);
     return;
   }
