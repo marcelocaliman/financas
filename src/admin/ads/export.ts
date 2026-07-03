@@ -1,7 +1,7 @@
 // Grava um story (canvas 1080×1920) em VÍDEO via MediaRecorder — MP4 quando o navegador suporta
 // (Chrome recente, Safari), senão WebM. Captura em tempo real (captureStream do canvas). Só o dono
 // usa isso (aba Ads do super-admin), então rodar ~9s de gravação na máquina dele é aceitável.
-import { drawStory, storyDuration, PHOTO_SRC, type Story } from "./engine";
+import { drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "./engine";
 
 // ── fotos de fundo (carregadas same-origin → sem taint no canvas) ──
 const photoCache = new Map<string, HTMLImageElement>();
@@ -135,6 +135,22 @@ export async function exportStory(story: Story): Promise<ExportResult> {
   const type = mime || "video/webm";
   const blob = new Blob(chunks, { type });
   return { blob, ext: type.includes("mp4") ? "mp4" : "webm", mime: type };
+}
+
+/** Renderiza UM post estático (4:5, 1080×1350) e devolve um PNG pronto pra baixar. Sem gravação:
+ *  é um quadro só, então é instantâneo (ao contrário do MP4 dos stories). */
+export async function exportPostPNG(post: Post): Promise<Blob> {
+  await ensureFonts();
+  const W = 1080, H = 1350;
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D indisponível");
+  drawPost(ctx, post, W, H);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
+  });
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {

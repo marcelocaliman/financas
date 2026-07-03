@@ -82,6 +82,93 @@ export const STORIES: Story[] = [
 
 export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
 
+// ── POSTS ESTÁTICOS (feed 4:5, 1080×1350, exportados em PNG) ─────────────────
+// Mesma estética/engine dos stories, mas UM quadro parado por peça (sem animação/tempo). 6 peças
+// cobrindo os 4 pilares: multimoeda/cross-border, privacidade, organização/FIRE, build-in-public.
+export interface Post {
+  id: string;
+  name: string; // rótulo no admin
+  pillar: string; // pilar (rótulo no card)
+  glow?: [number, number]; // posição do brilho (fração de W,H)
+  eyebrow: string;
+  title: string[]; // linhas
+  sub?: string;
+  mock?: "currencies" | "masked" | "donut"; // mockup do app
+  chips?: string[]; // pílulas
+  compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
+}
+
+export const POSTS: Post[] = [
+  {
+    id: "multimoeda",
+    name: "Multimoeda · somando tudo",
+    pillar: "Multimoeda",
+    glow: [0.74, 0.16],
+    eyebrow: "REAL, EURO, DÓLAR",
+    title: ["Quanto você tem", "somando tudo?"],
+    mock: "currencies",
+    sub: "Cada moeda na cotação de hoje, num número só — sem planilha, sem abrir conta.",
+  },
+  {
+    id: "custo-vida",
+    name: "Custo de vida · BR × Itália",
+    pillar: "Multimoeda",
+    glow: [0.3, 0.16],
+    eyebrow: "MUDAR DE PAÍS",
+    title: ["São Paulo", "× Milão"],
+    compare: {
+      head: ["SÃO PAULO", "MILÃO"],
+      rows: [
+        { label: "Aluguel (1 quarto)", a: "R$ 2.800", b: "€ 1.100" },
+        { label: "Mercado no mês", a: "R$ 1.200", b: "€ 320" },
+        { label: "Transporte/mês", a: "R$ 220", b: "€ 39" },
+        { label: "Jantar a dois", a: "R$ 180", b: "€ 55" },
+      ],
+    },
+    sub: "O app mostra o seu patrimônio e os gastos nas duas moedas, lado a lado.",
+  },
+  {
+    id: "privacidade",
+    name: "Privacidade · eles lucram",
+    pillar: "Privacidade",
+    glow: [0.28, 0.2],
+    eyebrow: "SOBRE OS APPS DE FINANÇAS",
+    title: ["Eles veem tudo", "o que você tem.", "E lucram com isso."],
+    mock: "masked",
+    sub: "O nosso não vê nada: tudo cifrado no seu aparelho. Nem eu, no servidor.",
+  },
+  {
+    id: "orcamento",
+    name: "Orçamento · pra onde foi",
+    pillar: "Organização",
+    glow: [0.5, 0.4],
+    eyebrow: "TODO FIM DE MÊS",
+    title: ["Pra onde foi", "o seu dinheiro?"],
+    mock: "donut",
+    sub: "Cada real organizado por categoria — em qualquer moeda, com o gráfico do mês.",
+  },
+  {
+    id: "liberdade",
+    name: "Liberdade · quando fica livre",
+    pillar: "Organização / FIRE",
+    glow: [0.72, 0.18],
+    eyebrow: "E O FUTURO?",
+    title: ["Veja quando", "você fica livre."],
+    sub: "Projeção de independência financeira com aportes e inflação real — no seu ritmo.",
+    chips: ["Projeção", "Aportes", "Inflação real", "Ano a ano"],
+  },
+  {
+    id: "build",
+    name: "Build in public · dev",
+    pillar: "Build in public",
+    glow: [0.32, 0.22],
+    eyebrow: "POR QUE EXISTE",
+    title: ["Construí porque", "eu mesmo precisava."],
+    sub: "Sou dev e me mudo do Brasil pra Itália. Fiz o app que eu queria — privado e multimoeda — e abri pra você.",
+    chips: ["Sem anúncios", "Sem rastreio", "Grátis pra começar"],
+  },
+];
+
 // ── helpers ─────────────────────────────────────────────────────────────────
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const easeOut = (x: number) => 1 - Math.pow(1 - clamp01(x), 3);
@@ -691,4 +778,108 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   sceneContent(ctx, s, W, H, sc, lt, a);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
   if (showProgress) drawProgress(ctx, s, W, n, t);
+}
+
+// ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────
+
+/** Rodapé do post: @handle (acento, mono) + site (fraco). Assinatura discreta em toda peça. */
+function drawHandle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number) {
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = fontMono(26 * s, 600);
+  ctx.fillStyle = ACCENT;
+  ctx.letterSpacing = `${1 * s}px`;
+  ctx.fillText("@nossasfinancasapp", x, y);
+  const hw = ctx.measureText("@nossasfinancasapp").width + 16 * s;
+  ctx.letterSpacing = "0px";
+  ctx.font = fontSans(24 * s, 500);
+  ctx.fillStyle = FAINT;
+  ctx.fillText("nossasfinancas.com.br", x + hw, y);
+}
+
+/** Tabela de comparação BR × Itália (label + 2 valores por linha), com divisores hairline. */
+function drawCompare(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, cmp: NonNullable<Post["compare"]>) {
+  const fullW = W - x * 2;
+  const labelW = fullW * 0.44;
+  const colW = (fullW - labelW) / 2;
+  const xa = x + labelW;
+  const xb = xa + colW;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.font = fontMono(23 * s, 700);
+  ctx.letterSpacing = `${1.5 * s}px`;
+  ctx.fillStyle = ACCENT;
+  ctx.fillText(cmp.head[0], xa, y);
+  ctx.fillStyle = MUTED;
+  ctx.fillText(cmp.head[1], xb, y);
+  ctx.letterSpacing = "0px";
+  let ry = y + 30 * s;
+  const rh = 108 * s;
+  for (const r of cmp.rows) {
+    const mid = ry + rh * 0.55;
+    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+    ctx.lineWidth = 1 * s;
+    ctx.beginPath();
+    ctx.moveTo(x, ry);
+    ctx.lineTo(x + fullW, ry);
+    ctx.stroke();
+    ctx.font = fontSans(27 * s, 500);
+    ctx.fillStyle = MUTED;
+    ctx.fillText(r.label, x, mid);
+    ctx.font = fontSans(38 * s, 600);
+    ctx.fillStyle = TEXT;
+    ctx.fillText(r.a, xa, mid);
+    ctx.fillStyle = ACCENT;
+    ctx.fillText(r.b, xb, mid);
+    ry += rh;
+  }
+  return ry;
+}
+
+/** Desenha UM post estático 4:5 (1080×1350 no full). Compõe os mesmos primitivos dos stories, mas
+ *  parado (alpha 1, sem rise, mock totalmente revelado com lt alto). 3 arranjos: mock / comparação /
+ *  título-herói (com sub e/ou chips). Sempre marca no topo + @handle no rodapé. */
+export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H: number) {
+  const s = W / 1080;
+  drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
+  drawBrand(ctx, s, 90 * s, 74 * s, 46);
+  const x = 90 * s;
+  const availW = (W - x * 2) * 0.99;
+
+  if (post.mock) {
+    drawMockCard(ctx, s * (540 / 540), W / 2, H * 0.3, 540 * s, post.mock, 1, 3);
+    // Bloco eyebrow→título→sub ANCORADO acima do rodapé — assim 2 ou 3 linhas de título nunca
+    // colam no @handle (o problema era o título de 3 linhas empurrar o sub por cima do rodapé).
+    const px = fitTitlePx(ctx, s, post.title, availW, 72, 92);
+    const lh = (px + 8) * s;
+    const eyeGap = (px * 0.72 + 48) * s;
+    const tb = H - (post.sub ? 210 : 120) * s; // base do título (reserva rodapé + ~2 linhas de sub)
+    const eyeY = tb - post.title.length * lh - eyeGap;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
+    drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px);
+    if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1);
+  } else if (post.compare) {
+    const eyeY = H * 0.13;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
+    const px = fitTitlePx(ctx, s, post.title, availW, 92, 112);
+    const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px);
+    const cb = drawCompare(ctx, s, x, tb + 70 * s, W, post.compare);
+    if (post.sub) drawSub(ctx, s, x, cb + 46 * s, W, post.sub, 1);
+  } else {
+    const px = fitTitlePx(ctx, s, post.title, availW, 96, 132);
+    const lh = (px + 8) * s;
+    const eyeGap = (px * 0.72 + 56) * s;
+    const titleH = post.title.length * lh;
+    const extraH = (post.sub ? 140 * s : 0) + (post.chips ? 120 * s : 0);
+    const blockH = eyeGap + titleH + extraH;
+    const eyeY = (H - blockH) / 2 + px * 0.35 * s;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
+    let tb = drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px);
+    if (post.sub) {
+      drawSub(ctx, s, x, tb + 36 * s, W, post.sub, 1);
+      tb += 100 * s;
+    }
+    if (post.chips) drawChips(ctx, s, x, tb + 44 * s, post.chips, 1, W - x * 2);
+  }
+  drawHandle(ctx, s, x, H - 64 * s);
 }

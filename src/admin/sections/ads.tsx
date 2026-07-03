@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, Film, Loader2 } from "lucide-react";
-import { STORIES, drawStory, storyDuration, PHOTO_SRC, type Story } from "@/admin/ads/engine";
-import { exportStory, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
+import { Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
+import { STORIES, POSTS, drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "@/admin/ads/engine";
+import { exportStory, exportPostPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_W = 330;
 const PREVIEW_H = 587; // 9:16
+const POST_W = 340;
+const POST_H = 425; // 4:5
 
 /** Prévia em loop do story (canvas pequeno, ~30fps). */
 function StoryPreview({ story }: { story: Story }) {
@@ -89,27 +91,108 @@ function StoryCard({ story }: { story: Story }) {
   );
 }
 
-/** Aba "Ads" (super-admin): 3 stories animados prontos pra divulgar, exportáveis em MP4 9:16. */
+/** Prévia ESTÁTICA de um post (um quadro só; redesenha quando as fontes carregam). */
+function PostPreview({ post }: { post: Post }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    const ctx = cv?.getContext("2d");
+    if (!cv || !ctx) return;
+    const draw = () => drawPost(ctx, post, POST_W, POST_H);
+    draw();
+    // as fontes (Inter/JetBrains) podem não estar prontas no 1º paint → redesenha quando ficarem
+    if (typeof document !== "undefined" && document.fonts) document.fonts.ready.then(draw).catch(() => {});
+  }, [post]);
+  return <canvas ref={ref} width={POST_W} height={POST_H} className="block w-full h-auto" />;
+}
+
+function PostCard({ post }: { post: Post }) {
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  const run = async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      const blob = await exportPostPNG(post);
+      downloadBlob(blob, `nossas-financas-${post.id}.png`);
+    } catch {
+      setNote("Falha ao gerar o PNG. Tente de novo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-border bg-card p-3.5">
+      <div className="overflow-hidden rounded-[14px] border border-border bg-bg">
+        <PostPreview post={post} />
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="truncate text-[13.5px] font-medium">{post.name}</div>
+          <div className="text-[11.5px] text-faint tabular">{post.pillar} · PNG · 4:5</div>
+        </div>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={run}
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            busy ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+          )}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Baixar PNG
+        </button>
+      </div>
+      {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
+    </div>
+  );
+}
+
+/** Aba "Ads" (super-admin): stories animados (MP4 9:16) + posts estáticos (PNG 4:5) pra divulgar. */
 export function AdsSection() {
   const supported = canExport();
   return (
-    <div>
-      <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-        Stories prontos pra divulgar (9:16, formato Instagram) — cada um com um mini-roteiro
-        (dor → o app → benefício → CTA). Clique em <b className="text-text">Baixar MP4</b>: a gravação
-        roda a animação em tempo real (~{storyDuration(STORIES[0])}s) e o arquivo baixa sozinho. É só
-        postar como Story ou Reels.
-      </p>
-      {!supported ? (
-        <div className="mb-4 rounded-[12px] border border-border bg-card2 p-3 text-[12.5px] text-muted">
-          Este navegador não suporta gravar o canvas em vídeo. Use Chrome recente ou Safari.
+    <div className="space-y-9">
+      <section>
+        <div className="mb-1.5 flex items-center gap-2">
+          <Film size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Stories · MP4 9:16</h3>
         </div>
-      ) : null}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {STORIES.map((st) => (
-          <StoryCard key={st.id} story={st} />
-        ))}
-      </div>
+        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
+          Cada um com um mini-roteiro (dor → o app → benefício → CTA). Clique em{" "}
+          <b className="text-text">Baixar MP4</b>: a gravação roda a animação em tempo real
+          (~{storyDuration(STORIES[0])}s) e o arquivo baixa sozinho. É só postar como Story ou Reels.
+        </p>
+        {!supported ? (
+          <div className="mb-4 rounded-[12px] border border-border bg-card2 p-3 text-[12.5px] text-muted">
+            Este navegador não suporta gravar o canvas em vídeo. Use Chrome recente ou Safari.
+          </div>
+        ) : null}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {STORIES.map((st) => (
+            <StoryCard key={st.id} story={st} />
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-1.5 flex items-center gap-2">
+          <ImageIcon size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Posts · PNG 4:5</h3>
+        </div>
+        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
+          Imagens estáticas pro feed (1080×1350) nos 4 pilares — multimoeda, privacidade, organização
+          e build-in-public. Clique em <b className="text-text">Baixar PNG</b> e poste direto. O
+          @nossasfinancasapp e o site já vão marcados no rodapé.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {POSTS.map((p) => (
+            <PostCard key={p.id} post={p} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -118,7 +201,7 @@ export function AdsSummary() {
   return (
     <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
       <Film size={15} className="text-accent" />
-      <span className="tabular">{STORIES.length} stories · MP4 9:16</span>
+      <span className="tabular">{STORIES.length} stories · {POSTS.length} posts</span>
     </span>
   );
 }
