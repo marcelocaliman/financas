@@ -1319,3 +1319,125 @@ export function drawCarouselSlide(ctx: CanvasRenderingContext2D, slide: Slide, W
   ctx.restore();
   ctx.textAlign = "left";
 }
+
+// ── CAPAS DE DESTAQUE (Instagram Highlights) ─────────────────────────────────
+// Quadrado 1080×1080; o Instagram RECORTA num CÍRCULO centrado → só um ÍCONE no centro (sem texto:
+// o nome do destaque é digitado no app). Set COESO: mesmo fundo escuro + glow verde + ícone no acento.
+export interface HighlightCover {
+  id: string;
+  label: string; // nome do destaque (vai EMBAIXO no Instagram; não entra na imagem)
+  hint: string; // quais stories agrupar (dica no admin)
+  icon: "play" | "globe" | "lock" | "growth" | "code";
+}
+export const HIGHLIGHTS: HighlightCover[] = [
+  { id: "comece", label: "Comece aqui", hint: "Tour do app · Simples", icon: "play" },
+  { id: "multimoeda", label: "Multimoeda", hint: "Sem fronteiras · Quanto você tem", icon: "globe" },
+  { id: "privacidade", label: "Privacidade", hint: "Privacidade", icon: "lock" },
+  { id: "liberdade", label: "Liberdade", hint: "Seu futuro · Orçamento & liberdade", icon: "growth" },
+  { id: "bastidores", label: "Bastidores", hint: "Build in public", icon: "code" },
+];
+
+/** Desenha UMA capa de destaque (ícone-só, centrado no círculo seguro). W=H (quadrado). */
+export function drawHighlightCover(ctx: CanvasRenderingContext2D, cover: HighlightCover, W: number, H: number) {
+  const s = W / 1080;
+  const cx = W / 2, cy = H / 2;
+  // fundo: quase-preto + glow verde central (dá profundidade no recorte circular)
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, W * 0.6);
+  g.addColorStop(0, "rgba(62,207,142,0.22)");
+  g.addColorStop(0.55, "rgba(62,207,142,0.05)");
+  g.addColorStop(1, "rgba(62,207,142,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const R = 190 * s; // "raio" do glyph — folgado dentro do círculo seguro (~470s)
+  ctx.strokeStyle = ACCENT;
+  ctx.fillStyle = ACCENT;
+  ctx.lineWidth = 30 * s;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  if (cover.icon === "play") {
+    const ox = cx + 0.06 * R; // leve compensação óptica do triângulo
+    ctx.beginPath();
+    ctx.moveTo(ox - 0.42 * R, cy - 0.62 * R);
+    ctx.lineTo(ox - 0.42 * R, cy + 0.62 * R);
+    ctx.lineTo(ox + 0.66 * R, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else if (cover.icon === "globe") {
+    ctx.lineWidth = 26 * s;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R * 0.42, R, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy);
+    ctx.lineTo(cx + R, cy);
+    ctx.stroke();
+    const ly = R * 0.55, lw = R * 0.835;
+    for (const dir of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(cx - lw, cy + dir * ly);
+      ctx.lineTo(cx + lw, cy + dir * ly);
+      ctx.stroke();
+    }
+  } else if (cover.icon === "lock") {
+    ctx.lineWidth = 28 * s;
+    const sr = R * 0.5, by = cy - R * 0.06, legTop = by - R * 0.16;
+    // shackle (∩)
+    ctx.beginPath();
+    ctx.moveTo(cx - sr, by);
+    ctx.lineTo(cx - sr, legTop);
+    ctx.arc(cx, legTop, sr, Math.PI, 0, true);
+    ctx.lineTo(cx + sr, by);
+    ctx.stroke();
+    // corpo
+    const bw = R * 1.2, bh = R * 1.02, bx = cx - bw / 2;
+    roundRect(ctx, bx, by, bw, bh, R * 0.18);
+    ctx.fill();
+    // fechadura (recorte escuro)
+    ctx.fillStyle = BG;
+    ctx.beginPath();
+    ctx.arc(cx, by + bh * 0.4, R * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+    roundRect(ctx, cx - R * 0.06, by + bh * 0.4, R * 0.12, R * 0.32, R * 0.06);
+    ctx.fill();
+  } else if (cover.icon === "growth") {
+    ctx.lineWidth = 30 * s;
+    ctx.beginPath();
+    ctx.moveTo(cx - R, cy + R * 0.6);
+    ctx.lineTo(cx - R * 0.32, cy - R * 0.05);
+    ctx.lineTo(cx + R * 0.16, cy + R * 0.26);
+    ctx.lineTo(cx + R, cy - R * 0.62);
+    ctx.stroke();
+    // seta no fim (↗)
+    ctx.beginPath();
+    ctx.moveTo(cx + R * 0.5, cy - R * 0.62);
+    ctx.lineTo(cx + R, cy - R * 0.62);
+    ctx.lineTo(cx + R, cy - R * 0.12);
+    ctx.stroke();
+  } else {
+    // code </>
+    ctx.lineWidth = 30 * s;
+    const k = R * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(cx - R * 0.42, cy - k);
+    ctx.lineTo(cx - R * 0.95, cy);
+    ctx.lineTo(cx - R * 0.42, cy + k);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + R * 0.42, cy - k);
+    ctx.lineTo(cx + R * 0.95, cy);
+    ctx.lineTo(cx + R * 0.42, cy + k);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + R * 0.2, cy - R * 0.78);
+    ctx.lineTo(cx - R * 0.2, cy + R * 0.78);
+    ctx.stroke();
+  }
+}

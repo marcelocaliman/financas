@@ -1,7 +1,7 @@
 // Grava um story (canvas 1080×1920) em VÍDEO via MediaRecorder — MP4 quando o navegador suporta
 // (Chrome recente, Safari), senão WebM. Captura em tempo real (captureStream do canvas). Só o dono
 // usa isso (aba Ads do super-admin), então rodar ~9s de gravação na máquina dele é aceitável.
-import { drawStory, drawPost, drawCarouselSlide, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel } from "./engine";
+import { drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type HighlightCover } from "./engine";
 
 // ── fotos de fundo (carregadas same-origin → sem taint no canvas) ──
 const photoCache = new Map<string, HTMLImageElement>();
@@ -190,6 +190,20 @@ export async function exportCarouselPNGs(carousel: Carousel): Promise<Blob[]> {
     blobs.push(blob);
   }
   return blobs;
+}
+
+/** Renderiza uma capa de destaque (quadrada 1080×1080) e devolve o PNG. Só ícone → sem fontes. */
+export async function exportHighlightPNG(cover: HighlightCover): Promise<Blob> {
+  const S = 1080;
+  const canvas = document.createElement("canvas");
+  canvas.width = S;
+  canvas.height = S;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas 2D indisponível");
+  drawHighlightCover(ctx, cover, S, S);
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
+  });
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {

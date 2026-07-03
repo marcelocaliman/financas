@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, Check, Copy, Download, Film, GalleryHorizontalEnd, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, POSTS, CAROUSELS, drawStory, drawPost, drawCarouselSlide, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide } from "@/admin/ads/engine";
-import { exportStory, exportPostPNG, exportCarouselPNGs, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
+import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, Image as ImageIcon, Loader2 } from "lucide-react";
+import { STORIES, POSTS, CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
+import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { cn } from "@/lib/utils";
@@ -357,6 +357,108 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
   );
 }
 
+const HL_PREV = 116; // px exibidos da prévia circular
+
+/** Prévia circular de uma capa de destaque (mostra como o Instagram vai recortar). */
+function HighlightPreview({ cover }: { cover: HighlightCover }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    const ctx = cv?.getContext("2d");
+    if (!cv || !ctx) return;
+    drawHighlightCover(ctx, cover, HL_PREV * 2, HL_PREV * 2);
+  }, [cover]);
+  return (
+    <canvas
+      ref={ref}
+      width={HL_PREV * 2}
+      height={HL_PREV * 2}
+      style={{ width: HL_PREV, height: HL_PREV }}
+      className="rounded-full border border-border"
+    />
+  );
+}
+
+function HighlightsBlock() {
+  const [busy, setBusy] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+
+  const one = async (cover: HighlightCover) => {
+    setBusyId(cover.id);
+    setNote(null);
+    try {
+      const b = await exportHighlightPNG(cover);
+      downloadBlob(b, `nossas-financas-destaque-${cover.id}.png`);
+    } catch {
+      setNote("Falha ao gerar a capa. Tente de novo.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const all = async () => {
+    setBusy(true);
+    setNote(null);
+    try {
+      for (const cover of HIGHLIGHTS) {
+        const b = await exportHighlightPNG(cover);
+        downloadBlob(b, `nossas-financas-destaque-${cover.id}.png`);
+        await new Promise((r) => setTimeout(r, 350)); // espaça os downloads
+      }
+    } catch {
+      setNote("Falha ao gerar as capas. Tente de novo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[16px] border border-border bg-card p-4">
+      <div className="flex flex-wrap items-start gap-x-6 gap-y-5">
+        {HIGHLIGHTS.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => one(c)}
+            title={`Baixar capa — agrupar: ${c.hint}`}
+            className="group flex w-[124px] flex-col items-center gap-1.5 outline-none"
+          >
+            <span className="relative">
+              <HighlightPreview cover={c} />
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                {busyId === c.id ? (
+                  <Loader2 size={20} className="animate-spin text-white" />
+                ) : (
+                  <Download size={20} className="text-white" />
+                )}
+              </span>
+            </span>
+            <span className="mt-1 text-[12.5px] font-medium">{c.label}</span>
+            <span className="text-center text-[11px] leading-snug text-faint">{c.hint}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={all}
+          disabled={busy}
+          className={cn(
+            "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            busy ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+          )}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}{" "}
+          {busy ? "Gerando…" : `Baixar todas (${HIGHLIGHTS.length})`}
+        </button>
+        <span className="text-[11.5px] text-faint">Clique numa capa pra baixar só ela.</span>
+      </div>
+      {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
+    </div>
+  );
+}
+
 /** Aba "Ads" (super-admin): stories animados (MP4 9:16) + posts estáticos (PNG 4:5) pra divulgar. */
 export function AdsSection() {
   const supported = canExport();
@@ -429,6 +531,19 @@ export function AdsSection() {
             <CarouselCard key={c.id} carousel={c} />
           ))}
         </div>
+      </section>
+
+      <section>
+        <div className="mb-1.5 flex items-center gap-2">
+          <Circle size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Capas de destaque</h3>
+        </div>
+        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
+          Capas pros seus Destaques. No Instagram: <b className="text-text">perfil → Destaques → Editar
+          → Capa → escolher da galeria</b>. Ele mostra só o círculo (o ícone); o nome você digita no
+          próprio destaque. Sob cada capa está quais stories agrupar nela.
+        </p>
+        <HighlightsBlock />
       </section>
     </div>
   );
