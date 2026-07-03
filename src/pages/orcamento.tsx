@@ -420,6 +420,20 @@ function CategoryDonut({
   disp: Currency;
   emptyLabel: string;
 }) {
+  // Fade na base da legenda SÓ quando ainda há item abaixo do que cabe (dica de "role pra ver mais").
+  // Some ao chegar no fim → o ÚLTIMO item nunca fica esmaecido à toa. Recalcula no scroll e no resize.
+  const listRef = useRef<HTMLDivElement>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const check = () => setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [data]);
+
   // Vazio: mantém o card visível com um anel "fantasma" + dica, em vez de sumir (layout estável).
   if (data.length === 0) {
     return (
@@ -455,9 +469,14 @@ function CategoryDonut({
             com 3 ou 100 itens, e os dois cards (receitas/gastos) sempre alinhados. Fade na base
             só quando há mais itens do que cabem (dica de "role pra ver mais"; não corta lista curta). */}
         <div
+          ref={listRef}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
+          }}
           className="flex flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1"
           style={
-            data.length > 5
+            moreBelow
               ? {
                   maskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)",
                   WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 22px), transparent)",
