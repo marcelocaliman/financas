@@ -1,13 +1,15 @@
 import { CURRENCIES, DEFAULT_RATES, type Currency, type RateTable } from "./currency";
 
 /**
- * Cotação de câmbio — Frankfurter (frankfurter.app): gratuita, SEM token, taxas de
+ * Cotação de câmbio — Frankfurter (frankfurter.dev): gratuita, SEM token, taxas de
  * referência do BCE atualizadas em dias úteis. Módulo PURO/testável: monta a RateTable
  * (cada moeda expressa em BRL; BRL = 1) a partir da resposta. Sem dado do usuário sai
  * daqui — só pares de moeda públicos. brapi (com token) fica pra cotação de ATIVOS depois.
  */
 
-const ENDPOINT = "https://api.frankfurter.app/latest";
+// frankfurter.app foi descontinuado e agora só faz 301 → frankfurter.dev/v1; o redirect
+// cai numa origem FORA do connect-src (CSP) e o fetch morre em produção. Apontar direto.
+const ENDPOINT = "https://api.frankfurter.dev/v1/latest";
 const BASE: Currency = "BRL";
 
 interface FrankfurterResponse {
@@ -38,7 +40,12 @@ export async function fetchRates(signal?: AbortSignal): Promise<RateTable> {
   const symbols = CURRENCIES.filter((c) => c !== BASE).join(",");
   const res = await fetch(`${ENDPOINT}?base=${BASE}&symbols=${symbols}`, { signal });
   if (!res.ok) throw new Error(`câmbio HTTP ${res.status}`);
-  return ratesFromFrankfurter((await res.json()) as FrankfurterResponse);
+  const data = (await res.json()) as FrankfurterResponse;
+  // Guarda contra mudança SILENCIOSA de forma/base (a inversão 1/perBase assume base=BRL):
+  // sem isto, uma base trocada produziria taxas plausíveis porém erradas, sem erro HTTP.
+  if (data.base && data.base !== BASE) throw new Error(`câmbio base inesperada: ${data.base}`);
+  if (!data.rates || typeof data.rates !== "object") throw new Error("câmbio sem taxas");
+  return ratesFromFrankfurter(data);
 }
 
 interface FrankfurterSeries {
@@ -68,7 +75,7 @@ export async function fetchRatesSeries(
   const end = new Date();
   const start = new Date(end.getTime() - lookbackDays * 24 * 60 * 60 * 1000);
   const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  const res = await fetch(`https://api.frankfurter.app/${fmt(start)}..${fmt(end)}?base=${BASE}&symbols=${symbols}`, { signal });
+  const res = await fetch(`https://api.frankfurter.dev/v1/${fmt(start)}..${fmt(end)}?base=${BASE}&symbols=${symbols}`, { signal });
   if (!res.ok) throw new Error(`câmbio série HTTP ${res.status}`);
   return seriesFromFrankfurter((await res.json()) as FrankfurterSeries);
 }

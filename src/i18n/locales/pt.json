@@ -93,6 +93,8 @@
     "vsMonth": "vs. mês ant.",
     "fxToday": "Câmbio hoje",
     "fxRates": "Câmbio",
+    "fxManual": "manual",
+    "fxStale": "desatualizada",
     "alsoWorth": "Equivale a",
     "fxSince": "Variação de {{from}} para {{to}}",
     "scroll": "rolar",

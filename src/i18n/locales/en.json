@@ -93,6 +93,8 @@
     "vsMonth": "vs. last mo.",
     "fxToday": "FX today",
     "fxRates": "Exchange",
+    "fxManual": "manual",
+    "fxStale": "outdated",
     "alsoWorth": "Also worth",
     "fxSince": "Change from {{from}} to {{to}}",
     "scroll": "scroll",
