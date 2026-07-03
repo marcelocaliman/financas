@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { isStale } from "@/money/rates";
-import { SPOT_ASSETS, QUOTE, fetchSpot, type SpotAsset } from "@/money/spot";
+import { SPOT_ASSETS, QUOTE, SPOT_TTL_MS, fetchSpot, type SpotAsset } from "@/money/spot";
 
 type PriceMap = Partial<Record<SpotAsset, number>>;
 
@@ -36,7 +35,7 @@ export const useSpot = create<SpotState>()(
       refresh: async (force) => {
         const { status, updatedAt, prices: oldPrices, prevPrices: oldPrev } = get();
         if (status === "loading") return;
-        if (!force && !isStale(updatedAt, Date.now())) return;
+        if (!force && updatedAt != null && Date.now() - updatedAt < SPOT_TTL_MS) return;
         set({ status: "loading" });
         const yesterday = daysAgo(1);
         try {

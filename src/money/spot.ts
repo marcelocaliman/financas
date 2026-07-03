@@ -15,6 +15,13 @@ export type SpotAsset = (typeof SPOT_ASSETS)[number];
 export const QUOTE: Currency = "USD";
 
 /**
+ * TTL curto (60s) — ouro/bitcoin são mercados AO VIVO na Coinbase. A chamada é do navegador de cada
+ * usuário (por-IP, sem cota mensal compartilhada) e o limite público da Coinbase é folgado (~10k/h),
+ * então dá pra atualizar de minuto em minuto sem risco. O ticker complementa com um poll a cada 60s.
+ */
+export const SPOT_TTL_MS = 60_000;
+
+/**
  * Selo de cada ativo: cor POR TEMA (tons mais escuros no claro pra manter contraste — igual às
  * moedas em composition.ts) e unidade opcional. Tons contidos de commodity — sem neon/arco-íris.
  */

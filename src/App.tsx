@@ -77,7 +77,11 @@ export default function App() {
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", refresh);
+    // Heartbeat p/ aba aberta o dia todo sem trocar de foco: reavalia a cada 30min (o TTL de 6h
+    // limita o fetch real). Cobre o caso de câmbio "preso" numa sessão PWA sempre-visível.
+    const beat = window.setInterval(onVisible, 30 * 60 * 1000);
     return () => {
+      clearInterval(beat);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", refresh);
     };

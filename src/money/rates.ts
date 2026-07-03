@@ -80,8 +80,12 @@ export async function fetchRatesSeries(
   return seriesFromFrankfurter((await res.json()) as FrankfurterSeries);
 }
 
-/** TTL de 12h → garante atualização "pelo menos 1x ao dia". */
-export const RATES_TTL_MS = 12 * 60 * 60 * 1000;
+/**
+ * TTL de 6h. Frankfurter = taxa de REFERÊNCIA do BCE, publicada ~1×/dia útil (~16h CET); não muda
+ * intraday, então poll de minuto seria inútil. 6h só garante pegar a taxa nova do dia com folga
+ * (revalida no boot/foco/rede + heartbeat). Grátis, sem token, por-IP — sem cota mensal.
+ */
+export const RATES_TTL_MS = 6 * 60 * 60 * 1000;
 
 export function isStale(updatedAt: number | null, now: number): boolean {
   return updatedAt == null || now - updatedAt > RATES_TTL_MS;

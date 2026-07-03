@@ -71,7 +71,9 @@ export function RatesTicker() {
   const dragRef = useRef({ active: false, startX: 0, startScroll: 0 });
 
   // Ouro/bitcoin só são buscados quando o ticker está montado (é opt-in) — nada de request à toa.
-  // Cotados em USD fixo, então não dependem da moeda do usuário: refaz no mount + foco/rede.
+  // Cotados em USD fixo (não dependem da moeda do usuário). Mercado AO VIVO: além do mount + foco/rede,
+  // faz um POLL a cada 60s enquanto a aba está visível (TTL de 60s no store limita a isso). A chamada
+  // é do próprio navegador (por-IP, sem cota mensal), então atualizar de minuto em minuto é seguro.
   useEffect(() => {
     refreshSpot();
     const onWake = () => {
@@ -79,7 +81,9 @@ export function RatesTicker() {
     };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("online", onWake);
+    const poll = window.setInterval(onWake, 60_000);
     return () => {
+      clearInterval(poll);
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("online", onWake);
     };
