@@ -98,6 +98,8 @@ export interface Post {
   mock?: "currencies" | "masked" | "donut"; // mockup do app
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
+  caption?: string; // legenda pronta pro Instagram (copiar e colar)
+  tags?: string[]; // hashtags (sem #)
 }
 
 export const POSTS: Post[] = [
@@ -105,6 +107,9 @@ export const POSTS: Post[] = [
     id: "multimoeda",
     name: "Multimoeda · somando tudo",
     pillar: "Multimoeda",
+    caption:
+      "Real na conta daqui, euro guardado lá fora, uns dólares investidos… e no fim você não sabe QUANTO tem no total. 🤯\n\nO Nossas Finanças junta tudo num número só, na cotação de hoje — sem planilha e sem abrir conta em lugar nenhum. Cada item guarda a própria moeda; você só escolhe em qual ver o total.\n\nSeu patrimônio inteiro, numa tela. 👀\n\n📲 Grátis pra começar — link na bio.",
+    tags: ["financaspessoais", "multimoeda", "expatriados", "brasileirosnoexterior", "cambio", "controlefinanceiro", "vidafinanceira", "dinheiro", "organizacaofinanceira", "patrimonio"],
     photo: "/img/ads/global.jpg",
     eyebrow: "REAL, EURO, DÓLAR",
     title: ["Quanto você tem", "somando tudo?"],
@@ -115,6 +120,9 @@ export const POSTS: Post[] = [
     id: "custo-vida",
     name: "Custo de vida · BR × Itália",
     pillar: "Multimoeda",
+    caption:
+      "Quanto custa a MESMA vida em São Paulo e em Milão? 🇧🇷🇮🇹\n\nAluguel, mercado, transporte, um jantar a dois — os números mudam muito (e nem sempre pra pior). Antes de se mudar, dá pra simular tudo nas duas moedas, lado a lado.\n\nÉ pra isso que existe o Nossas Finanças: seu patrimônio e seus gastos em real E euro, sem malabarismo de planilha.\n\n💬 Você toparia essa troca? Comenta aí.\n📲 Link na bio.",
+    tags: ["custodevida", "morarnaitalia", "brasileirosnaitalia", "expatriados", "mudardepais", "euro", "relocation", "vivernaitalia", "multimoeda", "financaspessoais"],
     glow: [0.3, 0.16],
     eyebrow: "MUDAR DE PAÍS",
     title: ["São Paulo", "× Milão"],
@@ -133,6 +141,9 @@ export const POSTS: Post[] = [
     id: "privacidade",
     name: "Privacidade · eles lucram",
     pillar: "Privacidade",
+    caption:
+      "A maioria dos apps de finanças lê CADA número seu — e ganha dinheiro com isso (anúncio, venda de dado, “parceiros”). 🫥\n\nO Nossas Finanças foi feito ao contrário: seus dados são cifrados no seu próprio aparelho, antes de irem pra qualquer lugar. Nem eu, no servidor, consigo ver os seus valores. Criptografia ponta a ponta, de verdade.\n\nPrivacidade não é um recurso. É a fundação. 🔒\n\n📲 Grátis — link na bio.",
+    tags: ["privacidade", "criptografia", "segurancadigital", "protecaodedados", "financaspessoais", "dadospessoais", "semrastreio", "e2ee", "tecnologia", "financas"],
     photo: "/img/ads/person.jpg",
     eyebrow: "SOBRE OS APPS DE FINANÇAS",
     title: ["Eles veem tudo", "o que você tem.", "E lucram com isso."],
@@ -143,6 +154,9 @@ export const POSTS: Post[] = [
     id: "orcamento",
     name: "Orçamento · pra onde foi",
     pillar: "Organização",
+    caption:
+      "Todo fim de mês a mesma pergunta: cadê o dinheiro? 😅\n\nQuando cada gasto está organizado por categoria — em qualquer moeda — a resposta vira um gráfico. Você vê pra onde foi, corta o que não faz sentido e sobra mais no fim do mês.\n\nSem culpa e sem planilha gigante. Só clareza.\n\n📲 Comece grátis — link na bio.",
+    tags: ["orcamento", "controlefinanceiro", "organizacaofinanceira", "financaspessoais", "economia", "planejamentofinanceiro", "dinheiro", "gastos", "educacaofinanceira", "vidafinanceira"],
     glow: [0.5, 0.4],
     eyebrow: "TODO FIM DE MÊS",
     title: ["Pra onde foi", "o seu dinheiro?"],
@@ -153,6 +167,9 @@ export const POSTS: Post[] = [
     id: "liberdade",
     name: "Liberdade · quando fica livre",
     pillar: "Organização / FIRE",
+    caption:
+      "Independência financeira não é sorte — é conta. 📈\n\nCom quanto você para de depender do salário? Em quantos anos? O Nossas Finanças projeta o seu futuro com aportes e inflação real, ano a ano, no SEU ritmo. Dá pra ver a data chegar mais perto cada vez que você guarda um pouco mais.\n\nO primeiro passo é enxergar o número. 🎯\n\n📲 Link na bio.",
+    tags: ["independenciafinanceira", "fire", "liberdadefinanceira", "investimentos", "aposentadoria", "financaspessoais", "investir", "projecaofinanceira", "patrimonio", "dinheiro"],
     green: true,
     glow: [0.6, 0.32],
     eyebrow: "E O FUTURO?",
@@ -164,6 +181,9 @@ export const POSTS: Post[] = [
     id: "build",
     name: "Build in public · dev",
     pillar: "Build in public",
+    caption:
+      "Confissão: eu não achei o app que eu queria… então construí. 👨‍💻\n\nSou dev e estou me mudando do Brasil pra Itália. Precisava enxergar meu dinheiro em real E euro, num lugar só, sem entregar meus dados pra ninguém. Como não existia do jeito certo — privado, multimoeda e simples — fiz o Nossas Finanças. E abri de graça pra você usar.\n\nTô construindo à vista de todos. Bora junto? 🚀\n\n📲 Link na bio.",
+    tags: ["buildinpublic", "devbr", "empreendedorismo", "startup", "multimoeda", "privacidade", "brasileirosnaitalia", "indiehacker", "financaspessoais", "fazendoacontecer"],
     photo: "/img/ads/life.jpg",
     eyebrow: "POR QUE EXISTE",
     title: ["Construí porque", "eu mesmo precisava."],

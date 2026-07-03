@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Check, Copy, Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
 import { STORIES, POSTS, drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { cn } from "@/lib/utils";
@@ -117,6 +117,11 @@ function PostPreview({ post }: { post: Post }) {
 function PostCard({ post }: { post: Post }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const captionText = post.caption
+    ? post.caption + (post.tags?.length ? "\n\n" + post.tags.map((t) => "#" + t).join(" ") : "")
+    : "";
 
   const run = async () => {
     setBusy(true);
@@ -128,6 +133,16 @@ function PostCard({ post }: { post: Post }) {
       setNote("Falha ao gerar o PNG. Tente de novo.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const copyCaption = async () => {
+    try {
+      await navigator.clipboard.writeText(captionText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setNote("Não consegui copiar — selecione o texto e copie manual.");
     }
   };
 
@@ -154,6 +169,26 @@ function PostCard({ post }: { post: Post }) {
         </button>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
+      {captionText ? (
+        <div className="mt-3 border-t border-border pt-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">Legenda</span>
+            <button
+              type="button"
+              onClick={copyCaption}
+              className={cn(
+                "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                copied ? "border border-border text-accent" : "border border-border text-muted hover:text-text hover:border-border-strong",
+              )}
+            >
+              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado!" : "Copiar"}
+            </button>
+          </div>
+          <div className="max-h-44 overflow-y-auto scrollbar-subtle whitespace-pre-wrap rounded-[10px] border border-border bg-bg px-2.5 py-2 text-[12px] leading-relaxed text-muted">
+            {captionText}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
