@@ -13,6 +13,36 @@ const ACCENT = "#3ECF8E";
 const CARD2 = "#191B20";
 const CARD = "#131418";
 
+// ── PALETAS ──────────────────────────────────────────────────────────────────
+// Além do tema ESCURO padrão (a cara do app), duas famílias novas dão VARIEDADE às peças sem sair
+// da marca: CLARO (papel premium neutro, texto escuro, mesmo acento fechado do modo claro do app) e
+// SOBRE-COR (fundo verde profundo, texto claro). Cada primitivo de texto recebe uma paleta (default =
+// ESCURO) → a MESMA engine produz visuais bem distintos só trocando a paleta + o fundo.
+export type PieceStyle = "light" | "color" | "vivid";
+interface Palette {
+  text: string;
+  muted: string;
+  faint: string;
+  accent: string;
+  onAccent: string; // texto SOBRE preenchimento no acento (pílula/CTA)
+  chipFill: string;
+  chipStroke: string;
+  chipText: string;
+  brandText: string;
+}
+const DARK: Palette = {
+  text: TEXT, muted: MUTED, faint: FAINT, accent: ACCENT, onAccent: "#08130C",
+  chipFill: "rgba(255,255,255,0.05)", chipStroke: "rgba(255,255,255,0.12)", chipText: MUTED, brandText: TEXT,
+};
+const LIGHT: Palette = {
+  text: "#0E1512", muted: "#55606A", faint: "#9AA1AA", accent: "#15976A", onAccent: "#FFFFFF",
+  chipFill: "rgba(14,21,18,0.04)", chipStroke: "rgba(14,21,18,0.13)", chipText: "#55606A", brandText: "#0E1512",
+};
+const ONCOLOR: Palette = {
+  text: "#EAF7F0", muted: "rgba(234,247,240,0.70)", faint: "rgba(234,247,240,0.46)", accent: "#7FE8B8", onAccent: "#05231A",
+  chipFill: "rgba(255,255,255,0.09)", chipStroke: "rgba(255,255,255,0.26)", chipText: "#EAF7F0", brandText: "#F4FBF7",
+};
+
 /** Posição do glow por story (x,y em fração) — dá ambiance diferente pra cada peça. */
 const GLOW: Record<string, [number, number]> = {
   privacidade: [0.28, 0.2],
@@ -26,6 +56,7 @@ export const PHOTO_SRC: Record<string, string> = {
   patrimonio: "/img/ads/global.jpg",
   privacidade: "/img/ads/person.jpg",
   orcamento: "/img/ads/life.jpg",
+  futuro: "/img/ads/horizon.jpg", // story "vivid" (foto vívida, não esmaecida)
 };
 
 export interface Scene {
@@ -44,6 +75,7 @@ export interface Story {
   id: string;
   name: string; // rótulo no admin
   scenes: Scene[];
+  style?: PieceStyle; // clima alternativo (claro / sobre-cor / foto vívida); default = escuro padrão
 }
 
 export const STORIES: Story[] = [
@@ -78,6 +110,40 @@ export const STORIES: Story[] = [
       { kind: "cta", value: "Nossas Finanças", tagline: "Planeje · Projete · Conquiste", sub: "nossasfinancas.com.br" },
     ],
   },
+
+  // ── 3 NOVOS: designs completamente diferentes (paletas claro / sobre-cor / foto vívida) ──
+  {
+    id: "simples",
+    name: "Simples · papel claro",
+    style: "light",
+    scenes: [
+      { kind: "hook", eyebrow: "CONTROLE FINANCEIRO", title: ["Finanças não", "precisam ser", "complicadas."] },
+      { kind: "hook", eyebrow: "SEM PLANILHA, SEM FRICÇÃO", title: ["Abra e comece.", "Em minutos."], sub: "Nada pra instalar, sem cadastrar cartão. Funciona no navegador — e offline." },
+      { kind: "hook", eyebrow: "SÓ O QUE IMPORTA", title: ["Clareza.", "Todo dia."], chips: ["Patrimônio", "Orçamento", "Metas", "Projeção"] },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Simples de verdade", sub: "nossasfinancas.com.br" },
+    ],
+  },
+  {
+    id: "fronteiras",
+    name: "Sem fronteiras · verde bold",
+    style: "color",
+    scenes: [
+      { kind: "hook", eyebrow: "MANIFESTO", title: ["Seu dinheiro", "não devia ficar", "preso a um país."] },
+      { kind: "hook", eyebrow: "MULTIMOEDA DE VERDADE", title: ["Real, euro,", "dólar — juntos."], sub: "Cada item guarda a própria moeda. Você escolhe em qual ver o total." },
+      { kind: "hook", eyebrow: "ONDE VOCÊ ESTIVER", title: ["Uma vida.", "Uma tela."], chips: ["Brasil", "Itália", "Qualquer lugar"] },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Dinheiro sem fronteiras", sub: "nossasfinancas.com.br" },
+    ],
+  },
+  {
+    id: "futuro",
+    name: "Seu futuro · foto vívida",
+    style: "vivid",
+    scenes: [
+      { kind: "hook", eyebrow: "INDEPENDÊNCIA FINANCEIRA", title: ["Que dia você", "para de depender", "do salário?"] },
+      { kind: "hook", eyebrow: "A CONTA EXISTE", title: ["Projete o seu", "futuro."], sub: "Aportes e inflação real, ano a ano. A data fica mais perto a cada real guardado." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Comece hoje", sub: "nossasfinancas.com.br" },
+    ],
+  },
 ];
 
 export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
@@ -98,6 +164,8 @@ export interface Post {
   mock?: "currencies" | "masked" | "donut"; // mockup do app
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
+  stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
+  style?: PieceStyle; // clima alternativo (claro / sobre-cor / foto vívida); default = escuro padrão
   caption?: string; // legenda pronta pro Instagram (copiar e colar)
   tags?: string[]; // hashtags (sem #)
 }
@@ -189,6 +257,47 @@ export const POSTS: Post[] = [
     title: ["Construí porque", "eu mesmo precisava."],
     sub: "Sou dev e me mudo do Brasil pra Itália. Fiz o app que eu queria — privado e multimoeda — e abri pra você.",
     chips: ["Sem anúncios", "Sem rastreio", "Grátis pra começar"],
+  },
+
+  // ── 3 NOVOS: designs completamente diferentes (papel claro / verde bold / foto vívida) ──
+  {
+    id: "cambio",
+    name: "Câmbio · papel claro (número)",
+    pillar: "Multimoeda",
+    style: "light",
+    caption:
+      "O euro subiu 3% essa semana. Boa notícia ou má notícia? Depende de onde está o seu dinheiro. 📉📈\n\nQuem tem patrimônio em mais de uma moeda sente o câmbio no bolso o tempo todo — só que quase ninguém enxerga QUANTO. O Nossas Finanças recalcula tudo na cotação de hoje e mostra, num número só, o que o câmbio fez com o seu total.\n\nPare de adivinhar. Veja. 👀\n\n📲 Grátis pra começar — link na bio.",
+    tags: ["cambio", "dolar", "euro", "multimoeda", "financaspessoais", "brasileirosnoexterior", "expatriados", "investimentos", "patrimonio", "mercadofinanceiro"],
+    eyebrow: "O EURO MEXEU ESSA SEMANA",
+    title: ["Quanto isso mudou", "no seu bolso?"],
+    stat: { value: "+ R$ 8.400", label: "no seu patrimônio, só pelo câmbio" },
+    sub: "O app recalcula tudo na cotação de hoje — você vê o efeito do câmbio na hora.",
+  },
+  {
+    id: "sem-fronteiras",
+    name: "Sem fronteiras · verde bold",
+    pillar: "Multimoeda",
+    style: "color",
+    caption:
+      "Você trabalha num país, guarda em outro, sonha com um terceiro. Seu dinheiro devia acompanhar. 🌍\n\nA maioria dos apps assume que você vive numa moeda só. O Nossas Finanças nasceu do contrário: cada conta, cada investimento e cada meta guarda a própria moeda — e você escolhe em qual ver o total. Real, euro, dólar, o que for.\n\nDinheiro sem fronteiras. Do jeito que a sua vida já é. 🚀\n\n📲 Link na bio.",
+    tags: ["multimoeda", "cambio", "brasileirosnoexterior", "expatriados", "morarfora", "financaspessoais", "investiroexterior", "vidacrossborder", "dinheiro", "liberdadefinanceira"],
+    eyebrow: "DINHEIRO SEM FRONTEIRAS",
+    title: ["Seu dinheiro não", "devia ficar preso", "a um país."],
+    sub: "Cada item na própria moeda; o total em qualquer uma. Feito pra quem vive entre países.",
+    chips: ["Real", "Euro", "Dólar", "Qualquer moeda"],
+  },
+  {
+    id: "metas",
+    name: "Metas · foto vívida",
+    pillar: "Organização",
+    style: "vivid",
+    photo: "/img/ads/peaks.jpg",
+    caption:
+      "Toda meta grande começa pequena: um valor, uma data, um passo por vez. 🏔️\n\nJuntar pra mudança de país, pra reserva, pra liberdade — no Nossas Finanças cada objetivo tem barra de progresso e pode estar em qualquer moeda. Você vê o quanto já andou e o quanto falta, sem planilha e sem achismo.\n\nO topo fica mais perto quando você enxerga o caminho. 🎯\n\n📲 Comece grátis — link na bio.",
+    tags: ["metas", "objetivos", "planejamentofinanceiro", "organizacaofinanceira", "financaspessoais", "reservadeemergencia", "independenciafinanceira", "poupar", "disciplina", "vidafinanceira"],
+    eyebrow: "SEUS OBJETIVOS",
+    title: ["Cada meta,", "no seu ritmo."],
+    sub: "Barra de progresso em qualquer moeda — veja o quanto já andou e o quanto falta.",
   },
 ];
 
@@ -475,18 +584,99 @@ function drawBg(ctx: CanvasRenderingContext2D, W: number, H: number, t: number, 
   ctx.fillRect(0, 0, W, H);
 }
 
+/** Fundo CLARO (papel premium neutro/zinc) + glow verde MUITO sutil — clima editorial claro. */
+function drawLightBg(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0, gx = 0.28, gy = 0.2) {
+  const base = ctx.createLinearGradient(0, 0, 0, H);
+  base.addColorStop(0, "#F7F8FA");
+  base.addColorStop(1, "#EAEDF1");
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, W, H);
+  const breathe = 0.5 + 0.5 * Math.sin(t * 0.6);
+  const cx = W * gx, cy = H * gy, r = W * (0.82 + 0.05 * breathe);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, `rgba(21,151,106,${0.09 + 0.02 * breathe})`);
+  g.addColorStop(0.6, "rgba(21,151,106,0.02)");
+  g.addColorStop(1, "rgba(21,151,106,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** Fundo SOBRE-COR: verde profundo saturado (diagonal) + realce do acento — clima bold/manifesto. */
+function drawColorBg(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0) {
+  const base = ctx.createLinearGradient(0, 0, W, H);
+  base.addColorStop(0, "#0C3B29");
+  base.addColorStop(0.55, "#0A291D");
+  base.addColorStop(1, "#05160F");
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, W, H);
+  const breathe = 0.5 + 0.5 * Math.sin(t * 0.5);
+  const cx = W * 0.74, cy = H * 0.18, r = W * (0.95 + 0.06 * breathe);
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  g.addColorStop(0, `rgba(62,207,142,${0.24 + 0.05 * breathe})`);
+  g.addColorStop(0.5, "rgba(62,207,142,0.05)");
+  g.addColorStop(1, "rgba(62,207,142,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+}
+
+/** Fundo FOTO VÍVIDA (não esmaecida): a foto ocupa a parte de cima em cor cheia (leve realce, sem
+ *  dessaturar) e o texto vai numa FAIXA SÓLIDA embaixo (#0E0F12) com keyline no acento — legibilidade
+ *  total sem lavar a imagem. `bandTopFrac` = onde começa a faixa; `t` = zoom Ken-Burns (stories).
+ *  Retorna o Y (px) do topo da faixa, pra o chamador ancorar o texto. */
+function drawVividPhotoBg(ctx: CanvasRenderingContext2D, photo: CanvasImageSource, W: number, H: number, bandTopFrac = 0.55, t = 0) {
+  const band = "#0E0F12";
+  ctx.fillStyle = band;
+  ctx.fillRect(0, 0, W, H);
+  const p = photo as unknown as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
+  const iw = p.naturalWidth || p.width || 0, ih = p.naturalHeight || p.height || 0;
+  const bandTop = H * bandTopFrac;
+  if (iw && ih) {
+    // foto cobre a área ACIMA da faixa, em cor CHEIA (realce leve, sem grayscale) + zoom lento
+    const zoom = 1 + 0.05 * clamp01(t / 16);
+    const scale = Math.max(W / iw, bandTop / ih) * zoom;
+    const dw = iw * scale, dh = ih * scale;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, bandTop);
+    ctx.clip();
+    ctx.filter = "saturate(1.06) contrast(1.03)";
+    ctx.drawImage(photo, (W - dw) / 2, (bandTop - dh) / 2, dw, dh);
+    ctx.restore();
+    ctx.filter = "none";
+  }
+  // scrim curto no topo (a marca lê sobre a foto)
+  const tg = ctx.createLinearGradient(0, 0, 0, H * 0.2);
+  tg.addColorStop(0, "rgba(6,7,9,0.5)");
+  tg.addColorStop(1, "rgba(6,7,9,0)");
+  ctx.fillStyle = tg;
+  ctx.fillRect(0, 0, W, H * 0.2);
+  // transição foto → faixa (fade curto pra a foto "entrar" na faixa sem corte duro)
+  const fadeH = H * 0.1;
+  const fg = ctx.createLinearGradient(0, bandTop - fadeH, 0, bandTop);
+  fg.addColorStop(0, "rgba(14,15,18,0)");
+  fg.addColorStop(1, band);
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, bandTop - fadeH, W, fadeH);
+  // faixa sólida + keyline no acento
+  ctx.fillStyle = band;
+  ctx.fillRect(0, bandTop, W, H - bandTop);
+  ctx.fillStyle = ACCENT;
+  ctx.fillRect(0, bandTop, W, Math.max(2, 3 * (W / 1080)));
+  return bandTop;
+}
+
 /** Barrinhas de progresso (topo, estilo Story): uma por cena, preenchendo. */
-function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: number, t: number) {
+function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: number, t: number, pal: Palette = DARK) {
   const pad = 54 * s, gap = 10 * s, y = 46 * s, h = 6 * s;
   const bw = (W - pad * 2 - gap * (n - 1)) / n;
   for (let i = 0; i < n; i++) {
     const x = pad + i * (bw + gap);
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fillStyle = pal.chipStroke;
     roundRect(ctx, x, y, bw, h, h / 2);
     ctx.fill();
     const fill = clamp01((t - i * SCENE_DUR) / (i === n - 1 ? SCENE_DUR + LAST_HOLD : SCENE_DUR));
     if (fill > 0) {
-      ctx.fillStyle = "#FFFFFF";
+      ctx.fillStyle = pal.text;
       roundRect(ctx, x, y, bw * fill, h, h / 2);
       ctx.fill();
     }
@@ -494,19 +684,19 @@ function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: nu
 }
 
 /** Logo + wordmark (topo dos stories). */
-function drawBrand(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, size = 46) {
+function drawBrand(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, size = 46, pal: Palette = DARK) {
   const d = size * s;
   drawMark(ctx, x, y, d);
-  ctx.fillStyle = TEXT;
+  ctx.fillStyle = pal.brandText;
   ctx.font = fontSans(30 * s, 600);
   ctx.textBaseline = "middle";
   ctx.textAlign = "left";
   ctx.fillText("Nossas Finanças", x + d + 18 * s, y + d / 2 + 1 * s);
 }
 
-function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number) {
+function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number, pal: Palette = DARK) {
   ctx.globalAlpha = a;
-  ctx.fillStyle = ACCENT;
+  ctx.fillStyle = pal.accent;
   ctx.font = fontMono(34 * s, 700);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -516,9 +706,9 @@ function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
   ctx.globalAlpha = 1;
 }
 
-function drawTitle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, lines: string[], a: number, dy: number, px = 96) {
+function drawTitle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, lines: string[], a: number, dy: number, px = 96, pal: Palette = DARK) {
   ctx.globalAlpha = a;
-  ctx.fillStyle = TEXT;
+  ctx.fillStyle = pal.text;
   ctx.font = fontSans(px * s, 600);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
@@ -539,7 +729,7 @@ function fitTitlePx(ctx: CanvasRenderingContext2D, s: number, lines: string[], t
 }
 
 /** Pílulas de features (cena de amplitude) — quebra em linhas se não couber. */
-function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, chips: string[], a: number, maxW: number) {
+function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, chips: string[], a: number, maxW: number, pal: Palette = DARK) {
   ctx.globalAlpha = a;
   ctx.font = fontMono(24 * s, 500);
   const h = 54 * s, padX = 24 * s, gap = 12 * s;
@@ -550,14 +740,14 @@ function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
       cxp = x;
       cyp += h + gap;
     }
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    ctx.fillStyle = pal.chipFill;
     roundRect(ctx, cxp, cyp, w, h, h / 2);
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.strokeStyle = pal.chipStroke;
     ctx.lineWidth = 1.5 * s;
     roundRect(ctx, cxp, cyp, w, h, h / 2);
     ctx.stroke();
-    ctx.fillStyle = MUTED;
+    ctx.fillStyle = pal.chipText;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     ctx.fillText(c, cxp + padX, cyp + h / 2 + 1 * s);
@@ -567,9 +757,9 @@ function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
   ctx.globalAlpha = 1;
 }
 
-function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number) {
+function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number, pal: Palette = DARK) {
   ctx.globalAlpha = a;
-  ctx.fillStyle = MUTED;
+  ctx.fillStyle = pal.muted;
   ctx.font = fontSans(34 * s, 400);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
@@ -592,13 +782,24 @@ function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number,
 }
 
 // ── cenas ───────────────────────────────────────────────────────────────────
-function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, sc: Scene, lt: number, a: number) {
+function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, sc: Scene, lt: number, a: number, pal: Palette = DARK, style?: PieceStyle) {
   const x = 90 * s;
   const midY = H * 0.5;
   const rise = (1 - easeOut(lt / 0.85)) * 40 * s; // sobe ao entrar (mais suave)
 
   if (sc.kind === "hook") {
     const availW = (W - x * 2) * 0.99; // largura útil (título preenche quase toda a coluna)
+    if (style === "vivid") {
+      // FOTO VÍVIDA: texto ancorado na faixa sólida inferior (a imagem manda em cima).
+      const bandTop = H * 0.58;
+      const lines = sc.title || [];
+      const px = fitTitlePx(ctx, s, lines, availW, 70, 104);
+      const eyeY = bandTop + 100 * s;
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, lines, a, rise, px, pal);
+      if (sc.sub) drawSub(ctx, s, x, tb + 28 * s, W, sc.sub, a, pal);
+      return;
+    }
     if (sc.mock) {
       // O APP: mockup em cima + legenda (título + sub) embaixo, título auto-ajustado à largura.
       const pop = easeOut(clamp01((lt - 0.15) / 0.85));
@@ -609,9 +810,9 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       drawMockCard(ctx, s * (D / 540), W / 2, cardY, D * s, sc.mock, a * (0.3 + 0.7 * pop), lt);
       const px = fitTitlePx(ctx, s, sc.title || [], availW, 84, 104);
       const eyeY = H * 0.605;
-      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a);
-      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 50) * s, sc.title || [], a, rise, px);
-      if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a);
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 50) * s, sc.title || [], a, rise, px, pal);
+      if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a, pal);
     } else {
       // PROBLEMA / BENEFÍCIO: título GRANDE que preenche a largura + sub/chips opcionais.
       const lines = sc.title || [];
@@ -624,13 +825,13 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       const extraH = sc.sub ? 150 * s : sc.chips ? 150 * s : 0;
       const blockH = eyeGap + titleH + extraH;
       const eyeY = (H - blockH) / 2 + px * 0.35 * s; // centraliza o bloco todo verticalmente
-      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a);
-      let tb = drawTitle(ctx, s, x, eyeY + eyeGap, lines, a, rise, px);
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
+      let tb = drawTitle(ctx, s, x, eyeY + eyeGap, lines, a, rise, px, pal);
       if (sc.sub) {
-        drawSub(ctx, s, x, tb + 34 * s, W, sc.sub, a);
+        drawSub(ctx, s, x, tb + 34 * s, W, sc.sub, a, pal);
         tb += 90 * s;
       }
-      if (sc.chips) drawChips(ctx, s, x, tb + 46 * s, sc.chips, a, W - x * 2);
+      if (sc.chips) drawChips(ctx, s, x, tb + 46 * s, sc.chips, a, W - x * 2, pal);
     }
     return;
   }
@@ -744,12 +945,12 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
     const d = 150 * s, cx = W / 2 - d / 2, cy = midY - 260 * s + rise;
     drawMark(ctx, cx, cy, d);
     ctx.textAlign = "center";
-    ctx.fillStyle = TEXT;
+    ctx.fillStyle = pal.text;
     ctx.font = fontSans(72 * s, 600);
     ctx.textBaseline = "alphabetic";
     ctx.fillText(sc.value || "Nossas Finanças", W / 2, cy + d + 100 * s);
     if (sc.tagline) {
-      ctx.fillStyle = ACCENT;
+      ctx.fillStyle = pal.accent;
       ctx.font = fontMono(30 * s, 500);
       ctx.letterSpacing = `${2 * s}px`;
       ctx.fillText(sc.tagline.toUpperCase(), W / 2, cy + d + 165 * s);
@@ -759,14 +960,14 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
     ctx.font = fontSans(34 * s, 600);
     const pillT = "Abra grátis";
     const pw = ctx.measureText(pillT).width + 96 * s, ph = 82 * s, ppx = W / 2 - pw / 2, ppy = cy + d + 240 * s;
-    ctx.fillStyle = ACCENT;
+    ctx.fillStyle = pal.accent;
     roundRect(ctx, ppx, ppy, pw, ph, ph / 2);
     ctx.fill();
-    ctx.fillStyle = "#08130C";
+    ctx.fillStyle = pal.onAccent;
     ctx.textBaseline = "middle";
     ctx.fillText(pillT, W / 2, ppy + ph / 2 + 1 * s);
     if (sc.sub) {
-      ctx.fillStyle = FAINT;
+      ctx.fillStyle = pal.faint;
       ctx.font = fontMono(28 * s, 500);
       ctx.textBaseline = "alphabetic";
       ctx.fillText(sc.sub, W / 2, ppy + ph + 74 * s);
@@ -780,7 +981,31 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 /** Desenha o story inteiro no instante t (segundos, 0..duração). W×H = tamanho do canvas. */
 export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number, showProgress = true, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
-  if (photo) {
+  const n = story.scenes.length;
+  const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
+  const lt = t - idx * SCENE_DUR;
+  const sc = story.scenes[idx];
+  const style = story.style;
+
+  // Fundo + paleta por CENA (o vívido troca a foto pela cor no CTA; os demais são uniformes).
+  let pal: Palette = DARK;
+  if (style === "light") {
+    drawLightBg(ctx, W, H, t);
+    pal = LIGHT;
+  } else if (style === "color") {
+    drawColorBg(ctx, W, H, t);
+    pal = ONCOLOR;
+  } else if (style === "vivid") {
+    if (sc.kind === "cta") {
+      drawColorBg(ctx, W, H, t); // CTA fecha em verde bold (reveal), sem foto
+      pal = ONCOLOR;
+    } else if (photo) {
+      drawVividPhotoBg(ctx, photo, W, H, 0.58, t);
+      pal = DARK; // texto vai na faixa escura
+    } else {
+      drawBg(ctx, W, H, t);
+    }
+  } else if (photo) {
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, W, H);
     drawPhotoBg(ctx, photo, W, H, t);
@@ -789,18 +1014,15 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
     const glow = GLOW[story.id] ?? [0.32, 0.22];
     drawBg(ctx, W, H, t, glow[0], glow[1]);
   }
-  const n = story.scenes.length;
-  const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
-  const lt = t - idx * SCENE_DUR;
-  const sc = story.scenes[idx];
+
   // Última cena (CTA): só fade-IN, sem fade-out — fica visível até o fim pro usuário clicar.
   const isLast = idx === n - 1;
   const a = isLast ? clamp01(lt / 0.6) : sceneAlpha(lt, SCENE_DUR);
   // marca no topo — desce um pouco quando NÃO há barra de progresso (export), pra não colar no topo
-  if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46);
-  sceneContent(ctx, s, W, H, sc, lt, a);
+  if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46, pal);
+  sceneContent(ctx, s, W, H, sc, lt, a, pal, style);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
-  if (showProgress) drawProgress(ctx, s, W, n, t);
+  if (showProgress) drawProgress(ctx, s, W, n, t, pal);
 }
 
 // ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────
@@ -851,17 +1073,17 @@ function drawPostPhotoBg(ctx: CanvasRenderingContext2D, photo: CanvasImageSource
 }
 
 /** Rodapé do post: @handle (acento, mono) + site (fraco). Assinatura discreta em toda peça. */
-function drawHandle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number) {
+function drawHandle(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, pal: Palette = DARK) {
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.font = fontMono(26 * s, 600);
-  ctx.fillStyle = ACCENT;
+  ctx.fillStyle = pal.accent;
   ctx.letterSpacing = `${1 * s}px`;
   ctx.fillText("@nossasfinancasapp", x, y);
   const hw = ctx.measureText("@nossasfinancasapp").width + 16 * s;
   ctx.letterSpacing = "0px";
   ctx.font = fontSans(24 * s, 500);
-  ctx.fillStyle = FAINT;
+  ctx.fillStyle = pal.faint;
   ctx.fillText("nossasfinancas.com.br", x + hw, y);
 }
 
@@ -909,12 +1131,67 @@ function drawCompare(ctx: CanvasRenderingContext2D, s: number, x: number, y: num
  *  título-herói (com sub e/ou chips). Sempre marca no topo + @handle no rodapé. */
 export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H: number, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
-  if (post.photo && photo) drawPostPhotoBg(ctx, photo, W, H);
-  else if (post.green) drawPostGreenBg(ctx, W, H, post.glow?.[0] ?? 0.5, post.glow?.[1] ?? 0.3);
-  else drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
-  drawBrand(ctx, s, 90 * s, 74 * s, 46);
+  const style = post.style;
   const x = 90 * s;
   const availW = (W - x * 2) * 0.99;
+
+  // Fundo + paleta por ESTILO (checa o estilo ANTES da foto: o vívido tem tratamento próprio).
+  let pal: Palette = DARK;
+  if (style === "light") {
+    drawLightBg(ctx, W, H, 0, post.glow?.[0] ?? 0.28, post.glow?.[1] ?? 0.2);
+    pal = LIGHT;
+  } else if (style === "color") {
+    drawColorBg(ctx, W, H, 0);
+    pal = ONCOLOR;
+  } else if (style === "vivid" && post.photo && photo) {
+    drawVividPhotoBg(ctx, photo, W, H, 0.55, 0);
+    pal = DARK; // texto na faixa escura inferior
+  } else if (post.photo && photo) {
+    drawPostPhotoBg(ctx, photo, W, H);
+  } else if (post.green) {
+    drawPostGreenBg(ctx, W, H, post.glow?.[0] ?? 0.5, post.glow?.[1] ?? 0.3);
+  } else {
+    drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
+  }
+  drawBrand(ctx, s, 90 * s, 74 * s, 46, pal);
+
+  // FOTO VÍVIDA: eyebrow → título → sub ancorados na faixa sólida inferior.
+  if (style === "vivid") {
+    const bandTop = H * 0.55;
+    const px = fitTitlePx(ctx, s, post.title, availW, 66, 92);
+    const eyeY = bandTop + 92 * s;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 44) * s, post.title, 1, 0, px, pal);
+    if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
+    drawHandle(ctx, s, x, H - 60 * s, pal);
+    return;
+  }
+
+  // ESTATÍSTICA (combina com o papel claro): eyebrow + título + NÚMERO-herói + label + sub, centrado.
+  if (post.stat) {
+    const px = fitTitlePx(ctx, s, post.title, availW, 78, 100);
+    const lh = (px + 8) * s;
+    const eyeGap = (px * 0.72 + 54) * s;
+    const statPx = 148;
+    const blockH = eyeGap + post.title.length * lh + 72 * s + statPx * s + 48 * s + (post.sub ? 120 * s : 0);
+    const eyeY = (H - blockH) / 2 + px * 0.35 * s;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    const tb = drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px, pal);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = pal.accent;
+    ctx.font = fontSans(statPx * s, 600);
+    const statY = tb + 72 * s + statPx * s;
+    ctx.fillText(post.stat.value, x, statY);
+    ctx.fillStyle = pal.faint;
+    ctx.font = fontMono(28 * s, 600);
+    ctx.letterSpacing = `${2 * s}px`;
+    ctx.fillText(post.stat.label.toUpperCase(), x, statY + 46 * s);
+    ctx.letterSpacing = "0px";
+    if (post.sub) drawSub(ctx, s, x, statY + 96 * s, W, post.sub, 1, pal);
+    drawHandle(ctx, s, x, H - 64 * s, pal);
+    return;
+  }
 
   if (post.mock) {
     drawMockCard(ctx, s * (540 / 540), W / 2, H * 0.3, 540 * s, post.mock, 1, 3);
@@ -925,16 +1202,16 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H
     const eyeGap = (px * 0.72 + 48) * s;
     const tb = H - (post.sub ? 210 : 120) * s; // base do título (reserva rodapé + ~2 linhas de sub)
     const eyeY = tb - post.title.length * lh - eyeGap;
-    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
-    drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px);
-    if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1);
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px, pal);
+    if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
   } else if (post.compare) {
     const eyeY = H * 0.13;
-    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     const px = fitTitlePx(ctx, s, post.title, availW, 92, 112);
-    const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px);
+    const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px, pal);
     const cb = drawCompare(ctx, s, x, tb + 70 * s, W, post.compare);
-    if (post.sub) drawSub(ctx, s, x, cb + 46 * s, W, post.sub, 1);
+    if (post.sub) drawSub(ctx, s, x, cb + 46 * s, W, post.sub, 1, pal);
   } else {
     const px = fitTitlePx(ctx, s, post.title, availW, 96, 132);
     const lh = (px + 8) * s;
@@ -943,13 +1220,13 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: Post, W: number, H
     const extraH = (post.sub ? 140 * s : 0) + (post.chips ? 120 * s : 0);
     const blockH = eyeGap + titleH + extraH;
     const eyeY = (H - blockH) / 2 + px * 0.35 * s;
-    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1);
-    let tb = drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px);
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    let tb = drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px, pal);
     if (post.sub) {
-      drawSub(ctx, s, x, tb + 36 * s, W, post.sub, 1);
+      drawSub(ctx, s, x, tb + 36 * s, W, post.sub, 1, pal);
       tb += 100 * s;
     }
-    if (post.chips) drawChips(ctx, s, x, tb + 44 * s, post.chips, 1, W - x * 2);
+    if (post.chips) drawChips(ctx, s, x, tb + 44 * s, post.chips, 1, W - x * 2, pal);
   }
-  drawHandle(ctx, s, x, H - 64 * s);
+  drawHandle(ctx, s, x, H - 64 * s, pal);
 }

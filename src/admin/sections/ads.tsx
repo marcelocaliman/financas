@@ -24,7 +24,8 @@ function StoryPreview({ story }: { story: Story }) {
     let last = 0;
     const dur = storyDuration(story);
     const start = performance.now();
-    void loadPhoto(PHOTO_SRC[story.id]).catch(() => {}); // pré-carrega (getPhoto vira não-null quando pronta)
+    const src = PHOTO_SRC[story.id];
+    if (src) void loadPhoto(src).catch(() => {}); // pré-carrega (getPhoto vira não-null quando pronta)
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       if (now - last < 33) return; // ~30fps (poupa CPU com 3 prévias juntas)
