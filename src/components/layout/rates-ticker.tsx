@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { useUI } from "@/store/ui";
@@ -64,6 +64,11 @@ export function RatesTicker() {
   const spotPrices = useSpot((s) => s.prices);
   const spotPrev = useSpot((s) => s.prevPrices);
   const refreshSpot = useSpot((s) => s.refresh);
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const hoverRef = useRef(false);
+  const dragRef = useRef({ active: false, startX: 0, startScroll: 0 });
 
   // Ouro/bitcoin só são buscados quando o ticker está montado (é opt-in) — nada de request à toa.
   // Cotados em USD fixo, então não dependem da moeda do usuário: refaz no mount + foco/rede.
@@ -132,15 +137,70 @@ export function RatesTicker() {
     return out;
   }, [brl, usd, eur, gbp, base, rates, today, prev, colors, spotPrices, spotPrev, theme, t]);
 
+  // Auto-rolagem via scrollLeft (no lugar da animação CSS) pra permitir ARRASTAR o ticker. Ao passar
+  // a largura de 1 cópia (metade do track duplicado), volta sem emenda. Pausa no hover e no arrasto;
+  // desliga o automático em prefers-reduced-motion (arrasto segue). `overflow-hidden` permite scrollLeft.
+  useEffect(() => {
+    const vp = viewportRef.current;
+    const track = trackRef.current;
+    if (!vp || !track) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(0.05, (now - last) / 1000); // clamp p/ aba em 2º plano não dar salto
+      last = now;
+      const half = track.scrollWidth / 2 || 1;
+      // Avança e, ao passar a largura de 1 cópia, volta pro início sem emenda (módulo). O automático
+      // só cresce, então o módulo basta; o arrasto (que pode ir pra trás) trata o sentido negativo.
+      if (!reduce && !hoverRef.current && !dragRef.current.active) {
+        vp.scrollLeft = (vp.scrollLeft + 42 * dt) % half;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [items]);
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    dragRef.current = { active: true, startX: e.clientX, startScroll: vp.scrollLeft };
+    vp.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    const vp = viewportRef.current;
+    const track = trackRef.current;
+    if (!d.active || !vp || !track) return;
+    // Wrap nos DOIS sentidos: scrollLeft clampa em ≥0, então mapeamos o alvo pra [0, half) via módulo
+    // em vez de deixar bater a parede no início — arrastar pra qualquer lado dá a volta sem emenda.
+    const half = track.scrollWidth / 2 || 1;
+    const target = d.startScroll - (e.clientX - d.startX);
+    vp.scrollLeft = ((target % half) + half) % half;
+  };
+  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragRef.current.active) return;
+    dragRef.current.active = false;
+    viewportRef.current?.releasePointerCapture?.(e.pointerId);
+  };
+
   const content = items.filter((i) => i.kind !== "divider").length;
   if (content === 0) return null;
-  const duration = Math.max(28, content * 7); // rolagem ~constante independente do nº de itens
 
   return (
     <div className="hidden lg:flex sticky top-0 z-30 h-[62px] -mb-[62px] items-center">
       <div className="w-full max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14">
-        <div className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-[color-mix(in_oklab,var(--card-2)_70%,transparent)] backdrop-blur-xl shadow-[0_6px_24px_-20px_rgba(0,0,0,0.35)]">
-          <div className="ticker-track flex w-max" style={{ ["--ticker-duration" as string]: `${duration}s` }}>
+        <div
+          ref={viewportRef}
+          onMouseEnter={() => (hoverRef.current = true)}
+          onMouseLeave={() => (hoverRef.current = false)}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          className="ticker-viewport ticker-mask overflow-hidden rounded-full border border-border bg-[color-mix(in_oklab,var(--card-2)_70%,transparent)] backdrop-blur-xl shadow-[0_6px_24px_-20px_rgba(0,0,0,0.35)] cursor-grab select-none touch-pan-y active:cursor-grabbing">
+          <div ref={trackRef} className="flex w-max">
             <TickerRow items={items} />
             <TickerRow items={items} ariaHidden />
           </div>

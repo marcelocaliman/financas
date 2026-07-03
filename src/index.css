@@ -361,28 +361,11 @@ summary {
   }
 }
 
-/* Ticker de cotações — marquee contínuo. O conteúdo é DUPLICADO no track; -50% fecha o loop
-   sem emenda. Pausa no hover; imóvel em prefers-reduced-motion. */
-@keyframes ticker-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ticker-track {
-  animation: ticker-scroll var(--ticker-duration, 40s) linear infinite;
-}
-.ticker-viewport:hover .ticker-track {
-  animation-play-state: paused;
-}
+/* Ticker de cotações — marquee ARRASTÁVEL. O conteúdo é DUPLICADO no track; o componente rola via
+   scrollLeft e, ao passar a largura de 1 cópia, volta ao início sem emenda. Arrasta com o ponteiro
+   (cursor grab); pausa no hover/arrasto; auto-rolagem off em prefers-reduced-motion (o arrasto
+   segue funcionando). Só a máscara de borda mora no CSS — o movimento é todo no rates-ticker.tsx. */
 .ticker-mask {
   -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
   mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
-  }
 }
