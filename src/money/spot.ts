@@ -2,13 +2,17 @@ import type { Currency } from "./currency";
 
 /**
  * Cotação de OURO (XAU, por onça-troy) e BITCOIN (BTC) — Coinbase (api.coinbase.com/v2/prices):
- * pública, SEM token, CORS liberado, e o preço já vem NA MOEDA do usuário (BTC-BRL, XAU-EUR, …).
+ * pública, SEM token, CORS liberado. Cotados SEMPRE em DÓLAR (convenção de mercado — ouro e cripto
+ * são precificados em USD no mundo todo), independente da moeda principal do usuário.
  * Só dado público de mercado — NENHUM dado do usuário sai daqui (mesma pegada do câmbio/Frankfurter).
  * Módulo PURO/testável: `parseSpot` isolado; `fetchSpot` só monta a URL e valida a resposta.
  */
 
 export const SPOT_ASSETS = ["XAU", "BTC"] as const;
 export type SpotAsset = (typeof SPOT_ASSETS)[number];
+
+/** Moeda em que ouro/bitcoin são cotados no ticker — dólar, o padrão desses mercados. */
+export const QUOTE: Currency = "USD";
 
 /**
  * Selo de cada ativo: cor POR TEMA (tons mais escuros no claro pra manter contraste — igual às

@@ -8,7 +8,7 @@ import { useSpot } from "@/store/spot";
 import { useMacro, MACRO_META } from "@/hooks/use-macro";
 import { convert, formatMoney, formatPercent, CURRENCIES } from "@/money/currency";
 import { pairChangePct } from "@/money/fx-daily";
-import { SPOT_ASSETS, ASSET_META, assetColor } from "@/money/spot";
+import { SPOT_ASSETS, ASSET_META, QUOTE, assetColor } from "@/money/spot";
 import { currencyColors } from "@/money/composition";
 import { cn } from "@/lib/utils";
 
@@ -61,17 +61,16 @@ export function RatesTicker() {
   const prev = useFxHistory((s) => s.prev);
   const colors = currencyColors(theme);
 
-  const spotBase = useSpot((s) => s.base);
   const spotPrices = useSpot((s) => s.prices);
   const spotPrev = useSpot((s) => s.prevPrices);
   const refreshSpot = useSpot((s) => s.refresh);
 
   // Ouro/bitcoin só são buscados quando o ticker está montado (é opt-in) — nada de request à toa.
-  // Refaz no mount, ao trocar a moeda principal e ao voltar o foco/rede (paridade com o câmbio).
+  // Cotados em USD fixo, então não dependem da moeda do usuário: refaz no mount + foco/rede.
   useEffect(() => {
-    refreshSpot(base);
+    refreshSpot();
     const onWake = () => {
-      if (document.visibilityState === "visible") refreshSpot(base);
+      if (document.visibilityState === "visible") refreshSpot();
     };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("online", onWake);
@@ -79,7 +78,7 @@ export function RatesTicker() {
       document.removeEventListener("visibilitychange", onWake);
       window.removeEventListener("online", onWake);
     };
-  }, [base, refreshSpot]);
+  }, [refreshSpot]);
 
   const brl = useMacro("BRL");
   const usd = useMacro("USD");
@@ -106,24 +105,21 @@ export function RatesTicker() {
       pct: today && prev ? pairChangePct(c, base, today, prev) : null,
       color: colors[c],
     }));
-    // Ouro + bitcoin na moeda principal. Só mostra se os preços em cache batem com a moeda atual
-    // (spotBase === base) — evita exibir número da moeda antiga enquanto a troca não recarrega.
-    const assetItems: AssetItem[] =
-      spotBase === base
-        ? SPOT_ASSETS.filter((a) => spotPrices[a] != null).map((a) => {
-            const price = spotPrices[a]!;
-            const p = spotPrev[a];
-            return {
-              key: `spot-${a}`,
-              kind: "asset",
-              tag: a === "XAU" ? t("dashboard.gold") : "BTC",
-              value: formatMoney(price, base, { maximumFractionDigits: 0 }),
-              unit: ASSET_META[a].unit ?? null,
-              pct: p != null && p > 0 ? ((price - p) / p) * 100 : null,
-              color: assetColor(a, theme),
-            };
-          })
-        : [];
+    // Ouro + bitcoin, sempre em DÓLAR (QUOTE) — a convenção desses mercados, independente da moeda
+    // principal do usuário. O selo já diz OURO/BTC; o "$" deixa claro que é dólar.
+    const assetItems: AssetItem[] = SPOT_ASSETS.filter((a) => spotPrices[a] != null).map((a) => {
+      const price = spotPrices[a]!;
+      const p = spotPrev[a];
+      return {
+        key: `spot-${a}`,
+        kind: "asset",
+        tag: a === "XAU" ? t("dashboard.gold") : "BTC",
+        value: formatMoney(price, QUOTE, { maximumFractionDigits: 0 }),
+        unit: ASSET_META[a].unit ?? null,
+        pct: p != null && p > 0 ? ((price - p) / p) * 100 : null,
+        color: assetColor(a, theme),
+      };
+    });
     // Junta as seções não vazias com uma barra entre cada (e uma no começo, p/ o loop separar
     // a virada do marquee). Ex.: | juros/inflação | câmbio | ouro/bitcoin |.
     const sections = [macroItems, fxItems, assetItems].filter((s) => s.length > 0);
@@ -134,7 +130,7 @@ export function RatesTicker() {
       if (i < sections.length - 1) out.push({ key: `d-${i}`, kind: "divider" });
     });
     return out;
-  }, [brl, usd, eur, gbp, base, rates, today, prev, colors, spotBase, spotPrices, spotPrev, t]);
+  }, [brl, usd, eur, gbp, base, rates, today, prev, colors, spotPrices, spotPrev, theme, t]);
 
   const content = items.filter((i) => i.kind !== "divider").length;
   if (content === 0) return null;
