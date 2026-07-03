@@ -397,7 +397,7 @@ function drawBrand(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
 function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number) {
   ctx.globalAlpha = a;
   ctx.fillStyle = ACCENT;
-  ctx.font = fontMono(26 * s, 600);
+  ctx.font = fontMono(34 * s, 700);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.letterSpacing = `${3 * s}px`;
@@ -500,14 +500,16 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       const px = fitTitlePx(ctx, s, sc.title || [], availW, 84, 104);
       const eyeY = H * 0.605;
       drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a);
-      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.82 + 20) * s, sc.title || [], a, rise, px);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 50) * s, sc.title || [], a, rise, px);
       if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a);
     } else {
       // PROBLEMA / BENEFÍCIO: título GRANDE que preenche a largura + sub/chips opcionais.
       const lines = sc.title || [];
       const px = fitTitlePx(ctx, s, lines, availW, 104, 150);
       const lh = (px + 8) * s;
-      const eyeGap = (px * 0.5 + 44) * s; // do baseline do eyebrow ao 1º baseline do título
+      // do baseline do eyebrow ao 1º baseline do título. Usa px*0.72 (altura de caixa-alta do título)
+      // pra o VÃO até o topo do título ficar CONSTANTE (~56s), independente do tamanho do título.
+      const eyeGap = (px * 0.72 + 56) * s;
       const titleH = lines.length * lh;
       const extraH = sc.sub ? 150 * s : sc.chips ? 150 * s : 0;
       const blockH = eyeGap + titleH + extraH;
@@ -525,7 +527,7 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 
   if (sc.kind === "privacy") {
     drawEyebrow(ctx, s, x, midY - 300 * s, sc.eyebrow || "", a);
-    drawTitle(ctx, s, x, midY - 210 * s, sc.title || [], a, rise);
+    drawTitle(ctx, s, x, midY - 184 * s, sc.title || [], a, rise);
     if (sc.sub) drawSub(ctx, s, x, midY + 30 * s, W, sc.sub, a);
     // "cadeado + ••••" cifrando
     const ly = midY + 200 * s;
