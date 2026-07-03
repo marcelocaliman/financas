@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy, Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
+import { CalendarCheck, Check, Copy, Download, Film, Image as ImageIcon, Loader2 } from "lucide-react";
 import { STORIES, POSTS, drawStory, drawPost, storyDuration, PHOTO_SRC, type Story, type Post } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
+import { AdsCalendar } from "@/admin/ads/calendar";
+import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { cn } from "@/lib/utils";
+
+const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 const PREVIEW_W = 330;
 const PREVIEW_H = 587; // 9:16
@@ -118,6 +122,14 @@ function PostCard({ post }: { post: Post }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [logged, setLogged] = useState(false);
+  const addCal = useAdsCalendar((s) => s.add);
+
+  const markToday = () => {
+    addCal({ date: dateKey(new Date()), pieceId: `post:${post.id}`, status: "posted" });
+    setLogged(true);
+    setTimeout(() => setLogged(false), 1600);
+  };
 
   const captionText = post.caption
     ? post.caption + (post.tags?.length ? "\n\n" + post.tags.map((t) => "#" + t).join(" ") : "")
@@ -156,17 +168,30 @@ function PostCard({ post }: { post: Post }) {
           <div className="truncate text-[13.5px] font-medium">{post.name}</div>
           <div className="text-[11.5px] text-faint tabular">{post.pillar} · PNG · 4:5</div>
         </div>
-        <button
-          type="button"
-          disabled={busy}
-          onClick={run}
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-            busy ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
-          )}
-        >
-          {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} Baixar PNG
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={markToday}
+            title="Marcar como postado hoje (vai pro calendário)"
+            className={cn(
+              "inline-flex items-center gap-1 h-9 px-2.5 rounded-[9px] border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              logged ? "border-border text-accent" : "border-border text-muted hover:text-text hover:border-border-strong",
+            )}
+          >
+            {logged ? <Check size={14} /> : <CalendarCheck size={14} />} {logged ? "Marcado" : "Hoje"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={run}
+            className={cn(
+              "inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              busy ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+            )}
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} PNG
+          </button>
+        </div>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
       {captionText ? (
@@ -198,6 +223,18 @@ export function AdsSection() {
   const supported = canExport();
   return (
     <div className="space-y-9">
+      <section>
+        <div className="mb-1.5 flex items-center gap-2">
+          <CalendarCheck size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Calendário de divulgação</h3>
+        </div>
+        <p className="mb-4 max-w-[640px] text-[13px] leading-relaxed text-muted">
+          Marque o que já postou (ou planeje) e acompanhe a cadência. Cada peça abaixo tem o botão{" "}
+          <b className="text-text">Hoje</b> pra registrar num clique.
+        </p>
+        <AdsCalendar />
+      </section>
+
       <section>
         <div className="mb-1.5 flex items-center gap-2">
           <Film size={15} className="text-accent" />
