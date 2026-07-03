@@ -29,6 +29,11 @@
     .brand{display:inline-flex;align-items:center;gap:9px;color:var(--text);font-weight:600;font-size:15px;letter-spacing:-.02em}
     .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(62,207,142,.14)}
     .back{font-size:13px;color:var(--muted)}
+    .topr{display:flex;align-items:center;gap:16px}
+    .lang{font-size:12px;color:var(--faint)}
+    .lang a{color:var(--muted)}
+    .lang b{color:var(--text);font-weight:600}
+    .lang .sep{opacity:.4;margin:0 6px}
     h1{font-size:clamp(26px,4vw,34px);letter-spacing:-.03em;margin:26px 0 4px}
     .updated{font-size:12px;color:var(--faint);margin:0 0 28px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px 24px}
@@ -46,7 +51,10 @@
   <main class="wrap">
     <div class="top">
       <a class="brand" href="/"><span class="dot"></span> Nossas Finanças</a>
-      <a class="back" href="/">← Voltar ao site</a>
+      <div class="topr">
+        <span class="lang"><b>PT</b><span class="sep">·</span><a href="/privacy">EN</a></span>
+        <a class="back" href="/">← Voltar ao site</a>
+      </div>
     </div>
 
     <h1>Política de Privacidade</h1>

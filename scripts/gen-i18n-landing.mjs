@@ -103,6 +103,10 @@ function gen(lang) {
   const ALT = { en: ["pt_BR"] };
   let ai = 0;
   html = html.replace(/(<meta property="og:locale:alternate" content=")[^"]*(")/g, (_m, a, b) => `${a}${ALT[lang][ai++]}${b}`);
+  // Aponta os links legais pra versão no idioma da página (EN → /privacy, /terms).
+  if (lang === "en") {
+    html = html.replace(/href="\/privacidade"/g, 'href="/privacy"').replace(/href="\/termos"/g, 'href="/terms"');
+  }
   return injectHreflang(html);
 }
 

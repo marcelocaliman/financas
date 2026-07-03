@@ -10,6 +10,8 @@
     { "source": "/share", "destination": "/share.html" },
     { "source": "/privacidade", "destination": "/privacidade.html" },
     { "source": "/termos", "destination": "/termos.html" },
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
     { "source": "/en", "destination": "/en.html" }
   ],
   "headers": [

@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  STATIC LEGAL PAGE (EN) — mirrors public/privacidade.html. KEEP IN SYNC: when the Portuguese
+  policy changes (privacidade.html / privacy-policy.tsx), update this English version too (and the date).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — Nossas Finanças</title>
+  <meta name="robots" content="index,follow" />
+  <link rel="canonical" href="https://nossasfinancas.com.br/privacy" />
+  <meta name="description" content="Nossas Finanças privacy policy — LGPD/GDPR, end-to-end encryption and the honest limits." />
+  <link rel="icon" href="/favicon.svg" />
+  <style>
+    :root{
+      --bg:#0A0B0D; --card:#131418; --border:rgba(255,255,255,.08); --border-strong:rgba(255,255,255,.14);
+      --text:#F3F4F6; --muted:#9CA2AC; --faint:#5F646C; --accent:#3ECF8E;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+      -webkit-font-smoothing:antialiased;line-height:1.6}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:760px;margin:0 auto;padding:48px 22px 80px}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
+    .brand{display:inline-flex;align-items:center;gap:9px;color:var(--text);font-weight:600;font-size:15px;letter-spacing:-.02em}
+    .brand .dot{width:11px;height:11px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px rgba(62,207,142,.14)}
+    .back{font-size:13px;color:var(--muted)}
+    .topr{display:flex;align-items:center;gap:16px}
+    .lang{font-size:12px;color:var(--faint)}
+    .lang a{color:var(--muted)}
+    .lang b{color:var(--text);font-weight:600}
+    .lang .sep{opacity:.4;margin:0 6px}
+    h1{font-size:clamp(26px,4vw,34px);letter-spacing:-.03em;margin:26px 0 4px}
+    .updated{font-size:12px;color:var(--faint);margin:0 0 28px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:8px 24px}
+    section{padding:20px 0;border-top:1px solid var(--border)}
+    section:first-child{border-top:0}
+    h2{font-size:15px;font-weight:600;color:var(--text);margin:0 0 8px}
+    p{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+    p:last-child{margin-bottom:0}
+    b{color:var(--text);font-weight:600}
+    .foot{margin-top:30px;font-size:12.5px;color:var(--faint);text-align:center}
+    .foot a{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <a class="brand" href="/"><span class="dot"></span> Nossas Finanças</a>
+      <div class="topr">
+        <span class="lang"><a href="/privacidade">PT</a><span class="sep">·</span><b>EN</b></span>
+        <a class="back" href="/">← Back to site</a>
+      </div>
+    </div>
+
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: July 2026</p>
+
+    <div class="card">
+      <section>
+        <h2>Who is responsible</h2>
+        <p><b>Nossas Finanças</b> (nossasfinancas.com.br), operated by <b>Marcelo Salgado Caliman</b> (an individual), is the party responsible (controller) for processing your personal data. To exercise any right below or to talk about privacy, write to <b>contato@nossasfinancas.com.br</b>.</p>
+      </section>
+
+      <section>
+        <h2>How we protect your data</h2>
+        <p>Your financial data is <b>encrypted on your device</b> (E2EE) with a key derived from your password. The server receives and stores only <b>ciphertext</b> — never your values in the clear, nor your password, nor the key.</p>
+      </section>
+
+      <section>
+        <h2>What data we process</h2>
+        <p>• <b>Email</b> — to create the account, authenticate and send essential emails (confirmation, password reset).</p>
+        <p>• <b>Encrypted vault</b> — the blob with your financial data, already encrypted on your device. To us it is unreadable text.</p>
+        <p>• <b>Minimal technical metadata</b> — approximate vault size, sync dates/versions and the provider's security logs. No behavioral profiles, no tracking cookies, no ads.</p>
+        <p>• <b>Asset tickers</b> — if you use stock quotes, the ticker symbols (e.g., PETR4) pass through our server only to fetch the day's price. We do not link them to your quantities/values (which stay encrypted) and we do not store them.</p>
+        <p>• <b>Support messages</b> — if you open a ticket (in the app or via the contact form), we store your email and the message content in <b>readable text</b> (not encrypted like the vault), because we need to read them to reply. For that reason, do not include your password, recovery code or account numbers in those messages. Images you attach are reachable via an unlisted (unguessable) link — avoid attaching sensitive content.</p>
+        <p>• <b>Pro subscription</b> (if you subscribe) — status, plan and subscription dates, plus Stripe identifiers. <b>Never your card details</b> (those stay only with Stripe). This is metadata, not the vault's financial data.</p>
+        <p>• <b>Waitlist</b> — if you leave your email on the “Pro Investor — coming soon” card, we store only that <b>email</b>, with your consent, to <b>let you know when the plan launches</b>. Nothing else — you can ask for removal at any time.</p>
+      </section>
+
+      <section>
+        <h2>Legal basis and purpose</h2>
+        <p>We process your email and the encrypted vault to <b>provide the service</b> you signed up for when creating the account (LGPD art. 7, V / GDPR art. 6(1)(b)) and, when you consent, based on your <b>consent</b>. The sole purpose is to make the app work and sync — nothing beyond that.</p>
+      </section>
+
+      <section>
+        <h2>Who we share with</h2>
+        <p>We use providers that operate solely to deliver the service, under contract:</p>
+        <p>• <b>Supabase</b> — authentication and storage of the encrypted vault.</p>
+        <p>• <b>Vercel</b> — hosting of the app and the function that fetches quotes.</p>
+        <p>• <b>Resend</b> — sending our emails (confirmation, password reset and support notifications). Receives only your email and the message content.</p>
+        <p>• <b>Exchange/quote APIs</b> (Frankfurter, brapi, Finnhub, Coinbase) — receive only currency pairs and tickers, never personal or financial data. We do not sell your data.</p>
+        <p>• <b>Stripe</b> — processes Pro plan payments. Your card details go <b>straight to Stripe</b> (encrypted); we <b>never see or store them</b>. On our side we keep only the <b>subscription status</b> (active/canceled) and Stripe identifiers — metadata, not the vault's financial data.</p>
+      </section>
+
+      <section>
+        <h2>International transfer</h2>
+        <p>These providers may process data on servers outside Brazil/the EU. Because the financial content always travels <b>encrypted</b>, it remains unreadable wherever it is stored.</p>
+      </section>
+
+      <section>
+        <h2>How long we keep it</h2>
+        <p>For as long as your account exists. When you <b>delete your account</b>, the encrypted vault and the registration are erased; provider backups expire on their own cycles. The <b>waitlist</b> email is deleted when the plan launches (or on request). <b>Payment/subscription records</b> (at Stripe and the identifiers on our side) may be kept for the applicable legal/tax period, even after cancellation.</p>
+      </section>
+
+      <section>
+        <h2>Cookies</h2>
+        <p>Only what is <b>essential</b> to keep you logged in (the authentication session). We do not use marketing cookies, invasive analytics or cross-site tracking.</p>
+      </section>
+
+      <section>
+        <h2>Usage metrics (anonymous)</h2>
+        <p>To understand usage and improve the product, we record <b>non-identifiable events</b> (e.g., a landing visit, sign-up, app open), the approximate <b>country</b> (the <b>IP is never stored</b>) and the <b>device type</b>. It is first-party analytics, <b>without cookies</b> and <b>never tied to your account</b> — there is no individual profile, nor financial data. An anonymous count of open sessions may appear as “online now”, without identifying anyone. Legal basis: legitimate interest (LGPD art. 7, IX / GDPR art. 6(1)(f)); you may object.</p>
+      </section>
+
+      <section>
+        <h2>Your rights (LGPD/GDPR)</h2>
+        <p>You own your data and may, at any time: <b>access and port it</b> (Settings → Data → Export/CSV), <b>correct it</b> (by editing in the app), <b>delete your account</b> (Settings → Account, which erases the vault forever) and <b>withdraw consent</b>. For the other rights (confirmation, objection, review) or questions, write to the contact above — we reply within the legal deadlines. You may also complain to a data protection authority: the <b>ANPD</b> (Brazil) or, if you are in the European Union, your country's authority.</p>
+      </section>
+
+      <section>
+        <h2>Honest limits (please read)</h2>
+        <p>• E2EE protects the copy on the <b>server</b>, not your device: in your browser the data is readable while the vault is unlocked.</p>
+        <p>• The login password travels to the authentication provider over TLS (standard model).</p>
+        <p>• Residual risk of malicious code in the browser (XSS) — mitigated by a strict security policy, not eliminated.</p>
+        <p>• <b>Losing your password AND your recovery code = unrecoverable data.</b> That is what makes the app truly private. The only way to recover the vault is the <b>recovery code</b> — there is no email recovery of the encrypted data.</p>
+      </section>
+    </div>
+
+    <p class="foot">© 2026 Nossas Finanças · <a href="/">nossasfinancas.com.br</a> · <a href="/terms">Terms of Service</a></p>
+  </main>
+</body>
+</html>
