@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import { useSections } from "@/store/sections";
 import { useUI } from "@/store/ui";
+import { useAdminUI } from "@/store/admin-ui";
 
 /** Offset (px) que as páginas PROVÊEM p/ os cabeçalhos sticky das seções; undefined = não gruda
  *  (ex.: admin, que não passa provider). Evita o Accordion adivinhar o layout. */
@@ -56,9 +57,12 @@ export function useScrollSpy(ids: string[], offsetTop = 130): string {
  *  (com uma folga pequena) em vez de ficar atrás da barra ou com um vão grande. */
 function topBarOffset(): number {
   if (typeof window === "undefined") return 24;
+  const desktop = window.innerWidth >= 1024;
+  // Painel super-admin: layout PRÓPRIO (rail à esquerda no desktop, AdminTopBar fixo no mobile) —
+  // não usa ticker/MobileBar/TopNav do app. Ancora com uma folga: desktop 28, mobile abaixo da barra.
+  if (useAdminUI.getState().adminOpen) return desktop ? 28 : 104;
   const ui = useUI.getState();
   const side = ui.navLayout === "side";
-  const desktop = window.innerWidth >= 1024;
   // Ticker de cotações (faixa que oculta, 62px, só desktop): a seção para 1px ABAIXO da faixa —
   // o cabeçalho encosta logo abaixo do ticker e a borda-divisória da seção fica escondida ATRÁS
   // da faixa (nada da tab anterior vaza). base(20) + 41 = 61 = altura da faixa − 1.
@@ -138,8 +142,11 @@ export function toggleSection(id: string, active: boolean): void {
  */
 export function stickyTopOffset(): number {
   if (typeof window === "undefined") return 0;
-  const ui = useUI.getState();
   const desktop = window.innerWidth >= 1024;
+  // Painel: sem barra fixa no topo do desktop (rail é lateral) → gruda com folguinha; no mobile,
+  // encosta logo abaixo do AdminTopBar (~94px: header 54 + linha de abas).
+  if (useAdminUI.getState().adminOpen) return desktop ? 16 : 94;
+  const ui = useUI.getState();
   if (ui.navLayout !== "side") return 72; // top-nav: header fixo (o ticker fica atrás dele)
   if (!desktop) return 60; // lateral no mobile: MobileBar
   return ui.ratesTicker ? 62 : 0; // lateral no desktop: só o ticker (0 se desligado)
@@ -149,13 +156,14 @@ export function stickyTopOffset(): number {
 export function useStickyOffset(): number {
   const navLayout = useUI((s) => s.navLayout);
   const ratesTicker = useUI((s) => s.ratesTicker);
+  const adminOpen = useAdminUI((s) => s.adminOpen);
   const [offset, setOffset] = useState(stickyTopOffset);
   useEffect(() => {
     const apply = () => setOffset(stickyTopOffset());
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
-  }, [navLayout, ratesTicker]);
+  }, [navLayout, ratesTicker, adminOpen]);
   return offset;
 }
 

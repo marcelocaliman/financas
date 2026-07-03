@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Accordion } from "@/components/common/accordion";
+import { StickyOffsetContext, useStickyOffset } from "@/hooks/use-scroll-spy";
 import { OverviewSection, OverviewSummary } from "./sections/overview";
 import { UsersSection, UsersSummary } from "./sections/users";
 import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
@@ -17,6 +18,7 @@ const PERIODS = [7, 30, 90] as const;
 /** Página do painel super-admin: mesma linguagem editorial do app (hero + accordions). */
 export function AdminPage() {
   const [days, setDays] = useState<number>(30);
+  const stickyTop = useStickyOffset();
 
   return (
     <div className="view-fade-in">
@@ -56,6 +58,9 @@ export function AdminPage() {
         <div className="border-t border-border" />
       </section>
 
+      {/* Cabeçalhos das seções abertas grudam no topo enquanto rolam (offset do layout do painel),
+          igual ao app do usuário — via StickyOffsetContext. */}
+      <StickyOffsetContext.Provider value={stickyTop}>
       <div className={cn(CONTAINER, GUTTERS, "pb-24 lg:pb-28")}>
         <Accordion id="adm-overview" title="Visão geral" summary={<OverviewSummary />} defaultOpen>
           <SectionErrorBoundary name="Visão geral"><OverviewSection days={days} /></SectionErrorBoundary>
@@ -79,6 +84,7 @@ export function AdminPage() {
           <SectionErrorBoundary name="Ads"><AdsSection /></SectionErrorBoundary>
         </Accordion>
       </div>
+      </StickyOffsetContext.Provider>
     </div>
   );
 }
