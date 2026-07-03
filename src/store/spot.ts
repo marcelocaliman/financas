@@ -23,6 +23,9 @@ interface SpotState {
   refresh: (force?: boolean) => Promise<void>;
 }
 
+/** Fatia persistida (localStorage) — sem `status`/`refresh`. Tipo único p/ partialize e migrate baterem. */
+type SpotPersist = Pick<SpotState, "prices" | "prevPrices" | "updatedAt">;
+
 export const useSpot = create<SpotState>()(
   persist(
     (set, get) => ({
@@ -66,7 +69,11 @@ export const useSpot = create<SpotState>()(
     }),
     {
       name: "financas-spot",
-      partialize: (s) => ({ prices: s.prices, prevPrices: s.prevPrices, updatedAt: s.updatedAt }),
+      version: 1,
+      partialize: (s): SpotPersist => ({ prices: s.prices, prevPrices: s.prevPrices, updatedAt: s.updatedAt }),
+      // v0→v1: antes ouro/btc eram cotados na moeda do usuário (ex.: BRL); agora são em USD. O cache
+      // v0 tem preços em BRL que, exibidos com "$", ficam ERRADOS — descarta e força refetch em USD.
+      migrate: (): SpotPersist => ({ prices: {}, prevPrices: {}, updatedAt: null }),
     },
   ),
 );
