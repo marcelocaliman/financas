@@ -1,12 +1,77 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
+import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, GraduationCap, Image as ImageIcon, Loader2 } from "lucide-react";
+import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
+import { CardSubNav } from "@/components/common/card-sub-nav";
 import { cn } from "@/lib/utils";
 
 const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const MONTHS_ABBR = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const fmtDay = (k: string) => {
+  const [, m, d] = k.split("-").map(Number);
+  return `${d} ${MONTHS_ABBR[m - 1]}`;
+};
+
+/** Marca a peça como publicada HOJE (idempotente: não duplica se já registrada hoje). */
+function markPostedToday(pieceId: string) {
+  const s = useAdsCalendar.getState();
+  const today = dateKey(new Date());
+  if (!s.entries.some((e) => e.pieceId === pieceId && e.date === today && e.status === "posted")) {
+    s.add({ date: today, pieceId, status: "posted" });
+  }
+}
+
+/** Selo "publicado em <dia>" sobreposto à prévia — mostra a data do último registro postado da peça. */
+function PostedBadge({ pieceId }: { pieceId: string }) {
+  const date = useAdsCalendar((s) => {
+    let latest: string | null = null;
+    for (const e of s.entries) if (e.pieceId === pieceId && e.status === "posted" && (!latest || e.date > latest)) latest = e.date;
+    return latest;
+  });
+  if (!date) return null;
+  return (
+    <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-accent px-2 py-[3px] text-[10.5px] font-semibold text-[#08130C] shadow">
+      <Check size={11} /> Publicado {fmtDay(date)}
+    </span>
+  );
+}
+
+/** Botão "marcar como publicado hoje" (registra no calendário) — padrão em todo card de peça. */
+function MarkTodayButton({ pieceId }: { pieceId: string }) {
+  const [logged, setLogged] = useState(false);
+  const posted = useAdsCalendar((s) => s.entries.some((e) => e.pieceId === pieceId && e.status === "posted"));
+  const onClick = () => {
+    markPostedToday(pieceId);
+    setLogged(true);
+    setTimeout(() => setLogged(false), 1600);
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Marcar como publicado hoje (vai pro calendário)"
+      className={cn(
+        "inline-flex items-center gap-1 h-9 px-2.5 rounded-[9px] border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+        logged || posted ? "border-border text-accent" : "border-border text-muted hover:text-text hover:border-border-strong",
+      )}
+    >
+      {logged || posted ? <Check size={14} /> : <CalendarCheck size={14} />} {logged ? "Marcado" : posted ? "Publicado" : "Hoje"}
+    </button>
+  );
+}
+
+/** Sub-abas (sticky, com sublinhado) da aba Ads — mesmas do painel do usuário. */
+const SUBNAV: { id: string; label: string }[] = [
+  { id: "ads-calendario", label: "Calendário" },
+  { id: "ads-stories", label: "Stories" },
+  { id: "ads-stories-edu", label: "Stories edu." },
+  { id: "ads-posts", label: "Posts" },
+  { id: "ads-posts-edu", label: "Posts edu." },
+  { id: "ads-carrosseis", label: "Carrosséis" },
+  { id: "ads-destaques", label: "Destaques" },
+];
 
 const PREVIEW_W = 330;
 const PREVIEW_H = 587; // 9:16
@@ -61,7 +126,8 @@ function StoryCard({ story }: { story: Story }) {
 
   return (
     <div className="rounded-[16px] border border-border bg-card p-3.5">
-      <div className="overflow-hidden rounded-[14px] border border-border bg-bg">
+      <div className="relative overflow-hidden rounded-[14px] border border-border bg-bg">
+        <PostedBadge pieceId={`story:${story.id}`} />
         <StoryPreview story={story} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
@@ -71,25 +137,20 @@ function StoryCard({ story }: { story: Story }) {
             {story.scenes.length} páginas · 9:16 · {storyDuration(story)}s
           </div>
         </div>
-        <button
-          type="button"
-          disabled={busy || !supported}
-          onClick={run}
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-            busy || !supported ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
-          )}
-        >
-          {busy ? (
-            <>
-              <Loader2 size={14} className="animate-spin" /> Gravando…
-            </>
-          ) : (
-            <>
-              <Download size={14} /> Baixar MP4
-            </>
-          )}
-        </button>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <MarkTodayButton pieceId={`story:${story.id}`} />
+          <button
+            type="button"
+            disabled={busy || !supported}
+            onClick={run}
+            className={cn(
+              "inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+              busy || !supported ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+            )}
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {busy ? "Gravando…" : "MP4"}
+          </button>
+        </div>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
     </div>
@@ -123,14 +184,6 @@ function PostCard({ post }: { post: Post }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [logged, setLogged] = useState(false);
-  const addCal = useAdsCalendar((s) => s.add);
-
-  const markToday = () => {
-    addCal({ date: dateKey(new Date()), pieceId: `post:${post.id}`, status: "posted" });
-    setLogged(true);
-    setTimeout(() => setLogged(false), 1600);
-  };
 
   const captionText = post.caption
     ? post.caption + (post.tags?.length ? "\n\n" + post.tags.map((t) => "#" + t).join(" ") : "")
@@ -161,7 +214,8 @@ function PostCard({ post }: { post: Post }) {
 
   return (
     <div className="rounded-[16px] border border-border bg-card p-3.5">
-      <div className="overflow-hidden rounded-[14px] border border-border bg-bg">
+      <div className="relative overflow-hidden rounded-[14px] border border-border bg-bg">
+        <PostedBadge pieceId={`post:${post.id}`} />
         <PostPreview post={post} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
@@ -170,17 +224,7 @@ function PostCard({ post }: { post: Post }) {
           <div className="text-[11.5px] text-faint tabular">{post.pillar} · PNG · 4:5</div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={markToday}
-            title="Marcar como postado hoje (vai pro calendário)"
-            className={cn(
-              "inline-flex items-center gap-1 h-9 px-2.5 rounded-[9px] border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-              logged ? "border-border text-accent" : "border-border text-muted hover:text-text hover:border-border-strong",
-            )}
-          >
-            {logged ? <Check size={14} /> : <CalendarCheck size={14} />} {logged ? "Marcado" : "Hoje"}
-          </button>
+          <MarkTodayButton pieceId={`post:${post.id}`} />
           <button
             type="button"
             disabled={busy}
@@ -255,15 +299,7 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [logged, setLogged] = useState(false);
-  const addCal = useAdsCalendar((s) => s.add);
   const total = carousel.slides.length;
-
-  const markToday = () => {
-    addCal({ date: dateKey(new Date()), pieceId: `carousel:${carousel.id}`, status: "posted" });
-    setLogged(true);
-    setTimeout(() => setLogged(false), 1600);
-  };
 
   const captionText = carousel.caption
     ? carousel.caption + (carousel.tags?.length ? "\n\n" + carousel.tags.map((t) => "#" + t).join(" ") : "")
@@ -297,10 +333,13 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
 
   return (
     <div className="rounded-[16px] border border-border bg-card p-3.5">
-      <div className="flex gap-2.5 overflow-x-auto scrollbar-subtle snap-x pb-1">
-        {carousel.slides.map((sl, i) => (
-          <SlideThumb key={i} slide={sl} index={i} total={total} />
-        ))}
+      <div className="relative">
+        <PostedBadge pieceId={`carousel:${carousel.id}`} />
+        <div className="flex gap-2.5 overflow-x-auto scrollbar-subtle snap-x pb-1">
+          {carousel.slides.map((sl, i) => (
+            <SlideThumb key={i} slide={sl} index={i} total={total} />
+          ))}
+        </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="min-w-0">
@@ -308,17 +347,7 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
           <div className="text-[11.5px] text-faint tabular">{carousel.pillar} · {total} imagens · PNG 4:5</div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            type="button"
-            onClick={markToday}
-            title="Marcar como postado hoje (vai pro calendário)"
-            className={cn(
-              "inline-flex items-center gap-1 h-9 px-2.5 rounded-[9px] border text-[12px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-              logged ? "border-border text-accent" : "border-border text-muted hover:text-text hover:border-border-strong",
-            )}
-          >
-            {logged ? <Check size={14} /> : <CalendarCheck size={14} />} {logged ? "Marcado" : "Hoje"}
-          </button>
+          <MarkTodayButton pieceId={`carousel:${carousel.id}`} />
           <button
             type="button"
             disabled={busy}
@@ -459,108 +488,119 @@ function HighlightsBlock() {
   );
 }
 
-/** Aba "Ads" (super-admin): stories animados (MP4 9:16) + posts estáticos (PNG 4:5) pra divulgar. */
+/** Cabeçalho padrão de uma sub-seção da aba. */
+function SubHead({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <>
+      <div className="mb-1.5 flex items-center gap-2">
+        {icon}
+        <h3 className="text-[14px] font-semibold text-text">{title}</h3>
+      </div>
+      <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">{children}</p>
+    </>
+  );
+}
+
+/** Aba "Ads" (super-admin): calendário + peças (stories, posts, carrosséis, destaques) pra divulgar.
+ *  Sub-abas sticky (como no painel do usuário) pulam entre as seções; cada peça mostra se já foi
+ *  publicada e em que dia (selo lido do calendário). */
 export function AdsSection() {
   const supported = canExport();
   return (
-    <div className="space-y-9">
-      <section>
-        <div className="mb-1.5 flex items-center gap-2">
-          <CalendarCheck size={15} className="text-accent" />
-          <h3 className="text-[14px] font-semibold text-text">Calendário de divulgação</h3>
-        </div>
-        <p className="mb-4 max-w-[640px] text-[13px] leading-relaxed text-muted">
-          Marque o que já postou (ou planeje) e acompanhe a cadência. Cada peça abaixo tem o botão{" "}
-          <b className="text-text">Hoje</b> pra registrar num clique.
-        </p>
-        <AdsCalendar />
-      </section>
+    <div>
+      <CardSubNav items={SUBNAV} />
+      <div className="space-y-10 pt-6">
+        <section id="ads-calendario">
+          <SubHead icon={<CalendarCheck size={15} className="text-accent" />} title="Calendário de divulgação">
+            Marque o que já postou (ou planeje) e acompanhe a cadência. Cada peça tem o botão{" "}
+            <b className="text-text">Hoje</b> pra registrar num clique — e mostra um selo{" "}
+            <b className="text-text">Publicado</b> com a data quando já foi ao ar.
+          </SubHead>
+          <AdsCalendar />
+        </section>
 
-      <section>
-        <div className="mb-1.5 flex items-center gap-2">
-          <Film size={15} className="text-accent" />
-          <h3 className="text-[14px] font-semibold text-text">Stories · MP4 9:16</h3>
-        </div>
-        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-          Cada um com um mini-roteiro (dor → o app → benefício → CTA). Clique em{" "}
-          <b className="text-text">Baixar MP4</b>: a gravação roda a animação em tempo real
-          (~{storyDuration(STORIES[0])}s) e o arquivo baixa sozinho. É só postar como Story ou Reels.
-        </p>
-        {!supported ? (
-          <div className="mb-4 rounded-[12px] border border-border bg-card2 p-3 text-[12.5px] text-muted">
-            Este navegador não suporta gravar o canvas em vídeo. Use Chrome recente ou Safari.
+        <section id="ads-stories">
+          <SubHead icon={<Film size={15} className="text-accent" />} title="Stories · MP4 9:16">
+            Institucionais (o app e o que faz), com mini-roteiro. Clique em <b className="text-text">MP4</b>:
+            a gravação roda a animação em tempo real (~{storyDuration(STORIES[0])}s) e baixa sozinho.
+          </SubHead>
+          {!supported ? (
+            <div className="mb-4 rounded-[12px] border border-border bg-card2 p-3 text-[12.5px] text-muted">
+              Este navegador não suporta gravar o canvas em vídeo. Use Chrome recente ou Safari.
+            </div>
+          ) : null}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {STORIES.map((st) => (
+              <StoryCard key={st.id} story={st} />
+            ))}
           </div>
-        ) : null}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {STORIES.map((st) => (
-            <StoryCard key={st.id} story={st} />
-          ))}
-        </div>
-        <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
-          Educativos — conteúdo que ensina
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EDU_STORIES.map((st) => (
-            <StoryCard key={st.id} story={st} />
-          ))}
-        </div>
-      </section>
+        </section>
 
-      <section>
-        <div className="mb-1.5 flex items-center gap-2">
-          <ImageIcon size={15} className="text-accent" />
-          <h3 className="text-[14px] font-semibold text-text">Posts · PNG 4:5</h3>
-        </div>
-        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-          Imagens estáticas pro feed (1080×1350) nos 4 pilares — multimoeda, privacidade, organização
-          e build-in-public. Clique em <b className="text-text">Baixar PNG</b> e poste direto. O
-          @nossasfinancasapp e o site já vão marcados no rodapé.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {POSTS.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
-        <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
-          Educativos — dica · passo a passo · mito × verdade · conceito
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EDU_POSTS.map((p) => (
-            <PostCard key={p.id} post={p} />
-          ))}
-        </div>
-      </section>
+        <section id="ads-stories-edu">
+          <SubHead icon={<GraduationCap size={15} className="text-accent" />} title="Stories educativos · MP4 9:16">
+            Conteúdo que ensina (orçamento, reserva, juros compostos…), cada um com foto temática.
+            Alternam a autoridade com o institucional.
+          </SubHead>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {EDU_STORIES.map((st) => (
+              <StoryCard key={st.id} story={st} />
+            ))}
+          </div>
+        </section>
 
-      <section>
-        <div className="mb-1.5 flex items-center gap-2">
-          <GalleryHorizontalEnd size={15} className="text-accent" />
-          <h3 className="text-[14px] font-semibold text-text">Carrosséis · PNG 4:5 (várias imagens)</h3>
-        </div>
-        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-          Apresentação completa do app: cada slide muda de template pra ficar dinâmico. Clique em{" "}
-          <b className="text-text">Baixar PNGs</b> e o navegador salva uma imagem por slide, numeradas
-          na ordem — no Instagram, crie um post e selecione todas. Pode aparecer um aviso pra permitir
-          baixar vários arquivos.
-        </p>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {CAROUSELS.map((c) => (
-            <CarouselCard key={c.id} carousel={c} />
-          ))}
-        </div>
-      </section>
+        <section id="ads-posts">
+          <SubHead icon={<ImageIcon size={15} className="text-accent" />} title="Posts · PNG 4:5">
+            Imagens estáticas pro feed (1080×1350), institucionais. Clique em <b className="text-text">PNG</b>{" "}
+            e poste direto — o @nossasfinancasapp e o site já vão no rodapé.
+          </SubHead>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {POSTS.map((p) => (
+              <PostCard key={p.id} post={p} />
+            ))}
+          </div>
+        </section>
 
-      <section>
-        <div className="mb-1.5 flex items-center gap-2">
-          <Circle size={15} className="text-accent" />
-          <h3 className="text-[14px] font-semibold text-text">Capas de destaque</h3>
-        </div>
-        <p className="mb-5 max-w-[640px] text-[13px] leading-relaxed text-muted">
-          Capas pros seus Destaques. No Instagram: <b className="text-text">perfil → Destaques → Editar
-          → Capa → escolher da galeria</b>. Ele mostra só o círculo (o ícone); o nome você digita no
-          próprio destaque. Sob cada capa está quais stories agrupar nela.
-        </p>
-        <HighlightsBlock />
-      </section>
+        <section id="ads-posts-edu">
+          <SubHead icon={<GraduationCap size={15} className="text-accent" />} title="Posts educativos · PNG 4:5">
+            Dica · passo a passo · mito × verdade · conceito · número. Cada um já vem com uma legenda
+            que ensina, pronta pra copiar.
+          </SubHead>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {EDU_POSTS.map((p) => (
+              <PostCard key={p.id} post={p} />
+            ))}
+          </div>
+        </section>
+
+        <section id="ads-carrosseis">
+          <SubHead icon={<GalleryHorizontalEnd size={15} className="text-accent" />} title="Carrosséis · PNG 4:5 (várias imagens)">
+            Vários slides numa publicação. Clique em <b className="text-text">PNGs</b> e o navegador salva
+            uma imagem por slide, numeradas — no Instagram, crie um post e selecione todas.
+          </SubHead>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {CAROUSELS.map((c) => (
+              <CarouselCard key={c.id} carousel={c} />
+            ))}
+          </div>
+          <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+            Educativos — passo a passo
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {EDU_CAROUSELS.map((c) => (
+              <CarouselCard key={c.id} carousel={c} />
+            ))}
+          </div>
+        </section>
+
+        <section id="ads-destaques">
+          <SubHead icon={<Circle size={15} className="text-accent" />} title="Capas de destaque">
+            Capas pros seus Destaques. No Instagram: <b className="text-text">perfil → Destaques → Editar
+            → Capa → escolher da galeria</b>. Ele mostra só o círculo (o ícone); o nome você digita no
+            próprio destaque. Sob cada capa está quais stories agrupar nela.
+          </SubHead>
+          <HighlightsBlock />
+        </section>
+      </div>
     </div>
   );
 }
@@ -570,7 +610,7 @@ export function AdsSummary() {
     <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
       <Film size={15} className="text-accent" />
       <span className="tabular">
-        {STORIES.length + EDU_STORIES.length} stories · {POSTS.length + EDU_POSTS.length} posts · {CAROUSELS.length} carrosséis
+        {STORIES.length + EDU_STORIES.length} stories · {POSTS.length + EDU_POSTS.length} posts · {CAROUSELS.length + EDU_CAROUSELS.length} carrosséis
       </span>
     </span>
   );

@@ -525,6 +525,10 @@ export const CAROUSELS: Carousel[] = [
       { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "COMECE AGORA", title: ["Abra grátis", "e comece hoje."], sub: "É só entrar pelo navegador — nossasfinancas.com.br" },
     ],
   },
+];
+
+// ── CARROSSÉIS EDUCATIVOS ────────────────────────────────────────────────────
+export const EDU_CAROUSELS: Carousel[] = [
   {
     id: "edu-orcamento-passo",
     name: "Educativo · seu 1º orçamento (7 slides)",

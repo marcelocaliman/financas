@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Trash2 } from "lucide-react";
-import { POSTS, STORIES } from "@/admin/ads/engine";
+import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { cn } from "@/lib/utils";
 
-/** Peças postáveis (posts + stories) — fonte do seletor e das estatísticas. */
+/** Peças postáveis (posts + stories + carrosséis, institucionais e educativos) — seletor e estatísticas. */
 const PIECES = [
   ...POSTS.map((p) => ({ id: `post:${p.id}`, label: p.name, pillar: p.pillar, kind: "post" as const })),
+  ...EDU_POSTS.map((p) => ({ id: `post:${p.id}`, label: p.name, pillar: p.pillar, kind: "post" as const })),
   ...STORIES.map((s) => ({ id: `story:${s.id}`, label: `Story · ${s.name}`, pillar: "Story", kind: "story" as const })),
+  ...EDU_STORIES.map((s) => ({ id: `story:${s.id}`, label: `Story · ${s.name}`, pillar: "Story", kind: "story" as const })),
+  ...CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, label: `Carrossel · ${c.name}`, pillar: c.pillar, kind: "carousel" as const })),
+  ...EDU_CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, label: `Carrossel · ${c.name}`, pillar: c.pillar, kind: "carousel" as const })),
 ];
 const PIECE = Object.fromEntries(PIECES.map((p) => [p.id, p]));
 const POST_PILLARS = [...new Set(POSTS.map((p) => p.pillar))];
