@@ -332,7 +332,8 @@ export function SideNav({ active }: { active: string }) {
 export interface NavListItem {
   id: string;
   label: string;
-  Icon: LucideIcon;
+  /** Ícone do item; opcional (ex.: "Visão geral" do admin não tem — cai no fallback textual). */
+  Icon?: LucideIcon;
   isSection: boolean;
 }
 
@@ -382,7 +383,7 @@ export function NavList({
                   on ? "text-accent bg-card2" : "text-muted hover:text-text hover:bg-card-hover",
                 )}
               >
-                <Icon size={17} />
+                {Icon ? <Icon size={17} /> : <span aria-hidden className="text-[15px] font-semibold leading-none">{label.charAt(0)}</span>}
                 {badge > 0 ? (
                   <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-card" />
                 ) : sectionOpen ? (
@@ -406,7 +407,7 @@ export function NavList({
               aria-label={label}
               className="flex items-center gap-3 h-10 px-3 flex-1 min-w-0 text-[13.5px] font-medium rounded-[11px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             >
-              <Icon size={17} className="shrink-0" />
+              {Icon ? <Icon size={17} className="shrink-0" /> : null}
               <span className="truncate">{label}</span>
               {badge > 0 ? (
                 <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[10px] font-bold tabular leading-none">

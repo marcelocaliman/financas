@@ -1,16 +1,17 @@
-import { LayoutDashboard, Users, BarChart3, ScrollText, ShieldCheck, Flag, Megaphone, type LucideIcon } from "lucide-react";
+import { Users, BarChart3, ScrollText, ShieldCheck, Flag, Megaphone, type LucideIcon } from "lucide-react";
 
 export interface AdminNavItem {
   /** id do accordion na página do painel (adm-*) */
   id: string;
   /** chave i18n do rótulo (admin.nav.*) */
   key: string;
-  icon: LucideIcon;
+  /** ícone do item (a "Visão geral" não tem — é sempre visível, funciona como âncora do topo) */
+  icon?: LucideIcon;
 }
 
 /** Seções do painel super-admin — mesma estrutura de "tabs" do app. */
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { id: "adm-overview", key: "overview", icon: LayoutDashboard },
+  { id: "adm-overview", key: "overview" },
   { id: "adm-users", key: "users", icon: Users },
   { id: "adm-analytics", key: "analytics", icon: BarChart3 },
   { id: "adm-access", key: "access", icon: ScrollText },

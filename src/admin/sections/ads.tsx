@@ -577,7 +577,7 @@ export function AdsSection() {
             Vários slides numa publicação. Clique em <b className="text-text">PNGs</b> e o navegador salva
             uma imagem por slide, numeradas — no Instagram, crie um post e selecione todas.
           </SubHead>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {CAROUSELS.map((c) => (
               <CarouselCard key={c.id} carousel={c} />
             ))}
@@ -585,7 +585,7 @@ export function AdsSection() {
           <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
             Educativos — passo a passo
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {EDU_CAROUSELS.map((c) => (
               <CarouselCard key={c.id} carousel={c} />
             ))}

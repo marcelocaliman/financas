@@ -54,7 +54,8 @@ export function AdminSideNav({ active }: { active: string }) {
   const sectionIds = ADMIN_NAV_ITEMS.map((n) => n.id);
   // "anyOpen": alguma seção aberta? Se SIM, o botão fecha TUDO (e sobe ao topo); se nenhuma, abre TUDO.
   const anyOpen = sectionIds.some((id) => openSections[id]);
-  const items = ADMIN_NAV_ITEMS.map((n) => ({ id: n.id, label: LABEL[n.key], Icon: n.icon, isSection: true }));
+  // "Visão geral" é sempre visível (não é accordion) → sem ícone nem chevron; funciona como âncora do topo.
+  const items = ADMIN_NAV_ITEMS.map((n) => ({ id: n.id, label: LABEL[n.key], Icon: n.icon, isSection: n.id !== "adm-overview" }));
 
   return (
     <aside
