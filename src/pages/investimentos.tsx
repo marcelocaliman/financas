@@ -112,7 +112,49 @@ export default function Investimentos() {
       {/* Alocação × Alvo */}
       <Tile className="p-4 sm:p-6 md:p-7">
         <Eyebrow className="mb-4">{t("investimentos.target")}</Eyebrow>
-        <div className="overflow-x-auto">
+        {/* MOBILE: cada classe num bloco vertical (a tabela de 4 colunas não cabe na tela). */}
+        <div className="sm:hidden space-y-2.5">
+          {view.rows.map((r) => (
+            <div key={r.id} className="rounded-[12px] border border-border bg-bg2 px-3.5 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="h-[9px] w-[9px] shrink-0 rounded-[2px]" style={{ background: colorOf(r.id) }} />
+                  <span className="truncate text-[13.5px] font-medium">{r.name}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <span className="font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">{t("investimentos.target")}</span>
+                  <TargetInput value={r.tgtPct} onCommit={(v) => setTarget(r.id, v)} />
+                </span>
+              </div>
+              <div className="mt-2.5 flex items-end justify-between gap-3">
+                <span className="min-w-0">
+                  <span className="block font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">{t("investimentos.currentAlloc")}</span>
+                  <span className="text-[13px] tabular">
+                    <Money value={r.value} currency={disp} /> <span className="text-muted"><Hidden>{r.curPct.toFixed(1) + "%"}</Hidden></span>
+                  </span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block font-mono text-[9.5px] uppercase tracking-[0.1em] text-faint">{t("investimentos.rebalance")}</span>
+                  <span className="text-[13px] tabular">
+                    {Math.abs(r.delta) < 1 || r.tgtPct === 0 ? (
+                      <span className="text-faint">—</span>
+                    ) : (
+                      <span className={r.delta > 0 ? "text-accent" : "text-neg"}>
+                        {r.delta > 0 ? "+" : "−"}
+                        {formatMoney(Math.abs(r.delta), disp).replace(/^[^\d]*/, "")}
+                        <span className="text-faint"> · {r.delta > 0 ? t("investimentos.buy") : t("investimentos.sell")}</span>
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </div>
+            </div>
+          ))}
+          {view.rows.length === 0 ? <p className="py-4 text-[13px] text-faint">{t("investimentos.empty")}</p> : null}
+        </div>
+
+        {/* DESKTOP/TABLET: tabela em grid. */}
+        <div className="hidden sm:block overflow-x-auto">
             <div className="min-w-0 sm:min-w-[520px]">
               <div className="grid grid-cols-[1.4fr_1fr_0.8fr_1.1fr] pb-2 border-b border-border">
                 <Eyebrow>{t("patrimonio.class")}</Eyebrow>

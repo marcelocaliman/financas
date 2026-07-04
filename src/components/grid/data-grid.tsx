@@ -950,9 +950,12 @@ export function DataGrid<T extends { id: string }>({
           <div className="mt-2 space-y-0.5 border-t border-[var(--grid-line)] pt-1.5">
             {restCols.map((col) => {
               const cell = renderCell(col, row, ghostRow);
-              // Linha de "recibo": rótulo à esquerda, VALOR à direita (inputs/selects/pickers
-              // alinhados à direita) — assim o valor não fica solto no meio do card.
-              const align = "flex min-w-0 justify-end text-right [&_input]:text-right [&_select]:text-right [&_button]:justify-end";
+              // Linha de "recibo": rótulo à esquerda, VALOR à direita. Alinha inputs/selects e os
+              // seletores dia/mês (que são `.w-full`) à direita — MAS não os botões-ícone centrados
+              // (check/recorrência/moeda, que são `w-7`/grid). O input de dinheiro encolhe pro
+              // conteúdo (field-sizing) pra a moeda COLAR no valor em vez de ficar um vão.
+              const align =
+                "flex min-w-0 items-center justify-end text-right [&_input]:text-right [&_select]:text-right [&_.w-full]:justify-end [&_input.flex-1]:!w-auto [&_input.flex-1]:!flex-none [&_input.flex-1]:[field-sizing:content]";
               return col.header ? (
                 <div key={col.key} className="flex items-center justify-between gap-3 min-h-[34px]">
                   <span className="shrink-0 font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{col.header}</span>
