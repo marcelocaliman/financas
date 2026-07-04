@@ -105,8 +105,22 @@ export function SideNav({ active }: { active: string }) {
   const configRef = useRef<HTMLDivElement>(null);
   const [listH, setListH] = useState<number | undefined>(undefined);
   useLayoutEffect(() => {
-    const el = configOpen ? configRef.current : pageRef.current;
-    if (el) setListH(el.offsetHeight);
+    // Mede a altura da lista ATIVA e acompanha mudanças (idioma/fonte e, principalmente, quando a
+    // sidebar sai de `display:none` ao cruzar o breakpoint lg ou num resize). NUNCA fixa 0 — senão o
+    // `overflow-hidden` engole o menu (era o bug do "menu lateral sumindo"). Sem altura real = auto.
+    const measure = () => {
+      const el = configOpen ? configRef.current : pageRef.current;
+      if (el && el.offsetHeight > 0) setListH(el.offsetHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (pageRef.current) ro.observe(pageRef.current);
+    if (configRef.current) ro.observe(configRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, [configOpen, collapsed]);
 
   const name = nameFromEmail(email);
