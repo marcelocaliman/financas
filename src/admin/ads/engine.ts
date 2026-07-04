@@ -532,14 +532,15 @@ export const CAROUSELS: Carousel[] = [
     caption:
       "Quer se organizar mas não sabe por onde começar? Salva esse post — é o passo a passo do seu primeiro orçamento. 📌\n\n1. Anote tudo que entra (sua renda real)\n2. Liste os gastos fixos\n3. Estime os variáveis (olhe os últimos meses)\n4. Separe o quanto vai poupar ANTES de gastar\n5. Acompanhe e ajuste no fim do mês\n\nNão precisa ser perfeito no 1º mês. Precisa começar — cada mês fica mais fácil. 💪\n\n📲 No Nossas Finanças dá pra fazer tudo isso, em qualquer moeda. Link na bio.",
     tags: ["orcamento", "passoapasso", "educacaofinanceira", "controlefinanceiro", "organizacaofinanceira", "financaspessoais", "planejamentofinanceiro", "comecaragora", "dinheiro", "vidafinanceira"],
+    // Todo slide VÍVIDO, com 1 foto TEMÁTICA e ÚNICA (ilustra cada passo, como nos stories educativos).
     slides: [
-      { style: "color", eyebrow: "PASSO A PASSO", title: ["Monte seu 1º", "orçamento"], sub: "Em 5 passos simples — sem planilha gigante." },
-      { style: "dark", eyebrow: "PASSO 1", title: ["Anote tudo", "que entra"], sub: "Salário, freelas, aluguéis. A sua renda real do mês." },
-      { style: "light", eyebrow: "PASSO 2", title: ["Liste os", "gastos fixos"], sub: "Moradia, contas, transporte, escola. O que se repete todo mês." },
-      { style: "dark", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
-      { style: "color", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
-      { style: "light", eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
-      { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda." },
+      { style: "vivid", photo: "/img/ads/calc.jpg", eyebrow: "PASSO A PASSO", title: ["Monte seu 1º", "orçamento"], sub: "Em 5 passos simples — sem planilha gigante." },
+      { style: "vivid", photo: "/img/ads/wallet.jpg", eyebrow: "PASSO 1", title: ["Anote tudo", "que entra"], sub: "Salário, freelas, aluguéis. A sua renda real do mês." },
+      { style: "vivid", photo: "/img/ads/rent.jpg", eyebrow: "PASSO 2", title: ["Liste os", "gastos fixos"], sub: "Moradia, contas, transporte, escola. O que se repete todo mês." },
+      { style: "vivid", photo: "/img/ads/market.jpg", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
+      { style: "vivid", photo: "/img/ads/counting.jpg", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
+      { style: "vivid", photo: "/img/ads/dashboard.jpg", eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
+      { style: "vivid", photo: "/img/ads/laptop.jpg", eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda." },
     ],
   },
 ];
