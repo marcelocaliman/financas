@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronLeft, ChevronRight, Clock, Plus, Rocket, Sparkles, Trash2 } from "lucide-react";
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
 import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
-import { generateSchedule, INTENSITY_LABEL, type Intensity } from "@/admin/ads/planner";
+import { generateSchedule, boostPlan, INTENSITY_LABEL, type Intensity } from "@/admin/ads/planner";
 import { cn } from "@/lib/utils";
 
 /** Peças postáveis (posts + stories + carrosséis, institucionais e educativos) — seletor e estatísticas. */
@@ -69,6 +69,9 @@ export function AdsAgenda() {
   const add = useAdsCalendar((s) => s.add);
   const remove = useAdsCalendar((s) => s.remove);
   const due = overdue.length + today.length;
+  // Início do roteiro (pra ancorar o plano de impulsionamento) = data mais antiga registrada.
+  const firstDate = useAdsCalendar((s) => (s.entries.length ? s.entries.map((e) => e.date).sort()[0] : ""));
+  const boostStart = firstDate || todayK;
 
   const [notify, setNotify] = useState(() => {
     try {
@@ -167,18 +170,64 @@ export function AdsAgenda() {
         </button>
       </div>
 
+      {/* Rotina fixa: o que fazer com cada peça (some da cabeça do usuário). */}
+      <p className="mb-3 text-[11.5px] leading-relaxed text-faint">
+        <b className="text-muted">Rotina:</b> todo post do feed → reposte no seu story; todo story → salve no{" "}
+        <b className="text-muted">Destaque</b> indicado; o 1º carrossel → fixe no topo do perfil.
+      </p>
+
       {total === 0 ? (
         <p className="text-[12.5px] leading-relaxed text-faint">
           Nada planejado ainda. Clique em <b className="text-muted">Gerar 4 semanas</b> pra um roteiro
           pronto — ou planeje à mão escolhendo um dia no calendário abaixo.
         </p>
       ) : (
-        <div className="space-y-3.5">
-          {overdue.length ? <AgendaGroup label={`Atrasado · ${overdue.length}`} tone="neg" entries={overdue} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
-          {today.length ? <AgendaGroup label="Pra hoje" tone="accent" entries={today} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
-          {upcoming.length ? <AgendaGroup label="Próximos" tone="muted" entries={upcoming} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
-        </div>
+        <>
+          <div className="space-y-3.5">
+            {overdue.length ? <AgendaGroup label={`Atrasado · ${overdue.length}`} tone="neg" entries={overdue} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+            {today.length ? <AgendaGroup label="Pra hoje" tone="accent" entries={today} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+            {upcoming.length ? <AgendaGroup label="Próximos" tone="muted" entries={upcoming} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+          </div>
+          <BoostPanel start={boostStart} todayK={todayK} />
+        </>
       )}
+    </div>
+  );
+}
+
+/** Plano de impulsionamento (quando/como pagar pra promover), ancorado no início do roteiro. */
+function BoostPanel({ start, todayK }: { start: string; todayK: string }) {
+  const recs = useMemo(() => boostPlan(parse(start)), [start]);
+  return (
+    <div className="mt-4 border-t border-border pt-3.5">
+      <div className="mb-1.5 flex items-center gap-2">
+        <Rocket size={14} className="text-accent" />
+        <h4 className="text-[12.5px] font-semibold text-text">Impulsionamento — quando pagar pra promover</h4>
+      </div>
+      <p className="mb-2.5 text-[11.5px] leading-relaxed text-faint">
+        Nas <b className="text-muted">2 primeiras semanas</b> não impulsione — poste orgânico e veja o que mais salva/compartilha. Depois, siga o plano:
+      </p>
+      <div className="space-y-2">
+        {recs.map((r, i) => {
+          const active = todayK >= r.date;
+          return (
+            <div key={i} className={cn("rounded-[11px] border px-3 py-2.5", active ? "border-accent/45 bg-accent-soft/40" : "border-border bg-card2")}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 truncate text-[12px] font-medium text-text">{PIECE[r.pieceId]?.label ?? r.pieceId}</span>
+                <span className={cn("shrink-0 font-mono text-[10px] uppercase tracking-[0.1em]", active ? "text-accent" : "text-faint")}>
+                  {r.window} · {relDay(r.date, todayK)}
+                </span>
+              </div>
+              <p className="mt-1 text-[11px] leading-snug text-muted">{r.why}</p>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10.5px] text-faint">
+                <span><b className="text-muted">Verba:</b> {r.budget} · {r.days}</span>
+                <span><b className="text-muted">Objetivo:</b> {r.objective}</span>
+                <span><b className="text-muted">Público:</b> {r.audience}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -207,9 +256,9 @@ function AgendaGroup({
             <span className={cn("h-2 w-2 shrink-0 rounded-full", tone === "neg" ? "bg-neg" : "bg-accent")} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-[12.5px] text-text">{PIECE[e.pieceId]?.label ?? e.pieceId}</div>
-              <div className="truncate text-[11px] text-faint">
+              <div className="text-[11px] text-faint">
                 {relDay(e.date, todayK)}
-                {e.note ? ` · ${e.note}` : ""}
+                {e.note ? <> · <span className="text-accent">{e.note}</span></> : null}
               </div>
             </div>
             <button type="button" onClick={() => onMark(e)} title="Marcar como publicado hoje" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-[8px] bg-accent px-2.5 text-[11.5px] font-medium text-[#08130C] hover:opacity-90">

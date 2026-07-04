@@ -32,6 +32,22 @@ function storyTheme(id: string): string {
   return "geral";
 }
 
+/** Destaque (Highlight) onde salvar cada story — casa com as 5 capas geradas em HIGHLIGHTS. */
+function storyHighlight(id: string): string {
+  const s = id.toLowerCase();
+  if (s.includes("tour") || s.includes("simples")) return "Comece aqui";
+  if (s.includes("privac")) return "Privacidade";
+  if (s.includes("build") || s.includes("bastidor")) return "Bastidores";
+  if (s.includes("cambio") || s.includes("fronteira") || s.includes("patrimonio") || s.includes("diversific")) return "Multimoeda";
+  return "Liberdade"; // orçamento/reserva/juros/dívidas/futuro/liberdade e demais
+}
+
+const addDays = (d: Date, n: number) => {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  x.setDate(x.getDate() + n);
+  return x;
+};
+
 /** Feed = posts + carrosséis (institucionais e educativos). */
 const FEED: PlanPiece[] = [
   ...POSTS.map((p) => ({ id: `post:${p.id}`, pillar: p.pillar, format: "post" as Fmt, edu: false })),
@@ -97,11 +113,14 @@ const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 export interface PlanEntry {
   date: string;
   pieceId: string;
+  /** O que fazer com a peça (repostar no story / salvar no destaque / fixar). */
+  note?: string;
 }
 
 /**
  * Gera o roteiro dos próximos `weeks` a partir de `start`: em cada dia, conforme a intensidade,
- * coloca a próxima peça de feed OU de story (ciclando as filas já ordenadas por variedade).
+ * coloca a próxima peça de feed OU de story (ciclando as filas já ordenadas por variedade) — e já
+ * anexa a AÇÃO daquela peça (feed → repostar no story; story → salvar no destaque; 1º carrossel → fixar).
  */
 export function generateSchedule(start: Date, weeks: number, intensity: Intensity): PlanEntry[] {
   const feedOrder = orderPieces(FEED, "carousel:tour");
@@ -116,12 +135,66 @@ export function generateSchedule(start: Date, weeks: number, intensity: Intensit
     d.setDate(base.getDate() + n);
     const wd = d.getDay();
     if (feed.includes(wd) && feedOrder.length) {
-      out.push({ date: key(d), pieceId: feedOrder[fi % feedOrder.length].id });
+      const p = feedOrder[fi % feedOrder.length];
+      const note = fi === 0 ? "Fixar no topo do perfil + repostar no story" : "Repostar no story (novo post 👇)";
+      out.push({ date: key(d), pieceId: p.id, note });
       fi++;
     } else if (story.includes(wd) && storyOrder.length) {
-      out.push({ date: key(d), pieceId: storyOrder[si % storyOrder.length].id });
+      const p = storyOrder[si % storyOrder.length];
+      out.push({ date: key(d), pieceId: p.id, note: `Salvar no Destaque "${storyHighlight(p.id)}"` });
       si++;
     }
   }
   return out;
+}
+
+export interface BoostRec {
+  date: string;
+  pieceId: string;
+  window: string; // "Semana 3" etc.
+  budget: string;
+  days: string;
+  objective: string;
+  audience: string;
+  why: string;
+}
+
+/**
+ * Plano de IMPULSIONAMENTO (quando pagar pra promover), ancorado no início do roteiro. Regra de
+ * ouro embutida: nada nas 2 primeiras semanas (medir orgânico), depois impulsionar as peças certas.
+ */
+export function boostPlan(start: Date): BoostRec[] {
+  const at = (n: number) => key(addDays(start, n));
+  return [
+    {
+      date: at(14),
+      pieceId: "carousel:tour",
+      window: "Semana 3",
+      budget: "R$ 20–30/dia",
+      days: "5–7 dias",
+      objective: "Visitas ao perfil (crescer base)",
+      audience: "Finanças pessoais · investimentos · expatriados / morar fora",
+      why: "É a apresentação do app — explica tudo e tem CTA. Comece por ela.",
+    },
+    {
+      date: at(24),
+      pieceId: "post:privacidade",
+      window: "Semana 4",
+      budget: "R$ 20–30/dia",
+      days: "5–7 dias",
+      objective: "Alcance / seguidores",
+      audience: "Amplo — finanças, privacidade, tecnologia",
+      why: "Tema que gera reação e compartilhamento (bom pra alcance).",
+    },
+    {
+      date: at(34),
+      pieceId: "post:custo-vida",
+      window: "Semana 5",
+      budget: "R$ 15–25/dia",
+      days: "5 dias",
+      objective: "Visitas ao site (link na bio)",
+      audience: "SÓ brasileiros na Itália / quem quer morar fora",
+      why: "Campanha de nicho: relevância altíssima num público pequeno = clique barato.",
+    },
+  ];
 }
