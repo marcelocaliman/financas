@@ -137,7 +137,10 @@ export function Accordion({
         role="region"
         aria-labelledby={`${id}-title`}
         className={cn(
-          "grid transition-all duration-300 ease-out motion-reduce:transition-none",
+          // grid-cols-1 = coluna única minmax(0,1fr): PRENDE a largura ao container (viewport no
+          // mobile). Sem isso, a coluna implícita é `auto` e cresce até o max-content do conteúdo —
+          // no celular isso estica a seção inteira além da tela e tudo dentro herda essa largura.
+          "grid grid-cols-1 transition-all duration-300 ease-out motion-reduce:transition-none",
           expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
         )}
       >
