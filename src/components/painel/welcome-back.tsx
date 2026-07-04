@@ -90,8 +90,8 @@ export function WelcomeBackView({
   const { t } = useTranslation();
   const up = nwChange >= 0;
   return (
-    <div className="mb-7 flex flex-wrap items-center gap-x-5 gap-y-2.5 rounded-[14px] border border-border bg-[color-mix(in_oklab,var(--card-2)_60%,transparent)] px-4 py-3">
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className="relative mb-4 sm:mb-7 flex flex-col gap-3 rounded-[14px] border border-border bg-[color-mix(in_oklab,var(--card-2)_60%,transparent)] px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-2.5">
+      <div className="flex items-center gap-2.5 min-w-0 pr-8 sm:pr-0">
         <span className="text-[15px] leading-none" aria-hidden>👋</span>
         <div className="min-w-0">
           <div className="text-[13.5px] font-semibold text-text leading-tight truncate">
@@ -126,7 +126,7 @@ export function WelcomeBackView({
         type="button"
         onClick={onDismiss}
         aria-label={t("welcome.dismiss")}
-        className="shrink-0 grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        className="absolute top-2.5 right-2.5 sm:static sm:top-auto sm:right-auto shrink-0 grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       >
         <X size={15} />
       </button>

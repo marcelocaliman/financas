@@ -149,7 +149,7 @@ export function DashboardHero() {
       <RotatingPhrase />
 
       {/* Faixa 1 — patrimônio (esquerda) + conversões nas outras moedas (direita) */}
-      <div className="mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+      <div className="mt-7 sm:mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
         <div>
           <Eyebrow className="mb-2.5">{t("dashboard.netWorth")}</Eyebrow>
           <HeroNumber
@@ -168,7 +168,7 @@ export function DashboardHero() {
       </div>
 
       {/* Faixa 2 — Liberdade + Saúde + Composição, tudo numa linha */}
-      <div className="mt-8 flex flex-wrap items-center gap-x-12 gap-y-6">
+      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-12 gap-y-6">
         {lib?.ready ? (
           <button
             type="button"
@@ -242,7 +242,7 @@ export function DashboardDetail() {
     <>
       <TipOfWeek />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
-        <div className={cn("lg:col-span-2 p-6 flex flex-col", CARD)}>
+        <div className={cn("lg:col-span-2 p-4 sm:p-6 flex flex-col", CARD)}>
           <div className="flex items-center justify-between mb-5">
             <Eyebrow>{t("dashboard.netWorthTrend")}</Eyebrow>
             {hasTrend ? (
@@ -291,7 +291,7 @@ export function DashboardDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 items-stretch">
-        <div className={cn("p-6", CARD)}>
+        <div className={cn("p-4 sm:p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
             <Eyebrow>{t("dashboard.budget")}</Eyebrow>
             <Eyebrow>
@@ -331,7 +331,7 @@ export function DashboardDetail() {
           </div>
         </div>
 
-        <div className={cn("p-6", CARD)}>
+        <div className={cn("p-4 sm:p-6", CARD)}>
           <div className="flex items-center justify-between mb-4">
             <Eyebrow>{t("dashboard.allocation")}</Eyebrow>
             <Eyebrow>
@@ -411,7 +411,7 @@ function RotatingPhrase() {
   return (
     <div
       className={cn(
-        "font-semibold text-[clamp(2.4rem,5vw,3.6rem)] tracking-[-0.035em] leading-[1.04] max-w-[760px] min-h-[2.1em] text-text transition-opacity duration-500 motion-reduce:transition-none",
+        "font-semibold text-[clamp(1.9rem,5vw,3.6rem)] tracking-[-0.035em] leading-[1.04] max-w-[760px] min-h-[2.1em] text-text transition-opacity duration-500 motion-reduce:transition-none",
         show ? "opacity-100" : "opacity-0",
       )}
     >
@@ -433,7 +433,7 @@ function Delta({ pct, suffix }: { pct: number; suffix?: string }) {
 function StatTile({ label, value, sub, positive, negative, wide }: { label: string; value: string; sub?: string; positive?: boolean; negative?: boolean; wide?: boolean }) {
   const hidden = useUI((s) => s.numbersHidden);
   return (
-    <div className={cn("p-5", CARD, wide && "col-span-2")}>
+    <div className={cn("p-4 sm:p-5", CARD, wide && "col-span-2")}>
       <Eyebrow>{label}</Eyebrow>
       <div className={cn("font-numeric font-semibold text-[22px] tracking-[-0.02em] tabular mt-2", negative ? "text-neg" : positive ? "text-accent" : "text-text")}>
         {hidden ? "••••" : value}

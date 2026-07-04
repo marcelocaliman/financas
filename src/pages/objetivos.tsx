@@ -81,11 +81,11 @@ export default function Objetivos() {
   const newGoal = (): Goal => ({ id: crypto.randomUUID(), name: "", currency: base, target: 0, current: 0 });
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       {cards.length > 0 ? (
         <>
           {/* Resumo agregado de todas as metas */}
-          <Tile className="p-6 md:p-7">
+          <Tile className="p-4 sm:p-6 md:p-7">
             <div className="flex flex-wrap items-center gap-x-9 gap-y-5">
               <ProgressRing pct={view.totalPct} size={104} stroke={9}>
                 <span className="text-[clamp(1.1rem,3vw,1.45rem)] font-semibold tabular leading-none">

@@ -72,7 +72,7 @@ export function Kpi({
           : undefined
       }
       className={cn(
-        "relative rounded-[14px] bg-card border border-border px-4 py-3.5 flex flex-col justify-between",
+        "relative rounded-[14px] bg-card border border-border px-3.5 py-3 sm:px-4 sm:py-3.5 flex flex-col justify-between",
         interactive &&
           "cursor-pointer hover:border-border-strong hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
       )}

@@ -257,7 +257,7 @@ export default function Patrimonio() {
     .map((g) => ({ ...g, pct: (g.total / view.totalAssets) * 100 }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <CardSubNav
         items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))}
         onSelect={(id) => {
@@ -487,7 +487,7 @@ function DebtScheduleTile() {
   const neg = "#f1746a";
 
   return (
-    <Tile className="p-6 md:p-7">
+    <Tile className="p-4 sm:p-6 md:p-7">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mb-4">
         <div className="flex items-center gap-2">
           <TrendingDown size={16} className="text-muted shrink-0" />

@@ -92,7 +92,7 @@ export default function Investimentos() {
   };
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       <h3 className="eyebrow">{t("nav.investimentos")}</h3>
       {/* Rentabilidade (só posições com preço médio) */}
       {view.hasCostBasis ? (
@@ -110,7 +110,7 @@ export default function Investimentos() {
       ) : null}
 
       {/* Alocação × Alvo */}
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <Eyebrow className="mb-4">{t("investimentos.target")}</Eyebrow>
         <div className="overflow-x-auto">
             <div className="min-w-0 sm:min-w-[520px]">
@@ -226,7 +226,7 @@ function Proventos({ invested }: { invested: number }) {
       </div>
 
       {v.passive > 0 ? (
-        <Tile className="p-6 md:p-7">
+        <Tile className="p-4 sm:p-6 md:p-7">
           <Eyebrow className="mb-4">{t("proventos.last12")}</Eyebrow>
           <div className="w-full h-[170px]">
             <ResponsiveContainer width="100%" height="100%">

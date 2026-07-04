@@ -38,7 +38,7 @@ export default function CrossBorder() {
   const fx = useFxExposure();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <FxImpact base={base} fx={fx} />
     </div>
   );
@@ -77,7 +77,7 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
       </div>
 
       {/* Exposição por moeda */}
-      <Tile className="p-6 md:p-7 space-y-3.5">
+      <Tile className="p-4 sm:p-6 md:p-7 space-y-3.5">
         {fx.rows.map((r) => {
           const share = fx.magnitude > 0 ? (Math.abs(r.principal) / fx.magnitude) * 100 : 0;
           const foreign = r.currency !== base;
@@ -108,7 +108,7 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
 
       {/* Sensibilidade ao câmbio — só faz sentido com moeda estrangeira (senão a oscilação é sempre 0) */}
       {hasForeign ? (
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Eyebrow>{t("crossborder.sensitivity")}</Eyebrow>

@@ -46,15 +46,15 @@ export function OnePage() {
           {/* pt-[68px] = folga do topo (ticker/MobileBar) + pt-10 do hero = 108px de antes.
               A barra de vencidas entra no meio (só quando há vencida); sem ela, o espaçamento
               fica idêntico ao anterior. */}
-          <div className={cn(CONTAINER, GUTTERS, "pt-[68px] pb-14")}>
+          <div className={cn(CONTAINER, GUTTERS, "pt-[68px] pb-8 sm:pb-14")}>
             <DueAlertBar />
-            <div className="pt-10">
+            <div className="pt-6 sm:pt-10">
               <DashboardHero />
             </div>
           </div>
         </div>
         <div className="border-t border-border" />
-        <div className={cn(CONTAINER, GUTTERS, "pt-9 pb-16")}>
+        <div className={cn(CONTAINER, GUTTERS, "pt-6 pb-10 sm:pt-9 sm:pb-16")}>
           <DashboardDetail />
         </div>
       </section>

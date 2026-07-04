@@ -110,7 +110,7 @@ export function Accordion({
         aria-controls={`${id}-body`}
         style={isSticky ? { top: stickyTop } : undefined}
         className={cn(
-          "group w-full flex items-center justify-between gap-4 py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]",
+          "group w-full flex items-center justify-between gap-4 py-5 sm:py-7 lg:py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded-[12px]",
           // Gruda no topo (abaixo do ticker/barra) e ocluí o conteúdo que rola por baixo (bg-bg).
           isSticky && "sticky z-20 bg-bg transition-shadow duration-200 motion-reduce:transition-none",
           isSticky && stuck && "shadow-[0_1px_0_0_var(--border),0_10px_20px_-18px_rgba(0,0,0,0.55)]",
@@ -150,7 +150,7 @@ export function Accordion({
             ele a linha 0fr não colapsaria. Junto: colapsa E preserva o sticky. */}
         <div className="overflow-clip min-h-0">
           <SubStickyOffsetContext.Provider value={isSticky ? stickyTop! + headerH : undefined}>
-            <div className="pb-10 lg:pb-14">{mounted ? children : null}</div>
+            <div className="pb-7 sm:pb-10 lg:pb-14">{mounted ? children : null}</div>
           </SubStickyOffsetContext.Provider>
         </div>
       </div>

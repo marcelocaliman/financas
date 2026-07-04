@@ -85,7 +85,7 @@ export default function Historico() {
   const up = view.change >= 0;
   const yieldUp = view.yieldGain >= 0;
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       {/* Indicadores da evolução: atual · crescimento · aporte vs rendimento · período */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Kpi label={t("historico.current")} value={<Money value={view.current} currency={disp} />} sub={view.last?.label} />
@@ -119,7 +119,7 @@ export default function Historico() {
       </div>
 
       {view.hasTrend ? (
-        <Tile className="p-6 md:p-7">
+        <Tile className="p-4 sm:p-6 md:p-7">
           <Eyebrow className="mb-4">{t("dashboard.netWorthTrend")}</Eyebrow>
           <div className="w-full h-[230px]">
             <TrendArea data={view.series} xKey="m" yKey="v" color={accent} axisColor="var(--faint)" currency={disp} lang={lang} name={t("common.networth")} />

@@ -101,7 +101,7 @@ export default function Projecao() {
       <div className="space-y-7 pt-6">
       {/* Premissas */}
       <div id="proj-premissas">
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <Eyebrow>{t("projecao.assumptions")}</Eyebrow>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-5 mt-4 max-w-2xl">
           <Field
@@ -144,7 +144,7 @@ export default function Projecao() {
 
       {/* Curva da projeção (cenários determinísticos) */}
       <div id="proj-curva">
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <Eyebrow>{t("projecao.curve")}</Eyebrow>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11.5px]">
@@ -279,7 +279,7 @@ function SensitivityCard() {
   };
 
   return (
-    <Tile className="p-6 md:p-7">
+    <Tile className="p-4 sm:p-6 md:p-7">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Eyebrow>{t("projecao.sensitivity")}</Eyebrow>
@@ -434,7 +434,7 @@ function FireCard() {
   // Sem gastos no orçamento → não dá pra calcular: convida a preencher (ou informar à mão).
   if (annualExp <= 0) {
     return (
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         {header}
         <p className="mt-3 text-[13px] text-muted max-w-md">{t("fire.empty")}</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5 mt-5 max-w-lg">
@@ -447,7 +447,7 @@ function FireCard() {
   }
 
   return (
-    <Tile className="p-6 md:p-7">
+    <Tile className="p-4 sm:p-6 md:p-7">
       <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div className="min-w-0">
           {header}
@@ -598,7 +598,7 @@ function MonteCard({
   const data = bands.map((b) => ({ year: b.year, range: [b.p10, b.p90], p50: b.p50 }));
   const fmt = (v: number) => formatMoney(v, disp);
   return (
-    <Tile className="p-6 md:p-7">
+    <Tile className="p-4 sm:p-6 md:p-7">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5">
         <div className="flex items-center gap-2 min-w-0">
           <Dices size={16} className="text-accent shrink-0" />
@@ -680,7 +680,7 @@ function MonteCarloAccumCard() {
   );
   if (!accum) {
     return (
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <div className="flex items-center gap-2">
           <Dices size={16} className="text-accent shrink-0" />
           <Eyebrow>{t("montecarlo.accumTitle")}</Eyebrow>

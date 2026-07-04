@@ -40,7 +40,7 @@ export default function Liberdade() {
   // Sem custo de vida → a métrica não faz sentido: convida a preencher.
   if (!v.ready) {
     return (
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-accent shrink-0" />
           <Eyebrow>{t("liberdade.eyebrow")}</Eyebrow>

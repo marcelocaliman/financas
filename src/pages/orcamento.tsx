@@ -248,7 +248,7 @@ export default function Orcamento() {
   };
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-5 sm:space-y-7">
       <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Navegador de mês */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -300,7 +300,7 @@ export default function Orcamento() {
 
       {/* Ao longo do ano — barras dos 12 meses do ano exibido (seletor de ano; clique abre o mês) */}
       <div id="orc-ano">
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <div className="flex items-center justify-between mb-4">
           <Eyebrow>{t("orcamento.alongYear")}</Eyebrow>
           <div className="flex items-center gap-1">
@@ -437,7 +437,7 @@ function CategoryDonut({
   // Vazio: mantém o card visível com um anel "fantasma" + dica, em vez de sumir (layout estável).
   if (data.length === 0) {
     return (
-      <Tile className="p-6 md:p-7">
+      <Tile className="p-4 sm:p-6 md:p-7">
         <Eyebrow className="mb-4">{title}</Eyebrow>
         <div className="flex items-center gap-6">
           <div className="w-[128px] h-[128px] shrink-0 rounded-full border-[21px] border-card2" aria-hidden />
@@ -447,7 +447,7 @@ function CategoryDonut({
     );
   }
   return (
-    <Tile className="p-6 md:p-7">
+    <Tile className="p-4 sm:p-6 md:p-7">
       <Eyebrow className="mb-4">{title}</Eyebrow>
       <div className="flex items-center gap-6">
         <div className="w-[128px] h-[128px] shrink-0">
