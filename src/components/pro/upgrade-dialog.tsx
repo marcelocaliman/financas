@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Check, ShieldCheck, Sparkles, Users, FileBarChart, BarChart3, TrendingUp } from "lucide-react";
+import { X, Check, ShieldCheck, Sparkles, Users, FileBarChart, BarChart3, TrendingUp, Globe } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { isNativeApp, openExternal } from "@/lib/native";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { Appearance } from "@stripe/stripe-js";
 import { getStripe } from "@/lib/stripe";
@@ -89,6 +90,33 @@ function PlanRow({ active, onClick, label, price, per, hint }: { active: boolean
 
 /** Diálogo de assinatura embutido (aberto via useProStore.openPaywall). Passo de planos
  *  rico (2 colunas: benefícios + confiança | planos); passo de pagamento embutido. */
+/** No app nativo (Play/App Store): a assinatura é feita no SITE — as lojas exigem billing próprio
+ *  pra compra digital dentro do app, então aqui informamos e mandamos pro navegador. */
+function WebOnlyPanel({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed inset-0 z-[120] grid place-items-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-[20px] border border-border bg-card p-6 text-center shadow-[0_24px_70px_-20px_rgba(0,0,0,0.6)]" onClick={(e) => e.stopPropagation()}>
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-accent-soft text-accent">
+          <Globe size={24} />
+        </span>
+        <div className="mt-4 text-[16px] font-semibold tracking-[-0.01em]">{t("pro.webOnlyTitle")}</div>
+        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{t("pro.webOnlyDesc")}</p>
+        <button
+          type="button"
+          onClick={() => openExternal("https://nossasfinancas.com.br")}
+          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-accent text-[14px] font-medium text-[#08130C] transition hover:opacity-90"
+        >
+          <Globe size={16} /> {t("pro.webOnlyCta")}
+        </button>
+        <button type="button" onClick={onClose} className="mt-2 h-10 w-full rounded-[12px] text-[13px] text-muted transition hover:text-text">
+          {t("pro.close")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function UpgradeDialog() {
   const { t } = useTranslation();
   const open = useProStore((s) => s.paywallOpen);
@@ -123,6 +151,9 @@ export function UpgradeDialog() {
   }, [open]);
 
   if (!open) return null;
+
+  // App nativo → assinatura só na web (regra das lojas). Cobre todos os pontos que abrem o paywall.
+  if (isNativeApp()) return <WebOnlyPanel onClose={close} />;
 
   const wide = step === "plan";
   const checkoutPlan: CheckoutPlan =

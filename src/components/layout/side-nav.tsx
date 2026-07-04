@@ -616,6 +616,7 @@ export function MobileBar() {
         scrolled ? "glass border-b border-border" : "border-b border-transparent",
         barHidden && "-translate-y-full",
       )}
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="flex items-center justify-between gap-3 h-[60px] px-5">
         <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5">
