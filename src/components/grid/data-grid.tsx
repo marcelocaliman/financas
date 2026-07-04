@@ -8,6 +8,7 @@ import { CURRENCIES, type Currency } from "@/money/currency";
 import { formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "@/money/parse";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
+import { useIsMobile } from "@/hooks/use-media";
 
 const MASK = "••••";
 
@@ -731,13 +732,16 @@ export function DataGrid<T extends { id: string }>({
   rowClass,
   indentRow,
 }: DataGridProps<T>) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [ghost, setGhost] = useState<T>(() => blank());
   const hidden = useUI((s) => s.numbersHidden);
   const viewerMode = useViewer((s) => s.viewerMode);
+  const isMobile = useIsMobile();
 
   const template = columns.map((c) => c.width).join(" ") + " 44px";
   const firstTextKey = columns.find((c) => c.type === "text")?.key ?? columns[0].key;
+  const titleCol = columns.find((c) => c.key === firstTextKey) ?? columns[0];
 
   // Navegação por DOM (não por índice posicional): a lista é reordenada por id e
   // o useLiveQuery re-renderiza async, então focamos após o próximo frame.
@@ -917,10 +921,66 @@ export function DataGrid<T extends { id: string }>({
     }
   };
 
+  // ── Layout MOBILE: cada linha vira um CARD com campos rotulados (dá pra inserir/editar sem
+  //    tabela horizontal que estoura a tela). Reusa exatamente os mesmos renderCell. ──
+  if (isMobile) {
+    const restCols = columns.filter((c) => c.key !== titleCol.key);
+    const mobileCard = (row: T, ghostRow: boolean) => (
+      <div
+        key={ghostRow ? "ghost" : row.id}
+        className={cn(
+          "relative rounded-[14px] border p-3.5",
+          ghostRow ? "border-dashed border-border-strong bg-card/50" : "border-border bg-card",
+          rowClass?.(row),
+        )}
+      >
+        {!ghostRow && !viewerMode ? (
+          <button
+            type="button"
+            onClick={() => onDelete(row.id)}
+            aria-label="Excluir"
+            className="absolute top-2 right-2 p-1.5 rounded-md text-faint hover:text-neg hover:bg-bg transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        ) : null}
+        {/* título = 1º campo de texto (nome), largura cheia */}
+        <div className="pr-7">{renderCell(titleCol, row, ghostRow)}</div>
+        {restCols.length ? (
+          <div className="mt-2 space-y-1.5 border-t border-[var(--grid-line)] pt-2">
+            {restCols.map((col) => {
+              const cell = renderCell(col, row, ghostRow);
+              return col.header ? (
+                <div key={col.key} className="grid grid-cols-[minmax(76px,34%)_1fr] items-center gap-2">
+                  <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint truncate">{col.header}</span>
+                  <div className="min-w-0">{cell}</div>
+                </div>
+              ) : (
+                <div key={col.key} className="min-w-0">{cell}</div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+    return (
+      <div ref={containerRef} className="space-y-2.5">
+        {rows.map((row) => mobileCard(row, false))}
+        {!viewerMode ? mobileCard(ghost, true) : null}
+        {total ? (
+          <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-card2 px-4 py-3">
+            <span className="font-mono text-[10px] font-medium uppercase tracking-[0.12em] text-muted">{t("common.total")}</span>
+            <span className="font-semibold tabular text-text">{total}</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}
-      className="rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden"
+      className="rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-x-auto overscroll-x-contain"
     >
       {/* Cabeçalho */}
       <div

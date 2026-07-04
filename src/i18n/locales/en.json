@@ -25,7 +25,7 @@
     "suporte": "Help & Support",
     "config": "Settings"
   },
-  "common": {"month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
+  "common": {"total": "Total", "month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
   "welcome": {
     "title": "Welcome back",
     "titleName": "Welcome back, {{name}}",
