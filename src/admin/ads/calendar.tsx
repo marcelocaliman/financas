@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Trash2 } from "lucide-react";
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
 import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
+import { generateSchedule, INTENSITY_LABEL, type Intensity } from "@/admin/ads/planner";
 import { cn } from "@/lib/utils";
 
 /** Peças postáveis (posts + stories + carrosséis, institucionais e educativos) — seletor e estatísticas. */
@@ -76,6 +77,17 @@ export function AdsAgenda() {
       return false;
     }
   });
+  const [intensity, setIntensity] = useState<Intensity>("equilibrado");
+
+  // Gera um roteiro pronto (ordem/cadência/variedade automáticas) pras próximas 4 semanas. Substitui
+  // o plano FUTURO (planejadas de hoje em diante) e preserva todo o histórico já POSTADO.
+  const generatePlan = () => {
+    const st = useAdsCalendar.getState();
+    const future = st.entries.filter((e) => e.status === "planned" && e.date >= todayK);
+    if (future.length && !window.confirm("Gerar um novo roteiro substitui o plano futuro (o histórico já postado é mantido). Continuar?")) return;
+    future.forEach((e) => remove(e.id));
+    for (const p of generateSchedule(new Date(), 4, intensity)) add({ date: p.date, pieceId: p.pieceId, status: "planned" });
+  };
 
   // Aviso do navegador: 1× por dia, quando há peça pra hoje/atrasada e a permissão está concedida.
   useEffect(() => {
@@ -136,10 +148,29 @@ export function AdsAgenda() {
         )}
       </div>
 
+      {/* Gerar roteiro AUTOMÁTICO (ordem/cadência/variedade determinística — sem IA). */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[12px] border border-dashed border-border-strong bg-card2/40 px-3 py-2.5">
+        <span className="text-[12px] text-muted">Não sabe a ordem? Gere um roteiro pronto:</span>
+        <select
+          value={intensity}
+          onChange={(e) => setIntensity(e.target.value as Intensity)}
+          className="h-8 rounded-[8px] border border-border bg-card px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          {(["leve", "equilibrado", "intenso"] as Intensity[]).map((k) => (
+            <option key={k} value={k}>
+              {INTENSITY_LABEL[k]}
+            </option>
+          ))}
+        </select>
+        <button type="button" onClick={generatePlan} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-[12px] font-medium text-[#08130C] hover:opacity-90">
+          <Sparkles size={13} /> Gerar 4 semanas
+        </button>
+      </div>
+
       {total === 0 ? (
         <p className="text-[12.5px] leading-relaxed text-faint">
-          Nada planejado ainda. Escolha um dia no calendário abaixo e adicione a peça como{" "}
-          <b className="text-muted">Planejado</b> — ela aparece aqui como o roteiro do dia.
+          Nada planejado ainda. Clique em <b className="text-muted">Gerar 4 semanas</b> pra um roteiro
+          pronto — ou planeje à mão escolhendo um dia no calendário abaixo.
         </p>
       ) : (
         <div className="space-y-3.5">
