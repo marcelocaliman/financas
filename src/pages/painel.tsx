@@ -149,7 +149,7 @@ export function DashboardHero() {
       <RotatingPhrase />
 
       {/* Faixa 1 — patrimônio (esquerda) + conversões nas outras moedas (direita) */}
-      <div className="mt-7 sm:mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-6">
+      <div className="mt-7 sm:mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-5 sm:gap-y-6">
         <div>
           <Eyebrow className="mb-2.5">{t("dashboard.netWorth")}</Eyebrow>
           <HeroNumber
@@ -168,7 +168,10 @@ export function DashboardHero() {
       </div>
 
       {/* Faixa 2 — Liberdade + Saúde + Composição, tudo numa linha */}
-      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-12 gap-y-6">
+      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-8 gap-y-5 sm:gap-x-12 sm:gap-y-6">
+        {/* Celular: Liberdade + Saúde lado a lado (2 colunas). No desktop, `sm:contents` desfaz o
+            wrapper e eles voltam a ser filhos diretos da linha (layout original preservado). */}
+        <div className="grid w-full grid-cols-2 gap-x-6 gap-y-5 sm:contents">
         {lib?.ready ? (
           <button
             type="button"
@@ -210,6 +213,7 @@ export function DashboardHero() {
             </div>
           </button>
         ) : null}
+        </div>
         {view.curSegments.length > 0 ? (
           <div className="flex-1 min-w-[280px] max-w-[460px]">
             <Eyebrow className="mb-3">{t("dashboard.composition")}</Eyebrow>

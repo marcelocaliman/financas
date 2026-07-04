@@ -86,7 +86,7 @@ export default function Objetivos() {
         <>
           {/* Resumo agregado de todas as metas */}
           <Tile className="p-4 sm:p-6 md:p-7">
-            <div className="flex flex-wrap items-center gap-x-9 gap-y-5">
+            <div className="flex flex-wrap items-center gap-x-9 gap-y-4 sm:gap-y-5">
               <ProgressRing pct={view.totalPct} size={104} stroke={9}>
                 <span className="text-[clamp(1.1rem,3vw,1.45rem)] font-semibold tabular leading-none">
                   <Hidden>{Math.round(view.totalPct)}%</Hidden>
@@ -99,7 +99,9 @@ export default function Objetivos() {
                   <span className="text-faint text-[13px]">/ <Money value={view.totalTarget} currency={disp} /></span>
                 </div>
               </div>
-              <div className="flex items-start gap-x-9 gap-y-4">
+              {/* Celular: FALTAM/OBJETIVOS numa faixa de 2 colunas, separada por um divisor (organiza
+                  o card). Desktop (sm:): volta à linha inline junto do anel + guardado. */}
+              <div className="w-full grid grid-cols-2 gap-4 border-t border-border pt-4 sm:w-auto sm:flex sm:items-start sm:gap-x-9 sm:gap-y-4 sm:border-0 sm:pt-0">
                 <div>
                   <Eyebrow>{t("objetivos.remaining")}</Eyebrow>
                   <div className="mt-1.5 text-[15px] font-semibold tabular"><Money value={view.totalRemaining} currency={disp} /></div>
