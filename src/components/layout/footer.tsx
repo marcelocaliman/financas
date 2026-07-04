@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 export function Footer() {
   const { t } = useTranslation();
   return (
-    <footer className="border-t border-border">
+    <footer className="hidden sm:block border-t border-border">
       <div className="max-w-[1280px] mx-auto px-5 md:px-10 lg:px-14 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-faint">
           <span>© 2026 {t("app.name")} · {t("footer.rights")}</span>

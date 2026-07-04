@@ -592,14 +592,31 @@ export function MobileBar() {
   const supportOpen = useUI((s) => s.supportOpen);
   const supportUnread = useMyTicketStats().unread;
   const [scrolled, setScrolled] = useState(false);
+  // Esconde a barra ao rolar pra BAIXO (lendo o conteúdo) e reaparece ao rolar pra CIMA — padrão
+  // nativo mobile, ganha área de tela. Sempre visível bem no topo.
+  const [barHidden, setBarHidden] = useState(false);
+  const lastY = useRef(0);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    lastY.current = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      if (y > lastY.current + 6 && y > 72) setBarHidden(true);
+      else if (y < lastY.current - 6 || y <= 4) setBarHidden(false);
+      lastY.current = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   return (
-    <header className={cn("lg:hidden fixed top-0 left-0 right-0 z-50 transition-colors duration-300", scrolled ? "glass border-b border-border" : "border-b border-transparent")}>
+    <header
+      className={cn(
+        "lg:hidden fixed top-0 left-0 right-0 z-50 transition-[transform,background-color,border-color] duration-300 motion-reduce:transition-none",
+        scrolled ? "glass border-b border-border" : "border-b border-transparent",
+        barHidden && "-translate-y-full",
+      )}
+    >
       <div className="flex items-center justify-between gap-3 h-[60px] px-5">
         <button type="button" onClick={() => goToSection(NAV_ITEMS[0].id)} className="flex items-center gap-2.5">
           <Logo size={28} />

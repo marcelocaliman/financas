@@ -149,7 +149,7 @@ export function DashboardHero() {
       <RotatingPhrase />
 
       {/* Faixa 1 — patrimônio (esquerda) + conversões nas outras moedas (direita) */}
-      <div className="mt-7 sm:mt-10 lg:mt-11 flex flex-wrap items-end justify-between gap-x-10 gap-y-5 sm:gap-y-6">
+      <div className="mt-7 sm:mt-10 lg:mt-11 flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-x-10 sm:gap-y-6">
         <div>
           <Eyebrow className="mb-2.5">{t("dashboard.netWorth")}</Eyebrow>
           <HeroNumber
@@ -168,7 +168,7 @@ export function DashboardHero() {
       </div>
 
       {/* Faixa 2 — Liberdade + Saúde + Composição, tudo numa linha */}
-      <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-x-8 gap-y-5 sm:gap-x-12 sm:gap-y-6">
+      <div className="mt-0 border-t border-border pt-6 sm:mt-8 sm:border-t-0 sm:pt-0 flex flex-wrap items-center gap-x-8 gap-y-5 sm:gap-x-12 sm:gap-y-6">
         {/* Celular: Liberdade + Saúde lado a lado (2 colunas). No desktop, `sm:contents` desfaz o
             wrapper e eles voltam a ser filhos diretos da linha (layout original preservado). */}
         <div className="grid w-full grid-cols-2 gap-x-6 gap-y-5 sm:contents">
@@ -176,7 +176,7 @@ export function DashboardHero() {
           <button
             type="button"
             onClick={() => goToSection("liberdade")}
-            className="flex items-center gap-3.5 text-left group rounded-[12px] -m-1 p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            className="flex items-center gap-3.5 text-left group rounded-[14px] border border-border bg-card2/40 p-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:rounded-[12px] sm:border-0 sm:bg-transparent sm:p-1 sm:-m-1"
             aria-label={t("liberdade.title")}
           >
             <ProgressRing pct={lib.freedomPct} size={66} stroke={6}>
@@ -198,7 +198,7 @@ export function DashboardHero() {
           <button
             type="button"
             onClick={() => goToSection("liberdade")}
-            className="flex items-center gap-3.5 text-left group rounded-[12px] -m-1 p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            className="flex items-center gap-3.5 text-left group rounded-[14px] border border-border bg-card2/40 p-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] sm:rounded-[12px] sm:border-0 sm:bg-transparent sm:p-1 sm:-m-1"
             aria-label={t("dashboard.health")}
           >
             <ProgressRing pct={health.score} size={66} stroke={6}>

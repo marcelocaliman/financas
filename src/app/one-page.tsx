@@ -62,7 +62,7 @@ export function OnePage() {
       {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro). O cabeçalho de cada
           seção aberta gruda no topo enquanto ela rola — offset do layout via StickyOffsetContext. */}
       <StickyOffsetContext.Provider value={stickyTop}>
-        <div className={cn(CONTAINER, GUTTERS, "pb-20 lg:pb-28")}>
+        <div className={cn(CONTAINER, GUTTERS, "pb-6 sm:pb-20 lg:pb-28")}>
           {rest.map((item) => {
             const sec = SECTIONS[item.id];
             return (

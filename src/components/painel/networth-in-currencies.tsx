@@ -19,9 +19,11 @@ export function NetWorthInCurrencies({ netWorth }: { netWorth: number }) {
   if (others.length === 0) return null;
 
   return (
-    <div className="flex flex-col items-start lg:items-end gap-3">
+    // Mobile: bloco de largura CHEIA, separado por um hairline, com as moedas distribuídas em 3
+    // colunas fixas (grid) → não reflui ao ocultar os números. Desktop (sm:+): igual ao original.
+    <div className="flex w-full flex-col items-start gap-2.5 border-t border-border pt-4 sm:w-auto sm:gap-3 sm:border-t-0 sm:pt-0 lg:items-end">
       <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">{t("dashboard.alsoWorth")}</span>
-      <div className="flex flex-wrap gap-x-7 gap-y-3 lg:justify-end">
+      <div className="grid w-full grid-cols-3 gap-x-4 gap-y-3 sm:flex sm:w-auto sm:flex-wrap sm:gap-x-7 lg:justify-end">
         {others.map((c) => (
           <div key={c} className="min-w-0">
             <div className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-faint mb-1">{c}</div>
