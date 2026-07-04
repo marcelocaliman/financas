@@ -59,8 +59,8 @@ export default function Liberdade() {
       <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Métrica principal: anel + % + número da independência + chegada */}
       <div id="lib-independencia">
-      <Tile className="p-6 md:p-8">
-        <div className="flex flex-wrap items-center gap-x-9 gap-y-6">
+      <Tile className="p-4 sm:p-6 md:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-9 sm:gap-y-6">
           <ProgressRing pct={v.freedomPct} size={132} stroke={10}>
             <div className="text-center leading-none">
               <div className="text-[clamp(1.5rem,4.5vw,2.1rem)] font-semibold tracking-[-0.03em] tabular">
@@ -94,7 +94,7 @@ export default function Liberdade() {
           </div>
 
           {/* Chegada estimada */}
-          <div className="text-right shrink-0">
+          <div className="text-left sm:text-right shrink-0">
             <Eyebrow className="mb-1.5">{t("liberdade.arrival")}</Eyebrow>
             {v.reached ? (
               <div className="text-[clamp(1.2rem,3vw,1.6rem)] font-semibold text-accent leading-none">{t("liberdade.reached")}</div>

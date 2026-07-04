@@ -604,7 +604,40 @@ function UpcomingBillsTile() {
   return (
     <section id="orc-vencimentos">
       <SectionHead title={t("orcamento.upcomingBills")} count={view.bills.length} />
-      <div className="overflow-x-auto">
+
+      {/* MOBILE: lista compacta (a tabela em grid não cabe na tela do celular). */}
+      <div className="sm:hidden overflow-hidden rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] divide-y divide-[var(--grid-line)]">
+        {shown.map((b) => (
+          <div key={b.id} className="flex items-center gap-3 px-3.5 py-2.5">
+            {viewerMode ? (
+              <Circle size={17} className="shrink-0 text-faint" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => pay(b.id)}
+                aria-label={t("orcamento.markPaid")}
+                className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-faint hover:bg-card-hover hover:text-accent transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                <Circle size={17} />
+              </button>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13.5px] text-text">{b.name || nameById(tax.expenseCategories, b.categoryId) || t("orcamento.uncategorized")}</div>
+              <div className={cn("mt-0.5 text-[11.5px] tabular", BILL_STATUS_TONE[b.status])}>
+                {dueDateLabel(b.dueDate, lang)} · {daysLabel(t, b.status, b.daysUntil)}
+              </div>
+            </div>
+            <Money value={conv(b.amount, b.currency)} currency={disp} className="shrink-0 text-[13.5px] font-medium tabular" />
+          </div>
+        ))}
+        <div className="flex items-center justify-between gap-3 bg-card2 px-3.5 py-2.5">
+          <span className="text-[11px] text-faint">{extra > 0 ? t("orcamento.moreBills", { n: extra }) : null}</span>
+          <Money value={view.total} currency={disp} className="text-[13px] font-semibold tabular text-neg" options={{ signDisplay: "never" }} />
+        </div>
+      </div>
+
+      {/* DESKTOP/TABLET: tabela em grid. */}
+      <div className="hidden sm:block overflow-x-auto">
         <div className="min-w-0 sm:min-w-[480px] rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">
           {/* Cabeçalho */}
           <div className="grid items-center bg-card2 border-b border-border" style={{ gridTemplateColumns: TPL }}>

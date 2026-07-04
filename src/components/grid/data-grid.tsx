@@ -947,16 +947,19 @@ export function DataGrid<T extends { id: string }>({
         {/* título = 1º campo de texto (nome), largura cheia */}
         <div className="pr-7">{renderCell(titleCol, row, ghostRow)}</div>
         {restCols.length ? (
-          <div className="mt-2 space-y-1.5 border-t border-[var(--grid-line)] pt-2">
+          <div className="mt-2 space-y-0.5 border-t border-[var(--grid-line)] pt-1.5">
             {restCols.map((col) => {
               const cell = renderCell(col, row, ghostRow);
+              // Linha de "recibo": rótulo à esquerda, VALOR à direita (inputs/selects/pickers
+              // alinhados à direita) — assim o valor não fica solto no meio do card.
+              const align = "flex min-w-0 justify-end text-right [&_input]:text-right [&_select]:text-right [&_button]:justify-end";
               return col.header ? (
-                <div key={col.key} className="grid grid-cols-[minmax(76px,34%)_1fr] items-center gap-2">
-                  <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint truncate">{col.header}</span>
-                  <div className="min-w-0">{cell}</div>
+                <div key={col.key} className="flex items-center justify-between gap-3 min-h-[34px]">
+                  <span className="shrink-0 font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{col.header}</span>
+                  <div className={cn(align, "max-w-[70%]")}>{cell}</div>
                 </div>
               ) : (
-                <div key={col.key} className="min-w-0">{cell}</div>
+                <div key={col.key} className={cn(align, "min-h-[34px] items-center")}>{cell}</div>
               );
             })}
           </div>
