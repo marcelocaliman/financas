@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronLeft, ChevronRight, Clock, Plus, Sparkles, Trash2 } from "lucide-react";
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
-import { useAdsCalendar } from "@/admin/ads/calendar-store";
+import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
 import { cn } from "@/lib/utils";
 
 /** Peças postáveis (posts + stories + carrosséis, institucionais e educativos) — seletor e estatísticas. */
@@ -28,6 +28,171 @@ const pretty = (k: string) => {
   const d = parse(k);
   return `${WD[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()].toLowerCase()}`;
 };
+
+const MS_DAY = 86_400_000;
+/** "hoje" / "amanhã" / "ontem" / "seg, 8 jul (· há Nd)". */
+function relDay(k: string, todayK: string): string {
+  const delta = Math.round((parse(k).getTime() - parse(todayK).getTime()) / MS_DAY);
+  if (delta === 0) return "hoje";
+  if (delta === 1) return "amanhã";
+  if (delta === -1) return "ontem";
+  const d = parse(k);
+  const s = `${WD[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3).toLowerCase()}`;
+  return delta < 0 ? `${s} · há ${-delta}d` : s;
+}
+
+/** Peças PLANEJADAS ainda não postadas, separadas em atrasadas / hoje / próximas. */
+function useAgenda() {
+  const entries = useAdsCalendar((s) => s.entries);
+  const todayK = key(new Date());
+  return useMemo(() => {
+    const posted = new Set(entries.filter((e) => e.status === "posted").map((e) => `${e.pieceId}@${e.date}`));
+    const pending = entries
+      .filter((e) => e.status === "planned" && !posted.has(`${e.pieceId}@${e.date}`))
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+    return {
+      todayK,
+      overdue: pending.filter((e) => e.date < todayK),
+      today: pending.filter((e) => e.date === todayK),
+      upcoming: pending.filter((e) => e.date > todayK).slice(0, 6),
+    };
+  }, [entries, todayK]);
+}
+
+const NOTIFY_KEY = "nf-ads-notify"; // "1" = quer aviso do navegador
+const NOTIFIED_ON = "nf-ads-notified-on"; // AAAA-MM-DD do último aviso (1×/dia)
+
+/** Roteiro de postagem: o que postar HOJE (+ atrasadas e próximas), com alerta opcional do navegador. */
+export function AdsAgenda() {
+  const { todayK, overdue, today, upcoming } = useAgenda();
+  const add = useAdsCalendar((s) => s.add);
+  const remove = useAdsCalendar((s) => s.remove);
+  const due = overdue.length + today.length;
+
+  const [notify, setNotify] = useState(() => {
+    try {
+      return localStorage.getItem(NOTIFY_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  // Aviso do navegador: 1× por dia, quando há peça pra hoje/atrasada e a permissão está concedida.
+  useEffect(() => {
+    if (!notify || due === 0 || typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    try {
+      if (localStorage.getItem(NOTIFIED_ON) === todayK) return;
+      new Notification("Nossas Finanças · Ads", {
+        body: overdue.length ? `${due} peça(s) pra postar (inclui atrasadas).` : `${due} peça(s) pra postar hoje.`,
+      });
+      localStorage.setItem(NOTIFIED_ON, todayK);
+    } catch {
+      /* ignora */
+    }
+  }, [notify, due, overdue.length, todayK]);
+
+  const enableNotify = async () => {
+    if (typeof Notification === "undefined") return;
+    const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+    const on = perm === "granted";
+    setNotify(on);
+    try {
+      localStorage.setItem(NOTIFY_KEY, on ? "1" : "0");
+    } catch {
+      /* ignora */
+    }
+  };
+  const disableNotify = () => {
+    setNotify(false);
+    try {
+      localStorage.setItem(NOTIFY_KEY, "0");
+    } catch {
+      /* ignora */
+    }
+  };
+
+  // "Publiquei": registra a postagem de HOJE e tira a peça do roteiro (feito). Lixeira só descarta o plano.
+  const markPosted = (e: CalEntry) => {
+    add({ date: todayK, pieceId: e.pieceId, status: "posted" });
+    remove(e.id);
+  };
+
+  const total = overdue.length + today.length + upcoming.length;
+  return (
+    <div className="rounded-[16px] border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <CalendarClock size={15} className="text-accent" />
+          <h3 className="text-[14px] font-semibold text-text">Roteiro de postagem</h3>
+        </div>
+        {notify ? (
+          <button type="button" onClick={disableNotify} title="Desligar avisos do navegador" className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] border border-border text-[11.5px] text-accent">
+            <BellRing size={13} /> Avisos ligados
+          </button>
+        ) : (
+          <button type="button" onClick={enableNotify} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] border border-border text-[11.5px] text-muted hover:text-text hover:border-border-strong transition-colors">
+            <Bell size={13} /> Avisar no navegador
+          </button>
+        )}
+      </div>
+
+      {total === 0 ? (
+        <p className="text-[12.5px] leading-relaxed text-faint">
+          Nada planejado ainda. Escolha um dia no calendário abaixo e adicione a peça como{" "}
+          <b className="text-muted">Planejado</b> — ela aparece aqui como o roteiro do dia.
+        </p>
+      ) : (
+        <div className="space-y-3.5">
+          {overdue.length ? <AgendaGroup label={`Atrasado · ${overdue.length}`} tone="neg" entries={overdue} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+          {today.length ? <AgendaGroup label="Pra hoje" tone="accent" entries={today} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+          {upcoming.length ? <AgendaGroup label="Próximos" tone="muted" entries={upcoming} todayK={todayK} onMark={markPosted} onRemove={remove} /> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgendaGroup({
+  label,
+  tone,
+  entries,
+  todayK,
+  onMark,
+  onRemove,
+}: {
+  label: string;
+  tone: "neg" | "accent" | "muted";
+  entries: CalEntry[];
+  todayK: string;
+  onMark: (e: CalEntry) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div>
+      <div className={cn("mb-1.5 font-mono text-[10px] font-medium uppercase tracking-[0.12em]", tone === "neg" ? "text-neg" : tone === "accent" ? "text-accent" : "text-faint")}>{label}</div>
+      <div className="space-y-1.5">
+        {entries.map((e) => (
+          <div key={e.id} className="flex items-center gap-2.5 rounded-[11px] border border-border bg-card2 px-3 py-2">
+            <span className={cn("h-2 w-2 shrink-0 rounded-full", tone === "neg" ? "bg-neg" : "bg-accent")} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[12.5px] text-text">{PIECE[e.pieceId]?.label ?? e.pieceId}</div>
+              <div className="truncate text-[11px] text-faint">
+                {relDay(e.date, todayK)}
+                {e.note ? ` · ${e.note}` : ""}
+              </div>
+            </div>
+            <button type="button" onClick={() => onMark(e)} title="Marcar como publicado hoje" className="inline-flex h-8 shrink-0 items-center gap-1 rounded-[8px] bg-accent px-2.5 text-[11.5px] font-medium text-[#08130C] hover:opacity-90">
+              <Check size={13} /> Publiquei
+            </button>
+            <button type="button" onClick={() => onRemove(e.id)} aria-label="Remover do roteiro" className="grid h-8 w-8 shrink-0 place-items-center rounded-[8px] text-faint hover:text-neg transition-colors">
+              <Trash2 size={13} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function AdsCalendar() {
   const entries = useAdsCalendar((s) => s.entries);

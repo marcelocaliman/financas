@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, GraduationCap, Image as ImageIcon, Loader2 } from "lucide-react";
 import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
-import { AdsCalendar } from "@/admin/ads/calendar";
+import { AdsCalendar, AdsAgenda } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { CardSubNav } from "@/components/common/card-sub-nav";
 import { cn } from "@/lib/utils";
@@ -512,11 +512,14 @@ export function AdsSection() {
       <div className="space-y-10 pt-6">
         <section id="ads-calendario">
           <SubHead icon={<CalendarCheck size={15} className="text-accent" />} title="Calendário de divulgação">
-            Marque o que já postou (ou planeje) e acompanhe a cadência. Cada peça tem o botão{" "}
-            <b className="text-text">Hoje</b> pra registrar num clique — e mostra um selo{" "}
-            <b className="text-text">Publicado</b> com a data quando já foi ao ar.
+            Planeje as postagens e acompanhe a cadência. O <b className="text-text">roteiro</b> abaixo
+            mostra o que postar hoje (e o que atrasou) e pode te avisar pelo navegador; cada peça tem
+            o botão <b className="text-text">Hoje</b> e um selo <b className="text-text">Publicado</b>.
           </SubHead>
-          <AdsCalendar />
+          <AdsAgenda />
+          <div className="mt-4">
+            <AdsCalendar />
+          </div>
         </section>
 
         <section id="ads-stories">
@@ -606,11 +609,24 @@ export function AdsSection() {
 }
 
 export function AdsSummary() {
+  // Peças planejadas pra HOJE ou atrasadas (planejadas no passado e ainda não postadas).
+  const due = useAdsCalendar((s) => {
+    const today = dateKey(new Date());
+    const posted = new Set(s.entries.filter((e) => e.status === "posted").map((e) => `${e.pieceId}@${e.date}`));
+    return s.entries.filter((e) => e.status === "planned" && e.date <= today && !posted.has(`${e.pieceId}@${e.date}`)).length;
+  });
   return (
-    <span className="inline-flex items-center gap-2 text-[12.5px] text-muted">
-      <Film size={15} className="text-accent" />
-      <span className="tabular">
-        {STORIES.length + EDU_STORIES.length} stories · {POSTS.length + EDU_POSTS.length} posts · {CAROUSELS.length + EDU_CAROUSELS.length} carrosséis
+    <span className="inline-flex items-center gap-2.5 text-[12.5px] text-muted">
+      {due > 0 ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-[11.5px] font-medium text-accent">
+          <CalendarCheck size={12} /> {due} pra postar
+        </span>
+      ) : null}
+      <span className="inline-flex items-center gap-2">
+        <Film size={15} className="text-accent" />
+        <span className="tabular">
+          {STORIES.length + EDU_STORIES.length} stories · {POSTS.length + EDU_POSTS.length} posts · {CAROUSELS.length + EDU_CAROUSELS.length} carrosséis
+        </span>
       </span>
     </span>
   );
