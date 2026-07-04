@@ -439,7 +439,7 @@ function CategoryDonut({
     return (
       <Tile className="p-4 sm:p-6 md:p-7">
         <Eyebrow className="mb-4">{title}</Eyebrow>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <div className="w-[128px] h-[128px] shrink-0 rounded-full border-[21px] border-card2" aria-hidden />
           <span className="text-[12.5px] text-faint">{emptyLabel}</span>
         </div>
@@ -449,7 +449,7 @@ function CategoryDonut({
   return (
     <Tile className="p-4 sm:p-6 md:p-7">
       <Eyebrow className="mb-4">{title}</Eyebrow>
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 sm:gap-6">
         <div className="w-[128px] h-[128px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -487,8 +487,10 @@ function CategoryDonut({
           {data.map((e, i) => (
             <div key={e.id} className="flex items-center gap-2.5 text-[12.5px]">
               <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
-              <span className="text-muted">{e.name}</span>
-              <Money value={e.value} currency={disp} className="font-semibold tabular" />
+              {/* Celular: nome trunca em 1 linha e o valor cola à direita (coluna limpa).
+                  Desktop (sm:): volta ao comportamento original (nome no fluxo, valor após). */}
+              <span className="min-w-0 flex-1 truncate text-muted sm:flex-none sm:overflow-visible sm:whitespace-normal">{e.name}</span>
+              <Money value={e.value} currency={disp} className="shrink-0 font-semibold tabular" />
             </div>
           ))}
         </div>
