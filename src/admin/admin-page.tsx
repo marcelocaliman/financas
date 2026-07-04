@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Accordion } from "@/components/common/accordion";
 import { StickyOffsetContext, useStickyOffset } from "@/hooks/use-scroll-spy";
-import { OverviewSection, OverviewSummary } from "./sections/overview";
+import { OverviewSection } from "./sections/overview";
 import { UsersSection, UsersSummary } from "./sections/users";
 import { AnalyticsSection, AnalyticsSummary } from "./sections/analytics";
 import { AccessLogSection, AccessSummary } from "./sections/access-log";
@@ -58,13 +58,20 @@ export function AdminPage() {
         <div className="border-t border-border" />
       </section>
 
-      {/* Cabeçalhos das seções abertas grudam no topo enquanto rolam (offset do layout do painel),
-          igual ao app do usuário — via StickyOffsetContext. */}
+      {/* Visão geral — SEMPRE visível (não é accordion), igual ao Painel do app do usuário. */}
+      <section id="adm-overview" className="scroll-mt-24">
+        <div className={cn(CONTAINER, GUTTERS, "pt-8 pb-12")}>
+          <div className="mb-5 flex items-baseline gap-2.5">
+            <h2 className="text-[15px] font-semibold text-text">Visão geral</h2>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-faint">painel</span>
+          </div>
+          <SectionErrorBoundary name="Visão geral"><OverviewSection days={days} /></SectionErrorBoundary>
+        </div>
+      </section>
+
+      {/* Demais seções: accordions. Cabeçalhos grudam no topo enquanto rolam — via StickyOffsetContext. */}
       <StickyOffsetContext.Provider value={stickyTop}>
       <div className={cn(CONTAINER, GUTTERS, "pb-24 lg:pb-28")}>
-        <Accordion id="adm-overview" title="Visão geral" summary={<OverviewSummary />} defaultOpen>
-          <SectionErrorBoundary name="Visão geral"><OverviewSection days={days} /></SectionErrorBoundary>
-        </Accordion>
         <Accordion id="adm-users" title="Usuários" summary={<UsersSummary />}>
           <SectionErrorBoundary name="Usuários"><UsersSection /></SectionErrorBoundary>
         </Accordion>
