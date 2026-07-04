@@ -130,7 +130,7 @@ export default function Historico() {
       <section>
         <SectionHead title={t("historico.snapshots")} count={data.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[560px]">
+          <div className="min-w-0 sm:min-w-[560px]">
             <DataGrid<NetWorthSnapshot>
               columns={cols}
               rows={view.sorted}

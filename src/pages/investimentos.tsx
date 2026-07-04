@@ -113,7 +113,7 @@ export default function Investimentos() {
       <Tile className="p-6 md:p-7">
         <Eyebrow className="mb-4">{t("investimentos.target")}</Eyebrow>
         <div className="overflow-x-auto">
-            <div className="min-w-[520px]">
+            <div className="min-w-0 sm:min-w-[520px]">
               <div className="grid grid-cols-[1.4fr_1fr_0.8fr_1.1fr] pb-2 border-b border-border">
                 <Eyebrow>{t("patrimonio.class")}</Eyebrow>
                 <Eyebrow className="text-right">{t("investimentos.currentAlloc")}</Eyebrow>
@@ -246,7 +246,7 @@ function Proventos({ invested }: { invested: number }) {
       ) : null}
 
       <div className="overflow-x-auto">
-        <div className="min-w-[460px]">
+        <div className="min-w-0 sm:min-w-[460px]">
           <DataGrid<Dividend>
             columns={cols}
             rows={[...(divs ?? [])].sort((a, b) => (a.month < b.month ? 1 : -1))}

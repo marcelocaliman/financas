@@ -196,7 +196,7 @@ export default function Projecao() {
         <Eyebrow>{t("projecao.yearByYear")}</Eyebrow>
         <div className="mt-3 rounded-[16px] border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
-            <div className="min-w-[520px]">
+            <div className="min-w-0 sm:min-w-[520px]">
               <div className="grid grid-cols-[0.6fr_1fr_1fr_1fr] bg-card2 border-b border-border px-4 py-2.5">
                 <Eyebrow>{t("projecao.year")}</Eyebrow>
                 {SCENARIO_KEYS.map((k) => (
@@ -300,7 +300,7 @@ function SensitivityCard() {
         <p className="mt-5 text-[13px] text-faint">{t("projecao.sensitivityReached")}</p>
       ) : (
         <div className="mt-5 overflow-x-auto">
-          <div className="min-w-[480px]">
+          <div className="min-w-0 sm:min-w-[480px]">
             <div className="mb-1.5 grid grid-cols-[64px_repeat(4,1fr)] gap-1.5">
               <div className="self-end pb-1 font-mono text-[9px] uppercase leading-tight tracking-[0.08em] text-faint">{t("projecao.annualReturn")} ↓<br />{t("projecao.monthly")} →</div>
               {mults.map((m) => (

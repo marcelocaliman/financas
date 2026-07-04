@@ -358,7 +358,7 @@ export default function Orcamento() {
       <section id="orc-receitas">
         <SectionHead title={t("orcamento.income")} count={view.monthInc.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
+          <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
               columns={cols(tax.incomeCategories, view.monthInc as BudgetRow[])}
@@ -378,7 +378,7 @@ export default function Orcamento() {
       <section id="orc-gastos">
         <SectionHead title={t("orcamento.expenses")} count={view.monthExp.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[600px]">
+          <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
               columns={cols(tax.expenseCategories, gridRows, true)}
@@ -605,7 +605,7 @@ function UpcomingBillsTile() {
     <section id="orc-vencimentos">
       <SectionHead title={t("orcamento.upcomingBills")} count={view.bills.length} />
       <div className="overflow-x-auto">
-        <div className="min-w-[480px] rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">
+        <div className="min-w-0 sm:min-w-[480px] rounded-[16px] border border-border bg-card shadow-[var(--shadow-card)] overflow-hidden">
           {/* Cabeçalho */}
           <div className="grid items-center bg-card2 border-b border-border" style={{ gridTemplateColumns: TPL }}>
             <div className="px-2 py-2.5" />

@@ -153,7 +153,7 @@ export default function Objetivos() {
       <section>
         <SectionHead title={t("nav.objetivos")} count={data.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-[620px]">
+          <div className="min-w-0 sm:min-w-[620px]">
             <DataGrid<Goal>
               columns={cols}
               rows={data}

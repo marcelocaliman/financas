@@ -361,7 +361,7 @@ export default function Patrimonio() {
             </div>
 
             <div className="overflow-x-auto">
-              <div className="min-w-[860px]">
+              <div className="min-w-0 sm:min-w-[860px]">
                 <DataGrid<Asset>
                   key={activeId}
                   columns={assetColsFor(activeId)}
@@ -419,7 +419,7 @@ export default function Patrimonio() {
         {liabOpen ? (
           <div className="mt-4 space-y-7">
             <div className="overflow-x-auto">
-              <div className="min-w-[760px]">
+              <div className="min-w-0 sm:min-w-[760px]">
                 <DataGrid<Liability>
                   columns={liabCols}
                   rows={data.liabilities}
