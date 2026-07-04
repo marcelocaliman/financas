@@ -312,6 +312,15 @@ body {
   animation: soft-pulse 2.4s ease-in-out infinite;
 }
 
+/* Bottom sheet (pickers no MOBILE): backdrop com fade + painel subindo de baixo. */
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-backdrop { animation: sheet-fade 200ms ease-out; }
+.sheet-panel { animation: sheet-up 300ms cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop, .sheet-panel { animation: none; }
+}
+
 input,
 select,
 button {

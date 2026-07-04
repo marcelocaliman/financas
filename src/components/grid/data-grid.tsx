@@ -73,6 +73,55 @@ const CELL_INPUT =
 
 const get = (row: object, key: string): unknown => (row as Record<string, unknown>)[key];
 
+// ── Bottom sheet (padrão MOBILE dos pickers) ─────────────────────────────────
+/** Folha que sobe de baixo: backdrop + painel com pegador + título opcional. Fecha no backdrop,
+ *  no Escape e ao escolher. É o modelo ÚNICO de "escolher algo" no celular (moeda/dia/mês/select). */
+function SheetShell({ title, onClose, children }: { title?: string; onClose: () => void; children: ReactNode }) {
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden"; // trava a rolagem do fundo enquanto a folha está aberta
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex flex-col justify-end" role="dialog" aria-modal="true">
+      <button type="button" aria-label="Fechar" onClick={onClose} className="sheet-backdrop absolute inset-0 bg-black/55" />
+      <div
+        className="sheet-panel relative max-h-[82vh] overflow-y-auto scrollbar-subtle rounded-t-[22px] border-t border-border bg-card px-3.5 pt-2.5 shadow-[0_-10px_44px_-14px_rgba(0,0,0,0.6)]"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}
+      >
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border-strong" />
+        {title ? <div className="mb-3 px-0.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-faint">{title}</div> : null}
+        {children}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** Uma opção (linha) dentro do sheet: rótulo à esquerda + check quando selecionada. Alvo de toque alto. */
+function SheetOption({ label, selected, onClick }: { label: ReactNode; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center justify-between gap-3 rounded-[12px] px-3.5 py-3 text-left text-[15px] transition-colors outline-none",
+        selected ? "bg-accent-soft text-text font-medium" : "text-muted hover:bg-card-hover hover:text-text active:bg-card-hover",
+      )}
+    >
+      <span className="truncate">{label}</span>
+      {selected ? <Check size={18} className="shrink-0 text-accent" /> : null}
+    </button>
+  );
+}
+
 // ── Células ───────────────────────────────────────────────────────────────────
 function TextCell({
   value,
@@ -195,6 +244,7 @@ function SelectCell({
   placeholder,
   rowId,
   colKey,
+  title,
   onCommit,
 }: {
   value: string;
@@ -203,13 +253,46 @@ function SelectCell({
   placeholder?: string;
   rowId: string;
   colKey: string;
+  title?: string;
   onCommit: (v: string) => void;
 }) {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
   // Opcional sem opções disponíveis (ex.: Indexador fora de Renda Fixa): não editável.
   if (optional && options.length === 0) {
     return <div className="px-2 py-1.5 text-[13px] text-faint">—</div>;
   }
   const hasValue = options.some((o) => o.value === value);
+
+  // MOBILE: gatilho + bottom sheet com as opções (padrão único de seleção no celular).
+  if (isMobile) {
+    const current = options.find((o) => o.value === value);
+    return (
+      <>
+        <button
+          type="button"
+          data-rowid={rowId}
+          data-col={colKey}
+          onClick={() => setOpen(true)}
+          className={cn(CELL_INPUT, "flex items-center justify-between gap-1 cursor-pointer", !current && "text-faint")}
+        >
+          <span className="truncate">{current?.label ?? placeholder ?? "—"}</span>
+          <ChevronDown size={13} className="shrink-0 text-faint" />
+        </button>
+        {open ? (
+          <SheetShell title={title} onClose={() => setOpen(false)}>
+            <div className="space-y-1">
+              {optional ? <SheetOption label="—" selected={!hasValue} onClick={() => { onCommit(""); setOpen(false); }} /> : null}
+              {options.map((o) => (
+                <SheetOption key={o.value} label={o.label} selected={o.value === value} onClick={() => { onCommit(o.value); setOpen(false); }} />
+              ))}
+            </div>
+          </SheetShell>
+        ) : null}
+      </>
+    );
+  }
+
   return (
     <select
       data-rowid={rowId}
@@ -314,20 +397,27 @@ function DayCell({
   rowId,
   colKey,
   align,
+  title,
   onCommit,
 }: {
   value: number | undefined;
   rowId: string;
   colKey: string;
   align?: "left" | "right";
+  title?: string;
   onCommit: (v: number | undefined) => void;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const MENU_W = 236;
   const MENU_H = 220;
   const openMenu = () => {
+    if (isMobile) {
+      setOpen(true);
+      return;
+    }
     const r = btnRef.current?.getBoundingClientRect();
     if (r) {
       // Alinha a borda direita do menu à do gatilho (coluna é à direita) e prende na viewport.
@@ -339,7 +429,7 @@ function DayCell({
     setOpen(true);
   };
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobile) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
@@ -348,13 +438,52 @@ function DayCell({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-  const pick = (d: number | undefined) => {
-    if (d !== value) onCommit(d);
+  }, [open, isMobile]);
+  const close = () => {
     setOpen(false);
     btnRef.current?.focus();
   };
+  const pick = (d: number | undefined) => {
+    if (d !== value) onCommit(d);
+    close();
+  };
   const today = new Date().getDate(); // dia do mês de hoje — marcado p/ achar rápido (não pré-seleciona)
+  // Grade 1–31 + "—"; `big` = células maiores (bottom sheet no mobile).
+  const grid = (big: boolean) => (
+    <>
+      <div className="grid grid-cols-7 gap-1">
+        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+          <button
+            key={d}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => pick(d)}
+            aria-current={d === today ? "date" : undefined}
+            className={cn(
+              "grid place-items-center rounded-[9px] tabular outline-none transition-colors",
+              big ? "h-11 text-[15px]" : "h-[28px] text-[12.5px]",
+              d === value
+                ? "bg-accent text-[#0A0B0D] font-semibold"
+                : d === today
+                  ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
+                  : "text-muted hover:bg-card-hover hover:text-text",
+            )}
+          >
+            {d}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        aria-label="Sem dia"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => pick(undefined)}
+        className={cn("mt-1.5 w-full grid place-items-center rounded-[9px] border-t border-border text-faint hover:text-text hover:bg-card-hover transition-colors", big ? "h-11 text-[13px]" : "h-[28px] text-[12px]")}
+      >
+        —
+      </button>
+    </>
+  );
   return (
     <>
       <button
@@ -381,50 +510,23 @@ function DayCell({
         <span>{value != null ? value : "—"}</span>
         <ChevronDown size={13} className="text-faint shrink-0" />
       </button>
-      {open && pos
-        ? createPortal(
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div
-                className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]"
-                style={{ top: pos.top, left: pos.left, width: MENU_W }}
-              >
-                <div className="grid grid-cols-7 gap-1">
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      // Não roubar o foco do gatilho (mesma razão do CurrencyPicker).
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => pick(d)}
-                      aria-current={d === today ? "date" : undefined}
-                      className={cn(
-                        "h-[28px] grid place-items-center rounded-[7px] text-[12.5px] tabular outline-none transition-colors",
-                        d === value
-                          ? "bg-accent text-[#0A0B0D] font-semibold"
-                          : d === today
-                            ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
-                            : "text-muted hover:bg-card-hover hover:text-text",
-                      )}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  aria-label="Sem dia"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => pick(undefined)}
-                  className="mt-1.5 w-full h-[28px] grid place-items-center rounded-[7px] border-t border-border text-[12px] text-faint hover:text-text hover:bg-card-hover transition-colors"
-                >
-                  —
-                </button>
-              </div>
-            </>,
-            document.body,
-          )
-        : null}
+      {isMobile ? (
+        open ? (
+          <SheetShell title={title} onClose={close}>
+            {grid(true)}
+          </SheetShell>
+        ) : null
+      ) : open && pos ? (
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]" style={{ top: pos.top, left: pos.left, width: MENU_W }}>
+              {grid(false)}
+            </div>
+          </>,
+          document.body,
+        )
+      ) : null}
     </>
   );
 }
@@ -441,6 +543,7 @@ function MonthCell({
   colKey,
   align,
   max,
+  title,
   onCommit,
 }: {
   value: string;
@@ -450,10 +553,12 @@ function MonthCell({
   align?: "left" | "right";
   /** maior mês selecionável ("AAAA-MM"); meses depois ficam desabilitados. */
   max?: string;
+  title?: string;
   onCommit: (v: string) => void;
 }) {
   const { i18n } = useTranslation();
   const locale = MONTH_LOCALE[(i18n.resolvedLanguage ?? "pt").slice(0, 2)] ?? "pt-BR";
+  const isMobile = useIsMobile();
   const today = new Date();
   const vy = value ? Number(value.split("-")[0]) : undefined;
   const vm = value ? Number(value.split("-")[1]) : undefined;
@@ -465,6 +570,10 @@ function MonthCell({
   const MENU_H = 248;
   const openMenu = () => {
     setNavYear(vy ?? today.getFullYear()); // reabre sempre no ano do valor (ou no atual)
+    if (isMobile) {
+      setOpen(true);
+      return;
+    }
     const r = btnRef.current?.getBoundingClientRect();
     if (r) {
       const left = Math.max(8, Math.min(r.left, window.innerWidth - MENU_W - 8));
@@ -475,7 +584,7 @@ function MonthCell({
     setOpen(true);
   };
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobile) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
@@ -484,16 +593,65 @@ function MonthCell({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
-  const pick = (m: number) => {
-    onCommit(`${navYear}-${String(m).padStart(2, "0")}`);
+  }, [open, isMobile]);
+  const close = () => {
     setOpen(false);
     btnRef.current?.focus();
+  };
+  const pick = (m: number) => {
+    onCommit(`${navYear}-${String(m).padStart(2, "0")}`);
+    close();
   };
   const months = Array.from({ length: 12 }, (_, i) =>
     new Date(2000, i, 1).toLocaleDateString(locale, { month: "short" }).replace(".", ""),
   );
   const label = value ? monthLabel(value, locale) : placeholder ?? "—";
+  // Navegação de ano + grade de 12 meses; `big` = maior (bottom sheet no mobile).
+  const menu = (big: boolean) => (
+    <>
+      <div className="mb-2 flex items-center justify-between px-0.5">
+        <button type="button" aria-label="Ano anterior" onMouseDown={(e) => e.preventDefault()} onClick={() => setNavYear((y) => y - 1)} className={cn("grid place-items-center rounded-[8px] text-muted hover:bg-card-hover hover:text-text", big ? "h-9 w-9" : "h-7 w-7")}>
+          <ChevronLeft size={big ? 18 : 15} />
+        </button>
+        <span className={cn("font-semibold tabular text-text", big ? "text-[15px]" : "text-[13px]")}>{navYear}</span>
+        <button type="button" aria-label="Próximo ano" onMouseDown={(e) => e.preventDefault()} onClick={() => setNavYear((y) => y + 1)} className={cn("grid place-items-center rounded-[8px] text-muted hover:bg-card-hover hover:text-text", big ? "h-9 w-9" : "h-7 w-7")}>
+          <ChevronRight size={big ? 18 : 15} />
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-1">
+        {months.map((name, i) => {
+          const m = i + 1;
+          const ym = `${navYear}-${String(m).padStart(2, "0")}`;
+          const disabled = max ? ym > max : false; // mês futuro: não selecionável
+          const selected = navYear === vy && m === vm;
+          const isToday = navYear === today.getFullYear() && m === today.getMonth() + 1;
+          return (
+            <button
+              key={m}
+              type="button"
+              disabled={disabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={disabled ? undefined : () => pick(m)}
+              aria-current={isToday ? "date" : undefined}
+              className={cn(
+                "grid place-items-center rounded-[8px] capitalize outline-none transition-colors",
+                big ? "h-11 text-[14px]" : "h-[30px] text-[12.5px]",
+                disabled
+                  ? "text-faint opacity-40 cursor-not-allowed"
+                  : selected
+                    ? "bg-accent font-semibold text-[#0A0B0D]"
+                    : isToday
+                      ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
+                      : "text-muted hover:bg-card-hover hover:text-text",
+              )}
+            >
+              {name}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
   return (
     <>
       <button
@@ -520,71 +678,23 @@ function MonthCell({
         <span className="truncate">{label}</span>
         <ChevronDown size={13} className="text-faint shrink-0" />
       </button>
-      {open && pos
-        ? createPortal(
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div
-                className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]"
-                style={{ top: pos.top, left: pos.left, width: MENU_W }}
-              >
-                <div className="mb-2 flex items-center justify-between px-0.5">
-                  <button
-                    type="button"
-                    aria-label="Ano anterior"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setNavYear((y) => y - 1)}
-                    className="grid h-7 w-7 place-items-center rounded-[7px] text-muted hover:bg-card-hover hover:text-text"
-                  >
-                    <ChevronLeft size={15} />
-                  </button>
-                  <span className="text-[13px] font-semibold tabular text-text">{navYear}</span>
-                  <button
-                    type="button"
-                    aria-label="Próximo ano"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => setNavYear((y) => y + 1)}
-                    className="grid h-7 w-7 place-items-center rounded-[7px] text-muted hover:bg-card-hover hover:text-text"
-                  >
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
-                <div className="grid grid-cols-3 gap-1">
-                  {months.map((name, i) => {
-                    const m = i + 1;
-                    const ym = `${navYear}-${String(m).padStart(2, "0")}`;
-                    const disabled = max ? ym > max : false; // mês futuro: não selecionável
-                    const selected = navYear === vy && m === vm;
-                    const isToday = navYear === today.getFullYear() && m === today.getMonth() + 1;
-                    return (
-                      <button
-                        key={m}
-                        type="button"
-                        disabled={disabled}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={disabled ? undefined : () => pick(m)}
-                        aria-current={isToday ? "date" : undefined}
-                        className={cn(
-                          "grid h-[30px] place-items-center rounded-[7px] text-[12.5px] capitalize outline-none transition-colors",
-                          disabled
-                            ? "text-faint opacity-40 cursor-not-allowed"
-                            : selected
-                              ? "bg-accent font-semibold text-[#0A0B0D]"
-                              : isToday
-                                ? "text-text ring-1 ring-inset ring-accent/55 hover:bg-card-hover"
-                                : "text-muted hover:bg-card-hover hover:text-text",
-                        )}
-                      >
-                        {name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </>,
-            document.body,
-          )
-        : null}
+      {isMobile ? (
+        open ? (
+          <SheetShell title={title} onClose={close}>
+            {menu(true)}
+          </SheetShell>
+        ) : null
+      ) : open && pos ? (
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div className="fixed z-50 rounded-[12px] border border-border-strong bg-card p-2 shadow-[var(--shadow-float)]" style={{ top: pos.top, left: pos.left, width: MENU_W }}>
+              {menu(false)}
+            </div>
+          </>,
+          document.body,
+        )
+      ) : null}
     </>
   );
 }
@@ -601,6 +711,8 @@ function CurrencyPicker({
   className?: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -609,12 +721,14 @@ function CurrencyPicker({
       setOpen(false);
       return;
     }
-    const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 6, left: r.left });
+    if (!isMobile) {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 6, left: r.left });
+    }
     setOpen(true);
   };
   useEffect(() => {
-    if (!open) return;
+    if (!open || isMobile) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
@@ -623,7 +737,7 @@ function CurrencyPicker({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isMobile]);
   return (
     <>
       <button
@@ -643,33 +757,57 @@ function CurrencyPicker({
       >
         {children}
       </button>
-      {open && pos
-        ? createPortal(
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div
-                className="fixed z-50 flex gap-1 rounded-[10px] border border-border-strong bg-card p-1.5 shadow-[var(--shadow-float)]"
-                style={{ top: pos.top, left: pos.left }}
-              >
-                {CURRENCIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => {
-                      onCommit(c);
-                      setOpen(false);
-                    }}
-                    className={cn("rounded-[7px] p-0.5", c === value && "ring-2 ring-[var(--ring)]")}
-                  >
-                    <CurrencyBadge currency={c} />
-                  </button>
-                ))}
-              </div>
-            </>,
-            document.body,
-          )
-        : null}
+      {isMobile ? (
+        open ? (
+          <SheetShell title={t("common.currency")} onClose={() => { setOpen(false); btnRef.current?.focus(); }}>
+            <div className="grid grid-cols-2 gap-2">
+              {CURRENCIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => {
+                    onCommit(c);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-[12px] border px-3.5 py-3 text-left transition-colors",
+                    c === value ? "border-accent bg-accent-soft" : "border-border hover:bg-card-hover",
+                  )}
+                >
+                  <CurrencyBadge currency={c} />
+                  <span className="text-[14px] font-medium">{c}</span>
+                </button>
+              ))}
+            </div>
+          </SheetShell>
+        ) : null
+      ) : open && pos ? (
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <div
+              className="fixed z-50 flex gap-1 rounded-[10px] border border-border-strong bg-card p-1.5 shadow-[var(--shadow-float)]"
+              style={{ top: pos.top, left: pos.left }}
+            >
+              {CURRENCIES.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    onCommit(c);
+                    setOpen(false);
+                  }}
+                  className={cn("rounded-[7px] p-0.5", c === value && "ring-2 ring-[var(--ring)]")}
+                >
+                  <CurrencyBadge currency={c} />
+                </button>
+              ))}
+            </div>
+          </>,
+          document.body,
+        )
+      ) : null}
     </>
   );
 }
@@ -808,6 +946,7 @@ export function DataGrid<T extends { id: string }>({
             placeholder={col.placeholder}
             rowId={rowId}
             colKey={col.key}
+            title={col.header}
             onCommit={commit}
           />
         );
@@ -840,7 +979,7 @@ export function DataGrid<T extends { id: string }>({
             </div>
           );
         }
-        return <SelectCell value={current} options={faturas} optional placeholder={col.placeholder} rowId={rowId} colKey={col.key} onCommit={commit} />;
+        return <SelectCell value={current} options={faturas} optional placeholder={col.placeholder} rowId={rowId} colKey={col.key} title={col.header} onCommit={commit} />;
       }
       case "number":
         return (
@@ -861,6 +1000,7 @@ export function DataGrid<T extends { id: string }>({
             rowId={rowId}
             colKey={col.key}
             align={col.align}
+            title={col.header}
             onCommit={commit}
           />
         );
@@ -873,6 +1013,7 @@ export function DataGrid<T extends { id: string }>({
             colKey={col.key}
             align={col.align}
             max={col.maxMonth}
+            title={col.header}
             onCommit={commit}
           />
         );
