@@ -155,7 +155,7 @@ export function DashboardHero() {
           <HeroNumber
             value={view.netWorth}
             currency={disp}
-            className="block whitespace-nowrap text-[clamp(3rem,6.5vw,4.8rem)]"
+            className="block whitespace-nowrap text-[clamp(2.3rem,6.5vw,4.8rem)]"
           />
           {hasTrend ? (
             <div className="mt-3.5">
