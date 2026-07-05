@@ -67,6 +67,32 @@ export const PHOTO_SRC: Record<string, string> = {
   "edu-dividas": "/img/ads/plan.jpg", // planejando na mesa
 };
 
+/** SCREENSHOTS reais do app (conta demo/vitrine) — emoldurados como janela flutuante. Misturam-se
+ *  com as fotos temáticas (variedade). Servidos same-origin (/img/ads) → sem taint no canvas/MP4. */
+export const SHOT_SRC = {
+  painel: "/img/ads/shot-painel.png",
+  privado: "/img/ads/shot-privado.png",
+  orcamento: "/img/ads/shot-orcamento.png",
+  patrimonio: "/img/ads/shot-patrimonio.png",
+  liberdade: "/img/ads/shot-liberdade.png",
+  multimoeda: "/img/ads/shot-multimoeda.png",
+  projecao: "/img/ads/shot-projecao.png",
+} as const;
+
+/** Cache de imagens já carregadas (por caminho) — deixa o draw resolver `shot` de forma SÍNCRONA
+ *  (o chamador pré-carrega e registra; enquanto não chega, a cena cai no texto sem quebrar). */
+const AD_IMAGES = new Map<string, CanvasImageSource>();
+export function setAdImage(src: string, img: CanvasImageSource): void {
+  AD_IMAGES.set(src, img);
+}
+function adImage(src?: string): CanvasImageSource | null {
+  return src ? AD_IMAGES.get(src) ?? null : null;
+}
+/** Caminhos de SCREENSHOT que um story usa (cenas com `shot`) — pro chamador pré-carregar/registrar. */
+export function storyShotSrcs(story: Story): string[] {
+  return [...new Set(story.scenes.map((sc) => sc.shot).filter((x): x is string => !!x))];
+}
+
 export interface Scene {
   kind: "hook" | "networth" | "budget" | "privacy" | "cta";
   eyebrow?: string;
@@ -77,6 +103,7 @@ export interface Scene {
   bars?: { label: string; w: number; c?: string }[];
   tagline?: string;
   mock?: "currencies" | "masked" | "donut" | "freedom"; // mockup do app na cena de hook (preenche + varia)
+  shot?: string; // SCREENSHOT real do app (/img/ads/shot-*.png) — emoldurado; substitui o mock nessa cena
   chips?: string[]; // pílulas de features (cena de amplitude/benefício)
   style?: PieceStyle; // clima DESTA cena (sobrescreve o do story) — deixa um mesmo story alternar templates
 }
@@ -159,11 +186,11 @@ export const STORIES: Story[] = [
     id: "app-tour",
     name: "Tour do app · multi-template",
     scenes: [
-      { kind: "hook", style: "vivid", eyebrow: "UM TOUR RÁPIDO", title: ["Conheça o Nossas", "Finanças."], sub: "Suas finanças multimoeda num app só — privado e simples." },
-      { kind: "hook", style: "dark", mock: "currencies", eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Real, euro, dólar — cada item na sua moeda, o total na cotação de hoje." },
-      { kind: "hook", style: "dark", mock: "masked", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
-      { kind: "hook", style: "dark", mock: "donut", eyebrow: "3 · ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
-      { kind: "hook", style: "dark", mock: "freedom", eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], sub: "Projeção de independência financeira com aportes e inflação real." },
+      { kind: "hook", style: "dark", shot: SHOT_SRC.painel, eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "num app só."], sub: "Multimoeda, privado e simples — dá pra ver tudo numa tela." },
+      { kind: "hook", style: "dark", shot: SHOT_SRC.multimoeda, eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Real, euro, dólar — cada item na sua moeda, o total na cotação de hoje." },
+      { kind: "hook", style: "dark", shot: SHOT_SRC.privado, eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
+      { kind: "hook", style: "dark", shot: SHOT_SRC.orcamento, eyebrow: "3 · ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
+      { kind: "hook", style: "dark", shot: SHOT_SRC.liberdade, eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], sub: "Projeção de independência financeira com aportes e inflação real." },
       { kind: "cta", style: "color", value: "Nossas Finanças", tagline: "Tudo num app só · grátis", sub: "nossasfinancas.com.br" },
     ],
   },
@@ -252,6 +279,7 @@ export interface PieceVisual {
   title: string[]; // linhas
   sub?: string;
   mock?: "currencies" | "masked" | "donut" | "freedom"; // mockup do app
+  shot?: string; // SCREENSHOT real do app (/img/ads/shot-*.png) — emoldurado; substitui o mock
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
   stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
@@ -336,7 +364,7 @@ export const POSTS: Post[] = [
     glow: [0.5, 0.4],
     eyebrow: "TODO FIM DE MÊS",
     title: ["Pra onde foi", "o seu dinheiro?"],
-    mock: "donut",
+    shot: SHOT_SRC.orcamento,
     sub: "Cada real organizado por categoria — em qualquer moeda, com o gráfico do mês.",
   },
   {
@@ -631,6 +659,46 @@ function drawDonut(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
 /** Card-mockup do app (screenshot estilizado): os elementos se CONSTROEM ao longo da cena (número
  *  conta, linhas/legenda em cascata, dots um a um, donut desenhando), como o mock da landing.
  *  `a` = alpha da cena/pop; `lt` = tempo local da cena (dispara as animações internas). */
+/** Dimensões naturais de uma imagem (HTMLImageElement no browser · Image do napi no teste). */
+function imgWH(img: CanvasImageSource): { w: number; h: number } {
+  const a = img as unknown as { naturalWidth?: number; naturalHeight?: number; width?: number; height?: number };
+  return { w: a.naturalWidth || a.width || 16, h: a.naturalHeight || a.height || 10 };
+}
+
+/** SCREENSHOT do app "emoldurado" como janela flutuante: card com sombra + hairline e a imagem
+ *  recortada em cantos arredondados. A ALTURA vem do aspecto da imagem (sem distorcer/cortar).
+ *  Desenha a partir de (cx, topY) com largura `w`; devolve a altura ocupada. */
+function drawShotCard(ctx: CanvasRenderingContext2D, s: number, cx: number, topY: number, w: number, img: CanvasImageSource, a: number): number {
+  const { w: iw, h: ih } = imgWH(img);
+  const h = w * (ih / iw);
+  const x = cx - w / 2, y = topY, r = 22 * s;
+  ctx.save();
+  ctx.globalAlpha = a;
+  // sombra sob a janela (profundidade)
+  ctx.shadowColor = "rgba(0,0,0,0.55)";
+  ctx.shadowBlur = 64 * s;
+  ctx.shadowOffsetY = 30 * s;
+  ctx.fillStyle = CARD;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+  // imagem recortada nos cantos arredondados
+  ctx.save();
+  roundRect(ctx, x, y, w, h, r);
+  ctx.clip();
+  ctx.drawImage(img, x, y, w, h);
+  ctx.restore();
+  // hairline sutil por cima
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 2 * s;
+  roundRect(ctx, x, y, w, h, r);
+  ctx.stroke();
+  ctx.restore();
+  return h;
+}
+
 function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut" | "freedom", a: number, lt: number) {
   const h = w * (kind === "donut" ? 1.05 : 0.84); // altura ajustada ao conteúdo de cada mockup
   ctx.save();
@@ -1102,6 +1170,20 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 
   if (sc.kind === "hook") {
     const availW = (W - x * 2) * 0.99; // largura útil (título preenche quase toda a coluna)
+    const shotImg = adImage(sc.shot);
+    if (sc.shot && shotImg) {
+      // SCREENSHOT real do app: janela emoldurada em cima + legenda (eyebrow/título/sub) embaixo.
+      const pop = easeOut(clamp01((lt - 0.1) / 0.9));
+      const cardW = W - 130 * s;
+      const topY = H * 0.1 + (1 - pop) * 26 * s;
+      const ch = drawShotCard(ctx, s, W / 2, topY, cardW, shotImg, a * (0.4 + 0.6 * pop));
+      const px = fitTitlePx(ctx, s, sc.title || [], availW, 80, 102);
+      const eyeY = topY + ch + 92 * s;
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, sc.title || [], a, rise, px, pal);
+      if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a, pal);
+      return;
+    }
     if (style === "vivid") {
       // FOTO VÍVIDA: texto ancorado na faixa sólida inferior (a imagem manda em cima).
       const bandTop = H * 0.58;
@@ -1598,6 +1680,25 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
     return;
   }
 
+  const postShot = adImage(post.shot);
+  if (post.shot && postShot) {
+    // SCREENSHOT real: eyebrow + título no alto, janela emoldurada embaixo (encolhe se não couber).
+    const eyeY = H * 0.115;
+    drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+    const px = fitTitlePx(ctx, s, post.title, availW, 62, 86);
+    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 44) * s, post.title, 1, 0, px, pal);
+    if (post.sub) {
+      drawSub(ctx, s, x, tb + 28 * s, W, post.sub, 1, pal);
+      tb += 92 * s;
+    }
+    const topY = tb + 56 * s;
+    const { w: iw, h: ih } = imgWH(postShot);
+    let cw = W - 150 * s;
+    if (topY + cw * (ih / iw) > H - 120 * s) cw = ((H - 120 * s - topY) * iw) / ih; // cabe acima do rodapé
+    drawShotCard(ctx, s, W / 2, topY, cw, postShot, 1);
+    drawHandle(ctx, s, x, H - 64 * s, pal);
+    return;
+  }
   if (post.mock) {
     drawMockCard(ctx, s * (540 / 540), W / 2, H * 0.3, 540 * s, post.mock, 1, 3);
     // Bloco eyebrow→título→sub ANCORADO acima do rodapé — assim 2 ou 3 linhas de título nunca

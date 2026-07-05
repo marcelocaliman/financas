@@ -1,7 +1,7 @@
 // Grava um story (canvas 1080×1920) em VÍDEO via MediaRecorder — MP4 quando o navegador suporta
 // (Chrome recente, Safari), senão WebM. Captura em tempo real (captureStream do canvas). Só o dono
 // usa isso (aba Ads do super-admin), então rodar ~9s de gravação na máquina dele é aceitável.
-import { drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type HighlightCover } from "./engine";
+import { drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, storyShotSrcs, setAdImage, type Story, type Post, type Carousel, type HighlightCover } from "./engine";
 
 // ── fotos de fundo (carregadas same-origin → sem taint no canvas) ──
 const photoCache = new Map<string, HTMLImageElement>();
@@ -89,6 +89,14 @@ export async function exportStory(story: Story): Promise<ExportResult> {
       /* segue sem foto (cai no glow) */
     }
   }
+  // Pré-carrega e REGISTRA os screenshots das cenas (o draw os resolve de forma síncrona).
+  for (const shot of storyShotSrcs(story)) {
+    try {
+      setAdImage(shot, await loadPhoto(shot));
+    } catch {
+      /* segue sem o screenshot (a cena cai no texto) */
+    }
+  }
   const W = 1080, H = 1920;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -149,6 +157,13 @@ export async function exportPostPNG(post: Post): Promise<Blob> {
       /* segue sem foto (cai no fundo escuro) */
     }
   }
+  if (post.shot) {
+    try {
+      setAdImage(post.shot, await loadPhoto(post.shot));
+    } catch {
+      /* segue sem o screenshot */
+    }
+  }
   const W = 1080, H = 1350;
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -176,6 +191,13 @@ export async function exportCarouselPNGs(carousel: Carousel): Promise<Blob[]> {
         img = await loadPhoto(slide.photo);
       } catch {
         /* segue sem foto (cai no fundo) */
+      }
+    }
+    if (slide.shot) {
+      try {
+        setAdImage(slide.shot, await loadPhoto(slide.shot));
+      } catch {
+        /* segue sem o screenshot */
       }
     }
     const canvas = document.createElement("canvas");

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, GraduationCap, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
+import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, storyShotSrcs, setAdImage, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar, AdsAgenda } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
@@ -91,6 +91,8 @@ function StoryPreview({ story }: { story: Story }) {
     const start = performance.now();
     const src = PHOTO_SRC[story.id];
     if (src) void loadPhoto(src).catch(() => {}); // pré-carrega (getPhoto vira não-null quando pronta)
+    // screenshots das cenas: carrega e registra no cache (o draw resolve síncrono quando prontas)
+    for (const shot of storyShotSrcs(story)) void loadPhoto(shot).then((i) => setAdImage(shot, i)).catch(() => {});
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop);
       if (now - last < 33) return; // ~30fps (poupa CPU com 3 prévias juntas)
@@ -173,6 +175,13 @@ function PostPreview({ post }: { post: Post }) {
       loadPhoto(post.photo)
         .then((i) => {
           img = i;
+          draw();
+        })
+        .catch(() => {});
+    if (post.shot)
+      loadPhoto(post.shot)
+        .then((i) => {
+          setAdImage(post.shot!, i);
           draw();
         })
         .catch(() => {});
@@ -281,6 +290,13 @@ function SlideThumb({ slide, index, total }: { slide: Slide; index: number; tota
       loadPhoto(slide.photo)
         .then((i) => {
           img = i;
+          draw();
+        })
+        .catch(() => {});
+    if (slide.shot)
+      loadPhoto(slide.shot)
+        .then((i) => {
+          setAdImage(slide.shot!, i);
           draw();
         })
         .catch(() => {});
