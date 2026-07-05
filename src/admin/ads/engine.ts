@@ -1422,8 +1422,9 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   // Última cena (CTA): só fade-IN, sem fade-out — fica visível até o fim pro usuário clicar.
   const isLast = idx === n - 1;
   const a = isLast ? clamp01(lt / 0.6) : sceneAlpha(lt, SCENE_DUR);
-  // marca no topo — desce um pouco quando NÃO há barra de progresso (export), pra não colar no topo
-  if (sc.kind !== "cta") drawBrand(ctx, s, 90 * s, (showProgress ? 92 : 70) * s, 46, pal);
+  // SEM logo no topo dos stories: o Instagram já sobrepõe avatar + nome + "×" ali (colidia). O resto
+  // é posicionado por frações da altura (independente da logo) → nada se move. A marca segue nos POSTS
+  // (drawPost) e no wordmark grande da cena de CTA.
   sceneContent(ctx, s, W, H, sc, lt, a, pal, style);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
   if (showProgress) drawProgress(ctx, s, W, n, t, pal);
