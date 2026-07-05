@@ -3,19 +3,23 @@ import type { SeedData } from "./repository";
 import type { Currency } from "@/money/currency";
 
 /**
- * Dados de exemplo ANCORADOS na moeda principal. O dia a dia (moradia, mercado,
- * transporte, salário, reserva, patrimônio local e toda a história de patrimônio)
- * nasce na moeda principal do usuário; só 2 itens "do exterior" ficam numa moeda
- * contraparte — o suficiente pra demonstrar o multimoeda sem dominar a visão.
- * NÃO são carregados automaticamente — o app começa vazio (opt-in pela Config).
+ * Dados de exemplo — um retrato COMPLETO e coerente de quem vive entre países:
+ * patrimônio diversificado, orçamento com fatura de cartão e contas a vencer,
+ * histórico de 11 meses, metas, proventos e alvos de alocação. Serve tanto de
+ * ponto de partida pro novo usuário quanto de "perfil vitrine" pra demonstração.
+ *
+ * Tudo nasce na MOEDA PRINCIPAL do usuário; uma fatia fica em duas moedas
+ * contraparte (ex.: EUR + USD) — o suficiente pra o multimoeda aparecer de
+ * verdade (composição, "equivale a") sem deixar de ser crível/local-first.
+ * NÃO é carregado automaticamente — o app começa vazio (opt-in pela Config).
  */
 
-/** Moeda "do outro país" pra a demonstração cross-border (sem dominar a tela). */
-const COUNTERPART: Record<Currency, Currency> = {
-  BRL: "EUR",
-  EUR: "BRL",
-  USD: "EUR",
-  GBP: "EUR",
+/** As duas moedas "do exterior" pra a demonstração cross-border, por moeda principal. */
+const FOREIGN: Record<Currency, [Currency, Currency]> = {
+  BRL: ["EUR", "USD"],
+  EUR: ["BRL", "USD"],
+  USD: ["EUR", "BRL"],
+  GBP: ["EUR", "USD"],
 };
 
 /** Escala aproximada vs. uma referência em EUR, pra valores realistas em cada moeda. */
@@ -28,70 +32,150 @@ function nice(eurRef: number, c: Currency): number {
   return Math.max(step, Math.round(v / step) * step);
 }
 
-/** Mês "AAAA-MM" deslocado de `back` meses a partir de um âncora fixo (junho/2026). */
-function pastMonth(back: number): string {
-  const m = 6 - back; // junho = 6
-  return `2026-${String(m).padStart(2, "0")}`;
+/** Mês "AAAA-MM" deslocado de `offset` meses a partir do mês atual (negativo = passado). */
+function monthKey(offset: number): string {
+  const d = new Date();
+  const x = new Date(d.getFullYear(), d.getMonth() + offset, 1);
+  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function buildSeed(main: Currency): SeedData {
-  const ab = COUNTERPART[main];
+  const [c2, c3] = FOREIGN[main]; // contrapartes (ex.: EUR, USD)
   const m = (eurRef: number) => nice(eurRef, main); // item local (moeda principal)
-  const a = (eurRef: number) => nice(eurRef, ab); // item "do exterior" (contraparte)
+  const f2 = (eurRef: number) => nice(eurRef, c2); // item na 1ª moeda do exterior
+  const f3 = (eurRef: number) => nice(eurRef, c3); // item na 2ª moeda do exterior
 
-  // Orçamento por MÊS: 3 meses (atual + 2 anteriores) com leve variação → visão histórica.
-  const months = [pastMonth(2), pastMonth(1), pastMonth(0)];
-  const vary = [0.95, 1, 1.05];
+  // ── Orçamento: 3 meses (atual + 2 anteriores) com leve variação → visão histórica. ──
+  const months = [monthKey(-2), monthKey(-1), monthKey(0)];
+  const vary = [0.94, 1, 1.06];
+  // Gastos recorrentes/avulsos (fora a fatura do cartão, tratada à parte).
   const EXP = [
-    { categoryId: "moradia", name: "Aluguel + condomínio", eur: 900 },
-    { categoryId: "alimentacao", name: "Mercado", eur: 500 },
-    { categoryId: "lazer", name: "Restaurantes e saídas", eur: 220 },
-    { categoryId: "gasto-outros", name: "Diversos", eur: 160 },
-    { categoryId: "transporte", name: "Transporte", eur: 130 },
-    { categoryId: "saude", name: "Plano de saúde", eur: 95 },
+    { key: "moradia", categoryId: "moradia", name: "Aluguel + condomínio", eur: 250, recurring: true, dueDay: 5 },
+    { key: "mercado", categoryId: "alimentacao", name: "Mercado", eur: 220 },
+    { key: "transporte", categoryId: "transporte", name: "Transporte", eur: 70, recurring: true },
+    { key: "saude", categoryId: "saude", name: "Plano de saúde", eur: 115, recurring: true, dueDay: 10 },
+    { key: "lazer", categoryId: "lazer", name: "Restaurantes e lazer", eur: 90 },
+    { key: "assinaturas", categoryId: "servicos", name: "Assinaturas (apps, streaming)", eur: 22, recurring: true },
+    { key: "italiano", categoryId: "educacao", name: "Curso de italiano", eur: 55, recurring: true },
+    { key: "impostos", categoryId: "impostos-gasto", name: "Impostos e taxas", eur: 35 },
   ];
-  const expenses = months.flatMap((mo, mi) =>
-    EXP.map((e, ei) => ({ id: `e${mi}-${ei}`, month: mo, categoryId: e.categoryId, name: e.name, currency: main, amount: m(Math.round(e.eur * vary[mi])) })),
-  );
-  const incomes = months.flatMap((mo, mi) => [
-    { id: `i${mi}-0`, month: mo, categoryId: "freela", name: "Salário / PJ", currency: main, amount: m(Math.round(3800 * vary[mi])) },
-    { id: `i${mi}-1`, month: mo, categoryId: "aluguel", name: "Aluguel recebido (exterior)", currency: ab, amount: a(700) },
-  ]);
+  const expenses = months.flatMap((mo, mi) => {
+    const rows = EXP.map((e) => ({
+      id: `e-${mi}-${e.key}`,
+      month: mo,
+      categoryId: e.categoryId,
+      name: e.name,
+      currency: main,
+      amount: m(Math.round(e.eur * vary[mi])),
+      ...(e.recurring ? { recurring: true } : {}),
+      ...("dueDay" in e && e.dueDay ? { dueDay: e.dueDay } : {}),
+      // Nos meses passados as contas já foram pagas; o mês corrente segue em aberto.
+      ...(mi < 2 ? { paid: true } : {}),
+    }));
+    // Fatura do cartão (guarda-chuva) + itens DENTRO dela (discriminados, sem dupla contagem).
+    const faturaId = `e-${mi}-fatura`;
+    rows.push({
+      id: faturaId,
+      month: mo,
+      categoryId: "gasto-cartao",
+      name: "Fatura do cartão",
+      currency: main,
+      amount: m(Math.round(320 * vary[mi])),
+      recurring: true,
+      dueDay: 15,
+      isStatement: true,
+      ...(mi < 2 ? { paid: true } : {}),
+    } as (typeof rows)[number]);
+    if (mi >= 1) {
+      rows.push(
+        { id: `e-${mi}-c1`, month: mo, categoryId: "servicos", name: "Streaming", currency: main, amount: m(11), parentId: faturaId } as (typeof rows)[number],
+        { id: `e-${mi}-c2`, month: mo, categoryId: "gasto-outros", name: "Compras online", currency: main, amount: m(Math.round(70 * vary[mi])), parentId: faturaId } as (typeof rows)[number],
+      );
+    }
+    return rows;
+  });
+
+  const incomes = months.flatMap((mo, mi) => {
+    const rows = [
+      { id: `i-${mi}-salario`, month: mo, categoryId: "salario", name: "Salário", currency: main, amount: m(Math.round(750 * vary[mi])), recurring: true },
+      { id: `i-${mi}-freela`, month: mo, categoryId: "freela", name: "Freela / PJ", currency: main, amount: m(Math.round(270 * vary[mi])), recurring: true },
+      // Renda "do exterior" na moeda contraparte — demonstra receber numa moeda, gastar noutra.
+      { id: `i-${mi}-aluguel`, month: mo, categoryId: "aluguel", name: "Aluguel recebido (Itália)", currency: c2, amount: f2(700), recurring: true },
+    ];
+    // Proventos caem no mês corrente (variedade de categorias de receita).
+    if (mi === 2) rows.push({ id: `i-${mi}-div`, month: mo, categoryId: "dividendos", name: "Proventos recebidos", currency: main, amount: m(45), recurring: false });
+    return rows;
+  });
 
   return {
     assets: [
-      { id: "a1", name: "Tesouro / Renda fixa", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(57000), cost: m(52000), indexerId: "ipca" },
-      { id: "a2", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(32000), cost: m(30000), indexerId: "cdi", institution: "Banco digital" },
-      { id: "a3", name: "Imóvel", classId: CLASS.imoveis, subtypeId: "imoveis-4", currency: main, amount: m(150000) },
-      { id: "a4", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(25000) },
-      // Item "do exterior" — demonstra o multimoeda sem dominar a tela.
-      { id: "a5", name: "Conta no exterior", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: ab, amount: a(12000), institution: "Conta internacional" },
-      // Ações/ETF na MOEDA PRINCIPAL (não travado em ação BR), com valor aplicado p/ a rentabilidade aparecer.
-      { id: "a6", name: "Ações / ETF", classId: CLASS.acoes, subtypeId: "acoes-1", currency: main, amount: m(8000), cost: m(6500), institution: "Corretora" },
+      // Renda Fixa (moeda principal) — com aplicado (cost) p/ a rentabilidade aparecer.
+      { id: "a1", name: "Tesouro IPCA+ 2035", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(7500), cost: m(6800), indexerId: "ipca" },
+      { id: "a2", name: "Tesouro Selic", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-1", regionId: "brasil", currency: main, amount: m(4500), cost: m(4300), indexerId: "selic" },
+      { id: "a3", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(3600), cost: m(3400), indexerId: "cdi", institution: "Banco digital" },
+      { id: "a4", name: "Debênture incentivada", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-10", currency: main, amount: m(2700), cost: m(2400), indexerId: "ipca" },
+      // Ações / ETF — modelo de VALOR (aplicado→atual) p/ a rentabilidade aparecer sem cotação ao vivo.
+      { id: "a5", name: "ETF de ações (BR)", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: "brasil", currency: main, amount: m(8600), cost: m(6800), institution: "Corretora" },
+      { id: "a6", name: "Stock internacional", classId: CLASS.acoes, subtypeId: "acoes-2", regionId: "eua", currency: c3, amount: f3(5000), cost: f3(4000), institution: "Corretora US" },
+      { id: "a7", name: "ETF Europa", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: "zona-euro", currency: c2, amount: f2(5000), cost: f2(4000) },
+      // FIIs — geram os proventos abaixo.
+      { id: "a8", name: "FII de tijolo", classId: CLASS.fiis, subtypeId: "fiis-1", regionId: "brasil", currency: main, amount: m(5400), cost: m(4800), institution: "Corretora" },
+      // Previdência, Cripto, Ouro — diversificam o donut.
+      { id: "a9", name: "Previdência (PGBL)", classId: CLASS.previdencia, subtypeId: "previdencia-1", currency: main, amount: m(9800), cost: m(8200), institution: "Seguradora" },
+      { id: "a10", name: "Bitcoin", classId: CLASS.cripto, subtypeId: "cripto-1", regionId: "global", currency: c3, amount: f3(2800), cost: f3(1600) },
+      { id: "a11", name: "Ouro", classId: CLASS.commodities, subtypeId: "commodities-1", currency: main, amount: m(2500), cost: m(2150) },
+      // Caixa — reserva (principal) + conta corrente + conta no exterior (EUR).
+      { id: "a12", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(10700) },
+      { id: "a13", name: "Conta corrente", classId: CLASS.caixa, subtypeId: "caixa-1", currency: main, amount: m(2150) },
+      { id: "a14", name: "Conta no exterior", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: c2, amount: f2(18000), institution: "Conta internacional" },
+      // Patrimônio físico.
+      { id: "a15", name: "Apartamento", classId: CLASS.imoveis, subtypeId: "imoveis-1", regionId: "brasil", currency: main, amount: m(37500) },
+      { id: "a16", name: "Carro", classId: CLASS.bens, subtypeId: "bens-1", currency: main, amount: m(8000) },
     ],
     liabilities: [
-      { id: "l1", name: "Financiamento imóvel", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(32000), interestRate: 9.5, installments: 180 },
-      { id: "l2", name: "Cartão de crédito", typeId: LIABILITY_TYPE.cartaoCredito, currency: main, amount: m(450) },
+      { id: "l1", name: "Financiamento do apê", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(17000), interestRate: 9.5, installments: 156 },
+      { id: "l2", name: "Financiamento do carro", typeId: LIABILITY_TYPE.financiamentoVeiculo, currency: main, amount: m(3200), interestRate: 18, installments: 30 },
+      { id: "l3", name: "Cartão de crédito", typeId: LIABILITY_TYPE.cartaoCredito, currency: main, amount: m(450) },
     ],
     expenses,
     incomes,
-    // Proventos das ações/ETF — renda passiva dos últimos meses, na MOEDA PRINCIPAL (não em BRL fixo).
-    dividends: [5, 4, 7, 4, 6, 5].map((eur, i) => ({
+    // Proventos (renda passiva) dos últimos 6 meses — do FII e do ETF, na moeda principal.
+    dividends: [-6, -5, -4, -3, -2, -1].map((off, i) => ({
       id: `d${i + 1}`,
-      month: pastMonth(5 - i),
-      source: "Ações / ETF",
+      month: monthKey(off),
+      source: i % 2 === 0 ? "FII de tijolo" : "ETF de ações (BR)",
       currency: main,
-      amount: m(eur),
+      amount: m([20, 18, 24, 19, 26, 22][i]),
     })),
-    // SÓ meses passados — o mês corrente é COMPUTADO do patrimônio (useAutoSnapshot),
+    // SÓ meses passados (11) — o mês corrente é COMPUTADO do patrimônio (useAutoSnapshot),
     // então Painel (herói) = última ponta da tendência = Histórico (atual), sempre.
-    snapshots: [
-      { id: "s1", month: pastMonth(5), currency: main, amount: m(226000), contribution: m(2300) },
-      { id: "s2", month: pastMonth(4), currency: main, amount: m(231000), contribution: m(2300) },
-      { id: "s3", month: pastMonth(3), currency: main, amount: m(235000), contribution: m(2000) },
-      { id: "s4", month: pastMonth(2), currency: main, amount: m(239000), contribution: m(2000) },
-      { id: "s5", month: pastMonth(1), currency: main, amount: m(242000), contribution: m(2300) },
+    snapshots: Array.from({ length: 11 }, (_, i) => {
+      const eurRef = Math.round(76000 + (107000 - 76000) * (i / 10)); // sobe suave até ~atual
+      return { id: `s${i + 1}`, month: monthKey(i - 11), currency: main, amount: m(eurRef), contribution: m(500) };
+    }),
+    goals: [
+      { id: "g1", name: "Reserva de emergência", currency: main, target: m(12000), current: m(10700) },
+      { id: "g2", name: "Entrada do apê na Itália", currency: c2, target: f2(40000), current: f2(15000), deadline: "2028" },
+      { id: "g3", name: "Fundo de viagem", currency: main, target: m(4000), current: m(1500), deadline: "12/2027" },
+      { id: "g4", name: "Independência financeira", currency: main, target: m(180000), current: m(70000), deadline: "2040" },
     ],
+    settings: {
+      // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.
+      allocationTargets: {
+        [CLASS.rendaFixa]: 28,
+        [CLASS.acoes]: 22,
+        [CLASS.fiis]: 12,
+        [CLASS.previdencia]: 10,
+        [CLASS.cripto]: 5,
+        [CLASS.commodities]: 3,
+        [CLASS.caixa]: 20,
+      },
+      liberdade: {
+        milestones: [m(45000), m(90000), m(180000)],
+        passiveCategories: ["aluguel"],
+        reserveMonths: 6,
+      },
+    },
   };
 }
 

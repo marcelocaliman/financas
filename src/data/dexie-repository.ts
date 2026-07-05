@@ -34,6 +34,7 @@ export class DexieRepository implements DataRepository {
       await this.database.incomes.bulkPut(data.incomes);
       await this.database.netWorthSnapshots.bulkPut(data.snapshots);
       if (data.dividends?.length) await this.database.dividends.bulkPut(data.dividends);
+      if (data.goals?.length) await this.database.goals.bulkPut(data.goals);
     });
   }
 

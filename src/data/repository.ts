@@ -17,6 +17,11 @@ export interface SeedData {
   incomes: Income[];
   snapshots: NetWorthSnapshot[];
   dividends?: Dividend[];
+  /** Metas (Objetivos) — opcional; o exemplo já traz um conjunto coerente. */
+  goals?: Goal[];
+  /** Preferências sincronizadas do exemplo (alvos de alocação, config da Liberdade/Saúde).
+   *  A moeda principal NÃO vem aqui — é injetada por quem carrega (loadSample). */
+  settings?: Pick<AppSettings, "allocationTargets" | "liberdade" | "health">;
 }
 
 /**

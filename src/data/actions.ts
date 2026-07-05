@@ -176,8 +176,15 @@ export const actions = {
       const seed = buildSeed(base);
       await repository.clearAll();
       await repository.seed(seed);
-      // clearAll zera as settings — preserva a moeda principal.
-      await repository.putSettings({ id: "settings", allocationTargets: {}, baseCurrency: base });
+      // clearAll zera as settings — reaplica as do exemplo (alocação/Liberdade/Saúde) e
+      // PRESERVA a moeda principal (injetada aqui, não vem no seed).
+      await repository.putSettings({
+        id: "settings",
+        allocationTargets: seed.settings?.allocationTargets ?? {},
+        baseCurrency: base,
+        liberdade: seed.settings?.liberdade,
+        health: seed.settings?.health,
+      });
     }),
   /** Apaga tudo — "começar do zero" (mantém a moeda principal como preferência). */
   resetAll: () =>
