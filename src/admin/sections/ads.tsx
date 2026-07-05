@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, GraduationCap, Image as ImageIcon, Loader2 } from "lucide-react";
 import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, storyShotSrcs, setAdImage, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
 import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
-import { AdsCalendar, AdsAgenda } from "@/admin/ads/calendar";
+import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { CardSubNav } from "@/components/common/card-sub-nav";
 import { cn } from "@/lib/utils";
@@ -64,7 +64,7 @@ function MarkTodayButton({ pieceId }: { pieceId: string }) {
 
 /** Sub-abas (sticky, com sublinhado) da aba Ads — mesmas do painel do usuário. */
 const SUBNAV: { id: string; label: string }[] = [
-  { id: "ads-calendario", label: "Calendário" },
+  { id: "ads-calendario", label: "Cronograma" },
   { id: "ads-stories", label: "Stories" },
   { id: "ads-stories-edu", label: "Stories edu." },
   { id: "ads-posts", label: "Posts" },
@@ -527,15 +527,12 @@ export function AdsSection() {
       <CardSubNav items={SUBNAV} />
       <div className="space-y-10 pt-6">
         <section id="ads-calendario">
-          <SubHead icon={<CalendarCheck size={15} className="text-accent" />} title="Calendário de divulgação">
-            Planeje as postagens e acompanhe a cadência. O <b className="text-text">roteiro</b> abaixo
-            mostra o que postar hoje (e o que atrasou) e pode te avisar pelo navegador; cada peça tem
-            o botão <b className="text-text">Hoje</b> e um selo <b className="text-text">Publicado</b>.
+          <SubHead icon={<CalendarCheck size={15} className="text-accent" />} title="Cronograma de conteúdo">
+            Seu plano de postagens num lugar só: o que postar <b className="text-text">hoje</b>, o que vem
+            nos próximos dias e o mês inteiro. Gere um roteiro automático e vá tocando em{" "}
+            <b className="text-text">Publiquei</b> — cada peça também traz o botão <b className="text-text">Hoje</b> e o selo <b className="text-text">Publicado</b>.
           </SubHead>
-          <AdsAgenda />
-          <div className="mt-4">
-            <AdsCalendar />
-          </div>
+          <AdsCalendar />
         </section>
 
         <section id="ads-stories">
