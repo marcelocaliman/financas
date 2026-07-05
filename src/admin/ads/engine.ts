@@ -308,6 +308,18 @@ export interface Carousel {
 
 export const POSTS: Post[] = [
   {
+    id: "apresentacao",
+    name: "Apresentação · a marca (perfil)",
+    pillar: "Apresentação",
+    caption:
+      "Prazer, eu sou o Nossas Finanças. 👋\n\nUm app pra você ver TODO o seu dinheiro — em qualquer moeda — num lugar só: patrimônio, orçamento, investimentos e metas. Feito por quem vive entre países, pra quem ganha numa moeda e gasta noutra.\n\nE com uma regra que eu não abro mão: seus números são cifrados no seu aparelho, antes de irem pra qualquer lugar. Nem eu, no servidor, vejo. Privacidade de verdade.\n\nGrátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\n📲 Link na bio. Seja bem-vindo(a). 💚",
+    tags: ["financaspessoais", "multimoeda", "privacidade", "expatriados", "brasileirosnoexterior", "controlefinanceiro", "organizacaofinanceira", "independenciafinanceira", "appdefinancas", "morarfora"],
+    shot: SHOT_SRC.painel,
+    eyebrow: "PRAZER, NOSSAS FINANÇAS",
+    title: ["Seu dinheiro,", "num app só."],
+    sub: "Multimoeda, privado e simples — feito por quem vive entre países. Grátis pra começar.",
+  },
+  {
     id: "multimoeda",
     name: "Multimoeda · somando tudo",
     pillar: "Multimoeda",
@@ -543,10 +555,10 @@ export const CAROUSELS: Carousel[] = [
       "Vem conhecer o Nossas Finanças. 👋\n\nÉ um app de finanças pessoais feito pra quem vive (ou vai viver) entre países — e pra qualquer um que queira controle simples e privado de verdade.\n\nO que ele faz:\n1️⃣ Multimoeda — real, euro, dólar num número só, na cotação de hoje\n2️⃣ Privacidade — tudo cifrado no seu aparelho; nem eu vejo\n3️⃣ Orçamento — pra onde vai cada real, por categoria\n4️⃣ Patrimônio — contas, investimentos e bens somados\n5️⃣ Metas — objetivos com barra de progresso em qualquer moeda\n6️⃣ Liberdade — projeção de independência financeira, ano a ano\n\nE o melhor: grátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\nArrasta pro lado pra ver tudo. 👉\n📲 Link na bio.",
     tags: ["financaspessoais", "multimoeda", "privacidade", "controlefinanceiro", "expatriados", "brasileirosnoexterior", "organizacaofinanceira", "independenciafinanceira", "appdefinancas", "morarfora"],
     slides: [
-      { style: "vivid", photo: "/img/ads/peaks.jpg", eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "sem fronteiras."], sub: "Um tour rápido pelo Nossas Finanças." },
-      { style: "dark", mock: "currencies", eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Cada item na sua moeda; o total na cotação de hoje." },
+      { style: "dark", shot: SHOT_SRC.painel, eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "num app só."], sub: "Um tour rápido pelo Nossas Finanças." },
+      { style: "dark", shot: SHOT_SRC.multimoeda, eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Cada item na sua moeda; o total na cotação de hoje." },
       { style: "color", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado no seu", "aparelho. Só", "você vê."], sub: "Criptografia ponta a ponta — só você abre os seus números." },
-      { style: "dark", mock: "donut", eyebrow: "3 · ORÇAMENTO", title: ["Pra onde vai", "cada real."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
+      { style: "dark", shot: SHOT_SRC.orcamento, eyebrow: "3 · ORÇAMENTO", title: ["Pra onde vai", "cada real."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
       { style: "light", eyebrow: "4 · PATRIMÔNIO", title: ["Seu patrimônio,", "num número só."], stat: { value: "R$ 1,28 mi", label: "contas + investimentos + bens" }, sub: "Ativos, dívidas e composição — sempre atualizados." },
       { style: "dark", eyebrow: "5 · METAS", title: ["Cada meta,", "no seu ritmo."], sub: "Objetivos com barra de progresso em qualquer moeda.", chips: ["Reserva", "Mudança", "Liberdade"] },
       { style: "color", eyebrow: "6 · E O MELHOR", title: ["Grátis, offline", "e no navegador."], sub: "Sem instalar nada, sem cadastrar cartão. Seus dados ficam com você.", chips: ["Sem instalar", "Funciona offline", "Sem cartão"] },
