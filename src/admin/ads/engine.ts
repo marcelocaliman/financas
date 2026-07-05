@@ -315,7 +315,7 @@ export const POSTS: Post[] = [
       "Prazer, eu sou o Nossas Finanças. 👋\n\nUm app pra você ver TODO o seu dinheiro — em qualquer moeda — num lugar só: patrimônio, orçamento, investimentos e metas. Feito por quem vive entre países, pra quem ganha numa moeda e gasta noutra.\n\nE com uma regra que eu não abro mão: seus números são cifrados no seu aparelho, antes de irem pra qualquer lugar. Nem eu, no servidor, vejo. Privacidade de verdade.\n\nGrátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\n📲 Link na bio. Seja bem-vindo(a). 💚",
     tags: ["financaspessoais", "multimoeda", "privacidade", "expatriados", "brasileirosnoexterior", "controlefinanceiro", "organizacaofinanceira", "independenciafinanceira", "appdefinancas", "morarfora"],
     shot: SHOT_SRC.painel,
-    eyebrow: "PRAZER, NOSSAS FINANÇAS",
+    eyebrow: "NOSSAS FINANÇAS",
     title: ["Seu dinheiro,", "num app só."],
     sub: "Multimoeda, privado e simples — feito por quem vive entre países. Grátis pra começar.",
   },
