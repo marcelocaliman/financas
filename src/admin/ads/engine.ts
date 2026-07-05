@@ -1696,15 +1696,16 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
   const postShot = adImage(post.shot);
   if (post.shot && postShot) {
     // SCREENSHOT real: eyebrow + título no alto, janela emoldurada embaixo (encolhe se não couber).
-    const eyeY = H * 0.115;
+    // A eyebrow começa MAIS ABAIXO da marca (respiro no topo) e os blocos ganham mais ar entre si.
+    const eyeY = H * 0.155;
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     const px = fitTitlePx(ctx, s, post.title, availW, 62, 86);
-    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 44) * s, post.title, 1, 0, px, pal);
+    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 54) * s, post.title, 1, 0, px, pal);
     if (post.sub) {
-      drawSub(ctx, s, x, tb + 28 * s, W, post.sub, 1, pal);
-      tb += 92 * s;
+      drawSub(ctx, s, x, tb + 34 * s, W, post.sub, 1, pal);
+      tb += 100 * s;
     }
-    const topY = tb + 56 * s;
+    const topY = tb + 66 * s;
     const { w: iw, h: ih } = imgWH(postShot);
     let cw = W - 150 * s;
     if (topY + cw * (ih / iw) > H - 120 * s) cw = ((H - 120 * s - topY) * iw) / ih; // cabe acima do rodapé
