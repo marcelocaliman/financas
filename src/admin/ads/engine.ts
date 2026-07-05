@@ -57,7 +57,7 @@ export const PHOTO_SRC: Record<string, string> = {
   privacidade: "/img/ads/person.jpg",
   orcamento: "/img/ads/life.jpg",
   futuro: "/img/ads/horizon.jpg", // story "vivid" (foto vívida, não esmaecida)
-  "app-tour": "/img/ads/horizon.jpg", // capa vívida do tour (as demais cenas ignoram a foto)
+  "app-tour": "/img/ads/dashboard.jpg", // capa vívida do tour: painel/gráficos (casa com "conheça o app")
   // Stories educativos — 1 foto TEMÁTICA e ÚNICA por peça (todas vívidas).
   "edu-orcamento": "/img/ads/budget.jpg", // calculadora + contas
   "edu-reserva": "/img/ads/savings.jpg", // cofrinho/dinheiro guardado
@@ -76,7 +76,7 @@ export interface Scene {
   badges?: string[]; // moedas
   bars?: { label: string; w: number; c?: string }[];
   tagline?: string;
-  mock?: "currencies" | "masked" | "donut"; // mockup do app na cena de hook (preenche + varia)
+  mock?: "currencies" | "masked" | "donut" | "freedom"; // mockup do app na cena de hook (preenche + varia)
   chips?: string[]; // pílulas de features (cena de amplitude/benefício)
   style?: PieceStyle; // clima DESTA cena (sobrescreve o do story) — deixa um mesmo story alternar templates
 }
@@ -161,9 +161,9 @@ export const STORIES: Story[] = [
     scenes: [
       { kind: "hook", style: "vivid", eyebrow: "UM TOUR RÁPIDO", title: ["Conheça o Nossas", "Finanças."], sub: "Suas finanças multimoeda num app só — privado e simples." },
       { kind: "hook", style: "dark", mock: "currencies", eyebrow: "1 · MULTIMOEDA", title: ["Tudo, em", "qualquer moeda."], sub: "Real, euro, dólar — cada item na sua moeda, o total na cotação de hoje." },
-      { kind: "hook", style: "color", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
+      { kind: "hook", style: "dark", mock: "masked", eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
       { kind: "hook", style: "dark", mock: "donut", eyebrow: "3 · ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
-      { kind: "hook", style: "light", eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], chips: ["Aportes", "Inflação real", "Ano a ano", "FIRE"] },
+      { kind: "hook", style: "dark", mock: "freedom", eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], sub: "Projeção de independência financeira com aportes e inflação real." },
       { kind: "cta", style: "color", value: "Nossas Finanças", tagline: "Tudo num app só · grátis", sub: "nossasfinancas.com.br" },
     ],
   },
@@ -251,7 +251,7 @@ export interface PieceVisual {
   eyebrow: string;
   title: string[]; // linhas
   sub?: string;
-  mock?: "currencies" | "masked" | "donut"; // mockup do app
+  mock?: "currencies" | "masked" | "donut" | "freedom"; // mockup do app
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
   stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
@@ -631,7 +631,7 @@ function drawDonut(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
 /** Card-mockup do app (screenshot estilizado): os elementos se CONSTROEM ao longo da cena (número
  *  conta, linhas/legenda em cascata, dots um a um, donut desenhando), como o mock da landing.
  *  `a` = alpha da cena/pop; `lt` = tempo local da cena (dispara as animações internas). */
-function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut", a: number, lt: number) {
+function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: number, w: number, kind: "currencies" | "masked" | "donut" | "freedom", a: number, lt: number) {
   const h = w * (kind === "donut" ? 1.05 : 0.84); // altura ajustada ao conteúdo de cada mockup
   ctx.save();
   ctx.globalAlpha = a;
@@ -758,7 +758,7 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
       }
     }
     ctx.stroke();
-  } else {
+  } else if (kind === "donut") {
     eyebrow("ORÇAMENTO DO MÊS");
     const dcx = x + w / 2, dcy = py + 175 * s, dr = 118 * s;
     // donut se desenhando (sweep)
@@ -783,6 +783,71 @@ function drawMockCard(ctx: CanvasRenderingContext2D, s: number, cx: number, cy: 
       ctx.textBaseline = "alphabetic";
       ctx.globalAlpha = a;
     });
+  } else {
+    // FREEDOM — "quando você fica livre": % da liberdade contando + número/ano + curva de projeção
+    // subindo (área + dot no alvo). Relaciona com a Projeção/Liberdade do app.
+    eyebrow("RUMO À LIBERDADE");
+    const pct = Math.round(23 * easeOut(clamp01((lt - 0.5) / 1.3)));
+    ctx.fillStyle = ACCENT;
+    ctx.font = fontSans(56 * s, 600);
+    ctx.fillText(pct + "% livre", px, py + 66 * s);
+    ctx.globalAlpha = a * fade(1.0);
+    ctx.fillStyle = MUTED;
+    ctx.font = fontSans(24 * s, 500);
+    ctx.fillText("R$ 2,4 mi · chegada em 2035", px, py + 108 * s);
+    ctx.globalAlpha = a;
+    // projeção subindo
+    const gy = py + 250 * s, base = gy + 130 * s;
+    const pts = [0.86, 0.72, 0.6, 0.45, 0.36, 0.22, 0.1]; // menor = mais alto (curva sobe)
+    const seg = pts.length - 1;
+    const cp = clamp01((lt - 0.7) / 1.5) * seg;
+    const ptAt = (i: number) => ({ gx: px + (iw * i) / seg, gyy: gy + 130 * s * pts[i] });
+    const traceTo = (fn: (gx: number, gyy: number, i: number) => void) => {
+      for (let i = 0; i <= seg; i++) {
+        if (cp >= i) fn(ptAt(i).gx, ptAt(i).gyy, i);
+        else {
+          const tt = cp - (i - 1);
+          if (tt > 0) {
+            const p0 = ptAt(i - 1), p1 = ptAt(i);
+            fn(p0.gx + (p1.gx - p0.gx) * tt, p0.gyy + (p1.gyy - p0.gyy) * tt, i);
+          }
+          break;
+        }
+      }
+    };
+    // área sob a linha
+    const endX = cp >= seg ? ptAt(seg).gx : px + (iw * Math.min(cp, seg)) / seg;
+    ctx.beginPath();
+    ctx.moveTo(px, base);
+    traceTo((gx, gyy) => ctx.lineTo(gx, gyy));
+    ctx.lineTo(endX, base);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, gy, 0, base);
+    grad.addColorStop(0, "rgba(62,207,142,0.22)");
+    grad.addColorStop(1, "rgba(62,207,142,0)");
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // linha
+    ctx.strokeStyle = ACCENT;
+    ctx.lineWidth = 6 * s;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    traceTo((gx, gyy, i) => (i === 0 ? ctx.moveTo(gx, gyy) : ctx.lineTo(gx, gyy)));
+    ctx.stroke();
+    // dot no alvo
+    if (cp >= seg) {
+      const { gx, gyy } = ptAt(seg);
+      ctx.fillStyle = ACCENT;
+      ctx.beginPath();
+      ctx.arc(gx, gyy, 9 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(62,207,142,0.3)";
+      ctx.lineWidth = 6 * s;
+      ctx.beginPath();
+      ctx.arc(gx, gyy, 17 * s, 0, Math.PI * 2);
+      ctx.stroke();
+    }
   }
   ctx.restore();
   ctx.globalAlpha = 1;
