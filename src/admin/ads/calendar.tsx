@@ -161,6 +161,16 @@ export function AdsCalendar() {
     remove(e.id);
   };
 
+  // Auto-limpeza (1×): remove planejados JÁ CUMPRIDOS por um postado da mesma peça+dia — sana
+  // registros antigos (ex.: marcar via botão "Hoje" da peça, que não limpava o planejado).
+  useEffect(() => {
+    const st = useAdsCalendar.getState();
+    const done = new Set(st.entries.filter((e) => e.status === "posted").map((e) => `${e.pieceId}@${e.date}`));
+    st.entries
+      .filter((e) => e.status === "planned" && done.has(`${e.pieceId}@${e.date}`))
+      .forEach((e) => st.remove(e.id));
+  }, []);
+
   // Gera um roteiro pronto (ordem/cadência/variedade automáticas) — substitui o plano FUTURO e
   // preserva o histórico já postado.
   const generatePlan = () => {

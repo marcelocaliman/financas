@@ -23,7 +23,15 @@ export const useAdsCalendar = create<CalState>()(
     (set) => ({
       entries: [],
       add: (e) =>
-        set((s) => ({ entries: [...s.entries, { ...e, id: crypto.randomUUID() }] })),
+        set((s) => {
+          // Ao registrar um POSTADO, remove o PLANEJADO redundante da mesma peça no mesmo dia
+          // (aquele planejamento foi cumprido) — evita a peça aparecer como planejada E postada.
+          const base =
+            e.status === "posted"
+              ? s.entries.filter((x) => !(x.status === "planned" && x.pieceId === e.pieceId && x.date === e.date))
+              : s.entries;
+          return { entries: [...base, { ...e, id: crypto.randomUUID() }] };
+        }),
       update: (id, patch) =>
         set((s) => ({ entries: s.entries.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       remove: (id) => set((s) => ({ entries: s.entries.filter((x) => x.id !== id) })),
