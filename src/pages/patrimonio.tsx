@@ -224,7 +224,9 @@ export default function Patrimonio() {
               />
             ))}
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 mt-4">
+          {/* Uma linha só: cartões de largura fixa que ROLAM na horizontal quando há muitas classes
+              (em vez de quebrar em várias linhas). */}
+          <div className="flex gap-2.5 mt-4 overflow-x-auto no-scrollbar">
             {alloc.map((a, i) => (
               <button
                 key={a.classId}
@@ -232,7 +234,7 @@ export default function Patrimonio() {
                 onClick={() => setTab(macroOf(a.classId))}
                 aria-label={`${a.name} ${a.pct.toFixed(1)}%`}
                 className={cn(
-                  "flex items-start gap-2.5 rounded-[12px] border px-3 py-2.5 text-left transition-colors",
+                  "flex items-start gap-2.5 rounded-[12px] border px-3 py-2.5 text-left transition-colors flex-1 min-w-[190px]",
                   macroOf(a.classId) === activeMacro.id ? "border-border-strong bg-card2" : "border-border hover:bg-card-hover",
                 )}
               >
