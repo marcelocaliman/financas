@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronDown, TrendingDown } from "lucide-react";
+import { Plus, ChevronDown, TrendingDown, Wallet } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -20,6 +20,7 @@ import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { CardSubNav } from "@/components/common/card-sub-nav";
+import { BalanceUpdater } from "@/components/patrimonio/balance-updater";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 import Investimentos from "./investimentos";
@@ -85,6 +86,7 @@ export default function Patrimonio() {
   const [tab, setTab] = useState("");
   const [extra, setExtra] = useState<string | null>(null);
   const [liabOpen, setLiabOpen] = useState(false); // Passivos colapsados por padrão (encurta a aba)
+  const [balancesOpen, setBalancesOpen] = useState(false);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -258,6 +260,7 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <BalanceUpdater open={balancesOpen} onClose={() => setBalancesOpen(false)} />
       <CardSubNav
         items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))}
         onSelect={(id) => {
@@ -314,7 +317,12 @@ export default function Patrimonio() {
       <section id="pat-ativos">
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="eyebrow">{t("patrimonio.assets")}</h3>
-          <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-[11.5px] text-faint tabular">{t("dashboard.positionsCount", { count: data.assets.length })}</span>
+            <button type="button" onClick={() => setBalancesOpen(true)} className="inline-flex h-8 items-center gap-1.5 rounded-[9px] bg-accent px-3 text-[12px] font-medium text-[#08130C] transition hover:opacity-90">
+              <Wallet size={14} /> {t("balances.cta")}
+            </button>
+          </div>
         </div>
 
         {/* Barra de abas + "adicionar classe" */}
