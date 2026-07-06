@@ -44,8 +44,12 @@ export interface Expense {
   amount: number; // valor no mês
   /** Fixo/recorrente: entra sozinho nos meses seguintes (aluguel, assinaturas…). */
   recurring?: boolean;
-  /** Dia de vencimento (1–31) — transforma o gasto numa CONTA A PAGAR. Ausente = sem vencimento. */
+  /** Dia de vencimento (1–31) — transforma o gasto numa CONTA A PAGAR. Ausente = sem vencimento.
+   *  Numa FATURA de cartão, é o dia de PAGAMENTO. */
   dueDay?: number;
+  /** Cartão: dia de FECHAMENTO da fatura (1–31). Define o ciclo: compras até o fechamento entram
+   *  nesta fatura; a partir dele, na PRÓXIMA (paga no mês seguinte). Só nas faturas (categoria Cartão). */
+  closeDay?: number;
   /** Conta já paga no mês? Cada mês tem a sua linha, então `paid` é por competência. */
   paid?: boolean;
   /** DENTRO de outro gasto (a fatura do cartão) — id do lançamento "pai". Um filho é DISCRIMINADO

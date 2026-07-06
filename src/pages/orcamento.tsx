@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { Check, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Circle, Copy, CreditCard, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
@@ -86,6 +86,22 @@ function shiftMonth(month: string, delta: number): string {
 function monthLabel(month: string, lang: string, short = false): string {
   const [y, mm] = month.split("-").map(Number);
   return new Date(y, mm - 1, 1).toLocaleDateString(LANG_LOCALE[lang] ?? "pt-BR", short ? { month: "short" } : { month: "long", year: "numeric" });
+}
+
+/** Seletor compacto de DIA (1–31 ou "—") — pro ciclo do cartão (fechamento/pagamento). */
+function DaySelect({ value, onChange }: { value?: number; onChange: (d: number | undefined) => void }) {
+  return (
+    <select
+      value={value ?? ""}
+      onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
+      className="rounded-[7px] border border-border bg-card px-1.5 py-1 text-[13px] tabular text-text outline-none cursor-pointer focus:border-accent"
+    >
+      <option value="" className="bg-card text-text">—</option>
+      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+        <option key={d} value={d} className="bg-card text-text">{d}</option>
+      ))}
+    </select>
+  );
 }
 
 /** Cards da aba Orçamento (âncoras + rótulos da sub-nav sticky). "Vencimentos" é condicional
@@ -239,6 +255,11 @@ export default function Orcamento() {
 
   const blank = (): BudgetRow => ({ id: crypto.randomUUID(), month, categoryId: "", name: "", currency: base, amount: 0, recurring: false });
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
+
+  // Faturas de cartão do mês (categoria "Cartão de Crédito") — pra editar o ciclo (fecha/paga).
+  const cardFaturas = data.expenses.filter((e) => e.month === month && e.categoryId === EXPENSE_CARD);
+  const setFaturaDay = (f: Expense, field: "closeDay" | "dueDay", day: number | undefined) =>
+    void actions.putExpense({ ...f, [field]: day });
   const isCurrent = month === currentMonth();
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
   // Filhos REAIS (pai existe) — pra tingir/recuar só quem não soma. Órfão (fatura apagada) fica normal.
@@ -404,6 +425,32 @@ export default function Orcamento() {
           </div>
         </div>
       </section>
+
+      {/* Ciclo do(s) cartão(ões): fechamento + pagamento por cartão — deixa explícito qual fatura recebe
+          cada compra. Compras a partir do fechamento vão pra próxima fatura (paga no mês seguinte). */}
+      {cardFaturas.length > 0 ? (
+        <div className="rounded-[14px] border border-border bg-card2/40 p-3.5 sm:p-4">
+          <div className="mb-2.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
+            <CreditCard size={13} /> {t("orcamento.cardCycle")}
+          </div>
+          <div className="space-y-3">
+            {cardFaturas.map((f) => (
+              <div key={f.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+                <span className="font-medium">{f.name || t("orcamento.card")}</span>
+                <span className="flex items-center gap-1.5 text-muted">
+                  {t("orcamento.closesOn")} <DaySelect value={f.closeDay} onChange={(d) => setFaturaDay(f, "closeDay", d)} />
+                </span>
+                <span className="flex items-center gap-1.5 text-muted">
+                  {t("orcamento.paysOn")} <DaySelect value={f.dueDay} onChange={(d) => setFaturaDay(f, "dueDay", d)} />
+                </span>
+                <p className="w-full text-[11.5px] leading-snug text-faint">
+                  {f.closeDay ? t("orcamento.cardCycleHint", { close: f.closeDay }) : t("orcamento.cardCycleSet")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       {/* Dica: o toggle ↻ marca lançamentos fixos que entram sozinhos nos próximos meses. */}
       <p className="flex items-center gap-2 text-[12px] text-faint">
