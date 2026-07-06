@@ -410,6 +410,8 @@ export const POSTS: Post[] = [
   {
     id: "build",
     name: "Build in public · dev",
+    comment:
+      "Você confia mais num app feito por uma empresa gigante ou por alguém que usa no próprio dia a dia? 👇\n\nSe curte acompanhar os bastidores, me segue aqui. App na bio 👉 nossasfinancas.com.br",
     pillar: "Build in public",
     caption:
       "Confissão: eu não achei o app que eu queria… então construí. 👨‍💻\n\nSou dev e estou me mudando do Brasil pra Itália. Precisava enxergar meu dinheiro em real E euro, num lugar só, sem entregar meus dados pra ninguém. Como não existia do jeito certo — privado, multimoeda e simples — fiz o Nossas Finanças. E abri de graça pra você usar.\n\nTô construindo à vista de todos. Bora junto? 🚀\n\n📲 Link na bio.",
@@ -425,6 +427,8 @@ export const POSTS: Post[] = [
   {
     id: "cambio",
     name: "Câmbio · papel claro (número)",
+    comment:
+      "Você acompanha o câmbio quando tem dinheiro em mais de uma moeda? Comenta 👇\n\nSalva pra ver o efeito no seu bolso. App grátis na bio 👉 nossasfinancas.com.br",
     pillar: "Multimoeda",
     style: "light",
     caption:
@@ -438,6 +442,8 @@ export const POSTS: Post[] = [
   {
     id: "sem-fronteiras",
     name: "Sem fronteiras · verde bold",
+    comment:
+      "Você vive (ou pensa em viver) entre países? Conta aí de onde pra onde 👇\n\nSalva e compartilha com quem também está nessa. Link na bio.",
     pillar: "Multimoeda",
     style: "color",
     caption:
@@ -451,6 +457,8 @@ export const POSTS: Post[] = [
   {
     id: "metas",
     name: "Metas · foto vívida",
+    comment:
+      "Qual é a sua próxima meta? Escreve aqui embaixo — colocar em palavras já ajuda 👇\n\nSalva pra acompanhar a sua no app. Grátis na bio 👉 nossasfinancas.com.br",
     pillar: "Organização",
     style: "vivid",
     photo: "/img/ads/peaks.jpg",
