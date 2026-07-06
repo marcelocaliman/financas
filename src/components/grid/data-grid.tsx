@@ -68,6 +68,9 @@ interface DataGridProps<T extends { id: string }> {
   onDelete: (id: string) => void;
   addPlaceholder: string;
   total?: ReactNode;
+  /** Moeda-base: fallback pra formatar/parsear e pra preencher a moeda vazia — a linha em branco
+   *  mostra "—" na moeda (em vez de pré-selecionar); ao salvar sem escolher, cai nesta base. */
+  defaultCurrency?: Currency;
   /** Classe extra por linha (ex.: tingir os itens DENTRO de uma fatura). */
   rowClass?: (row: T) => string | undefined;
   /** Recua a coluna marcada com `indentable` desta linha (ex.: itens aninhados sob a fatura). */
@@ -849,7 +852,7 @@ function CurrencyPicker({
 function CurrencyCell({ value, onCommit }: { value: Currency; onCommit: (c: Currency) => void }) {
   return (
     <CurrencyPicker value={value} onCommit={onCommit}>
-      <CurrencyBadge currency={value} />
+      {value ? <CurrencyBadge currency={value} /> : <span className="px-1.5 text-[13px] text-faint">—</span>}
     </CurrencyPicker>
   );
 }
@@ -907,6 +910,7 @@ export function DataGrid<T extends { id: string }>({
   total,
   rowClass,
   indentRow,
+  defaultCurrency,
 }: DataGridProps<T>) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -944,10 +948,15 @@ export function DataGrid<T extends { id: string }>({
   // nunca a cada tecla. É isso que deixa trocar a moeda no meio da digitação sem
   // auto-commitar a linha na moeda antiga (ver preventDefault no CurrencyPicker).
   // Se um dia empurrar o valor digitado pro ghost a cada onChange, o bug volta.
+  // Salva a linha; se a moeda ficou vazia (a linha em branco não escolheu), cai na moeda-base.
+  const emit = (row: T) => {
+    const c = (row as Record<string, unknown>).currency;
+    onCommit(defaultCurrency && (c === "" || c == null) ? ({ ...row, currency: defaultCurrency } as T) : row);
+  };
   const commitGhostPatch = (patch: Partial<T>) => {
     const next = { ...ghost, ...patch } as T;
     if (isComplete(next)) {
-      onCommit(next);
+      emit(next);
       setGhost(blank());
     } else {
       setGhost(next);
@@ -961,7 +970,7 @@ export function DataGrid<T extends { id: string }>({
     const commit = (value: unknown) => {
       // Deriva campos vinculados (ex.: país → moeda) junto com o valor da célula.
       const patch = { [col.key]: value, ...(col.derive ? col.derive(value as string, row) : {}) } as Partial<T>;
-      return ghostRow ? commitGhostPatch(patch) : onCommit({ ...row, ...patch } as T);
+      return ghostRow ? commitGhostPatch(patch) : emit({ ...row, ...patch } as T);
     };
     const onEnter = ghostRow ? () => focusGhost(firstTextKey) : () => nextInColumn(row.id, col.key);
 
@@ -1028,7 +1037,7 @@ export function DataGrid<T extends { id: string }>({
         return (
           <NumberCell
             value={get(row, col.key) as number | undefined}
-            currency={get(row, col.currencyKey ?? "currency") as Currency}
+            currency={(get(row, col.currencyKey ?? "currency") as Currency) || defaultCurrency || ("BRL" as Currency)}
             decimals={col.decimals}
             rowId={rowId}
             colKey={col.key}
@@ -1065,13 +1074,13 @@ export function DataGrid<T extends { id: string }>({
         return (
           <MoneyCell
             value={(get(row, col.key) as number) ?? 0}
-            currency={get(row, curKey) as Currency}
+            currency={(get(row, curKey) as Currency) || defaultCurrency || ("BRL" as Currency)}
             rowId={rowId}
             colKey={col.key}
             hideCurrency={col.hideCurrency}
             onCommit={commit}
             onCurrencyCommit={(c) =>
-              ghostRow ? commitGhost(curKey, c) : onCommit({ ...row, [curKey]: c } as T)
+              ghostRow ? commitGhost(curKey, c) : emit({ ...row, [curKey]: c } as T)
             }
             onEnter={onEnter}
           />

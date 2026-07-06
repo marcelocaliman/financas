@@ -164,7 +164,8 @@ export default function Patrimonio() {
     const st = tax.subtypes.find((s) => s.id === a.subtypeId);
     void actions.putAsset(st ? { ...a, classId: st.classId } : a);
   };
-  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeMacro.classIds[0], currency: base, amount: 0 });
+  // Moeda vazia na linha em branco (mostra "—", não pré-seleciona) — o País preenche, ou cai na base ao salvar.
+  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeMacro.classIds[0], currency: "" as Currency, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("patrimonio.namePlaceholderLiab") },
@@ -312,6 +313,7 @@ export default function Patrimonio() {
               columns={assetColsFor(activeMacro)}
               rows={activeAssets}
               blank={newAsset}
+              defaultCurrency={base}
               isComplete={(r) => !!r.subtypeId && r.amount > 0}
               onCommit={commitAsset}
               onDelete={(id) => void actions.removeAsset(id)}
