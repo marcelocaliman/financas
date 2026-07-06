@@ -979,18 +979,27 @@ function drawBg(ctx: CanvasRenderingContext2D, W: number, H: number, t: number, 
 
 /** Fundo CLARO (papel premium neutro/zinc) + glow verde MUITO sutil — clima editorial claro. */
 function drawLightBg(ctx: CanvasRenderingContext2D, W: number, H: number, t = 0, gx = 0.28, gy = 0.2) {
+  // base neutra premium com um leve toque esverdeado (menos "branco chapado")
   const base = ctx.createLinearGradient(0, 0, 0, H);
-  base.addColorStop(0, "#F7F8FA");
-  base.addColorStop(1, "#EAEDF1");
+  base.addColorStop(0, "#F4F7F5");
+  base.addColorStop(1, "#E5EBE7");
   ctx.fillStyle = base;
   ctx.fillRect(0, 0, W, H);
   const breathe = 0.5 + 0.5 * Math.sin(t * 0.6);
-  const cx = W * gx, cy = H * gy, r = W * (0.82 + 0.05 * breathe);
+  // brilho verde PRINCIPAL no canto de cima (perto da marca/eyebrow) — elegante, mais presente
+  const cx = W * gx, cy = H * gy, r = W * (0.92 + 0.05 * breathe);
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-  g.addColorStop(0, `rgba(21,151,106,${0.09 + 0.02 * breathe})`);
-  g.addColorStop(0.6, "rgba(21,151,106,0.02)");
+  g.addColorStop(0, `rgba(21,151,106,${0.18 + 0.03 * breathe})`);
+  g.addColorStop(0.55, "rgba(21,151,106,0.045)");
   g.addColorStop(1, "rgba(21,151,106,0)");
   ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  // brilho SECUNDÁRIO difuso no canto oposto (profundidade tipo mesh-gradient, bem sutil)
+  const g2 = ctx.createRadialGradient(W * 0.92, H * 0.9, 0, W * 0.92, H * 0.9, W * 0.8);
+  g2.addColorStop(0, "rgba(21,151,106,0.09)");
+  g2.addColorStop(0.6, "rgba(21,151,106,0.015)");
+  g2.addColorStop(1, "rgba(21,151,106,0)");
+  ctx.fillStyle = g2;
   ctx.fillRect(0, 0, W, H);
 }
 
@@ -1606,7 +1615,7 @@ function drawSteps(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
       if (line) ctx.fillText(line, textX, ly);
       rowBottom = ly;
     }
-    yy = rowBottom + 48 * s; // respiro entre itens
+    yy = rowBottom + 60 * s; // respiro entre itens
   });
   return yy;
 }
@@ -1681,14 +1690,14 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
   // PASSO A PASSO / CHECKLIST / LISTA (educativo): eyebrow + título no alto + lista abaixo.
   if (post.steps) {
     const px = fitTitlePx(ctx, s, post.title, availW, 60, 84);
-    const eyeY = H * 0.115;
+    const eyeY = H * 0.15; // respiro da marca no topo (não colar a eyebrow na logo)
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
-    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 46) * s, post.title, 1, 0, px, pal);
+    let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px, pal);
     if (post.sub) {
-      drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
-      tb += 96 * s;
+      drawSub(ctx, s, x, tb + 32 * s, W, post.sub, 1, pal);
+      tb += 100 * s;
     }
-    drawSteps(ctx, s, x, tb + 62 * s, W, post.steps, post.stepMarker ?? "number", pal);
+    drawSteps(ctx, s, x, tb + 80 * s, W, post.steps, post.stepMarker ?? "number", pal);
     drawHandle(ctx, s, x, H - 64 * s, pal);
     return;
   }
