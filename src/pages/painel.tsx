@@ -29,6 +29,7 @@ import { DailyFxLine } from "@/components/painel/daily-fx-line";
 import { WelcomeBack } from "@/components/painel/welcome-back";
 import { MilestoneCelebration } from "@/components/painel/milestone-celebration";
 import { MonthWrap } from "@/components/painel/month-wrap";
+import { BalanceNudge } from "@/components/painel/balance-nudge";
 import { TipOfWeek } from "@/components/painel/tip-of-week";
 import { NetWorthInCurrencies } from "@/components/painel/networth-in-currencies";
 import { cn } from "@/lib/utils";
@@ -141,6 +142,7 @@ export function DashboardHero() {
   return (
     <>
       <MonthWrap />
+      <BalanceNudge />
       <MilestoneCelebration />
       <WelcomeBack name={name} nwChange={view.nwChange} freedomPct={lib?.ready ? lib.freedomPct : null} hasTrend={hasTrend} />
       <div className="font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accent mb-4">

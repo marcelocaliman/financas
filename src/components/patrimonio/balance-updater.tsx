@@ -13,8 +13,16 @@ import { nameById } from "@/domain/taxonomy";
 import { useIsMobile } from "@/hooks/use-media";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
 import { Button } from "@/components/common/button";
+import { useBalanceUpdater } from "@/store/balance-updater";
+import { useEngagement } from "@/store/engagement";
 import { cn } from "@/lib/utils";
 import type { Asset } from "@/domain/types";
+
+/** Mês corrente "AAAA-MM" — pra marcar a última atualização de saldos (nudge 1×/mês). */
+const ym = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+};
 
 /** Interpreta o texto digitado como número (aceita vírgula decimal; ignora o resto). */
 const parseNum = (s: string): number => {
@@ -27,8 +35,11 @@ const parseNum = (s: string): number => {
  * (por classe), editável de uma vez, com o patrimônio recalculando ao vivo. Drawer lateral no
  * desktop; bottom sheet no celular. Salva tudo numa tacada (só o que mudou).
  */
-export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function BalanceUpdater() {
   const { t } = useTranslation();
+  const open = useBalanceUpdater((s) => s.open);
+  const close = useBalanceUpdater((s) => s.closeDrawer);
+  const setBalancesUpdated = useEngagement((s) => s.setBalancesUpdated);
   const data = usePatrimonio();
   const tax = useTaxonomy();
   const disp = useUI((s) => s.displayCurrency);
@@ -47,7 +58,7 @@ export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () =
     if (!open) return;
     const id = pushModal();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isTopModal(id)) onClose();
+      if (e.key === "Escape" && isTopModal(id)) close();
     };
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -57,7 +68,7 @@ export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () =
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open, close]);
 
   const groups = useMemo(() => {
     if (!data || !tax) return [] as { id: string; name: string; assets: Asset[] }[];
@@ -82,13 +93,14 @@ export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () =
       const n = parseNum(v);
       if (n !== a.amount) void actions.putAsset({ ...a, amount: n });
     }
-    onClose();
+    setBalancesUpdated(ym());
+    close();
   };
 
   return createPortal(
     <div
       className={cn("fixed inset-0 z-[70] flex bg-black/50 backdrop-blur-sm", isMobile ? "items-end justify-center" : "items-stretch justify-end")}
-      onClick={onClose}
+      onClick={close}
       role="presentation"
     >
       <div
@@ -110,7 +122,7 @@ export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () =
               <div className="text-[12px] text-muted">{t("balances.sub")}</div>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label={t("common.close")} className="shrink-0 text-muted transition hover:text-text">
+          <button type="button" onClick={close} aria-label={t("common.close")} className="shrink-0 text-muted transition hover:text-text">
             <X size={18} />
           </button>
         </div>
@@ -147,7 +159,7 @@ export function BalanceUpdater({ open, onClose }: { open: boolean; onClose: () =
             <span className="tabular text-[19px] font-semibold tracking-[-0.03em] text-text">{formatMoney(netWorth, disp)}</span>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={onClose}>
+            <Button variant="secondary" className="flex-1" onClick={close}>
               {t("common.close")}
             </Button>
             <Button className="flex-1" onClick={saveAll}>
