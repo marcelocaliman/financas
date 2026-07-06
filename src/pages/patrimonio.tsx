@@ -5,14 +5,12 @@ import { Plus, ChevronDown, TrendingDown, Wallet } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
-import { useQuotes } from "@/store/quotes";
-import { useCanLiveQuotes } from "@/hooks/use-live-quotes";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { CLASS, isInvestedClass, isDetailedAssetClass, nameById } from "@/domain/taxonomy";
+import { isInvestedClass, isDetailedAssetClass, nameById } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -51,9 +49,6 @@ export default function Patrimonio() {
   const data = usePatrimonio();
   const tax = useTaxonomy();
   const rates = useRates((s) => s.rates);
-  const prices = useQuotes((s) => s.prices);
-  // Cotação automática (brapi) é exclusiva do super-admin — uso pessoal do tier free.
-  const canQuote = useCanLiveQuotes();
 
   const view = useMemo(() => {
     if (!data) return null;
@@ -111,68 +106,17 @@ export default function Patrimonio() {
   const activeAssets = data.assets.filter((a) => a.classId === activeId);
   const absentClasses = tax.assetClasses.filter((c) => !presentIds.includes(c.id));
 
-  const priceOf = (ticker?: string) => prices[(ticker ?? "").toUpperCase()];
-
-  // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
+  // Colunas por classe — modelo POR CLASSE × MOEDA (um valor por moeda; sem discriminar item):
+  // Moeda → [Aplicado] → Valor atual → [Rentabilidade] → [Em <moeda de exibição>].
   const assetColsFor = (classId: string): GridColumn<Asset>[] => {
-    const quotable = isDetailedAssetClass(classId);
-    const cols: GridColumn<Asset>[] = [];
-    // Cotáveis não têm campo de valor (vem de qtd × cotação) → mantêm o seletor de moeda como selo.
-    if (quotable) {
-      cols.push({ key: "currency", type: "currency", header: "", width: "46px" });
-    }
-    cols.push({ key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.6fr)", placeholder: t("patrimonio.namePlaceholder") });
-    cols.push({ key: "subtypeId", type: "select", optional: true, header: t("patrimonio.subtype"), width: "minmax(140px,1.1fr)", optionsFor: (r) => opts(tax.subtypes.filter((s) => s.classId === r.classId)) });
-    if (classId === CLASS.rendaFixa) {
-      cols.push({ key: "indexerId", type: "select", optional: true, header: t("patrimonio.indexer"), width: "minmax(104px,0.9fr)", options: opts(tax.indexers) });
-    }
-    if (quotable) {
-      // Visão de posição: Ticker · Qtd · Preço médio · [Cotação · Rentabilidade ao vivo] · Valor atual.
-      // As colunas AO VIVO só aparecem pro super-admin (cotação automática = uso pessoal do free
-      // brapi). Não-admin fica manual: valor = quantidade × preço médio.
-      cols.push({ key: "ticker", type: "text", header: t("patrimonio.ticker"), width: "minmax(88px,0.8fr)", placeholder: "—" });
-      cols.push({ key: "quantity", type: "number", header: t("patrimonio.quantity"), width: "minmax(72px,0.6fr)", align: "right" });
-      cols.push({ key: "avgPrice", type: "number", decimals: 2, header: t("patrimonio.avgPrice"), width: "minmax(96px,0.8fr)", align: "right" });
-      if (canQuote) cols.push({
-        key: "price",
-        type: "computed",
-        header: t("patrimonio.price"),
-        width: "minmax(92px,0.8fr)",
-        align: "right",
-        compute: (r: Asset) => {
-          const q = priceOf(r.ticker);
-          return q ? formatMoney(q.price, r.currency, { maximumFractionDigits: 2 }) : "—";
-        },
-      });
-      if (canQuote) cols.push({
-        key: "ret",
-        type: "computed",
-        header: t("patrimonio.return"),
-        width: "minmax(86px,0.7fr)",
-        align: "right",
-        compute: (r: Asset) => {
-          const q = priceOf(r.ticker);
-          const cost = (r.quantity ?? 0) * (r.avgPrice ?? 0);
-          if (!q || cost <= 0) return "—";
-          const ret = (((r.quantity ?? 0) * q.price - cost) / cost) * 100;
-          return (
-            <span className={ret >= 0 ? "text-accent" : "text-neg"}>
-              <Hidden>{(ret >= 0 ? "+" : "") + ret.toFixed(1) + "%"}</Hidden>
-            </span>
-          );
-        },
-      });
-      cols.push({ ...convertedCol, header: t("patrimonio.currentValue"), compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
-      return cols;
-    }
-    cols.push({ key: "regionId", type: "select", optional: true, header: t("patrimonio.region"), width: "minmax(116px,1fr)", options: opts(tax.regions) });
-    cols.push({ key: "institution", type: "text", header: t("patrimonio.institution"), width: "minmax(112px,1fr)", placeholder: "—" });
-    // Classes INVESTIDAS sem ticker (renda fixa, outros): aplicado → atual → rentabilidade.
     const invested = isInvestedClass(classId);
+    const cols: GridColumn<Asset>[] = [
+      { key: "currency", type: "currency", header: t("common.currency"), width: "minmax(64px,0.5fr)" },
+    ];
     if (invested) {
       cols.push({ key: "cost", type: "number", decimals: 2, header: t("patrimonio.applied"), width: "minmax(120px,1fr)", align: "right", currencyKey: "currency" });
     }
-    cols.push({ key: "amount", type: "money", header: invested ? t("patrimonio.currentValue") : t("patrimonio.amount"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency" });
+    cols.push({ key: "amount", type: "money", hideCurrency: true, header: invested ? t("patrimonio.currentValue") : t("patrimonio.amount"), width: "minmax(140px,1fr)", align: "right", currencyKey: "currency" });
     if (invested) {
       cols.push({
         key: "ret",
@@ -199,27 +143,8 @@ export default function Patrimonio() {
     return cols;
   };
 
-  const commitAsset = (a: Asset) => {
-    const next = { ...a };
-    if (next.subtypeId && !tax.subtypes.some((s) => s.id === next.subtypeId && s.classId === next.classId)) {
-      next.subtypeId = undefined;
-    }
-    if (next.classId !== CLASS.rendaFixa) next.indexerId = undefined;
-    // Cotáveis: valor = quantidade × (cotação do dia, se houver; senão preço médio = custo).
-    // SEM exigir ticker — um cotável sem ticker ainda vale qtd × preço médio (custo),
-    // senão ficaria com valor 0 (rentabilidade −100% e patrimônio subestimado).
-    if (isDetailedAssetClass(next.classId) && (next.quantity ?? 0) > 0) {
-      const unit = priceOf(next.ticker)?.price ?? next.avgPrice ?? 0;
-      if (unit > 0) next.amount = (next.quantity ?? 0) * unit;
-    }
-    void actions.putAsset(next);
-    // Ticker novo/alterado → busca a cotação NA HORA (force ignora o TTL). Só pro super-admin;
-    // não-admin mantém o valor manual (qtd × preço médio).
-    if (canQuote && next.ticker) {
-      const assets = [...data.assets.filter((x) => x.id !== next.id), next];
-      void useQuotes.getState().refresh(assets, true);
-    }
-  };
+  // Sem itens nomeados: cada linha é (classe, moeda) com valor aplicado + atual. Só salvar.
+  const commitAsset = (a: Asset) => void actions.putAsset(a);
   const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: base, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
@@ -368,17 +293,13 @@ export default function Patrimonio() {
             </div>
 
             <div className="overflow-x-auto">
-              <div className="min-w-0 sm:min-w-[860px]">
+              <div className="min-w-0 sm:min-w-[560px]">
                 <DataGrid<Asset>
                   key={activeId}
                   columns={assetColsFor(activeId)}
                   rows={activeAssets}
                   blank={newAsset}
-                  isComplete={(r) =>
-                    r.name.trim().length > 0 &&
-                    r.classId.length > 0 &&
-                    (isDetailedAssetClass(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
-                  }
+                  isComplete={(r) => r.classId.length > 0 && r.amount > 0}
                   onCommit={commitAsset}
                   onDelete={(id) => void actions.removeAsset(id)}
                   addPlaceholder={t("patrimonio.addAsset")}
@@ -386,9 +307,6 @@ export default function Patrimonio() {
                 />
               </div>
             </div>
-            {isDetailedAssetClass(activeId) && canQuote ? (
-              <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
-            ) : null}
           </>
         ) : (
           <p className="text-[13px] text-faint py-6">{t("patrimonio.emptyAssets")}</p>

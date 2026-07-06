@@ -38,6 +38,8 @@ export interface GridColumn<T> {
   /** select opcional: inclui um "—" (vazio) e o valor pode ficar em branco. */
   optional?: boolean;
   currencyKey?: string; // money/number: campo da moeda p/ o locale (default "currency")
+  /** money: NÃO mostrar o seletor de moeda embutido (quando a moeda tem coluna própria). */
+  hideCurrency?: boolean;
   /** number: casas decimais FIXAS (ex.: preço médio = 2). Indefinido = flexível (qtd). */
   decimals?: number;
   /** month: maior mês selecionável ("AAAA-MM"). Meses depois disso ficam desabilitados
@@ -178,6 +180,7 @@ function MoneyCell({
   currency,
   rowId,
   colKey,
+  hideCurrency,
   onCommit,
   onCurrencyCommit,
   onEnter,
@@ -186,6 +189,7 @@ function MoneyCell({
   currency: Currency;
   rowId: string;
   colKey: string;
+  hideCurrency?: boolean;
   onCommit: (v: number) => void;
   onCurrencyCommit: (c: Currency) => void;
   onEnter: () => void;
@@ -203,10 +207,13 @@ function MoneyCell({
   };
   return (
     // Moeda colada no valor: o usuário vê e troca a moeda exatamente onde digita.
+    // (hideCurrency: a moeda vive numa coluna própria — aqui fica só o valor.)
     <div className="flex items-center gap-1.5">
-      <CurrencyPicker value={currency} onCommit={onCurrencyCommit} className="shrink-0">
-        <CurrencyBadge currency={currency} />
-      </CurrencyPicker>
+      {!hideCurrency ? (
+        <CurrencyPicker value={currency} onCommit={onCurrencyCommit} className="shrink-0">
+          <CurrencyBadge currency={currency} />
+        </CurrencyPicker>
+      ) : null}
       <input
         data-rowid={rowId}
         data-col={colKey}
@@ -1025,6 +1032,7 @@ export function DataGrid<T extends { id: string }>({
             currency={get(row, curKey) as Currency}
             rowId={rowId}
             colKey={col.key}
+            hideCurrency={col.hideCurrency}
             onCommit={commit}
             onCurrencyCommit={(c) =>
               ghostRow ? commitGhost(curKey, c) : onCommit({ ...row, [curKey]: c } as T)

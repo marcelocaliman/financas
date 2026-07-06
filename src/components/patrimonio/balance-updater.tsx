@@ -9,7 +9,6 @@ import { useRates } from "@/store/rates";
 import { actions } from "@/data/actions";
 import { convert, formatMoney } from "@/money/currency";
 import { CurrencyBadge } from "@/components/common/currency-badge";
-import { nameById } from "@/domain/taxonomy";
 import { useIsMobile } from "@/hooks/use-media";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
 import { Button } from "@/components/common/button";
@@ -137,7 +136,7 @@ export function BalanceUpdater() {
                 <div className="space-y-1.5">
                   {g.assets.map((a) => (
                     <div key={a.id} className="flex items-center gap-2.5 rounded-[12px] border border-border bg-card2 px-3 py-2">
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-text">{a.name || nameById(tax.assetClasses, a.classId)}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-text">{a.name || a.currency}</span>
                       <CurrencyBadge currency={a.currency} />
                       <input
                         inputMode="decimal"

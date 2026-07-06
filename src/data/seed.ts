@@ -109,28 +109,27 @@ export function buildSeed(main: Currency): SeedData {
 
   return {
     assets: [
-      // Renda Fixa (moeda principal) — com aplicado (cost) p/ a rentabilidade aparecer.
-      { id: "a1", name: "Tesouro IPCA+ 2035", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: "brasil", currency: main, amount: m(7500), cost: m(6800), indexerId: "ipca" },
-      { id: "a2", name: "Tesouro Selic", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-1", regionId: "brasil", currency: main, amount: m(4500), cost: m(4300), indexerId: "selic" },
-      { id: "a3", name: "CDB liquidez diária", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(3600), cost: m(3400), indexerId: "cdi", institution: "Banco digital" },
-      { id: "a4", name: "Debênture incentivada", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-10", currency: main, amount: m(2700), cost: m(2400), indexerId: "ipca" },
-      // Ações / ETF — modelo de VALOR (aplicado→atual) p/ a rentabilidade aparecer sem cotação ao vivo.
-      { id: "a5", name: "ETF de ações (BR)", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: "brasil", currency: main, amount: m(8600), cost: m(6800), institution: "Corretora" },
-      { id: "a6", name: "Stock internacional", classId: CLASS.acoes, subtypeId: "acoes-2", regionId: "eua", currency: c3, amount: f3(5000), cost: f3(4000), institution: "Corretora US" },
-      { id: "a7", name: "ETF Europa", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: "zona-euro", currency: c2, amount: f2(5000), cost: f2(4000) },
-      // FIIs — geram os proventos abaixo.
-      { id: "a8", name: "FII de tijolo", classId: CLASS.fiis, subtypeId: "fiis-1", regionId: "brasil", currency: main, amount: m(5400), cost: m(4800), institution: "Corretora" },
-      // Previdência, Cripto, Ouro — diversificam o donut.
-      { id: "a9", name: "Previdência (PGBL)", classId: CLASS.previdencia, subtypeId: "previdencia-1", currency: main, amount: m(9800), cost: m(8200), institution: "Seguradora" },
-      { id: "a10", name: "Bitcoin", classId: CLASS.cripto, subtypeId: "cripto-1", regionId: "global", currency: c3, amount: f3(2800), cost: f3(1600) },
-      { id: "a11", name: "Ouro", classId: CLASS.commodities, subtypeId: "commodities-1", currency: main, amount: m(2500), cost: m(2150) },
-      // Caixa — reserva (principal) + conta corrente + conta no exterior (EUR).
-      { id: "a12", name: "Reserva de emergência", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(10700) },
-      { id: "a13", name: "Conta corrente", classId: CLASS.caixa, subtypeId: "caixa-1", currency: main, amount: m(2150) },
-      { id: "a14", name: "Conta no exterior", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: "italia", currency: c2, amount: f2(18000), institution: "Conta internacional" },
-      // Patrimônio físico.
-      { id: "a15", name: "Apartamento", classId: CLASS.imoveis, subtypeId: "imoveis-1", regionId: "brasil", currency: main, amount: m(37500) },
-      { id: "a16", name: "Carro", classId: CLASS.bens, subtypeId: "bens-1", currency: main, amount: m(8000) },
+      // Modelo POR CLASSE × MOEDA: um valor por classe/moeda (sem discriminar item). Onde faz
+      // sentido, guarda o aplicado (cost) além do atual pra a rentabilidade aparecer.
+      // Renda Fixa (principal).
+      { id: "a-rf", name: "", classId: CLASS.rendaFixa, currency: main, amount: m(18300), cost: m(16900) },
+      // Ações — BR (principal) + Europa (EUR) + EUA (USD): o multimoeda de verdade.
+      { id: "a-ac-main", name: "", classId: CLASS.acoes, currency: main, amount: m(8600), cost: m(6800) },
+      { id: "a-ac-eu", name: "", classId: CLASS.acoes, currency: c2, amount: f2(5000), cost: f2(4000) },
+      { id: "a-ac-us", name: "", classId: CLASS.acoes, currency: c3, amount: f3(5000), cost: f3(4000) },
+      // FIIs (principal) — geram os proventos abaixo.
+      { id: "a-fii", name: "", classId: CLASS.fiis, currency: main, amount: m(5400), cost: m(4800) },
+      // Previdência (principal).
+      { id: "a-prev", name: "", classId: CLASS.previdencia, currency: main, amount: m(9800), cost: m(8200) },
+      // Cripto (USD) e Ouro (principal) — diversificam o donut.
+      { id: "a-cripto", name: "", classId: CLASS.cripto, currency: c3, amount: f3(2800), cost: f3(1600) },
+      { id: "a-ouro", name: "", classId: CLASS.commodities, currency: main, amount: m(2500), cost: m(2150) },
+      // Caixa — reserva + conta (principal) e conta no exterior (EUR).
+      { id: "a-cx-main", name: "", classId: CLASS.caixa, currency: main, amount: m(12850) },
+      { id: "a-cx-eu", name: "", classId: CLASS.caixa, currency: c2, amount: f2(18000) },
+      // Patrimônio físico (principal).
+      { id: "a-imo", name: "", classId: CLASS.imoveis, currency: main, amount: m(37500) },
+      { id: "a-bens", name: "", classId: CLASS.bens, currency: main, amount: m(8000) },
     ],
     liabilities: [
       { id: "l1", name: "Financiamento do apê", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(17000), interestRate: 9.5, installments: 156 },

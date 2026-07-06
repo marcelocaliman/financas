@@ -13,6 +13,7 @@ import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
 import { useTaxonomyBackfill } from "@/hooks/use-taxonomy-backfill";
 import { useCostBackfill } from "@/hooks/use-cost-backfill";
+import { useAssetConsolidation } from "@/hooks/use-asset-consolidation";
 import { useUI } from "@/store/ui";
 import { RatesTicker } from "@/components/layout/rates-ticker";
 import { track } from "@/lib/analytics";
@@ -39,6 +40,7 @@ export function AppShell() {
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
   useTaxonomyBackfill(); // garante defaults novos (classe "Bens", categoria "Cartão de Crédito") nas taxonomias já existentes (1×, respeitando exclusão)
   useCostBackfill(); // preenche "valor aplicado" (qtd × preço médio) dos ativos legados (1×)
+  useAssetConsolidation(); // funde itens antigos num valor por classe×moeda (modelo por totais, 1×)
 
   // Analytics próprio: 1 evento "app_open" por sessão de app (anônimo, sem dado financeiro).
   useEffect(() => {
