@@ -292,6 +292,7 @@ export interface Post extends PieceVisual {
   pillar: string; // pilar (rótulo no card)
   caption?: string; // legenda pronta pro Instagram (copiar e colar)
   tags?: string[]; // hashtags (sem #)
+  comment?: string; // 1º comentário pronto (gancho de engajamento: pergunta + "salva" + link)
 }
 /** Um quadro do carrossel = os mesmos campos visuais de um post (sem os metadados do feed). */
 export type Slide = PieceVisual;
@@ -304,12 +305,15 @@ export interface Carousel {
   slides: Slide[];
   caption?: string;
   tags?: string[];
+  comment?: string; // 1º comentário pronto (gancho de engajamento: pergunta + "salva" + link)
 }
 
 export const POSTS: Post[] = [
   {
     id: "apresentacao",
     name: "Apresentação · a marca (perfil)",
+    comment:
+      "Curtiu a ideia? Me segue aqui 👀 e comenta: qual a parte mais difícil de organizar o seu dinheiro hoje? 👇\n\nApp grátis no link da bio 👉 nossasfinancas.com.br",
     pillar: "Apresentação",
     caption:
       "Prazer, eu sou o Nossas Finanças. 👋\n\nUm app pra você ver TODO o seu dinheiro — em qualquer moeda — num lugar só: patrimônio, orçamento, investimentos e metas. Feito por quem vive entre países, pra quem ganha numa moeda e gasta noutra.\n\nE com uma regra que eu não abro mão: seus números são cifrados no seu aparelho, antes de irem pra qualquer lugar. Nem eu, no servidor, vejo. Privacidade de verdade.\n\nGrátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\n📲 Link na bio. Seja bem-vindo(a). 💚",
@@ -322,6 +326,8 @@ export const POSTS: Post[] = [
   {
     id: "multimoeda",
     name: "Multimoeda · somando tudo",
+    comment:
+      "Você guarda dinheiro em mais de uma moeda? Conta aí quais 👇\n\nSalva esse post pra testar depois — app grátis na bio 👉 nossasfinancas.com.br",
     pillar: "Multimoeda",
     caption:
       "Real na conta daqui, euro guardado lá fora, uns dólares investidos… e no fim você não sabe QUANTO tem no total. 🤯\n\nO Nossas Finanças junta tudo num número só, na cotação de hoje — sem planilha e sem abrir conta em lugar nenhum. Cada item guarda a própria moeda; você só escolhe em qual ver o total.\n\nSeu patrimônio inteiro, numa tela. 👀\n\n📲 Grátis pra começar — link na bio.",
@@ -335,6 +341,8 @@ export const POSTS: Post[] = [
   {
     id: "custo-vida",
     name: "Custo de vida · BR × Itália",
+    comment:
+      "Você toparia essa troca? 🇧🇷↔️🇮🇹 Comenta qual número te surpreendeu 👇\n\nSalva pra quando for planejar a mudança. Link na bio.",
     pillar: "Multimoeda",
     caption:
       "Quanto custa a MESMA vida em São Paulo e em Milão? 🇧🇷🇮🇹\n\nAluguel, mercado, transporte, um jantar a dois — os números mudam muito (e nem sempre pra pior). Antes de se mudar, dá pra simular tudo nas duas moedas, lado a lado.\n\nÉ pra isso que existe o Nossas Finanças: seu patrimônio e seus gastos em real E euro, sem malabarismo de planilha.\n\n💬 Você toparia essa troca? Comenta aí.\n📲 Link na bio.",
@@ -356,6 +364,8 @@ export const POSTS: Post[] = [
   {
     id: "privacidade",
     name: "Privacidade · eles lucram",
+    comment:
+      "Você já tinha parado pra pensar que a maioria dos apps lê cada número seu? 👀 Comenta 👇\n\nCompartilha com quem precisa ver isso. App na bio 👉 nossasfinancas.com.br",
     pillar: "Privacidade",
     caption:
       "A maioria dos apps de finanças lê CADA número seu — e ganha dinheiro com isso (anúncio, venda de dado, “parceiros”). 🫥\n\nO Nossas Finanças foi feito ao contrário: seus dados são cifrados no seu próprio aparelho, antes de irem pra qualquer lugar. Nem eu, no servidor, consigo ver os seus valores. Criptografia ponta a ponta, de verdade.\n\nPrivacidade não é um recurso. É a fundação. 🔒\n\n📲 Grátis — link na bio.",
@@ -369,6 +379,8 @@ export const POSTS: Post[] = [
   {
     id: "orcamento",
     name: "Orçamento · pra onde foi",
+    comment:
+      "No fim do mês você sabe pra onde foi o seu dinheiro? Responde sincero 👇\n\nSalva esse post pra começar o seu. App grátis na bio.",
     pillar: "Organização",
     caption:
       "Todo fim de mês a mesma pergunta: cadê o dinheiro? 😅\n\nQuando cada gasto está organizado por categoria — em qualquer moeda — a resposta vira um gráfico. Você vê pra onde foi, corta o que não faz sentido e sobra mais no fim do mês.\n\nSem culpa e sem planilha gigante. Só clareza.\n\n📲 Comece grátis — link na bio.",
@@ -382,6 +394,8 @@ export const POSTS: Post[] = [
   {
     id: "liberdade",
     name: "Liberdade · quando fica livre",
+    comment:
+      "Você já sabe o seu número da liberdade? Chuta aí quantos anos faltam 👇\n\nSalva e volta aqui quando descobrir. App grátis na bio 👉 nossasfinancas.com.br",
     pillar: "Organização / FIRE",
     caption:
       "Independência financeira não é sorte — é conta. 📈\n\nCom quanto você para de depender do salário? Em quantos anos? O Nossas Finanças projeta o seu futuro com aportes e inflação real, ano a ano, no SEU ritmo. Dá pra ver a data chegar mais perto cada vez que você guarda um pouco mais.\n\nO primeiro passo é enxergar o número. 🎯\n\n📲 Link na bio.",
@@ -456,6 +470,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-reserva",
     name: "Educativo · reserva (passo a passo)",
+    comment:
+      "E você, já tem a sua reserva? Quantos meses de gasto você guarda? 👇\n\nSalva esse post pra montar a sua no próximo salário 📌 App grátis na bio.",
     pillar: "Educativo",
     style: "light",
     caption:
@@ -473,6 +489,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-mito-investir",
     name: "Educativo · mito (investir)",
+    comment:
+      "Você já acreditou nesse mito? 🤔 Comenta com quanto dá pra começar a investir hoje 👇\n\nCompartilha com quem precisa ouvir isso. Link na bio.",
     pillar: "Educativo",
     style: "color",
     caption:
@@ -485,6 +503,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-juros",
     name: "Educativo · juros compostos (número)",
+    comment:
+      "Começar cedo ou investir mais — o que pesa mais? Comenta o seu palpite 👇\n\nSalva pra lembrar do poder do tempo 📌 App na bio 👉 nossasfinancas.com.br",
     pillar: "Educativo",
     style: "light",
     caption:
@@ -498,6 +518,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-checklist-investir",
     name: "Educativo · checklist (investir)",
+    comment:
+      "Quantos itens do checklist você já tem prontos? (0 a 4) 👇\n\nSalva pra não pular etapa antes de investir. App grátis na bio.",
     pillar: "Educativo",
     style: "dark",
     stepMarker: "check",
@@ -516,6 +538,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-inflacao",
     name: "Educativo · conceito (inflação)",
+    comment:
+      "Ficou claro? Manda pra alguém que ainda acha que dinheiro parado \"está seguro\" 👇\n\nSalva pra revisar depois. Link na bio.",
     pillar: "Educativo",
     style: "light",
     caption:
@@ -528,6 +552,8 @@ export const EDU_POSTS: Post[] = [
   {
     id: "edu-erros-orcamento",
     name: "Educativo · 3 erros (orçamento)",
+    comment:
+      "Qual desses 3 erros MAIS te pega? Confessa aí 👇\n\nSalva e compartilha no grupo da família 📌 App na bio.",
     pillar: "Educativo",
     style: "dark",
     caption:
@@ -550,6 +576,8 @@ export const CAROUSELS: Carousel[] = [
   {
     id: "tour",
     name: "Conheça o app · 8 slides",
+    comment:
+      "Ficou com alguma dúvida sobre o app? Pergunta aqui embaixo que eu respondo 👇\n\nSalva pra testar com calma — grátis no link da bio 👉 nossasfinancas.com.br",
     pillar: "Apresentação",
     caption:
       "Vem conhecer o Nossas Finanças. 👋\n\nÉ um app de finanças pessoais feito pra quem vive (ou vai viver) entre países — e pra qualquer um que queira controle simples e privado de verdade.\n\nO que ele faz:\n1️⃣ Multimoeda — real, euro, dólar num número só, na cotação de hoje\n2️⃣ Privacidade — tudo cifrado no seu aparelho; nem eu vejo\n3️⃣ Orçamento — pra onde vai cada real, por categoria\n4️⃣ Patrimônio — contas, investimentos e bens somados\n5️⃣ Metas — objetivos com barra de progresso em qualquer moeda\n6️⃣ Liberdade — projeção de independência financeira, ano a ano\n\nE o melhor: grátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\nArrasta pro lado pra ver tudo. 👉\n📲 Link na bio.",
@@ -572,6 +600,8 @@ export const EDU_CAROUSELS: Carousel[] = [
   {
     id: "edu-orcamento-passo",
     name: "Educativo · seu 1º orçamento (7 slides)",
+    comment:
+      "Qual passo você já faz e qual ainda falta? Conta aí 👇\n\nSalva esse post pra montar o seu no fim do mês 📌 App grátis na bio.",
     pillar: "Educativo",
     caption:
       "Quer se organizar mas não sabe por onde começar? Salva esse post — é o passo a passo do seu primeiro orçamento. 📌\n\n1. Anote tudo que entra (sua renda real)\n2. Liste os gastos fixos\n3. Estime os variáveis (olhe os últimos meses)\n4. Separe o quanto vai poupar ANTES de gastar\n5. Acompanhe e ajuste no fim do mês\n\nNão precisa ser perfeito no 1º mês. Precisa começar — cada mês fica mais fácil. 💪\n\n📲 No Nossas Finanças dá pra fazer tudo isso, em qualquer moeda. Link na bio.",

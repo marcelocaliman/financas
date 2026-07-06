@@ -189,10 +189,43 @@ function PostPreview({ post }: { post: Post }) {
   return <canvas ref={ref} width={POST_W} height={POST_H} className="block w-full h-auto" />;
 }
 
+/** Bloco de texto pronto (legenda ou 1º comentário) com botão Copiar — estado próprio por bloco. */
+function CopyBlock({ label, text }: { label: string; text: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* sem permissão de clipboard: selecione o texto e copie manual */
+    }
+  };
+  return (
+    <div className="mt-3 border-t border-border pt-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">{label}</span>
+        <button
+          type="button"
+          onClick={copy}
+          className={cn(
+            "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            copied ? "border border-border text-accent" : "border border-border text-muted hover:text-text hover:border-border-strong",
+          )}
+        >
+          {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado!" : "Copiar"}
+        </button>
+      </div>
+      <div className="max-h-44 overflow-y-auto scrollbar-subtle whitespace-pre-wrap rounded-[10px] border border-border bg-bg px-2.5 py-2 text-[12px] leading-relaxed text-muted">
+        {text}
+      </div>
+    </div>
+  );
+}
+
 function PostCard({ post }: { post: Post }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const captionText = post.caption
     ? post.caption + (post.tags?.length ? "\n\n" + post.tags.map((t) => "#" + t).join(" ") : "")
@@ -208,16 +241,6 @@ function PostCard({ post }: { post: Post }) {
       setNote("Falha ao gerar o PNG. Tente de novo.");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const copyCaption = async () => {
-    try {
-      await navigator.clipboard.writeText(captionText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setNote("Não consegui copiar — selecione o texto e copie manual.");
     }
   };
 
@@ -248,26 +271,8 @@ function PostCard({ post }: { post: Post }) {
         </div>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
-      {captionText ? (
-        <div className="mt-3 border-t border-border pt-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">Legenda</span>
-            <button
-              type="button"
-              onClick={copyCaption}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                copied ? "border border-border text-accent" : "border border-border text-muted hover:text-text hover:border-border-strong",
-              )}
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado!" : "Copiar"}
-            </button>
-          </div>
-          <div className="max-h-44 overflow-y-auto scrollbar-subtle whitespace-pre-wrap rounded-[10px] border border-border bg-bg px-2.5 py-2 text-[12px] leading-relaxed text-muted">
-            {captionText}
-          </div>
-        </div>
-      ) : null}
+      {captionText ? <CopyBlock label="Legenda" text={captionText} /> : null}
+      {post.comment ? <CopyBlock label="1º comentário" text={post.comment} /> : null}
     </div>
   );
 }
@@ -314,7 +319,6 @@ function SlideThumb({ slide, index, total }: { slide: Slide; index: number; tota
 function CarouselCard({ carousel }: { carousel: Carousel }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const total = carousel.slides.length;
 
   const captionText = carousel.caption
@@ -334,16 +338,6 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
       setNote("Falha ao gerar as imagens. Tente de novo.");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const copyCaption = async () => {
-    try {
-      await navigator.clipboard.writeText(captionText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1600);
-    } catch {
-      setNote("Não consegui copiar — selecione o texto e copie manual.");
     }
   };
 
@@ -378,26 +372,8 @@ function CarouselCard({ carousel }: { carousel: Carousel }) {
         </div>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
-      {captionText ? (
-        <div className="mt-3 border-t border-border pt-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-faint">Legenda</span>
-            <button
-              type="button"
-              onClick={copyCaption}
-              className={cn(
-                "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-[8px] text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                copied ? "border border-border text-accent" : "border border-border text-muted hover:text-text hover:border-border-strong",
-              )}
-            >
-              {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? "Copiado!" : "Copiar"}
-            </button>
-          </div>
-          <div className="max-h-44 overflow-y-auto scrollbar-subtle whitespace-pre-wrap rounded-[10px] border border-border bg-bg px-2.5 py-2 text-[12px] leading-relaxed text-muted">
-            {captionText}
-          </div>
-        </div>
-      ) : null}
+      {captionText ? <CopyBlock label="Legenda" text={captionText} /> : null}
+      {carousel.comment ? <CopyBlock label="1º comentário" text={carousel.comment} /> : null}
     </div>
   );
 }
