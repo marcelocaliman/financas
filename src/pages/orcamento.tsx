@@ -204,13 +204,10 @@ export default function Orcamento() {
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
     if (bill) {
-      columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // "Pago"/"Recebido": check só nas linhas COM dia (dueDay) — reflete/alterna o status (o mesmo
-      // `paid` da seção Vencimentos, nos gastos). Padroniza receitas e gastos. Sem dia → "—".
-      columns.push({ key: bill.statusKey, type: "toggle", header: bill.statusLabel, width: "58px", icon: Check, isOn: (r) => !!r[bill.statusKey], hideWhen: (r) => r.dueDay == null });
-      // Coluna "Na fatura" (só gastos): marca um lançamento como DENTRO da fatura de um cartão (assim não
-      // soma de novo — a fatura já entra pelo total). Fatura = CATEGORIA "Cartão de Crédito". Só aparece
-      // com ≥1 cartão no mês: 1 → CHECK; 2+ → seletor. A própria fatura mostra "—".
+      // "Na fatura" (só gastos): marca um lançamento como DENTRO da fatura de um cartão (assim não soma
+      // de novo — a fatura já entra pelo total). Vem ANTES do Dia de propósito: assim o trio final
+      // Dia · Status · Valor fica IGUAL em receitas e gastos. Fatura = CATEGORIA "Cartão de Crédito";
+      // só aparece com ≥1 cartão no mês (1 → CHECK; 2+ → seletor). A própria fatura mostra "—".
       if (bill.fatura) {
         const faturas = rows.filter((r) => isFaturaRow(r, rows));
         if (faturas.length > 0) {
@@ -228,6 +225,10 @@ export default function Orcamento() {
           });
         }
       }
+      columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
+      // "Pago"/"Recebido": check só nas linhas COM dia (dueDay) — reflete/alterna o status (o mesmo
+      // `paid` da seção Vencimentos, nos gastos). Padroniza receitas e gastos. Sem dia → "—".
+      columns.push({ key: bill.statusKey, type: "toggle", header: bill.statusLabel, width: "58px", icon: Check, isOn: (r) => !!r[bill.statusKey], hideWhen: (r) => r.dueDay == null });
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
     if (rows.some((r) => r.currency !== disp)) {
