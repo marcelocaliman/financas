@@ -52,7 +52,7 @@
       { "@type": "WebSite", "@id": "https://nossasfinancas.com.br/#website", "url": "https://nossasfinancas.com.br/", "name": "Nossas Finanças", "inLanguage": "pt-BR", "publisher": { "@id": "https://nossasfinancas.com.br/#org" } },
       { "@type": "SoftwareApplication", "name": "Nossas Finanças", "applicationCategory": "FinanceApplication", "operatingSystem": "Web, iOS, Android (PWA)", "url": "https://nossasfinancas.com.br/app", "inLanguage": ["pt-BR", "en"], "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }, "featureList": ["Multimoeda (BRL, EUR, USD, GBP)", "Criptografia ponta a ponta (E2EE)", "Local-first e offline (PWA)", "Patrimônio e investimentos", "Orçamento mensal multimoeda", "Projeção e independência financeira (FIRE)", "Acesso da família (só-leitura)"] },
       { "@type": "FAQPage", "inLanguage": "pt-BR", "mainEntity": [
-        { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "O núcleo é grátis pra sempre: patrimônio, orçamento, investimentos, projeção e independência. O Pro opcional (R$ 24,90/mês ou R$ 249/ano, com 14 dias grátis) desbloqueia Acesso da Família, relatório completo em PDF e projeção avançada. Sem cartão pra começar." } },
+        { "@type": "Question", "name": "É grátis mesmo?", "acceptedAnswer": { "@type": "Answer", "text": "O núcleo é grátis pra sempre: patrimônio, orçamento, investimentos, projeção e independência. O Pro opcional (R$ 9,90/mês ou R$ 100/ano, com 14 dias grátis) desbloqueia Acesso da Família, relatório completo em PDF e projeção avançada. Sem cartão pra começar." } },
         { "@type": "Question", "name": "Posso me cadastrar agora?", "acceptedAnswer": { "@type": "Answer", "text": "Pode — o cadastro está aberto e é grátis. É um produto novo, em construção: entrar agora é estar entre os primeiros e ajudar a moldar o que vem." } },
         { "@type": "Question", "name": "Vocês conseguem ver os meus dados?", "acceptedAnswer": { "@type": "Answer", "text": "Não. Tudo é cifrado no seu aparelho antes de sair dele. O que guardamos é um borrão que nem nós conseguimos ler." } },
         { "@type": "Question", "name": "E se eu perder a senha?", "acceptedAnswer": { "@type": "Answer", "text": "Você recebe um código de recuperação no cadastro — guarde bem. Sem a senha e sem esse código, nem nós conseguimos abrir seus dados. É o preço justo da privacidade de verdade." } },
@@ -521,7 +521,7 @@
     .stagger.armed.in > *:nth-child(4) { transition-delay: .21s; }
     @media (prefers-reduced-motion: reduce) { .reveal, .stagger > * { transition: none; } }
     /* Planos (freemium) */
-    #planos .plans{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;max-width:1140px;margin:38px auto 0}
+    #planos .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:820px;margin:38px auto 0}
     #planos .plan{border:1px solid var(--border);background:var(--card);border-radius:18px;padding:26px 24px;display:flex;flex-direction:column}
     #planos .plan-pro{border-color:var(--accent);box-shadow:0 22px 60px -30px rgba(0,0,0,.55)}
     #planos .plan .price{font-size:30px;font-weight:600;letter-spacing:-.03em;margin:14px 0 2px;font-variant-numeric:tabular-nums}
@@ -1048,7 +1048,7 @@
         <div class="card step">
           <div class="num">02</div>
           <h3 data-i18n="step2.h">O câmbio faz o resto</h3>
-          <p data-i18n="step2.p">Cotações automáticas (com ajuste manual quando quiser) convertem tudo pra moeda que você quer enxergar. Real, euro, dólar — a escolha é sua.</p>
+          <p data-i18n="step2.p">A conversão entre moedas é automática (câmbio atualizado), com ajuste manual quando quiser. Real, euro, dólar — a escolha é sua.</p>
         </div>
         <div class="card step">
           <div class="num">03</div>
@@ -1379,7 +1379,7 @@
           <p data-i18n="planos.freeDesc">Tudo pra organizar a vida financeira multimoeda, com privacidade total.</p>
           <ul>
             <li data-i18n="planos.f1">Patrimônio, investimentos e orçamento multimoeda</li>
-            <li data-i18n="planos.f2">Posições com quantidade e preço médio</li>
+            <li data-i18n="planos.f2">Ativos e investimentos por classe e moeda</li>
             <li data-i18n="planos.f3">Projeção e independência (FIRE) — cenários + Monte Carlo</li>
             <li data-i18n="planos.f4">Histórico do patrimônio e objetivos com progresso</li>
             <li data-i18n="planos.f5">Criptografia ponta a ponta — nem nós vemos seus números</li>
@@ -1389,8 +1389,8 @@
         </div>
         <div class="plan plan-pro">
           <div class="eyebrow accent" data-i18n="planos.proTitle">Pro</div>
-          <div class="price"><span data-i18n="planos.proPrice">R$ 24,90</span><span class="per" data-i18n="planos.proPer">/mês</span></div>
-          <div class="annual" data-i18n="planos.proAnnual">ou R$ 249/ano · 14 dias grátis</div>
+          <div class="price"><span data-i18n="planos.proPrice">R$ 9,90</span><span class="per" data-i18n="planos.proPer">/mês</span></div>
+          <div class="annual" data-i18n="planos.proAnnual">ou R$ 100/ano · 14 dias grátis</div>
           <p data-i18n="planos.proDesc">Desbloqueia o que vai além do básico — e mantém o app vivo e independente.</p>
           <ul>
             <li data-i18n="planos.p1">Tudo do plano Grátis, incluso</li>
@@ -1401,34 +1401,6 @@
             <li data-i18n="planos.p6">Apoie um app independente — sem anúncios, sem vender seus dados</li>
           </ul>
           <a class="btn btn-primary" href="/app" data-i18n="planos.proCta">Testar o Pro grátis</a>
-        </div>
-        <div class="plan plan-inv">
-          <div class="inv-head">
-            <span class="eyebrow accent" data-i18n="planos.invTitle">Pro Investidor</span>
-            <span class="inv-soon" data-i18n="planos.invSoon">Em breve</span>
-          </div>
-          <div class="price"><span data-i18n="planos.invPrice">R$ 44,90</span><span class="per" data-i18n="planos.invPer">/mês</span></div>
-          <div class="annual" data-i18n="planos.invAnnual">ou R$ 449/ano · 14 dias grátis</div>
-          <p data-i18n="planos.invDesc">Tudo do Pro + cotação automática dos seus ativos.</p>
-          <ul>
-            <li data-i18n="planos.iAll">Tudo do plano Pro, incluso</li>
-            <li data-i18n="planos.i1">Cotação automática da B3</li>
-            <li data-i18n="planos.i2">Cotação internacional (US, Europa) via Finnhub</li>
-            <li data-i18n="planos.i3">Valor e rentabilidade atualizados sozinhos</li>
-            <li data-i18n="planos.i4">Pra quem investe dentro e fora do Brasil</li>
-          </ul>
-          <form class="inv-wait" id="invWaitForm" novalidate>
-            <p class="inv-wait-lead" data-i18n="planos.invWaitLead">Quer esse plano? Deixe seu email que a gente avisa quando lançar.</p>
-            <div class="inv-wait-row">
-              <input type="email" id="invWaitEmail" required autocomplete="email" data-i18n-ph="planos.invWaitPlaceholder" placeholder="seu@email.com" />
-              <button type="submit" class="btn btn-primary" id="invWaitBtn" data-i18n="planos.invWaitCta">Quero ser avisado</button>
-            </div>
-            <p class="inv-wait-status" id="invWaitStatus" role="status"></p>
-            <p class="inv-wait-consent" data-i18n="planos.invWaitConsent">Guardamos só seu email pra avisar do lançamento — sem spam. Remoção quando quiser: contato@nossasfinancas.com.br.</p>
-            <a class="inv-wait-policy" href="/privacidade" data-i18n="planos.invWaitPolicy">Política de privacidade</a>
-            <div id="invTs"></div>
-          </form>
-          <a class="btn btn-primary inv-live-cta" href="/app#signup" data-i18n="planos.invCta">Testar o Investidor</a>
         </div>
       </div>
       <div class="eyebrow" style="text-align:center;margin-top:20px;color:var(--faint)" data-i18n="planos.note">Tudo do grátis continua grátis · Cancele quando quiser</div>
