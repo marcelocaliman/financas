@@ -9,7 +9,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, isDetailedAssetClass, nameById, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
+import { isInvestedClass, isDetailedAssetClass, nameById, tipoSubtypesFor, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -115,15 +115,15 @@ export default function Patrimonio() {
   // Colunas por MACRO: Tipo (sub-categoria) → Moeda → [Aplicado] → Valor atual → [Rent.] → [Em <moeda>].
   const assetColsFor = (macro: AssetMacro): GridColumn<Asset>[] => {
     const invested = macro.classIds.some(isInvestedClass);
-    // "Tipo" = subtypes das classes da macro, prefixados pela classe (ex.: "Ações · ETF de ações").
-    const tipoOptions: SelectOption[] = macro.classIds.flatMap((cid) => {
-      const cls = tax.assetClasses.find((c) => c.id === cid);
-      return tax.subtypes
-        .filter((s) => s.classId === cid)
-        .map((s) => ({ value: s.id, label: cls ? `${cls.name} · ${s.name}` : s.name }));
-    });
+    // "Tipo" AGRUPADO por classe (seção = nome da classe; opção = sub-tipo curado, sem prefixo).
+    const tipoGroups = macro.classIds
+      .map((cid) => ({
+        label: tax.assetClasses.find((c) => c.id === cid)?.name ?? "",
+        options: tipoSubtypesFor(tax.subtypes, cid).map((s) => ({ value: s.id, label: s.name })),
+      }))
+      .filter((g) => g.options.length > 0);
     const cols: GridColumn<Asset>[] = [
-      { key: "subtypeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.7fr)", placeholder: t("patrimonio.typePlaceholder"), options: tipoOptions },
+      { key: "subtypeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.7fr)", placeholder: t("patrimonio.typePlaceholder"), optionGroups: tipoGroups },
       { key: "currency", type: "currency", header: t("common.currency"), width: "minmax(56px,0.45fr)" },
     ];
     if (invested) {

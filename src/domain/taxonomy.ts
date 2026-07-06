@@ -82,6 +82,38 @@ export function macroOf(classId: string): string {
   return MACRO_OF[classId] ?? MACRO.rendaVariavel;
 }
 
+/**
+ * Sub-tipos "principais" por classe — a lista ENXUTA e profissional mostrada no seletor de "Tipo"
+ * (a taxonomia completa segue existindo e 100% editável na Config; isto só cura o que aparece no
+ * seletor pra não virar um paredão de 30+ opções). Ids do default (estáveis).
+ */
+export const CURATED_SUBTYPES: Record<string, string[]> = {
+  [CLASS.rendaFixa]: ["renda-fixa-1", "renda-fixa-3", "renda-fixa-4", "renda-fixa-9", "renda-fixa-12", "renda-fixa-14"],
+  [CLASS.previdencia]: ["previdencia-1", "previdencia-2", "previdencia-4"],
+  [CLASS.acoes]: ["acoes-1", "acoes-2", "acoes-4"],
+  [CLASS.fiis]: ["fiis-1", "fiis-2", "fiis-4"],
+  [CLASS.multimercado]: ["multimercado-1"],
+  [CLASS.cripto]: ["cripto-1", "cripto-2", "cripto-3"],
+  [CLASS.commodities]: ["commodities-1", "commodities-3"],
+  [CLASS.privateEquity]: ["private-equity-1", "private-equity-2"],
+  [CLASS.caixa]: ["caixa-1", "caixa-2", "caixa-3", "caixa-5"],
+  [CLASS.imoveis]: ["imoveis-1", "imoveis-2", "imoveis-3", "imoveis-4"],
+  [CLASS.bens]: ["bens-1", "bens-4", "bens-7"],
+  [CLASS.outros]: ["outros-1"],
+};
+
+/**
+ * Sub-tipos a MOSTRAR no seletor de Tipo de uma classe: o subconjunto curado, quando presente.
+ * Fallback pra TODOS os subtipos da classe se nenhum curado casar (taxonomia customizada/apagada).
+ */
+export function tipoSubtypesFor(subtypes: SubtypeItem[], classId: string): SubtypeItem[] {
+  const all = subtypes.filter((s) => s.classId === classId);
+  const wanted = CURATED_SUBTYPES[classId];
+  if (!wanted) return all;
+  const curated = all.filter((s) => wanted.includes(s.id));
+  return curated.length ? curated : all;
+}
+
 /** Ids estáveis dos tipos de passivo default (usados na migração). */
 export const LIABILITY_TYPE = {
   financiamentoImobiliario: "financiamento-imobiliario",

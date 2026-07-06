@@ -35,6 +35,8 @@ export interface GridColumn<T> {
   options?: SelectOption[];
   /** select em CASCATA: opções dependem da linha (ex.: Subtipo depende da Classe). */
   optionsFor?: (row: T) => SelectOption[];
+  /** select AGRUPADO: opções em seções (optgroup) — tem precedência sobre options/optionsFor. */
+  optionGroups?: { label: string; options: SelectOption[] }[];
   /** select opcional: inclui um "—" (vazio) e o valor pode ficar em branco. */
   optional?: boolean;
   currencyKey?: string; // money/number: campo da moeda p/ o locale (default "currency")
@@ -247,6 +249,7 @@ function MoneyCell({
 function SelectCell({
   value,
   options,
+  groups,
   optional,
   placeholder,
   rowId,
@@ -256,6 +259,7 @@ function SelectCell({
 }: {
   value: string;
   options: SelectOption[];
+  groups?: { label: string; options: SelectOption[] }[];
   optional?: boolean;
   placeholder?: string;
   rowId: string;
@@ -265,15 +269,17 @@ function SelectCell({
 }) {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  // Lista achatada p/ lookup do valor selecionado (agrupado ou plano).
+  const flat = groups ? groups.flatMap((g) => g.options) : options;
   // Opcional sem opções disponíveis (ex.: Indexador fora de Renda Fixa): não editável.
-  if (optional && options.length === 0) {
+  if (optional && flat.length === 0) {
     return <div className="px-2 py-1.5 text-[13px] text-faint">—</div>;
   }
-  const hasValue = options.some((o) => o.value === value);
+  const hasValue = flat.some((o) => o.value === value);
 
-  // MOBILE: gatilho + bottom sheet com as opções (padrão único de seleção no celular).
+  // MOBILE: gatilho + bottom sheet com as opções (em seções, se agrupadas).
   if (isMobile) {
-    const current = options.find((o) => o.value === value);
+    const current = flat.find((o) => o.value === value);
     return (
       <>
         <button
@@ -290,9 +296,18 @@ function SelectCell({
           <SheetShell title={title} onClose={() => setOpen(false)}>
             <div className="space-y-1">
               {optional ? <SheetOption label="—" selected={!hasValue} onClick={() => { onCommit(""); setOpen(false); }} /> : null}
-              {options.map((o) => (
-                <SheetOption key={o.value} label={o.label} selected={o.value === value} onClick={() => { onCommit(o.value); setOpen(false); }} />
-              ))}
+              {groups
+                ? groups.map((g) => (
+                    <div key={g.label}>
+                      <div className="px-3.5 pb-1 pt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{g.label}</div>
+                      {g.options.map((o) => (
+                        <SheetOption key={o.value} label={o.label} selected={o.value === value} onClick={() => { onCommit(o.value); setOpen(false); }} />
+                      ))}
+                    </div>
+                  ))
+                : options.map((o) => (
+                    <SheetOption key={o.value} label={o.label} selected={o.value === value} onClick={() => { onCommit(o.value); setOpen(false); }} />
+                  ))}
             </div>
           </SheetShell>
         ) : null}
@@ -317,11 +332,21 @@ function SelectCell({
           {placeholder ?? "—"}
         </option>
       )}
-      {options.map((o) => (
-        <option key={o.value} value={o.value} className="bg-card text-text">
-          {o.label}
-        </option>
-      ))}
+      {groups
+        ? groups.map((g) => (
+            <optgroup key={g.label} label={g.label} className="bg-card text-text">
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value} className="bg-card text-text">
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
+          ))
+        : options.map((o) => (
+            <option key={o.value} value={o.value} className="bg-card text-text">
+              {o.label}
+            </option>
+          ))}
     </select>
   );
 }
@@ -851,7 +876,11 @@ function ReadOnlyCell<T extends { id: string }>({ col, row }: { col: GridColumn<
     case "month":
       return <div className="px-2 text-[13.5px] text-text capitalize">{(v as string) ? monthLabel(v as string, "pt-BR") : "—"}</div>;
     case "select": {
-      const opts = col.optionsFor ? col.optionsFor(row) : col.options ?? [];
+      const opts = col.optionGroups
+        ? col.optionGroups.flatMap((g) => g.options)
+        : col.optionsFor
+          ? col.optionsFor(row)
+          : col.options ?? [];
       return <div className="px-2 text-[13.5px] text-text">{opts.find((o) => o.value === v)?.label ?? "—"}</div>;
     }
     case "computed":
@@ -949,6 +978,7 @@ export function DataGrid<T extends { id: string }>({
           <SelectCell
             value={(get(row, col.key) as string) ?? ""}
             options={col.optionsFor ? col.optionsFor(row) : col.options ?? []}
+            groups={col.optionGroups}
             optional={col.optional}
             placeholder={col.placeholder}
             rowId={rowId}
