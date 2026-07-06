@@ -7,6 +7,7 @@ import type {
   Income,
   Liability,
   NetWorthSnapshot,
+  Subscription,
 } from "@/domain/types";
 import { TAXONOMY_ID, type Taxonomy } from "@/domain/taxonomy";
 import type { DataRepository, SeedData } from "./repository";
@@ -35,6 +36,7 @@ export class DexieRepository implements DataRepository {
       await this.database.netWorthSnapshots.bulkPut(data.snapshots);
       if (data.dividends?.length) await this.database.dividends.bulkPut(data.dividends);
       if (data.goals?.length) await this.database.goals.bulkPut(data.goals);
+      if (data.subscriptions?.length) await this.database.subscriptions.bulkPut(data.subscriptions);
     });
   }
 
@@ -121,6 +123,16 @@ export class DexieRepository implements DataRepository {
     await this.database.dividends.delete(id);
   }
 
+  listSubscriptions(): Promise<Subscription[]> {
+    return this.database.subscriptions.toArray();
+  }
+  async putSubscription(subscription: Subscription): Promise<void> {
+    await this.database.subscriptions.put(subscription);
+  }
+  async removeSubscription(id: string): Promise<void> {
+    await this.database.subscriptions.delete(id);
+  }
+
   async getSettings(): Promise<AppSettings | null> {
     return (await this.database.settings.get(SETTINGS_ID)) ?? null;
   }
@@ -135,6 +147,7 @@ const WRITE_METHODS = new Set([
   "putTaxonomy", "putExpense", "removeExpense", "putIncome", "removeIncome",
   "putNetWorthSnapshot", "removeNetWorthSnapshot", "putGoal", "removeGoal",
   "putDividend", "removeDividend", "putSettings",
+  "putSubscription", "removeSubscription",
 ]);
 
 let READ_ONLY = false;

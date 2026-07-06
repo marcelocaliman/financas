@@ -7,6 +7,7 @@ import type {
   Income,
   Liability,
   NetWorthSnapshot,
+  Subscription,
 } from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
 
@@ -19,6 +20,8 @@ export interface SeedData {
   dividends?: Dividend[];
   /** Metas (Objetivos) — opcional; o exemplo já traz um conjunto coerente. */
   goals?: Goal[];
+  /** Assinaturas recorrentes (documentação) — opcional. */
+  subscriptions?: Subscription[];
   /** Preferências sincronizadas do exemplo (alvos de alocação, config da Liberdade/Saúde).
    *  A moeda principal NÃO vem aqui — é injetada por quem carrega (loadSample). */
   settings?: Pick<AppSettings, "allocationTargets" | "liberdade" | "health">;
@@ -72,6 +75,11 @@ export interface DataRepository {
   listDividends(): Promise<Dividend[]>;
   putDividend(dividend: Dividend): Promise<void>;
   removeDividend(id: string): Promise<void>;
+
+  // Assinaturas recorrentes (documentação)
+  listSubscriptions(): Promise<Subscription[]>;
+  putSubscription(subscription: Subscription): Promise<void>;
+  removeSubscription(id: string): Promise<void>;
 
   // Configurações sincronizadas (alvos de alocação, etc.)
   getSettings(): Promise<AppSettings | null>;

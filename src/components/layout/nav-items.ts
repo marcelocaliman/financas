@@ -15,6 +15,7 @@ import {
   Database,
   Lock,
   Sparkles,
+  Repeat,
   type LucideIcon,
 } from "lucide-react";
 
@@ -31,6 +32,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: "painel", key: "painel", icon: LayoutDashboard },
   { id: "patrimonio", key: "patrimonio", icon: Wallet },
   { id: "orcamento", key: "orcamento", icon: PiggyBank },
+  { id: "assinaturas", key: "assinaturas", icon: Repeat },
   { id: "historico", key: "historico", icon: LineChart },
   { id: "objetivos", key: "objetivos", icon: Target },
   { id: "projecao", key: "projecao", icon: BarChart3 },

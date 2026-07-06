@@ -14,6 +14,7 @@ import type {
   Liability,
   LiberdadeConfig,
   NetWorthSnapshot,
+  Subscription,
 } from "@/domain/types";
 import type { Taxonomy } from "@/domain/taxonomy";
 import { planRecurring, effectiveRecurringIds } from "@/domain/recurring";
@@ -74,6 +75,10 @@ export const actions = {
   // Proventos / dividendos
   putDividend: (dividend: Dividend) => withSync(() => repository.putDividend(dividend)),
   removeDividend: (id: string) => withSync(() => repository.removeDividend(id)),
+
+  // Assinaturas recorrentes (documentação)
+  putSubscription: (subscription: Subscription) => withSync(() => repository.putSubscription(subscription)),
+  removeSubscription: (id: string) => withSync(() => repository.removeSubscription(id)),
 
   // Configurações sincronizadas (singleton): SEMPRE merge sobre o estado mais fresco do
   // repositório — nunca reconstruído de um snapshot do React (que pode estar vazio/velho

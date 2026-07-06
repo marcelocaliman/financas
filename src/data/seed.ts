@@ -168,6 +168,14 @@ export function buildSeed(main: Currency): SeedData {
       { id: "g3", name: "Fundo de viagem", currency: main, target: m(4000), current: m(1500), deadline: "12/2027" },
       { id: "g4", name: "Independência financeira", currency: main, target: m(180000), current: m(70000), deadline: "2040" },
     ],
+    // Assinaturas recorrentes (documentação — não somam no orçamento; já entram na fatura do cartão).
+    subscriptions: [
+      { id: "sub1", name: "Netflix", currency: main, amount: m(11), renewalDay: 8 },
+      { id: "sub2", name: "Spotify", currency: main, amount: m(6), renewalDay: 15 },
+      { id: "sub3", name: "iCloud+", currency: main, amount: m(3), renewalDay: 2 },
+      { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: f2(20), renewalDay: 20 },
+      { id: "sub5", name: "Academia", currency: main, amount: m(35), renewalDay: 5 },
+    ],
     settings: {
       // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.
       allocationTargets: {

@@ -18,6 +18,7 @@
     "patrimonio": "Wealth",
     "investimentos": "Investments",
     "orcamento": "Budget",
+    "assinaturas": "Subscriptions",
     "historico": "History",
     "objetivos": "Goals",
     "projecao": "Projection",
@@ -263,6 +264,16 @@
     "tipEmpty": "Set goals and track your progress.",
     "avgProgress": "Avg. progress",
     "remaining": "To go"
+  },
+  "assinaturas": {
+    "name": "Subscription",
+    "namePlaceholder": "e.g. Netflix, Spotify, iCloud",
+    "renewalDay": "Renews",
+    "monthly": "Per month",
+    "monthlyTotal": "Total per month",
+    "yearlyTotal": "per year",
+    "addSub": "Add subscription",
+    "note": "Documentation — not counted in the budget total. Subscriptions paid by card are already in the statement; this is just an X-ray of your recurring charges (how much they weigh, what to cut)."
   },
   "investimentos": {
     "total": "Total invested",

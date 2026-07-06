@@ -95,6 +95,21 @@ export interface Goal {
   deadline?: string; // opcional (ex.: "2030" ou "12/2030")
 }
 
+/**
+ * Assinatura recorrente (Netflix, Spotify, Google One…) — lista GLOBAL de DOCUMENTAÇÃO.
+ * NÃO entra no total do orçamento (as pagas no cartão já estão na fatura). Serve pra ter o
+ * raio-x das recorrências (total mensal/anual, o que cortar).
+ */
+export interface Subscription {
+  id: string;
+  name: string;
+  currency: Currency;
+  /** Valor por MÊS (cobrança mensal). */
+  amount: number;
+  /** Dia de renovação/cobrança (1–31), opcional. */
+  renewalDay?: number;
+}
+
 /** Provento recebido (dividendo, JCP, rendimento de FII…) — renda passiva dos investimentos. */
 export interface Dividend {
   id: string;

@@ -8,6 +8,7 @@ import type {
   Income,
   Liability,
   NetWorthSnapshot,
+  Subscription,
 } from "@/domain/types";
 import {
   CLASS,
@@ -30,6 +31,7 @@ export class FinancasDB extends Dexie {
   goals!: Table<Goal, string>;
   settings!: Table<AppSettings, string>;
   dividends!: Table<Dividend, string>;
+  subscriptions!: Table<Subscription, string>;
 
   constructor() {
     super("financas");
@@ -131,6 +133,10 @@ export class FinancasDB extends Dexie {
             if (!i.month) i.month = month;
           });
       });
+    // v8: Assinaturas recorrentes (documentação, lista global). Tabela nova.
+    this.version(8).stores({
+      subscriptions: "id, currency",
+    });
   }
 }
 

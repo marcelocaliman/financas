@@ -18,6 +18,7 @@
     "patrimonio": "Patrimônio",
     "investimentos": "Investimentos",
     "orcamento": "Orçamento",
+    "assinaturas": "Assinaturas",
     "historico": "Histórico",
     "objetivos": "Objetivos",
     "projecao": "Projeção",
@@ -263,6 +264,16 @@
     "tipEmpty": "Defina metas e acompanhe o progresso.",
     "avgProgress": "Progresso médio",
     "remaining": "Faltam"
+  },
+  "assinaturas": {
+    "name": "Assinatura",
+    "namePlaceholder": "Ex.: Netflix, Spotify, iCloud",
+    "renewalDay": "Renova",
+    "monthly": "Por mês",
+    "monthlyTotal": "Total por mês",
+    "yearlyTotal": "no ano",
+    "addSub": "Adicionar assinatura",
+    "note": "Documentação — não entra no total do orçamento. As assinaturas pagas no cartão já estão na fatura; aqui é só o raio-x das recorrências (quanto pesam, o que dá pra cortar)."
   },
   "investimentos": {
     "total": "Total investido",

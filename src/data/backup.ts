@@ -100,7 +100,7 @@ function csvCell(v: unknown): string {
 const CSV_COLS = ["tipo", "nome", "categoria", "moeda", "valor", "extra"] as const;
 
 export async function exportCSV(): Promise<void> {
-  const [assets, liabilities, expenses, incomes, snapshots, goals, dividends] = await Promise.all([
+  const [assets, liabilities, expenses, incomes, snapshots, goals, dividends, subscriptions] = await Promise.all([
     db.assets.toArray(),
     db.liabilities.toArray(),
     db.expenses.toArray(),
@@ -108,6 +108,7 @@ export async function exportCSV(): Promise<void> {
     db.netWorthSnapshots.toArray(),
     db.goals.toArray(),
     db.dividends.toArray(),
+    db.subscriptions.toArray(),
   ]);
 
   const rows: Record<string, unknown>[] = [];
@@ -127,6 +128,8 @@ export async function exportCSV(): Promise<void> {
     rows.push({ tipo: "objetivo", nome: g.name, categoria: "", moeda: g.currency, valor: g.current, extra: `alvo:${g.target}` });
   for (const d of dividends)
     rows.push({ tipo: "provento", nome: d.source, categoria: d.month, moeda: d.currency, valor: d.amount, extra: "" });
+  for (const s of subscriptions)
+    rows.push({ tipo: "assinatura", nome: s.name, categoria: "", moeda: s.currency, valor: s.amount, extra: s.renewalDay ? `renova dia ${s.renewalDay}` : "" });
 
   const head = CSV_COLS.join(",");
   const body = rows.map((r) => CSV_COLS.map((c) => csvCell(r[c])).join(",")).join("\n");
