@@ -27,12 +27,6 @@ import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/
 
 type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean };
 
-/** É uma FATURA (guarda-chuva do cartão) se está na categoria "Cartão de Crédito" — OU, por
- *  retrocompatibilidade, foi marcada no modelo antigo (isStatement) OU já tem itens dentro (filhos).
- *  Só faturas podem receber outros lançamentos "na fatura" (a fatura entra no total; os itens, não). */
-function isFaturaRow(r: BudgetRow, rows: BudgetRow[]): boolean {
-  return r.categoryId === EXPENSE_CARD || !!r.isStatement || rows.some((x) => x.parentId === r.id);
-}
 /** Normaliza o vínculo do lançamento no commit: "" (desmarcado) → undefined; e uma fatura
  *  (categoria Cartão) nunca fica DENTRO de outra fatura (não faz sentido aninhar cartão em cartão). */
 function normalizeExpenseLink(e: Expense): Expense {
@@ -196,7 +190,7 @@ export default function Orcamento() {
   const cols = (
     categories: TaxonomyItem[],
     rows: BudgetRow[],
-    bill?: { statusKey: "paid" | "received"; statusLabel: string; fatura?: boolean },
+    bill?: { statusKey: "paid" | "received"; statusLabel: string },
   ): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
       { key: "recurring", type: "toggle", header: t("orcamento.recurringShort"), width: "64px" },
@@ -204,27 +198,6 @@ export default function Orcamento() {
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
     if (bill) {
-      // "Na fatura" (só gastos): marca um lançamento como DENTRO da fatura de um cartão (assim não soma
-      // de novo — a fatura já entra pelo total). Vem ANTES do Dia de propósito: assim o trio final
-      // Dia · Status · Valor fica IGUAL em receitas e gastos. Fatura = CATEGORIA "Cartão de Crédito";
-      // só aparece com ≥1 cartão no mês (1 → CHECK; 2+ → seletor). A própria fatura mostra "—".
-      if (bill.fatura) {
-        const faturas = rows.filter((r) => isFaturaRow(r, rows));
-        if (faturas.length > 0) {
-          columns.push({
-            key: "parentId",
-            type: "insideStatement",
-            optional: true,
-            header: t("orcamento.insideOf"),
-            width: "minmax(120px,1fr)",
-            placeholder: t("orcamento.insideOf"),
-            optionsFor: (r) =>
-              isFaturaRow(r, rows)
-                ? []
-                : faturas.map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
-          });
-        }
-      }
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
       // "Pago"/"Recebido": check só nas linhas COM dia (dueDay) — reflete/alterna o status (o mesmo
       // `paid` da seção Vencimentos, nos gastos). Padroniza receitas e gastos. Sem dia → "—".
@@ -390,7 +363,7 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.expenseCategories, gridRows, { statusKey: "paid", statusLabel: t("orcamento.paidShort"), fatura: true })}
+              columns={cols(tax.expenseCategories, gridRows, { statusKey: "paid", statusLabel: t("orcamento.paidShort") })}
               rows={gridRows}
               rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40 shadow-[inset_3px_0_0_0_var(--accent)]" : undefined)}
               indentRow={(r) => expChildIds.has(r.id)}
