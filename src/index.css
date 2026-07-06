@@ -304,6 +304,16 @@ body {
   background: var(--chip-gbp-bg);
 }
 
+/* Grid com acento VERMELHO (tabela de gastos) — diferencia da de receitas (verde). Recolore só o
+   acento (toggles ↻/✓, foco); o selo de moeda usa cores próprias (chip-*), então NÃO é afetado. */
+.grid-neg {
+  --accent: var(--neg);
+  --accent-soft: var(--neg-soft);
+  --color-accent: var(--neg);
+  --color-accent-soft: var(--neg-soft);
+  --ring: color-mix(in oklab, var(--neg) 40%, transparent);
+}
+
 @keyframes soft-pulse {
   0%, 100% { opacity: 0.55; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.15); }

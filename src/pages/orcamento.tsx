@@ -360,7 +360,7 @@ export default function Orcamento() {
       <section id="orc-gastos">
         <SectionHead title={t("orcamento.expenses")} count={view.monthExp.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-0 sm:min-w-[600px]">
+          <div className="min-w-0 sm:min-w-[600px] grid-neg">
             <DataGrid<BudgetRow>
               key={month}
               columns={cols(tax.expenseCategories, gridRows, { statusKey: "paid", statusLabel: t("orcamento.paidShort") })}
