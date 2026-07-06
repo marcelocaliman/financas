@@ -620,19 +620,13 @@ export function AdsSection() {
             Vários slides numa publicação. Clique em <b className="text-text">PNGs</b> e o navegador salva
             uma imagem por slide, numeradas — no Instagram, crie um post e selecione todas.
           </SubHead>
+          {/* Institucional + educativo na MESMA grade → 2 colunas lado a lado (min-[560px], pra
+              ativar mesmo em janela estreita/dividida). Cada card já mostra o pilar (Apresentação /
+              Educativo), então não precisa do divisor. */}
           <ArchivableGrid
-            items={CAROUSELS}
+            items={[...CAROUSELS, ...EDU_CAROUSELS]}
             pieceId={(c) => `carousel:${c.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2"
-            render={(c) => <CarouselCard key={c.id} carousel={c} />}
-          />
-          <div className="mb-4 mt-7 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">
-            Educativos — passo a passo
-          </div>
-          <ArchivableGrid
-            items={EDU_CAROUSELS}
-            pieceId={(c) => `carousel:${c.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2"
+            gridClass="grid gap-4 min-[560px]:grid-cols-2"
             render={(c) => <CarouselCard key={c.id} carousel={c} />}
           />
         </section>
