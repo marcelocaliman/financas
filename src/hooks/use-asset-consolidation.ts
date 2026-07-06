@@ -24,10 +24,10 @@ export function useAssetConsolidation(): void {
       return;
     }
     ran = true;
-    // Agrupa por classe+moeda; funde os grupos com 2+ linhas.
+    // Agrupa por classe+subtipo+moeda; funde os grupos com 2+ linhas (não mistura tipos distintos).
     const groups = new Map<string, typeof assets>();
     for (const a of assets) {
-      const key = `${a.classId}|${a.currency}`;
+      const key = `${a.classId}|${a.subtypeId ?? ""}|${a.currency}`;
       const arr = groups.get(key);
       if (arr) arr.push(a);
       else groups.set(key, [a]);
@@ -46,6 +46,7 @@ export function useAssetConsolidation(): void {
           id: first.id,
           name: "",
           classId: first.classId,
+          ...(first.subtypeId ? { subtypeId: first.subtypeId } : {}),
           currency: first.currency,
           amount,
           ...(cost > 0 ? { cost } : {}),

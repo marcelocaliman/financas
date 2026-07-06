@@ -51,6 +51,37 @@ export const CLASS = {
   outros: "outros",
 } as const;
 
+/**
+ * MACRO-categorias que agrupam as classes nas ABAS de Patrimônio (Renda Fixa · Renda Variável ·
+ * Caixa · Bens). A CLASSE segue sendo a unidade dos cálculos (investido/alocação/composição/FIRE);
+ * a macro é só o agrupamento de exibição, e o "Tipo" da linha é o SUBTYPE. Fixas em código (por ora).
+ */
+export const MACRO = {
+  rendaFixa: "m-renda-fixa",
+  rendaVariavel: "m-renda-variavel",
+  caixa: "m-caixa",
+  bens: "m-bens",
+} as const;
+
+export interface AssetMacro {
+  id: string;
+  classIds: string[];
+}
+export const ASSET_MACROS: AssetMacro[] = [
+  { id: MACRO.rendaFixa, classIds: [CLASS.rendaFixa, CLASS.previdencia] },
+  { id: MACRO.rendaVariavel, classIds: [CLASS.acoes, CLASS.fiis, CLASS.multimercado, CLASS.cripto, CLASS.commodities, CLASS.privateEquity, CLASS.outros] },
+  { id: MACRO.caixa, classIds: [CLASS.caixa] },
+  { id: MACRO.bens, classIds: [CLASS.imoveis, CLASS.bens] },
+];
+
+const MACRO_OF: Record<string, string> = Object.fromEntries(
+  ASSET_MACROS.flatMap((m) => m.classIds.map((c) => [c, m.id])),
+);
+/** Macro de uma classe. Classe nova/desconhecida cai em Renda Variável (catch-all financeiro). */
+export function macroOf(classId: string): string {
+  return MACRO_OF[classId] ?? MACRO.rendaVariavel;
+}
+
 /** Ids estáveis dos tipos de passivo default (usados na migração). */
 export const LIABILITY_TYPE = {
   financiamentoImobiliario: "financiamento-imobiliario",
@@ -101,7 +132,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     ...subs(CLASS.imoveis, ["Residencial", "Comercial", "Terreno", "Imóvel de aluguel", "Outro"]),
     ...subs(CLASS.bens, ["Veículo", "Motocicleta", "Bicicleta", "Joias e relógios", "Eletrônicos", "Móveis e eletrodomésticos", "Arte e colecionáveis", "Outro"]),
     ...subs(CLASS.privateEquity, ["Private equity", "Venture capital", "Participação em empresa", "Arte/colecionáveis", "Outro"]),
-    // "Outros" é livre — sem subtipos.
+    ...subs(CLASS.outros, ["Outro"]),
   ],
   regions: [
     { id: "brasil", name: "Brasil" },

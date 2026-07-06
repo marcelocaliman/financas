@@ -1,7 +1,6 @@
-import { useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, ChevronDown, TrendingDown, Wallet } from "lucide-react";
+import { ChevronDown, TrendingDown, Wallet } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -10,7 +9,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, isDetailedAssetClass, nameById } from "@/domain/taxonomy";
+import { isInvestedClass, isDetailedAssetClass, nameById, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -40,6 +39,14 @@ const SUBNAV: { id: string; key: string }[] = [
   { id: "pat-investimentos", key: "nav.investimentos" },
   { id: "pat-passivos", key: "patrimonio.liabilities" },
 ];
+
+/** Rótulo i18n de cada macro-categoria (abas de Ativos). */
+const MACRO_LABEL: Record<string, string> = {
+  [MACRO.rendaFixa]: "patrimonio.macroRendaFixa",
+  [MACRO.rendaVariavel]: "patrimonio.macroRendaVariavel",
+  [MACRO.caixa]: "patrimonio.macroCaixa",
+  [MACRO.bens]: "patrimonio.macroBens",
+};
 
 export default function Patrimonio() {
   const { t } = useTranslation();
@@ -78,8 +85,7 @@ export default function Patrimonio() {
     return { totalAssets, totalLiab, netWorth: totalAssets - totalLiab, invested, groups };
   }, [data, disp, rates, tax]);
 
-  const [tab, setTab] = useState("");
-  const [extra, setExtra] = useState<string | null>(null);
+  const [tab, setTab] = useState(""); // macro ativa (id)
   const [liabOpen, setLiabOpen] = useState(false); // Passivos colapsados por padrão (encurta a aba)
   const openDrawer = useBalanceUpdater((s) => s.openDrawer);
 
@@ -99,30 +105,37 @@ export default function Patrimonio() {
     align: "right" as const,
   };
 
-  const presentIds = view.groups.map((g) => g.classId);
-  const tabIds = extra && !presentIds.includes(extra) ? [...presentIds, extra] : presentIds;
-  const activeId = tabIds.includes(tab) ? tab : (tabIds[0] ?? "");
-  const activeGroup = view.groups.find((g) => g.classId === activeId);
-  const activeAssets = data.assets.filter((a) => a.classId === activeId);
-  const absentClasses = tax.assetClasses.filter((c) => !presentIds.includes(c.id));
+  // Abas = MACROS (Renda Fixa · Renda Variável · Caixa · Bens). A linha é (subtype, moeda) DENTRO
+  // da macro; o "Tipo" (subtype) define a classe, então composição/alocação/FIRE seguem por classe.
+  const activeMacro = ASSET_MACROS.find((m) => m.id === tab) ?? ASSET_MACROS[0];
+  const activeAssets = data.assets.filter((a) => macroOf(a.classId) === activeMacro.id);
+  const macroTotal = activeAssets.reduce((s, a) => s + conv(a.amount, a.currency), 0);
+  const macroCount = (m: AssetMacro) => data.assets.filter((a) => macroOf(a.classId) === m.id).length;
 
-  // Colunas por classe — modelo POR CLASSE × MOEDA (um valor por moeda; sem discriminar item):
-  // Moeda → [Aplicado] → Valor atual → [Rentabilidade] → [Em <moeda de exibição>].
-  const assetColsFor = (classId: string): GridColumn<Asset>[] => {
-    const invested = isInvestedClass(classId);
+  // Colunas por MACRO: Tipo (sub-categoria) → Moeda → [Aplicado] → Valor atual → [Rent.] → [Em <moeda>].
+  const assetColsFor = (macro: AssetMacro): GridColumn<Asset>[] => {
+    const invested = macro.classIds.some(isInvestedClass);
+    // "Tipo" = subtypes das classes da macro, prefixados pela classe (ex.: "Ações · ETF de ações").
+    const tipoOptions: SelectOption[] = macro.classIds.flatMap((cid) => {
+      const cls = tax.assetClasses.find((c) => c.id === cid);
+      return tax.subtypes
+        .filter((s) => s.classId === cid)
+        .map((s) => ({ value: s.id, label: cls ? `${cls.name} · ${s.name}` : s.name }));
+    });
     const cols: GridColumn<Asset>[] = [
-      { key: "currency", type: "currency", header: t("common.currency"), width: "minmax(64px,0.5fr)" },
+      { key: "subtypeId", type: "select", header: t("patrimonio.type"), width: "minmax(160px,1.7fr)", placeholder: t("patrimonio.typePlaceholder"), options: tipoOptions },
+      { key: "currency", type: "currency", header: t("common.currency"), width: "minmax(56px,0.45fr)" },
     ];
     if (invested) {
-      cols.push({ key: "cost", type: "number", decimals: 2, header: t("patrimonio.applied"), width: "minmax(120px,1fr)", align: "right", currencyKey: "currency" });
+      cols.push({ key: "cost", type: "number", decimals: 2, header: t("patrimonio.applied"), width: "minmax(110px,0.9fr)", align: "right", currencyKey: "currency" });
     }
-    cols.push({ key: "amount", type: "money", hideCurrency: true, header: invested ? t("patrimonio.currentValue") : t("patrimonio.amount"), width: "minmax(140px,1fr)", align: "right", currencyKey: "currency" });
+    cols.push({ key: "amount", type: "money", hideCurrency: true, header: invested ? t("patrimonio.currentValue") : t("patrimonio.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency" });
     if (invested) {
       cols.push({
         key: "ret",
         type: "computed",
         header: t("patrimonio.return"),
-        width: "minmax(86px,0.7fr)",
+        width: "minmax(80px,0.6fr)",
         align: "right",
         compute: (r: Asset) => {
           const cost = r.cost ?? 0;
@@ -136,16 +149,19 @@ export default function Patrimonio() {
         },
       });
     }
-    // "Em <moeda>" só quando há conversão (algum ativo da classe em moeda ≠ da exibida).
-    if (data.assets.some((a) => a.classId === classId && a.currency !== disp)) {
+    // "Em <moeda>" só quando há conversão (algum ativo da macro em moeda ≠ da exibida).
+    if (data.assets.some((a) => macroOf(a.classId) === macro.id && a.currency !== disp)) {
       cols.push({ ...convertedCol, compute: (r: Asset) => formatMoney(conv(r.amount, r.currency), disp) });
     }
     return cols;
   };
 
-  // Sem itens nomeados: cada linha é (classe, moeda) com valor aplicado + atual. Só salvar.
-  const commitAsset = (a: Asset) => void actions.putAsset(a);
-  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeId, currency: base, amount: 0 });
+  // O "Tipo" (subtype) escolhido define a CLASSE-pai (lookup na taxonomia) — os cálculos seguem por classe.
+  const commitAsset = (a: Asset) => {
+    const st = tax.subtypes.find((s) => s.id === a.subtypeId);
+    void actions.putAsset(st ? { ...a, classId: st.classId } : a);
+  };
+  const newAsset = (): Asset => ({ id: crypto.randomUUID(), name: "", classId: activeMacro.classIds[0], currency: base, amount: 0 });
 
   const liabCols: GridColumn<Liability>[] = [
     { key: "name", type: "text", header: t("patrimonio.name"), width: "minmax(150px,1.7fr)", placeholder: t("patrimonio.namePlaceholderLiab") },
@@ -159,9 +175,9 @@ export default function Patrimonio() {
   }
   const newLiab = (): Liability => ({ id: crypto.randomUUID(), name: "", typeId: "", currency: base, amount: 0 });
 
-  const sharePct = view.totalAssets > 0 ? ((activeGroup?.total ?? 0) / view.totalAssets) * 100 : 0;
+  const sharePct = view.totalAssets > 0 ? (macroTotal / view.totalAssets) * 100 : 0;
 
-  // Rentabilidade PONDERADA da classe ativa = (Σ valor atual − Σ valor aplicado) / Σ valor aplicado,
+  // Rentabilidade PONDERADA da macro ativa = (Σ valor atual − Σ valor aplicado) / Σ valor aplicado,
   // só sobre os ativos COM valor aplicado (custo). Proporcional ao valor, não média simples dos %.
   // Some um KPI só quando faz sentido (há custo) — exclui Caixa/Bens naturalmente.
   const classReturn = (() => {
@@ -213,14 +229,11 @@ export default function Patrimonio() {
               <button
                 key={a.classId}
                 type="button"
-                onClick={() => {
-                  setTab(a.classId);
-                  setExtra(null);
-                }}
+                onClick={() => setTab(macroOf(a.classId))}
                 aria-label={`${a.name} ${a.pct.toFixed(1)}%`}
                 className={cn(
                   "flex items-start gap-2.5 rounded-[12px] border px-3 py-2.5 text-left transition-colors",
-                  a.classId === activeId ? "border-border-strong bg-card2" : "border-border hover:bg-card-hover",
+                  macroOf(a.classId) === activeMacro.id ? "border-border-strong bg-card2" : "border-border hover:bg-card-hover",
                 )}
               >
                 <span className="w-2.5 h-2.5 rounded-[3px] shrink-0 mt-1" style={{ background: ramp[i % ramp.length] }} />
@@ -249,68 +262,59 @@ export default function Patrimonio() {
           </div>
         </div>
 
-        {/* Barra de abas + "adicionar classe" */}
+        {/* Barra de abas = MACRO-categorias (sempre as 4) */}
         <div className="flex items-center gap-1.5 border-b border-border mb-5 overflow-x-auto no-scrollbar">
-          {tabIds.map((id) => {
-            const g = view.groups.find((x) => x.classId === id);
-            const name = g?.name ?? tax.assetClasses.find((c) => c.id === id)?.name ?? id;
-            const on = id === activeId;
+          {ASSET_MACROS.map((m) => {
+            const on = m.id === activeMacro.id;
             return (
               <button
-                key={id}
+                key={m.id}
                 type="button"
-                onClick={() => { setTab(id); setExtra(null); }}
+                onClick={() => setTab(m.id)}
                 className={cn(
                   "relative px-3 py-2.5 text-[13.5px] font-medium whitespace-nowrap shrink-0 transition-colors",
                   on ? "text-text" : "text-muted hover:text-text",
                 )}
               >
-                {name} <span className="text-faint tabular text-[12px]">{g?.count ?? 0}</span>
+                {t(MACRO_LABEL[m.id])} <span className="text-faint tabular text-[12px]">{macroCount(m)}</span>
                 {on ? <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-full bg-accent" /> : null}
               </button>
             );
           })}
-          {absentClasses.length > 0 ? <AddClassMenu classes={absentClasses} onPick={(id) => { setExtra(id); setTab(id); }} /> : null}
         </div>
 
-        {activeId ? (
-          <>
-            {/* KPIs da classe ativa */}
-            <div className={cn("grid grid-cols-2 gap-3 mb-5", classReturn.has ? "sm:grid-cols-3 lg:grid-cols-5" : "sm:grid-cols-3")}>
-              {classReturn.has ? (
-                <Kpi label={t("patrimonio.applied")} value={<Money value={classReturn.applied} currency={disp} />} />
-              ) : null}
-              <Kpi label={classReturn.has ? t("patrimonio.currentValue") : t("patrimonio.classTotal")} value={<Money value={activeGroup?.total ?? 0} currency={disp} />} />
-              {classReturn.has ? (
-                <Kpi
-                  label={t("investimentos.profitability")}
-                  tone={classReturn.pct >= 0 ? "accent" : "neg"}
-                  value={<Hidden>{`${classReturn.pct >= 0 ? "+" : ""}${classReturn.pct.toFixed(1)}%`}</Hidden>}
-                />
-              ) : null}
-              <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" ring={sharePct} />
-              <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeGroup?.count ?? 0}</span>} />
-            </div>
+        {/* KPIs da macro ativa */}
+        <div className={cn("grid grid-cols-2 gap-3 mb-5", classReturn.has ? "sm:grid-cols-3 lg:grid-cols-5" : "sm:grid-cols-3")}>
+          {classReturn.has ? (
+            <Kpi label={t("patrimonio.applied")} value={<Money value={classReturn.applied} currency={disp} />} />
+          ) : null}
+          <Kpi label={classReturn.has ? t("patrimonio.currentValue") : t("patrimonio.classTotal")} value={<Money value={macroTotal} currency={disp} />} />
+          {classReturn.has ? (
+            <Kpi
+              label={t("investimentos.profitability")}
+              tone={classReturn.pct >= 0 ? "accent" : "neg"}
+              value={<Hidden>{`${classReturn.pct >= 0 ? "+" : ""}${classReturn.pct.toFixed(1)}%`}</Hidden>}
+            />
+          ) : null}
+          <Kpi label={t("patrimonio.share")} value={`${sharePct.toFixed(1)}%`} tone="accent" ring={sharePct} />
+          <Kpi label={t("patrimonio.assetCount")} value={<span className="tabular">{activeAssets.length}</span>} />
+        </div>
 
-            <div className="overflow-x-auto">
-              <div className="min-w-0 sm:min-w-[560px]">
-                <DataGrid<Asset>
-                  key={activeId}
-                  columns={assetColsFor(activeId)}
-                  rows={activeAssets}
-                  blank={newAsset}
-                  isComplete={(r) => r.classId.length > 0 && r.amount > 0}
-                  onCommit={commitAsset}
-                  onDelete={(id) => void actions.removeAsset(id)}
-                  addPlaceholder={t("patrimonio.addAsset")}
-                  total={<Money value={activeGroup?.total ?? 0} currency={disp} />}
-                />
-              </div>
-            </div>
-          </>
-        ) : (
-          <p className="text-[13px] text-faint py-6">{t("patrimonio.emptyAssets")}</p>
-        )}
+        <div className="overflow-x-auto">
+          <div className="min-w-0 sm:min-w-[620px]">
+            <DataGrid<Asset>
+              key={activeMacro.id}
+              columns={assetColsFor(activeMacro)}
+              rows={activeAssets}
+              blank={newAsset}
+              isComplete={(r) => !!r.subtypeId && r.amount > 0}
+              onCommit={commitAsset}
+              onDelete={(id) => void actions.removeAsset(id)}
+              addPlaceholder={t("patrimonio.addAsset")}
+              total={<Money value={macroTotal} currency={disp} />}
+            />
+          </div>
+        </div>
       </section>
 
       {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}
@@ -520,67 +524,5 @@ export function PatrimonioSummary() {
       <HeaderKpi secondary label={t("patrimonio.assets")} value={<Money value={v.totalAssets} currency={disp} />} />
       <HeaderKpi secondary label={t("patrimonio.liabilities")} tone={v.totalLiab > 0 ? "neg" : "text"} value={<Money value={v.totalLiab} currency={disp} options={{ signDisplay: "never" }} />} />
     </HeaderKpis>
-  );
-}
-
-/**
- * Menu "+" pra começar uma classe ainda sem ativos. O dropdown vai por PORTAL no body
- * (posição calculada do botão) pra não ser recortado pelo overflow das abas/accordion.
- */
-function AddClassMenu({ classes, onPick }: { classes: { id: string; name: string }[]; onPick: (id: string) => void }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  const toggle = () => {
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    const r = btnRef.current?.getBoundingClientRect();
-    if (r) setPos({ top: r.bottom + 6, left: r.left });
-    setOpen(true);
-  };
-
-  return (
-    <div className="shrink-0 ml-1">
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={toggle}
-        className="inline-flex items-center gap-1 px-2.5 py-2 text-[13px] text-muted hover:text-text transition-colors whitespace-nowrap"
-      >
-        <Plus size={14} />
-        {t("patrimonio.addClass")}
-        <ChevronDown size={13} className="text-faint" />
-      </button>
-      {open && pos
-        ? createPortal(
-            <>
-              <div className="fixed inset-0 z-[55]" onClick={() => setOpen(false)} />
-              <div
-                className="fixed z-[56] w-56 max-h-[320px] overflow-y-auto rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] p-1.5"
-                style={{ top: pos.top, left: pos.left }}
-              >
-                {classes.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      onPick(c.id);
-                      setOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-[8px] text-[13.5px] text-muted hover:text-text hover:bg-card-hover transition-colors"
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </>,
-            document.body,
-          )
-        : null}
-    </div>
   );
 }
