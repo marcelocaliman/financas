@@ -615,7 +615,7 @@ export function AdsSection() {
           <PieceRail
             items={STORIES}
             pieceId={(st) => `story:${st.id}`}
-            cardW="w-[210px]"
+            cardW="w-[360px]"
             render={(st) => <StoryCard key={st.id} story={st} />}
           />
         </section>
@@ -628,7 +628,7 @@ export function AdsSection() {
           <PieceRail
             items={EDU_STORIES}
             pieceId={(st) => `story:${st.id}`}
-            cardW="w-[210px]"
+            cardW="w-[360px]"
             render={(st) => <StoryCard key={st.id} story={st} />}
           />
         </section>
@@ -641,7 +641,7 @@ export function AdsSection() {
           <PieceRail
             items={POSTS}
             pieceId={(p) => `post:${p.id}`}
-            cardW="w-[300px]"
+            cardW="w-[380px]"
             render={(p) => <PostCard key={p.id} post={p} />}
           />
         </section>
@@ -654,7 +654,7 @@ export function AdsSection() {
           <PieceRail
             items={EDU_POSTS}
             pieceId={(p) => `post:${p.id}`}
-            cardW="w-[300px]"
+            cardW="w-[380px]"
             render={(p) => <PostCard key={p.id} post={p} />}
           />
         </section>
@@ -668,7 +668,7 @@ export function AdsSection() {
           <PieceRail
             items={[...CAROUSELS, ...EDU_CAROUSELS]}
             pieceId={(c) => `carousel:${c.id}`}
-            cardW="w-[330px]"
+            cardW="w-[440px]"
             render={(c) => <CarouselCard key={c.id} carousel={c} />}
           />
         </section>
