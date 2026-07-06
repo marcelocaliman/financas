@@ -8,6 +8,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { actions } from "@/data/actions";
 import { convert, formatMoney } from "@/money/currency";
+import { formatAmountEdit, parseLocaleNumber } from "@/money/parse";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { useIsMobile } from "@/hooks/use-media";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
@@ -21,12 +22,6 @@ import type { Asset } from "@/domain/types";
 const ym = (): string => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-};
-
-/** Interpreta o texto digitado como número (aceita vírgula decimal; ignora o resto). */
-const parseNum = (s: string): number => {
-  const n = Number(String(s).replace(",", ".").replace(/[^\d.-]/g, ""));
-  return Number.isFinite(n) ? n : 0;
 };
 
 /**
@@ -48,7 +43,7 @@ export function BalanceUpdater() {
 
   // Inicializa os valores ao ABRIR (não a cada mudança do banco, pra não atropelar a digitação).
   useEffect(() => {
-    if (open && data) setEdits(Object.fromEntries(data.assets.map((a) => [a.id, String(a.amount)])));
+    if (open && data) setEdits(Object.fromEntries(data.assets.map((a) => [a.id, formatAmountEdit(a.amount, a.currency)])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -78,7 +73,7 @@ export function BalanceUpdater() {
 
   const netWorth = useMemo(() => {
     if (!data) return 0;
-    const assets = data.assets.reduce((s, a) => s + convert(edits[a.id] != null ? parseNum(edits[a.id]) : a.amount, a.currency, disp, rates), 0);
+    const assets = data.assets.reduce((s, a) => s + convert(parseLocaleNumber(edits[a.id] ?? "", a.currency) ?? a.amount, a.currency, disp, rates), 0);
     const liab = data.liabilities.reduce((s, l) => s + convert(l.amount, l.currency, disp, rates), 0);
     return assets - liab;
   }, [data, edits, disp, rates]);
@@ -89,8 +84,8 @@ export function BalanceUpdater() {
     for (const a of data.assets) {
       const v = edits[a.id];
       if (v == null) continue;
-      const n = parseNum(v);
-      if (n !== a.amount) void actions.putAsset({ ...a, amount: n });
+      const n = parseLocaleNumber(v, a.currency);
+      if (n != null && n !== a.amount) void actions.putAsset({ ...a, amount: n });
     }
     setBalancesUpdated(ym());
     close();
@@ -141,8 +136,12 @@ export function BalanceUpdater() {
                       <input
                         inputMode="decimal"
                         value={edits[a.id] ?? ""}
+                        onFocus={(e) => e.currentTarget.select()}
                         onChange={(e) => setEdits((p) => ({ ...p, [a.id]: e.target.value }))}
-                        className="w-[108px] rounded-[8px] border border-border bg-card px-2.5 py-1.5 text-right text-[13px] tabular text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                        onBlur={() =>
+                          setEdits((p) => ({ ...p, [a.id]: formatAmountEdit(parseLocaleNumber(p[a.id] ?? "", a.currency) ?? a.amount, a.currency) }))
+                        }
+                        className="w-[120px] rounded-[8px] border border-border bg-card px-2.5 py-1.5 text-right text-[13px] tabular text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                       />
                     </div>
                   ))}
