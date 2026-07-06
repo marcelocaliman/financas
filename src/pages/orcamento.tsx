@@ -25,7 +25,7 @@ import { SectionHead } from "@/components/common/section-head";
 import { CardSubNav } from "@/components/common/card-sub-nav";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; parentId?: string; isStatement?: boolean };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean };
 
 /** É uma FATURA (guarda-chuva do cartão) se está na categoria "Cartão de Crédito" — OU, por
  *  retrocompatibilidade, foi marcada no modelo antigo (isStatement) OU já tem itens dentro (filhos).
@@ -193,35 +193,40 @@ export default function Orcamento() {
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
   const opts = (items: TaxonomyItem[]): SelectOption[] => items.map((i) => ({ value: i.id, label: i.name }));
-  const cols = (categories: TaxonomyItem[], rows: BudgetRow[], withDueDay = false): GridColumn<BudgetRow>[] => {
+  const cols = (
+    categories: TaxonomyItem[],
+    rows: BudgetRow[],
+    bill?: { statusKey: "paid" | "received"; statusLabel: string; fatura?: boolean },
+  ): GridColumn<BudgetRow>[] => {
     const columns: GridColumn<BudgetRow>[] = [
       { key: "recurring", type: "toggle", header: t("orcamento.recurringShort"), width: "64px" },
       { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories), indentable: true },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
-    if (withDueDay) {
+    if (bill) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
-      // "Pago": check só nas contas com vencimento (dueDay) — reflete/alterna o mesmo `paid` da seção
-      // Vencimentos. Assim dá pra ver na própria tabela de gastos o que já foi pago. Sem dueDay → "—".
-      columns.push({ key: "paid", type: "toggle", header: t("orcamento.paidShort"), width: "58px", icon: Check, isOn: (r) => !!r.paid, hideWhen: (r) => r.dueDay == null });
-      // Coluna "Na fatura": marca um lançamento como DENTRO da fatura de um cartão (assim ele não soma
-      // de novo — a fatura já entra pelo total). A FATURA é identificada pela CATEGORIA "Cartão de
-      // Crédito" (sem marcador "é a fatura"). A coluna só aparece quando há ≥1 cartão no mês: 1 cartão
-      // → CHECK; 2+ → seletor de qual cartão. A própria fatura mostra "—" (cartão não fica em cartão).
-      const faturas = rows.filter((r) => isFaturaRow(r, rows));
-      if (faturas.length > 0) {
-        columns.push({
-          key: "parentId",
-          type: "insideStatement",
-          optional: true,
-          header: t("orcamento.insideOf"),
-          width: "minmax(120px,1fr)",
-          placeholder: t("orcamento.insideOf"),
-          optionsFor: (r) =>
-            isFaturaRow(r, rows)
-              ? []
-              : faturas.map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
-        });
+      // "Pago"/"Recebido": check só nas linhas COM dia (dueDay) — reflete/alterna o status (o mesmo
+      // `paid` da seção Vencimentos, nos gastos). Padroniza receitas e gastos. Sem dia → "—".
+      columns.push({ key: bill.statusKey, type: "toggle", header: bill.statusLabel, width: "58px", icon: Check, isOn: (r) => !!r[bill.statusKey], hideWhen: (r) => r.dueDay == null });
+      // Coluna "Na fatura" (só gastos): marca um lançamento como DENTRO da fatura de um cartão (assim não
+      // soma de novo — a fatura já entra pelo total). Fatura = CATEGORIA "Cartão de Crédito". Só aparece
+      // com ≥1 cartão no mês: 1 → CHECK; 2+ → seletor. A própria fatura mostra "—".
+      if (bill.fatura) {
+        const faturas = rows.filter((r) => isFaturaRow(r, rows));
+        if (faturas.length > 0) {
+          columns.push({
+            key: "parentId",
+            type: "insideStatement",
+            optional: true,
+            header: t("orcamento.insideOf"),
+            width: "minmax(120px,1fr)",
+            placeholder: t("orcamento.insideOf"),
+            optionsFor: (r) =>
+              isFaturaRow(r, rows)
+                ? []
+                : faturas.map((x) => ({ value: x.id, label: x.name || nameById(categories, x.categoryId) || t("orcamento.uncategorized") })),
+          });
+        }
       }
     }
     columns.push({ key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(150px,1.1fr)", align: "right", currencyKey: "currency" });
@@ -364,7 +369,7 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.incomeCategories, view.monthInc as BudgetRow[])}
+              columns={cols(tax.incomeCategories, view.monthInc as BudgetRow[], { statusKey: "received", statusLabel: t("orcamento.receivedShort") })}
               rows={view.monthInc as BudgetRow[]}
               blank={blank}
               isComplete={complete}
@@ -384,7 +389,7 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.expenseCategories, gridRows, true)}
+              columns={cols(tax.expenseCategories, gridRows, { statusKey: "paid", statusLabel: t("orcamento.paidShort"), fatura: true })}
               rows={gridRows}
               rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40 shadow-[inset_3px_0_0_0_var(--accent)]" : undefined)}
               indentRow={(r) => expChildIds.has(r.id)}

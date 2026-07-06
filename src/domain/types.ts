@@ -68,6 +68,10 @@ export interface Income {
   amount: number; // valor no mês
   /** Fixo/recorrente: entra sozinho nos meses seguintes (salário, aluguel recebido…). */
   recurring?: boolean;
+  /** Dia esperado do recebimento (1–31) — espelha o `dueDay` do gasto. Ausente = sem dia. */
+  dueDay?: number;
+  /** Já recebido no mês? (equivalente ao `paid` do gasto). Por competência. */
+  received?: boolean;
 }
 
 export interface NetWorthSnapshot {

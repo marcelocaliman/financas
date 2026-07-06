@@ -200,6 +200,7 @@
     "recurring": "Recorrente",
     "recurringShort": "Fixo",
     "paidShort": "Pago",
+    "receivedShort": "Recebido",
     "recurringHint": "Marque com ↻ os lançamentos fixos (aluguel, salário, assinaturas) — eles entram sozinhos nos próximos meses.",
     "dueDay": "Dia",
     "dueColumn": "Vencimento",

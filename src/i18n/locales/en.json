@@ -200,6 +200,7 @@
     "recurring": "Recurring",
     "recurringShort": "Fixed",
     "paidShort": "Paid",
+    "receivedShort": "Received",
     "recurringHint": "Mark fixed entries (rent, salary, subscriptions) with ↻ — they flow into the next months on their own.",
     "dueDay": "Day",
     "dueColumn": "Due date",
