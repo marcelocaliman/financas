@@ -9,7 +9,6 @@ import { convert } from "@/money/currency";
 import type { Subscription } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
@@ -87,26 +86,5 @@ export default function Assinaturas() {
         {data.length === 0 ? <p className="mt-3 text-[12px] leading-relaxed text-faint">{t("assinaturas.note")}</p> : null}
       </section>
     </div>
-  );
-}
-
-/** KPIs do cabeçalho do accordion de Assinaturas. */
-export function AssinaturasSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = useSubscriptions();
-  const v = useMemo(() => {
-    if (!data || data.length === 0) return null;
-    const monthly = data.reduce((s, a) => s + convert(a.amount, a.currency, disp, rates), 0);
-    return { count: data.length, monthly };
-  }, [data, disp, rates]);
-  if (!v) return null;
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("assinaturas.monthlyTotal")} value={<Money value={v.monthly} currency={disp} />} />
-      <HeaderKpi secondary label={t("assinaturas.yearlyTotal")} value={<Money value={v.monthly * 12} currency={disp} />} />
-      <HeaderKpi secondary label={t("nav.assinaturas")} value={<span className="tabular">{v.count}</span>} />
-    </HeaderKpis>
   );
 }

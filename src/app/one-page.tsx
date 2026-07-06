@@ -10,7 +10,6 @@ import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import { DueAlertBar } from "@/components/layout/due-alert-bar";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
 import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
-import Assinaturas, { AssinaturasSummary } from "@/pages/assinaturas";
 import Historico, { HistoricoSummary } from "@/pages/historico";
 import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
 import Projecao, { ProjecaoSummary } from "@/pages/projecao";
@@ -21,7 +20,6 @@ import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
   patrimonio: { detail: <Patrimonio />, summary: <PatrimonioSummary /> },
   orcamento: { detail: <Orcamento />, summary: <OrcamentoSummary /> },
-  assinaturas: { detail: <Assinaturas />, summary: <AssinaturasSummary /> },
   historico: { detail: <Historico />, summary: <HistoricoSummary /> },
   objetivos: { detail: <Objetivos />, summary: <ObjetivosSummary /> },
   projecao: { detail: <Projecao />, summary: <ProjecaoSummary /> },

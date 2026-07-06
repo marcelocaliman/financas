@@ -23,6 +23,7 @@ import { Hidden } from "@/components/common/hidden";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { CardSubNav } from "@/components/common/card-sub-nav";
+import Assinaturas from "@/pages/assinaturas";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
 type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean };
@@ -90,6 +91,7 @@ const SUBNAV: { id: string; key: string }[] = [
   { id: "orc-composicao", key: "orcamento.tabBreakdown" },
   { id: "orc-receitas", key: "orcamento.income" },
   { id: "orc-gastos", key: "orcamento.expenses" },
+  { id: "orc-assinaturas", key: "nav.assinaturas" },
 ];
 
 export default function Orcamento() {
@@ -383,6 +385,11 @@ export default function Orcamento() {
         <Repeat size={13} className="shrink-0" />
         {t("orcamento.recurringHint")}
       </p>
+
+      {/* Assinaturas (documentação — lista global, NÃO soma no total do orçamento). */}
+      <div id="orc-assinaturas">
+        <Assinaturas />
+      </div>
     </div>
   );
 }
