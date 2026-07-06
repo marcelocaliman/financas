@@ -37,6 +37,8 @@ export interface GridColumn<T> {
   optionsFor?: (row: T) => SelectOption[];
   /** select AGRUPADO: opções em seções (optgroup) — tem precedência sobre options/optionsFor. */
   optionGroups?: { label: string; options: SelectOption[] }[];
+  /** Ao mudar ESTA célula, DERIVA outros campos junto (ex.: escolher o país preenche a moeda). */
+  derive?: (value: string, row: T) => Partial<T>;
   /** select opcional: inclui um "—" (vazio) e o valor pode ficar em branco. */
   optional?: boolean;
   currencyKey?: string; // money/number: campo da moeda p/ o locale (default "currency")
@@ -942,8 +944,8 @@ export function DataGrid<T extends { id: string }>({
   // nunca a cada tecla. É isso que deixa trocar a moeda no meio da digitação sem
   // auto-commitar a linha na moeda antiga (ver preventDefault no CurrencyPicker).
   // Se um dia empurrar o valor digitado pro ghost a cada onChange, o bug volta.
-  const commitGhost = (key: string, value: unknown) => {
-    const next = { ...ghost, [key]: value } as T;
+  const commitGhostPatch = (patch: Partial<T>) => {
+    const next = { ...ghost, ...patch } as T;
     if (isComplete(next)) {
       onCommit(next);
       setGhost(blank());
@@ -951,12 +953,16 @@ export function DataGrid<T extends { id: string }>({
       setGhost(next);
     }
   };
+  const commitGhost = (key: string, value: unknown) => commitGhostPatch({ [key]: value } as Partial<T>);
 
   const renderCell = (col: GridColumn<T>, row: T, ghostRow: boolean): ReactNode => {
     if (viewerMode) return <ReadOnlyCell col={col} row={row} />;
     const rowId = ghostRow ? "ghost" : row.id;
-    const commit = (value: unknown) =>
-      ghostRow ? commitGhost(col.key, value) : onCommit({ ...row, [col.key]: value } as T);
+    const commit = (value: unknown) => {
+      // Deriva campos vinculados (ex.: país → moeda) junto com o valor da célula.
+      const patch = { [col.key]: value, ...(col.derive ? col.derive(value as string, row) : {}) } as Partial<T>;
+      return ghostRow ? commitGhostPatch(patch) : onCommit({ ...row, ...patch } as T);
+    };
     const onEnter = ghostRow ? () => focusGhost(firstTextKey) : () => nextInColumn(row.id, col.key);
 
     switch (col.type) {

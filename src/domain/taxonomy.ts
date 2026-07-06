@@ -5,6 +5,8 @@
  * cifrada junto com o resto (serialize.ts itera todas as tabelas).
  */
 
+import type { Currency } from "@/money/currency";
+
 export interface TaxonomyItem {
   id: string;
   name: string;
@@ -136,6 +138,24 @@ export const REGION_FLAG: Record<string, string> = {
 
 /** Novos ids de região (além dos originais) — usados pelo backfill p/ taxonomias já salvas. */
 export const NEW_REGION_IDS = ["espanha", "portugal", "alemanha", "franca", "paises-baixos", "suica"];
+
+/**
+ * Moeda PADRÃO de cada país — escolher o país já preenche a moeda (o comum: Itália→€, EUA→US$).
+ * Editável depois pra exceções (ex.: bond de empresa europeia emitido em dólar). Países sem moeda
+ * fixa aqui (Suíça=CHF não suportado, Global, Outro) mantêm a moeda atual.
+ */
+export const REGION_CURRENCY: Record<string, Currency> = {
+  brasil: "BRL",
+  eua: "USD",
+  italia: "EUR",
+  espanha: "EUR",
+  portugal: "EUR",
+  alemanha: "EUR",
+  franca: "EUR",
+  "paises-baixos": "EUR",
+  "zona-euro": "EUR",
+  "reino-unido": "GBP",
+};
 
 /** Ids estáveis dos tipos de passivo default (usados na migração). */
 export const LIABILITY_TYPE = {

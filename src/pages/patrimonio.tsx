@@ -9,7 +9,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, isDetailedAssetClass, nameById, tipoSubtypesFor, REGION_FLAG, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
+import { isInvestedClass, isDetailedAssetClass, nameById, tipoSubtypesFor, REGION_FLAG, REGION_CURRENCY, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -126,7 +126,7 @@ export default function Patrimonio() {
       .filter((g) => g.options.length > 0);
     const cols: GridColumn<Asset>[] = [
       { key: "subtypeId", type: "select", header: t("patrimonio.type"), width: "minmax(150px,1.5fr)", placeholder: t("patrimonio.typePlaceholder"), optionGroups: tipoGroups },
-      { key: "regionId", type: "select", optional: true, header: t("patrimonio.country"), width: "minmax(112px,1fr)", options: regionOptions },
+      { key: "regionId", type: "select", optional: true, header: t("patrimonio.country"), width: "minmax(112px,1fr)", options: regionOptions, derive: (id) => (REGION_CURRENCY[id] ? { currency: REGION_CURRENCY[id] } : {}) },
       { key: "currency", type: "currency", header: t("common.currency"), width: "minmax(56px,0.45fr)" },
     ];
     if (invested) {
