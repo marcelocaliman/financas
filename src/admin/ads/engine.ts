@@ -583,7 +583,7 @@ export const EDU_CAROUSELS: Carousel[] = [
       { style: "vivid", photo: "/img/ads/rent.jpg", eyebrow: "PASSO 2", title: ["Liste os", "gastos fixos"], sub: "Moradia, contas, transporte, escola. O que se repete todo mês." },
       { style: "vivid", photo: "/img/ads/market.jpg", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
       { style: "vivid", photo: "/img/ads/counting.jpg", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
-      { style: "vivid", photo: "/img/ads/dashboard.jpg", eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
+      { style: "dark", shot: SHOT_SRC.orcamento, eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
       { style: "vivid", photo: "/img/ads/laptop.jpg", eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda." },
     ],
   },
