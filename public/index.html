@@ -474,8 +474,7 @@
     .igwin { border: 1px solid var(--border); border-radius: 20px; background: var(--card); box-shadow: var(--shadow-float); padding: 18px; }
     .igwin .igtop { display: flex; align-items: center; gap: 13px; }
     .igwin .igava { width: 54px; height: 54px; border-radius: 50%; padding: 2.5px; flex: none; background: linear-gradient(72deg, #f9a13c, #e24a63, #cc2d8f, #8a3ab9); }
-    .igwin .igava > span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: var(--bg); color: var(--accent); }
-    .igwin .igava svg { width: 26px; height: 26px; }
+    .igwin .igava img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
     .igwin .igmeta { flex: 1; min-width: 0; }
     .igwin .ighandle { font-weight: 700; font-size: 15px; color: var(--text); }
     .igwin .igname { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
@@ -1324,7 +1323,7 @@
           <div class="commstage">
             <div class="igwin">
               <div class="igtop">
-                <span class="igava"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M7 15l3.5-4 3 2.5L20 6"/></svg></span></span>
+                <span class="igava"><img src="/icon.svg" alt="Nossas Finanças" /></span>
                 <div class="igmeta">
                   <div class="ighandle">@nossasfinancasapp</div>
                   <div class="igname">Nossas Finanças</div>
