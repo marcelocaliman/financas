@@ -75,10 +75,9 @@
         <p>• <b>Email</b> — to create the account, authenticate and send essential emails (confirmation, password reset).</p>
         <p>• <b>Encrypted vault</b> — the blob with your financial data, already encrypted on your device. To us it is unreadable text.</p>
         <p>• <b>Minimal technical metadata</b> — approximate vault size, sync dates/versions and the provider's security logs. No behavioral profiles, no tracking cookies, no ads.</p>
-        <p>• <b>Asset tickers</b> — if you use stock quotes, the ticker symbols (e.g., PETR4) pass through our server only to fetch the day's price. We do not link them to your quantities/values (which stay encrypted) and we do not store them.</p>
+        <p>• <b>Market quotes</b> — to convert currencies and show references like gold and bitcoin, our server fetches public prices using only currency pairs and public symbols (e.g., EUR/BRL, XAU, BTC). None of your data — neither your assets nor your values (which stay encrypted) — is sent or stored.</p>
         <p>• <b>Support messages</b> — if you open a ticket (in the app or via the contact form), we store your email and the message content in <b>readable text</b> (not encrypted like the vault), because we need to read them to reply. For that reason, do not include your password, recovery code or account numbers in those messages. Images you attach are reachable via an unlisted (unguessable) link — avoid attaching sensitive content.</p>
         <p>• <b>Pro subscription</b> (if you subscribe) — status, plan and subscription dates, plus Stripe identifiers. <b>Never your card details</b> (those stay only with Stripe). This is metadata, not the vault's financial data.</p>
-        <p>• <b>Waitlist</b> — if you leave your email on the “Pro Investor — coming soon” card, we store only that <b>email</b>, with your consent, to <b>let you know when the plan launches</b>. Nothing else — you can ask for removal at any time.</p>
       </section>
 
       <section>
@@ -92,7 +91,7 @@
         <p>• <b>Supabase</b> — authentication and storage of the encrypted vault.</p>
         <p>• <b>Vercel</b> — hosting of the app and the function that fetches quotes.</p>
         <p>• <b>Resend</b> — sending our emails (confirmation, password reset and support notifications). Receives only your email and the message content.</p>
-        <p>• <b>Exchange/quote APIs</b> (Frankfurter, brapi, Finnhub, Coinbase) — receive only currency pairs and tickers, never personal or financial data. We do not sell your data.</p>
+        <p>• <b>Exchange & market-reference APIs</b> (Frankfurter, Coinbase) — receive only currency pairs and public symbols (e.g., gold, bitcoin), never personal or financial data. We do not sell your data.</p>
         <p>• <b>Stripe</b> — processes Pro plan payments. Your card details go <b>straight to Stripe</b> (encrypted); we <b>never see or store them</b>. On our side we keep only the <b>subscription status</b> (active/canceled) and Stripe identifiers — metadata, not the vault's financial data.</p>
       </section>
 
@@ -103,7 +102,7 @@
 
       <section>
         <h2>How long we keep it</h2>
-        <p>For as long as your account exists. When you <b>delete your account</b>, the encrypted vault and the registration are erased; provider backups expire on their own cycles. The <b>waitlist</b> email is deleted when the plan launches (or on request). <b>Payment/subscription records</b> (at Stripe and the identifiers on our side) may be kept for the applicable legal/tax period, even after cancellation.</p>
+        <p>For as long as your account exists. When you <b>delete your account</b>, the encrypted vault and the registration are erased; provider backups expire on their own cycles. <b>Payment/subscription records</b> (at Stripe and the identifiers on our side) may be kept for the applicable legal/tax period, even after cancellation.</p>
       </section>
 
       <section>

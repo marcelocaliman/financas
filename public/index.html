@@ -532,32 +532,6 @@
     #planos .plan li{font-size:13.5px;color:var(--text);padding-left:22px;position:relative;line-height:1.4}
     #planos .plan li::before{content:"✓";position:absolute;left:0;top:0;color:var(--accent);font-weight:700}
     #planos .plan .btn{margin-top:auto;width:100%;justify-content:center}
-    /* Pro Investidor: SEMPRE visível. Por padrão em modo "Em breve" (lista de espera); quando a
-       flag quotes_live está ON, o landing.js adiciona .inv-live e o card vira "Assinar". */
-    #planos .plan-inv .inv-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    #planos .inv-soon{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 8px}
-    #planos .inv-wait{margin-top:auto;display:flex;flex-direction:column;gap:8px}
-    #planos .inv-wait-lead{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
-    #planos .inv-wait-row{display:flex;gap:8px;flex-wrap:wrap}
-    #planos .inv-wait input{flex:1 1 150px;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13.5px}
-    #planos .inv-wait input:focus{outline:none;border-color:var(--accent)}
-    #planos .inv-wait .btn{width:auto;white-space:nowrap;margin-top:0}
-    #planos .inv-wait-status{font-size:12px;margin:0;min-height:1em}
-    #planos .inv-wait-status.ok{color:var(--accent)}
-    #planos .inv-wait-status.err{color:#f1746a}
-    #planos .inv-wait-consent{font-size:11px;color:var(--faint);margin:0;line-height:1.4}
-    #planos .inv-wait-policy{font-size:11px;color:var(--faint);text-decoration:underline;align-self:flex-start}
-    #planos .plan-inv .inv-live-cta{display:none}
-    #planos .plans.inv-live .plan-inv .inv-soon,
-    #planos .plans.inv-live .plan-inv .inv-wait{display:none}
-    #planos .plans.inv-live .plan-inv .inv-live-cta{display:flex}
-    /* Pro Investidor: acento DOURADO (tier premium) — distinto do verde do Pro, sem clonar a borda. */
-    #planos .plan-inv{border-color:rgba(201,154,78,.5);box-shadow:0 22px 60px -30px rgba(0,0,0,.55)}
-    #planos .plan-inv .eyebrow.accent,#planos .plan-inv .annual,#planos .plan-inv li::before,#planos .plan-inv .inv-wait-status.ok{color:#c99a4e}
-    #planos .plan-inv .inv-soon{color:#c99a4e;border-color:rgba(201,154,78,.6)}
-    #planos .plan-inv .inv-wait input:focus{border-color:#c99a4e}
-    #planos .plan-inv .btn-primary{background:#c99a4e;color:#160f04}
-    #planos .plan-inv .btn-primary:hover{background:#b98a3e}
     @media (max-width:980px){#planos .plans{grid-template-columns:1fr}}
 
     /* ── Mock animado da UI: TOUR do app — 4 telas se montando em sequência (Painel → Orçamento →
@@ -986,10 +960,10 @@
                     <span class="am-aseg" style="flex:10;background:var(--card-2)"></span>
                   </div>
                   <div class="am-holds">
-                    <div class="am-hrow"><span class="am-tk">VWCE</span><span class="am-htrack"><span class="am-hbar" style="--w:90%"></span></span><span class="am-hret pos">+2,1%</span></div>
-                    <div class="am-hrow"><span class="am-tk">AAPL</span><span class="am-htrack"><span class="am-hbar" style="--w:72%"></span></span><span class="am-hret pos">+1,4%</span></div>
-                    <div class="am-hrow"><span class="am-tk">PETR4</span><span class="am-htrack"><span class="am-hbar" style="--w:54%"></span></span><span class="am-hret neg">−0,8%</span></div>
-                    <div class="am-hrow"><span class="am-tk">BTC</span><span class="am-htrack"><span class="am-hbar" style="--w:38%"></span></span><span class="am-hret pos">+3,6%</span></div>
+                    <div class="am-hrow"><span class="am-tk">Renda&nbsp;Fixa</span><span class="am-htrack"><span class="am-hbar" style="--w:90%"></span></span><span class="am-hret pos">+6,7%</span></div>
+                    <div class="am-hrow"><span class="am-tk">Ações</span><span class="am-htrack"><span class="am-hbar" style="--w:72%"></span></span><span class="am-hret neg">−14,3%</span></div>
+                    <div class="am-hrow"><span class="am-tk">FIIs</span><span class="am-htrack"><span class="am-hbar" style="--w:54%"></span></span><span class="am-hret pos">+3,2%</span></div>
+                    <div class="am-hrow"><span class="am-tk">Cripto</span><span class="am-htrack"><span class="am-hbar" style="--w:38%"></span></span><span class="am-hret pos">+28,0%</span></div>
                   </div>
                 </div>
 

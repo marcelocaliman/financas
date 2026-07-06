@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   PÁGINA LEGAL ESTÁTICA — espelha src/components/privacy-policy.tsx (versão da landing, pra quem
-  ainda não tem conta, ex.: lista de espera). MANTENHA EM SINCRONIA: ao mudar a política no app
+  ainda não tem conta). MANTENHA EM SINCRONIA: ao mudar a política no app
   (privacy-policy.tsx), atualize este arquivo também (e a data "Última atualização").
 -->
 <html lang="pt-BR">
@@ -76,15 +76,14 @@
         <p>• <b>E-mail</b> — para criar a conta, autenticar e enviar e-mails essenciais (confirmação, redefinição de senha).</p>
         <p>• <b>Cofre cifrado</b> — o blob com seus dados financeiros, já criptografado no seu aparelho. Para nós é texto ilegível.</p>
         <p>• <b>Metadados técnicos mínimos</b> — tamanho aproximado do cofre, datas/versões de sincronização e logs de segurança do provedor. Sem perfis de comportamento, sem cookies de rastreio, sem anúncios.</p>
-        <p>• <b>Tickers de ativos</b> — se você usa cotação de ações, os códigos dos papéis (ex.: PETR4) passam pelo nosso servidor só para buscar o preço do dia. Não associamos isso às suas quantidades/valores (que seguem cifrados) e não os guardamos.</p>
+        <p>• <b>Cotações de mercado</b> — para converter moedas e mostrar referências como ouro e bitcoin, nosso servidor busca preços públicos usando só pares de moeda e símbolos públicos (ex.: EUR/BRL, XAU, BTC). Nenhum dado seu — nem seus ativos nem seus valores (que seguem cifrados) — é enviado ou guardado.</p>
         <p>• <b>Mensagens de suporte</b> — se você abre um ticket (no app ou pelo formulário de contato), guardamos o seu e-mail e o conteúdo da mensagem em <b>texto legível</b> (não são cifradas como o cofre), porque precisamos lê-las para responder. Por isso, não inclua senha, código de recuperação nem números de conta nessas mensagens.</p>
         <p>• <b>Assinatura Pro</b> (se você assina) — status, plano e datas da assinatura, mais identificadores da Stripe. <b>Nunca os dados do cartão</b> (esses ficam só na Stripe). É metadado, não o dado financeiro do cofre.</p>
-        <p>• <b>Lista de espera</b> — se você deixa seu e-mail no card “Pro Investidor — em breve”, guardamos só esse <b>e-mail</b>, com o seu consentimento, para <b>avisar você quando o plano lançar</b>. Usamos confirmação por e-mail (double opt-in): só entra na lista quem clica no link de confirmação. Nada além disso — você pode pedir a remoção a qualquer momento em contato@nossasfinancas.com.br.</p>
       </section>
 
       <section>
         <h2>Base legal e finalidade</h2>
-        <p>Tratamos seu e-mail e o cofre cifrado para <b>executar o serviço</b> que você contratou ao criar a conta (LGPD art. 7º, V / GDPR art. 6(1)(b)) e, quando você consente (ex.: lista de espera, métricas), com base no seu <b>consentimento</b>. A finalidade é só fazer o app funcionar e sincronizar — nada além disso.</p>
+        <p>Tratamos seu e-mail e o cofre cifrado para <b>executar o serviço</b> que você contratou ao criar a conta (LGPD art. 7º, V / GDPR art. 6(1)(b)) e, quando você consente (ex.: métricas), com base no seu <b>consentimento</b>. A finalidade é só fazer o app funcionar e sincronizar — nada além disso.</p>
       </section>
 
       <section>
@@ -92,9 +91,9 @@
         <p>Usamos prestadores que operam só para entregar o serviço, sob contrato:</p>
         <p>• <b>Supabase</b> — autenticação e armazenamento do cofre cifrado.</p>
         <p>• <b>Vercel</b> — hospedagem do app e a função que busca cotações.</p>
-        <p>• <b>Resend</b> — envio dos nossos e-mails (confirmação, redefinição de senha, lista de espera e notificações de suporte). Recebe só o seu e-mail e o conteúdo da mensagem.</p>
-        <p>• <b>Cloudflare Turnstile</b> — verificação anti-spam nos formulários públicos (contato e lista de espera). Não usamos cookies de rastreio.</p>
-        <p>• <b>APIs de câmbio/cotação</b> (Frankfurter, brapi, Finnhub) — recebem só pares de moeda e tickers, nunca dados pessoais ou financeiros. Não vendemos seus dados.</p>
+        <p>• <b>Resend</b> — envio dos nossos e-mails (confirmação, redefinição de senha e notificações de suporte). Recebe só o seu e-mail e o conteúdo da mensagem.</p>
+        <p>• <b>Cloudflare Turnstile</b> — verificação anti-spam nos formulários públicos (contato). Não usamos cookies de rastreio.</p>
+        <p>• <b>APIs de câmbio e referências de mercado</b> (Frankfurter, Coinbase) — recebem só pares de moeda e símbolos públicos (ex.: ouro, bitcoin), nunca dados pessoais ou financeiros. Não vendemos seus dados.</p>
         <p>• <b>Stripe</b> — processa os pagamentos do plano Pro. Os dados do seu cartão vão <b>direto pra Stripe</b> (criptografados); nós <b>nunca os vemos nem armazenamos</b>. Do nosso lado fica só o <b>status da assinatura</b> e identificadores da Stripe — metadado, não dado financeiro do cofre.</p>
       </section>
 
@@ -105,7 +104,7 @@
 
       <section>
         <h2>Por quanto tempo guardamos</h2>
-        <p>Enquanto a sua conta existir. Ao <b>excluir a conta</b>, o cofre cifrado e o cadastro são apagados; backups dos provedores expiram nos ciclos deles. O e-mail da <b>lista de espera</b> é apagado quando o plano lança (ou a pedido). <b>Registros de pagamento/assinatura</b> podem ser mantidos pelo prazo legal/fiscal aplicável.</p>
+        <p>Enquanto a sua conta existir. Ao <b>excluir a conta</b>, o cofre cifrado e o cadastro são apagados; backups dos provedores expiram nos ciclos deles. <b>Registros de pagamento/assinatura</b> podem ser mantidos pelo prazo legal/fiscal aplicável.</p>
       </section>
 
       <section>
