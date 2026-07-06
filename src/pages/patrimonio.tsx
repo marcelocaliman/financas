@@ -12,7 +12,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { CLASS, isInvestedClass, isQuotableClass, nameById } from "@/domain/taxonomy";
+import { CLASS, isInvestedClass, isDetailedAssetClass, nameById } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -113,7 +113,7 @@ export default function Patrimonio() {
 
   // Colunas sob medida por classe (sem a coluna "Classe" — é o contexto da aba).
   const assetColsFor = (classId: string): GridColumn<Asset>[] => {
-    const quotable = isQuotableClass(classId);
+    const quotable = isDetailedAssetClass(classId);
     const cols: GridColumn<Asset>[] = [];
     // Cotáveis não têm campo de valor (vem de qtd × cotação) → mantêm o seletor de moeda como selo.
     if (quotable) {
@@ -206,7 +206,7 @@ export default function Patrimonio() {
     // Cotáveis: valor = quantidade × (cotação do dia, se houver; senão preço médio = custo).
     // SEM exigir ticker — um cotável sem ticker ainda vale qtd × preço médio (custo),
     // senão ficaria com valor 0 (rentabilidade −100% e patrimônio subestimado).
-    if (isQuotableClass(next.classId) && (next.quantity ?? 0) > 0) {
+    if (isDetailedAssetClass(next.classId) && (next.quantity ?? 0) > 0) {
       const unit = priceOf(next.ticker)?.price ?? next.avgPrice ?? 0;
       if (unit > 0) next.amount = (next.quantity ?? 0) * unit;
     }
@@ -370,7 +370,7 @@ export default function Patrimonio() {
                   isComplete={(r) =>
                     r.name.trim().length > 0 &&
                     r.classId.length > 0 &&
-                    (isQuotableClass(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
+                    (isDetailedAssetClass(r.classId) ? (r.quantity ?? 0) > 0 && (r.avgPrice ?? 0) > 0 : r.amount > 0)
                   }
                   onCommit={commitAsset}
                   onDelete={(id) => void actions.removeAsset(id)}
@@ -379,7 +379,7 @@ export default function Patrimonio() {
                 />
               </div>
             </div>
-            {isQuotableClass(activeId) && canQuote ? (
+            {isDetailedAssetClass(activeId) && canQuote ? (
               <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("patrimonio.tickerHint")}</p>
             ) : null}
           </>
@@ -567,7 +567,7 @@ export function PatrimonioSummary() {
     let totalCost = 0;
     let totalCostValue = 0;
     for (const a of data.assets.filter((x) => isInvestedClass(x.classId))) {
-      const cost = isQuotableClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
+      const cost = isDetailedAssetClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
       if (cost > 0) {
         totalCost += conv(cost, a.currency);
         totalCostValue += conv(a.amount, a.currency);

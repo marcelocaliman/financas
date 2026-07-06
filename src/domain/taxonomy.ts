@@ -196,6 +196,17 @@ export function isQuotableClass(classId: string): boolean {
 }
 
 /**
+ * Modo DETALHADO de ativos (ticker · quantidade · preço médio · cotação) — DESLIGADO no modelo
+ * "totais por classe": a gestão é por VALOR total por ativo/classe, sem cotação automática (que
+ * teria custo e licença). A UI de ativos usa este seletor no lugar de isQuotableClass; com a flag
+ * OFF, todo ativo é editado como valor. Vire `DETAILED_ASSETS` pra `true` pra reativar sem mais nada.
+ */
+export const DETAILED_ASSETS = false;
+export function isDetailedAssetClass(classId: string): boolean {
+  return DETAILED_ASSETS && isQuotableClass(classId);
+}
+
+/**
  * Elegibilidade PADRÃO p/ a métrica Liberdade: por padrão NÃO contam os ativos ilíquidos que
  * não geram renda sacável — Imóveis (físicos) e Bens (veículos etc.). Tudo mais (investido +
  * Caixa) conta. É só o ponto de partida: o usuário liga/desliga cada classe no Config (ex.:
