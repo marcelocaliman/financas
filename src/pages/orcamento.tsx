@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Circle, Copy, Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useRates } from "@/store/rates";
@@ -201,6 +201,9 @@ export default function Orcamento() {
     ];
     if (withDueDay) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
+      // "Pago": check só nas contas com vencimento (dueDay) — reflete/alterna o mesmo `paid` da seção
+      // Vencimentos. Assim dá pra ver na própria tabela de gastos o que já foi pago. Sem dueDay → "—".
+      columns.push({ key: "paid", type: "toggle", header: t("orcamento.paidShort"), width: "58px", icon: Check, isOn: (r) => !!r.paid, hideWhen: (r) => r.dueDay == null });
       // Coluna "Na fatura": marca um lançamento como DENTRO da fatura de um cartão (assim ele não soma
       // de novo — a fatura já entra pelo total). A FATURA é identificada pela CATEGORIA "Cartão de
       // Crédito" (sem marcador "é a fatura"). A coluna só aparece quando há ≥1 cartão no mês: 1 cartão

@@ -199,6 +199,7 @@
     "vsPrev": "vs. last month",
     "recurring": "Recurring",
     "recurringShort": "Fixed",
+    "paidShort": "Paid",
     "recurringHint": "Mark fixed entries (rent, salary, subscriptions) with ↻ — they flow into the next months on their own.",
     "dueDay": "Day",
     "dueColumn": "Due date",

@@ -199,6 +199,7 @@
     "vsPrev": "vs. mês anterior",
     "recurring": "Recorrente",
     "recurringShort": "Fixo",
+    "paidShort": "Pago",
     "recurringHint": "Marque com ↻ os lançamentos fixos (aluguel, salário, assinaturas) — eles entram sozinhos nos próximos meses.",
     "dueDay": "Dia",
     "dueColumn": "Vencimento",

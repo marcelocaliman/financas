@@ -55,6 +55,8 @@ export interface GridColumn<T> {
   icon?: LucideIcon;
   /** toggle: estado LIGADO derivado (default = o campo booleano da coluna). */
   isOn?: (row: T) => boolean;
+  /** toggle: "não se aplica" a esta linha (mostra "—", sem botão) — ex.: "Pago" só p/ contas com vencimento. */
+  hideWhen?: (row: T) => boolean;
   /** Esta é a coluna recuada quando a linha é aninhada (ver indentRow). */
   indentable?: boolean;
 }
@@ -1089,6 +1091,7 @@ export function DataGrid<T extends { id: string }>({
       case "computed":
         return <div className="px-2 tabular text-muted">{hidden ? MASK : col.compute?.(row)}</div>;
       case "toggle": {
+        if (col.hideWhen?.(row)) return <div className="px-2 py-1.5 text-center text-[13px] text-faint">—</div>;
         const on = col.isOn ? col.isOn(row) : Boolean(get(row, col.key));
         const Icon = col.icon ?? Repeat;
         return (
