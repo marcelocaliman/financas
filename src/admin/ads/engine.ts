@@ -280,6 +280,7 @@ export interface PieceVisual {
   sub?: string;
   mock?: "currencies" | "masked" | "donut" | "freedom"; // mockup do app
   shot?: string; // SCREENSHOT real do app (/img/ads/shot-*.png) — emoldurado; substitui o mock
+  shotTop?: boolean; // print NO TOPO + texto embaixo (casa com slides de foto; p/ carrosséis passo a passo)
   chips?: string[]; // pílulas
   compare?: { head: [string, string]; rows: { label: string; a: string; b: string }[] }; // tabela BR×IT
   stat?: { value: string; label: string }; // número-herói (arranjo "estatística", combina com style claro)
@@ -583,8 +584,8 @@ export const EDU_CAROUSELS: Carousel[] = [
       { style: "vivid", photo: "/img/ads/rent.jpg", eyebrow: "PASSO 2", title: ["Liste os", "gastos fixos"], sub: "Moradia, contas, transporte, escola. O que se repete todo mês." },
       { style: "vivid", photo: "/img/ads/market.jpg", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
       { style: "vivid", photo: "/img/ads/counting.jpg", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
-      { style: "dark", shot: SHOT_SRC.orcamento, eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
-      { style: "vivid", photo: "/img/ads/laptop.jpg", eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda." },
+      { style: "dark", shot: SHOT_SRC.orcamento, shotTop: true, eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, compare o real com o planejado. Vai afinando." },
+      { style: "dark", shot: SHOT_SRC.painel, shotTop: true, eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda — grátis, no navegador." },
     ],
   },
 ];
@@ -1695,8 +1696,26 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
 
   const postShot = adImage(post.shot);
   if (post.shot && postShot) {
-    // SCREENSHOT real: eyebrow + título no alto, janela emoldurada embaixo (encolhe se não couber).
-    // A eyebrow começa MAIS ABAIXO da marca (respiro no topo) e os blocos ganham mais ar entre si.
+    const { w: iw, h: ih } = imgWH(postShot);
+    if (post.shotTop) {
+      // IMAGEM NO TOPO + texto embaixo — casa com os slides de foto (imagem em cima, conteúdo
+      // separado embaixo). Usado nos carrosséis "passo a passo".
+      const eyeY = H * 0.6;
+      const imgTop = 140 * s;
+      const imgArea = eyeY - 80 * s - imgTop; // espaço do print no topo
+      let cw = W - 150 * s;
+      if (cw * (ih / iw) > imgArea) cw = (imgArea * iw) / ih;
+      const chh = cw * (ih / iw);
+      drawShotCard(ctx, s, W / 2, imgTop + Math.max(0, (imgArea - chh) / 2), cw, postShot, 1);
+      const px = fitTitlePx(ctx, s, post.title, availW, 66, 92);
+      drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
+      const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 44) * s, post.title, 1, 0, px, pal);
+      if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
+      drawHandle(ctx, s, x, H - 64 * s, pal);
+      return;
+    }
+    // (padrão) eyebrow + título no alto, janela emoldurada embaixo (encolhe se não couber). A eyebrow
+    // começa mais abaixo da marca (respiro no topo) e os blocos ganham mais ar entre si.
     const eyeY = H * 0.155;
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     const px = fitTitlePx(ctx, s, post.title, availW, 62, 86);
@@ -1706,7 +1725,6 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
       tb += 100 * s;
     }
     const topY = tb + 66 * s;
-    const { w: iw, h: ih } = imgWH(postShot);
     let cw = W - 150 * s;
     if (topY + cw * (ih / iw) > H - 120 * s) cw = ((H - 120 * s - topY) * iw) / ih; // cabe acima do rodapé
     drawShotCard(ctx, s, W / 2, topY, cw, postShot, 1);
