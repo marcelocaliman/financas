@@ -503,29 +503,73 @@ function usePostedPieceIds(): Set<string> {
   }, [entries]);
 }
 
-/** Grade que ARQUIVA as peças já postadas (somem por padrão) + botão "ver arquivadas (N)".
- *  Mantém a grade normal pras não-postadas; as arquivadas reaparecem esmaecidas quando abertas. */
-function ArchivableGrid<T>({ items, pieceId, gridClass, render }: {
+/** Ordem de POSTAGEM de cada peça = data planejada mais próxima no calendário (sincronizado com o
+ *  cronograma). Peças sem plano vão pro fim, mantendo a ordem original (fila estável). */
+function usePostingOrder(): (pieceId: string) => number {
+  const entries = useAdsCalendar((s) => s.entries);
+  return useMemo(() => {
+    const first: Record<string, number> = {};
+    for (const e of entries) {
+      if (e.status !== "planned") continue;
+      const t = new Date(e.date).getTime();
+      if (first[e.pieceId] === undefined || t < first[e.pieceId]) first[e.pieceId] = t;
+    }
+    return (pid: string) => first[pid] ?? Infinity;
+  }, [entries]);
+}
+
+/** SLIDER (uma linha só, rolagem horizontal) das peças, EM ORDEM DE POSTAGEM (sincronizado com o
+ *  cronograma). Arquiva as já postadas (somem; "ver arquivadas (N)" reabre esmaecidas). Cada card
+ *  ativo mostra o número da sua posição na fila. */
+function PieceRail<T>({ items, pieceId, cardW, render }: {
   items: T[];
   pieceId: (item: T) => string;
-  gridClass: string;
+  cardW: string; // largura do card no trilho (ex.: "w-[300px]")
   render: (item: T) => React.ReactNode;
 }) {
   const posted = usePostedPieceIds();
+  const orderKey = usePostingOrder();
   const [showArchived, setShowArchived] = useState(false);
-  const active = items.filter((it) => !posted.has(pieceId(it)));
-  const archived = items.filter((it) => posted.has(pieceId(it)));
+  const sorted = useMemo(
+    () =>
+      items
+        .map((it, i) => ({ it, i }))
+        .sort((a, b) => orderKey(pieceId(a.it)) - orderKey(pieceId(b.it)) || a.i - b.i)
+        .map((x) => x.it),
+    [items, orderKey], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const active = sorted.filter((it) => !posted.has(pieceId(it)));
+  const archived = sorted.filter((it) => posted.has(pieceId(it)));
+
+  const rail = (list: T[], dim: boolean, numbered: boolean) => (
+    <div className="flex snap-x gap-4 overflow-x-auto scrollbar-subtle pb-2">
+      {list.map((it, idx) => (
+        <div key={pieceId(it)} className={cn("relative shrink-0 snap-start", cardW, dim && "opacity-60")}>
+          {numbered ? (
+            <span
+              className="absolute left-2 top-2 z-20 grid h-6 w-6 place-items-center rounded-full bg-accent text-[11px] font-bold text-[#08130C] shadow"
+              title="posição na fila de postagem"
+            >
+              {idx + 1}
+            </span>
+          ) : null}
+          {render(it)}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <>
       {active.length ? (
-        <div className={gridClass}>{active.map(render)}</div>
+        rail(active, false, true)
       ) : (
         <div className="rounded-[12px] border border-dashed border-border-strong bg-card2/40 px-4 py-5 text-center text-[12.5px] text-muted">
           Tudo desta seção já foi postado 🎉{archived.length ? " Veja as arquivadas abaixo." : ""}
         </div>
       )}
       {archived.length ? (
-        <div className="mt-4">
+        <div className="mt-3">
           <button
             type="button"
             onClick={() => setShowArchived((v) => !v)}
@@ -533,7 +577,7 @@ function ArchivableGrid<T>({ items, pieceId, gridClass, render }: {
           >
             <Archive size={14} /> {showArchived ? "Ocultar" : "Ver"} arquivadas ({archived.length})
           </button>
-          {showArchived ? <div className={cn(gridClass, "mt-3 opacity-60")}>{archived.map(render)}</div> : null}
+          {showArchived ? rail(archived, true, false) : null}
         </div>
       ) : null}
     </>
@@ -568,10 +612,10 @@ export function AdsSection() {
               Este navegador não suporta gravar o canvas em vídeo. Use Chrome recente ou Safari.
             </div>
           ) : null}
-          <ArchivableGrid
+          <PieceRail
             items={STORIES}
             pieceId={(st) => `story:${st.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            cardW="w-[210px]"
             render={(st) => <StoryCard key={st.id} story={st} />}
           />
         </section>
@@ -581,10 +625,10 @@ export function AdsSection() {
             Conteúdo que ensina (orçamento, reserva, juros compostos…), cada um com foto temática.
             Alternam a autoridade com o institucional.
           </SubHead>
-          <ArchivableGrid
+          <PieceRail
             items={EDU_STORIES}
             pieceId={(st) => `story:${st.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            cardW="w-[210px]"
             render={(st) => <StoryCard key={st.id} story={st} />}
           />
         </section>
@@ -594,10 +638,10 @@ export function AdsSection() {
             Imagens estáticas pro feed (1080×1350), institucionais. Clique em <b className="text-text">PNG</b>{" "}
             e poste direto — o @nossasfinancasapp e o site já vão no rodapé.
           </SubHead>
-          <ArchivableGrid
+          <PieceRail
             items={POSTS}
             pieceId={(p) => `post:${p.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            cardW="w-[300px]"
             render={(p) => <PostCard key={p.id} post={p} />}
           />
         </section>
@@ -607,10 +651,10 @@ export function AdsSection() {
             Dica · passo a passo · mito × verdade · conceito · número. Cada um já vem com uma legenda
             que ensina, pronta pra copiar.
           </SubHead>
-          <ArchivableGrid
+          <PieceRail
             items={EDU_POSTS}
             pieceId={(p) => `post:${p.id}`}
-            gridClass="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            cardW="w-[300px]"
             render={(p) => <PostCard key={p.id} post={p} />}
           />
         </section>
@@ -620,13 +664,11 @@ export function AdsSection() {
             Vários slides numa publicação. Clique em <b className="text-text">PNGs</b> e o navegador salva
             uma imagem por slide, numeradas — no Instagram, crie um post e selecione todas.
           </SubHead>
-          {/* Institucional + educativo na MESMA grade → 2 colunas lado a lado (min-[560px], pra
-              ativar mesmo em janela estreita/dividida). Cada card já mostra o pilar (Apresentação /
-              Educativo), então não precisa do divisor. */}
-          <ArchivableGrid
+          {/* Institucional + educativo no MESMO trilho (cada card mostra o pilar; sem divisor). */}
+          <PieceRail
             items={[...CAROUSELS, ...EDU_CAROUSELS]}
             pieceId={(c) => `carousel:${c.id}`}
-            gridClass="grid gap-4 min-[560px]:grid-cols-2"
+            cardW="w-[330px]"
             render={(c) => <CarouselCard key={c.id} carousel={c} />}
           />
         </section>
