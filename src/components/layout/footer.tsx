@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 /**
  * Rodapé ENXUTO do app: só copyright + selo cifrado. O rodapé editorial (navegação, links legais e
  * comunidade) foi removido da área logada pra não poluir — os links legais vivem em Configurações →
- * Privacidade e na tela de cadastro; a comunidade (Discord) fica na landing.
+ * Privacidade e na tela de cadastro; o Instagram fica na landing.
  */
 export function Footer() {
   const { t } = useTranslation();
