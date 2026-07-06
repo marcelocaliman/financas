@@ -25,6 +25,9 @@ const FOREIGN: Record<Currency, [Currency, Currency]> = {
 /** Escala aproximada vs. uma referência em EUR, pra valores realistas em cada moeda. */
 const SCALE: Record<Currency, number> = { EUR: 1, USD: 1.08, GBP: 0.85, BRL: 5.6 };
 
+/** País (região) default por moeda — só pra o EXEMPLO nascer com bandeiras coerentes. */
+const REGION_OF: Record<Currency, string> = { BRL: "brasil", USD: "eua", EUR: "italia", GBP: "reino-unido" };
+
 /** Converte um valor de referência (EUR) pra a moeda dada e arredonda pra número redondo. */
 function nice(eurRef: number, c: Currency): number {
   const v = eurRef * SCALE[c];
@@ -44,6 +47,9 @@ export function buildSeed(main: Currency): SeedData {
   const m = (eurRef: number) => nice(eurRef, main); // item local (moeda principal)
   const f2 = (eurRef: number) => nice(eurRef, c2); // item na 1ª moeda do exterior
   const f3 = (eurRef: number) => nice(eurRef, c3); // item na 2ª moeda do exterior
+  const rMain = REGION_OF[main]; // país da moeda principal
+  const rC2 = REGION_OF[c2];
+  const rC3 = REGION_OF[c3];
 
   // ── Orçamento: 3 meses (atual + 2 anteriores) com leve variação → visão histórica. ──
   const months = [monthKey(-2), monthKey(-1), monthKey(0)];
@@ -111,29 +117,29 @@ export function buildSeed(main: Currency): SeedData {
     assets: [
       // Modelo POR CATEGORIA: cada linha é uma SUB-CATEGORIA (Tipo = subtype) × MOEDA — sem
       // discriminar item. Nas investidas guarda o aplicado (cost) além do atual → rentabilidade.
-      // ── Renda Fixa ──
-      { id: "a-rf-ipca", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", currency: main, amount: m(7500), cost: m(6800) },
-      { id: "a-rf-selic", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-1", currency: main, amount: m(4500), cost: m(4300) },
-      { id: "a-rf-cdb", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", currency: main, amount: m(3600), cost: m(3400) },
-      { id: "a-rf-deb", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-9", currency: main, amount: m(2700), cost: m(2400) },
-      { id: "a-rf-intl", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-14", currency: c3, amount: f3(3000), cost: f3(2900) },
-      { id: "a-prev", name: "", classId: CLASS.previdencia, subtypeId: "previdencia-1", currency: main, amount: m(9800), cost: m(8200) },
+      // ── Renda Fixa ── (BR detalhado + um título internacional em US$)
+      { id: "a-rf-ipca", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-3", regionId: rMain, currency: main, amount: m(7500), cost: m(6800) },
+      { id: "a-rf-selic", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-1", regionId: rMain, currency: main, amount: m(4500), cost: m(4300) },
+      { id: "a-rf-cdb", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-4", regionId: rMain, currency: main, amount: m(3600), cost: m(3400) },
+      { id: "a-rf-deb", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-9", regionId: rMain, currency: main, amount: m(2700), cost: m(2400) },
+      { id: "a-rf-intl", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-14", regionId: rC3, currency: c3, amount: f3(3000), cost: f3(2900) },
+      { id: "a-prev", name: "", classId: CLASS.previdencia, subtypeId: "previdencia-1", regionId: rMain, currency: main, amount: m(9800), cost: m(8200) },
       // ── Renda Variável ── (ações BR + stock EUA + ETF Europa; FII BR + REIT EUA; cripto; ouro)
-      { id: "a-acao-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-1", currency: main, amount: m(4600), cost: m(3600) },
-      { id: "a-etf-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", currency: main, amount: m(4000), cost: m(3200) },
-      { id: "a-stock-us", name: "", classId: CLASS.acoes, subtypeId: "acoes-2", currency: c3, amount: f3(5000), cost: f3(4000) },
-      { id: "a-etf-eu", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", currency: c2, amount: f2(5000), cost: f2(4000) },
-      { id: "a-fii", name: "", classId: CLASS.fiis, subtypeId: "fiis-1", currency: main, amount: m(5400), cost: m(4800) },
-      { id: "a-reit", name: "", classId: CLASS.fiis, subtypeId: "fiis-4", currency: c3, amount: f3(2500), cost: f3(2200) },
-      { id: "a-btc", name: "", classId: CLASS.cripto, subtypeId: "cripto-1", currency: c3, amount: f3(2800), cost: f3(1600) },
-      { id: "a-ouro", name: "", classId: CLASS.commodities, subtypeId: "commodities-1", currency: main, amount: m(2500), cost: m(2150) },
+      { id: "a-acao-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: rMain, currency: main, amount: m(4600), cost: m(3600) },
+      { id: "a-etf-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: rMain, currency: main, amount: m(4000), cost: m(3200) },
+      { id: "a-stock-us", name: "", classId: CLASS.acoes, subtypeId: "acoes-2", regionId: rC3, currency: c3, amount: f3(5000), cost: f3(4000) },
+      { id: "a-etf-eu", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: rC2, currency: c2, amount: f2(5000), cost: f2(4000) },
+      { id: "a-fii", name: "", classId: CLASS.fiis, subtypeId: "fiis-1", regionId: rMain, currency: main, amount: m(5400), cost: m(4800) },
+      { id: "a-reit", name: "", classId: CLASS.fiis, subtypeId: "fiis-4", regionId: rC3, currency: c3, amount: f3(2500), cost: f3(2200) },
+      { id: "a-btc", name: "", classId: CLASS.cripto, subtypeId: "cripto-1", regionId: "global", currency: c3, amount: f3(2800), cost: f3(1600) },
+      { id: "a-ouro", name: "", classId: CLASS.commodities, subtypeId: "commodities-1", regionId: "global", currency: main, amount: m(2500), cost: m(2150) },
       // ── Caixa & Liquidez ── (reserva + conta principal; conta no exterior em EUR)
-      { id: "a-reserva", name: "", classId: CLASS.caixa, subtypeId: "caixa-5", currency: main, amount: m(10700) },
-      { id: "a-cc", name: "", classId: CLASS.caixa, subtypeId: "caixa-1", currency: main, amount: m(2150) },
-      { id: "a-cx-intl", name: "", classId: CLASS.caixa, subtypeId: "caixa-3", currency: c2, amount: f2(18000) },
+      { id: "a-reserva", name: "", classId: CLASS.caixa, subtypeId: "caixa-5", regionId: rMain, currency: main, amount: m(10700) },
+      { id: "a-cc", name: "", classId: CLASS.caixa, subtypeId: "caixa-1", regionId: rMain, currency: main, amount: m(2150) },
+      { id: "a-cx-intl", name: "", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: rC2, currency: c2, amount: f2(18000) },
       // ── Bens & Imóveis ──
-      { id: "a-imovel", name: "", classId: CLASS.imoveis, subtypeId: "imoveis-1", currency: main, amount: m(37500) },
-      { id: "a-carro", name: "", classId: CLASS.bens, subtypeId: "bens-1", currency: main, amount: m(8000) },
+      { id: "a-imovel", name: "", classId: CLASS.imoveis, subtypeId: "imoveis-1", regionId: rMain, currency: main, amount: m(37500) },
+      { id: "a-carro", name: "", classId: CLASS.bens, subtypeId: "bens-1", regionId: rMain, currency: main, amount: m(8000) },
     ],
     liabilities: [
       { id: "l1", name: "Financiamento do apê", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(17000), interestRate: 9.5, installments: 156 },

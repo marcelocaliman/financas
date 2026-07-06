@@ -9,6 +9,7 @@ import { useRates } from "@/store/rates";
 import { actions } from "@/data/actions";
 import { convert, formatMoney } from "@/money/currency";
 import { formatAmountEdit, parseLocaleNumber } from "@/money/parse";
+import { nameById, REGION_FLAG } from "@/domain/taxonomy";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { useIsMobile } from "@/hooks/use-media";
 import { pushModal, popModal, isTopModal } from "@/lib/modal-stack";
@@ -129,9 +130,12 @@ export function BalanceUpdater() {
               <div key={g.id} className="mb-4">
                 <div className="mb-2 px-1 font-mono text-[10px] uppercase tracking-[0.12em] text-faint">{g.name}</div>
                 <div className="space-y-1.5">
-                  {g.assets.map((a) => (
+                  {g.assets.map((a) => {
+                    const flag = a.regionId ? REGION_FLAG[a.regionId] ?? "" : "";
+                    const label = a.name || nameById(tax.subtypes, a.subtypeId) || a.currency;
+                    return (
                     <div key={a.id} className="flex items-center gap-2.5 rounded-[12px] border border-border bg-card2 px-3 py-2">
-                      <span className="min-w-0 flex-1 truncate text-[13px] text-text">{a.name || a.currency}</span>
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-text">{flag ? `${flag} ` : ""}{label}</span>
                       <CurrencyBadge currency={a.currency} />
                       <input
                         inputMode="decimal"
@@ -144,7 +148,8 @@ export function BalanceUpdater() {
                         className="w-[120px] rounded-[8px] border border-border bg-card px-2.5 py-1.5 text-right text-[13px] tabular text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                       />
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))

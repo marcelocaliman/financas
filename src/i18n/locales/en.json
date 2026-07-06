@@ -152,6 +152,7 @@
     "macroRendaVariavel": "Equities & Variable",
     "macroCaixa": "Cash & Liquidity",
     "macroBens": "Property & Goods",
+    "country": "Country",
     "share": "% of assets",
     "assetCount": "Assets",
     "totalDebt": "Balance due",

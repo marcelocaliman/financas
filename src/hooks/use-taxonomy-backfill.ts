@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
-import { CLASS, DEFAULT_TAXONOMY, EXPENSE_CARD, EXPENSE_OTHER, type Taxonomy } from "@/domain/taxonomy";
+import { CLASS, DEFAULT_TAXONOMY, EXPENSE_CARD, EXPENSE_OTHER, NEW_REGION_IDS, type Taxonomy } from "@/domain/taxonomy";
 
 /**
  * Backfills ÚNICOS por dispositivo: garantem defaults NOVOS nas taxonomias já existentes —
@@ -14,11 +14,13 @@ import { CLASS, DEFAULT_TAXONOMY, EXPENSE_CARD, EXPENSE_OTHER, type Taxonomy } f
 const BENS_FLAG = "tax_backfill_bens_v1";
 const CARD_FLAG = "tax_backfill_cartao_v1";
 const RFINTL_FLAG = "tax_backfill_rf_intl_v1";
+const REGIONS_FLAG = "tax_backfill_regions_v1";
 /** Sub-tipos de renda fixa INTERNACIONAL (novos) — paridade com os detalhados do Brasil. */
 const RF_INTL_IDS = ["renda-fixa-16", "renda-fixa-17"];
 let bensRan = false;
 let cardRan = false;
 let rfIntlRan = false;
+let regionsRan = false;
 
 export function useTaxonomyBackfill(): void {
   const tax = useLiveQuery(() => repository.getTaxonomy());
@@ -28,7 +30,8 @@ export function useTaxonomyBackfill(): void {
     // antes de rodar o próximo — assim o segundo write parte do estado já com o primeiro (sem clobber).
     if (backfillBens(tax)) return;
     if (backfillCard(tax)) return;
-    backfillRfIntl(tax);
+    if (backfillRfIntl(tax)) return;
+    backfillRegions(tax);
   }, [tax]);
 }
 
@@ -87,5 +90,22 @@ function backfillRfIntl(tax: Taxonomy | null): boolean {
   const missing = DEFAULT_TAXONOMY.subtypes.filter((s) => RF_INTL_IDS.includes(s.id) && !have.has(s.id));
   if (missing.length === 0) return false;
   void actions.putTaxonomy({ ...tax, subtypes: [...(tax.subtypes ?? []), ...missing] });
+  return true;
+}
+
+/** Garante os PAÍSES novos (Espanha, Alemanha…) em `regions` — pra distinguir país na Eurozona. */
+function backfillRegions(tax: Taxonomy | null): boolean {
+  if (regionsRan) return false;
+  if (localStorage.getItem(REGIONS_FLAG)) {
+    regionsRan = true;
+    return false;
+  }
+  regionsRan = true;
+  localStorage.setItem(REGIONS_FLAG, "1");
+  if (!tax) return false; // usuário novo: o DEFAULT já inclui
+  const have = new Set((tax.regions ?? []).map((r) => r.id));
+  const missing = DEFAULT_TAXONOMY.regions.filter((r) => NEW_REGION_IDS.includes(r.id) && !have.has(r.id));
+  if (missing.length === 0) return false;
+  void actions.putTaxonomy({ ...tax, regions: [...(tax.regions ?? DEFAULT_TAXONOMY.regions), ...missing] });
   return true;
 }

@@ -114,6 +114,29 @@ export function tipoSubtypesFor(subtypes: SubtypeItem[], classId: string): Subty
   return curated.length ? curated : all;
 }
 
+/**
+ * Bandeira (emoji) por região/PAÍS — identifica de ONDE é o ativo, já que a moeda não basta
+ * (o € é de vários países: Itália, Espanha, Alemanha…). Ausente = sem bandeira.
+ */
+export const REGION_FLAG: Record<string, string> = {
+  brasil: "🇧🇷",
+  eua: "🇺🇸",
+  italia: "🇮🇹",
+  espanha: "🇪🇸",
+  portugal: "🇵🇹",
+  alemanha: "🇩🇪",
+  franca: "🇫🇷",
+  "paises-baixos": "🇳🇱",
+  "reino-unido": "🇬🇧",
+  suica: "🇨🇭",
+  "zona-euro": "🇪🇺",
+  global: "🌐",
+  outro: "🏳️",
+};
+
+/** Novos ids de região (além dos originais) — usados pelo backfill p/ taxonomias já salvas. */
+export const NEW_REGION_IDS = ["espanha", "portugal", "alemanha", "franca", "paises-baixos", "suica"];
+
 /** Ids estáveis dos tipos de passivo default (usados na migração). */
 export const LIABILITY_TYPE = {
   financiamentoImobiliario: "financiamento-imobiliario",
@@ -170,10 +193,16 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
   ],
   regions: [
     { id: "brasil", name: "Brasil" },
-    { id: "italia", name: "Itália" },
-    { id: "zona-euro", name: "Zona do Euro (outros)" },
     { id: "eua", name: "Estados Unidos" },
+    { id: "italia", name: "Itália" },
+    { id: "espanha", name: "Espanha" },
+    { id: "portugal", name: "Portugal" },
+    { id: "alemanha", name: "Alemanha" },
+    { id: "franca", name: "França" },
+    { id: "paises-baixos", name: "Países Baixos" },
     { id: "reino-unido", name: "Reino Unido" },
+    { id: "suica", name: "Suíça" },
+    { id: "zona-euro", name: "Zona do Euro (outros)" },
     { id: "global", name: "Global/Mundo" },
     { id: "outro", name: "Outro" },
   ],
