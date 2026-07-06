@@ -20,7 +20,6 @@ const LABEL: Record<string, string> = {
   analytics: "Analytics",
   access: "Acessos & logs",
   admins: "Administradores",
-  flags: "Flags",
   ads: "Ads",
 };
 

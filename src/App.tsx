@@ -6,7 +6,6 @@ import { useFxHistory } from "@/store/fx-history";
 import { useAdminUI } from "@/store/admin-ui";
 import { useIsAdmin } from "@/admin/use-admin";
 import { useProSync } from "@/hooks/use-pro";
-import { useQuotesSync } from "@/hooks/use-quotes-sync";
 import { usePresenceTracker, markSeen } from "@/lib/presence";
 import { AdminApp } from "@/admin/admin-app";
 import { AuthGate } from "@/components/auth/auth-gate";
@@ -30,7 +29,6 @@ export default function App() {
   const syncFromPath = useAdminUI((s) => s.syncFromPath);
   const { isAdmin, resolving: adminResolving } = useIsAdmin();
   useProSync(); // carrega o estado Pro após o unlock (metadado; gate validado no servidor)
-  useQuotesSync(); // cotação automática dos ativos: boot + foco + DE HORA EM HORA no pregão (todas as telas)
 
   // URL própria do painel (/app/admin): mantém o estado em sincronia com voltar/avançar.
   useEffect(() => {

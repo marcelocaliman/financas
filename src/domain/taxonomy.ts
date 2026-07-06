@@ -297,28 +297,6 @@ export function isInvestedClass(classId: string): boolean {
   return !NON_INVESTED.has(classId);
 }
 
-/**
- * Modelo "cotável" (ticker · qtd · preço médio) REATIVADO (jun/2026) para as classes negociadas
- * por UNIDADE/cota — valor = qtd × (cotação do dia, se houver; senão preço médio). As demais
- * investidas (renda fixa, fundos) seguem no modelo de VALOR (aplicado → atual → rentabilidade),
- * que é melhor pra elas. A COTAÇÃO automática é do super-admin (brapi free) e do Pro Investidor
- * quando a flag 'quotes_live' estiver ON — ver api/quote.js + use-quotes-sync.
- */
-const QUOTABLE_CLASSES = new Set<string>([CLASS.acoes, CLASS.fiis, CLASS.cripto, CLASS.commodities]);
-export function isQuotableClass(classId: string): boolean {
-  return QUOTABLE_CLASSES.has(classId);
-}
-
-/**
- * Modo DETALHADO de ativos (ticker · quantidade · preço médio · cotação) — DESLIGADO no modelo
- * "totais por classe": a gestão é por VALOR total por ativo/classe, sem cotação automática (que
- * teria custo e licença). A UI de ativos usa este seletor no lugar de isQuotableClass; com a flag
- * OFF, todo ativo é editado como valor. Vire `DETAILED_ASSETS` pra `true` pra reativar sem mais nada.
- */
-export const DETAILED_ASSETS = false;
-export function isDetailedAssetClass(classId: string): boolean {
-  return DETAILED_ASSETS && isQuotableClass(classId);
-}
 
 /**
  * Elegibilidade PADRÃO p/ a métrica Liberdade: por padrão NÃO contam os ativos ilíquidos que

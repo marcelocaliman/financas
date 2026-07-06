@@ -1,6 +1,6 @@
 /**
  * Billing — cria/gerencia a assinatura Pro (Stripe), checkout EMBUTIDO (Payment Element).
- * Autentica pelo JWT do usuário (= /api/quote, /api/ticket). Escreve em pro_subscriptions
+ * Autentica pelo JWT do usuário (= /api/ticket). Escreve em pro_subscriptions
  * via service_role. O estado de verdade é firmado pelo webhook (/api/stripe-webhook);
  * aqui só persistimos os ids do Stripe e devolvemos o clientSecret pro front confirmar.
  * NENHUM dado financeiro do cofre passa por aqui — só metadados de assinatura.
@@ -13,11 +13,8 @@ const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const PRICES = {
   monthly: process.env.STRIPE_PRICE_MONTHLY,
   annual: process.env.STRIPE_PRICE_ANNUAL,
-  // Tier "Pro Investidor" (cotação ao vivo) — estrutura pronta, DESLIGADA até a UI oferecer.
-  investor_monthly: process.env.STRIPE_PRICE_INVESTOR_MONTHLY,
-  investor_annual: process.env.STRIPE_PRICE_INVESTOR_ANNUAL,
 };
-const ALLOWED_PLANS = ["monthly", "annual", "investor_monthly", "investor_annual"];
+const ALLOWED_PLANS = ["monthly", "annual"];
 // Pina uma versão de API estável: o fluxo embutido usa latest_invoice.payment_intent
 // e subscription.current_period_end (versões 2025+ moveram esses campos → quebrava o checkout).
 const stripe = STRIPE_SECRET ? new Stripe(STRIPE_SECRET, { apiVersion: "2024-06-20" }) : null;

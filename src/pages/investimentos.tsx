@@ -10,7 +10,7 @@ import { useDividends } from "@/hooks/use-dividends";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, isDetailedAssetClass, nameById } from "@/domain/taxonomy";
+import { isInvestedClass, nameById } from "@/domain/taxonomy";
 import type { Dividend } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -56,7 +56,7 @@ export default function Investimentos() {
     const positions = invested
       .map((a) => {
         const value = conv(a.amount, a.currency);
-        const cost = isDetailedAssetClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0); // moeda do ativo
+        const cost = a.cost ?? 0; // moeda do ativo
         const hasCost = cost > 0;
         if (hasCost) {
           totalCost += conv(cost, a.currency);
@@ -321,7 +321,7 @@ export function InvestimentosSummary() {
     let totalCostValue = 0;
     for (const a of invested) {
       // Mesmo custo unificado da página: cotável = qtd×preço médio; demais = valor aplicado.
-      const cost = isDetailedAssetClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
+      const cost = a.cost ?? 0;
       if (cost > 0) {
         totalCost += conv(cost, a.currency);
         totalCostValue += conv(a.amount, a.currency);

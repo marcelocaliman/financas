@@ -9,7 +9,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors } from "@/money/composition";
-import { isInvestedClass, isDetailedAssetClass, nameById, tipoSubtypesFor, REGION_FLAG, REGION_CURRENCY, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
+import { isInvestedClass, nameById, tipoSubtypesFor, REGION_FLAG, REGION_CURRENCY, MACRO, ASSET_MACROS, macroOf, type AssetMacro } from "@/domain/taxonomy";
 import { debtPlan, amortizationBalances } from "@/finance/debt";
 import type { Asset, Liability } from "@/domain/types";
 import { Money } from "@/components/common/money";
@@ -503,7 +503,7 @@ export function PatrimonioSummary() {
     let totalCost = 0;
     let totalCostValue = 0;
     for (const a of data.assets.filter((x) => isInvestedClass(x.classId))) {
-      const cost = isDetailedAssetClass(a.classId) ? (a.quantity ?? 0) * (a.avgPrice ?? 0) : (a.cost ?? 0);
+      const cost = a.cost ?? 0;
       if (cost > 0) {
         totalCost += conv(cost, a.currency);
         totalCostValue += conv(a.amount, a.currency);

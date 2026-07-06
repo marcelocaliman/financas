@@ -4,7 +4,7 @@ import { CURRENCIES, DEFAULT_RATES, type Currency, type RateTable } from "./curr
  * Cotação de câmbio — Frankfurter (frankfurter.dev): gratuita, SEM token, taxas de
  * referência do BCE atualizadas em dias úteis. Módulo PURO/testável: monta a RateTable
  * (cada moeda expressa em BRL; BRL = 1) a partir da resposta. Sem dado do usuário sai
- * daqui — só pares de moeda públicos. brapi (com token) fica pra cotação de ATIVOS depois.
+ * daqui — só pares de moeda públicos (câmbio). Sem cotação de ativos (modelo por totais).
  */
 
 // frankfurter.app foi descontinuado e agora só faz 301 → frankfurter.dev/v1; o redirect

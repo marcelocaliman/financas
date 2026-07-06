@@ -21,11 +21,11 @@ export interface Asset {
   indexerId?: string;
   /** Instituição / corretora (opcional, texto livre). */
   institution?: string;
-  /** Ticker p/ cotação automática via brapi (ex.: PETR4, HGLG11) — opcional. */
+  /** Ticker (legado do modelo detalhado, ex.: PETR4) — mantido só p/ export/compat; sem cotação. */
   ticker?: string;
-  /** Quantidade. Com ticker, o valor passa a ser quantidade × cotação do dia. */
+  /** Quantidade (legado) — usada só pra derivar o custo aplicado de ativos antigos. */
   quantity?: number;
-  /** Preço médio de compra (p/ ações/cotáveis) — base do custo e da rentabilidade. */
+  /** Preço médio de compra (legado) — base do custo aplicado derivado de ativos antigos. */
   avgPrice?: number;
   /** Valor aplicado/investido (custo), na moeda do ativo — p/ classes SEM ticker
    *  (renda fixa, outros). A rentabilidade = (valor atual − aplicado) / aplicado. */
