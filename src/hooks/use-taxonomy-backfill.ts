@@ -13,8 +13,12 @@ import { CLASS, DEFAULT_TAXONOMY, EXPENSE_CARD, EXPENSE_OTHER, type Taxonomy } f
  */
 const BENS_FLAG = "tax_backfill_bens_v1";
 const CARD_FLAG = "tax_backfill_cartao_v1";
+const RFINTL_FLAG = "tax_backfill_rf_intl_v1";
+/** Sub-tipos de renda fixa INTERNACIONAL (novos) — paridade com os detalhados do Brasil. */
+const RF_INTL_IDS = ["renda-fixa-16", "renda-fixa-17"];
 let bensRan = false;
 let cardRan = false;
+let rfIntlRan = false;
 
 export function useTaxonomyBackfill(): void {
   const tax = useLiveQuery(() => repository.getTaxonomy());
@@ -23,7 +27,8 @@ export function useTaxonomyBackfill(): void {
     // No máximo UM write por passe: se um backfill escreveu, espera o `tax` atualizar (useLiveQuery)
     // antes de rodar o próximo — assim o segundo write parte do estado já com o primeiro (sem clobber).
     if (backfillBens(tax)) return;
-    backfillCard(tax);
+    if (backfillCard(tax)) return;
+    backfillRfIntl(tax);
   }, [tax]);
 }
 
@@ -65,5 +70,22 @@ function backfillCard(tax: Taxonomy | null): boolean {
   const otherIdx = cats.findIndex((c) => c.id === EXPENSE_OTHER);
   cats.splice(otherIdx >= 0 ? otherIdx : cats.length, 0, card); // antes de "Outros" (ou no fim)
   void actions.putTaxonomy({ ...tax, expenseCategories: cats });
+  return true;
+}
+
+/** Garante os sub-tipos de renda fixa INTERNACIONAL (novos) em `subtypes`. True se escreveu. */
+function backfillRfIntl(tax: Taxonomy | null): boolean {
+  if (rfIntlRan) return false;
+  if (localStorage.getItem(RFINTL_FLAG)) {
+    rfIntlRan = true;
+    return false;
+  }
+  rfIntlRan = true;
+  localStorage.setItem(RFINTL_FLAG, "1");
+  if (!tax) return false; // usuário novo: o DEFAULT já inclui
+  const have = new Set((tax.subtypes ?? []).map((s) => s.id));
+  const missing = DEFAULT_TAXONOMY.subtypes.filter((s) => RF_INTL_IDS.includes(s.id) && !have.has(s.id));
+  if (missing.length === 0) return false;
+  void actions.putTaxonomy({ ...tax, subtypes: [...(tax.subtypes ?? []), ...missing] });
   return true;
 }

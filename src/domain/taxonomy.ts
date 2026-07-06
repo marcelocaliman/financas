@@ -88,7 +88,7 @@ export function macroOf(classId: string): string {
  * seletor pra não virar um paredão de 30+ opções). Ids do default (estáveis).
  */
 export const CURATED_SUBTYPES: Record<string, string[]> = {
-  [CLASS.rendaFixa]: ["renda-fixa-1", "renda-fixa-3", "renda-fixa-4", "renda-fixa-9", "renda-fixa-12", "renda-fixa-14"],
+  [CLASS.rendaFixa]: ["renda-fixa-1", "renda-fixa-3", "renda-fixa-4", "renda-fixa-9", "renda-fixa-12", "renda-fixa-14", "renda-fixa-16", "renda-fixa-17"],
   [CLASS.previdencia]: ["previdencia-1", "previdencia-2", "previdencia-4"],
   [CLASS.acoes]: ["acoes-1", "acoes-2", "acoes-4"],
   [CLASS.fiis]: ["fiis-1", "fiis-2", "fiis-4"],
@@ -153,6 +153,8 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
       "Tesouro Selic (LFT)", "Tesouro Prefixado (LTN)", "Tesouro IPCA+ (NTN-B)", "CDB",
       "LCI", "LCA", "CRI", "CRA", "Debênture", "Debênture incentivada",
       "Letra de Câmbio (LC)", "Fundo de Renda Fixa", "Fundo DI", "Bond/Título internacional", "Outro",
+      // Internacionais — anexados no FIM (não deslocam os ids acima). A moeda define o país.
+      "Bond corporativo internacional", "Renda fixa internacional (fundo/ETF)",
     ]),
     ...subs(CLASS.acoes, ["Ação (BR)", "Stock (internacional)", "BDR", "ETF de ações", "Fundo de ações", "Outro"]),
     ...subs(CLASS.fiis, ["FII de tijolo", "FII de papel", "FII de fundos (FOF)", "REIT internacional", "FI-Infra", "Outro"]),
