@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Archive, CalendarCheck, Check, Circle, Copy, Download, Film, GalleryHorizontalEnd, GraduationCap, Image as ImageIcon, Loader2 } from "lucide-react";
-import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, storyShotSrcs, setAdImage, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
-import { exportStory, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
+import { STORIES, EDU_STORIES, POSTS, EDU_POSTS, CAROUSELS, EDU_CAROUSELS, HIGHLIGHTS, REEL_COPY, drawStory, drawPost, drawCarouselSlide, drawHighlightCover, storyDuration, PHOTO_SRC, storyShotSrcs, setAdImage, type Story, type Post, type Carousel, type Slide, type HighlightCover } from "@/admin/ads/engine";
+import { exportStory, exportReelCoverPNG, exportPostPNG, exportCarouselPNGs, exportHighlightPNG, downloadBlob, canExport, loadPhoto, getPhoto } from "@/admin/ads/export";
 import { AdsCalendar } from "@/admin/ads/calendar";
 import { useAdsCalendar } from "@/admin/ads/calendar-store";
 import { CardSubNav } from "@/components/common/card-sub-nav";
@@ -107,8 +107,10 @@ function StoryPreview({ story }: { story: Story }) {
 
 function StoryCard({ story }: { story: Story }) {
   const [busy, setBusy] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const supported = canExport();
+  const copy = REEL_COPY[story.id];
 
   const run = async () => {
     setBusy(true);
@@ -125,6 +127,18 @@ function StoryCard({ story }: { story: Story }) {
       setBusy(false);
     }
   };
+  const runCover = async () => {
+    setCoverBusy(true);
+    setNote(null);
+    try {
+      const blob = await exportReelCoverPNG(story);
+      downloadBlob(blob, `nossas-financas-capa-${story.id}.png`);
+    } catch {
+      setNote("Falha ao gerar a capa. Tente de novo.");
+    } finally {
+      setCoverBusy(false);
+    }
+  };
 
   return (
     <div className="rounded-[16px] border border-border bg-card p-3.5">
@@ -135,26 +149,43 @@ function StoryCard({ story }: { story: Story }) {
       <div className="mt-3 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-[13.5px] font-medium">{story.name}</div>
-          <div className="text-[11.5px] text-faint tabular">
-            {story.scenes.length} páginas · 9:16 · {storyDuration(story)}s
-          </div>
+          <div className="text-[11.5px] text-faint tabular">Reel · 9:16 · {storyDuration(story)}s</div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          <MarkTodayButton pieceId={`story:${story.id}`} />
-          <button
-            type="button"
-            disabled={busy || !supported}
-            onClick={run}
-            className={cn(
-              "inline-flex items-center gap-1.5 h-9 px-3 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-              busy || !supported ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
-            )}
-          >
-            {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {busy ? "Gravando…" : "MP4"}
-          </button>
-        </div>
+        <MarkTodayButton pieceId={`story:${story.id}`} />
+      </div>
+      {/* Baixar: CAPA (PNG, pra usar de capa do Reel — o vídeo começa com o texto entrando) + VÍDEO. */}
+      <div className="mt-2.5 grid grid-cols-2 gap-1.5">
+        <button
+          type="button"
+          disabled={coverBusy}
+          onClick={runCover}
+          title="Capa PNG (1ª cena com texto) — suba como capa do Reel no Instagram"
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 h-9 rounded-[9px] text-[12.5px] font-medium border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            coverBusy ? "border-border bg-card2 text-faint cursor-not-allowed" : "border-border bg-card text-text hover:bg-card-hover",
+          )}
+        >
+          {coverBusy ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />} {coverBusy ? "Gerando…" : "Capa"}
+        </button>
+        <button
+          type="button"
+          disabled={busy || !supported}
+          onClick={run}
+          className={cn(
+            "inline-flex items-center justify-center gap-1.5 h-9 rounded-[9px] text-[12.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            busy || !supported ? "bg-card2 text-faint cursor-not-allowed" : "bg-accent text-[#08130C] hover:opacity-90",
+          )}
+        >
+          {busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} {busy ? "Gravando…" : "Vídeo"}
+        </button>
       </div>
       {note ? <div className="mt-2 text-[11.5px] text-neg leading-snug">{note}</div> : null}
+      {copy ? (
+        <div className="mt-3 space-y-2">
+          <CopyBlock label="Legenda" text={copy.caption} />
+          <CopyBlock label="1º comentário" text={copy.comment} />
+        </div>
+      ) : null}
     </div>
   );
 }

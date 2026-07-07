@@ -3,7 +3,7 @@ import {
   Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
   Clapperboard, Clock, Film, GalleryHorizontalEnd, Image as ImageIcon, Plus, Rocket, Sparkles, Trash2,
 } from "lucide-react";
-import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
+import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS, REEL_COPY } from "@/admin/ads/engine";
 import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
 import { generateSchedule, boostPlan, INTENSITY_LABEL, storyForDate, storyHighlight, type Intensity } from "@/admin/ads/planner";
 import { cn } from "@/lib/utils";
@@ -34,12 +34,13 @@ const KIND_META: Record<Kind, { icon: typeof Film; label: string }> = {
   carousel: { icon: GalleryHorizontalEnd, label: "Carrossel" },
 };
 
-// Legenda + 1º comentário prontos por peça (posts e carrosséis têm; Reels/vídeos não — legenda curta na hora).
+// Legenda + 1º comentário prontos por peça — posts, carrosséis E reels (REEL_COPY dos vídeos 9:16).
 const CAPTION: Record<string, { caption?: string; comment?: string }> = Object.fromEntries([
   ...POSTS.map((p) => [`post:${p.id}`, { caption: p.caption, comment: p.comment }] as const),
   ...EDU_POSTS.map((p) => [`post:${p.id}`, { caption: p.caption, comment: p.comment }] as const),
   ...CAROUSELS.map((c) => [`carousel:${c.id}`, { caption: c.caption, comment: c.comment }] as const),
   ...EDU_CAROUSELS.map((c) => [`carousel:${c.id}`, { caption: c.caption, comment: c.comment }] as const),
+  ...Object.entries(REEL_COPY).map(([id, c]) => [`story:${id}`, c] as const),
 ]);
 
 /** Passos EXPLÍCITOS do dia pra uma peça — DERIVADOS do formato (funcionam até em planos já salvos). */
@@ -208,7 +209,7 @@ function TodayCard({ entry, todayK, tone, onMark, onRemove }: { entry: CalEntry;
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             {cap?.caption ? <button type="button" onClick={() => copy("cap", cap.caption)} className={COPY_BTN}><Check size={12} className={cn(copied === "cap" ? "text-accent" : "opacity-0")} />{copied === "cap" ? "Legenda copiada" : "Copiar legenda"}</button> : null}
             {cap?.comment ? <button type="button" onClick={() => copy("com", cap.comment)} className={COPY_BTN}><Check size={12} className={cn(copied === "com" ? "text-accent" : "opacity-0")} />{copied === "com" ? "Comentário copiado" : "Copiar 1º comentário"}</button> : null}
-            {isReel ? <span className="text-[11px] text-faint">Legenda do Reel: escreva 1 frase curta + “app grátis na bio” — o vídeo já explica o resto.</span> : null}
+            {isReel && !cap?.caption ? <span className="text-[11px] text-faint">Legenda do Reel: 1 frase curta + “app grátis na bio”.</span> : null}
           </div>
         </div>
       </div>

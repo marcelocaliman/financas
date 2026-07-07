@@ -309,6 +309,65 @@ export const EDU_STORIES: Story[] = [
   },
 ];
 
+// ── LEGENDAS DOS REELS ───────────────────────────────────────────────────────
+// Os vídeos 9:16 (STORIES/EDU_STORIES) viram Reels no feed → precisam de legenda + 1º comentário.
+// Curtas (o vídeo carrega o conteúdo) + CTA de cadastro. Só features REAIS (o app é tracker/planner,
+// não corretora — nada de "auto-investir"). Keyed pelo id do story.
+export const REEL_COPY: Record<string, { caption: string; comment: string }> = {
+  patrimonio: {
+    caption: "Real na conta daqui, euro guardado lá fora, uns dólares investidos — e no fim você não sabe QUANTO tem. 🤯\n\nNo Nossas Finanças você junta tudo num número só, na cotação de hoje. Multimoeda de verdade, grátis.\n\n📲 Comece grátis — link na bio.",
+    comment: "Você guarda dinheiro em mais de uma moeda? Conta aí 👇\n\nApp grátis 👉 nossasfinancas.com.br",
+  },
+  privacidade: {
+    caption: "A maioria dos apps de finanças LÊ cada número seu — e lucra com isso. 🫥\n\nO Nossas Finanças não: tudo cifrado no seu aparelho, nem eu no servidor vejo. Privacidade de verdade.\n\n📲 Comece grátis — link na bio.",
+    comment: "Você já tinha pensado que a maioria dos apps lê tudo o que você tem? 👀\n\nApp grátis 👉 nossasfinancas.com.br",
+  },
+  orcamento: {
+    caption: "Todo fim de mês a mesma pergunta: cadê o dinheiro? 😅\n\nNo Nossas Finanças você vê pra onde foi cada real, por categoria — e sobra mais no fim do mês.\n\n📲 Comece grátis — link na bio.",
+    comment: "No fim do mês você sabe pra onde foi o seu dinheiro? Responde sincero 👇\n\nApp grátis na bio.",
+  },
+  simples: {
+    caption: "Finanças não precisam ser complicadas. 🙌\n\nAbra o Nossas Finanças e comece em minutos — sem instalar, sem cadastrar cartão, no navegador.\n\n📲 Grátis — link na bio.",
+    comment: "O que mais te trava pra organizar o dinheiro hoje? 👇\n\nApp grátis na bio.",
+  },
+  fronteiras: {
+    caption: "Seu dinheiro não devia ficar preso a um país. 🌍\n\nNo Nossas Finanças cada item guarda a própria moeda; você vê o total em qualquer uma. Feito pra quem vive entre países.\n\n📲 Comece grátis — link na bio.",
+    comment: "Você vive (ou pensa em viver) entre países? Conta de onde pra onde 👇\n\nApp grátis na bio.",
+  },
+  futuro: {
+    caption: "Que dia você para de depender do salário? 📈\n\nNo Nossas Finanças você projeta a data — com aportes e inflação real, ano a ano, no seu ritmo.\n\n📲 Descubra grátis — link na bio.",
+    comment: "Chuta aí: quantos anos faltam pra sua liberdade financeira? 👇\n\nDescubra no app, grátis.",
+  },
+  "app-tour": {
+    caption: "Suas finanças, num app só. 👀\n\nMultimoeda, privado e simples: patrimônio, orçamento, metas e projeção numa tela.\n\n📲 Comece grátis — link na bio.",
+    comment: "Qual parte da sua vida financeira é a mais bagunçada hoje? 👇\n\nApp grátis na bio.",
+  },
+  "edu-orcamento": {
+    caption: "A regra mais simples pra organizar a renda: 50 · 30 · 20. 💸\n\n50% essenciais, 30% desejos, 20% pro futuro. No Nossas Finanças você monta o seu — grátis, sem planilha.\n\n📲 Link na bio.",
+    comment: "Você já usa alguma regra pra dividir a renda? 👇\n\nMonte o seu no app (grátis).",
+  },
+  "edu-reserva": {
+    caption: "Reserva de emergência: 3 a 6 meses de gasto guardado. 🛟\n\nÉ o que te segura num imprevisto sem cair no cartão. No Nossas Finanças você cria a meta e acompanha o progresso.\n\n📲 Comece grátis — link na bio.",
+    comment: "Quantos meses de gasto você já tem guardado? 👇\n\nApp grátis na bio.",
+  },
+  "edu-juros": {
+    caption: "R$ 200/mês por 30 anos ≈ R$ 280 mil. Você deposita R$ 72 mil; o resto é juros. 📈\n\nÉ o poder do tempo. No Nossas Finanças você projeta o SEU número, com inflação real.\n\n📲 Grátis — link na bio.",
+    comment: "Começar cedo ou investir mais — o que pesa mais? 👇\n\nProjete o seu no app (grátis).",
+  },
+  "edu-diversificar": {
+    caption: "Não ponha tudo num lugar só. 🥚\n\nDiversificar é espalhar o risco: se um cai, os outros seguram. No Nossas Finanças você vê sua alocação e rebalanceia.\n\n📲 Grátis — link na bio.",
+    comment: "Você diversifica ou está tudo num lugar só? 👇\n\nVeja sua alocação no app (grátis).",
+  },
+  "edu-cambio": {
+    caption: "Se você tem moeda lá fora, o câmbio mexe no seu patrimônio — mesmo com o dinheiro parado. 🌍\n\nNo Nossas Finanças você vê tudo convertido, na moeda que quiser, na cotação de hoje.\n\n📲 Comece grátis — link na bio.",
+    comment: "Você acompanha o câmbio quando tem dinheiro em outra moeda? 👇\n\nApp grátis na bio.",
+  },
+  "edu-dividas": {
+    caption: "Antes de investir: ataque a dívida mais cara primeiro. 🔴\n\nCartão e cheque especial rendem CONTRA você (passam de 300%/ano). No Nossas Finanças você organiza e vê o total cair.\n\n📲 Grátis — link na bio.",
+    comment: "Qual dívida te incomoda mais hoje? 👇\n\nOrganize no app (grátis).",
+  },
+};
+
 // ── POSTS ESTÁTICOS (feed 4:5, 1080×1350, exportados em PNG) ─────────────────
 // Mesma estética/engine dos stories, mas UM quadro parado por peça (sem animação/tempo). 6 peças
 // cobrindo os 4 pilares: multimoeda/cross-border, privacidade, organização/FIRE, build-in-public.
@@ -1579,6 +1638,12 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   sceneContent(ctx, s, W, H, sc, lt, a, pal, style, story.teach);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
   if (showProgress) drawProgress(ctx, s, W, n, t, pal, dur, hold);
+}
+
+/** CAPA (thumbnail) do Reel: a 1ª cena renderizada ESTÁTICA (texto JÁ visível, sem o fade do vídeo) —
+ *  resolve o frame inicial "pelado". 9:16, mesma estética do vídeo; baixável como PNG pra usar de capa. */
+export function drawReelCover(ctx: CanvasRenderingContext2D, story: Story, W: number, H: number, photo: CanvasImageSource | null = null) {
+  drawStory(ctx, story, (story.sceneDur ?? SCENE_DUR) * 0.5, W, H, false, photo);
 }
 
 // ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────
