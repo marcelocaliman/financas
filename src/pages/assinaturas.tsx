@@ -5,7 +5,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { actions } from "@/data/actions";
-import { convert, formatMoney } from "@/money/currency";
+import { convert, formatMoney, type Currency } from "@/money/currency";
 import type { Subscription } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -56,10 +56,13 @@ export default function Assinaturas() {
     // Valor cobrado no ciclo (mensal ou anual). Pequeno → sempre 2 casas (padrão do app é 0).
     { key: "amount", type: "money", header: t("assinaturas.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
     // Equivalente mensal (só-leitura): anual ÷ 12 — deixa mensal e anual comparáveis lado a lado.
-    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => formatMoney(monthlyOf(r), r.currency, CENTS) },
+    // Fantasma (sem valor) fica "—" pra a linha inteira ler-se vazia; senão formata em 2 casas.
+    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => (r.amount > 0 ? formatMoney(monthlyOf(r), r.currency || base, CENTS) : "—") },
   ];
 
-  const newSub = (): Subscription => ({ id: crypto.randomUUID(), name: "", currency: base, amount: 0, cycle: "monthly" });
+  // Fantasma nasce SEM moeda e SEM ciclo (mostra "—"); ao salvar, moeda cai na base (DataGrid)
+  // e o ciclo assume "monthly".
+  const newSub = (): Subscription => ({ id: crypto.randomUUID(), name: "", currency: "" as Currency, amount: 0 });
 
   return (
     <div className="space-y-5 sm:space-y-7">
@@ -95,8 +98,9 @@ export default function Assinaturas() {
               columns={cols}
               rows={data}
               blank={newSub}
+              defaultCurrency={base}
               isComplete={(r) => r.name.trim().length > 0 && r.amount > 0}
-              onCommit={(r) => void actions.putSubscription(r)}
+              onCommit={(r) => void actions.putSubscription({ ...r, cycle: r.cycle || "monthly" })}
               onDelete={(id) => void actions.removeSubscription(id)}
               addPlaceholder={t("assinaturas.addSub")}
               total={<Money value={monthly} currency={disp} options={CENTS} />}

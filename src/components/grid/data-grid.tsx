@@ -187,6 +187,7 @@ function TextCell({
 function MoneyCell({
   value,
   currency,
+  emptyCurrency,
   rowId,
   colKey,
   hideCurrency,
@@ -196,6 +197,8 @@ function MoneyCell({
 }: {
   value: number;
   currency: Currency;
+  /** Moeda ainda não escolhida (linha-fantasma): mostra "—" no badge, mas formata com `currency`. */
+  emptyCurrency?: boolean;
   rowId: string;
   colKey: string;
   hideCurrency?: boolean;
@@ -220,7 +223,7 @@ function MoneyCell({
     <div className="flex items-center gap-1.5">
       {!hideCurrency ? (
         <CurrencyPicker value={currency} onCommit={onCurrencyCommit} className="shrink-0">
-          <CurrencyBadge currency={currency} />
+          {emptyCurrency ? <span className="px-1.5 text-[13px] text-faint">—</span> : <CurrencyBadge currency={currency} />}
         </CurrencyPicker>
       ) : null}
       <input
@@ -1073,10 +1076,12 @@ export function DataGrid<T extends { id: string }>({
         );
       case "money": {
         const curKey = col.currencyKey ?? "currency";
+        const rawCur = get(row, curKey) as Currency | "" | undefined;
         return (
           <MoneyCell
             value={(get(row, col.key) as number) ?? 0}
-            currency={(get(row, curKey) as Currency) || defaultCurrency || ("BRL" as Currency)}
+            currency={(rawCur as Currency) || defaultCurrency || ("BRL" as Currency)}
+            emptyCurrency={!rawCur}
             rowId={rowId}
             colKey={col.key}
             hideCurrency={col.hideCurrency}
