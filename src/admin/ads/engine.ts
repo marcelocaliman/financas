@@ -368,6 +368,27 @@ export const REEL_COPY: Record<string, { caption: string; comment: string }> = {
   },
 };
 
+// ── CAPAS DOS REELS (PADRONIZADAS) ───────────────────────────────────────────
+// Mesmo LAYOUT pra todas (série coesa no grid): marca no topo · eyebrow (categoria) · TÍTULO grande
+// de referência ao tema · rodapé com o site. Varia SÓ a cor de fundo (paletas que já existem:
+// escuro / verde bold / papel claro) — sem foto, pra não ficar cada uma diferente.
+type CoverBg = "dark" | "color" | "light";
+export const REEL_COVER: Record<string, { eyebrow: string; title: string[]; bg: CoverBg }> = {
+  patrimonio: { eyebrow: "MULTIMOEDA", title: ["Quanto você tem,", "somando tudo?"], bg: "dark" },
+  privacidade: { eyebrow: "PRIVACIDADE", title: ["Seus números,", "só seus."], bg: "dark" },
+  orcamento: { eyebrow: "ORÇAMENTO", title: ["Pra onde vai", "o seu dinheiro?"], bg: "color" },
+  simples: { eyebrow: "SIMPLES", title: ["Finanças sem", "complicação."], bg: "light" },
+  fronteiras: { eyebrow: "SEM FRONTEIRAS", title: ["Dinheiro sem", "fronteiras."], bg: "color" },
+  futuro: { eyebrow: "LIBERDADE", title: ["Quando você", "fica livre?"], bg: "dark" },
+  "app-tour": { eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "num app só."], bg: "color" },
+  "edu-orcamento": { eyebrow: "EDUCATIVO", title: ["A regra", "50 · 30 · 20"], bg: "light" },
+  "edu-reserva": { eyebrow: "EDUCATIVO", title: ["Reserva de", "emergência"], bg: "color" },
+  "edu-juros": { eyebrow: "EDUCATIVO", title: ["Juros", "compostos"], bg: "dark" },
+  "edu-diversificar": { eyebrow: "EDUCATIVO", title: ["Como", "diversificar"], bg: "light" },
+  "edu-cambio": { eyebrow: "EDUCATIVO", title: ["O câmbio no", "seu bolso"], bg: "color" },
+  "edu-dividas": { eyebrow: "EDUCATIVO", title: ["Como sair", "das dívidas"], bg: "dark" },
+};
+
 // ── POSTS ESTÁTICOS (feed 4:5, 1080×1350, exportados em PNG) ─────────────────
 // Mesma estética/engine dos stories, mas UM quadro parado por peça (sem animação/tempo). 6 peças
 // cobrindo os 4 pilares: multimoeda/cross-border, privacidade, organização/FIRE, build-in-public.
@@ -1640,10 +1661,46 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   if (showProgress) drawProgress(ctx, s, W, n, t, pal, dur, hold);
 }
 
-/** CAPA (thumbnail) do Reel: a 1ª cena renderizada ESTÁTICA (texto JÁ visível, sem o fade do vídeo) —
- *  resolve o frame inicial "pelado". 9:16, mesma estética do vídeo; baixável como PNG pra usar de capa. */
-export function drawReelCover(ctx: CanvasRenderingContext2D, story: Story, W: number, H: number, photo: CanvasImageSource | null = null) {
-  drawStory(ctx, story, (story.sceneDur ?? SCENE_DUR) * 0.5, W, H, false, photo);
+/** CAPA (thumbnail) do Reel — PADRONIZADA. Mesmo LAYOUT pra todos os reels (série coesa no grid):
+ *  marca no topo · eyebrow (categoria) · TÍTULO grande de referência ao tema · rodapé com o site.
+ *  Varia SÓ a cor de fundo (escuro / verde bold / papel claro) via REEL_COVER — sem foto, pra as capas
+ *  não ficarem cada uma diferente. 9:16, baixável como PNG (o vídeo começa com o texto entrando). */
+export function drawReelCover(ctx: CanvasRenderingContext2D, story: Story, W: number, H: number) {
+  const s = W / 1080;
+  const cover = REEL_COVER[story.id] ?? { eyebrow: "NOSSAS FINANÇAS", title: [story.name], bg: "dark" as const };
+
+  let pal: Palette;
+  if (cover.bg === "color") { drawColorBg(ctx, W, H, 0); pal = ONCOLOR; }
+  else if (cover.bg === "light") { drawLightBg(ctx, W, H, 0); pal = LIGHT; }
+  else { drawBg(ctx, W, H, 0, 0.72, 0.14); pal = DARK; }
+
+  const x = 96 * s;
+
+  // marca no topo (mesma âncora sempre)
+  drawBrand(ctx, s, x, 156 * s, 54, pal);
+
+  // bloco eyebrow + TÍTULO grande, centralizado na vertical
+  const lines = cover.title;
+  const px = fitTitlePx(ctx, s, lines, W - x * 2, 92, 150);
+  const gap = 76 * s;
+  const firstAscent = px * 0.74 * s;
+  const tlh = (px + 8) * s;
+  const blockH = gap + firstAscent + (lines.length - 1) * tlh + px * 0.22 * s;
+  const eyeY = (H - blockH) / 2;
+  drawEyebrow(ctx, s, x, eyeY, cover.eyebrow, 1, pal, 36);
+  drawTitle(ctx, s, x, eyeY + gap + firstAscent, lines, 1, 0, px, pal);
+
+  // rodapé: barrinha de acento + site (mono, discreto) — fecha a composição
+  ctx.fillStyle = pal.accent;
+  roundRect(ctx, x, H - 176 * s, 68 * s, 7 * s, 4 * s);
+  ctx.fill();
+  ctx.fillStyle = pal.faint;
+  ctx.font = fontMono(28 * s, 500);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.letterSpacing = `${1.5 * s}px`;
+  ctx.fillText("nossasfinancas.com.br", x, H - 122 * s);
+  ctx.letterSpacing = "0px";
 }
 
 // ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────

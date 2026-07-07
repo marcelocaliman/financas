@@ -145,33 +145,17 @@ export async function exportStory(story: Story): Promise<ExportResult> {
   return { blob, ext: type.includes("mp4") ? "mp4" : "webm", mime: type };
 }
 
-/** Renderiza a CAPA de um Reel (9:16, 1080×1920) e devolve o PNG. É a 1ª cena estática (texto já
- *  visível) — pra usar como capa do Reel no Instagram, já que o vídeo começa com o texto entrando. */
+/** Renderiza a CAPA (padronizada) de um Reel (9:16, 1080×1920) e devolve o PNG — pra usar como capa
+ *  do Reel no Instagram, já que o vídeo começa com o texto entrando. Sem foto: fundo + título só. */
 export async function exportReelCoverPNG(story: Story): Promise<Blob> {
   await ensureFonts();
-  let photo: HTMLImageElement | null = null;
-  const src = PHOTO_SRC[story.id];
-  if (src) {
-    try {
-      photo = await loadPhoto(src);
-    } catch {
-      /* segue sem foto (cai no glow) */
-    }
-  }
-  for (const shot of storyShotSrcs(story)) {
-    try {
-      setAdImage(shot, await loadPhoto(shot));
-    } catch {
-      /* segue sem o screenshot */
-    }
-  }
   const W = 1080, H = 1920;
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas 2D indisponível");
-  drawReelCover(ctx, story, W, H, photo);
+  drawReelCover(ctx, story, W, H);
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("PNG vazio"))), "image/png");
   });
