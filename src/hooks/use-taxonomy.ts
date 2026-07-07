@@ -23,6 +23,7 @@ export function useTaxonomy(): Taxonomy {
       ...tax,
       incomeCategories: tax.incomeCategories ?? DEFAULT_TAXONOMY.incomeCategories,
       expenseCategories: tax.expenseCategories ?? DEFAULT_TAXONOMY.expenseCategories,
+      people: tax.people ?? DEFAULT_TAXONOMY.people,
     };
   }, [tax]);
 }

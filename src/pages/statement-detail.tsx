@@ -31,6 +31,7 @@ export function StatementDetail({
   fatura,
   items,
   categories,
+  people,
   rates,
 }: {
   fatura: Expense;
@@ -38,6 +39,8 @@ export function StatementDetail({
   items: Expense[];
   /** Categorias de gasto elegíveis (sem a própria "Cartão de Crédito"). */
   categories: TaxonomyItem[];
+  /** Integrantes da casa — coluna "Pessoa" e coluna do modelo só surgem com 2+. */
+  people: TaxonomyItem[];
   rates: RateTable;
 }) {
   const { t } = useTranslation();
@@ -47,17 +50,32 @@ export function StatementDetail({
 
   const residual = statementResidual(fatura, items, rates);
   const itemized = fatura.amount - residual;
+  const hasPeople = people.length >= 2;
 
   const cols: GridColumn<Expense>[] = [
     { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(130px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: categories.map((c): SelectOption => ({ value: c.id, label: c.name })) },
     { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(140px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
+    ...(hasPeople ? [{ key: "personId", type: "select" as const, header: t("orcamento.person"), width: "minmax(96px,0.9fr)", optional: true, options: people.map((p): SelectOption => ({ value: p.id, label: p.name })) }] : []),
     { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency" },
   ];
   const newChild = (): Expense => ({ id: crypto.randomUUID(), month: fatura.month, categoryId: "", name: "", currency: fatura.currency, amount: 0, parentId: fatura.id });
 
   const downloadTemplate = () => {
     const header = [t("orcamento.category"), t("orcamento.detail"), t("orcamento.amount"), t("common.currency")];
-    const csv = statementTemplateCSV(categories.map((c) => c.name), fatura.currency, header);
+    if (hasPeople) header.push(t("orcamento.person"));
+    const cats = categories.map((c) => c.name);
+    const pers = people.map((p) => p.name);
+    const examples = [
+      ["Mercado", "Compras do mês", "450,00"],
+      ["Transporte", "Uber / combustível", "180,00"],
+      ["Saúde", "Farmácia", "90,00"],
+    ];
+    const rows = examples.map((ex, i) => {
+      const row = [cats[i] ?? ex[0], ex[1], ex[2], fatura.currency];
+      if (hasPeople) row.push(pers[i % pers.length] ?? "");
+      return row;
+    });
+    const csv = statementTemplateCSV(header, rows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -78,6 +96,7 @@ export function StatementDetail({
     try {
       const recs = parseCSV(await file.text());
       const byName = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c.id]));
+      const byPerson = new Map(people.map((p) => [p.name.trim().toLowerCase(), p.id]));
       const toAdd: Expense[] = [];
       let skipped = 0;
       for (const r of recs) {
@@ -91,7 +110,9 @@ export function StatementDetail({
         const cur = pick(r, "moeda", "currency").trim().toUpperCase();
         const currency = (CURRENCIES as readonly string[]).includes(cur) ? (cur as Currency) : fatura.currency;
         const name = pick(r, "detalhe", "detail", "nome", "name", "descrição", "description").trim();
-        toAdd.push({ id: crypto.randomUUID(), month: fatura.month, categoryId, name, currency, amount, parentId: fatura.id });
+        const personRaw = pick(r, "pessoa", "person", "portador").trim().toLowerCase();
+        const personId = personRaw ? byPerson.get(personRaw) : undefined;
+        toAdd.push({ id: crypto.randomUUID(), month: fatura.month, categoryId, name, currency, amount, parentId: fatura.id, ...(personId ? { personId } : {}) });
       }
       if (toAdd.length === 0) {
         setMsg(t("orcamento.importNone"));

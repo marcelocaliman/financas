@@ -54,6 +54,8 @@ export interface Expense {
   /** É uma FATURA/cartão (um guarda-chuva): outros itens podem ser marcados como DENTRO dele. Só
    *  marcador de UI (define quem pode ser "pai"); a regra de soma é sempre por parentId. */
   isStatement?: boolean;
+  /** Portador do gasto — id do integrante da casa (taxonomy.people). Ausente = compartilhado/casa. */
+  personId?: string;
 }
 
 export interface Income {
@@ -72,6 +74,8 @@ export interface Income {
   dueDay?: number;
   /** Já recebido no mês? (equivalente ao `paid` do gasto). Por competência. */
   received?: boolean;
+  /** Quem recebeu — id do integrante da casa (taxonomy.people). Ausente = compartilhado/casa. */
+  personId?: string;
 }
 
 export interface NetWorthSnapshot {

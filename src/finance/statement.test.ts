@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { RateTable } from "@/money/currency";
 import type { Expense } from "@/domain/types";
-import { topLevelExpenses, expenseTotal, statementResidual, expenseLeaves, childrenOf, hasChildren } from "./statement";
+import { topLevelExpenses, expenseTotal, statementResidual, expenseLeaves, expenseByPerson, childrenOf, hasChildren } from "./statement";
 
 const RATES: RateTable = { BRL: 1, EUR: 5.85, USD: 5.42, GBP: 7.1 };
 const exp = (o: Partial<Expense>): Expense => ({ id: "x", month: "2026-07", categoryId: "cat", name: "", currency: "BRL", amount: 0, ...o });
@@ -53,5 +53,21 @@ describe("statement — anti dupla-contagem", () => {
     expect(childrenOf(ALL, "card").map((e) => e.id)).toEqual(["c1", "c2"]);
     expect(hasChildren(ALL, "card")).toBe(true);
     expect(hasChildren(ALL, "s1")).toBe(false);
+  });
+
+  it("expenseByPerson: itens da fatura contam pela pessoa de cada um; resíduo pela pessoa da fatura", () => {
+    const card = exp({ id: "card", amount: 1000, personId: "marcelo" });
+    const kA = exp({ id: "kA", parentId: "card", amount: 200, personId: "marcelo" });
+    const kB = exp({ id: "kB", parentId: "card", amount: 300, personId: "ana" });
+    const solo = exp({ id: "solo", amount: 400, personId: "ana" });
+    const shared = exp({ id: "sh", amount: 150 }); // sem pessoa
+    const byP = expenseByPerson([card, kA, kB, solo, shared], "BRL", RATES);
+    // marcelo: kA 200 + resíduo (1000−500=500) = 700; ana: kB 300 + solo 400 = 700; "" (casa): 150
+    expect(byP.marcelo).toBeCloseTo(700, 4);
+    expect(byP.ana).toBeCloseTo(700, 4);
+    expect(byP[""]).toBeCloseTo(150, 4);
+    // soma das pessoas = total top-level (fatura 1000 + solo 400 + shared 150)
+    const total = Object.values(byP).reduce((s, v) => s + v, 0);
+    expect(total).toBeCloseTo(expenseTotal([card, kA, kB, solo, shared], "BRL", RATES), 4);
   });
 });

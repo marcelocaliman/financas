@@ -64,23 +64,11 @@ export function parseCSV(text: string): Record<string, string>[] {
 const esc = (s: string) => (/[",\n\r;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
 
 /**
- * CSV-modelo da fatura (com BOM p/ o Excel abrir UTF-8). Colunas: categoria · detalhe · valor · moeda.
- * As linhas-exemplo usam categorias REAIS do usuário (quando houver) pra o casamento por nome funcionar.
- * `moeda` é opcional na importação — em branco herda a moeda da fatura. `header` permite rótulos
- * localizados (o parser reconhece PT e EN de qualquer jeito).
+ * Monta o CSV-modelo da fatura (com BOM p/ o Excel abrir UTF-8) a partir de `header` (rótulos das
+ * colunas, localizados) + `rows` (linhas-exemplo já prontas). O parser reconhece as colunas por
+ * sinônimo (PT/EN), então o rótulo pode variar sem quebrar a importação.
  */
-export function statementTemplateCSV(
-  exampleCategories: string[],
-  currency: string,
-  header: string[] = ["categoria", "detalhe", "valor", "moeda"],
-): string {
-  const examples = [
-    ["Mercado", "Compras do mês", "450,00"],
-    ["Transporte", "Uber / combustível", "180,00"],
-    ["Saúde", "Farmácia", "90,00"],
-  ];
-  const cats = exampleCategories.filter((c) => c && c.trim().length > 0);
-  const rows = examples.map((ex, i) => [cats[i] ?? ex[0], ex[1], ex[2], currency]);
+export function statementTemplateCSV(header: string[], rows: string[][]): string {
   const lines = [header, ...rows].map((r) => r.map(esc).join(","));
   return "﻿" + lines.join("\n") + "\n";
 }

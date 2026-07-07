@@ -12,7 +12,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, EXPENSE_CARD, type TaxonomyItem } from "@/domain/taxonomy";
-import { topLevelExpenses, expenseTotal, expenseLeaves } from "@/finance/statement";
+import { topLevelExpenses, expenseTotal, expenseLeaves, expenseByPerson } from "@/finance/statement";
 import { upcomingBills } from "@/domain/bills";
 import { BILL_STATUS_TONE, dueDateLabel, daysLabel } from "@/components/common/bill-format";
 import type { Expense, Income } from "@/domain/types";
@@ -27,7 +27,7 @@ import Assinaturas from "@/pages/assinaturas";
 import { StatementDetail } from "@/pages/statement-detail";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
-type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean };
+type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean; personId?: string };
 
 /** Normaliza o vínculo do lançamento no commit: "" (desmarcado) → undefined; e uma fatura
  *  (categoria Cartão) nunca fica DENTRO de outra fatura (não faz sentido aninhar cartão em cartão). */
@@ -69,6 +69,7 @@ const SUBNAV: { id: string; key: string }[] = [
   { id: "orc-ano", key: "orcamento.tabYear" },
   { id: "orc-vencimentos", key: "orcamento.tabBills" },
   { id: "orc-composicao", key: "orcamento.tabBreakdown" },
+  { id: "orc-pessoas", key: "orcamento.tabPeople" },
   { id: "orc-receitas", key: "orcamento.income" },
   { id: "orc-gastos", key: "orcamento.expenses" },
   { id: "orc-assinaturas", key: "nav.assinaturas" },
@@ -179,6 +180,10 @@ export default function Orcamento() {
       { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(140px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(categories), indentable: true },
       { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(150px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
     ];
+    // "Pessoa" (portador) — só aparece quando há 2+ integrantes cadastrados (não polui quem mora só).
+    if (tax.people.length >= 2) {
+      columns.push({ key: "personId", type: "select", header: t("orcamento.person"), width: "minmax(96px,0.9fr)", optional: true, options: tax.people.map((p) => ({ value: p.id, label: p.name })) });
+    }
     if (bill) {
       columns.push({ key: "dueDay", type: "day", header: t("orcamento.dueDay"), width: "84px", align: "right" });
       // "Pago"/"Recebido": check só nas linhas COM dia (dueDay) — reflete/alterna o status (o mesmo
@@ -201,6 +206,25 @@ export default function Orcamento() {
   const topLevelExp = topLevelExpenses(view.monthExp) as BudgetRow[];
   const prev = shiftMonth(month, -1);
 
+  // Resumo "Por pessoa" (só com 2+ integrantes): gastou (por FOLHA — item da fatura conta pela sua
+  // pessoa; "não discriminado" pela pessoa da fatura) · recebeu · saldo. Sem pessoa = "Compartilhado".
+  const peopleRows =
+    tax.people.length >= 2
+      ? (() => {
+          const spent = expenseByPerson(view.monthExp, disp, rates);
+          const recv: Record<string, number> = {};
+          for (const i of view.monthInc) {
+            const k = i.personId ?? "";
+            recv[k] = (recv[k] ?? 0) + conv(i.amount, i.currency);
+          }
+          const rows = tax.people.map((p) => ({ id: p.id, name: p.name, spent: spent[p.id] ?? 0, received: recv[p.id] ?? 0 }));
+          const sSpent = spent[""] ?? 0;
+          const sRecv = recv[""] ?? 0;
+          if (sSpent > 0.005 || sRecv > 0.005) rows.push({ id: "", name: t("orcamento.personShared"), spent: sSpent, received: sRecv });
+          return rows.map((r) => ({ ...r, saldo: r.received - r.spent }));
+        })()
+      : null;
+
   // Apagar uma fatura SOLTA seus itens (parentId → undefined): voltam a ser lançamentos normais,
   // pra o valor nunca sumir do total (não vira órfão preso a um cartão inexistente).
   const removeExpenseAndDetach = async (id: string) => {
@@ -218,6 +242,7 @@ export default function Orcamento() {
       fatura={fatura as Expense}
       items={view.monthExp.filter((e) => e.parentId === fatura.id)}
       categories={statementCats}
+      people={tax.people}
       rates={rates}
     />
   );
@@ -329,6 +354,33 @@ export default function Orcamento() {
         <CategoryDonut title={t("orcamento.expenseBreakdown")} data={view.expSlices} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
       </div>
 
+      {/* Por pessoa (só com 2+ integrantes): quem gastou/recebeu quanto no mês. */}
+      {peopleRows ? (
+        <section id="orc-pessoas">
+          <SectionHead title={t("orcamento.tabPeople")} count={peopleRows.length} />
+          <Tile className="overflow-hidden p-0">
+            <div className="divide-y divide-border">
+              {peopleRows.map((p) => (
+                <div key={p.id || "shared"} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3.5 sm:px-6">
+                  <span className="min-w-0 truncate text-[14px] font-medium text-text">{p.name}</span>
+                  <div className="flex flex-wrap items-center gap-x-7 gap-y-1.5">
+                    <PersonStat label={t("orcamento.personSpent")}>
+                      <Money value={p.spent} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />
+                    </PersonStat>
+                    <PersonStat label={t("orcamento.personReceived")}>
+                      <Money value={p.received} currency={disp} className="text-accent" />
+                    </PersonStat>
+                    <PersonStat label={t("orcamento.personBalance")}>
+                      <Money value={p.saldo} currency={disp} className={p.saldo >= 0 ? "text-accent" : "text-neg"} />
+                    </PersonStat>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Tile>
+        </section>
+      ) : null}
+
       {/* Receitas (mês) */}
       <section id="orc-receitas">
         <SectionHead title={t("orcamento.income")} count={view.monthInc.length} />
@@ -381,6 +433,16 @@ export default function Orcamento() {
       <div id="orc-assinaturas">
         <Assinaturas />
       </div>
+    </div>
+  );
+}
+
+/** Micro-métrica do resumo "Por pessoa": rótulo mono em cima, valor tabular embaixo. */
+function PersonStat({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="text-right">
+      <div className="font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{label}</div>
+      <div className="text-[14px] font-semibold tabular">{children}</div>
     </div>
   );
 }

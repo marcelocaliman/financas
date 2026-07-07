@@ -56,6 +56,12 @@ export function TaxonomyEditor() {
         items={tax.expenseCategories}
         onChange={(items) => save({ ...tax, expenseCategories: items })}
       />
+      <ListEditor
+        title="Integrantes da casa"
+        hint="Quem gasta/recebe (você, cônjuge…). Com 2+, aparece a coluna 'Pessoa' no Orçamento e o resumo 'Por pessoa'."
+        items={tax.people ?? []}
+        onChange={(items) => save({ ...tax, people: items })}
+      />
     </div>
   );
 }

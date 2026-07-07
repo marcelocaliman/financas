@@ -53,6 +53,8 @@ export interface ExpenseLeaf {
   name: string;
   amount: number;
   currency: Currency;
+  /** Portador (id do integrante). Filho → o seu; resíduo → o da fatura; avulso → o seu. */
+  personId?: string;
   /** true = sobra "não discriminado" de uma fatura (não é um lançamento real). */
   residual?: boolean;
 }
@@ -77,21 +79,35 @@ export function expenseLeaves(expenses: Expense[], rates: RateTable): ExpenseLea
   const leaves: ExpenseLeaf[] = [];
   for (const e of expenses) {
     if (e.parentId && ids.has(e.parentId)) {
-      // filho → entra como ele mesmo
-      leaves.push({ id: e.id, categoryId: e.categoryId, name: e.name, amount: e.amount, currency: e.currency });
+      // filho → entra como ele mesmo (portador próprio)
+      leaves.push({ id: e.id, categoryId: e.categoryId, name: e.name, amount: e.amount, currency: e.currency, personId: e.personId });
       continue;
     }
     const kids = kidsByParent.get(e.id);
     if (kids && kids.length) {
-      // fatura → só a sobra não discriminada (os filhos já entraram acima)
+      // fatura → só a sobra não discriminada (os filhos já entraram acima); portador = o da fatura
       const residual = statementResidual(e, kids, rates);
       if (residual > 0.005) {
-        leaves.push({ id: `${e.id}::res`, categoryId: e.categoryId, name: e.name, amount: residual, currency: e.currency, residual: true });
+        leaves.push({ id: `${e.id}::res`, categoryId: e.categoryId, name: e.name, amount: residual, currency: e.currency, personId: e.personId, residual: true });
       }
     } else {
       // avulso → ele mesmo
-      leaves.push({ id: e.id, categoryId: e.categoryId, name: e.name, amount: e.amount, currency: e.currency });
+      leaves.push({ id: e.id, categoryId: e.categoryId, name: e.name, amount: e.amount, currency: e.currency, personId: e.personId });
     }
   }
   return leaves;
+}
+
+/**
+ * Total de gastos por PESSOA (id do integrante; "" = sem pessoa/compartilhado), convertido pra
+ * `display`. Usa as FOLHAS: cada item de fatura conta pela sua pessoa, e o "não discriminado" pela
+ * pessoa da fatura — então a soma de todas as pessoas = total top-level (sem dupla contagem).
+ */
+export function expenseByPerson(expenses: Expense[], display: Currency, rates: RateTable): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const l of expenseLeaves(expenses, rates)) {
+    const key = l.personId ?? "";
+    out[key] = (out[key] ?? 0) + convert(l.amount, l.currency, display, rates);
+  }
+  return out;
 }

@@ -26,6 +26,8 @@ export interface Taxonomy {
   liabilityTypes: TaxonomyItem[];
   incomeCategories: TaxonomyItem[];
   expenseCategories: TaxonomyItem[];
+  /** Integrantes da casa (portador do gasto/receita). Opcional; vazio = ninguém cadastrado. */
+  people: TaxonomyItem[];
 }
 
 /** Categoria-padrão "Outros" de cada lado do orçamento (fallback da migração). */
@@ -265,6 +267,7 @@ export const DEFAULT_TAXONOMY: Taxonomy = {
     { id: EXPENSE_CARD, name: "Cartão de Crédito" },
     { id: EXPENSE_OTHER, name: "Outros" },
   ],
+  people: [],
 };
 
 /** Normaliza pra casar nomes (minúsculo, sem acento, sem espaços extras). */

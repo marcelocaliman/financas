@@ -1,5 +1,6 @@
 import { repository, isRepositoryReadOnly } from "@/data/dexie-repository";
-import { buildSeed } from "@/data/seed";
+import { buildSeed, SAMPLE_PEOPLE } from "@/data/seed";
+import { DEFAULT_TAXONOMY } from "@/domain/taxonomy";
 import { useUI } from "@/store/ui";
 import { useVault } from "@/vault/vault-store";
 import { pending } from "@/vault/pending";
@@ -186,6 +187,9 @@ export const actions = {
       const seed = buildSeed(base);
       await repository.clearAll();
       await repository.seed(seed);
+      // O exemplo tem 2 integrantes (vitrine do "Por pessoa"); clearAll zerou a taxonomia, então
+      // reaplica o DEFAULT + os integrantes (senão a coluna/resumo Pessoa não apareceriam no demo).
+      await repository.putTaxonomy({ ...DEFAULT_TAXONOMY, people: SAMPLE_PEOPLE });
       // clearAll zera as settings — reaplica as do exemplo (alocação/Liberdade/Saúde) e
       // PRESERVA a moeda principal (injetada aqui, não vem no seed).
       await repository.putSettings({

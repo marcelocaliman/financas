@@ -42,6 +42,14 @@ function monthKey(offset: number): string {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** Integrantes de exemplo (vitrine) — mostram a coluna "Pessoa" e o resumo "Por pessoa". */
+export const SAMPLE_PEOPLE = [
+  { id: "person-a", name: "Marcelo" },
+  { id: "person-b", name: "Ana" },
+];
+const PA = SAMPLE_PEOPLE[0].id;
+const PB = SAMPLE_PEOPLE[1].id;
+
 export function buildSeed(main: Currency): SeedData {
   const [c2, c3] = FOREIGN[main]; // contrapartes (ex.: EUR, USD)
   const m = (eurRef: number) => nice(eurRef, main); // item local (moeda principal)
@@ -58,14 +66,14 @@ export function buildSeed(main: Currency): SeedData {
   const vary = [0.94, 1, 1.06];
   // Gastos recorrentes/avulsos (fora a fatura do cartão, tratada à parte).
   const EXP = [
-    { key: "moradia", categoryId: "moradia", name: "Aluguel + condomínio", eur: 250, recurring: true, dueDay: 5 },
-    { key: "mercado", categoryId: "alimentacao", name: "Mercado", eur: 220 },
-    { key: "transporte", categoryId: "transporte", name: "Transporte", eur: 70, recurring: true },
-    { key: "saude", categoryId: "saude", name: "Plano de saúde", eur: 115, recurring: true, dueDay: 10 },
-    { key: "lazer", categoryId: "lazer", name: "Restaurantes e lazer", eur: 90 },
-    { key: "assinaturas", categoryId: "servicos", name: "Assinaturas (apps, streaming)", eur: 22, recurring: true },
-    { key: "italiano", categoryId: "educacao", name: "Curso de italiano", eur: 55, recurring: true },
-    { key: "impostos", categoryId: "impostos-gasto", name: "Impostos e taxas", eur: 35 },
+    { key: "moradia", categoryId: "moradia", name: "Aluguel + condomínio", eur: 250, recurring: true, dueDay: 5, p: "" },
+    { key: "mercado", categoryId: "alimentacao", name: "Mercado", eur: 220, p: "" },
+    { key: "transporte", categoryId: "transporte", name: "Transporte", eur: 70, recurring: true, p: PA },
+    { key: "saude", categoryId: "saude", name: "Plano de saúde", eur: 115, recurring: true, dueDay: 10, p: PB },
+    { key: "lazer", categoryId: "lazer", name: "Restaurantes e lazer", eur: 90, p: "" },
+    { key: "assinaturas", categoryId: "servicos", name: "Assinaturas (apps, streaming)", eur: 22, recurring: true, p: PA },
+    { key: "italiano", categoryId: "educacao", name: "Curso de italiano", eur: 55, recurring: true, p: PB },
+    { key: "impostos", categoryId: "impostos-gasto", name: "Impostos e taxas", eur: 35, p: "" },
   ];
   const expenses = months.flatMap((mo, mi) => {
     const rows = EXP.map((e) => ({
@@ -77,6 +85,7 @@ export function buildSeed(main: Currency): SeedData {
       amount: m(Math.round(e.eur * vary[mi])),
       ...(e.recurring ? { recurring: true } : {}),
       ...("dueDay" in e && e.dueDay ? { dueDay: e.dueDay } : {}),
+      ...(e.p ? { personId: e.p } : {}),
       // Nos meses passados as contas já foram pagas; o mês corrente segue em aberto.
       ...(mi < 2 ? { paid: true } : {}),
     }));
@@ -96,8 +105,8 @@ export function buildSeed(main: Currency): SeedData {
     } as (typeof rows)[number]);
     if (mi >= 1) {
       rows.push(
-        { id: `e-${mi}-c1`, month: mo, categoryId: "servicos", name: "Streaming", currency: main, amount: m(11), parentId: faturaId } as (typeof rows)[number],
-        { id: `e-${mi}-c2`, month: mo, categoryId: "gasto-outros", name: "Compras online", currency: main, amount: m(Math.round(70 * vary[mi])), parentId: faturaId } as (typeof rows)[number],
+        { id: `e-${mi}-c1`, month: mo, categoryId: "servicos", name: "Streaming", currency: main, amount: m(11), parentId: faturaId, personId: PA } as (typeof rows)[number],
+        { id: `e-${mi}-c2`, month: mo, categoryId: "gasto-outros", name: "Compras online", currency: main, amount: m(Math.round(70 * vary[mi])), parentId: faturaId, personId: PB } as (typeof rows)[number],
       );
     }
     return rows;
@@ -105,13 +114,13 @@ export function buildSeed(main: Currency): SeedData {
 
   const incomes = months.flatMap((mo, mi) => {
     const rows = [
-      { id: `i-${mi}-salario`, month: mo, categoryId: "salario", name: "Salário", currency: main, amount: m(Math.round(750 * vary[mi])), recurring: true },
-      { id: `i-${mi}-freela`, month: mo, categoryId: "freela", name: "Freela / PJ", currency: main, amount: m(Math.round(270 * vary[mi])), recurring: true },
+      { id: `i-${mi}-salario`, month: mo, categoryId: "salario", name: "Salário", currency: main, amount: m(Math.round(750 * vary[mi])), recurring: true, personId: PA },
+      { id: `i-${mi}-freela`, month: mo, categoryId: "freela", name: "Freela / PJ", currency: main, amount: m(Math.round(270 * vary[mi])), recurring: true, personId: PB },
       // Renda "do exterior" na moeda contraparte — demonstra receber numa moeda, gastar noutra.
-      { id: `i-${mi}-aluguel`, month: mo, categoryId: "aluguel", name: "Aluguel recebido (Itália)", currency: c2, amount: f2(700), recurring: true },
+      { id: `i-${mi}-aluguel`, month: mo, categoryId: "aluguel", name: "Aluguel recebido (Itália)", currency: c2, amount: f2(700), recurring: true, personId: PB },
     ];
     // Proventos caem no mês corrente (variedade de categorias de receita).
-    if (mi === 2) rows.push({ id: `i-${mi}-div`, month: mo, categoryId: "dividendos", name: "Proventos recebidos", currency: main, amount: m(45), recurring: false });
+    if (mi === 2) rows.push({ id: `i-${mi}-div`, month: mo, categoryId: "dividendos", name: "Proventos recebidos", currency: main, amount: m(45), recurring: false, personId: "" });
     return rows;
   });
 

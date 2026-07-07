@@ -39,23 +39,26 @@ describe("parseCSV", () => {
 });
 
 describe("statementTemplateCSV", () => {
-  it("gera modelo com BOM, cabeçalho e moeda preenchida", () => {
-    const csv = statementTemplateCSV(["Mercado", "Transporte"], "BRL");
+  it("gera modelo com BOM a partir de header + linhas, roundtrip pelo parser", () => {
+    const csv = statementTemplateCSV(
+      ["categoria", "detalhe", "valor", "moeda"],
+      [["Mercado", "Compras", "450,00", "BRL"]],
+    );
     expect(csv.startsWith("﻿")).toBe(true);
     const recs = parseCSV(csv);
-    expect(recs).toHaveLength(3);
+    expect(recs).toHaveLength(1);
     expect(Object.keys(recs[0])).toEqual(["categoria", "detalhe", "valor", "moeda"]);
-    expect(recs[0].moeda).toBe("BRL");
+    expect(recs[0]).toEqual({ categoria: "Mercado", detalhe: "Compras", valor: "450,00", moeda: "BRL" });
   });
 
-  it("usa as categorias reais do usuário nos exemplos", () => {
-    const recs = parseCSV(statementTemplateCSV(["Alimentação"], "EUR"));
-    expect(recs[0].categoria).toBe("Alimentação");
-    expect(recs[0].moeda).toBe("EUR");
+  it("suporta uma coluna 'pessoa' extra", () => {
+    const recs = parseCSV(statementTemplateCSV(["categoria", "valor", "pessoa"], [["Mercado", "90", "Ana"]]));
+    expect(recs[0].pessoa).toBe("Ana");
   });
 
-  it("volta pro exemplo-padrão quando não há categorias", () => {
-    const recs = parseCSV(statementTemplateCSV([], "USD"));
-    expect(recs[0].categoria).toBe("Mercado");
+  it("escapa valores com vírgula/decimal (roundtrip preserva)", () => {
+    const recs = parseCSV(statementTemplateCSV(["detalhe", "valor"], [["Pão, leite", "1.234,56"]]));
+    expect(recs[0].detalhe).toBe("Pão, leite");
+    expect(recs[0].valor).toBe("1.234,56");
   });
 });
