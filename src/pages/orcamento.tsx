@@ -12,7 +12,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, EXPENSE_CARD, type TaxonomyItem } from "@/domain/taxonomy";
-import { topLevelExpenses, expenseTotal, expenseLeaves, statementResidual } from "@/finance/statement";
+import { topLevelExpenses, expenseTotal, expenseLeaves } from "@/finance/statement";
 import { upcomingBills } from "@/domain/bills";
 import { BILL_STATUS_TONE, dueDateLabel, daysLabel } from "@/components/common/bill-format";
 import type { Expense, Income } from "@/domain/types";
@@ -24,6 +24,7 @@ import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { CardSubNav } from "@/components/common/card-sub-nav";
 import Assinaturas from "@/pages/assinaturas";
+import { StatementDetail } from "@/pages/statement-detail";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
 
 type BudgetRow = { id: string; month: string; categoryId: string; name: string; currency: Currency; amount: number; recurring?: boolean; dueDay?: number; paid?: boolean; received?: boolean; parentId?: string; isStatement?: boolean };
@@ -209,39 +210,17 @@ export default function Orcamento() {
     await actions.removeExpense(id);
   };
 
-  // Painel de DETALHE de uma fatura: mini-tabela dos itens (filhos) + a sobra "não discriminado".
-  // Adicionar aqui já linka parentId = id da fatura (mês/moeda herdados); assim o total não duplica.
-  const detailCols: GridColumn<BudgetRow>[] = [
-    { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(130px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(tax.expenseCategories.filter((c) => c.id !== EXPENSE_CARD)) },
-    { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(140px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
-    { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency" },
-  ];
-  const renderStatementDetail = (fatura: BudgetRow) => {
-    const kids = view.monthExp.filter((e) => e.parentId === fatura.id) as BudgetRow[];
-    const residual = statementResidual(fatura as Expense, kids as Expense[], rates);
-    const itemized = fatura.amount - residual;
-    const newChild = (): BudgetRow => ({ id: crypto.randomUUID(), month: fatura.month, categoryId: "", name: "", currency: fatura.currency, amount: 0, parentId: fatura.id });
-    return (
-      <div className="space-y-2">
-        <p className="text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
-        <DataGrid<BudgetRow>
-          columns={detailCols}
-          rows={kids}
-          blank={newChild}
-          isComplete={(r) => r.categoryId.length > 0 && r.amount > 0}
-          onCommit={(r) => void actions.putExpense({ ...(r as Expense), parentId: fatura.id })}
-          onDelete={(id) => void actions.removeExpense(id)}
-          addPlaceholder={t("orcamento.addStatementItem")}
-          total={<Money value={itemized} currency={fatura.currency} />}
-        />
-        <div className="flex items-center justify-between gap-3 px-1 pt-0.5 text-[12px]">
-          <span className="text-muted">{t("orcamento.statementResidual")}</span>
-          <Money value={residual} currency={fatura.currency} className={cn("font-medium", residual < -0.005 && "text-neg")} />
-        </div>
-        {residual < -0.005 ? <p className="px-1 text-[11px] text-neg">{t("orcamento.overItemized")}</p> : null}
-      </div>
-    );
-  };
+  // Painel de DETALHE de uma fatura (accordion): itens da fatura + "não discriminado" + import CSV.
+  // Adicionar/importar aqui já linka parentId = id da fatura → nunca soma em dobro no total do mês.
+  const statementCats = tax.expenseCategories.filter((c) => c.id !== EXPENSE_CARD);
+  const renderStatementDetail = (fatura: BudgetRow) => (
+    <StatementDetail
+      fatura={fatura as Expense}
+      items={view.monthExp.filter((e) => e.parentId === fatura.id)}
+      categories={statementCats}
+      rates={rates}
+    />
+  );
 
   return (
     <div className="space-y-5 sm:space-y-7">

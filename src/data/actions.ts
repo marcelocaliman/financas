@@ -60,6 +60,11 @@ export const actions = {
   // Orçamento
   putExpense: (expense: Expense) => withSync(() => repository.putExpense(expense)),
   removeExpense: (id: string) => withSync(() => repository.removeExpense(id)),
+  /** Insere vários gastos de uma vez (import CSV da fatura) — UMA transação, UM push de sync. */
+  importExpenses: (expenses: Expense[]) =>
+    withSync(async () => {
+      for (const e of expenses) await repository.putExpense(e);
+    }),
   putIncome: (income: Income) => withSync(() => repository.putIncome(income)),
   removeIncome: (id: string) => withSync(() => repository.removeIncome(id)),
 
