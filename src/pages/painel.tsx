@@ -304,7 +304,7 @@ export function DashboardDetail() {
               {view.expDisp.length} {t(view.expDisp.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}
             </Eyebrow>
           </div>
-          <div className="flex items-center gap-5 sm:gap-6">
+          <div className="flex items-start gap-5 sm:gap-6">
             <div className="w-[132px] h-[132px] shrink-0 relative">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -345,7 +345,7 @@ export function DashboardDetail() {
             </Eyebrow>
           </div>
           {alloc.length > 0 ? (
-            <div className="flex items-center gap-5 sm:gap-6">
+            <div className="flex items-start gap-5 sm:gap-6">
               {/* Donut (anel) por classe, com o total no centro — estilo dos anéis de Liberdade/Saúde */}
               <div className="w-[132px] h-[132px] shrink-0 relative">
                 <ResponsiveContainer width="100%" height="100%">
