@@ -217,6 +217,7 @@
     "importDoneSkipped": "{{n}} itens importados · {{s}} linha(s) ignorada(s) sem valor.",
     "importNone": "Nenhum item válido no arquivo. Confira as colunas: categoria, detalhe, valor.",
     "importError": "Não foi possível ler o arquivo. Baixe o modelo e tente de novo.",
+    "othersSlice": "Outros",
     "person": "Pessoa",
     "tabPeople": "Por pessoa",
     "personSpent": "Gastou",

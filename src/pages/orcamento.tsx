@@ -36,6 +36,18 @@ function normalizeExpenseLink(e: Expense): Expense {
   return { ...e, parentId };
 }
 
+type Slice = { id: string; name: string; value: number };
+/** Limita o donut a N fatias: as (N−1) maiores + uma "Outros" agregando a cauda. Sem isso, um
+ *  extrato de cartão itemizado (dezenas de compras pequenas) vira um anel de fatias minúsculas
+ *  (com o paddingAngle, parece pontos espalhados). Recebe as fatias JÁ ordenadas desc. */
+const MAX_SLICES = 9;
+function capSlices(slices: Slice[], othersLabel: string): Slice[] {
+  if (slices.length <= MAX_SLICES) return slices;
+  const rest = slices.slice(MAX_SLICES - 1);
+  const value = rest.reduce((s, x) => s + x.value, 0);
+  return [...slices.slice(0, MAX_SLICES - 1), { id: "__others__", name: `${othersLabel} · ${rest.length}`, value }];
+}
+
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 
 function currentMonth(): string {
@@ -105,17 +117,23 @@ export default function Orcamento() {
     // categoria, se sem detalhe) → duas receitas "Salário" aparecem separadas, com cores próprias.
     // Composição DESMEMBRA as faturas: cada item (Claude, Amil…) vira fatia + a sobra "não
     // discriminado" da fatura; a soma bate com o total top-level (sem dupla contagem).
-    const expSlices = expenseLeaves(monthExp, rates)
-      .map((l) => {
-        const base = l.name || nameById(tax.expenseCategories, l.categoryId) || t("orcamento.uncategorized");
-        return { id: l.id, name: l.residual ? `${base} · ${t("orcamento.notItemized")}` : base, value: conv(l.amount, l.currency) };
-      })
-      .filter((s) => s.value > 0)
-      .sort((a, b) => b.value - a.value);
-    const incSlices = monthInc
-      .map((i) => ({ id: i.id, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), value: conv(i.amount, i.currency) }))
-      .filter((s) => s.value > 0)
-      .sort((a, b) => b.value - a.value);
+    const expSlices = capSlices(
+      expenseLeaves(monthExp, rates)
+        .map((l) => {
+          const base = l.name || nameById(tax.expenseCategories, l.categoryId) || t("orcamento.uncategorized");
+          return { id: l.id, name: l.residual ? `${base} · ${t("orcamento.notItemized")}` : base, value: conv(l.amount, l.currency) };
+        })
+        .filter((s) => s.value > 0)
+        .sort((a, b) => b.value - a.value),
+      t("orcamento.othersSlice"),
+    );
+    const incSlices = capSlices(
+      monthInc
+        .map((i) => ({ id: i.id, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), value: conv(i.amount, i.currency) }))
+        .filter((s) => s.value > 0)
+        .sort((a, b) => b.value - a.value),
+      t("orcamento.othersSlice"),
+    );
     const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
 

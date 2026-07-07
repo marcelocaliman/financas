@@ -217,6 +217,7 @@
     "importDoneSkipped": "{{n}} items imported · {{s}} row(s) skipped with no amount.",
     "importNone": "No valid items in the file. Check the columns: category, detail, amount.",
     "importError": "Couldn't read the file. Download the template and try again.",
+    "othersSlice": "Others",
     "person": "Person",
     "tabPeople": "By person",
     "personSpent": "Spent",
