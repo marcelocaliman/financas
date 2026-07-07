@@ -292,10 +292,12 @@
     "renewalDay": "Renews",
     "amount": "Amount",
     "monthly": "Per month",
+    "monthlyAvg": "Per month (avg)",
+    "yearlyLabel": "Per year",
     "monthlyTotal": "Total per month",
     "yearlyTotal": "per year",
     "addSub": "Add subscription",
-    "note": "Documentation — not counted in the budget total. Subscriptions paid by card are already in the statement; this is just an X-ray of your recurring charges (how much they weigh, what to cut)."
+    "note": "Documentation — not counted in the budget total (card-paid ones are already in the statement). Each subscription shows its real amount in its own cycle; annual ones are charged in full on renewal. The “per month (avg)” is just the yearly sum ÷ 12, for comparison."
   },
   "investimentos": {
     "total": "Total invested",

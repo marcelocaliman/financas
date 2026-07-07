@@ -5,7 +5,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { actions } from "@/data/actions";
-import { convert, formatMoney, type Currency } from "@/money/currency";
+import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import type { Subscription } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -55,12 +55,21 @@ export default function Assinaturas() {
     // Mês de início (opcional) — quando começou; numa anual, junto do dia, é a âncora da renovação.
     { key: "startMonth", type: "month", header: t("assinaturas.startMonth"), width: "minmax(92px,0.9fr)", align: "right" },
     { key: "renewalDay", type: "day", header: t("assinaturas.renewalDay"), width: "84px", align: "right" },
-    // Valor cobrado no ciclo (mensal ou anual). Pequeno → sempre 2 casas (padrão do app é 0).
+    // Valor cobrado NO CICLO REAL (mensal ou anual), na moeda da assinatura — o que você paga de
+    // verdade (a anual sai inteira 1×/ano; nada de "por mês" que você não paga). Pequeno → 2 casas.
     { key: "amount", type: "money", header: t("assinaturas.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
-    // Equivalente mensal (só-leitura) NA MOEDA DE EXIBIÇÃO: converte (anual÷12 × câmbio) pra dar pra
-    // comparar mensal e anual, em moedas diferentes, na mesma régua — e bater com o Total lá embaixo.
-    // Fantasma (sem valor) fica "—" pra a linha inteira ler-se vazia; senão formata em 2 casas.
-    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => (r.amount > 0 ? formatMoney(convert(monthlyOf(r), r.currency || base, disp, rates), disp, CENTS) : "—") },
+    // "Na sua moeda" — só quando há assinatura em moeda estrangeira: o MESMO valor convertido, no
+    // MESMO ciclo (US$19/ano → R$99/ano). Sem inventar mensal; o Ciclo diz a cadência. (Padrão do app.)
+    ...(data.some((a) => a.currency && a.currency !== disp)
+      ? [{
+          key: "conv",
+          type: "computed" as const,
+          header: `${t("patrimonio.in")} ${CURRENCY_SYMBOL[disp]}`,
+          width: "minmax(96px,0.9fr)",
+          align: "right" as const,
+          compute: (r: Subscription) => (r.amount > 0 && r.currency ? formatMoney(convert(r.amount, r.currency, disp, rates), disp, CENTS) : "—"),
+        }]
+      : []),
   ];
 
   // Fantasma nasce SEM moeda e SEM ciclo (mostra "—"); ao salvar, moeda cai na base (DataGrid)
@@ -71,22 +80,27 @@ export default function Assinaturas() {
     <div className="space-y-5 sm:space-y-7">
       {data.length > 0 ? (
         <Tile className="p-4 sm:p-6 md:p-7">
-          <div className="flex flex-wrap items-center gap-x-9 gap-y-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:gap-x-8">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
               <Repeat size={22} />
             </span>
             <div className="min-w-0">
-              <Eyebrow>{t("assinaturas.monthlyTotal")}</Eyebrow>
-              <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
+              <Eyebrow>{t("assinaturas.monthlyAvg")}</Eyebrow>
+              <div className="mt-1.5">
                 <Money value={monthly} currency={disp} options={CENTS} className="text-[clamp(1.2rem,3vw,1.6rem)] font-semibold tabular" />
-                <span className="text-faint text-[13px]">
-                  · {t("assinaturas.yearlyTotal")} <Money value={monthly * 12} currency={disp} options={CENTS} />
-                </span>
               </div>
             </div>
-            <div className="w-full border-t border-border pt-4 sm:w-auto sm:border-0 sm:pt-0">
+            <span className="hidden h-9 w-px shrink-0 bg-border sm:block" aria-hidden />
+            <div>
+              <Eyebrow>{t("assinaturas.yearlyLabel")}</Eyebrow>
+              <div className="mt-1.5">
+                <Money value={monthly * 12} currency={disp} options={CENTS} className="text-[16px] font-semibold tabular text-muted" />
+              </div>
+            </div>
+            <span className="hidden h-9 w-px shrink-0 bg-border sm:block" aria-hidden />
+            <div>
               <Eyebrow>{t("nav.assinaturas")}</Eyebrow>
-              <div className="mt-1.5 text-[15px] font-semibold tabular">{data.length}</div>
+              <div className="mt-1.5 text-[16px] font-semibold tabular text-muted">{data.length}</div>
             </div>
           </div>
           <p className="mt-4 text-[12px] leading-relaxed text-faint">{t("assinaturas.note")}</p>
@@ -106,7 +120,6 @@ export default function Assinaturas() {
               onCommit={(r) => void actions.putSubscription({ ...r, cycle: r.cycle || "monthly" })}
               onDelete={(id) => void actions.removeSubscription(id)}
               addPlaceholder={t("assinaturas.addSub")}
-              total={<Money value={monthly} currency={disp} options={CENTS} />}
             />
           </div>
         </div>

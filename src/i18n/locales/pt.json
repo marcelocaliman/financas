@@ -292,10 +292,12 @@
     "renewalDay": "Renova",
     "amount": "Valor",
     "monthly": "Por mês",
+    "monthlyAvg": "Por mês (média)",
+    "yearlyLabel": "No ano",
     "monthlyTotal": "Total por mês",
     "yearlyTotal": "no ano",
     "addSub": "Adicionar assinatura",
-    "note": "Documentação — não entra no total do orçamento. As assinaturas pagas no cartão já estão na fatura; aqui é só o raio-x das recorrências (quanto pesam, o que dá pra cortar)."
+    "note": "Documentação — não entra no total do orçamento (as pagas no cartão já estão na fatura). Cada assinatura mostra o valor real no ciclo dela; a anual você paga inteira no vencimento. A “média por mês” é só a soma anual ÷ 12, pra comparar."
   },
   "investimentos": {
     "total": "Total investido",
