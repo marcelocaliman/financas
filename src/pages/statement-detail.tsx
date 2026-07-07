@@ -6,7 +6,7 @@ import { statementResidual } from "@/finance/statement";
 import { parseCSV, statementTemplateCSV } from "@/finance/statement-csv";
 import { parseAmount } from "@/money/parse";
 import { matchCategory, EXPENSE_OTHER, type TaxonomyItem } from "@/domain/taxonomy";
-import { CURRENCIES, type Currency, type RateTable } from "@/money/currency";
+import { convert, CURRENCIES, type Currency, type RateTable } from "@/money/currency";
 import type { Expense } from "@/domain/types";
 import { Money } from "@/components/common/money";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
@@ -51,6 +51,21 @@ export function StatementDetail({
   const residual = statementResidual(fatura, items, rates);
   const itemized = fatura.amount - residual;
   const hasPeople = people.length >= 2;
+
+  // Quanto cada pessoa gastou NESTA fatura (só os itens detalhados; o "não discriminado" fica de fora,
+  // aparece na linha própria). Itens sem pessoa somam em "Compartilhado". Na moeda da fatura.
+  const perPerson = (() => {
+    if (!hasPeople || items.length === 0) return [];
+    const by = new Map<string, number>();
+    for (const it of items) {
+      const k = it.personId ?? "";
+      by.set(k, (by.get(k) ?? 0) + convert(it.amount, it.currency, fatura.currency, rates));
+    }
+    const rows = people.filter((p) => (by.get(p.id) ?? 0) > 0.005).map((p) => ({ id: p.id, name: p.name, value: by.get(p.id)! }));
+    const shared = by.get("") ?? 0;
+    if (shared > 0.005) rows.push({ id: "", name: t("orcamento.personShared"), value: shared });
+    return rows.sort((a, b) => b.value - a.value);
+  })();
 
   const cols: GridColumn<Expense>[] = [
     { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(130px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: categories.map((c): SelectOption => ({ value: c.id, label: c.name })) },
@@ -152,6 +167,17 @@ export function StatementDetail({
         addPlaceholder={t("orcamento.addStatementItem")}
         total={<Money value={itemized} currency={fatura.currency} />}
       />
+      {perPerson.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 pt-0.5">
+          <span className="mr-0.5 font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{t("orcamento.tabPeople")}</span>
+          {perPerson.map((b) => (
+            <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 rounded-full bg-card2 px-2.5 py-1 text-[11.5px]">
+              <span className="text-muted">{b.name}</span>
+              <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
+            </span>
+          ))}
+        </div>
+      ) : null}
       <div className="flex items-center justify-between gap-3 px-1 pt-0.5 text-[12px]">
         <span className="text-muted">{t("orcamento.statementResidual")}</span>
         <Money value={residual} currency={fatura.currency} className={cn("font-medium", residual < -0.005 && "text-neg")} />
