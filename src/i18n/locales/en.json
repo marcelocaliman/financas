@@ -268,7 +268,11 @@
   "assinaturas": {
     "name": "Subscription",
     "namePlaceholder": "e.g. Netflix, Spotify, iCloud",
+    "cycle": "Cycle",
+    "cycleMonthly": "Monthly",
+    "cycleYearly": "Yearly",
     "renewalDay": "Renews",
+    "amount": "Amount",
     "monthly": "Per month",
     "monthlyTotal": "Total per month",
     "yearlyTotal": "per year",

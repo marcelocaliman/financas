@@ -5,7 +5,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { actions } from "@/data/actions";
-import { convert } from "@/money/currency";
+import { convert, formatMoney } from "@/money/currency";
 import type { Subscription } from "@/domain/types";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -14,6 +14,9 @@ import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
 /** Assinaturas têm valores pequenos → mostrar 2 casas (o Money do app arredonda pra inteiro). */
 const CENTS: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+
+/** Custo MENSAL equivalente: anual ÷ 12; mensal (ou ciclo ausente) fica igual. Normaliza pra comparar. */
+const monthlyOf = (s: Subscription) => (s.cycle === "yearly" ? s.amount / 12 : s.amount);
 
 /**
  * Assinaturas — registro GLOBAL de recorrências (Netflix, Spotify…), como DOCUMENTAÇÃO.
@@ -27,8 +30,9 @@ export default function Assinaturas() {
   const rates = useRates((s) => s.rates);
   const data = useSubscriptions();
 
+  // Total mensal NORMALIZADO: cada anual entra como ÷12, cada mensal cheia. Projeção anual = ×12.
   const monthly = useMemo(
-    () => (data ? data.reduce((s, a) => s + convert(a.amount, a.currency, disp, rates), 0) : 0),
+    () => (data ? data.reduce((s, a) => s + convert(monthlyOf(a), a.currency, disp, rates), 0) : 0),
     [data, disp, rates],
   );
 
@@ -37,13 +41,25 @@ export default function Assinaturas() {
   }
 
   const cols: GridColumn<Subscription>[] = [
-    { key: "name", type: "text", header: t("assinaturas.name"), width: "minmax(160px,2fr)", placeholder: t("assinaturas.namePlaceholder") },
-    { key: "renewalDay", type: "day", header: t("assinaturas.renewalDay"), width: "96px", align: "right" },
-    // Valores pequenos (R$ 21,90, € 4,99…): mostra sempre 2 casas (o padrão do app é 0).
-    { key: "amount", type: "money", header: t("assinaturas.monthly"), width: "minmax(150px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
+    { key: "name", type: "text", header: t("assinaturas.name"), width: "minmax(150px,2fr)", placeholder: t("assinaturas.namePlaceholder") },
+    {
+      key: "cycle",
+      type: "select",
+      header: t("assinaturas.cycle"),
+      width: "110px",
+      options: [
+        { value: "monthly", label: t("assinaturas.cycleMonthly") },
+        { value: "yearly", label: t("assinaturas.cycleYearly") },
+      ],
+    },
+    { key: "renewalDay", type: "day", header: t("assinaturas.renewalDay"), width: "84px", align: "right" },
+    // Valor cobrado no ciclo (mensal ou anual). Pequeno → sempre 2 casas (padrão do app é 0).
+    { key: "amount", type: "money", header: t("assinaturas.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
+    // Equivalente mensal (só-leitura): anual ÷ 12 — deixa mensal e anual comparáveis lado a lado.
+    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => formatMoney(monthlyOf(r), r.currency, CENTS) },
   ];
 
-  const newSub = (): Subscription => ({ id: crypto.randomUUID(), name: "", currency: base, amount: 0 });
+  const newSub = (): Subscription => ({ id: crypto.randomUUID(), name: "", currency: base, amount: 0, cycle: "monthly" });
 
   return (
     <div className="space-y-5 sm:space-y-7">
@@ -74,7 +90,7 @@ export default function Assinaturas() {
       <section>
         <SectionHead title={t("nav.assinaturas")} count={data.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-0 sm:min-w-[480px]">
+          <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<Subscription>
               columns={cols}
               rows={data}

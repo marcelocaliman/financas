@@ -104,8 +104,10 @@ export interface Subscription {
   id: string;
   name: string;
   currency: Currency;
-  /** Valor por MÊS (cobrança mensal). */
+  /** Valor cobrado por CICLO (o que aparece na fatura): mensal → por mês; anual → por ano. */
   amount: number;
+  /** Ciclo de cobrança. Ausente = "monthly" (retrocompatível). O total mensal normaliza anual÷12. */
+  cycle?: "monthly" | "yearly";
   /** Dia de renovação/cobrança (1–31), opcional. */
   renewalDay?: number;
 }

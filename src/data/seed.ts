@@ -172,11 +172,12 @@ export function buildSeed(main: Currency): SeedData {
     ],
     // Assinaturas recorrentes (documentação — não somam no orçamento; já entram na fatura do cartão).
     subscriptions: [
-      { id: "sub1", name: "Netflix", currency: main, amount: priced(8.02, main), renewalDay: 8 },
-      { id: "sub2", name: "Spotify", currency: main, amount: priced(3.91, main), renewalDay: 15 },
-      { id: "sub3", name: "iCloud+", currency: main, amount: priced(2.66, main), renewalDay: 2 },
-      { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: priced(20, c2), renewalDay: 20 },
-      { id: "sub5", name: "Academia", currency: main, amount: priced(21.41, main), renewalDay: 5 },
+      { id: "sub1", name: "Netflix", currency: main, amount: priced(8.02, main), cycle: "monthly", renewalDay: 8 },
+      { id: "sub2", name: "Spotify", currency: main, amount: priced(3.91, main), cycle: "monthly", renewalDay: 15 },
+      { id: "sub3", name: "iCloud+", currency: main, amount: priced(2.66, main), cycle: "monthly", renewalDay: 2 },
+      { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: priced(20, c2), cycle: "monthly", renewalDay: 20 },
+      // Cobrança ANUAL (mais barata que mensal) — o total mensal a normaliza em ÷12.
+      { id: "sub5", name: "Amazon Prime", currency: main, amount: priced(25, main), cycle: "yearly", renewalDay: 5 },
     ],
     settings: {
       // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.
