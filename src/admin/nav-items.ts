@@ -1,4 +1,4 @@
-import { Users, BarChart3, ScrollText, ShieldCheck, Flag, Megaphone, type LucideIcon } from "lucide-react";
+import { Users, BarChart3, ScrollText, ShieldCheck, Megaphone, type LucideIcon } from "lucide-react";
 
 export interface AdminNavItem {
   /** id do accordion na página do painel (adm-*) */
@@ -16,6 +16,5 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { id: "adm-analytics", key: "analytics", icon: BarChart3 },
   { id: "adm-access", key: "access", icon: ScrollText },
   { id: "adm-admins", key: "admins", icon: ShieldCheck },
-  { id: "adm-flags", key: "flags", icon: Flag },
   { id: "adm-ads", key: "ads", icon: Megaphone },
 ];
