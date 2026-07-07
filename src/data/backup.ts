@@ -129,7 +129,7 @@ export async function exportCSV(): Promise<void> {
   for (const d of dividends)
     rows.push({ tipo: "provento", nome: d.source, categoria: d.month, moeda: d.currency, valor: d.amount, extra: "" });
   for (const s of subscriptions)
-    rows.push({ tipo: "assinatura", nome: s.name, categoria: s.cycle === "yearly" ? "anual" : "mensal", moeda: s.currency, valor: s.amount, extra: s.renewalDay ? `renova dia ${s.renewalDay}` : "" });
+    rows.push({ tipo: "assinatura", nome: s.name, categoria: s.cycle === "yearly" ? "anual" : "mensal", moeda: s.currency, valor: s.amount, extra: [s.startMonth ? `início ${s.startMonth}` : "", s.renewalDay ? `renova dia ${s.renewalDay}` : ""].filter(Boolean).join(" · ") });
 
   const head = CSV_COLS.join(",");
   const body = rows.map((r) => CSV_COLS.map((c) => csvCell(r[c])).join(",")).join("\n");

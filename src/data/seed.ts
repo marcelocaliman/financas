@@ -185,8 +185,9 @@ export function buildSeed(main: Currency): SeedData {
       { id: "sub2", name: "Spotify", currency: main, amount: priced(3.91, main), cycle: "monthly", renewalDay: 15 },
       { id: "sub3", name: "iCloud+", currency: main, amount: priced(2.66, main), cycle: "monthly", renewalDay: 2 },
       { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: priced(20, c2), cycle: "monthly", renewalDay: 20 },
-      // Cobrança ANUAL (mais barata que mensal) — o total mensal a normaliza em ÷12.
-      { id: "sub5", name: "Amazon Prime", currency: main, amount: priced(25, main), cycle: "yearly", renewalDay: 5 },
+      // Cobrança ANUAL (mais barata que mensal) — o total mensal a normaliza em ÷12. Início + dia
+      // = âncora da renovação (renova todo dia 5 do mês de início, uma vez ao ano).
+      { id: "sub5", name: "Amazon Prime", currency: main, amount: priced(25, main), cycle: "yearly", startMonth: monthKey(-3), renewalDay: 5 },
     ],
     settings: {
       // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.

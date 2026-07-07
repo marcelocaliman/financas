@@ -52,6 +52,8 @@ export default function Assinaturas() {
         { value: "yearly", label: t("assinaturas.cycleYearly") },
       ],
     },
+    // Mês de início (opcional) — quando começou; numa anual, junto do dia, é a âncora da renovação.
+    { key: "startMonth", type: "month", header: t("assinaturas.startMonth"), width: "minmax(92px,0.9fr)", align: "right" },
     { key: "renewalDay", type: "day", header: t("assinaturas.renewalDay"), width: "84px", align: "right" },
     // Valor cobrado no ciclo (mensal ou anual). Pequeno → sempre 2 casas (padrão do app é 0).
     { key: "amount", type: "money", header: t("assinaturas.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
@@ -94,7 +96,7 @@ export default function Assinaturas() {
       <section>
         <SectionHead title={t("nav.assinaturas")} count={data.length} />
         <div className="overflow-x-auto">
-          <div className="min-w-0 sm:min-w-[600px]">
+          <div className="min-w-0 sm:min-w-[680px]">
             <DataGrid<Subscription>
               columns={cols}
               rows={data}

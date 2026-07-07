@@ -288,6 +288,7 @@
     "cycle": "Cycle",
     "cycleMonthly": "Monthly",
     "cycleYearly": "Yearly",
+    "startMonth": "Started",
     "renewalDay": "Renews",
     "amount": "Amount",
     "monthly": "Per month",

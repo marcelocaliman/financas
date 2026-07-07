@@ -112,6 +112,9 @@ export interface Subscription {
   amount: number;
   /** Ciclo de cobrança. Ausente = "monthly" (retrocompatível). O total mensal normaliza anual÷12. */
   cycle?: "monthly" | "yearly";
+  /** Mês de início "AAAA-MM" (opcional) — quando a assinatura começou. Numa anual, junto do
+   *  `renewalDay`, é a âncora da renovação (ex.: 2026-04 + dia 16 → renova todo 16 de abril). */
+  startMonth?: string;
   /** Dia de renovação/cobrança (1–31), opcional. */
   renewalDay?: number;
 }
