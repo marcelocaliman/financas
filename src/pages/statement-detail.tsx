@@ -142,35 +142,39 @@ export function StatementDetail({
 
   return (
     <div className="space-y-3">
-      {/* Cabeçalho: dica à esquerda, ações (baixar modelo / importar) à direita — alinhadas. */}
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="max-w-[52ch] text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
-        {!viewerMode ? (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button type="button" onClick={downloadTemplate} className={BTN}>
-              <Download size={13} /> {t("orcamento.downloadTemplate")}
-            </button>
-            <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
-              <Upload size={13} /> {t("orcamento.importCsv")}
-            </button>
-            <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onFile(e)} />
-          </div>
-        ) : null}
-      </div>
-      {msg ? <p className="text-[11px] text-muted">{msg}</p> : null}
+      {/* Dica em LARGURA CHEIA (1–2 linhas em vez de 3 estreitas). */}
+      <p className="text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
 
-      {/* Por pessoa — ACIMA da tabela: quanto cada um gastou nesta fatura (caixa própria, alinhada). */}
-      {perPerson.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[10px] border border-border bg-card2/40 px-3.5 py-2.5">
-          <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.12em] text-faint">{t("orcamento.tabPeople")}</span>
-          {perPerson.map((b) => (
-            <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 text-[12.5px]">
-              <span className="text-muted">{b.name}</span>
-              <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
-            </span>
-          ))}
+      {/* Linha ACIMA da tabela: totais por pessoa à ESQUERDA · ações (modelo/importar) à DIREITA. */}
+      {perPerson.length > 0 || !viewerMode ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[10px] border border-border bg-card2/40 px-3.5 py-2.5">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-1.5">
+            {perPerson.length > 0 ? (
+              <>
+                <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.12em] text-faint">{t("orcamento.tabPeople")}</span>
+                {perPerson.map((b) => (
+                  <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 text-[12.5px]">
+                    <span className="text-muted">{b.name}</span>
+                    <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
+                  </span>
+                ))}
+              </>
+            ) : null}
+          </div>
+          {!viewerMode ? (
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button type="button" onClick={downloadTemplate} className={BTN}>
+                <Download size={13} /> {t("orcamento.downloadTemplate")}
+              </button>
+              <button type="button" onClick={() => fileRef.current?.click()} className={BTN}>
+                <Upload size={13} /> {t("orcamento.importCsv")}
+              </button>
+              <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onFile(e)} />
+            </div>
+          ) : null}
         </div>
       ) : null}
+      {msg ? <p className="text-[11px] text-muted">{msg}</p> : null}
 
       <DataGrid<Expense>
         columns={cols}
