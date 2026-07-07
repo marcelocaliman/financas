@@ -1155,10 +1155,10 @@ function drawBrand(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
   ctx.fillText("Nossas Finanças", x + d + 18 * s, y + d / 2 + 1 * s);
 }
 
-function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number, pal: Palette = DARK) {
+function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number, pal: Palette = DARK, size = 34) {
   ctx.globalAlpha = a;
   ctx.fillStyle = pal.accent;
-  ctx.font = fontMono(34 * s, 700);
+  ctx.font = fontMono(size * s, 700);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
   ctx.letterSpacing = `${3 * s}px`;
@@ -1218,27 +1218,31 @@ function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
   ctx.globalAlpha = 1;
 }
 
+/** Quebra o texto em linhas que cabem em `maxW` (a fonte JÁ deve estar setada no ctx). */
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
+  const words = text.split(" ");
+  const out: string[] = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      out.push(line);
+      line = w;
+    } else line = test;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
 function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number, pal: Palette = DARK, size = 34, lhPx = 46) {
   ctx.globalAlpha = a;
   ctx.fillStyle = pal.muted;
   ctx.font = fontSans(size * s, 400);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  // wrap simples por largura
-  const maxW = W - x - 90 * s;
-  const words = text.split(" ");
-  let line = "";
-  let yy = y;
   const lh = lhPx * s;
-  for (const w of words) {
-    const test = line ? line + " " + w : w;
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line, x, yy);
-      line = w;
-      yy += lh;
-    } else line = test;
-  }
-  if (line) {
+  let yy = y;
+  for (const line of wrapLines(ctx, text, W - x - 90 * s)) {
     ctx.fillText(line, x, yy);
     yy += lh;
   }
@@ -1269,16 +1273,34 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       return;
     }
     if (style === "vivid" && teach) {
-      // EDUCATIVO: foto menor em cima (faixa 0.4) → mais espaço pro texto. Título MODERADO + eyebrow +
-      // EXPLICAÇÃO grande e com respiro (todo tópico é explicado, nada de frase solta). Padding folgado.
+      // EDUCATIVO: foto menor em cima (faixa 0.4) → sobra a metade de baixo pro texto. Título no
+      // MESMO tamanho bom (63–92) + eyebrow e EXPLICAÇÃO GRANDES (não miúdos) + o bloco CENTRALIZADO
+      // na faixa (nada de vão vazio embaixo). Mede a altura real (título+sub+chips) pra centralizar.
       const bandTop = H * 0.4;
       const lines = sc.title || [];
-      const px = fitTitlePx(ctx, s, lines, availW, 50, 74);
-      const eyeY = bandTop + 104 * s;
-      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
-      let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 42) * s, lines, a, rise, px, pal);
-      if (sc.sub) tb = drawSub(ctx, s, x, tb + 40 * s, W, sc.sub, a, pal, 37, 52);
-      if (sc.chips) drawChips(ctx, s, x, tb + 40 * s, sc.chips, a, W - x * 2, pal);
+      const px = fitTitlePx(ctx, s, lines, availW, 63, 92);
+      const titleLh = (px + 10) * s;
+      const subSize = 44;
+      const subLhPx = 62;
+      const eyeSize = 38;
+      const eyeToTitle = (px * 0.72 + 48) * s; // baseline do eyebrow → 1ª baseline do título
+      const titleH = lines.length * titleLh;
+      const subGap = 50 * s;
+      ctx.font = fontSans(subSize * s, 400);
+      const subN = sc.sub ? wrapLines(ctx, sc.sub, W - x - 90 * s).length : 0;
+      const subH = subN * subLhPx * s;
+      const chipsGap = sc.chips ? 48 * s : 0;
+      const chipsH = sc.chips ? 54 * s : 0;
+      // Altura do bloco a partir da baseline do eyebrow (incl. o "corpo" do eyebrow acima dela).
+      const eyeCap = eyeSize * 0.75 * s;
+      const blockH = eyeCap + eyeToTitle + titleH + (sc.sub ? subGap + subH : 0) + (sc.chips ? chipsGap + chipsH : 0);
+      const zoneTop = bandTop + 22 * s;
+      const zoneBottom = H - 86 * s;
+      const eyeY = zoneTop + eyeCap + Math.max(0, (zoneBottom - zoneTop - blockH) / 2);
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal, eyeSize);
+      let tb = drawTitle(ctx, s, x, eyeY + eyeToTitle, lines, a, rise, px, pal);
+      if (sc.sub) tb = drawSub(ctx, s, x, tb + subGap, W, sc.sub, a, pal, subSize, subLhPx);
+      if (sc.chips) drawChips(ctx, s, x, tb + chipsGap, sc.chips, a, W - x * 2, pal);
       return;
     }
     if (style === "vivid") {
