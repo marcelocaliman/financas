@@ -209,8 +209,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"] },
-      { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar"], chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
-      { kind: "hook", eyebrow: "IMPORTANTE", title: ["É um ponto", "de partida."], sub: "Adapte aos seus números — o que importa é ter um plano e seguir." },
+      { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar."], chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
+      { kind: "hook", eyebrow: "NUM SALÁRIO DE R$ 3.000", title: ["1.500 · 900 ·", "600"], sub: "Metade nas contas do mês, 30% no que te dá prazer e 20% pro seu futuro. Fácil de lembrar." },
+      { kind: "hook", eyebrow: "O SEGREDO", title: ["Poupe ANTES", "de gastar."], sub: "Separe os 20% assim que a renda cai — o resto se vira com o que sobra. Nunca o contrário." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Monte o seu orçamento — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -219,8 +221,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"] },
-      { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "O suficiente pra respirar se a renda parar. Guarde onde dê pra sacar no mesmo dia." },
-      { kind: "hook", eyebrow: "POR QUE IMPORTA", title: ["Ela evita", "a dívida."], sub: "Sem reserva, todo imprevisto vira cartão ou empréstimo caro." },
+      { kind: "hook", eyebrow: "O QUE É", title: ["O dinheiro que", "te segura."], sub: "Se a renda parar ou vier um imprevisto, você resolve sem cartão nem empréstimo caro." },
+      { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "Gasta R$ 2.000/mês? Mire R$ 6.000 a 12.000. Deixe onde dê pra sacar no mesmo dia." },
+      { kind: "hook", eyebrow: "COMO MONTAR", title: ["Um aporte fixo,", "todo mês."], sub: "No automático, até chegar no alvo. Só use em emergência de verdade — e reponha depois." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Acompanhe sua reserva no app", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -229,8 +233,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"] },
-      { kind: "hook", eyebrow: "UM EXEMPLO", title: ["R$ 200/mês viram", "~R$ 280 mil."], sub: "Em 30 anos, a ~8% ao ano. Você põe R$ 72 mil; o resto é rendimento sobre rendimento." },
-      { kind: "hook", eyebrow: "A LIÇÃO", title: ["Comece pequeno,", "mas comece já."], sub: "Tempo vale mais que valor. Cada ano a mais faz uma diferença enorme." },
+      { kind: "hook", eyebrow: "JUROS COMPOSTOS", title: ["Rendimento sobre", "rendimento."], sub: "O que você ganha passa a render também — e a bola de neve cresce cada vez mais rápido, sozinha." },
+      { kind: "hook", eyebrow: "UM EXEMPLO REAL", title: ["R$ 200/mês →", "~R$ 280 mil"], sub: "Em 30 anos, a ~8% ao ano. Você deposita só R$ 72 mil; o resto (mais de R$ 200 mil!) é rendimento." },
+      { kind: "hook", eyebrow: "A LIÇÃO", title: ["Comece pequeno,", "mas comece já."], sub: "Tempo vale mais que valor. Cada ano a mais faz uma diferença enorme lá na frente." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Projete o seu futuro — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -239,8 +245,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."] },
-      { kind: "hook", eyebrow: "POR QUÊ", title: ["Se um cai,", "os outros seguram."], sub: "Espalhar entre tipos de ativo (e moedas) reduz o risco de um tombo te pegar inteiro." },
-      { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Some, não", "concentre."], sub: "Diversificar não é ter mais risco — é não depender de uma aposta só." },
+      { kind: "hook", eyebrow: "O QUE É DIVERSIFICAR", title: ["Espalhar", "o risco."], sub: "Dividir o dinheiro entre tipos de ativo (e moedas) pra não depender de uma aposta só dar certo." },
+      { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Se um cai, os", "outros seguram."], sub: "Renda fixa + ações + FIIs + moedas: quando um tomba, o conjunto amortece — você sente menos." },
+      { kind: "hook", eyebrow: "O PONTO", title: ["Menos risco,", "não mais."], sub: "Diversificar não é arriscar mais — é não colocar todos os ovos na mesma cesta." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Veja sua alocação por classe", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -249,8 +257,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."] },
-      { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada, só pela cotação." },
-      { kind: "hook", eyebrow: "A DICA", title: ["Acompanhe em", "uma moeda só."], sub: "Ver tudo convertido evita susto — e mostra o efeito real do câmbio." },
+      { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada — só pela cotação do dia." },
+      { kind: "hook", eyebrow: "UM EXEMPLO", title: ["€ 1.000 hoje", "≠ amanhã."], sub: "Se o euro sobe 5%, seus € 1.000 valem 5% a mais em real — sem você mexer num centavo." },
+      { kind: "hook", eyebrow: "A DICA", title: ["Acompanhe numa", "moeda só."], sub: "Ver tudo convertido pra uma moeda evita susto e mostra o efeito real do câmbio no seu bolso." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Multimoeda de verdade", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -259,8 +269,10 @@ export const EDU_STORIES: Story[] = [
     style: "vivid",
     scenes: [
       { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."] },
-      { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Juros de cartão e cheque especial superam qualquer investimento. Quitar é lucro garantido." },
-      { kind: "hook", eyebrow: "A ORDEM", title: ["Maior juro,", "não maior valor."], sub: "Liste as dívidas pela taxa e mate a de juro mais alto — nessa ordem." },
+      { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Os juros de cartão e cheque especial superam QUALQUER investimento. Quitar é lucro garantido." },
+      { kind: "hook", eyebrow: "A CONTA", title: ["Rotativo passa", "de 300% ao ano."], sub: "Nenhum investimento paga isso. Cada real da dívida cara que você mata rende mais que aplicar." },
+      { kind: "hook", eyebrow: "A ORDEM CERTA", title: ["Maior juro,", "não maior valor."], sub: "Liste as dívidas pela TAXA e mate a de juro mais alto primeiro — depois a próxima, e assim vai." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Organize e saia do vermelho", sub: "nossasfinancas.com.br" },
     ],
   },
 ];
