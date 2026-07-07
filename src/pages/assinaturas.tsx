@@ -55,9 +55,10 @@ export default function Assinaturas() {
     { key: "renewalDay", type: "day", header: t("assinaturas.renewalDay"), width: "84px", align: "right" },
     // Valor cobrado no ciclo (mensal ou anual). Pequeno → sempre 2 casas (padrão do app é 0).
     { key: "amount", type: "money", header: t("assinaturas.amount"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency", decimals: 2 },
-    // Equivalente mensal (só-leitura): anual ÷ 12 — deixa mensal e anual comparáveis lado a lado.
+    // Equivalente mensal (só-leitura) NA MOEDA DE EXIBIÇÃO: converte (anual÷12 × câmbio) pra dar pra
+    // comparar mensal e anual, em moedas diferentes, na mesma régua — e bater com o Total lá embaixo.
     // Fantasma (sem valor) fica "—" pra a linha inteira ler-se vazia; senão formata em 2 casas.
-    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => (r.amount > 0 ? formatMoney(monthlyOf(r), r.currency || base, CENTS) : "—") },
+    { key: "monthlyEq", type: "computed", header: t("assinaturas.monthly"), width: "minmax(110px,1fr)", align: "right", compute: (r) => (r.amount > 0 ? formatMoney(convert(monthlyOf(r), r.currency || base, disp, rates), disp, CENTS) : "—") },
   ];
 
   // Fantasma nasce SEM moeda e SEM ciclo (mostra "—"); ao salvar, moeda cai na base (DataGrid)
