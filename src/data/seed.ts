@@ -47,6 +47,8 @@ export function buildSeed(main: Currency): SeedData {
   const m = (eurRef: number) => nice(eurRef, main); // item local (moeda principal)
   const f2 = (eurRef: number) => nice(eurRef, c2); // item na 1ª moeda do exterior
   const f3 = (eurRef: number) => nice(eurRef, c3); // item na 2ª moeda do exterior
+  // Preço "de assinatura" — valor pequeno com centavos (sem o arredondamento de `nice`).
+  const priced = (eurRef: number, c: Currency) => Math.round(eurRef * SCALE[c] * 100) / 100;
   const rMain = REGION_OF[main]; // país da moeda principal
   const rC2 = REGION_OF[c2];
   const rC3 = REGION_OF[c3];
@@ -170,11 +172,11 @@ export function buildSeed(main: Currency): SeedData {
     ],
     // Assinaturas recorrentes (documentação — não somam no orçamento; já entram na fatura do cartão).
     subscriptions: [
-      { id: "sub1", name: "Netflix", currency: main, amount: m(11), renewalDay: 8 },
-      { id: "sub2", name: "Spotify", currency: main, amount: m(6), renewalDay: 15 },
-      { id: "sub3", name: "iCloud+", currency: main, amount: m(3), renewalDay: 2 },
-      { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: f2(20), renewalDay: 20 },
-      { id: "sub5", name: "Academia", currency: main, amount: m(35), renewalDay: 5 },
+      { id: "sub1", name: "Netflix", currency: main, amount: priced(8.02, main), renewalDay: 8 },
+      { id: "sub2", name: "Spotify", currency: main, amount: priced(3.91, main), renewalDay: 15 },
+      { id: "sub3", name: "iCloud+", currency: main, amount: priced(2.66, main), renewalDay: 2 },
+      { id: "sub4", name: "ChatGPT Plus", currency: c2, amount: priced(20, c2), renewalDay: 20 },
+      { id: "sub5", name: "Academia", currency: main, amount: priced(21.41, main), renewalDay: 5 },
     ],
     settings: {
       // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.
