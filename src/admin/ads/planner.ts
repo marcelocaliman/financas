@@ -40,7 +40,7 @@ function storyTheme(id: string): string {
 }
 
 /** Destaque (Highlight) onde salvar cada reel/story — casa com as 5 capas geradas em HIGHLIGHTS. */
-function storyHighlight(id: string): string {
+export function storyHighlight(id: string): string {
   const s = id.toLowerCase();
   if (s.includes("tour") || s.includes("simples")) return "Comece aqui";
   if (s.includes("privac")) return "Privacidade";

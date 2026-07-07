@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
 import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
-import { generateSchedule, boostPlan, INTENSITY_LABEL, storyForDate, type Intensity } from "@/admin/ads/planner";
+import { generateSchedule, boostPlan, INTENSITY_LABEL, storyForDate, storyHighlight, type Intensity } from "@/admin/ads/planner";
 import { cn } from "@/lib/utils";
 
 // ── catálogo de peças (posts + reels + carrosséis, institucionais e educativos) ──
@@ -33,6 +33,39 @@ const KIND_META: Record<Kind, { icon: typeof Film; label: string }> = {
   reel: { icon: Clapperboard, label: "Reel" },
   carousel: { icon: GalleryHorizontalEnd, label: "Carrossel" },
 };
+
+// Legenda + 1º comentário prontos por peça (posts e carrosséis têm; Reels/vídeos não — legenda curta na hora).
+const CAPTION: Record<string, { caption?: string; comment?: string }> = Object.fromEntries([
+  ...POSTS.map((p) => [`post:${p.id}`, { caption: p.caption, comment: p.comment }] as const),
+  ...EDU_POSTS.map((p) => [`post:${p.id}`, { caption: p.caption, comment: p.comment }] as const),
+  ...CAROUSELS.map((c) => [`carousel:${c.id}`, { caption: c.caption, comment: c.comment }] as const),
+  ...EDU_CAROUSELS.map((c) => [`carousel:${c.id}`, { caption: c.caption, comment: c.comment }] as const),
+]);
+
+/** Passos EXPLÍCITOS do dia pra uma peça — DERIVADOS do formato (funcionam até em planos já salvos). */
+function pieceSteps(pieceId: string): string[] {
+  const kind = PIECE[pieceId]?.kind ?? "post";
+  const dest = storyHighlight(pieceId);
+  const isTour = pieceId === "carousel:tour";
+  if (kind === "reel")
+    return [
+      "Poste como REEL 9:16 (é o que alcança quem NÃO te segue) — não deixe só no story.",
+      "Reposte o Reel no seu Story: “vídeo novo 👇” + sticker de link pra bio.",
+      `Salve o story no Destaque “${dest}”.`,
+    ];
+  if (kind === "carousel")
+    return [
+      "Poste o carrossel no feed (arraste os slides na ordem; 1 legenda pro conjunto).",
+      ...(isTour ? ["FIXE no topo do perfil — é a sua vitrine."] : []),
+      "Reposte no Story: “saiu coisa nova 👇” + sticker de link.",
+      ...(isTour ? ["Salve o story no Destaque “Comece aqui”."] : []),
+    ];
+  return [
+    "Poste a imagem no feed (4:5).",
+    "Reposte no Story: “saiu post novo 👇” + sticker de link pra bio.",
+  ];
+}
+const copyText = (t: string) => { try { void navigator.clipboard?.writeText(t); } catch { /* clipboard indisponível */ } };
 
 const MONTHS = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 const WD = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -138,6 +171,51 @@ function PieceRow({ entry, todayK, tone, onMark, onRemove }: { entry: CalEntry; 
       <button type="button" onClick={() => onRemove(entry.id)} aria-label="Remover do plano" className="grid h-8 w-8 shrink-0 place-items-center rounded-[8px] text-faint transition-colors hover:text-neg">
         <Trash2 size={13} />
       </button>
+    </div>
+  );
+}
+
+const COPY_BTN = "inline-flex h-7 items-center gap-1.5 rounded-[7px] border border-border bg-card px-2.5 text-[11px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors";
+
+/** HOJE (foco do dia): peça + ROTEIRO em passos numerados (postar → story → destaque) + copiar legenda. */
+function TodayCard({ entry, todayK, tone, onMark, onRemove }: { entry: CalEntry; todayK: string; tone: "neg" | "accent"; onMark: (e: CalEntry) => void; onRemove: (id: string) => void }) {
+  const [copied, setCopied] = useState<"cap" | "com" | null>(null);
+  const meta = PIECE[entry.pieceId];
+  const Icon = meta ? KIND_META[meta.kind].icon : ImageIcon;
+  const neg = tone === "neg";
+  const steps = pieceSteps(entry.pieceId);
+  const cap = CAPTION[entry.pieceId];
+  const isReel = meta?.kind === "reel";
+  const copy = (which: "cap" | "com", text?: string) => { if (!text) return; copyText(text); setCopied(which); setTimeout(() => setCopied(null), 1500); };
+  return (
+    <div className={cn("rounded-[12px] border px-3.5 py-3", neg ? "border-neg/30 bg-neg/5" : "border-accent/30 bg-accent-soft/25")}>
+      <div className="flex items-start gap-3">
+        <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-[9px]", neg ? "bg-neg/15 text-neg" : "bg-accent/15 text-accent")}><Icon size={16} /></span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[13.5px] font-semibold text-text">{meta?.label ?? entry.pieceId}</span>
+            <span className="shrink-0 rounded-[5px] bg-card px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.06em] text-faint">{meta ? KIND_META[meta.kind].label : "peça"}{meta?.edu ? " · edu" : ""}</span>
+            <span className={cn("text-[11px] font-medium", neg ? "text-neg" : "text-accent")}>· {neg ? "atrasada" : relDay(entry.date, todayK)}</span>
+          </div>
+          <ol className="mt-2 space-y-1.5">
+            {steps.map((s, i) => (
+              <li key={i} className="flex gap-2 text-[12px] leading-snug text-text">
+                <span className="mt-px grid h-4 w-4 shrink-0 place-items-center rounded-full bg-accent/15 font-mono text-[9px] font-semibold text-accent">{i + 1}</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            {cap?.caption ? <button type="button" onClick={() => copy("cap", cap.caption)} className={COPY_BTN}><Check size={12} className={cn(copied === "cap" ? "text-accent" : "opacity-0")} />{copied === "cap" ? "Legenda copiada" : "Copiar legenda"}</button> : null}
+            {cap?.comment ? <button type="button" onClick={() => copy("com", cap.comment)} className={COPY_BTN}><Check size={12} className={cn(copied === "com" ? "text-accent" : "opacity-0")} />{copied === "com" ? "Comentário copiado" : "Copiar 1º comentário"}</button> : null}
+            {isReel ? <span className="text-[11px] text-faint">Legenda do Reel: escreva 1 frase curta + “app grátis na bio” — o vídeo já explica o resto.</span> : null}
+          </div>
+        </div>
+      </div>
+      <div className="mt-2.5 flex items-center gap-2 border-t border-border/60 pt-2.5">
+        <button type="button" onClick={() => onMark(entry)} className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-accent px-3 text-[12px] font-medium text-[#08130C] hover:opacity-90"><Check size={13} /> Publiquei</button>
+        <button type="button" onClick={() => onRemove(entry.id)} aria-label="Remover do plano" className="ml-auto grid h-8 w-8 place-items-center rounded-[8px] text-faint transition-colors hover:text-neg"><Trash2 size={13} /></button>
+      </div>
     </div>
   );
 }
@@ -266,9 +344,9 @@ export function AdsCalendar() {
             <MicroLabel tone={due ? (overdue.length ? "neg" : "accent") : "faint"}>Hoje{due ? ` · ${due} pra postar` : ""}</MicroLabel>
           </div>
           {due ? (
-            <div className="space-y-2">
-              {overdue.map((e) => <PieceRow key={e.id} entry={e} todayK={todayK} tone="neg" onMark={markPosted} onRemove={remove} />)}
-              {today.map((e) => <PieceRow key={e.id} entry={e} todayK={todayK} tone="accent" onMark={markPosted} onRemove={remove} />)}
+            <div className="space-y-2.5">
+              {overdue.map((e) => <TodayCard key={e.id} entry={e} todayK={todayK} tone="neg" onMark={markPosted} onRemove={remove} />)}
+              {today.map((e) => <TodayCard key={e.id} entry={e} todayK={todayK} tone="accent" onMark={markPosted} onRemove={remove} />)}
             </div>
           ) : hasPlan ? (
             <div className="flex items-start gap-3 rounded-[12px] border border-accent/30 bg-accent-soft/25 px-3.5 py-3">
