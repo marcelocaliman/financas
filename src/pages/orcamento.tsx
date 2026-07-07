@@ -12,7 +12,7 @@ import { actions } from "@/data/actions";
 import { convert, formatMoney, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { categoryColors, expenseColors } from "@/money/composition";
 import { nameById, EXPENSE_CARD, type TaxonomyItem } from "@/domain/taxonomy";
-import { topLevelExpenses, expenseTotal, expenseLeaves, childExpenseIds } from "@/finance/statement";
+import { topLevelExpenses, expenseTotal, expenseLeaves, statementResidual } from "@/finance/statement";
 import { upcomingBills } from "@/domain/bills";
 import { BILL_STATUS_TONE, dueDateLabel, daysLabel } from "@/components/common/bill-format";
 import type { Expense, Income } from "@/domain/types";
@@ -33,27 +33,6 @@ type BudgetRow = { id: string; month: string; categoryId: string; name: string; 
 function normalizeExpenseLink(e: Expense): Expense {
   const parentId = e.categoryId === EXPENSE_CARD ? undefined : e.parentId || undefined;
   return { ...e, parentId };
-}
-
-/** Ordena os gastos agrupando cada FILHO logo abaixo da sua fatura (pai). */
-function groupExpenseRows(rows: BudgetRow[]): BudgetRow[] {
-  const ids = new Set(rows.map((r) => r.id));
-  const kids = new Map<string, BudgetRow[]>();
-  const top: BudgetRow[] = [];
-  for (const r of rows) {
-    if (r.parentId && ids.has(r.parentId)) {
-      const arr = kids.get(r.parentId);
-      if (arr) arr.push(r);
-      else kids.set(r.parentId, [r]);
-    } else top.push(r);
-  }
-  const out: BudgetRow[] = [];
-  for (const p of top) {
-    out.push(p);
-    const c = kids.get(p.id);
-    if (c) out.push(...c);
-  }
-  return out;
 }
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
@@ -216,19 +195,52 @@ export default function Orcamento() {
   const complete = (r: BudgetRow) => r.categoryId.length > 0 && r.amount > 0;
   const isCurrent = month === currentMonth();
   const empty = view.monthExp.length === 0 && view.monthInc.length === 0;
-  // Filhos REAIS (pai existe) — pra tingir/recuar só quem não soma. Órfão (fatura apagada) fica normal.
-  const expChildIds = childExpenseIds(view.monthExp);
-  // Linhas do grid: agrupadas com cada filho (item da fatura) aninhado logo abaixo do seu cartão.
-  const gridRows = groupExpenseRows(view.monthExp as BudgetRow[]);
+  // Tabela principal: só TOP-LEVEL (faturas + avulsos). Os itens DENTRO de uma fatura vivem no
+  // painel expansível da própria fatura (accordion) — não poluem a lista nem contam em dobro.
+  const topLevelExp = topLevelExpenses(view.monthExp) as BudgetRow[];
   const prev = shiftMonth(month, -1);
 
-  // Apagar uma fatura SOLTA seus itens (parentId → undefined): voltam a ser lançamentos normais.
-  // Evita órfão preso a um cartão inexistente e a coluna "Na fatura" sumir com item ainda vinculado.
+  // Apagar uma fatura SOLTA seus itens (parentId → undefined): voltam a ser lançamentos normais,
+  // pra o valor nunca sumir do total (não vira órfão preso a um cartão inexistente).
   const removeExpenseAndDetach = async (id: string) => {
     for (const c of view.monthExp.filter((e) => e.parentId === id)) {
       await actions.putExpense({ ...c, parentId: undefined });
     }
     await actions.removeExpense(id);
+  };
+
+  // Painel de DETALHE de uma fatura: mini-tabela dos itens (filhos) + a sobra "não discriminado".
+  // Adicionar aqui já linka parentId = id da fatura (mês/moeda herdados); assim o total não duplica.
+  const detailCols: GridColumn<BudgetRow>[] = [
+    { key: "categoryId", type: "select", header: t("orcamento.category"), width: "minmax(130px,1.2fr)", placeholder: t("orcamento.categoryPlaceholder"), options: opts(tax.expenseCategories.filter((c) => c.id !== EXPENSE_CARD)) },
+    { key: "name", type: "text", header: t("orcamento.detail"), width: "minmax(140px,1.6fr)", placeholder: t("orcamento.detailPlaceholder") },
+    { key: "amount", type: "money", header: t("orcamento.monthly"), width: "minmax(130px,1fr)", align: "right", currencyKey: "currency" },
+  ];
+  const renderStatementDetail = (fatura: BudgetRow) => {
+    const kids = view.monthExp.filter((e) => e.parentId === fatura.id) as BudgetRow[];
+    const residual = statementResidual(fatura as Expense, kids as Expense[], rates);
+    const itemized = fatura.amount - residual;
+    const newChild = (): BudgetRow => ({ id: crypto.randomUUID(), month: fatura.month, categoryId: "", name: "", currency: fatura.currency, amount: 0, parentId: fatura.id });
+    return (
+      <div className="space-y-2">
+        <p className="text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
+        <DataGrid<BudgetRow>
+          columns={detailCols}
+          rows={kids}
+          blank={newChild}
+          isComplete={(r) => r.categoryId.length > 0 && r.amount > 0}
+          onCommit={(r) => void actions.putExpense({ ...(r as Expense), parentId: fatura.id })}
+          onDelete={(id) => void actions.removeExpense(id)}
+          addPlaceholder={t("orcamento.addStatementItem")}
+          total={<Money value={itemized} currency={fatura.currency} />}
+        />
+        <div className="flex items-center justify-between gap-3 px-1 pt-0.5 text-[12px]">
+          <span className="text-muted">{t("orcamento.statementResidual")}</span>
+          <Money value={residual} currency={fatura.currency} className={cn("font-medium", residual < -0.005 && "text-neg")} />
+        </div>
+        {residual < -0.005 ? <p className="px-1 text-[11px] text-neg">{t("orcamento.overItemized")}</p> : null}
+      </div>
+    );
   };
 
   return (
@@ -365,10 +377,10 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px] grid-neg">
             <DataGrid<BudgetRow>
               key={month}
-              columns={cols(tax.expenseCategories, gridRows, { statusKey: "paid", statusLabel: t("orcamento.paidShort") })}
-              rows={gridRows}
-              rowClass={(r) => (expChildIds.has(r.id) ? "bg-card2/40 shadow-[inset_3px_0_0_0_var(--accent)]" : undefined)}
-              indentRow={(r) => expChildIds.has(r.id)}
+              columns={cols(tax.expenseCategories, topLevelExp, { statusKey: "paid", statusLabel: t("orcamento.paidShort") })}
+              rows={topLevelExp}
+              expandableRow={(r) => r.categoryId === EXPENSE_CARD}
+              renderRowDetail={renderStatementDetail}
               blank={blank}
               isComplete={complete}
               onCommit={(r) => void actions.putExpense(normalizeExpenseLink(normalizeBill(r as Expense)))}

@@ -27,7 +27,7 @@
     "suporte": "Help & Support",
     "config": "Settings"
   },
-  "common": {"close": "Close", "total": "Total", "currency": "Currency", "month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
+  "common": {"close": "Close", "total": "Total", "currency": "Currency", "month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "expand": "Expand", "collapse": "Collapse", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
   "welcome": {
     "title": "Welcome back",
     "titleName": "Welcome back, {{name}}",
@@ -207,6 +207,10 @@
     "dueColumn": "Due date",
     "insideOf": "In bill",
     "notItemized": "not itemized",
+    "statementResidual": "Not itemized",
+    "statementHint": "Break down the charges that make up this bill here. They do NOT add up again in the month's total — the amount is already in the bill. Whatever you don't itemize shows as \"not itemized\".",
+    "addStatementItem": "Add item to bill",
+    "overItemized": "The items already exceed the bill amount — check the values or the bill.",
     "amount": "Amount",
     "upcomingBills": "Upcoming bills",
     "markPaid": "Mark as paid",

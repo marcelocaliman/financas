@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2, type LucideIcon } from "lucide-react";
@@ -77,6 +77,10 @@ interface DataGridProps<T extends { id: string }> {
   rowClass?: (row: T) => string | undefined;
   /** Recua a coluna marcada com `indentable` desta linha (ex.: itens aninhados sob a fatura). */
   indentRow?: (row: T) => boolean;
+  /** Esta linha pode EXPANDIR um painel de detalhe abaixo dela (ex.: fatura → itens). */
+  expandableRow?: (row: T) => boolean;
+  /** Conteúdo do painel expandido de uma linha (renderizado só quando aberta). */
+  renderRowDetail?: (row: T) => ReactNode;
 }
 
 const CELL_INPUT =
@@ -916,6 +920,8 @@ export function DataGrid<T extends { id: string }>({
   rowClass,
   indentRow,
   defaultCurrency,
+  expandableRow,
+  renderRowDetail,
 }: DataGridProps<T>) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -923,8 +929,18 @@ export function DataGrid<T extends { id: string }>({
   const hidden = useUI((s) => s.numbersHidden);
   const viewerMode = useViewer((s) => s.viewerMode);
   const isMobile = useIsMobile();
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const canExpand = !!expandableRow && !!renderRowDetail;
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
-  const template = columns.map((c) => c.width).join(" ") + " 44px";
+  // Coluna-guia (28px) só quando há linhas expansíveis — abriga o chevron sem sobrecarregar as demais.
+  const template = (canExpand ? "28px " : "") + columns.map((c) => c.width).join(" ") + " 44px";
   const firstTextKey = columns.find((c) => c.type === "text")?.key ?? columns[0].key;
   const titleCol = columns.find((c) => c.key === firstTextKey) ?? columns[0];
 
@@ -1127,7 +1143,10 @@ export function DataGrid<T extends { id: string }>({
   //    tabela horizontal que estoura a tela). Reusa exatamente os mesmos renderCell. ──
   if (isMobile) {
     const restCols = columns.filter((c) => c.key !== titleCol.key);
-    const mobileCard = (row: T, ghostRow: boolean) => (
+    const mobileCard = (row: T, ghostRow: boolean) => {
+      const isExpandable = canExpand && !ghostRow && expandableRow!(row);
+      const isOpen = isExpandable && expanded.has(row.id);
+      return (
       <div
         key={ghostRow ? "ghost" : row.id}
         className={cn(
@@ -1146,8 +1165,21 @@ export function DataGrid<T extends { id: string }>({
             <Trash2 size={15} />
           </button>
         ) : null}
-        {/* título = 1º campo de texto (nome), largura cheia */}
-        <div className="pr-7">{renderCell(titleCol, row, ghostRow)}</div>
+        {/* título = 1º campo de texto (nome), largura cheia (chevron à esquerda p/ linhas expansíveis) */}
+        <div className="flex items-center gap-1.5 pr-7">
+          {isExpandable ? (
+            <button
+              type="button"
+              onClick={() => toggleExpand(row.id)}
+              aria-label={isOpen ? t("common.collapse") : t("common.expand")}
+              aria-expanded={isOpen}
+              className="shrink-0 p-1 -ml-1 rounded-md text-faint hover:text-text hover:bg-bg transition-colors"
+            >
+              <ChevronRight size={16} className={cn("transition-transform", isOpen && "rotate-90")} />
+            </button>
+          ) : null}
+          <div className="min-w-0 flex-1">{renderCell(titleCol, row, ghostRow)}</div>
+        </div>
         {restCols.length ? (
           <div className="mt-2 space-y-0.5 border-t border-[var(--grid-line)] pt-1.5">
             {restCols.map((col) => {
@@ -1169,8 +1201,10 @@ export function DataGrid<T extends { id: string }>({
             })}
           </div>
         ) : null}
+        {isOpen ? <div className="mt-2.5 border-t border-[var(--grid-line)] pt-2.5">{renderRowDetail!(row)}</div> : null}
       </div>
-    );
+      );
+    };
     return (
       <div ref={containerRef} className="space-y-2.5">
         {rows.map((row) => mobileCard(row, false))}
@@ -1195,6 +1229,7 @@ export function DataGrid<T extends { id: string }>({
         className="grid items-center bg-card2 border-b border-border"
         style={{ gridTemplateColumns: template }}
       >
+        {canExpand ? <div /> : null}
         {columns.map((c) => (
           <div
             key={c.key}
@@ -1211,31 +1246,52 @@ export function DataGrid<T extends { id: string }>({
       </div>
 
       {/* Linhas */}
-      {rows.map((row) => (
-        <div
-          key={row.id}
-          className={cn("group grid items-center border-b border-[var(--grid-line)] hover:bg-card-hover transition-colors", rowClass?.(row))}
-          style={{ gridTemplateColumns: template }}
-        >
-          {columns.map((c) => (
-            <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right", indentRow?.(row) && c.indentable && "pl-6")}>
-              {renderCell(c, row, false)}
+      {rows.map((row) => {
+        const isExpandable = canExpand && expandableRow!(row);
+        const isOpen = isExpandable && expanded.has(row.id);
+        return (
+          <Fragment key={row.id}>
+            <div
+              className={cn("group grid items-center border-b border-[var(--grid-line)] hover:bg-card-hover transition-colors", isOpen && "bg-card-hover", rowClass?.(row))}
+              style={{ gridTemplateColumns: template }}
+            >
+              {canExpand ? (
+                <div className="flex justify-center">
+                  {isExpandable ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(row.id)}
+                      aria-label={isOpen ? t("common.collapse") : t("common.expand")}
+                      aria-expanded={isOpen}
+                      className="p-1 rounded-md text-faint hover:text-text hover:bg-bg transition-colors"
+                    >
+                      <ChevronRight size={15} className={cn("transition-transform", isOpen && "rotate-90")} />
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+              {columns.map((c) => (
+                <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right", indentRow?.(row) && c.indentable && "pl-6")}>
+                  {renderCell(c, row, false)}
+                </div>
+              ))}
+              <div className="flex justify-center">
+                {!viewerMode ? (
+                  <button
+                    type="button"
+                    onClick={() => onDelete(row.id)}
+                    aria-label="Excluir"
+                    className="p-2 rounded-md text-faint hover:text-neg hover:bg-bg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                ) : null}
+              </div>
             </div>
-          ))}
-          <div className="flex justify-center">
-            {!viewerMode ? (
-              <button
-                type="button"
-                onClick={() => onDelete(row.id)}
-                aria-label="Excluir"
-                className="p-2 rounded-md text-faint hover:text-neg hover:bg-bg opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-              >
-                <Trash2 size={15} />
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ))}
+            {isOpen ? <div className="border-b border-[var(--grid-line)] bg-bg/40 px-2 py-2.5 sm:px-3">{renderRowDetail!(row)}</div> : null}
+          </Fragment>
+        );
+      })}
 
       {/* Linha-fantasma (adicionar) — oculta no modo visitante */}
       {!viewerMode ? (
@@ -1243,6 +1299,7 @@ export function DataGrid<T extends { id: string }>({
           className="grid items-center border-t border-dashed border-border-strong opacity-65 focus-within:opacity-100 transition-opacity"
           style={{ gridTemplateColumns: template }}
         >
+          {canExpand ? <div /> : null}
           {columns.map((c) => (
             <div key={c.key} className={cn("px-2 py-1 min-w-0", c.align === "right" && "text-right")}>
               {renderCell(c, ghost, true)}
