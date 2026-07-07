@@ -112,4 +112,31 @@ function gen(lang) {
 
 writeFileSync(`${DIST}/en.html`, gen("en"));
 writeFileSync(`${DIST}/index.html`, injectHreflang(base));
-console.log("✓ i18n landing: dist/en.html gerada + hreflang em index.html");
+
+// ── Sitemap gerado no BUILD com lastmod SEMPRE fresco ────────────────────────
+// O Google usa <lastmod> pra priorizar o recrawl; um sitemap estático fica velho e
+// o robô não volta. Stampando a data do build a cada deploy, sinalizamos "há conteúdo
+// novo, revisita" — útil especialmente num domínio com histórico do dono antigo.
+function buildSitemap() {
+  const today = new Date().toISOString().slice(0, 10);
+  const alt = [
+    `<xhtml:link rel="alternate" hreflang="pt-BR" href="${SITE}/" />`,
+    `<xhtml:link rel="alternate" hreflang="en" href="${SITE}/en" />`,
+    `<xhtml:link rel="alternate" hreflang="x-default" href="${SITE}/" />`,
+  ].join("\n      ");
+  const url = (loc, { priority, changefreq, alternates = false }) =>
+    `  <url>\n    <loc>${loc}</loc>\n` +
+    (alternates ? `      ${alt}\n` : "") +
+    `    <lastmod>${today}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
+  const pages = [
+    url(`${SITE}/`, { priority: "1.0", changefreq: "weekly", alternates: true }),
+    url(`${SITE}/en`, { priority: "0.9", changefreq: "weekly", alternates: true }),
+    url(`${SITE}/privacidade`, { priority: "0.3", changefreq: "monthly" }),
+    url(`${SITE}/termos`, { priority: "0.3", changefreq: "monthly" }),
+    url(`${SITE}/privacy`, { priority: "0.3", changefreq: "monthly" }),
+    url(`${SITE}/terms`, { priority: "0.3", changefreq: "monthly" }),
+  ];
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.join("\n")}\n</urlset>\n`;
+}
+writeFileSync(`${DIST}/sitemap.xml`, buildSitemap());
+console.log("✓ i18n landing: dist/en.html + hreflang + sitemap.xml (lastmod fresco)");
