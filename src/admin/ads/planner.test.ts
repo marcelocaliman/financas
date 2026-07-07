@@ -26,7 +26,7 @@ describe("orderPieces (variedade)", () => {
   it("é determinístico", () => {
     const pool = [
       { id: "a1", pillar: "A", format: "post" as const, edu: false },
-      { id: "b1", pillar: "B", format: "story" as const, edu: true },
+      { id: "b1", pillar: "B", format: "reel" as const, edu: true },
       { id: "c1", pillar: "C", format: "carousel" as const, edu: false },
     ];
     expect(orderPieces(pool).map((p) => p.id)).toEqual(orderPieces(pool).map((p) => p.id));
@@ -36,7 +36,7 @@ describe("orderPieces (variedade)", () => {
 describe("generateSchedule (roteiro)", () => {
   it("preenche 4 semanas (equilibrado) sem repetir peça e liderando pelo carrossel de apresentação", () => {
     const plan = generateSchedule(new Date(2026, 6, 1), 4, "equilibrado");
-    expect(plan.length).toBe(28); // 4 feed + 3 story por semana = 7/dia × 28 dias
+    expect(plan.length).toBe(20); // 3 feed + 2 reels por semana = 5/sem × 4 semanas (story leve não é peça)
     const ids = plan.map((e) => e.pieceId);
     expect(new Set(ids).size).toBe(ids.length); // nenhuma peça repetida na janela
     const firstFeed = plan.find((e) => e.pieceId.startsWith("post:") || e.pieceId.startsWith("carousel:"));

@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Bell, BellRing, CalendarClock, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight,
-  Clock, Film, GalleryHorizontalEnd, Image as ImageIcon, Plus, Rocket, Sparkles, Trash2,
+  Clapperboard, Clock, Film, GalleryHorizontalEnd, Image as ImageIcon, Plus, Rocket, Sparkles, Trash2,
 } from "lucide-react";
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "@/admin/ads/engine";
 import { useAdsCalendar, type CalEntry } from "@/admin/ads/calendar-store";
-import { generateSchedule, boostPlan, INTENSITY_LABEL, type Intensity } from "@/admin/ads/planner";
+import { generateSchedule, boostPlan, INTENSITY_LABEL, storyForDate, type Intensity } from "@/admin/ads/planner";
 import { cn } from "@/lib/utils";
 
-// ── catálogo de peças (posts + stories + carrosséis, institucionais e educativos) ──
-type Kind = "post" | "story" | "carousel";
+// ── catálogo de peças (posts + reels + carrosséis, institucionais e educativos) ──
+// Os vídeos 9:16 (arrays STORIES/EDU_STORIES no estúdio) são postados como REELS — kind "reel".
+type Kind = "post" | "reel" | "carousel";
 interface PieceMeta {
   id: string;
   label: string;
@@ -20,8 +21,8 @@ interface PieceMeta {
 const PIECES: PieceMeta[] = [
   ...POSTS.map((p) => ({ id: `post:${p.id}`, label: p.name, pillar: p.pillar, kind: "post" as const, edu: false })),
   ...EDU_POSTS.map((p) => ({ id: `post:${p.id}`, label: p.name, pillar: p.pillar, kind: "post" as const, edu: true })),
-  ...STORIES.map((s) => ({ id: `story:${s.id}`, label: s.name, pillar: "Story", kind: "story" as const, edu: false })),
-  ...EDU_STORIES.map((s) => ({ id: `story:${s.id}`, label: s.name, pillar: "Story", kind: "story" as const, edu: true })),
+  ...STORIES.map((s) => ({ id: `story:${s.id}`, label: s.name, pillar: "Reel", kind: "reel" as const, edu: false })),
+  ...EDU_STORIES.map((s) => ({ id: `story:${s.id}`, label: s.name, pillar: "Reel", kind: "reel" as const, edu: true })),
   ...CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, label: c.name, pillar: c.pillar, kind: "carousel" as const, edu: false })),
   ...EDU_CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, label: c.name, pillar: c.pillar, kind: "carousel" as const, edu: true })),
 ];
@@ -29,7 +30,7 @@ const PIECE: Record<string, PieceMeta> = Object.fromEntries(PIECES.map((p) => [p
 const POST_PILLARS = [...new Set(POSTS.map((p) => p.pillar))];
 const KIND_META: Record<Kind, { icon: typeof Film; label: string }> = {
   post: { icon: ImageIcon, label: "Post" },
-  story: { icon: Film, label: "Story" },
+  reel: { icon: Clapperboard, label: "Reel" },
   carousel: { icon: GalleryHorizontalEnd, label: "Carrossel" },
 };
 
@@ -121,10 +122,13 @@ function PieceRow({ entry, todayK, tone, onMark, onRemove }: { entry: CalEntry; 
           <span className="truncate text-[13px] font-medium text-text">{meta?.label ?? entry.pieceId}</span>
           {meta ? <span className="shrink-0 rounded-[5px] bg-card px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.06em] text-faint">{KIND_META[meta.kind].label}{meta.edu ? " · edu" : ""}</span> : null}
         </div>
-        <div className="mt-0.5 truncate text-[11.5px] text-faint">
+        <div className="mt-0.5 text-[11.5px] text-faint">
           <span className={cn(neg && "text-neg")}>{relDay(entry.date, todayK)}</span>
-          {entry.note ? <> · <span className="text-accent">{entry.note}</span></> : null}
         </div>
+        {entry.note ? (
+          // Hoje/atrasado: instrução COMPLETA (o dono lê e faz). Próximos (muted): compacta.
+          <div className={cn("mt-1 text-[11.5px] leading-snug", tone === "muted" ? "truncate text-faint" : "text-accent")}>{entry.note}</div>
+        ) : null}
       </div>
       {onMark ? (
         <button type="button" onClick={() => onMark(entry)} title="Marcar como publicado hoje" className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[9px] bg-accent px-3 text-[12px] font-medium text-[#08130C] hover:opacity-90">
@@ -267,10 +271,12 @@ export function AdsCalendar() {
               {today.map((e) => <PieceRow key={e.id} entry={e} todayK={todayK} tone="accent" onMark={markPosted} onRemove={remove} />)}
             </div>
           ) : hasPlan ? (
-            <div className="flex items-center gap-3 rounded-[12px] border border-accent/30 bg-accent-soft/25 px-3.5 py-3">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/15 text-accent"><Check size={16} /></span>
+            <div className="flex items-start gap-3 rounded-[12px] border border-accent/30 bg-accent-soft/25 px-3.5 py-3">
+              <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent/15 text-accent"><Check size={16} /></span>
               <div className="min-w-0 text-[12.5px] leading-snug text-text">
-                Você está em dia.{next ? <span className="text-muted"> Próximo: <b className="text-text">{PIECE[next.pieceId]?.label ?? next.pieceId}</b> · {relDay(next.date, todayK)}.</span> : null}
+                Sem peça principal hoje — dia de <b className="text-text">story leve</b> (ou descanse; pular não quebra nada).
+                <div className="mt-1.5 text-[11.5px] leading-snug text-muted">📲 <b className="text-text">Story de hoje:</b> {storyForDate(todayK)}</div>
+                {next ? <div className="mt-1.5 text-[11.5px] text-faint">Próxima peça: <b className="text-muted">{PIECE[next.pieceId]?.label ?? next.pieceId}</b> · {relDay(next.date, todayK)}.</div> : null}
               </div>
             </div>
           ) : (
@@ -310,9 +316,12 @@ export function AdsCalendar() {
             <div className="mt-2 space-y-1.5">
               {upcoming.map((e) => <PieceRow key={e.id} entry={e} todayK={todayK} tone="muted" onRemove={remove} />)}
             </div>
-            <p className="mt-2.5 text-[11px] leading-relaxed text-faint">
-              <b className="text-muted">Rotina:</b> post do feed → reposte no story · story → salve no <b className="text-muted">Destaque</b> indicado · 1º carrossel → fixe no topo.
-            </p>
+            <div className="mt-3 rounded-[10px] border border-border bg-card2/40 px-3 py-2.5 text-[11px] leading-relaxed text-faint">
+              <b className="text-muted">Rotina fixa:</b> <b className="text-muted">Post/Carrossel</b> → poste no feed e reposte no story · <b className="text-muted">Reel</b> (vídeo 9:16) → poste como Reel (não só story!), reposte no story e salve no Destaque · o carrossel <b className="text-muted">“Conheça o app”</b> fica fixado no topo.
+              <div className="mt-1.5">
+                <b className="text-muted">Story leve</b> (dias sem peça, 10s, pular é OK): {storyForDate(todayK)}
+              </div>
+            </div>
           </div>
         ) : null}
       </div>

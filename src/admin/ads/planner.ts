@@ -1,24 +1,31 @@
-// Gerador de ROTEIRO de postagem — determinístico, SEM IA. Responde "o que postar, em que ordem":
-// distribui as peças (posts/carrosséis/stories) ao longo dos dias com cadência fixa e VARIEDADE
-// (nunca dois do mesmo pilar/formato/tipo colados; o carrossel de apresentação lidera o feed).
+// Gerador de ROTEIRO de postagem — determinístico, SEM IA. Responde "o que postar, em que ordem, em
+// que FORMATO e o que fazer no story". 3 TRILHAS que não competem (best-practice 2026):
+//  • FEED (posts 4:5 + carrosséis) = portfólio permanente. Qualidade > quantidade (3–4/sem).
+//  • REELS (os vídeos 9:16) = motor de DESCOBERTA (alcança quem NÃO segue). 2–3/sem. Vídeo é SEMPRE
+//    postado como REEL — nunca queimado num story de 24h.
+//  • STORIES = toque LEVE diário (aquece quem já segue). NÃO consome peça: nos dias com post/reel é o
+//    repost do dia; nos dias sem, 1 story rotativo de 10s (STORY_ROTATION). Pular é OK — é bônus.
+// Não existe "cansar o algoritmo" por postar demais: o limite é HUMANO (manter por meses) + qualidade
+// (cada post disputa a MESMA audiência). Como as peças pesadas já existem no estúdio, o trabalho diário
+// vira "postar a próxima da fila + 1 story leve".
 import { POSTS, EDU_POSTS, STORIES, EDU_STORIES, CAROUSELS, EDU_CAROUSELS } from "./engine";
 
 export type Intensity = "leve" | "equilibrado" | "intenso";
 export const INTENSITY_LABEL: Record<Intensity, string> = {
-  leve: "Leve · ~4/sem",
-  equilibrado: "Equilibrado · ~7/sem",
-  intenso: "Intenso · quase diário",
+  leve: "Leve · ~4/sem (2 feed + 2 reels)",
+  equilibrado: "Equilibrado · ~5/sem (3 feed + 2 reels)",
+  intenso: "Intenso · ~6/sem (3 feed + 3 reels) — só campanha",
 };
 
-type Fmt = "post" | "carousel" | "story";
+type Fmt = "post" | "carousel" | "reel";
 interface PlanPiece {
-  id: string; // pieceId "post:..|story:..|carousel:.."
+  id: string; // pieceId "post:..|story:..|carousel:.." (o prefixo "story:" hoje É um REEL — mantido por compat)
   pillar: string; // tema (pra espaçar assuntos iguais)
   format: Fmt;
   edu: boolean; // educativo × institucional (pra alternar)
 }
 
-/** Tema aproximado de um story pelo id — só pra espaçar assuntos iguais no roteiro. */
+/** Tema aproximado de um vídeo/reel pelo id — só pra espaçar assuntos iguais no roteiro. */
 function storyTheme(id: string): string {
   const s = id.toLowerCase();
   if (s.includes("privac")) return "privacidade";
@@ -32,7 +39,7 @@ function storyTheme(id: string): string {
   return "geral";
 }
 
-/** Destaque (Highlight) onde salvar cada story — casa com as 5 capas geradas em HIGHLIGHTS. */
+/** Destaque (Highlight) onde salvar cada reel/story — casa com as 5 capas geradas em HIGHLIGHTS. */
 function storyHighlight(id: string): string {
   const s = id.toLowerCase();
   if (s.includes("tour") || s.includes("simples")) return "Comece aqui";
@@ -48,17 +55,18 @@ const addDays = (d: Date, n: number) => {
   return x;
 };
 
-/** Feed = posts + carrosséis (institucionais e educativos). */
+/** FEED = posts + carrosséis (institucionais e educativos). */
 const FEED: PlanPiece[] = [
   ...POSTS.map((p) => ({ id: `post:${p.id}`, pillar: p.pillar, format: "post" as Fmt, edu: false })),
   ...CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, pillar: c.pillar, format: "carousel" as Fmt, edu: false })),
   ...EDU_POSTS.map((p) => ({ id: `post:${p.id}`, pillar: p.pillar, format: "post" as Fmt, edu: true })),
   ...EDU_CAROUSELS.map((c) => ({ id: `carousel:${c.id}`, pillar: c.pillar, format: "carousel" as Fmt, edu: true })),
 ];
-/** Stories (institucionais e educativos) — trilha própria (formato leve, cadência à parte). */
-const STORY: PlanPiece[] = [
-  ...STORIES.map((s) => ({ id: `story:${s.id}`, pillar: storyTheme(s.id), format: "story" as Fmt, edu: false })),
-  ...EDU_STORIES.map((s) => ({ id: `story:${s.id}`, pillar: storyTheme(s.id), format: "story" as Fmt, edu: true })),
+/** REELS = os vídeos 9:16 (institucionais e educativos). Trilha própria — 2–3/sem, motor de descoberta.
+ *  O prefixo do id segue "story:" (compat com o estúdio e com planos já salvos); o FORMATO é reel. */
+const REELS: PlanPiece[] = [
+  ...STORIES.map((s) => ({ id: `story:${s.id}`, pillar: storyTheme(s.id), format: "reel" as Fmt, edu: false })),
+  ...EDU_STORIES.map((s) => ({ id: `story:${s.id}`, pillar: storyTheme(s.id), format: "reel" as Fmt, edu: true })),
 ];
 
 /**
@@ -101,34 +109,66 @@ export function orderPieces(pool: PlanPiece[], seedId?: string): PlanPiece[] {
   return out;
 }
 
-/** Dias da semana de cada trilha por intensidade (0=dom … 6=sáb). */
-const RHYTHM: Record<Intensity, { feed: number[]; story: number[] }> = {
-  leve: { feed: [1, 3, 5], story: [6] }, // seg/qua/sex + sáb story
-  equilibrado: { feed: [1, 3, 5, 6], story: [2, 4, 0] }, // seg/qua/sex/sáb + ter/qui/dom story
-  intenso: { feed: [1, 2, 4, 5, 6], story: [3, 0] },
+/** Dias da semana de cada trilha por intensidade (0=dom … 6=sáb). MOLDE flexível, não lei — sáb/dom
+ *  rendem menos em finanças; pode deslocar. Dias sem feed/reel = story leve (bônus, ver STORY_ROTATION). */
+const RHYTHM: Record<Intensity, { feed: number[]; reel: number[] }> = {
+  leve: { feed: [1, 5], reel: [3, 6] }, // seg/sex feed + qua/sáb reel = 4/sem
+  equilibrado: { feed: [1, 3, 5], reel: [2, 6] }, // seg/qua/sex feed + ter/sáb reel = 5/sem
+  intenso: { feed: [1, 3, 5], reel: [2, 4, 6] }, // 3 feed + 3 reel = 6/sem (só campanha)
 };
 
 const key = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+/** STORY LEVE rotativo pros dias SEM peça principal — 10s, zero produção. Escolha 1. */
+export const STORY_ROTATION: string[] = [
+  "📊 Enquete: “Você guarda dinheiro em mais de uma moeda?” → Sim, mais de uma / Só em real.",
+  "🛠️ Bastidor: print do código ou de uma tela + “Construindo o Nossas Finanças hoje 👨‍💻”.",
+  "❓ Caixa de perguntas: “Pergunta o que quiser sobre organizar dinheiro / morar fora / o app 👇”.",
+  "🔁 Repost de destaque: um Reel/post forte de 1–2 semanas atrás — “caso você tenha perdido 👇”.",
+  "🔢 Enquete-quiz: “Quantos meses de gasto tem que ter na reserva?” → 1 / 3 a 6 / 12 (revela amanhã).",
+  "💬 Escala: barra 😅→😎 “De 0 a 10, o quanto você sente que controla o seu dinheiro?”.",
+  "🌍 Enquete: “Você mora fora, pensa em morar, ou tá firme no Brasil?” → Moro fora / Quero ir / Fico no BR.",
+  "👀 Teaser: print de uma tela do app com uma parte borrada — “adivinha o que é? resposta amanhã”.",
+];
+/** Sugestão de story leve DETERMINÍSTICA por data (varia sem repetir no curto prazo). */
+export function storyForDate(dateK: string): string {
+  const [y, m, d] = dateK.split("-").map(Number);
+  const doy = Math.floor((Date.UTC(y, m - 1, d) - Date.UTC(y, 0, 1)) / 86400000);
+  return STORY_ROTATION[((doy % STORY_ROTATION.length) + STORY_ROTATION.length) % STORY_ROTATION.length];
+}
+
+/** Instrução EXPLÍCITA de um FEED (post/carrossel). */
+function feedNote(isFirst: boolean, isCarousel: boolean): string {
+  const arrasta = isCarousel ? "Arraste os slides na ordem; 1 legenda pro conjunto. " : "";
+  const repost = "Depois de publicar, reposte no story (“saiu post novo 👇”) com sticker de link pra bio.";
+  if (isFirst) return `${arrasta}FIXE no topo do perfil (é a sua vitrine). ${repost}`;
+  return `${arrasta}${repost}`;
+}
+/** Instrução EXPLÍCITA de um REEL. */
+function reelNote(highlight: string): string {
+  return `Poste como REEL 9:16 (é o que alcança quem NÃO te segue). Depois reposte no story (“vídeo novo 👇”) e salve no Destaque “${highlight}”.`;
+}
+
 export interface PlanEntry {
   date: string;
   pieceId: string;
-  /** O que fazer com a peça (repostar no story / salvar no destaque / fixar). */
+  /** O que fazer com a peça (formato + repost no story + salvar no destaque / fixar). */
   note?: string;
 }
 
 /**
- * Gera o roteiro dos próximos `weeks` a partir de `start`: em cada dia, conforme a intensidade,
- * coloca a próxima peça de feed OU de story (ciclando as filas já ordenadas por variedade) — e já
- * anexa a AÇÃO daquela peça (feed → repostar no story; story → salvar no destaque; 1º carrossel → fixar).
+ * Gera o roteiro dos próximos `weeks` a partir de `start`: em cada dia de FEED coloca a próxima peça
+ * de feed; em cada dia de REEL a próxima de reel (filas já ordenadas por variedade). Dias sem peça NÃO
+ * geram entrada — o story leve daquele dia é sugerido na UI (storyForDate). O carrossel de apresentação
+ * lidera o feed e é fixado no topo.
  */
 export function generateSchedule(start: Date, weeks: number, intensity: Intensity): PlanEntry[] {
   const feedOrder = orderPieces(FEED, "carousel:tour");
-  const storyOrder = orderPieces(STORY, "story:app-tour");
-  const { feed, story } = RHYTHM[intensity];
+  const reelOrder = orderPieces(REELS);
+  const { feed, reel } = RHYTHM[intensity];
   const out: PlanEntry[] = [];
   let fi = 0;
-  let si = 0;
+  let ri = 0;
   const base = new Date(start.getFullYear(), start.getMonth(), start.getDate());
   for (let n = 0; n < weeks * 7; n++) {
     const d = new Date(base);
@@ -136,13 +176,12 @@ export function generateSchedule(start: Date, weeks: number, intensity: Intensit
     const wd = d.getDay();
     if (feed.includes(wd) && feedOrder.length) {
       const p = feedOrder[fi % feedOrder.length];
-      const note = fi === 0 ? "Fixar no topo do perfil + repostar no story" : "Repostar no story (novo post 👇)";
-      out.push({ date: key(d), pieceId: p.id, note });
+      out.push({ date: key(d), pieceId: p.id, note: feedNote(fi === 0, p.format === "carousel") });
       fi++;
-    } else if (story.includes(wd) && storyOrder.length) {
-      const p = storyOrder[si % storyOrder.length];
-      out.push({ date: key(d), pieceId: p.id, note: `Salvar no Destaque "${storyHighlight(p.id)}"` });
-      si++;
+    } else if (reel.includes(wd) && reelOrder.length) {
+      const p = reelOrder[ri % reelOrder.length];
+      out.push({ date: key(d), pieceId: p.id, note: reelNote(storyHighlight(p.id)) });
+      ri++;
     }
   }
   return out;
