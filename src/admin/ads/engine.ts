@@ -112,6 +112,9 @@ export interface Story {
   name: string; // rótulo no admin
   scenes: Scene[];
   style?: PieceStyle; // clima padrão do story (cada cena pode sobrescrever); default = escuro padrão
+  /** EDUCATIVO: layout que ensina — foto menor, título moderado, EXPLICAÇÃO grande e com respiro
+   *  (a institucional é punch: título gigante + legenda mínima). Ver o ramo "vivid" em sceneContent. */
+  teach?: boolean;
 }
 
 export const STORIES: Story[] = [
@@ -207,11 +210,12 @@ export const EDU_STORIES: Story[] = [
     id: "edu-orcamento",
     name: "Educativo · regra 50/30/20",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"] },
-      { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar."], chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
-      { kind: "hook", eyebrow: "NUM SALÁRIO DE R$ 3.000", title: ["1.500 · 900 ·", "600"], sub: "Metade nas contas do mês, 30% no que te dá prazer e 20% pro seu futuro. Fácil de lembrar." },
-      { kind: "hook", eyebrow: "O SEGREDO", title: ["Poupe ANTES", "de gastar."], sub: "Separe os 20% assim que a renda cai — o resto se vira com o que sobra. Nunca o contrário." },
+      { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"], sub: "Um jeito simples de dividir a renda pra não se perder no mês — e ainda sobrar pro futuro." },
+      { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar."], sub: "Metade no que você PRECISA, 30% no que QUER e 20% pro amanhã. Só isso.", chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
+      { kind: "hook", eyebrow: "NUM SALÁRIO DE R$ 3.000", title: ["R$ 1.500 ·", "900 · 600"], sub: "R$ 1.500 nas contas do mês, R$ 900 no lazer e R$ 600 investidos — todo mês, no piloto automático." },
+      { kind: "hook", eyebrow: "O SEGREDO", title: ["Poupe ANTES", "de gastar."], sub: "Separe os 20% assim que a renda cai; o resto se vira com o que sobra. Nunca o contrário — senão nunca sobra." },
       { kind: "cta", value: "Nossas Finanças", tagline: "Monte o seu orçamento — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
@@ -219,11 +223,12 @@ export const EDU_STORIES: Story[] = [
     id: "edu-reserva",
     name: "Educativo · reserva de emergência",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"] },
-      { kind: "hook", eyebrow: "O QUE É", title: ["O dinheiro que", "te segura."], sub: "Se a renda parar ou vier um imprevisto, você resolve sem cartão nem empréstimo caro." },
-      { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "Gasta R$ 2.000/mês? Mire R$ 6.000 a 12.000. Deixe onde dê pra sacar no mesmo dia." },
-      { kind: "hook", eyebrow: "COMO MONTAR", title: ["Um aporte fixo,", "todo mês."], sub: "No automático, até chegar no alvo. Só use em emergência de verdade — e reponha depois." },
+      { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"], sub: "É o primeiro passo das finanças — vem ANTES de investir em qualquer coisa." },
+      { kind: "hook", eyebrow: "O QUE É", title: ["O dinheiro que", "te segura."], sub: "Se a renda parar ou vier um imprevisto (saúde, conserto, desemprego), você resolve sem cartão nem empréstimo caro." },
+      { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "Gasta R$ 2.000/mês? Mire entre R$ 6.000 e R$ 12.000 — e deixe onde dê pra sacar no mesmo dia." },
+      { kind: "hook", eyebrow: "COMO MONTAR", title: ["Um aporte fixo,", "todo mês."], sub: "No automático, até chegar no alvo. Use só em emergência de verdade — e reponha depois de usar." },
       { kind: "cta", value: "Nossas Finanças", tagline: "Acompanhe sua reserva no app", sub: "nossasfinancas.com.br" },
     ],
   },
@@ -231,10 +236,11 @@ export const EDU_STORIES: Story[] = [
     id: "edu-juros",
     name: "Educativo · juros compostos",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"] },
-      { kind: "hook", eyebrow: "JUROS COMPOSTOS", title: ["Rendimento sobre", "rendimento."], sub: "O que você ganha passa a render também — e a bola de neve cresce cada vez mais rápido, sozinha." },
-      { kind: "hook", eyebrow: "UM EXEMPLO REAL", title: ["R$ 200/mês →", "~R$ 280 mil"], sub: "Em 30 anos, a ~8% ao ano. Você deposita só R$ 72 mil; o resto (mais de R$ 200 mil!) é rendimento." },
+      { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"], sub: "Por causa do efeito mais poderoso das finanças pessoais: os juros compostos." },
+      { kind: "hook", eyebrow: "O QUE SÃO", title: ["Rendimento sobre", "rendimento."], sub: "O que você ganha passa a render também. A bola de neve cresce cada vez mais rápido — sozinha." },
+      { kind: "hook", eyebrow: "UM EXEMPLO REAL", title: ["R$ 200/mês →", "~R$ 280 mil"], sub: "Em 30 anos, a ~8% ao ano. Você deposita só R$ 72 mil; o resto — mais de R$ 200 mil — é rendimento." },
       { kind: "hook", eyebrow: "A LIÇÃO", title: ["Comece pequeno,", "mas comece já."], sub: "Tempo vale mais que valor. Cada ano a mais faz uma diferença enorme lá na frente." },
       { kind: "cta", value: "Nossas Finanças", tagline: "Projete o seu futuro — grátis", sub: "nossasfinancas.com.br" },
     ],
@@ -243,10 +249,11 @@ export const EDU_STORIES: Story[] = [
     id: "edu-diversificar",
     name: "Educativo · diversificação",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."] },
+      { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."], sub: "A regra mais antiga do dinheiro — e uma das que mais protege quem investe." },
       { kind: "hook", eyebrow: "O QUE É DIVERSIFICAR", title: ["Espalhar", "o risco."], sub: "Dividir o dinheiro entre tipos de ativo (e moedas) pra não depender de uma aposta só dar certo." },
-      { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Se um cai, os", "outros seguram."], sub: "Renda fixa + ações + FIIs + moedas: quando um tomba, o conjunto amortece — você sente menos." },
+      { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Se um cai, os", "outros seguram."], sub: "Renda fixa + ações + FIIs + moedas: quando um tomba, o conjunto amortece e você sente bem menos." },
       { kind: "hook", eyebrow: "O PONTO", title: ["Menos risco,", "não mais."], sub: "Diversificar não é arriscar mais — é não colocar todos os ovos na mesma cesta." },
       { kind: "cta", value: "Nossas Finanças", tagline: "Veja sua alocação por classe", sub: "nossasfinancas.com.br" },
     ],
@@ -255,8 +262,9 @@ export const EDU_STORIES: Story[] = [
     id: "edu-cambio",
     name: "Educativo · câmbio no seu bolso",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."] },
+      { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."], sub: "Real, euro, dólar: quem vive entre moedas sente a cotação no bolso — todos os dias." },
       { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada — só pela cotação do dia." },
       { kind: "hook", eyebrow: "UM EXEMPLO", title: ["€ 1.000 hoje", "≠ amanhã."], sub: "Se o euro sobe 5%, seus € 1.000 valem 5% a mais em real — sem você mexer num centavo." },
       { kind: "hook", eyebrow: "A DICA", title: ["Acompanhe numa", "moeda só."], sub: "Ver tudo convertido pra uma moeda evita susto e mostra o efeito real do câmbio no seu bolso." },
@@ -267,8 +275,9 @@ export const EDU_STORIES: Story[] = [
     id: "edu-dividas",
     name: "Educativo · sair das dívidas",
     style: "vivid",
+    teach: true,
     scenes: [
-      { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."] },
+      { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."], sub: "Antes de investir, quitar dívida cara é o melhor 'investimento' que existe." },
       { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Os juros de cartão e cheque especial superam QUALQUER investimento. Quitar é lucro garantido." },
       { kind: "hook", eyebrow: "A CONTA", title: ["Rotativo passa", "de 300% ao ano."], sub: "Nenhum investimento paga isso. Cada real da dívida cara que você mata rende mais que aplicar." },
       { kind: "hook", eyebrow: "A ORDEM CERTA", title: ["Maior juro,", "não maior valor."], sub: "Liste as dívidas pela TAXA e mate a de juro mais alto primeiro — depois a próxima, e assim vai." },
@@ -1209,10 +1218,10 @@ function drawChips(ctx: CanvasRenderingContext2D, s: number, x: number, y: numbe
   ctx.globalAlpha = 1;
 }
 
-function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number, pal: Palette = DARK) {
+function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, W: number, text: string, a: number, pal: Palette = DARK, size = 34, lhPx = 46) {
   ctx.globalAlpha = a;
   ctx.fillStyle = pal.muted;
-  ctx.font = fontSans(34 * s, 400);
+  ctx.font = fontSans(size * s, 400);
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   // wrap simples por largura
@@ -1220,7 +1229,7 @@ function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number,
   const words = text.split(" ");
   let line = "";
   let yy = y;
-  const lh = 46 * s;
+  const lh = lhPx * s;
   for (const w of words) {
     const test = line ? line + " " + w : w;
     if (ctx.measureText(test).width > maxW && line) {
@@ -1229,12 +1238,16 @@ function drawSub(ctx: CanvasRenderingContext2D, s: number, x: number, y: number,
       yy += lh;
     } else line = test;
   }
-  if (line) ctx.fillText(line, x, yy);
+  if (line) {
+    ctx.fillText(line, x, yy);
+    yy += lh;
+  }
   ctx.globalAlpha = 1;
+  return yy; // y do fim do bloco (pra posicionar o que vier abaixo)
 }
 
 // ── cenas ───────────────────────────────────────────────────────────────────
-function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, sc: Scene, lt: number, a: number, pal: Palette = DARK, style?: PieceStyle) {
+function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: number, sc: Scene, lt: number, a: number, pal: Palette = DARK, style?: PieceStyle, teach = false) {
   const x = 90 * s;
   const midY = H * 0.5;
   const rise = (1 - easeOut(lt / 0.85)) * 40 * s; // sobe ao entrar (mais suave)
@@ -1255,8 +1268,21 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
       if (sc.sub) drawSub(ctx, s, x, tb + 26 * s, W, sc.sub, a, pal);
       return;
     }
+    if (style === "vivid" && teach) {
+      // EDUCATIVO: foto menor em cima (faixa 0.4) → mais espaço pro texto. Título MODERADO + eyebrow +
+      // EXPLICAÇÃO grande e com respiro (todo tópico é explicado, nada de frase solta). Padding folgado.
+      const bandTop = H * 0.4;
+      const lines = sc.title || [];
+      const px = fitTitlePx(ctx, s, lines, availW, 50, 74);
+      const eyeY = bandTop + 104 * s;
+      drawEyebrow(ctx, s, x, eyeY, sc.eyebrow || "", a, pal);
+      let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 42) * s, lines, a, rise, px, pal);
+      if (sc.sub) tb = drawSub(ctx, s, x, tb + 40 * s, W, sc.sub, a, pal, 37, 52);
+      if (sc.chips) drawChips(ctx, s, x, tb + 40 * s, sc.chips, a, W - x * 2, pal);
+      return;
+    }
     if (style === "vivid") {
-      // FOTO VÍVIDA: texto ancorado na faixa sólida inferior (a imagem manda em cima).
+      // FOTO VÍVIDA (institucional): texto ancorado na faixa sólida inferior (a imagem manda em cima).
       const bandTop = H * 0.58;
       const lines = sc.title || [];
       const px = fitTitlePx(ctx, s, lines, availW, 70, 104);
@@ -1471,7 +1497,9 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
       drawColorBg(ctx, W, H, t); // CTA fecha em verde bold (reveal), sem foto
       pal = ONCOLOR;
     } else if (photo) {
-      drawVividPhotoBg(ctx, photo, W, H, 0.58, t);
+      // Educativo: foto MENOR (faixa de texto maior) — a explicação precisa de espaço; institucional
+      // mantém a foto grande (título punch embaixo).
+      drawVividPhotoBg(ctx, photo, W, H, story.teach ? 0.4 : 0.58, t);
       pal = DARK; // texto vai na faixa escura
     } else {
       drawBg(ctx, W, H, t);
@@ -1496,7 +1524,7 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
   // SEM logo no topo dos stories: o Instagram já sobrepõe avatar + nome + "×" ali (colidia). O resto
   // é posicionado por frações da altura (independente da logo) → nada se move. A marca segue nos POSTS
   // (drawPost) e no wordmark grande da cena de CTA.
-  sceneContent(ctx, s, W, H, sc, lt, a, pal, style);
+  sceneContent(ctx, s, W, H, sc, lt, a, pal, style, story.teach);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
   if (showProgress) drawProgress(ctx, s, W, n, t, pal);
 }
