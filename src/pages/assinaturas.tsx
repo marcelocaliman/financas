@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Repeat } from "lucide-react";
 import { useUI } from "@/store/ui";
@@ -11,12 +11,23 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
+import { cn } from "@/lib/utils";
 
 /** Assinaturas têm valores pequenos → mostrar 2 casas (o Money do app arredonda pra inteiro). */
 const CENTS: Intl.NumberFormatOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
-/** Custo MENSAL equivalente: anual ÷ 12; mensal (ou ciclo ausente) fica igual. Normaliza pra comparar. */
-const monthlyOf = (s: Subscription) => (s.cycle === "yearly" ? s.amount / 12 : s.amount);
+/** KPI no padrão do app: eyebrow mono + valor numérico tabular (hero = maior, destaque). */
+function Kpi({ label, value, hero }: { label: string; value: ReactNode; hero?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <Eyebrow>{label}</Eyebrow>
+      <div className={cn("mt-1.5 font-numeric font-semibold tabular tracking-[-0.01em] leading-none whitespace-nowrap", hero ? "text-[clamp(1.25rem,3vw,1.65rem)] text-text" : "text-[15px] lg:text-[16px] text-muted")}>
+        {value}
+      </div>
+    </div>
+  );
+}
+const KpiDivider = () => <span className="hidden h-9 w-px shrink-0 bg-border sm:block" aria-hidden />;
 
 /**
  * Assinaturas — registro GLOBAL de recorrências (Netflix, Spotify…), como DOCUMENTAÇÃO.
@@ -30,11 +41,19 @@ export default function Assinaturas() {
   const rates = useRates((s) => s.rates);
   const data = useSubscriptions();
 
-  // Total mensal NORMALIZADO: cada anual entra como ÷12, cada mensal cheia. Projeção anual = ×12.
-  const monthly = useMemo(
-    () => (data ? data.reduce((s, a) => s + convert(monthlyOf(a), a.currency, disp, rates), 0) : 0),
-    [data, disp, rates],
-  );
+  // Totais na moeda de exibição. Separa o REAL: `mensal` = soma das assinaturas mensais (paga/mês);
+  // `anual` = soma das anuais (paga inteira 1×/ano). Combinados: `media`/mês (= mensal + anual÷12,
+  // pra comparar/orçar) e `ano` (= mensal×12 + anual, desembolso real no ano).
+  const T = useMemo(() => {
+    let mensal = 0;
+    let anual = 0;
+    for (const s of data ?? []) {
+      const v = convert(s.amount, s.currency || base, disp, rates);
+      if (s.cycle === "yearly") anual += v;
+      else mensal += v;
+    }
+    return { mensal, anual, media: mensal + anual / 12, ano: mensal * 12 + anual };
+  }, [data, disp, rates, base]);
 
   if (!data) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -80,28 +99,18 @@ export default function Assinaturas() {
     <div className="space-y-5 sm:space-y-7">
       {data.length > 0 ? (
         <Tile className="p-4 sm:p-6 md:p-7">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 sm:gap-x-8">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-4 sm:gap-x-6 lg:gap-x-7">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent">
               <Repeat size={22} />
             </span>
-            <div className="min-w-0">
-              <Eyebrow>{t("assinaturas.monthlyAvg")}</Eyebrow>
-              <div className="mt-1.5">
-                <Money value={monthly} currency={disp} options={CENTS} className="text-[clamp(1.2rem,3vw,1.6rem)] font-semibold tabular" />
-              </div>
-            </div>
-            <span className="hidden h-9 w-px shrink-0 bg-border sm:block" aria-hidden />
-            <div>
-              <Eyebrow>{t("assinaturas.yearlyLabel")}</Eyebrow>
-              <div className="mt-1.5">
-                <Money value={monthly * 12} currency={disp} options={CENTS} className="text-[16px] font-semibold tabular text-muted" />
-              </div>
-            </div>
-            <span className="hidden h-9 w-px shrink-0 bg-border sm:block" aria-hidden />
-            <div>
-              <Eyebrow>{t("nav.assinaturas")}</Eyebrow>
-              <div className="mt-1.5 text-[16px] font-semibold tabular text-muted">{data.length}</div>
-            </div>
+            <Kpi hero label={t("assinaturas.monthlyAvg")} value={<Money value={T.media} currency={disp} options={CENTS} />} />
+            <KpiDivider />
+            <Kpi label={t("assinaturas.monthlyOnly")} value={<Money value={T.mensal} currency={disp} options={CENTS} />} />
+            <Kpi label={t("assinaturas.yearlyOnly")} value={<Money value={T.anual} currency={disp} options={CENTS} />} />
+            <KpiDivider />
+            <Kpi label={t("assinaturas.yearlyLabel")} value={<Money value={T.ano} currency={disp} options={CENTS} />} />
+            <KpiDivider />
+            <Kpi label={t("nav.assinaturas")} value={data.length} />
           </div>
           <p className="mt-4 text-[12px] leading-relaxed text-faint">{t("assinaturas.note")}</p>
         </Tile>

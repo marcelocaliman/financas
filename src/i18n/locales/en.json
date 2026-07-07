@@ -293,6 +293,8 @@
     "amount": "Amount",
     "monthly": "Per month",
     "monthlyAvg": "Per month (avg)",
+    "monthlyOnly": "Monthly",
+    "yearlyOnly": "Annual",
     "yearlyLabel": "Per year",
     "monthlyTotal": "Total per month",
     "yearlyTotal": "per year",
