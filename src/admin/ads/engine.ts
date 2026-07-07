@@ -124,6 +124,17 @@ export interface Story {
 
 export const STORIES: Story[] = [
   // Arco de cada peça: PROBLEMA (a dor) → O APP (mockup + o que é) → AMPLITUDE/BENEFÍCIO → CTA.
+  // Peça-carro-chefe: o soco na EVITAÇÃO (agressivo, 100% honesto — nada de "o app te enriquece").
+  {
+    id: "medo-de-olhar",
+    name: "Medo de olhar",
+    scenes: [
+      { kind: "hook", eyebrow: "A VERDADE QUE NINGUÉM FALA", title: ["Você não tem", "medo de investir.", "Tem medo de olhar."] },
+      { kind: "hook", mock: "currencies", eyebrow: "ENCARE O NÚMERO", title: ["Todo o seu", "dinheiro, somado."], sub: "Real, euro, dólar — num painel só, na cotação de hoje. Sem mais adivinhação." },
+      { kind: "hook", eyebrow: "E QUANTO FALTA", title: ["Quanto falta pra", "sua liberdade."], sub: "Patrimônio, orçamento e projeção de independência — no seu ritmo, cifrado ponta a ponta." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Encare seus números — grátis", sub: "nossasfinancas.com.br" },
+    ],
+  },
   {
     id: "patrimonio",
     name: "Quanto você tem",
@@ -131,7 +142,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "DINHEIRO EM MAIS DE UMA MOEDA?", title: ["Real, euro, dólar…", "quanto você tem", "somando tudo?"] },
       { kind: "hook", mock: "currencies", eyebrow: "UM PAINEL SÓ", title: ["Tudo, em", "qualquer moeda."], sub: "Na cotação de hoje — sem planilha, sem abrir conta." },
       { kind: "hook", eyebrow: "E VAI MUITO ALÉM", title: ["Sua vida", "financeira inteira."], chips: ["Patrimônio", "Orçamento", "Investimentos", "Metas", "Projeção"] },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Veja quanto você tem — grátis", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Descubra quanto você tem — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -314,6 +325,10 @@ export const EDU_STORIES: Story[] = [
 // Curtas (o vídeo carrega o conteúdo) + CTA de cadastro. Só features REAIS (o app é tracker/planner,
 // não corretora — nada de "auto-investir"). Keyed pelo id do story.
 export const REEL_COPY: Record<string, { caption: string; comment: string }> = {
+  "medo-de-olhar": {
+    caption: "Você não tem medo de investir. Você tem medo de olhar. 👀\n\nA planilha que você não abre há meses sabe uma verdade que você tá evitando. No Nossas Finanças você encara: todo o seu dinheiro, em qualquer moeda, num lugar só — e quanto falta pra sua liberdade. Cifrado ponta a ponta: nem a gente vê.\n\n📲 Encare grátis — link na bio.",
+    comment: "Sincerão: há quanto tempo você não soma tudo o que tem? 👇\n\nApp grátis 👉 nossasfinancas.com.br",
+  },
   patrimonio: {
     caption: "Real na conta daqui, euro guardado lá fora, uns dólares investidos — e no fim você não sabe QUANTO tem. 🤯\n\nNo Nossas Finanças você junta tudo num número só, na cotação de hoje. Multimoeda de verdade, grátis.\n\n📲 Comece grátis — link na bio.",
     comment: "Você guarda dinheiro em mais de uma moeda? Conta aí 👇\n\nApp grátis 👉 nossasfinancas.com.br",
@@ -374,6 +389,7 @@ export const REEL_COPY: Record<string, { caption: string; comment: string }> = {
 // escuro / verde bold / papel claro) — sem foto, pra não ficar cada uma diferente.
 type CoverBg = "dark" | "color" | "light";
 export const REEL_COVER: Record<string, { eyebrow: string; title: string[]; bg: CoverBg }> = {
+  "medo-de-olhar": { eyebrow: "ENCARE", title: ["Você tem medo", "de olhar."], bg: "dark" },
   patrimonio: { eyebrow: "MULTIMOEDA", title: ["Quanto você tem,", "somando tudo?"], bg: "dark" },
   privacidade: { eyebrow: "PRIVACIDADE", title: ["Seus números,", "só seus."], bg: "dark" },
   orcamento: { eyebrow: "ORÇAMENTO", title: ["Pra onde vai", "o seu dinheiro?"], bg: "color" },
