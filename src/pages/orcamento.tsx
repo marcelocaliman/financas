@@ -113,27 +113,22 @@ export default function Orcamento() {
     const monthExp = data.expenses.filter((e) => e.month === month);
     const monthInc = data.incomes.filter((i) => i.month === month);
 
-    // Donut: UMA fatia por lançamento (não agrupa por categoria). Rótulo = detalhe (ou a
-    // categoria, se sem detalhe) → duas receitas "Salário" aparecem separadas, com cores próprias.
-    // Composição DESMEMBRA as faturas: cada item (Claude, Amil…) vira fatia + a sobra "não
-    // discriminado" da fatura; a soma bate com o total top-level (sem dupla contagem).
-    const expSlices = capSlices(
-      expenseLeaves(monthExp, rates)
-        .map((l) => {
-          const base = l.name || nameById(tax.expenseCategories, l.categoryId) || t("orcamento.uncategorized");
-          return { id: l.id, name: l.residual ? `${base} · ${t("orcamento.notItemized")}` : base, value: conv(l.amount, l.currency) };
-        })
-        .filter((s) => s.value > 0)
-        .sort((a, b) => b.value - a.value),
-      t("orcamento.othersSlice"),
-    );
-    const incSlices = capSlices(
-      monthInc
-        .map((i) => ({ id: i.id, name: i.name || nameById(tax.incomeCategories, i.categoryId) || t("orcamento.uncategorized"), value: conv(i.amount, i.currency) }))
-        .filter((s) => s.value > 0)
-        .sort((a, b) => b.value - a.value),
-      t("orcamento.othersSlice"),
-    );
+    // Donut: agrupado por CATEGORIA (uma fatia por categoria). Usa as FOLHAS dos gastos, então os
+    // itens da fatura contam na SUA categoria (Amil→Saúde…) e a sobra "não discriminado" na categoria
+    // da fatura (Cartão de Crédito) — a soma bate com o total top-level (sem dupla contagem).
+    const sumByCat = <T,>(items: T[], catOf: (x: T) => string, valOf: (x: T) => number, names: TaxonomyItem[]) => {
+      const by = new Map<string, number>();
+      for (const it of items) by.set(catOf(it), (by.get(catOf(it)) ?? 0) + valOf(it));
+      return capSlices(
+        [...by]
+          .map(([catId, value]) => ({ id: catId, name: nameById(names, catId) || t("orcamento.uncategorized"), value }))
+          .filter((s) => s.value > 0)
+          .sort((a, b) => b.value - a.value),
+        t("orcamento.othersSlice"),
+      );
+    };
+    const expSlices = sumByCat(expenseLeaves(monthExp, rates), (l) => l.categoryId, (l) => conv(l.amount, l.currency), tax.expenseCategories);
+    const incSlices = sumByCat(monthInc, (i) => i.categoryId, (i) => conv(i.amount, i.currency), tax.incomeCategories);
     const totalExp = expenseTotal(monthExp, disp, rates); // só top-level (faturas + avulsos)
     const totalInc = monthInc.reduce((s, i) => s + conv(i.amount, i.currency), 0);
 
@@ -547,9 +542,8 @@ function CategoryDonut({
           {data.map((e, i) => (
             <div key={e.id} className="flex items-center gap-2.5 text-[12.5px]">
               <span className="w-[7px] h-[7px] rounded-[2px] shrink-0" style={{ background: palette[i % palette.length] }} />
-              {/* Celular: nome trunca em 1 linha e o valor cola à direita (coluna limpa).
-                  Desktop (sm:): volta ao comportamento original (nome no fluxo, valor após). */}
-              <span className="min-w-0 flex-1 truncate text-muted sm:flex-none sm:overflow-visible sm:whitespace-normal">{e.name}</span>
+              {/* Nome no flow (trunca) + valor SEMPRE colado à direita (coluna alinhada, estilo recibo). */}
+              <span className="min-w-0 flex-1 truncate text-muted">{e.name}</span>
               <Money value={e.value} currency={disp} className="shrink-0 font-semibold tabular" />
             </div>
           ))}
@@ -644,13 +638,15 @@ function UpcomingBillsTile() {
   const rates = useRates((s) => s.rates);
   const tax = useTaxonomy();
   const data = useBudget();
+  const month = useBudgetMonth((s) => s.month);
   const view = useMemo(() => {
     if (!data) return null;
     const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const bills = upcomingBills(data.expenses, todayISO());
+    // Só os vencimentos do mês em exibição (não misturar contas de outros meses).
+    const bills = upcomingBills(data.expenses, todayISO()).filter((b) => b.month === month);
     const total = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
     return { bills, total };
-  }, [data, disp, rates]);
+  }, [data, disp, rates, month]);
   if (!view || view.bills.length === 0) return null;
 
   const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
@@ -767,7 +763,7 @@ export function OrcamentoSummary() {
     const totalExp = expenseTotal(data.expenses.filter((e) => e.month === mo), disp, rates); // só top-level (bate com a tabela)
     const totalInc = data.incomes.filter((i) => i.month === mo).reduce((s, i) => s + conv(i.amount, i.currency), 0);
     const saldo = totalInc - totalExp;
-    const bills = upcomingBills(data.expenses, todayISO());
+    const bills = upcomingBills(data.expenses, todayISO()).filter((b) => b.month === mo);
     const duePayable = bills.reduce((s, b) => s + conv(b.amount, b.currency), 0);
     return { totalExp, totalInc, saldo, savingsRate: totalInc > 0 ? (saldo / totalInc) * 100 : 0, duePayable, dueCount: bills.length };
   }, [data, disp, rates, month]);
