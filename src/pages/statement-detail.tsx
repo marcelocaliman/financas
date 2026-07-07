@@ -145,22 +145,23 @@ export function StatementDetail({
       {/* Dica em LARGURA CHEIA (1–2 linhas em vez de 3 estreitas). */}
       <p className="text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
 
-      {/* Linha ACIMA da tabela: totais por pessoa à ESQUERDA · ações (modelo/importar) à DIREITA. */}
+      {/* Linha ACIMA da tabela: totais por pessoa numa CAIXINHA (só o tamanho do conteúdo) à esquerda ·
+          botões SOLTOS (sem card) à direita — dois assuntos distintos, separados. */}
       {perPerson.length > 0 || !viewerMode ? (
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[10px] border border-border bg-card2/40 px-3.5 py-2.5">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-1.5">
-            {perPerson.length > 0 ? (
-              <>
-                <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.12em] text-faint">{t("orcamento.tabPeople")}</span>
-                {perPerson.map((b) => (
-                  <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 text-[12.5px]">
-                    <span className="text-muted">{b.name}</span>
-                    <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
-                  </span>
-                ))}
-              </>
-            ) : null}
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          {perPerson.length > 0 ? (
+            <div className="inline-flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[9px] border border-border bg-card2/40 px-3 py-1.5">
+              <span className="font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-faint">{t("orcamento.tabPeople")}</span>
+              {perPerson.map((b) => (
+                <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 text-[12px]">
+                  <span className="text-muted">{b.name}</span>
+                  <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
           {!viewerMode ? (
             <div className="flex shrink-0 items-center gap-1.5">
               <button type="button" onClick={downloadTemplate} className={BTN}>
