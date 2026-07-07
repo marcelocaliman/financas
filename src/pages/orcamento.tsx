@@ -367,30 +367,31 @@ export default function Orcamento() {
         <CategoryDonut title={t("orcamento.expenseBreakdown")} data={view.expSlices} palette={CAT_EXP} disp={disp} emptyLabel={t("orcamento.noExpenseMonth")} />
       </div>
 
-      {/* Por pessoa (só com 2+ integrantes): quem gastou/recebeu quanto no mês. */}
+      {/* Por pessoa (só com 2+ integrantes): um CARD por integrante, numa linha (auto-fit) — quebra
+          só quando não couber. Mesmo padrão sempre: nome, Gastou/Recebeu e Saldo destacado embaixo. */}
       {peopleRows ? (
         <section id="orc-pessoas">
           <SectionHead title={t("orcamento.tabPeople")} count={peopleRows.length} />
-          <Tile className="overflow-hidden p-0">
-            <div className="divide-y divide-border">
-              {peopleRows.map((p) => (
-                <div key={p.id || "shared"} className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-3.5 sm:px-6">
-                  <span className="min-w-0 truncate text-[14px] font-medium text-text">{p.name}</span>
-                  <div className="flex flex-wrap items-center gap-x-7 gap-y-1.5">
-                    <PersonStat label={t("orcamento.personSpent")}>
-                      <Money value={p.spent} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />
-                    </PersonStat>
-                    <PersonStat label={t("orcamento.personReceived")}>
-                      <Money value={p.received} currency={disp} className="text-accent" />
-                    </PersonStat>
-                    <PersonStat label={t("orcamento.personBalance")}>
-                      <Money value={p.saldo} currency={disp} className={p.saldo >= 0 ? "text-accent" : "text-neg"} />
-                    </PersonStat>
-                  </div>
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]">
+            {peopleRows.map((p) => (
+              <div key={p.id || "shared"} className="rounded-[14px] border border-border bg-card p-4 sm:p-5 shadow-[var(--shadow-card)]">
+                <div className="truncate text-[14px] font-medium text-text">{p.name}</div>
+                <div className="mt-3 space-y-1.5">
+                  <PersonStat label={t("orcamento.personSpent")}>
+                    <Money value={p.spent} currency={disp} className="text-neg" options={{ signDisplay: "never" }} />
+                  </PersonStat>
+                  <PersonStat label={t("orcamento.personReceived")}>
+                    <Money value={p.received} currency={disp} className="text-accent" />
+                  </PersonStat>
                 </div>
-              ))}
-            </div>
-          </Tile>
+                <div className="mt-2.5 border-t border-border pt-2.5">
+                  <PersonStat label={t("orcamento.personBalance")} strong>
+                    <Money value={p.saldo} currency={disp} className={p.saldo >= 0 ? "text-accent" : "text-neg"} />
+                  </PersonStat>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
       ) : null}
 
@@ -450,12 +451,13 @@ export default function Orcamento() {
   );
 }
 
-/** Micro-métrica do resumo "Por pessoa": rótulo mono em cima, valor tabular embaixo. */
-function PersonStat({ label, children }: { label: string; children: React.ReactNode }) {
+/** Linha de métrica do card "Por pessoa": rótulo mono à esquerda, valor tabular à direita.
+ *  `strong` destaca o Saldo (maior/mais forte). */
+function PersonStat({ label, strong, children }: { label: string; strong?: boolean; children: React.ReactNode }) {
   return (
-    <div className="text-right">
-      <div className="font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{label}</div>
-      <div className="text-[14px] font-semibold tabular">{children}</div>
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{label}</span>
+      <span className={cn("tabular", strong ? "text-[15px] font-semibold" : "text-[13.5px] font-medium")}>{children}</span>
     </div>
   );
 }
@@ -529,7 +531,7 @@ function CategoryDonut({
             const el = e.currentTarget;
             setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
           }}
-          className="flex flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1"
+          className="flex flex-1 flex-col gap-y-2 min-w-0 max-h-[128px] overflow-y-auto scrollbar-subtle pr-1"
           style={
             moreBelow
               ? {
