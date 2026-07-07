@@ -389,7 +389,7 @@ export const POSTS: Post[] = [
       "Você toparia essa troca? 🇧🇷↔️🇮🇹 Comenta qual número te surpreendeu 👇\n\nSalva pra quando for planejar a mudança. Link na bio.",
     pillar: "Multimoeda",
     caption:
-      "Quanto custa a MESMA vida em São Paulo e em Milão? 🇧🇷🇮🇹\n\nAluguel, mercado, transporte, um jantar a dois — os números mudam muito (e nem sempre pra pior). Antes de se mudar, dá pra ver tudo nas duas moedas, lado a lado.\n\nÉ pra isso que existe o Nossas Finanças: seu patrimônio e seus gastos em real E euro, na cotação de hoje, sem malabarismo de planilha.\n\n💬 Você toparia essa troca? Comenta aí.\n📲 Link na bio.",
+      "Quanto custa a MESMA vida em São Paulo e em Milão? 🇧🇷🇮🇹\n\nAluguel, mercado, transporte, um jantar a dois — os números mudam muito (e nem sempre pra pior). Antes de se mudar, dá pra ver tudo nas duas moedas, lado a lado.\n\nÉ pra isso que existe o Nossas Finanças: seu patrimônio e seus gastos em real E euro, na cotação de hoje, sem malabarismo de planilha.\n\n💬 Você toparia essa troca? Comenta aí.\n📲 Cadastre-se grátis — link na bio.",
     tags: ["custodevida", "morarnaitalia", "brasileirosnaitalia", "expatriados", "mudardepais", "euro", "relocation", "vivernaitalia", "multimoeda", "financaspessoais"],
     glow: [0.3, 0.16],
     eyebrow: "MUDAR DE PAÍS",
@@ -442,7 +442,7 @@ export const POSTS: Post[] = [
       "Você já sabe o seu número da liberdade? Chuta aí quantos anos faltam 👇\n\nSalva e volta aqui quando descobrir. App grátis na bio 👉 nossasfinancas.com.br",
     pillar: "Organização / FIRE",
     caption:
-      "Independência financeira não é sorte — é conta. 📈\n\nCom quanto você para de depender do salário? Em quantos anos? O Nossas Finanças projeta o seu futuro com aportes e inflação real, ano a ano, no SEU ritmo. Dá pra ver a data chegar mais perto cada vez que você guarda um pouco mais.\n\nO primeiro passo é enxergar o número. 🎯\n\n📲 Link na bio.",
+      "Independência financeira não é sorte — é conta. 📈\n\nCom quanto você para de depender do salário? Em quantos anos? O Nossas Finanças projeta o seu futuro com aportes e inflação real, ano a ano, no SEU ritmo. Dá pra ver a data chegar mais perto cada vez que você guarda um pouco mais.\n\nO primeiro passo é enxergar o número. 🎯\n\n📲 Descubra grátis — link na bio.",
     tags: ["independenciafinanceira", "fire", "liberdadefinanceira", "investimentos", "aposentadoria", "financaspessoais", "investir", "projecaofinanceira", "patrimonio", "dinheiro"],
     green: true,
     glow: [0.6, 0.32],
@@ -458,7 +458,7 @@ export const POSTS: Post[] = [
       "Você confia mais num app feito por uma empresa gigante ou por alguém que usa no próprio dia a dia? 👇\n\nSe curte acompanhar os bastidores, me segue aqui. App na bio 👉 nossasfinancas.com.br",
     pillar: "Build in public",
     caption:
-      "Confissão: eu não achei o app que eu queria… então construí. 👨‍💻\n\nSou dev e estou me mudando do Brasil pra Itália. Precisava enxergar meu dinheiro em real E euro, num lugar só, sem entregar meus dados pra ninguém. Como não existia do jeito certo — privado, multimoeda e simples — fiz o Nossas Finanças. E abri de graça pra você usar.\n\nTô construindo à vista de todos. Bora junto? 🚀\n\n📲 Link na bio.",
+      "Confissão: eu não achei o app que eu queria… então construí. 👨‍💻\n\nSou dev e estou me mudando do Brasil pra Itália. Precisava enxergar meu dinheiro em real E euro, num lugar só, sem entregar meus dados pra ninguém. Como não existia do jeito certo — privado, multimoeda e simples — fiz o Nossas Finanças. E abri de graça pra você usar.\n\nTô construindo à vista de todos. Vem usar comigo. 🚀\n\n📲 Cadastre-se grátis — link na bio.",
     tags: ["buildinpublic", "devbr", "empreendedorismo", "startup", "multimoeda", "privacidade", "brasileirosnaitalia", "indiehacker", "financaspessoais", "fazendoacontecer"],
     photo: "/img/ads/life.jpg",
     eyebrow: "POR QUE EXISTE",
@@ -491,7 +491,7 @@ export const POSTS: Post[] = [
     pillar: "Multimoeda",
     style: "color",
     caption:
-      "Você trabalha num país, guarda em outro, sonha com um terceiro. Seu dinheiro devia acompanhar. 🌍\n\nA maioria dos apps assume que você vive numa moeda só. O Nossas Finanças nasceu do contrário: cada conta, cada investimento e cada meta guarda a própria moeda — e você escolhe em qual ver o total. Real, euro, dólar, o que for.\n\nDinheiro sem fronteiras. Do jeito que a sua vida já é. 🚀\n\n📲 Link na bio.",
+      "Você trabalha num país, guarda em outro, sonha com um terceiro. Seu dinheiro devia acompanhar. 🌍\n\nA maioria dos apps assume que você vive numa moeda só. O Nossas Finanças nasceu do contrário: cada conta, cada investimento e cada meta guarda a própria moeda — e você escolhe em qual ver o total. Real, euro, dólar, o que for.\n\nDinheiro sem fronteiras. Do jeito que a sua vida já é. 🚀\n\n📲 Cadastre-se grátis — link na bio.",
     tags: ["multimoeda", "cambio", "brasileirosnoexterior", "expatriados", "morarfora", "financaspessoais", "investiroexterior", "vidacrossborder", "dinheiro", "liberdadefinanceira"],
     eyebrow: "DINHEIRO SEM FRONTEIRAS",
     title: ["Seu dinheiro não", "devia ficar preso", "a um país."],
@@ -523,11 +523,11 @@ export const EDU_POSTS: Post[] = [
     id: "edu-reserva",
     name: "Educativo · reserva (passo a passo)",
     comment:
-      "E você, já tem a sua reserva? Quantos meses de gasto você guarda? 👇\n\nSalva esse post pra montar a sua no próximo salário 📌 App grátis na bio.",
+      "E você, já tem a sua reserva? Quantos meses de gasto você guarda? 👇\n\nNo Nossas Finanças dá pra criar a meta da reserva e acompanhar o progresso mês a mês. Comece grátis — link na bio 📌",
     pillar: "Educativo",
     style: "light",
     caption:
-      "Reserva de emergência é o primeiro passo — antes de qualquer investimento. 🛟\n\nÉ o dinheiro que te protege de um imprevisto (perder a renda, uma emergência de saúde, um conserto) sem precisar recorrer a cartão ou empréstimo caro.\n\nComo montar:\n1. Alvo: 3 a 6 meses dos seus gastos essenciais\n2. Onde: algo seguro e com resgate no mesmo dia\n3. Como: um aporte fixo todo mês, no automático\n4. Uso: só emergência de verdade — e reponha depois\n\nNão precisa ser rápido. Precisa ser constante. 💪\n\n📲 Acompanhe isso no Nossas Finanças — link na bio.",
+      "Reserva de emergência é o primeiro passo — antes de qualquer investimento. 🛟\n\nÉ o dinheiro que te protege de um imprevisto (perder a renda, uma emergência de saúde, um conserto) sem precisar recorrer a cartão ou empréstimo caro.\n\nComo montar:\n1. Alvo: 3 a 6 meses dos seus gastos essenciais\n2. Onde: algo seguro e com resgate no mesmo dia\n3. Como: um aporte fixo todo mês, no automático\n4. Uso: só emergência de verdade — e reponha depois\n\nNo Nossas Finanças você cria a reserva como meta e acompanha, mês a mês, quanto já guardou e quanto falta pro alvo. Não precisa ser rápido — precisa ser constante. 💪\n\n📲 Comece grátis — nossasfinancas.com.br",
     tags: ["reservadeemergencia", "educacaofinanceira", "financaspessoais", "planejamentofinanceiro", "organizacaofinanceira", "dinheiro", "poupar", "vidafinanceira", "investir", "passoapasso"],
     eyebrow: "PASSO A PASSO",
     title: ["Monte sua reserva", "de emergência"],
@@ -542,11 +542,11 @@ export const EDU_POSTS: Post[] = [
     id: "edu-mito-investir",
     name: "Educativo · mito (investir)",
     comment:
-      "Você já acreditou nesse mito? 🤔 Comenta com quanto dá pra começar a investir hoje 👇\n\nCompartilha com quem precisa ouvir isso. Link na bio.",
+      "Você já acreditou nesse mito? 🤔 Comenta com quanto dá pra começar a investir hoje 👇\n\nNo Nossas Finanças você acompanha seus aportes e projeta o resultado no tempo. Comece grátis — link na bio.",
     pillar: "Educativo",
     style: "color",
     caption:
-      "“Investir é só pra quem tem muito dinheiro.” 🙅\n\nMito. Hoje dá pra começar com poucos reais e no automático. O que constrói patrimônio não é o valor inicial — é o TEMPO e a constância.\n\nR$ 100 por mês, todo mês, por anos, com juros compostos, viram muito mais do que um aporte grande e único lá na frente. Começar cedo (mesmo com pouco) vence começar tarde com muito.\n\nO melhor dia pra começar foi ontem. O segundo melhor é hoje. 🌱\n\n📲 Link na bio.",
+      "“Investir é só pra quem tem muito dinheiro.” 🙅\n\nMito. Hoje dá pra começar com poucos reais. O que constrói patrimônio não é o valor inicial — é o TEMPO e a constância.\n\nR$ 100 por mês, todo mês, por anos, com juros compostos, podem render bem mais do que um aporte grande feito uma vez só. Começar cedo (mesmo com pouco) vence começar tarde com muito.\n\nNo Nossas Finanças você acompanha seus aportes e projeta a bola de neve ano a ano — pra ver aonde a constância te leva.\n\nO melhor dia pra começar foi ontem. O segundo melhor é hoje. 🌱\n\n📲 Cadastre-se grátis — link na bio.",
     tags: ["investimentos", "educacaofinanceira", "financaspessoais", "juroscompostos", "investirpouco", "liberdadefinanceira", "dinheiro", "investir", "comecaragora", "mentalidadefinanceira"],
     eyebrow: "MITO OU VERDADE",
     title: ["“Investir é só", "pra quem tem", "muito dinheiro.”"],
@@ -556,11 +556,11 @@ export const EDU_POSTS: Post[] = [
     id: "edu-juros",
     name: "Educativo · juros compostos (número)",
     comment:
-      "Começar cedo ou investir mais — o que pesa mais? Comenta o seu palpite 👇\n\nSalva pra lembrar do poder do tempo 📌 App na bio 👉 nossasfinancas.com.br",
+      "Começar cedo ou investir mais — o que pesa mais? Comenta o seu palpite 👇\n\nNo Nossas Finanças você projeta o seu cenário, com juros compostos. Comece grátis — link na bio 📌",
     pillar: "Educativo",
     style: "light",
     caption:
-      "Isso aqui é o efeito mais poderoso das finanças pessoais: juros compostos. 📈\n\nGuardando R$ 200 por mês, por 30 anos, a uns 8% ao ano, você chega em ~R$ 280 mil. Só que você depositou só R$ 72 mil no total — o resto (mais de R$ 200 mil!) é rendimento rendendo em cima de rendimento.\n\nÉ por isso que TEMPO importa mais que valor. Cada ano a mais na conta multiplica o resultado.\n\n(Exemplo ilustrativo, sem considerar impostos/inflação — a ideia é mostrar a lógica.)\n\n📲 Projete o seu no app — link na bio.",
+      "Isso aqui é o efeito mais poderoso das finanças pessoais: juros compostos. 📈\n\nGuardando R$ 200 por mês, por 30 anos, a uns 8% ao ano, você chega em ~R$ 280 mil. Só que você depositou só R$ 72 mil no total — o resto (mais de R$ 200 mil!) é rendimento rendendo em cima de rendimento.\n\nÉ por isso que TEMPO importa mais que valor. Cada ano a mais na conta multiplica o resultado.\n\nNo Nossas Finanças você projeta o SEU número — com aportes e inflação real, ano a ano, na moeda que quiser.\n\n(Exemplo ilustrativo — a ideia é mostrar a lógica.)\n\n📲 Comece grátis — nossasfinancas.com.br",
     tags: ["juroscompostos", "educacaofinanceira", "investimentos", "financaspessoais", "liberdadefinanceira", "aposentadoria", "investir", "longoprazo", "patrimonio", "dinheiro"],
     eyebrow: "O PODER DO TEMPO",
     title: ["Juros compostos", "trabalham por você"],
@@ -571,12 +571,12 @@ export const EDU_POSTS: Post[] = [
     id: "edu-checklist-investir",
     name: "Educativo · checklist (investir)",
     comment:
-      "Quantos itens do checklist você já tem prontos? (0 a 4) 👇\n\nSalva pra não pular etapa antes de investir. App grátis na bio.",
+      "Quantos itens do checklist você já tem prontos? (0 a 4) 👇\n\nNo Nossas Finanças você organiza reserva, metas, dívidas e patrimônio num app só. Comece grátis — link na bio.",
     pillar: "Educativo",
     style: "dark",
     stepMarker: "check",
     caption:
-      "Antes de comprar o primeiro investimento, confere se essas 4 bases estão de pé: ✅\n\n1. Reserva de emergência — pra não precisar resgatar na pior hora\n2. Dívidas caras quitadas — cartão e cheque especial rendem contra você\n3. Um objetivo e um prazo — pra quê e pra quando você investe\n4. Seu perfil de risco — quanta oscilação você aguenta sem pânico\n\nInvestir bem começa ANTES de investir. Base sólida primeiro, produto depois. 🧱\n\n📲 Link na bio.",
+      "Antes de comprar o primeiro investimento, confere se essas 4 bases estão de pé: ✅\n\n1. Reserva de emergência — pra não precisar resgatar na pior hora\n2. Dívidas caras quitadas — cartão e cheque especial rendem contra você\n3. Um objetivo e um prazo — pra quê e pra quando você investe\n4. Seu perfil de risco — quanta oscilação você aguenta sem pânico (isso é com você)\n\nNo Nossas Finanças você organiza as 3 primeiras num lugar só: reserva e metas com barra de progresso, dívidas e patrimônio numa tela. Base sólida primeiro, produto depois. 🧱\n\n📲 Comece grátis — link na bio.",
     tags: ["investimentos", "educacaofinanceira", "checklist", "financaspessoais", "comecarainvestir", "reservadeemergencia", "perfilderisco", "planejamentofinanceiro", "investir", "dinheiro"],
     eyebrow: "CHECKLIST",
     title: ["Antes de investir,", "tenha isso pronto"],
@@ -591,11 +591,11 @@ export const EDU_POSTS: Post[] = [
     id: "edu-inflacao",
     name: "Educativo · conceito (inflação)",
     comment:
-      "Ficou claro? Manda pra alguém que ainda acha que dinheiro parado \"está seguro\" 👇\n\nSalva pra revisar depois. Link na bio.",
+      "Ficou claro? Manda pra alguém que ainda acha que dinheiro parado \"está seguro\" 👇\n\nNo Nossas Finanças você vê seu patrimônio real, já descontando a inflação. Comece grátis — link na bio.",
     pillar: "Educativo",
     style: "light",
     caption:
-      "Conceito em 1 minuto: inflação. 🎈\n\nÉ o encarecimento geral dos preços ao longo do tempo. Se a inflação do ano foi 5%, o que custava R$ 100 passa a custar R$ 105 — e o dinheiro parado na conta compra menos.\n\nNa prática: guardar embaixo do colchão (ou numa conta que não rende) é perder poder de compra todo ano, de forma silenciosa. Por isso o objetivo de investir é render ACIMA da inflação — é isso que protege (e aumenta) o seu de verdade.\n\n📲 No app dá pra projetar seu patrimônio já descontando a inflação — link na bio.",
+      "Conceito em 1 minuto: inflação. 🎈\n\nÉ o encarecimento geral dos preços ao longo do tempo. Se a inflação do ano foi 5%, o que custava R$ 100 passa a custar R$ 105 — e o dinheiro parado na conta compra menos.\n\nNa prática: guardar embaixo do colchão (ou numa conta que não rende) é perder poder de compra todo ano, de forma silenciosa. Por isso o objetivo de investir é render ACIMA da inflação.\n\nNo Nossas Finanças você projeta seu patrimônio já descontando a inflação — vê o valor REAL, em dinheiro de hoje, do que terá lá na frente.\n\n📲 Comece grátis — nossasfinancas.com.br",
     tags: ["inflacao", "educacaofinanceira", "financaspessoais", "economia", "poderdecompra", "investir", "dinheiro", "planejamentofinanceiro", "conceitofinanceiro", "protejaseudinheiro"],
     eyebrow: "CONCEITO EM 1 MINUTO",
     title: ["O que é", "inflação?"],
@@ -605,11 +605,11 @@ export const EDU_POSTS: Post[] = [
     id: "edu-erros-orcamento",
     name: "Educativo · 3 erros (orçamento)",
     comment:
-      "Qual desses 3 erros MAIS te pega? Confessa aí 👇\n\nSalva e compartilha no grupo da família 📌 App na bio.",
+      "Qual desses 3 erros MAIS te pega? Confessa aí 👇\n\nNo Nossas Finanças você vê cada gasto por categoria e o gráfico do mês — os pequenos param de escapar. Comece grátis — link na bio 📌",
     pillar: "Educativo",
     style: "dark",
     caption:
-      "3 erros que furam o orçamento de quase todo mundo (e como evitar): 🕳️\n\n1. Ignorar os pequenos — cafezinho, app, delivery. Sozinhos parecem nada; somados no mês, viram um rombo invisível.\n2. Esquecer os anuais — IPVA, seguro, matrícula. Divida por 12 e guarde todo mês pra não levar susto.\n3. Orçar sem folga — deixe uns 10% de respiro. O mês real nunca sai igual ao planejado no papel.\n\nOrçamento bom não é o perfeito — é o que você consegue manter. 🎯\n\n📲 Link na bio.",
+      "3 erros que furam o orçamento de quase todo mundo (e como evitar): 🕳️\n\n1. Ignorar os pequenos — cafezinho, app, delivery. Sozinhos parecem nada; somados no mês, viram um rombo invisível.\n2. Esquecer os anuais — IPVA, seguro, matrícula. Divida por 12 e separe todo mês pra não levar susto.\n3. Orçar sem folga — deixe uns 10% de respiro. O mês real nunca sai igual ao planejado no papel.\n\nNo Nossas Finanças você põe cada gasto na categoria e vê, no fim do mês, pra onde foi cada real — os pequenos incluídos. Orçamento bom não é o perfeito — é o que você consegue manter. 🎯\n\n📲 Comece grátis — link na bio.",
     tags: ["orcamento", "educacaofinanceira", "controlefinanceiro", "financaspessoais", "organizacaofinanceira", "planejamentofinanceiro", "gastos", "economia", "dinheiro", "dicasfinanceiras"],
     eyebrow: "EVITE ESTES ERROS",
     title: ["3 erros que furam", "o seu orçamento"],
@@ -629,10 +629,10 @@ export const CAROUSELS: Carousel[] = [
     id: "tour",
     name: "Conheça o app · 8 slides",
     comment:
-      "Ficou com alguma dúvida sobre o app? Pergunta aqui embaixo que eu respondo 👇\n\nSalva pra testar com calma — grátis no link da bio 👉 nossasfinancas.com.br",
+      "Ficou com alguma dúvida sobre o app? Pergunta aqui embaixo que eu respondo 👇\n\nNo Nossas Finanças você descobre pra onde vai cada real e para de terminar o mês no escuro. Comece grátis — link na bio 👉 nossasfinancas.com.br",
     pillar: "Apresentação",
     caption:
-      "Vem conhecer o Nossas Finanças. 👋\n\nÉ um app de finanças pessoais feito pra quem vive (ou vai viver) entre países — e pra qualquer um que queira controle simples e privado de verdade.\n\nO que ele faz:\n1️⃣ Multimoeda — real, euro, dólar num número só, na cotação de hoje\n2️⃣ Privacidade — tudo cifrado no seu aparelho; nem eu vejo\n3️⃣ Orçamento — pra onde vai cada real, por categoria\n4️⃣ Patrimônio — contas, investimentos e bens somados\n5️⃣ Metas — objetivos com barra de progresso em qualquer moeda\n6️⃣ Liberdade — projeção de independência financeira, ano a ano\n\nE o melhor: grátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\nArrasta pro lado pra ver tudo. 👉\n📲 Link na bio.",
+      "Vem conhecer o Nossas Finanças. 👋\n\nÉ um app de finanças pessoais feito pra quem vive (ou vai viver) entre países — e pra qualquer um que queira finalmente entender pra onde vai cada real.\n\nNo Nossas Finanças você consegue:\n1️⃣ Ver tudo num número só — real, euro, dólar na cotação de hoje\n2️⃣ Manter seus números privados — cifrados no seu aparelho; nem eu, no servidor, vejo\n3️⃣ Parar de dizer 'não sei pra onde foi' — orçamento por categoria, em qualquer moeda\n4️⃣ Somar tudo que você tem — contas, investimentos e bens, numa tela só\n5️⃣ Acompanhar metas reais — objetivos com barra de progresso em qualquer moeda\n6️⃣ Projetar sua liberdade — quanto falta pra parar de depender do salário\n\nE o melhor: grátis pra começar, funciona offline e roda no navegador — sem instalar nada, sem cadastrar cartão.\n\nArrasta pro lado pra ver tudo. 👉\n📲 Cadastre-se grátis — link na bio.",
     tags: ["financaspessoais", "multimoeda", "privacidade", "controlefinanceiro", "expatriados", "brasileirosnoexterior", "organizacaofinanceira", "independenciafinanceira", "appdefinancas", "morarfora"],
     slides: [
       { style: "dark", shot: SHOT_SRC.painel, eyebrow: "CONHEÇA O APP", title: ["Suas finanças,", "num app só."], sub: "Um tour rápido pelo Nossas Finanças." },
@@ -642,7 +642,7 @@ export const CAROUSELS: Carousel[] = [
       { style: "light", eyebrow: "4 · PATRIMÔNIO", title: ["Seu patrimônio,", "num número só."], stat: { value: "R$ 1,28 mi", label: "contas + investimentos + bens" }, sub: "Ativos, dívidas e composição — em qualquer moeda, num número só." },
       { style: "dark", eyebrow: "5 · METAS", title: ["Cada meta,", "no seu ritmo."], sub: "Objetivos com barra de progresso em qualquer moeda.", chips: ["Reserva", "Mudança", "Liberdade"] },
       { style: "color", eyebrow: "6 · E O MELHOR", title: ["Grátis, offline", "e no navegador."], sub: "Sem instalar nada, sem cadastrar cartão. Seus dados ficam com você.", chips: ["Sem instalar", "Funciona offline", "Sem cartão"] },
-      { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "COMECE AGORA", title: ["Abra grátis", "e comece hoje."], sub: "É só entrar pelo navegador — nossasfinancas.com.br" },
+      { style: "vivid", photo: "/img/ads/horizon.jpg", eyebrow: "COMECE AGORA", title: ["Abra grátis", "e comece hoje."], sub: "No Nossas Finanças você controla tudo — em qualquer moeda, sem cartão, no navegador." },
     ],
   },
 ];
@@ -653,10 +653,10 @@ export const EDU_CAROUSELS: Carousel[] = [
     id: "edu-orcamento-passo",
     name: "Educativo · seu 1º orçamento (7 slides)",
     comment:
-      "Qual passo você já faz e qual ainda falta? Conta aí 👇\n\nSalva esse post pra montar o seu no fim do mês 📌 App grátis na bio.",
+      "Qual passo você já faz e qual ainda falta? Conta aí 👇\n\nNo Nossas Finanças você acompanha cada real e monta o gráfico do mês. Comece grátis — link na bio 📌",
     pillar: "Educativo",
     caption:
-      "Quer se organizar mas não sabe por onde começar? Salva esse post — é o passo a passo do seu primeiro orçamento. 📌\n\n1. Anote tudo que entra (sua renda real)\n2. Liste os gastos fixos\n3. Estime os variáveis (olhe os últimos meses)\n4. Separe o quanto vai poupar ANTES de gastar\n5. Acompanhe e ajuste no fim do mês\n\nNão precisa ser perfeito no 1º mês. Precisa começar — cada mês fica mais fácil. 💪\n\n📲 No Nossas Finanças dá pra fazer tudo isso, em qualquer moeda. Link na bio.",
+      "Quer se organizar mas não sabe por onde começar? Salva esse post — é o passo a passo do seu primeiro orçamento. 📌\n\n1. Anote tudo que entra (sua renda real)\n2. Liste os gastos fixos\n3. Estime os variáveis (olhe os últimos meses)\n4. Separe o quanto vai poupar ANTES de gastar\n5. Acompanhe e ajuste no fim do mês\n\nNão precisa ser perfeito no 1º mês. Precisa começar — cada mês fica mais fácil. 💪\n\nNo Nossas Finanças você faz tudo isso numa tela, em qualquer moeda, e vê pra onde foi cada real.\n📲 Comece grátis — nossasfinancas.com.br",
     tags: ["orcamento", "passoapasso", "educacaofinanceira", "controlefinanceiro", "organizacaofinanceira", "financaspessoais", "planejamentofinanceiro", "comecaragora", "dinheiro", "vidafinanceira"],
     // Todo slide VÍVIDO, com 1 foto TEMÁTICA e ÚNICA (ilustra cada passo, como nos stories educativos).
     slides: [
@@ -666,7 +666,7 @@ export const EDU_CAROUSELS: Carousel[] = [
       { style: "vivid", photo: "/img/ads/market.jpg", eyebrow: "PASSO 3", title: ["Estime os", "variáveis"], sub: "Mercado, lazer, delivery. Olhe os últimos 2–3 meses pra ter a média." },
       { style: "vivid", photo: "/img/ads/counting.jpg", eyebrow: "PASSO 4", title: ["Separe o que", "vai poupar"], sub: "Defina antes de gastar — nem que comece com 5%. Pague-se primeiro." },
       { style: "vivid", photo: SHOT_SRC.orcamento, eyebrow: "PASSO 5", title: ["Acompanhe", "e ajuste"], sub: "No fim do mês, veja pra onde foi cada real — e vá ajustando." },
-      { style: "vivid", photo: SHOT_SRC.painel, eyebrow: "AGORA É COM VOCÊ", title: ["Comece o", "seu hoje."], sub: "Dá pra fazer tudo isso no app, em qualquer moeda — grátis, no navegador." },
+      { style: "vivid", photo: SHOT_SRC.painel, eyebrow: "AGORA É COM VOCÊ", title: ["Agora é com", "você — no app."], sub: "No Nossas Finanças você acompanha cada real, em qualquer moeda — grátis." },
     ],
   },
 ];
