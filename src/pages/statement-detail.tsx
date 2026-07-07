@@ -141,9 +141,10 @@ export function StatementDetail({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="max-w-[62ch] text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
+    <div className="space-y-3">
+      {/* Cabeçalho: dica à esquerda, ações (baixar modelo / importar) à direita — alinhadas. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="max-w-[52ch] text-[11px] leading-relaxed text-faint">{t("orcamento.statementHint")}</p>
         {!viewerMode ? (
           <div className="flex shrink-0 items-center gap-1.5">
             <button type="button" onClick={downloadTemplate} className={BTN}>
@@ -156,7 +157,21 @@ export function StatementDetail({
           </div>
         ) : null}
       </div>
-      {msg ? <p className="px-1 text-[11px] text-muted">{msg}</p> : null}
+      {msg ? <p className="text-[11px] text-muted">{msg}</p> : null}
+
+      {/* Por pessoa — ACIMA da tabela: quanto cada um gastou nesta fatura (caixa própria, alinhada). */}
+      {perPerson.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-[10px] border border-border bg-card2/40 px-3.5 py-2.5">
+          <span className="font-mono text-[9.5px] font-medium uppercase tracking-[0.12em] text-faint">{t("orcamento.tabPeople")}</span>
+          {perPerson.map((b) => (
+            <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 text-[12.5px]">
+              <span className="text-muted">{b.name}</span>
+              <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
+            </span>
+          ))}
+        </div>
+      ) : null}
+
       <DataGrid<Expense>
         columns={cols}
         rows={items}
@@ -167,17 +182,6 @@ export function StatementDetail({
         addPlaceholder={t("orcamento.addStatementItem")}
         total={<Money value={itemized} currency={fatura.currency} />}
       />
-      {perPerson.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 pt-0.5">
-          <span className="mr-0.5 font-mono text-[9.5px] font-medium uppercase tracking-[0.1em] text-faint">{t("orcamento.tabPeople")}</span>
-          {perPerson.map((b) => (
-            <span key={b.id || "shared"} className="inline-flex items-baseline gap-1.5 rounded-full bg-card2 px-2.5 py-1 text-[11.5px]">
-              <span className="text-muted">{b.name}</span>
-              <Money value={b.value} currency={fatura.currency} className="font-semibold tabular text-text" />
-            </span>
-          ))}
-        </div>
-      ) : null}
       <div className="flex items-center justify-between gap-3 px-1 pt-0.5 text-[12px]">
         <span className="text-muted">{t("orcamento.statementResidual")}</span>
         <Money value={residual} currency={fatura.currency} className={cn("font-medium", residual < -0.005 && "text-neg")} />
