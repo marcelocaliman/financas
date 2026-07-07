@@ -115,6 +115,11 @@ export interface Story {
   /** EDUCATIVO: layout que ensina — foto menor, título moderado, EXPLICAÇÃO grande e com respiro
    *  (a institucional é punch: título gigante + legenda mínima). Ver o ramo "vivid" em sceneContent. */
   teach?: boolean;
+  /** Segundos por cena (default SCENE_DUR=4). Educativos usam 6 — a explicação é longa, precisa
+   *  de tempo pra LER (não só decodificar) antes do fade. */
+  sceneDur?: number;
+  /** Segundos EXTRAS parados na última cena (CTA); default LAST_HOLD=2.5. Educativos usam 3. */
+  lastHold?: number;
 }
 
 export const STORIES: Story[] = [
@@ -126,7 +131,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "DINHEIRO EM MAIS DE UMA MOEDA?", title: ["Real, euro, dólar…", "quanto você tem", "somando tudo?"] },
       { kind: "hook", mock: "currencies", eyebrow: "UM PAINEL SÓ", title: ["Tudo, em", "qualquer moeda."], sub: "Na cotação de hoje — sem planilha, sem abrir conta." },
       { kind: "hook", eyebrow: "E VAI MUITO ALÉM", title: ["Sua vida", "financeira inteira."], chips: ["Patrimônio", "Orçamento", "Investimentos", "Metas", "Projeção"] },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Multimoeda de verdade", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Veja quanto você tem — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -136,7 +141,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "SOBRE OS APPS DE FINANÇAS", title: ["Eles veem tudo", "o que você tem.", "E lucram com isso."] },
       { kind: "hook", mock: "masked", eyebrow: "CRIPTOGRAFIA PONTA A PONTA", title: ["O nosso não", "vê nada."], sub: "Tudo cifrado no seu aparelho. Nem eu, no servidor, vejo." },
       { kind: "hook", eyebrow: "PRIVACIDADE DE VERDADE", title: ["Seus números.", "Só seus."], sub: "Sem anúncios e sem vender os seus dados." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Privado · Local-first", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Comece grátis — seus dados vão junto", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -146,7 +151,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "TODO FIM DE MÊS", title: ["Pra onde foi", "o seu dinheiro?"] },
       { kind: "hook", mock: "donut", eyebrow: "ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Em qualquer moeda, com o gráfico do mês." },
       { kind: "hook", eyebrow: "E O FUTURO?", title: ["Veja quando você", "fica livre."], sub: "Projeção de independência financeira, no seu ritmo." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Planeje · Projete · Conquiste", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Deixe o dinheiro sobrar — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
 
@@ -159,7 +164,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "CONTROLE FINANCEIRO", title: ["Finanças não", "precisam ser", "complicadas."] },
       { kind: "hook", eyebrow: "SEM PLANILHA, SEM FRICÇÃO", title: ["Abra e comece.", "Em minutos."], sub: "Nada pra instalar, sem cadastrar cartão. Funciona no navegador — e offline." },
       { kind: "hook", eyebrow: "SÓ O QUE IMPORTA", title: ["Clareza.", "Todo dia."], chips: ["Patrimônio", "Orçamento", "Metas", "Projeção"] },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Simples de verdade", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Comece agora — em minutos, grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -170,7 +175,7 @@ export const STORIES: Story[] = [
       { kind: "hook", eyebrow: "MANIFESTO", title: ["Seu dinheiro", "não devia ficar", "preso a um país."] },
       { kind: "hook", eyebrow: "MULTIMOEDA DE VERDADE", title: ["Real, euro,", "dólar — juntos."], sub: "Cada item guarda a própria moeda. Você escolhe em qual ver o total." },
       { kind: "hook", eyebrow: "ONDE VOCÊ ESTIVER", title: ["Uma vida.", "Uma tela."], chips: ["Brasil", "Itália", "Qualquer lugar"] },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Dinheiro sem fronteiras", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Comece grátis — sem fronteiras", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -180,7 +185,7 @@ export const STORIES: Story[] = [
     scenes: [
       { kind: "hook", eyebrow: "INDEPENDÊNCIA FINANCEIRA", title: ["Que dia você", "para de depender", "do salário?"] },
       { kind: "hook", eyebrow: "A CONTA EXISTE", title: ["Projete o seu", "futuro."], sub: "Aportes e inflação real, ano a ano. A data fica mais perto a cada real guardado." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Comece hoje", sub: "nossasfinancas.com.br" },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Descubra sua data — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
 
@@ -194,12 +199,12 @@ export const STORIES: Story[] = [
       { kind: "hook", style: "dark", shot: SHOT_SRC.privado, eyebrow: "2 · PRIVACIDADE", title: ["Cifrado. Só", "você vê."], sub: "Criptografia ponta a ponta: nem eu, no servidor, vejo os seus números." },
       { kind: "hook", style: "dark", shot: SHOT_SRC.orcamento, eyebrow: "3 · ORÇAMENTO", title: ["Cada real,", "organizado."], sub: "Gastos por categoria, em qualquer moeda, com o gráfico do mês." },
       { kind: "hook", style: "dark", shot: SHOT_SRC.liberdade, eyebrow: "4 · LIBERDADE", title: ["Veja quando", "você fica livre."], sub: "Projeção de independência financeira com aportes e inflação real." },
-      { kind: "cta", style: "color", value: "Nossas Finanças", tagline: "Tudo num app só · grátis", sub: "nossasfinancas.com.br" },
+      { kind: "cta", style: "color", value: "Nossas Finanças", tagline: "Comece agora — grátis, sem cartão", sub: "nossasfinancas.com.br" },
     ],
   },
 ];
 
-export const storyDuration = (st: Story) => st.scenes.length * SCENE_DUR + LAST_HOLD;
+export const storyDuration = (st: Story) => st.scenes.length * (st.sceneDur ?? SCENE_DUR) + (st.lastHold ?? LAST_HOLD);
 
 // ── STORIES EDUCATIVOS ───────────────────────────────────────────────────────
 // Templates de conteúdo que ENSINA (não institucional): troque texto/estilo pra falar de qualquer
@@ -211,12 +216,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · regra 50/30/20",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "ORÇAMENTO SEM COMPLICAR", title: ["A regra", "50 · 30 · 20"], sub: "Um jeito simples de dividir a renda pra não se perder no mês — e ainda sobrar pro futuro." },
       { kind: "hook", eyebrow: "COMO DIVIDIR A RENDA", title: ["Cada real", "tem um lugar."], sub: "Metade no que você PRECISA, 30% no que QUER e 20% pro amanhã. Só isso.", chips: ["50% Essenciais", "30% Desejos", "20% Investir"] },
       { kind: "hook", eyebrow: "NUM SALÁRIO DE R$ 3.000", title: ["R$ 1.500 ·", "900 · 600"], sub: "R$ 1.500 nas contas do mês, R$ 900 no lazer e R$ 600 investidos — todo mês, no piloto automático." },
       { kind: "hook", eyebrow: "O SEGREDO", title: ["Poupe ANTES", "de gastar."], sub: "Separe os 20% assim que a renda cai; o resto se vira com o que sobra. Nunca o contrário — senão nunca sobra." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Monte o seu orçamento — grátis", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "DA TEORIA PRA PRÁTICA", title: ["No Nossas Finanças,", "cada real acha", "o lugar."], sub: "Você põe o gasto na categoria e o app monta o gráfico do mês — sem planilha." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Monte seu orçamento — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -224,12 +232,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · reserva de emergência",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "A BASE DE TUDO", title: ["Você tem uma", "reserva de", "emergência?"], sub: "É o primeiro passo das finanças — vem ANTES de investir em qualquer coisa." },
       { kind: "hook", eyebrow: "O QUE É", title: ["O dinheiro que", "te segura."], sub: "Se a renda parar ou vier um imprevisto (saúde, conserto, desemprego), você resolve sem cartão nem empréstimo caro." },
       { kind: "hook", eyebrow: "QUANTO GUARDAR", title: ["3 a 6 meses", "de gastos."], sub: "Gasta R$ 2.000/mês? Mire entre R$ 6.000 e R$ 12.000 — e deixe onde dê pra sacar no mesmo dia." },
       { kind: "hook", eyebrow: "COMO MONTAR", title: ["Um aporte fixo,", "todo mês."], sub: "No automático, até chegar no alvo. Use só em emergência de verdade — e reponha depois de usar." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Acompanhe sua reserva no app", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "SEM PERDER DE VISTA", title: ["No Nossas Finanças,", "vira barra de", "progresso."], sub: "Você cria a meta da reserva e vê, todo mês, quanto subiu e quanto falta pro alvo." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Monte sua reserva — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -237,12 +248,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · juros compostos",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "O TEMPO É O TRUQUE", title: ["Por que começar", "cedo muda tudo?"], sub: "Por causa do efeito mais poderoso das finanças pessoais: os juros compostos." },
       { kind: "hook", eyebrow: "O QUE SÃO", title: ["Rendimento sobre", "rendimento."], sub: "O que você ganha passa a render também. A bola de neve cresce cada vez mais rápido — sozinha." },
       { kind: "hook", eyebrow: "UM EXEMPLO REAL", title: ["R$ 200/mês →", "~R$ 280 mil"], sub: "Em 30 anos, a ~8% ao ano. Você deposita só R$ 72 mil; o resto — mais de R$ 200 mil — é rendimento." },
       { kind: "hook", eyebrow: "A LIÇÃO", title: ["Comece pequeno,", "mas comece já."], sub: "Tempo vale mais que valor. Cada ano a mais faz uma diferença enorme lá na frente." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Projete o seu futuro — grátis", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "DE OLHO NO AMANHÃ", title: ["No Nossas Finanças,", "você vê a", "bola de neve."], sub: "Projeta quanto vai ter com aportes e inflação real, ano a ano — no seu ritmo." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Projete quando fica livre — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -250,12 +264,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · diversificação",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "REGRA DE OURO", title: ["Não ponha tudo", "num lugar só."], sub: "A regra mais antiga do dinheiro — e uma das que mais protege quem investe." },
       { kind: "hook", eyebrow: "O QUE É DIVERSIFICAR", title: ["Espalhar", "o risco."], sub: "Dividir o dinheiro entre tipos de ativo (e moedas) pra não depender de uma aposta só dar certo." },
       { kind: "hook", eyebrow: "NA PRÁTICA", title: ["Se um cai, os", "outros seguram."], sub: "Renda fixa + ações + FIIs + moedas: quando um tomba, o conjunto amortece e você sente bem menos." },
       { kind: "hook", eyebrow: "O PONTO", title: ["Menos risco,", "não mais."], sub: "Diversificar não é arriscar mais — é não colocar todos os ovos na mesma cesta." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Veja sua alocação por classe", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "SUA CARTEIRA INTEIRA", title: ["No Nossas Finanças,", "seu mix fica", "visível."], sub: "Cada investimento na sua moeda, num gráfico só — você vê o desequilíbrio e rebalanceia." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Veja sua alocação — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -263,12 +280,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · câmbio no seu bolso",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "SE VOCÊ TEM MOEDA LÁ FORA", title: ["O câmbio mexe", "no seu", "patrimônio."], sub: "Real, euro, dólar: quem vive entre moedas sente a cotação no bolso — todos os dias." },
       { kind: "hook", eyebrow: "COMO ASSIM", title: ["Euro sobe,", "seu total sobe."], sub: "Quem guarda em mais de uma moeda ganha (ou perde) sem fazer nada — só pela cotação do dia." },
       { kind: "hook", eyebrow: "UM EXEMPLO", title: ["€ 1.000 hoje", "≠ amanhã."], sub: "Se o euro sobe 5%, seus € 1.000 valem 5% a mais em real — sem você mexer num centavo." },
       { kind: "hook", eyebrow: "A DICA", title: ["Acompanhe numa", "moeda só."], sub: "Ver tudo convertido pra uma moeda evita susto e mostra o efeito real do câmbio no seu bolso." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Multimoeda de verdade", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "TUDO EM UMA MOEDA", title: ["No Nossas Finanças,", "você escolhe", "a moeda."], sub: "Real, euro, dólar — você vê o patrimônio inteiro na cotação de hoje, na moeda que preferir." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Veja tudo numa moeda só — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
   {
@@ -276,12 +296,15 @@ export const EDU_STORIES: Story[] = [
     name: "Educativo · sair das dívidas",
     style: "vivid",
     teach: true,
+    sceneDur: 6,
+    lastHold: 3,
     scenes: [
       { kind: "hook", eyebrow: "PRIMEIRO PASSO PRA INVESTIR", title: ["Ataque a dívida", "mais cara", "primeiro."], sub: "Antes de investir, quitar dívida cara é o melhor 'investimento' que existe." },
       { kind: "hook", eyebrow: "POR QUÊ", title: ["Cartão rende", "contra você."], sub: "Os juros de cartão e cheque especial superam QUALQUER investimento. Quitar é lucro garantido." },
       { kind: "hook", eyebrow: "A CONTA", title: ["Rotativo passa", "de 300% ao ano."], sub: "Nenhum investimento paga isso. Cada real da dívida cara que você mata rende mais que aplicar." },
       { kind: "hook", eyebrow: "A ORDEM CERTA", title: ["Maior juro,", "não maior valor."], sub: "Liste as dívidas pela TAXA e mate a de juro mais alto primeiro — depois a próxima, e assim vai." },
-      { kind: "cta", value: "Nossas Finanças", tagline: "Organize e saia do vermelho", sub: "nossasfinancas.com.br" },
+      { kind: "hook", eyebrow: "NA ORDEM CERTA", title: ["No Nossas Finanças,", "você organiza", "e ataca."], sub: "Registra suas dívidas no patrimônio e vê o total cair a cada pagamento." },
+      { kind: "cta", value: "Nossas Finanças", tagline: "Organize suas dívidas — grátis", sub: "nossasfinancas.com.br" },
     ],
   },
 ];
@@ -1127,7 +1150,7 @@ function drawVividPhotoBg(ctx: CanvasRenderingContext2D, photo: CanvasImageSourc
 }
 
 /** Barrinhas de progresso (topo, estilo Story): uma por cena, preenchendo. */
-function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: number, t: number, pal: Palette = DARK) {
+function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: number, t: number, pal: Palette = DARK, dur = SCENE_DUR, hold = LAST_HOLD) {
   const pad = 54 * s, gap = 10 * s, y = 46 * s, h = 6 * s;
   const bw = (W - pad * 2 - gap * (n - 1)) / n;
   for (let i = 0; i < n; i++) {
@@ -1135,7 +1158,7 @@ function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: nu
     ctx.fillStyle = pal.chipStroke;
     roundRect(ctx, x, y, bw, h, h / 2);
     ctx.fill();
-    const fill = clamp01((t - i * SCENE_DUR) / (i === n - 1 ? SCENE_DUR + LAST_HOLD : SCENE_DUR));
+    const fill = clamp01((t - i * dur) / (i === n - 1 ? dur + hold : dur));
     if (fill > 0) {
       ctx.fillStyle = pal.text;
       roundRect(ctx, x, y, bw * fill, h, h / 2);
@@ -1469,9 +1492,14 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
     ctx.fillText(sc.value || "Nossas Finanças", W / 2, cy + d + 100 * s);
     if (sc.tagline) {
       ctx.fillStyle = pal.accent;
-      ctx.font = fontMono(30 * s, 500);
+      const tl = sc.tagline.toUpperCase();
       ctx.letterSpacing = `${2 * s}px`;
-      ctx.fillText(sc.tagline.toUpperCase(), W / 2, cy + d + 165 * s);
+      ctx.font = fontMono(30 * s, 500);
+      // Encolhe se a tagline (agora mais longa: verbo + benefício + "grátis") não couber em 1 linha.
+      const maxTW = W - 120 * s;
+      const tw = ctx.measureText(tl).width;
+      if (tw > maxTW) ctx.font = fontMono(Math.max(20, 30 * (maxTW / tw)) * s, 500);
+      ctx.fillText(tl, W / 2, cy + d + 165 * s);
       ctx.letterSpacing = "0px";
     }
     // pílula "abra grátis"
@@ -1500,8 +1528,10 @@ function sceneContent(ctx: CanvasRenderingContext2D, s: number, W: number, H: nu
 export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number, W: number, H: number, showProgress = true, photo: CanvasImageSource | null = null) {
   const s = W / 1080;
   const n = story.scenes.length;
-  const idx = Math.min(n - 1, Math.floor(t / SCENE_DUR));
-  const lt = t - idx * SCENE_DUR;
+  const dur = story.sceneDur ?? SCENE_DUR;
+  const hold = story.lastHold ?? LAST_HOLD;
+  const idx = Math.min(n - 1, Math.floor(t / dur));
+  const lt = t - idx * dur;
   const sc = story.scenes[idx];
   // Cada CENA pode ter o próprio clima (sobrescreve o do story) → um mesmo story alterna templates.
   const style = sc.style ?? story.style;
@@ -1542,13 +1572,13 @@ export function drawStory(ctx: CanvasRenderingContext2D, story: Story, t: number
 
   // Última cena (CTA): só fade-IN, sem fade-out — fica visível até o fim pro usuário clicar.
   const isLast = idx === n - 1;
-  const a = isLast ? clamp01(lt / 0.6) : sceneAlpha(lt, SCENE_DUR);
+  const a = isLast ? clamp01(lt / 0.6) : sceneAlpha(lt, dur);
   // SEM logo no topo dos stories: o Instagram já sobrepõe avatar + nome + "×" ali (colidia). O resto
   // é posicionado por frações da altura (independente da logo) → nada se move. A marca segue nos POSTS
   // (drawPost) e no wordmark grande da cena de CTA.
   sceneContent(ctx, s, W, H, sc, lt, a, pal, style, story.teach);
   // Barras de progresso: SÓ na prévia do admin. No vídeo exportado NÃO — o Instagram já põe as dele.
-  if (showProgress) drawProgress(ctx, s, W, n, t, pal);
+  if (showProgress) drawProgress(ctx, s, W, n, t, pal, dur, hold);
 }
 
 // ── POSTS ESTÁTICOS (drawPost) ───────────────────────────────────────────────
