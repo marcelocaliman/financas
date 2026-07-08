@@ -28,6 +28,45 @@ export const CLASS_TO_CODE: Record<string, { group: string; code: string }> = {
   [CLASS.outros]: { group: "99", code: "99" },
 };
 
+/**
+ * Refinamento por SUBTIPO (mais preciso que a classe) — só os casos de alta confiança; o resto cai no
+ * default da classe. Ids seguem `${classId}-${índice}` da taxonomia. Tudo editável.
+ */
+export const SUBTYPE_TO_CODE: Record<string, { group: string; code: string }> = {
+  // Renda fixa ISENTA → 04/03 (o default da classe é 04/02, tributável).
+  "renda-fixa-5": { group: "04", code: "03" }, // LCI
+  "renda-fixa-6": { group: "04", code: "03" }, // LCA
+  "renda-fixa-7": { group: "04", code: "03" }, // CRI
+  "renda-fixa-8": { group: "04", code: "03" }, // CRA
+  "renda-fixa-10": { group: "04", code: "03" }, // Debênture incentivada
+  "renda-fixa-12": { group: "07", code: "01" }, // Fundo de Renda Fixa → Fundos
+  "renda-fixa-13": { group: "07", code: "01" }, // Fundo DI → Fundos
+  "renda-fixa-17": { group: "07", code: "99" }, // RF internacional (fundo/ETF) → fundo no exterior
+  // ETF e fundo de ações são FUNDOS (07), não ações (03).
+  "acoes-4": { group: "07", code: "06" }, // ETF de ações
+  "acoes-5": { group: "07", code: "04" }, // Fundo de ações
+  // FIIs
+  "fiis-4": { group: "07", code: "99" }, // REIT internacional → fundo no exterior
+  "fiis-5": { group: "07", code: "07" }, // FI-Infra → Fundos em Infraestrutura
+  // Previdência: PGBL NÃO é bem (é dedução em Pagamentos) → sem código; a UI/avisos alertam.
+  "previdencia-1": { group: "", code: "" }, // PGBL
+  // Cripto por tipo (Bitcoin já é 08/01 pelo default).
+  "cripto-2": { group: "08", code: "02" }, // Ethereum → altcoin
+  "cripto-3": { group: "08", code: "02" }, // Altcoins
+  "cripto-4": { group: "08", code: "03" }, // Stablecoin
+  // Commodities: ETF de ouro é fundo.
+  "commodities-3": { group: "07", code: "06" }, // ETF de ouro/commodities
+  // Caixa: POUPANÇA é grupo 04 (não 06).
+  "caixa-2": { group: "04", code: "01" }, // Conta poupança
+  // Bens móveis por tipo.
+  "bens-4": { group: "02", code: "06" }, // Joias e relógios → Joia
+  "bens-7": { group: "02", code: "05" }, // Arte e colecionáveis
+  // Imóveis por tipo.
+  "imoveis-3": { group: "01", code: "13" }, // Terreno
+  // Participação direta em empresa → quotas de capital.
+  "private-equity-3": { group: "03", code: "02" },
+};
+
 /** Tipo de passivo → código da ficha "Dívidas e Ônus Reais" (editável). */
 export const LIABILITY_TO_CODE: Record<string, string> = {
   [LIABILITY_TYPE.financiamentoImobiliario]: "11",
@@ -90,7 +129,7 @@ export function composeDiscriminacao(kind: "asset" | "debt", group: string, f: R
  */
 export const irpfSeedMapper: TaxSeedMapper = {
   asset: (a, baseYear) => {
-    const { group, code } = CLASS_TO_CODE[a.classId] ?? { group: "99", code: "99" };
+    const { group, code } = SUBTYPE_TO_CODE[a.subtypeId ?? ""] ?? CLASS_TO_CODE[a.classId] ?? { group: "99", code: "99" };
     const fields: Record<string, string> = { nome: a.name };
     if (a.ticker) fields.ticker = a.ticker;
     if (a.quantity != null) fields.quantidade = String(a.quantity);

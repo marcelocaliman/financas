@@ -33,6 +33,19 @@ describe("irpfSeedMapper (classe → código oficial)", () => {
     expect(`${it.group}/${it.code}`).toBe("99/99");
   });
 
+  it("refina pelo SUBTIPO quando dá (ETF→fundo, LCI→isento, poupança→04/01)", () => {
+    const gc = (classId: string, subtypeId: string) => {
+      const it = irpfSeedMapper.asset(asset({ classId, subtypeId }), 2025);
+      return `${it.group}/${it.code}`;
+    };
+    expect(gc("acoes", "acoes-4")).toBe("07/06");        // ETF de ações → Fundos, NÃO 03/01
+    expect(gc("renda-fixa", "renda-fixa-5")).toBe("04/03"); // LCI → isento (default seria 04/02)
+    expect(gc("caixa", "caixa-2")).toBe("04/01");        // Poupança → grupo 04, NÃO 06
+    expect(gc("cripto", "cripto-4")).toBe("08/03");      // Stablecoin
+    expect(gc("bens", "bens-4")).toBe("02/06");          // Joias
+    expect(gc("acoes", "acoes-1")).toBe("03/01");        // Ação BR sem refino → default da classe
+  });
+
   it("bem no exterior guarda moeda de origem + país e NÃO tem BRL calculado", () => {
     const it = irpfSeedMapper.asset(asset({ classId: "acoes", currency: "USD", regionId: "eua", amount: 5000 }), 2025);
     expect(it.currency).toBe("USD");
