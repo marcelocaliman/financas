@@ -51,9 +51,9 @@ export function DueAlertBarView({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-3 rounded-[14px] border border-[color-mix(in_oklab,var(--neg)_38%,transparent)] bg-[var(--neg-soft)] px-3.5 py-3">
-      <span className="grid place-items-center w-9 h-9 rounded-[10px] bg-card text-neg shrink-0">
-        <AlertTriangle size={17} />
+    <div className="flex items-center gap-2.5 rounded-[14px] border border-[color-mix(in_oklab,var(--neg)_38%,transparent)] bg-[var(--neg-soft)] px-4 py-3">
+      <span className="grid place-items-center w-7 h-7 rounded-[8px] bg-card text-neg shrink-0">
+        <AlertTriangle size={15} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="text-[13.5px] font-semibold text-text leading-tight">
@@ -64,7 +64,7 @@ export function DueAlertBarView({
       <button
         type="button"
         onClick={onGo}
-        className="shrink-0 h-9 px-3.5 rounded-[10px] bg-neg text-[#2b0c09] text-[12.5px] font-semibold hover:opacity-90 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        className="shrink-0 h-7 px-3 rounded-[8px] bg-neg text-[#2b0c09] text-[12px] font-semibold hover:opacity-90 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       >
         {t("orcamento.overdueBarCta")}
       </button>
@@ -72,9 +72,9 @@ export function DueAlertBarView({
         type="button"
         onClick={onDismiss}
         aria-label={t("orcamento.overdueBarDismiss")}
-        className="shrink-0 grid place-items-center w-9 h-9 rounded-[10px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        className="shrink-0 grid place-items-center w-7 h-7 rounded-[8px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       >
-        <X size={16} />
+        <X size={15} />
       </button>
     </div>
   );

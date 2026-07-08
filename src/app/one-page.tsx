@@ -48,7 +48,9 @@ export function OnePage() {
               fica idêntico ao anterior. */}
           <div className={cn(CONTAINER, GUTTERS, "pt-[68px] pb-8 sm:pb-14")}>
             <DueAlertBar />
-            <div className="pt-6 sm:pt-10">
+            {/* Sem alerta (DueAlertBar=null) → hero é o 1º filho e mantém o respiro folgado.
+                Com alerta → hero deixa de ser 1º filho e o gap aperta pra casar com o do ticker. */}
+            <div className="pt-6 sm:pt-10 [&:not(:first-child)]:pt-4 sm:[&:not(:first-child)]:pt-5">
               <DashboardHero />
             </div>
           </div>
