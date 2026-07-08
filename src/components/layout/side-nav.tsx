@@ -253,6 +253,12 @@ export function SideNav({ active }: { active: string }) {
             </div>
           </div>
         </div>
+
+        {/* Organizador de IRPF — último item, ancorado no FUNDO da navegação (mt-auto), logo ACIMA da
+            linha do rodapé; separado dos itens de gestão, alinhado com eles. */}
+        <div className={cn("mt-auto pt-3 pb-1", collapsed ? "px-2 flex justify-center" : "px-2.5")}>
+          <IrpfNavItem collapsed={collapsed} active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
+        </div>
       </div>
 
       {/* Rodapé fixo no fim do menu — fora da área rolável */}
@@ -265,9 +271,6 @@ export function SideNav({ active }: { active: string }) {
                 <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
-                  {/* Organizador de IRPF — no TOPO do rodapé, separado dos itens de gestão */}
-                  <IrpfNavItem collapsed active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
-                  <div className="h-px w-7 bg-border my-0.5" />
                   <ProNavCard collapsed />
                   <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                     {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -293,10 +296,6 @@ export function SideNav({ active }: { active: string }) {
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
               ) : (
                 <>
-                  {/* Organizador de IRPF — no TOPO do rodapé, separado dos itens de gestão de cima */}
-                  <div className="mb-2.5">
-                    <IrpfNavItem collapsed={false} active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
-                  </div>
                   <ProNavCard collapsed={false} />
                   {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
                   {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
@@ -531,9 +530,9 @@ function daysToIrpfDeadline(): number {
   return Math.round((deadline.getTime() - today.getTime()) / 86400000);
 }
 
-/** Item do Organizador de IRPF — vive no TOPO do RODAPÉ (separado dos itens de gestão), distinguido
- *  por um FUNDO: cinza sutil fora do prazo, VERDE na temporada da declaração (mar–mai) + KPI de dias
- *  até 31/mai. Abre a tela cheia. Recolhido = ícone quadrado como os demais do rodapé. */
+/** Item do Organizador de IRPF — ancorado no FUNDO da navegação, logo ACIMA da linha do rodapé
+ *  (separado dos itens de gestão, mas alinhado com eles). Distinguido por um FUNDO: cinza sutil fora
+ *  do prazo, VERDE na temporada da declaração (mar–mai) + KPI de dias até 31/mai. Abre a tela cheia. */
 function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolean; active: boolean; season: boolean; onClick: () => void }) {
   const { t } = useTranslation();
   // Fundo diferenciado (não é seção): ativo = card2; temporada = verde suave; fora do prazo = cinza sutil.
@@ -551,9 +550,9 @@ function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolea
           onClick={onClick}
           aria-pressed={active}
           aria-label={t("nav.irpf")}
-          className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
+          className={cn("grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
         >
-          <Landmark size={16} />
+          <Landmark size={17} />
         </button>
       </Tooltip>
     );
