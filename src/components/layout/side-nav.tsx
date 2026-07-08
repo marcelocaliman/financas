@@ -247,9 +247,6 @@ export function SideNav({ active }: { active: string }) {
                   ...(due.count > 0 ? { orcamento: <DueBillsTooltip /> } : {}),
                 }}
               />
-              {/* Organizador de IRPF — último item, levemente separado da navegação de seções; ganha
-                  destaque de acento na temporada da declaração (mar–mai). Abre a tela cheia. */}
-              <IrpfNavItem collapsed={collapsed} active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
@@ -268,6 +265,9 @@ export function SideNav({ active }: { active: string }) {
                 <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
+                  {/* Organizador de IRPF — no TOPO do rodapé, separado dos itens de gestão */}
+                  <IrpfNavItem collapsed active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
+                  <div className="h-px w-7 bg-border my-0.5" />
                   <ProNavCard collapsed />
                   <IconBtn onClick={toggleNumbers} label={numbersHidden ? t("menu.show") : t("menu.hide")} active={numbersHidden}>
                     {numbersHidden ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -293,6 +293,10 @@ export function SideNav({ active }: { active: string }) {
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
               ) : (
                 <>
+                  {/* Organizador de IRPF — no TOPO do rodapé, separado dos itens de gestão de cima */}
+                  <div className="mb-2.5">
+                    <IrpfNavItem collapsed={false} active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
+                  </div>
                   <ProNavCard collapsed={false} />
                   {/* Painel admin + "online agora" — no TOPO do rodapé (acima dos controles) */}
                   {isAdmin ? <AdminPresence collapsed={false} onOpenAdmin={() => setAdminOpen(true)} /> : null}
@@ -527,9 +531,9 @@ function daysToIrpfDeadline(): number {
   return Math.round((deadline.getTime() - today.getTime()) / 86400000);
 }
 
-/** Item do Organizador de IRPF na lista PRINCIPAL — logo após "Internacional", ALINHADO com os demais
- *  itens (mesmo padding/ícone), distinguido por um FUNDO: cinza sutil fora do prazo, VERDE na temporada
- *  da declaração (mar–mai) + selo "declarar". Sem divisor. Abre a tela cheia. */
+/** Item do Organizador de IRPF — vive no TOPO do RODAPÉ (separado dos itens de gestão), distinguido
+ *  por um FUNDO: cinza sutil fora do prazo, VERDE na temporada da declaração (mar–mai) + KPI de dias
+ *  até 31/mai. Abre a tela cheia. Recolhido = ícone quadrado como os demais do rodapé. */
 function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolean; active: boolean; season: boolean; onClick: () => void }) {
   const { t } = useTranslation();
   // Fundo diferenciado (não é seção): ativo = card2; temporada = verde suave; fora do prazo = cinza sutil.
@@ -541,41 +545,39 @@ function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolea
 
   if (collapsed) {
     return (
-      <div className="px-2 pt-0.5 flex justify-center">
+      <Tooltip label={t("nav.irpf")}>
         <button
           type="button"
           onClick={onClick}
           aria-pressed={active}
           aria-label={t("nav.irpf")}
-          className={cn("grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
+          className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
         >
-          <Landmark size={17} />
+          <Landmark size={16} />
         </button>
-      </div>
+      </Tooltip>
     );
   }
   return (
-    <div className="px-2.5 pt-0.5">
-      <button
-        type="button"
-        onClick={onClick}
-        aria-pressed={active}
-        className={cn("w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn("w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
+    >
+      <Landmark size={17} className="shrink-0" />
+      <span className="truncate">{t("nav.irpf")}</span>
+      {/* KPI de prazo (onde ficaria a setinha): dias até 31/mai. Verde-sólido na temporada, discreto fora. */}
+      <span
+        title={t("irpf.deadlineTitle")}
+        className={cn(
+          "ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full font-mono text-[9.5px] font-bold tabular leading-none",
+          season ? "bg-accent text-[#0A0B0D]" : "border border-border text-faint",
+        )}
       >
-        <Landmark size={17} className="shrink-0" />
-        <span className="truncate">{t("nav.irpf")}</span>
-        {/* KPI de prazo (onde ficaria a setinha): dias até 31/mai. Verde-sólido na temporada, discreto fora. */}
-        <span
-          title={t("irpf.deadlineTitle")}
-          className={cn(
-            "ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full font-mono text-[9.5px] font-bold tabular leading-none",
-            season ? "bg-accent text-[#0A0B0D]" : "border border-border text-faint",
-          )}
-        >
-          {daysToIrpfDeadline()}d
-        </span>
-      </button>
-    </div>
+        {daysToIrpfDeadline()}d
+      </span>
+    </button>
   );
 }
 

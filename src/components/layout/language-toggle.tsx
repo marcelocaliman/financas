@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, Check, Globe } from "lucide-react";
+import { ChevronDown, Check } from "lucide-react";
 import { SUPPORTED_LANGS } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +42,8 @@ export function LanguageMenu({
         aria-label="Idioma"
         aria-haspopup="true"
         aria-expanded={open}
-        className="flex items-center gap-1.5 h-9 pl-2.5 pr-2 rounded-[10px] border bg-card2 border-border text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        className="flex items-center gap-1.5 h-9 px-2.5 rounded-[10px] border bg-card2 border-border text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
       >
-        <Globe size={14} className="text-faint" />
         <span className="text-[11px] font-mono font-semibold uppercase tracking-[0.08em] text-text">{cur}</span>
         <ChevronDown size={14} className="text-faint" />
       </button>
