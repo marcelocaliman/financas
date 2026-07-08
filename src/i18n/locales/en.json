@@ -57,6 +57,8 @@
     "discriminacaoPh": "Description of the asset — what appears on the tax return",
     "valueOn": "Situation on 12/31/{{year}}",
     "review": "review",
+    "reviewWhy": "This is TODAY's value (pulled from your net worth). Adjust it to the 12/31/{{year}} position.",
+    "reviewBanner": "{{n}} value(s) came in as TODAY's value (pulled from your net worth) — adjust each to the 12/31/{{year}} position. That's why they say “review”.",
     "valueBrl": "Value in BRL (you enter)",
     "foreignWarn": "Foreign asset: the BRL value follows acquisition cost at the purchase-date exchange rate (tax rule). The app doesn't compute it — enter it and confirm with your accountant.",
     "removeItem": "Remove item",

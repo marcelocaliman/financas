@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
 const CONTAINER = "max-w-[1280px] mx-auto"; // mesma largura/estrutura das outras páginas
+// Cabeçalho de seção/card — mono, mas LEGÍVEL (texto forte + semibold), não o eyebrow apagado.
+const HEAD = "font-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-text";
 const currentYear = new Date().getFullYear();
 
 /** Tela cheia do Organizador de IRPF — renderizada na casca (menu presente), igual a Config/Suporte. */
@@ -131,6 +133,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const diff = useMemo(() => diffPatrimonio(list, assets, liabilities), [list, assets, liabilities]);
   const pending = countPending(list);
   const newCount = diff.newAssets.length + diff.newLiabilities.length;
+  const needsReviewCount = list.filter((i) => i.needsReview).length;
   const priorYear = useMemo(() => {
     const ys = (returns ?? []).map((r) => r.baseYear).filter((y) => y < year);
     return ys.length ? Math.max(...ys) : null;
@@ -256,6 +259,12 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         ) : null}
       </div>
 
+      {needsReviewCount > 0 ? (
+        <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
+          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0 mt-0.5" />
+          <span>{t("irpf.reviewBanner", { n: needsReviewCount, year })}</span>
+        </div>
+      ) : null}
       {pending > 0 ? (
         <div className="flex items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_40%,transparent)] bg-[color-mix(in_oklab,#e0a33c_9%,transparent)] px-4 py-2.5 text-[12.5px] text-text">
           <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" /> {t("irpf.pendingBanner", { n: pending })}
@@ -288,7 +297,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           {bensByGroup.map(([group, list]) => (
             <section key={group || "sem"} className="rounded-[16px] border border-border bg-card overflow-hidden">
               <div className="flex items-baseline justify-between px-4 sm:px-5 py-3 border-b border-border">
-                <div className="eyebrow">{group ? `${group} · ${groupName(group)}` : t("irpf.noCode")}</div>
+                <div className={HEAD}>{group ? `${group} · ${groupName(group)}` : t("irpf.noCode")}</div>
                 <div className="eyebrow">{list.length} {t(list.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
               </div>
               <div className="divide-y divide-border">
@@ -300,7 +309,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           {dividas.length ? (
             <section className="rounded-[16px] border border-border bg-card overflow-hidden">
               <div className="flex items-baseline justify-between px-4 sm:px-5 py-3 border-b border-border">
-                <div className="eyebrow">{t("irpf.debtsSection")}</div>
+                <div className={HEAD}>{t("irpf.debtsSection")}</div>
                 <div className="eyebrow">{dividas.length} {t(dividas.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
               </div>
               <div className="divide-y divide-border">
@@ -314,7 +323,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       {incomeSummary.length ? (
         <section className="rounded-[16px] border border-border bg-card overflow-hidden">
           <div className="px-4 sm:px-5 py-3 border-b border-border">
-            <div className="eyebrow">{t("irpf.incomeSection", { year })}</div>
+            <div className={HEAD}>{t("irpf.incomeSection", { year })}</div>
           </div>
           <div className="px-4 sm:px-5 py-3.5 space-y-2">
             <p className="text-[11.5px] text-faint">{t("irpf.incomeHint")}</p>
@@ -366,7 +375,7 @@ function Row({ item }: { item: TaxItem }) {
         <select
           value={item.code}
           onChange={(e) => patch({ code: e.target.value })}
-          className="h-8 min-w-0 max-w-[280px] rounded-[8px] border border-border bg-card2 px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          className="h-8 flex-1 min-w-[200px] max-w-[560px] rounded-[8px] border border-border bg-card2 px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           aria-label={t("irpf.code")}
         >
           <option value="">{t("irpf.code")}…</option>
@@ -410,7 +419,7 @@ function Row({ item }: { item: TaxItem }) {
               )}
             />
             {item.needsReview ? (
-              <span className="text-[10.5px] font-medium text-[#e0a33c] whitespace-nowrap">{t("irpf.review")}</span>
+              <span title={t("irpf.reviewWhy", { year: item.baseYear })} className="text-[10.5px] font-medium text-[#e0a33c] whitespace-nowrap cursor-help underline decoration-dotted underline-offset-2">{t("irpf.review")}</span>
             ) : null}
           </div>
         </label>

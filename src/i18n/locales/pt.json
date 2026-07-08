@@ -57,6 +57,8 @@
     "discriminacaoPh": "Discriminação (descrição do bem) — o que aparece na declaração",
     "valueOn": "Situação em 31/12/{{year}}",
     "review": "revisar",
+    "reviewWhy": "É o valor de HOJE (puxado do seu patrimônio). Ajuste para a posição em 31/12/{{year}}.",
+    "reviewBanner": "{{n}} valor(es) vieram com o valor de HOJE (puxados do patrimônio) — ajuste cada um para a posição em 31/12/{{year}}. É por isso do “revisar”.",
     "valueBrl": "Valor em R$ (você informa)",
     "foreignWarn": "Bem no exterior: o valor em R$ segue o custo de aquisição pelo câmbio da data da compra (regra da Receita). O app não calcula — informe e confira com seu contador.",
     "removeItem": "Remover item",
