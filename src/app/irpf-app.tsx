@@ -1,15 +1,17 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock } from "lucide-react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
 import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
-import { buildSeedTaxItems } from "@/finance/irpf-seed";
+import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
 import { irpfSeedMapper } from "@/irpf/mapper";
+import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
-import type { TaxItem } from "@/domain/irpf";
+import type { TaxItem, TaxReturn } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
@@ -52,7 +54,7 @@ export function IrpfView() {
         {!resolved ? null : !isPro ? (
           <LockedPreview onUpgrade={() => openPaywall("irpf")} />
         ) : (
-          <Organizer year={year} items={items} />
+          <Organizer year={year} items={items} returns={returns} />
         )}
       </div>
     </div>
@@ -113,32 +115,58 @@ function LockedPreview({ onUpgrade }: { onUpgrade: () => void }) {
 }
 
 /** O organizador em si (Pro): disclaimer + puxar + lista editável agrupada. */
-function Organizer({ year, items }: { year: number; items: TaxItem[] | null }) {
+function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | null; returns: TaxReturn[] | null }) {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
+  const assets = useLiveQuery(() => repository.listAssets()) ?? [];
+  const liabilities = useLiveQuery(() => repository.listLiabilities()) ?? [];
+  const list = useMemo(() => items ?? [], [items]);
+  const diff = useMemo(() => diffPatrimonio(list, assets, liabilities), [list, assets, liabilities]);
+  const pending = countPending(list);
+  const newCount = diff.newAssets.length + diff.newLiabilities.length;
+  const priorYear = useMemo(() => {
+    const ys = (returns ?? []).map((r) => r.baseYear).filter((y) => y < year);
+    return ys.length ? Math.max(...ys) : null;
+  }, [returns, year]);
+
+  async function ensureReturn() {
+    if (!(await repository.getTaxReturn(String(year)))) {
+      await actions.putTaxReturn({ id: String(year), baseYear: year, reportingCurrency: "BRL", status: "draft", updatedAt: Date.now() });
+    }
+  }
 
   async function pull() {
     setBusy(true);
     try {
-      if (!(await repository.getTaxReturn(String(year)))) {
-        await actions.putTaxReturn({ id: String(year), baseYear: year, reportingCurrency: "BRL", status: "draft", updatedAt: Date.now() });
-      }
-      const [assets, liabilities, existing] = await Promise.all([
+      await ensureReturn();
+      const [curAssets, curLiabs, existing] = await Promise.all([
         repository.listAssets(),
         repository.listLiabilities(),
         repository.listTaxItems(year),
       ]);
-      const fresh = buildSeedTaxItems(year, assets, liabilities, existing, irpfSeedMapper);
+      const fresh = buildSeedTaxItems(year, curAssets, curLiabs, existing, irpfSeedMapper);
       if (fresh.length) await actions.putTaxItems(fresh);
     } finally {
       setBusy(false);
     }
   }
 
-  async function addManual() {
-    if (!(await repository.getTaxReturn(String(year)))) {
-      await actions.putTaxReturn({ id: String(year), baseYear: year, reportingCurrency: "BRL", status: "draft", updatedAt: Date.now() });
+  /** Traz os itens do ano anterior: o valor de 31/12 vira a coluna "ano anterior" e você só atualiza o novo. */
+  async function rollForward() {
+    if (priorYear == null) return;
+    setBusy(true);
+    try {
+      const prev = await repository.listTaxItems(priorYear);
+      if (!prev.length) return;
+      await ensureReturn();
+      await actions.putTaxItems(buildRollForward(prev, year));
+    } finally {
+      setBusy(false);
     }
+  }
+
+  async function addManual() {
+    await ensureReturn();
     await actions.putTaxItem({
       id: crypto.randomUUID(),
       baseYear: year,
@@ -153,14 +181,15 @@ function Organizer({ year, items }: { year: number; items: TaxItem[] | null }) {
     });
   }
 
-  const bens = (items ?? []).filter((i) => i.kind === "asset");
-  const dividas = (items ?? []).filter((i) => i.kind === "debt");
+  const bens = list.filter((i) => i.kind === "asset");
+  const dividas = list.filter((i) => i.kind === "debt");
   const bensByGroup = useMemo(() => {
     const m = new Map<string, TaxItem[]>();
     for (const it of bens) (m.get(it.group) ?? m.set(it.group, []).get(it.group)!).push(it);
     return [...m.entries()].sort((a, b) => (a[0] || "zz").localeCompare(b[0] || "zz"));
-  }, [bens]);
-  const empty = (items ?? []).length === 0;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+  const empty = list.length === 0;
 
   return (
     <div className="space-y-5">
@@ -192,9 +221,32 @@ function Organizer({ year, items }: { year: number; items: TaxItem[] | null }) {
         </span>
       </div>
 
+      {pending > 0 ? (
+        <div className="flex items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_40%,transparent)] bg-[color-mix(in_oklab,#e0a33c_9%,transparent)] px-4 py-2.5 text-[12.5px] text-text">
+          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" /> {t("irpf.pendingBanner", { n: pending })}
+        </div>
+      ) : null}
+      {newCount > 0 ? (
+        <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
+          <RefreshCw size={15} className="text-accent shrink-0" />
+          <span>{t("irpf.newBanner", { n: newCount })}</span>
+          <button type="button" onClick={pull} className="ml-auto text-accent font-medium hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">{t("irpf.pull")}</button>
+        </div>
+      ) : null}
+      {diff.orphans.length > 0 ? (
+        <div className="flex items-start gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
+          <CalendarClock size={15} className="text-faint shrink-0 mt-0.5" /> {t("irpf.orphanBanner", { n: diff.orphans.length })}
+        </div>
+      ) : null}
+
       {empty ? (
-        <div className="rounded-[16px] border border-dashed border-border p-8 text-center text-[13.5px] text-muted">
-          {t("irpf.emptyState")}
+        <div className="rounded-[16px] border border-dashed border-border p-8 text-center">
+          <p className="text-[13.5px] text-muted">{t("irpf.emptyState")}</p>
+          {priorYear != null ? (
+            <button type="button" onClick={rollForward} disabled={busy} className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-[10px] border border-border bg-card text-[12.5px] font-medium text-text hover:border-border-strong disabled:opacity-60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+              <RefreshCw size={14} /> {t("irpf.rollForward", { year: priorYear })}
+            </button>
+          ) : null}
         </div>
       ) : (
         <>
@@ -234,6 +286,7 @@ function Organizer({ year, items }: { year: number; items: TaxItem[] | null }) {
 function Row({ item }: { item: TaxItem }) {
   const { t } = useTranslation();
   const foreign = isForeignCurrency(item.currency);
+  const issues = itemIssues(item);
   const patch = (p: Partial<TaxItem>) => void actions.putTaxItem({ ...item, ...p });
   const [disc, setDisc] = useState(item.discriminacao);
   const [val, setVal] = useState(item.valorAnoBase ? String(item.valorAnoBase) : "");
@@ -333,6 +386,16 @@ function Row({ item }: { item: TaxItem }) {
 
       {item.kind === "asset" && item.code ? (
         <p className="text-[11px] text-faint">{codeName(item.group, item.code)}</p>
+      ) : null}
+
+      {issues.length ? (
+        <div className="flex flex-wrap gap-1.5">
+          {issues.map((iss) => (
+            <span key={iss} className="inline-flex items-center px-2 h-[20px] rounded-full bg-[color-mix(in_oklab,var(--neg)_12%,transparent)] text-neg text-[10.5px] font-medium">
+              {t(`irpf.issues.${iss}`)}
+            </span>
+          ))}
+        </div>
       ) : null}
     </div>
   );

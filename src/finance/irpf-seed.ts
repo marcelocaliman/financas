@@ -77,3 +77,22 @@ export function buildSeedTaxItems(
   for (const l of liabilities) if (!seen.has(l.id)) out.push(map.debt(l, baseYear));
   return out;
 }
+
+/**
+ * Roll-forward: clona os itens de um ano pro ano seguinte. O valor de 31/12 do ano anterior VIRA a
+ * coluna "situação ano anterior" (as duas que a Receita pede) e o valor deste ano nasce herdado,
+ * marcado como "revisar" — a única tarefa do ano 2+ é atualizar o valor novo. Preserva código,
+ * discriminação (e o `discriminacaoLocked`), campos, moeda, país e o rastro de origem.
+ */
+export function buildRollForward(prev: TaxItem[], newBaseYear: number): TaxItem[] {
+  return prev.map((p) => ({
+    ...p,
+    id: p.sourceId
+      ? `irpf-${newBaseYear}-${p.kind === "asset" ? "a" : "l"}-${p.sourceId}`
+      : `irpf-${newBaseYear}-m-${p.id}`,
+    baseYear: newBaseYear,
+    valorAnoAnterior: p.valorAnoBase,
+    valorBrlAnoAnterior: p.valorBrlAnoBase,
+    needsReview: true,
+  }));
+}

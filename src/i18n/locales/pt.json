@@ -56,7 +56,17 @@
     "review": "revisar",
     "valueBrl": "Valor em R$ (você informa)",
     "foreignWarn": "Bem no exterior: o valor em R$ segue o custo de aquisição pelo câmbio da data da compra (regra da Receita). O app não calcula — informe e confira com seu contador.",
-    "removeItem": "Remover item"
+    "removeItem": "Remover item",
+    "pendingBanner": "{{n}} item(ns) com pendência — resolva antes de gerar o documento.",
+    "newBanner": "{{n}} item(ns) novo(s) no seu patrimônio ainda não estão na lista.",
+    "orphanBanner": "{{n}} item(ns) desta lista não estão mais no seu patrimônio (baixados no ano?) — confira com o contador.",
+    "rollForward": "Trazer os itens de {{year}}",
+    "issues": {
+      "no-code": "sem código",
+      "no-value": "sem valor",
+      "foreign-no-brl": "falta o R$",
+      "incomplete": "completar descrição"
+    }
   },
   "common": {"close": "Fechar", "total": "Total", "currency": "Moeda", "month": "Mês", "monthPlaceholder": "AAAA-MM", "networth": "Patrimônio", "contribution": "Aporte", "current": "Último registro", "totalChange": "Variação total", "contributions": "Aportes", "growth": "Crescimento total", "return": "Rendimento", "returnSub": "trabalho do dinheiro", "contributionsSub": "do seu bolso", "period": "Período", "monthsValue": "{{n}} meses", "snapshots": "Registros", "addSnapshot": "Adicionar registro", "expand": "Expandir", "collapse": "Recolher", "autoHint": "O mês atual é capturado automaticamente do seu patrimônio — e o aporte vem do saldo (poupança) do seu orçamento. Edite qualquer linha pra assumir o controle dela."},
   "welcome": {

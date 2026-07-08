@@ -56,7 +56,17 @@
     "review": "review",
     "valueBrl": "Value in BRL (you enter)",
     "foreignWarn": "Foreign asset: the BRL value follows acquisition cost at the purchase-date exchange rate (tax rule). The app doesn't compute it — enter it and confirm with your accountant.",
-    "removeItem": "Remove item"
+    "removeItem": "Remove item",
+    "pendingBanner": "{{n}} item(s) need attention before generating the document.",
+    "newBanner": "{{n}} new item(s) in your net worth aren't in the list yet.",
+    "orphanBanner": "{{n}} item(s) here are no longer in your net worth — check with your accountant.",
+    "rollForward": "Bring items from {{year}}",
+    "issues": {
+      "no-code": "no code",
+      "no-value": "no value",
+      "foreign-no-brl": "missing BRL",
+      "incomplete": "complete description"
+    }
   },
   "common": {"close": "Close", "total": "Total", "currency": "Currency", "month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "expand": "Expand", "collapse": "Collapse", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
   "welcome": {
