@@ -33,6 +33,7 @@
     "subtitle": "Monta um documento organizado do seu patrimônio pro seu contador digitar na declaração. Não declaramos, não enviamos nada, não calculamos imposto.",
     "baseYear": "Ano-base",
     "season": "declarar",
+    "deadlineTitle": "Dias até o prazo da declaração (31/mai)",
     "lockedTitle": "Um recurso do Pro",
     "lockedDesc": "O Organizador de IRPF puxa o seu patrimônio e monta o documento de Bens e Direitos pronto pro contador — privado, no seu aparelho.",
     "lockedBullets": [

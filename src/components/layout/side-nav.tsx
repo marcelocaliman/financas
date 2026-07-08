@@ -518,6 +518,15 @@ function isIrpfSeason(): boolean {
   return m >= 3 && m <= 5;
 }
 
+/** Dias até o próximo prazo da declaração (31/mai) — vira um KPI de prazo no item de menu. */
+function daysToIrpfDeadline(): number {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let deadline = new Date(now.getFullYear(), 4, 31); // 31 de maio (mês 4 = maio)
+  if (today > deadline) deadline = new Date(now.getFullYear() + 1, 4, 31);
+  return Math.round((deadline.getTime() - today.getTime()) / 86400000);
+}
+
 /** Item do Organizador de IRPF na lista PRINCIPAL — logo após "Internacional", ALINHADO com os demais
  *  itens (mesmo padding/ícone), distinguido por um FUNDO: cinza sutil fora do prazo, VERDE na temporada
  *  da declaração (mar–mai) + selo "declarar". Sem divisor. Abre a tela cheia. */
@@ -555,11 +564,16 @@ function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolea
       >
         <Landmark size={17} className="shrink-0" />
         <span className="truncate">{t("nav.irpf")}</span>
-        {season && !active ? (
-          <span className="ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[9px] font-bold uppercase tracking-[0.05em] leading-none">
-            {t("irpf.season")}
-          </span>
-        ) : null}
+        {/* KPI de prazo (onde ficaria a setinha): dias até 31/mai. Verde-sólido na temporada, discreto fora. */}
+        <span
+          title={t("irpf.deadlineTitle")}
+          className={cn(
+            "ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full font-mono text-[9.5px] font-bold tabular leading-none",
+            season ? "bg-accent text-[#0A0B0D]" : "border border-border text-faint",
+          )}
+        >
+          {daysToIrpfDeadline()}d
+        </span>
       </button>
     </div>
   );
