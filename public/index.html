@@ -440,6 +440,29 @@
     .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px,5vw,64px); align-items: center; }
     @media (max-width: 860px) { .lib-grid { grid-template-columns: 1fr; gap: 36px; } }
 
+    /* IRPF — band destacada (Brasil): fundo elevado + glow verde no topo-direito atrás do Leão */
+    .irpf-band { position: relative; overflow: hidden; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 62%); }
+    .irpf-band::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(58% 48% at 84% 2%, rgba(62,207,142,.14), transparent 62%); pointer-events: none; }
+    .irpf-band .wrap { position: relative; z-index: 1; }
+    .irpf-stage { position: relative; width: 100%; max-width: 420px; }
+    .irpf-mock { background: var(--card); border: 1px solid var(--border-strong); border-radius: 18px; box-shadow: var(--shadow-float); padding: 18px 18px 16px; }
+    .irpf-mock .im-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 11px; border-bottom: 1px solid var(--border); }
+    .im-t { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+    .irpf-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .irpf-row:last-of-type { border-bottom: 0; }
+    .im-code { font-family: var(--font-mono); font-size: 9.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); padding: 3px 6px; border-radius: 6px; white-space: nowrap; }
+    .im-desc { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .im-vals { display: flex; gap: 12px; font-variant-numeric: tabular-nums slashed-zero; font-size: 12px; white-space: nowrap; }
+    .im-vals .prev { color: var(--faint); }
+    .im-vals .base { color: var(--text); font-weight: 600; }
+    .im-sold .im-code { color: #d8a43a; background: rgba(216,164,58,.13); }
+    .im-sold .base { color: var(--faint); }
+    .im-foot { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--faint); }
+    .im-foot svg { width: 14px; height: 14px; color: var(--accent); flex: none; }
+    .lion-badge { position: absolute; z-index: 3; top: -44px; right: -20px; width: 92px; height: 92px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--card) 92%, transparent); border: 1px solid var(--border-strong); box-shadow: var(--shadow-float); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .lion-badge svg { width: 58px; height: 58px; }
+    @media (max-width: 480px) { .lion-badge { top: -34px; right: -6px; width: 76px; height: 76px; } .lion-badge svg { width: 46px; height: 46px; } }
+
     /* Família — PIN */
     .pinrow { display: flex; gap: 10px; margin: 8px 0 2px; }
     .pinbox { width: 44px; height: 54px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--bg-2); display: grid; place-items: center; font-family: var(--font-mono); font-size: 21px; font-weight: 600; color: var(--text); }
@@ -688,6 +711,7 @@
           <a href="#liberdade" data-i18n="nav.liberdade">Liberdade</a>
           <a href="#familia" data-i18n="nav.compartilhar">Compartilhar</a>
           <a href="#privacidade" data-i18n="nav.privacidade">Privacidade</a>
+          <a href="#irpf" data-i18n="nav.irpf">IRPF</a>
           <a href="#instagram" data-i18n="nav.comunidade">Instagram</a>
           <a href="#planos" data-i18n="nav.planos">Planos</a>
           <a href="#faq" data-i18n="nav.faq">FAQ</a>
@@ -1266,6 +1290,84 @@
           <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64A9 9 0 1 1 5.64 6.64M12 2v10"/></svg></div>
           <h3 data-i18n="pillar3.h">Sem rastreio, sem anúncio</h3>
           <p data-i18n="pillar3.p">Você é o usuário, não o produto. Não vendemos, não espionamos, não entregamos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8.5 · IRPF (Brasil) -->
+  <section class="irpf-band" id="irpf">
+    <div class="wrap">
+      <div class="feature">
+        <div class="copy reveal from-l">
+          <div class="eyebrow accent" data-i18n="ir.eyebrow">IRPF — só para o Brasil</div>
+          <h2 data-i18n="ir.h2">Quando o Leão chamar, seus números já vão estar prontos.</h2>
+          <p data-i18n="ir.p">O app puxa o seu patrimônio e monta o documento de <b>Bens e Direitos</b> — com código, descrição e as duas colunas de 31/12 — pronto pro seu contador digitar. <b>Não declaramos, não enviamos nada, não calculamos imposto.</b> Só tiramos o caos do caminho.</p>
+          <ul class="checks">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="ir.l1"><b>Puxa do seu patrimônio.</b> Cada bem vira uma linha com o código sugerido e a descrição pronta.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="ir.l2"><b>As duas colunas de 31/12.</b> Ano anterior e ano-base como a Receita pede — e o que você vendeu no ano entra certinho.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="ir.l3"><b>Bens no exterior na régua.</b> Custo de aquisição pela PTAX do BCB da data da compra — o app não inventa valor.</span></li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg> <span data-i18n="ir.l4"><b>Sai em PDF e planilha</b> — e nunca sai do seu aparelho. Nem nós vemos os seus números.</span></li>
+          </ul>
+          <p class="honesty" style="margin-top:22px" data-i18n="ir.honesty">Isto não é a sua declaração. O app organiza — não declara, não envia, não presta consultoria fiscal. Sempre confira com um contador.</p>
+          <div style="margin-top:24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <a class="btn btn-primary btn-lg" href="/app" data-i18n="ir.cta">Conhecer o Organizador</a>
+            <span class="chip chip-neutral" data-i18n="ir.pro">Recurso Pro</span>
+          </div>
+        </div>
+        <div class="reveal from-r" style="display:flex;justify-content:center">
+          <div class="irpf-stage">
+            <div class="lion-badge" aria-hidden="true">
+              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- juba: anel grosso tracejado -->
+                <circle cx="50" cy="53" r="34" stroke="var(--accent)" stroke-width="8" stroke-dasharray="2.5 5.5" stroke-linecap="round" opacity="0.92"/>
+                <!-- orelhas -->
+                <circle cx="33" cy="39" r="7" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+                <circle cx="67" cy="39" r="7" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+                <circle cx="33" cy="39" r="2.4" fill="var(--accent)"/>
+                <circle cx="67" cy="39" r="2.4" fill="var(--accent)"/>
+                <!-- rosto -->
+                <circle cx="50" cy="53" r="24" fill="var(--card)" stroke="var(--accent)" stroke-width="2"/>
+                <!-- olhos -->
+                <circle cx="42" cy="50" r="2.6" fill="var(--accent)"/>
+                <circle cx="58" cy="50" r="2.6" fill="var(--accent)"/>
+                <!-- focinho -->
+                <path d="M45.5 59 H54.5 L50 64 Z" fill="var(--accent)"/>
+                <path d="M50 64 Q50 68.5 45.5 69.5 M50 64 Q50 68.5 54.5 69.5" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+                <!-- bigodes -->
+                <path d="M40 61 L28 59 M40 64 L29 65.5 M60 61 L72 59 M60 64 L71 65.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round" opacity="0.65"/>
+              </svg>
+            </div>
+            <div class="irpf-mock">
+              <div class="im-head">
+                <span class="im-t" data-i18n="ir.mocktitle">Bens e Direitos · 31/12/2025</span>
+              </div>
+              <div class="irpf-row">
+                <span class="im-code">03/01</span>
+                <span class="im-desc" data-i18n="ir.r1">100 PETR4 · CNPJ 33.000.167/0001-01</span>
+                <span class="im-vals"><span class="prev">20.000</span><span class="base">20.000</span></span>
+              </div>
+              <div class="irpf-row">
+                <span class="im-code">07/03</span>
+                <span class="im-desc" data-i18n="ir.r2">HGLG11 — 40 cotas</span>
+                <span class="im-vals"><span class="prev">18.400</span><span class="base">19.200</span></span>
+              </div>
+              <div class="irpf-row">
+                <span class="im-code">01/12</span>
+                <span class="im-desc" data-i18n="ir.r3">Apê · matrícula 12.345</span>
+                <span class="im-vals"><span class="prev">320.000</span><span class="base">320.000</span></span>
+              </div>
+              <div class="irpf-row im-sold">
+                <span class="im-code" data-i18n="ir.r4c">VENDIDO</span>
+                <span class="im-desc" data-i18n="ir.r4">Stock AAPL · alienado em 09/2025</span>
+                <span class="im-vals"><span class="prev">15.000</span><span class="base">0</span></span>
+              </div>
+              <div class="im-foot">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                <span data-i18n="ir.mockfoot">Pronto pro contador — PDF + planilha</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
