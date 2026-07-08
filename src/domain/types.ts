@@ -173,6 +173,14 @@ export interface HealthConfig {
   maxDebtRatio?: number;
 }
 
+/** Como o usuário (ou casal) declara o IRPF. */
+export interface IrpfSettings {
+  /** "joint" = uma declaração pra tudo; "separate" = uma por declarante (dono por bem). Ausente = joint. */
+  mode?: "joint" | "separate";
+  /** Declarante primário ("Eu") — bens sem dono e renda sem pessoa caem nele. Ausente = 1ª pessoa. */
+  primaryId?: string;
+}
+
 /** Configurações sincronizadas (singleton). */
 export interface AppSettings {
   id: string;
@@ -185,6 +193,8 @@ export interface AppSettings {
   liberdade?: LiberdadeConfig;
   /** Configuração do score de saúde financeira. */
   health?: HealthConfig;
+  /** Modalidade de declaração de IRPF (conjunta × separada). */
+  irpf?: IrpfSettings;
 }
 
 export interface Liability {

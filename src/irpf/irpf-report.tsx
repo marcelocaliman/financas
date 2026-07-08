@@ -8,6 +8,7 @@ import { BENS_GROUPS, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/c
 import { changeFlag, brlValue } from "@/irpf/irpf-csv";
 import { nameById } from "@/domain/taxonomy";
 import type { TaxItem } from "@/domain/irpf";
+import type { Income } from "@/domain/types";
 
 // Documento do Organizador de IRPF pro contador — HTML impresso em PDF (mesmo pipeline do relatório Pro:
 // #irpf-report + body.print-irpf + @media print). Em PT (é documento brasileiro). Estilos inline de
@@ -63,10 +64,13 @@ function ItemBlock({ it, year, debt }: { it: TaxItem; year: number; debt?: boole
   );
 }
 
-/** Documento completo — impresso quando o body tem a classe `print-irpf`. */
-export function IrpfReport({ year }: { year: number }) {
-  const items = useTaxItems(year) ?? [];
-  const incomes = useLiveQuery(() => repository.listIncomes()) ?? [];
+/** Documento completo — impresso quando o body tem a classe `print-irpf`. No modo separado recebe os
+ *  itens/renda JÁ filtrados pelo declarante (e os comuns já divididos) + o nome dele no cabeçalho. */
+export function IrpfReport({ year, itemsOverride, incomesOverride, declaranteName }: { year: number; itemsOverride?: TaxItem[]; incomesOverride?: Income[]; declaranteName?: string }) {
+  const queriedItems = useTaxItems(year) ?? [];
+  const queriedIncomes = useLiveQuery(() => repository.listIncomes()) ?? [];
+  const items = itemsOverride ?? queriedItems;
+  const incomes = incomesOverride ?? queriedIncomes;
   const tax = useTaxonomy();
   const incomeSummary = useMemo(() => summarizeIncome(incomes, year), [incomes, year]);
 
@@ -85,7 +89,7 @@ export function IrpfReport({ year }: { year: number }) {
       <div style={{ borderBottom: `2px solid ${INK}`, paddingBottom: "10px", marginBottom: "14px" }}>
         <div style={{ fontFamily: MONO, fontSize: "8.5px", letterSpacing: "0.12em", textTransform: "uppercase", color: FAINT }}>Organizador de IRPF · {CODES_LAYOUT}</div>
         <h1 style={{ fontSize: "19px", margin: "4px 0 0", fontWeight: 600, letterSpacing: "-0.02em" }}>Informe para organização do IRPF {year}</h1>
-        <div style={{ fontSize: "9.5px", color: MUTED, marginTop: "3px" }}>Posição em 31/12/{year} · valores em reais (R$)</div>
+        <div style={{ fontSize: "9.5px", color: MUTED, marginTop: "3px" }}>{declaranteName ? <><b style={{ color: INK }}>Declaração de {declaranteName}</b> · </> : null}Posição em 31/12/{year} · valores em reais (R$){declaranteName ? " · bens comuns pela parte que cabe a esta declaração" : ""}</div>
         <div style={{ marginTop: "8px", padding: "7px 10px", border: `1px solid ${AMBER}`, background: "#fdf6e9", borderRadius: "6px", fontSize: "9px", color: "#6f5514" }}>
           <b>Isto não é a sua declaração.</b> O app organiza — não declara, não envia, não presta consultoria fiscal. Confira TODOS os dados (códigos, valores, CNPJ) com o seu contador. Os códigos mudam a cada exercício.
         </div>

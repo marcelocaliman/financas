@@ -24,6 +24,9 @@ export interface TaxReturn {
 
 export type TaxItemKind = "asset" | "debt";
 
+/** ownerId especial = bem COMUM do casal (dividido entre as declarações no modo separado). */
+export const SHARED_OWNER = "shared";
+
 /** Uma linha de "Bens e Direitos" (ou "Dívidas e Ônus") — foto de 31/12. */
 export interface TaxItem {
   /** Determinístico p/ os que vêm do patrimônio (`irpf-<ano>-a-<assetId>`); uuid p/ manuais. */
@@ -70,4 +73,9 @@ export interface TaxItem {
   sourceId?: string;
   /** Quando foi criado (manual) — pra novos itens aparecerem no topo. */
   createdAt?: number;
+  /** Dono do bem, só p/ declaração SEPARADA: personId (taxonomy.people), SHARED_OWNER (comum do
+   *  casal), ou ausente = declarante primário ("Eu"). No modo conjunto o dono é ignorado. */
+  ownerId?: string;
+  /** % de um bem COMUM que entra em CADA declaração (default 50). Só quando ownerId === SHARED_OWNER. */
+  sharePct?: number;
 }

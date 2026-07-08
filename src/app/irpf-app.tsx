@@ -13,11 +13,14 @@ import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
 import { buildBensCSV, buildDividasCSV, downloadCSV, parseIrpfImport, IRPF_IMPORT_TEMPLATE } from "@/irpf/irpf-csv";
 import { IrpfReport } from "@/irpf/irpf-report";
+import { belongsTo, applyShare, incomesForDeclarante } from "@/irpf/declarante";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear, yearCloseWindow } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
-import { nameById } from "@/domain/taxonomy";
+import { useSettings } from "@/hooks/use-settings";
+import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
+import { SHARED_OWNER } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
@@ -67,7 +70,6 @@ export function IrpfView() {
           <Organizer year={year} items={items} returns={returns} />
         )}
       </div>
-      {isPro ? <IrpfReport year={year} /> : null}
     </div>
   );
 }
@@ -132,6 +134,22 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const allAssets = useLiveQuery(() => repository.listAllAssets()) ?? [];
   const liabilities = useLiveQuery(() => repository.listLiabilities()) ?? [];
   const list = useMemo(() => items ?? [], [items]);
+
+  // Declaração SEPARADA (casal): só quando escolhida E há 2+ pessoas. "Eu" (primário) = a 1ª pessoa,
+  // salvo o que o usuário definir. O declarante em foco filtra o que aparece e o que exporta.
+  const tax = useTaxonomy();
+  const settings = useSettings();
+  const people = tax.people;
+  const separate = settings.irpf?.mode === "separate" && people.length >= 2;
+  const primaryId = (separate && settings.irpf?.primaryId && people.some((p) => p.id === settings.irpf!.primaryId) ? settings.irpf!.primaryId : people[0]?.id) ?? "";
+  const [selDeclarante, setSelDeclarante] = useState<string | null>(null);
+  const declarante = separate ? (selDeclarante && people.some((p) => p.id === selDeclarante) ? selDeclarante : primaryId) : "";
+  // Lista MOSTRADA: no separado, só os bens do declarante (+ comuns); no conjunto, tudo.
+  const visible = useMemo(() => (separate ? list.filter((i) => belongsTo(i, declarante, primaryId)) : list), [list, separate, declarante, primaryId]);
+  // Itens prontos p/ exportar: no separado, filtrados e com os comuns já divididos por sharePct.
+  const forExport = useMemo(() => (separate ? visible.map(applyShare) : list), [visible, list, separate]);
+  const declaranteName = separate ? nameById(people, declarante) : "";
+
   // Bens vendidos ANTES do ano-base já saíram (não entram). Vendidos no ano-base ou depois ainda
   // interessam (no ano ⇒ ficha com base 0; depois ⇒ ainda eram seus em 31/12 ⇒ bem normal).
   const relevantAssets = useMemo(
@@ -141,9 +159,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
   // Bens já na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados (roll-forward).
   const unmarkedDisposals = useMemo(() => findUnmarkedDisposals(list, relevantAssets, year), [list, relevantAssets, year]);
-  const pending = countPending(list);
+  const pending = countPending(visible);
   const newCount = diff.newAssets.length + diff.newLiabilities.length;
-  const needsReviewCount = list.filter((i) => i.needsReview).length;
+  const needsReviewCount = visible.filter((i) => i.needsReview).length;
   const thisReturn = useMemo(() => (returns ?? []).find((r) => r.baseYear === year), [returns, year]);
   const closedAt = thisReturn?.closedAt;
   // Estamos na janela de fechar a posição de 31/12 deste ano e ele ainda não foi fechado?
@@ -153,8 +171,8 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     return ys.length ? Math.max(...ys) : null;
   }, [returns, year]);
   const incomes = useLiveQuery(() => repository.listIncomes()) ?? [];
-  const tax = useTaxonomy();
-  const incomeSummary = useMemo(() => summarizeIncome(incomes, year), [incomes, year]);
+  const incSource = useMemo(() => (separate ? incomesForDeclarante(incomes, declarante, primaryId) : incomes), [incomes, separate, declarante, primaryId]);
+  const incomeSummary = useMemo(() => summarizeIncome(incSource, year), [incSource, year]);
 
   async function ensureReturn() {
     if (!(await repository.getTaxReturn(String(year)))) {
@@ -223,7 +241,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
 
   /** Puxei tudo no fim do ano e conferi → limpa os "revisar" de uma vez (um clique). */
   async function confirmAll() {
-    const cleared = list.filter((i) => i.needsReview).map((i) => ({ ...i, needsReview: false }));
+    const cleared = visible.filter((i) => i.needsReview).map((i) => ({ ...i, needsReview: false }));
     if (cleared.length) await actions.putTaxItems(cleared);
   }
 
@@ -241,6 +259,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       fields: {},
       source: "manual",
       createdAt: Date.now(),
+      ...(separate ? { ownerId: declarante } : {}),
     });
   }
 
@@ -262,6 +281,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       fields: { dataVenda: "", valorVenda: "", comprador: "" },
       source: "manual",
       createdAt: Date.now(),
+      ...(separate ? { ownerId: declarante } : {}),
     });
   }
 
@@ -279,8 +299,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     window.print();
   }
   function downloadCsvs() {
-    downloadCSV(`irpf-${year}-bens-e-direitos.csv`, buildBensCSV(list));
-    if (list.some((i) => i.kind === "debt")) downloadCSV(`irpf-${year}-dividas.csv`, buildDividasCSV(list));
+    const tag = separate && declaranteName ? `-${declaranteName.toLowerCase().replace(/\s+/g, "-")}` : "";
+    downloadCSV(`irpf-${year}${tag}-bens-e-direitos.csv`, buildBensCSV(forExport));
+    if (forExport.some((i) => i.kind === "debt")) downloadCSV(`irpf-${year}${tag}-dividas.csv`, buildDividasCSV(forExport));
   }
 
   const fileRef = useRef<HTMLInputElement>(null);
@@ -296,8 +317,8 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     if (imported.length) await actions.putTaxItems(imported);
   }
 
-  const bens = list.filter((i) => i.kind === "asset");
-  const dividas = list.filter((i) => i.kind === "debt");
+  const bens = visible.filter((i) => i.kind === "asset");
+  const dividas = visible.filter((i) => i.kind === "debt");
   const bensByGroup = useMemo(() => {
     const m = new Map<string, TaxItem[]>();
     for (const it of bens) (m.get(it.group) ?? m.set(it.group, []).get(it.group)!).push(it);
@@ -305,8 +326,15 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     m.get("")?.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return [...m.entries()].sort((a, b) => (a[0] || "00").localeCompare(b[0] || "00"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list]);
+  }, [visible]);
   const empty = list.length === 0;
+
+  function setMode(mode: "joint" | "separate") {
+    void actions.putSettings({ irpf: { ...settings.irpf, mode, primaryId: settings.irpf?.primaryId || people[0]?.id } });
+  }
+  function setPrimary(id: string) {
+    void actions.putSettings({ irpf: { ...settings.irpf, mode: "separate", primaryId: id } });
+  }
 
   return (
     <div className="space-y-5">
@@ -315,6 +343,56 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         <ShieldCheck size={16} className="text-accent shrink-0 mt-0.5" />
         <span>{t("irpf.disclaimer")}</span>
       </div>
+
+      {/* Modalidade da declaração (só aparece com 2+ pessoas na casa): conjunta × separada + declarante */}
+      {people.length >= 2 ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[12px] border border-border bg-card2/50 px-4 py-3">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[12px] text-muted">{t("irpf.filingMode")}</span>
+            <div className="inline-flex rounded-[9px] bg-card p-0.5 border border-border">
+              {(["joint", "separate"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  aria-pressed={(settings.irpf?.mode ?? "joint") === m}
+                  className={cn(
+                    "px-3 h-7 rounded-[7px] text-[12px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+                    (settings.irpf?.mode ?? "joint") === m ? "bg-accent text-[#08130C]" : "text-muted hover:text-text",
+                  )}
+                >
+                  {t(m === "joint" ? "irpf.modeJoint" : "irpf.modeSeparate")}
+                </button>
+              ))}
+            </div>
+          </div>
+          {separate ? (
+            <>
+              <label className="flex items-center gap-2 text-[12px] text-muted">
+                {t("irpf.declarante")}
+                <select
+                  value={declarante}
+                  onChange={(e) => setSelDeclarante(e.target.value)}
+                  className="h-8 rounded-[8px] border border-border bg-card px-2.5 text-[12.5px] font-semibold text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                >
+                  {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-[12px] text-faint">
+                {t("irpf.primary")}
+                <select
+                  value={primaryId}
+                  onChange={(e) => setPrimary(e.target.value)}
+                  className="h-8 rounded-[8px] border border-border bg-card px-2.5 text-[12.5px] text-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                >
+                  {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </label>
+              <span className="text-[11.5px] text-faint w-full sm:w-auto sm:ml-auto">{t("irpf.separateHint")}</span>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {year >= currentYear ? (
         <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--accent)_28%,transparent)] bg-accent-soft px-4 py-2.5 text-[12.5px] text-muted">
@@ -450,7 +528,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
                 <div className="eyebrow">{list.length} {t(list.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
               </div>
               <div className="divide-y divide-border">
-                {list.map((it) => <Row key={it.id} item={it} />)}
+                {list.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
               </div>
             </section>
           ))}
@@ -462,7 +540,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
                 <div className="eyebrow">{dividas.length} {t(dividas.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
               </div>
               <div className="divide-y divide-border">
-                {dividas.map((it) => <Row key={it.id} item={it} />)}
+                {dividas.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
               </div>
             </section>
           ) : null}
@@ -471,8 +549,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
 
       {incomeSummary.length ? (
         <section className="rounded-[16px] border border-border bg-card overflow-hidden">
-          <div className="px-4 sm:px-5 py-3 border-b border-border">
+          <div className="flex items-baseline justify-between gap-3 px-4 sm:px-5 py-3 border-b border-border">
             <div className={HEAD}>{t("irpf.incomeSection", { year })}</div>
+            {separate ? <div className="eyebrow">{declaranteName}</div> : null}
           </div>
           <div className="px-4 sm:px-5 py-3.5 space-y-2">
             <p className="text-[11.5px] text-faint">{t("irpf.incomeHint")}</p>
@@ -485,6 +564,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           </div>
         </section>
       ) : null}
+
+      {/* Documento impresso (oculto) — no separado, o do declarante em foco (itens + renda + nome). */}
+      <IrpfReport year={year} itemsOverride={separate ? forExport : undefined} incomesOverride={separate ? incSource : undefined} declaranteName={declaranteName} />
     </div>
   );
 }
@@ -522,11 +604,17 @@ function MoneyField({ value, amber, onChange }: { value: number | undefined; amb
 /** Uma linha de bem/dívida — grupo/código, CAMPOS estruturados (que geram a discriminação), valores.
  *  Campos e discriminação em estado local (sem pulo de cursor); mudar um campo regenera a discriminação
  *  (a menos que o usuário a tenha editado à mão → discriminacaoLocked). O Dexie persiste ao fundo. */
-function Row({ item }: { item: TaxItem }) {
+function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[]; primaryId: string } }) {
   const { t } = useTranslation();
   const foreign = isForeignCurrency(item.currency);
   const issues = itemIssues(item);
   const patch = (p: Partial<TaxItem>) => void actions.putTaxItem({ ...item, ...p });
+  // Dono (só declaração separada): a pessoa, ou "Comum" (dividido). Vazio/ausente = declarante primário.
+  const ownerValue = item.ownerId ?? (owner ? owner.primaryId : "");
+  function setOwner(v: string) {
+    if (v === SHARED_OWNER) patch({ ownerId: SHARED_OWNER, sharePct: item.sharePct ?? 50 });
+    else patch({ ownerId: v, sharePct: undefined });
+  }
   const [fields, setFields] = useState<Record<string, string>>(item.fields);
   const [disc, setDisc] = useState(item.discriminacao);
   // Bem vendido ganha campos extra da alienação (data/valor/comprador) que entram na discriminação.
@@ -583,6 +671,34 @@ function Row({ item }: { item: TaxItem }) {
         {item.disposed ? (
           <span className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[8px] bg-[color-mix(in_oklab,#e0a33c_14%,transparent)] text-[10.5px] font-mono uppercase tracking-[0.08em] text-[#e0a33c]">
             <Tag size={11} /> {t("irpf.soldBadge")}
+          </span>
+        ) : null}
+        {owner ? (
+          <span className="inline-flex items-center gap-1.5">
+            <select
+              value={ownerValue}
+              onChange={(e) => setOwner(e.target.value)}
+              className="h-8 rounded-[8px] border border-border bg-card2 px-2 text-[11.5px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              aria-label={t("irpf.owner")}
+              title={t("irpf.owner")}
+            >
+              {owner.people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              <option value={SHARED_OWNER}>{t("irpf.ownerShared")}</option>
+            </select>
+            {item.ownerId === SHARED_OWNER ? (
+              <span className="inline-flex items-center h-8 px-2 rounded-[8px] bg-accent-soft text-[11px] text-accent tabular" title={t("irpf.sharePct")}>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={item.sharePct ?? 50}
+                  onChange={(e) => patch({ sharePct: Math.max(1, Math.min(100, Number(e.target.value) || 50)) })}
+                  className="w-9 bg-transparent text-right tabular outline-none"
+                  aria-label={t("irpf.sharePct")}
+                />
+                %
+              </span>
+            ) : null}
           </span>
         ) : null}
         <button
