@@ -23,6 +23,9 @@ export interface SeedData {
   goals?: Goal[];
   /** Assinaturas recorrentes (documentação) — opcional. */
   subscriptions?: Subscription[];
+  /** Organizador de IRPF (retrato de exemplo/vitrine) — opcional. */
+  taxReturns?: TaxReturn[];
+  taxItems?: TaxItem[];
   /** Preferências sincronizadas do exemplo (alvos de alocação, config da Liberdade/Saúde).
    *  A moeda principal NÃO vem aqui — é injetada por quem carrega (loadSample). */
   settings?: Pick<AppSettings, "allocationTargets" | "liberdade" | "health">;

@@ -38,6 +38,8 @@ export class DexieRepository implements DataRepository {
       if (data.dividends?.length) await this.database.dividends.bulkPut(data.dividends);
       if (data.goals?.length) await this.database.goals.bulkPut(data.goals);
       if (data.subscriptions?.length) await this.database.subscriptions.bulkPut(data.subscriptions);
+      if (data.taxReturns?.length) await this.database.taxReturns.bulkPut(data.taxReturns);
+      if (data.taxItems?.length) await this.database.taxItems.bulkPut(data.taxItems);
     });
   }
 

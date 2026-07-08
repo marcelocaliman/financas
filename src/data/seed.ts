@@ -1,5 +1,6 @@
 import { CLASS, LIABILITY_TYPE } from "@/domain/taxonomy";
 import type { SeedData } from "./repository";
+import type { TaxItem } from "@/domain/irpf";
 import type { Currency } from "@/money/currency";
 
 /**
@@ -49,6 +50,30 @@ export const SAMPLE_PEOPLE = [
 ];
 const PA = SAMPLE_PEOPLE[0].id;
 const PB = SAMPLE_PEOPLE[1].id;
+
+/** Retrato de IRPF pronto pra vitrine/prints — bens BR + um no exterior + uma dívida, com campos e
+ *  valores preenchidos (posição de 31/12) e o valor do ano anterior (roll-forward/diff realistas).
+ *  Ano-base = último ano cheio; valores em BRL (o IRPF é brasileiro, independe da moeda de exibição). */
+function irpfDemoSeed(): Pick<SeedData, "taxReturns" | "taxItems"> {
+  const by = new Date().getFullYear() - 1;
+  const now = Date.now();
+  const a = (n: number, group: string, code: string, disc: string, fields: Record<string, string>, valor: number, prev: number): TaxItem => ({
+    id: `demo-irpf-${n}`, baseYear: by, kind: "asset", group, code, discriminacao: disc, currency: "BRL", valorAnoBase: valor, valorAnoAnterior: prev, fields, source: "seed-asset", createdAt: now + n,
+  });
+  return {
+    taxReturns: [{ id: String(by), baseYear: by, reportingCurrency: "BRL", status: "draft", updatedAt: now }],
+    taxItems: [
+      a(1, "03", "01", "100 ações PETR4, CNPJ 33.000.167/0001-01 — custódia em XP Investimentos", { nome: "Ações Petrobras", quantidade: "100", ticker: "PETR4", cnpj: "33.000.167/0001-01", instituicao: "XP Investimentos" }, 4180, 4180),
+      a(2, "07", "03", "300 cotas do FII HGLG11, CNPJ 11.728.688/0001-47 — administrador CSHG", { nome: "FII Logística CSHG", quantidade: "300", ticker: "HGLG11", cnpj: "11.728.688/0001-47", instituicao: "CSHG" }, 48000, 45000),
+      a(3, "04", "02", "CDB Banco Inter, CNPJ 00.416.968/0001-01", { nome: "CDB Banco Inter", cnpj: "00.416.968/0001-01", instituicao: "Banco Inter" }, 62000, 50000),
+      a(4, "06", "01", "Saldo em Nubank — ag. 0001, conta 12345-6, CNPJ 18.236.120/0001-58", { nome: "Conta Nubank", banco: "Nubank", agencia: "0001", conta: "12345-6", cnpj: "18.236.120/0001-58" }, 14500, 9800),
+      a(5, "01", "12", "Casa — Rua das Acácias 100, São Paulo/SP, matrícula 123.456, 120 m²", { nome: "Casa própria", endereco: "Rua das Acácias 100, São Paulo/SP", matricula: "123.456", area: "120" }, 520000, 520000),
+      a(6, "08", "01", "Bitcoin — 0,25 BTC — custódia em Binance", { nome: "Bitcoin", quantidade: "0,25", instituicao: "Binance" }, 22000, 12000),
+      { id: "demo-irpf-7", baseYear: by, kind: "asset", group: "03", code: "01", discriminacao: "50 ações AAPL (Apple Inc.) — custódia em Avenue Securities", currency: "USD", valorAnoBase: 12500, valorBrlAnoBase: 62500, country: "eua", fxNote: "PTAX compra 31/12", fields: { nome: "Apple (AAPL)", quantidade: "50", ticker: "AAPL", instituicao: "Avenue" }, source: "seed-asset", createdAt: now + 7 },
+      { id: "demo-irpf-8", baseYear: by, kind: "debt", group: "", code: "11", discriminacao: "Financiamento imobiliário — credor Itaú Unibanco, CNPJ 60.701.190/0001-04", currency: "BRL", valorAnoBase: 190000, valorAnoAnterior: 210000, fields: { nome: "Financiamento do apê", instituicao: "Itaú Unibanco", cnpj: "60.701.190/0001-04" }, source: "seed-liability", createdAt: now + 8 },
+    ],
+  };
+}
 
 export function buildSeed(main: Currency): SeedData {
   const [c2, c3] = FOREIGN[main]; // contrapartes (ex.: EUR, USD)
@@ -189,6 +214,7 @@ export function buildSeed(main: Currency): SeedData {
       // = âncora da renovação (renova todo dia 5 do mês de início, uma vez ao ano).
       { id: "sub5", name: "Amazon Prime", currency: main, amount: priced(25, main), cycle: "yearly", startMonth: monthKey(-3), renewalDay: 5 },
     ],
+    ...irpfDemoSeed(),
     settings: {
       // Alvos de alocação (%) — o rebalanceamento mostra o quanto falta/sobra por classe.
       allocationTargets: {
