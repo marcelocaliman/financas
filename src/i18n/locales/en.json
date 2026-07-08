@@ -32,6 +32,7 @@
     "title": "IRPF Organizer",
     "subtitle": "Builds an organized document of your assets for your accountant to type into the tax return. We don't file, don't send anything, don't calculate tax.",
     "baseYear": "Base year",
+    "inProgressNote": "Year in progress: build the structure now (assets, codes, CNPJ, description). You'll confirm and lock the 12/31/{{year}} values at year-end — nothing retroactive.",
     "season": "file it",
     "deadlineTitle": "Days until the filing deadline (May 31)",
     "lockedTitle": "A Pro feature",

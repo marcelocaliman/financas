@@ -108,3 +108,13 @@ export function codeName(group: string, code: string, kind: "asset" | "debt" = "
 export function isForeignCurrency(currency: string): boolean {
   return currency !== "BRL";
 }
+
+/**
+ * Ano-base que o usuário está PREPARANDO agora — evita trabalho retroativo num ano já declarado:
+ *  • jun–dez → ANO ATUAL (a declaração do ano passado já foi; agora acumula o atual pra declarar no
+ *    ano que vem). 31/12 ainda não chegou → monta-se a ESTRUTURA e fecha-se o valor no fim do ano.
+ *  • jan–mai → ano passado (é a temporada em que se declara a posição do ano anterior).
+ */
+export function defaultBaseYear(now = new Date()): number {
+  return now.getMonth() + 1 >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+}

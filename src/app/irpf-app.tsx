@@ -13,7 +13,7 @@ import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
 import { buildBensCSV, buildDividasCSV, downloadCSV, parseIrpfImport, IRPF_IMPORT_TEMPLATE } from "@/irpf/irpf-csv";
 import { IrpfReport } from "@/irpf/irpf-report";
-import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
+import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { nameById } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
@@ -35,7 +35,9 @@ export function IrpfView() {
 
   const latest = returns && returns.length ? Math.max(...returns.map((r) => r.baseYear)) : null;
   const [selYear, setSelYear] = useState<number | null>(null);
-  const year = selYear ?? latest ?? currentYear - 1; // ano-base = último ano cheo por padrão
+  // Padrão = o ano que você está PREPARANDO (não um já declarado). Nunca abaixo disso, mesmo que
+  // exista um ano anterior salvo — evita cair num ano retroativo já entregue.
+  const year = selYear ?? Math.max(defaultBaseYear(), latest ?? 0);
   const items = useTaxItems(year);
 
   return (
@@ -245,6 +247,13 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         <ShieldCheck size={16} className="text-accent shrink-0 mt-0.5" />
         <span>{t("irpf.disclaimer")}</span>
       </div>
+
+      {year >= currentYear ? (
+        <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--accent)_28%,transparent)] bg-accent-soft px-4 py-2.5 text-[12.5px] text-muted">
+          <CalendarClock size={15} className="text-accent shrink-0 mt-0.5" />
+          <span>{t("irpf.inProgressNote", { year })}</span>
+        </div>
+      ) : null}
 
       {/* Ações */}
       <div className="flex flex-wrap items-center gap-2.5">

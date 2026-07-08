@@ -32,6 +32,7 @@
     "title": "Organizador de IRPF",
     "subtitle": "Monta um documento organizado do seu patrimônio pro seu contador digitar na declaração. Não declaramos, não enviamos nada, não calculamos imposto.",
     "baseYear": "Ano-base",
+    "inProgressNote": "Ano em andamento: monte agora a estrutura (bens, códigos, CNPJ, descrição). Os valores de 31/12/{{year}} você confere e fecha no fim do ano — nada retroativo.",
     "season": "declarar",
     "deadlineTitle": "Dias até o prazo da declaração (31/mai)",
     "lockedTitle": "Um recurso do Pro",

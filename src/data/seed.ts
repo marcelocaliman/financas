@@ -1,6 +1,7 @@
 import { CLASS, LIABILITY_TYPE } from "@/domain/taxonomy";
 import type { SeedData } from "./repository";
 import type { TaxItem } from "@/domain/irpf";
+import { defaultBaseYear } from "@/irpf/codes";
 import type { Currency } from "@/money/currency";
 
 /**
@@ -55,7 +56,7 @@ const PB = SAMPLE_PEOPLE[1].id;
  *  valores preenchidos (posição de 31/12) e o valor do ano anterior (roll-forward/diff realistas).
  *  Ano-base = último ano cheio; valores em BRL (o IRPF é brasileiro, independe da moeda de exibição). */
 function irpfDemoSeed(): Pick<SeedData, "taxReturns" | "taxItems"> {
-  const by = new Date().getFullYear() - 1;
+  const by = defaultBaseYear();
   const now = Date.now();
   const a = (n: number, group: string, code: string, disc: string, fields: Record<string, string>, valor: number, prev: number): TaxItem => ({
     id: `demo-irpf-${n}`, baseYear: by, kind: "asset", group, code, discriminacao: disc, currency: "BRL", valorAnoBase: valor, valorAnoAnterior: prev, fields, source: "seed-asset", createdAt: now + n,
