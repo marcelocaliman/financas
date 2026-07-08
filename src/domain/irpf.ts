@@ -42,6 +42,9 @@ export interface TaxItem {
   valorAnoBase: number;
   /** Situação em 31/12 do ano anterior, NA MOEDA `currency`. */
   valorAnoAnterior?: number;
+  /** O valor ainda é o "de hoje" (auto-puxado do patrimônio), não confirmado pro fim do ano →
+   *  a UI mostra pill âmbar "revisar". Some quando o usuário toca no valor. */
+  needsReview?: boolean;
   // Exterior (currency ≠ BRL): o valor em BRL que VAI pra declaração é SEMPRE manual/confirmado —
   // a regra é custo de aquisição pelo câmbio da DATA DA COMPRA, que o app NUNCA auto-calcula.
   valorBrlAnoBase?: number;

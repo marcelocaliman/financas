@@ -52,6 +52,8 @@ export function SideNav({ active }: { active: string }) {
   const configOpen = useUI((s) => s.configOpen);
   const setSupportOpen = useUI((s) => s.setSupportOpen);
   const supportOpen = useUI((s) => s.supportOpen);
+  const setIrpfOpen = useUI((s) => s.setIrpfOpen);
+  const irpfOpen = useUI((s) => s.irpfOpen);
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
   const { isAdmin } = useIsAdmin();
   const email = useVault((s) => s.email);
@@ -260,6 +262,8 @@ export function SideNav({ active }: { active: string }) {
                 <IconBtn onClick={() => setConfigOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : supportOpen ? (
                 <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
+              ) : irpfOpen ? (
+                <IconBtn onClick={() => setIrpfOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
                   <ProNavCard collapsed />
@@ -268,6 +272,7 @@ export function SideNav({ active }: { active: string }) {
                   </IconBtn>
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                   <IconBtn onClick={() => setSupportOpen(true)} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
+                  <IconBtn onClick={() => setIrpfOpen(true)} label={t("nav.irpf")}><Landmark size={16} /></IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
                   {isAdmin ? <AdminRailCollapsed onOpen={() => setAdminOpen(true)} /> : null}
                 </>
@@ -285,6 +290,8 @@ export function SideNav({ active }: { active: string }) {
               ) : supportOpen ? (
                 /* Em Ajuda & Suporte: mesma cara — só "Voltar ao app" */
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
+              ) : irpfOpen ? (
+                <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setIrpfOpen(false)} />
               ) : (
                 <>
                   <ProNavCard collapsed={false} />
@@ -304,6 +311,7 @@ export function SideNav({ active }: { active: string }) {
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
                   <div className="mt-2.5 pt-2.5 border-t border-border space-y-1">
                     <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => setSupportOpen(true)} />
+                    <FooterItem icon={Landmark} label={t("nav.irpf")} active={irpfOpen} onClick={() => setIrpfOpen(true)} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
                 </>
@@ -604,6 +612,8 @@ export function MobileBar() {
   const configOpen = useUI((s) => s.configOpen);
   const setSupportOpen = useUI((s) => s.setSupportOpen);
   const supportOpen = useUI((s) => s.supportOpen);
+  const setIrpfOpen = useUI((s) => s.setIrpfOpen);
+  const irpfOpen = useUI((s) => s.irpfOpen);
   const supportUnread = useMyTicketStats().unread;
   const [scrolled, setScrolled] = useState(false);
   // Esconde a barra ao rolar pra BAIXO (lendo o conteúdo) e reaparece ao rolar pra CIMA — padrão
@@ -645,6 +655,9 @@ export function MobileBar() {
           <button type="button" onClick={() => setSupportOpen(!supportOpen)} aria-label={t("nav.suporte")} className={cn("relative grid place-items-center w-9 h-9 rounded-[10px] transition-colors", supportOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             {supportOpen ? <ArrowLeft size={16} /> : <LifeBuoy size={16} />}
             {!supportOpen && supportUnread > 0 ? <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
+          </button>
+          <button type="button" onClick={() => setIrpfOpen(!irpfOpen)} aria-label={irpfOpen ? t("menu.back") : t("nav.irpf")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", irpfOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
+            {irpfOpen ? <ArrowLeft size={16} /> : <Landmark size={16} />}
           </button>
           <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={configOpen ? t("menu.back") : t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             {configOpen ? <ArrowLeft size={16} /> : <Settings size={16} />}

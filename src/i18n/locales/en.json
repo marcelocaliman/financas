@@ -24,8 +24,38 @@
     "projecao": "Projection",
     "liberdade": "Freedom",
     "crossborder": "Cross-border",
+    "irpf": "IRPF",
     "suporte": "Help & Support",
     "config": "Settings"
+  },
+  "irpf": {
+    "title": "IRPF Organizer",
+    "subtitle": "Builds an organized document of your assets for your accountant to type into the tax return. We don't file, don't send anything, don't calculate tax.",
+    "baseYear": "Base year",
+    "lockedTitle": "A Pro feature",
+    "lockedDesc": "The IRPF Organizer pulls your net worth and builds the Assets & Rights document ready for your accountant — private, on your device.",
+    "lockedBullets": [
+      "Pulls your assets and debts and suggests each one's code",
+      "Ready-to-copy descriptions, grouped by code",
+      "Next year, just update the Dec 31 value",
+      "All encrypted on your device — not even we can see it"
+    ],
+    "lockedCta": "See Pro",
+    "disclaimer": "This is not your tax return. The app organizes — it doesn't file, doesn't send, doesn't give tax advice. Always confirm with an accountant.",
+    "pull": "Pull from my net worth",
+    "addItem": "Add item",
+    "exportSoon": "Generate document (soon)",
+    "emptyState": "Click “Pull from my net worth” to start — each asset and debt becomes a line with a suggested code.",
+    "noCode": "No code yet",
+    "debtsSection": "Debts and Real Liens",
+    "group": "Group",
+    "code": "Code",
+    "discriminacaoPh": "Description of the asset — what appears on the tax return",
+    "valueOn": "Situation on 12/31/{{year}}",
+    "review": "review",
+    "valueBrl": "Value in BRL (you enter)",
+    "foreignWarn": "Foreign asset: the BRL value follows acquisition cost at the purchase-date exchange rate (tax rule). The app doesn't compute it — enter it and confirm with your accountant.",
+    "removeItem": "Remove item"
   },
   "common": {"close": "Close", "total": "Total", "currency": "Currency", "month": "Month", "monthPlaceholder": "YYYY-MM", "networth": "Net worth", "contribution": "Contribution", "current": "Last snapshot", "totalChange": "Total change", "contributions": "Contributions", "growth": "Total growth", "return": "Return", "returnSub": "money at work", "contributionsSub": "out of pocket", "period": "Period", "monthsValue": "{{n}} months", "snapshots": "Records", "addSnapshot": "Add record", "expand": "Expand", "collapse": "Collapse", "autoHint": "The current month is captured automatically from your net worth — and the contribution comes from your budget's monthly savings. Edit any row to take it over."},
   "welcome": {

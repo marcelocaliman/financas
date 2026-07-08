@@ -109,6 +109,7 @@ export function scrollToCard(id: string, offset: number): void {
  *  Se a Config estiver aberta, fecha-a e adia a rolagem pro AppShell (quando o conteúdo volta). */
 export function goToSection(id: string): void {
   useUI.getState().setSupportOpen(false); // navegar por uma seção sai da página de Suporte
+  useUI.getState().setIrpfOpen(false); // …e do Organizador de IRPF
   useSections.getState().setOpen(id, true);
   if (useUI.getState().configOpen) {
     pendingNav = id;

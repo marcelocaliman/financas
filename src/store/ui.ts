@@ -33,6 +33,9 @@ interface UIState {
   /** Página de Ajuda & Suporte aberta — tela cheia, igual ao painel admin (não persiste). */
   supportOpen: boolean;
   setSupportOpen: (v: boolean) => void;
+  /** Organizador de IRPF aberto — tela cheia, mesma casca (não persiste). */
+  irpfOpen: boolean;
+  setIrpfOpen: (v: boolean) => void;
   /** Posição do menu (persiste). */
   navLayout: NavLayout;
   setNavLayout: (v: NavLayout) => void;
@@ -59,10 +62,12 @@ export const useUI = create<UIState>()(
       numbersHidden: false,
       toggleNumbers: () => set((s) => ({ numbersHidden: !s.numbersHidden })),
       configOpen: false,
-      setConfigOpen: (configOpen) => set({ configOpen }),
+      // Config, Suporte e IRPF são telas separadas mutuamente exclusivas — abrir uma fecha as outras.
+      setConfigOpen: (configOpen) => set(configOpen ? { configOpen: true, supportOpen: false, irpfOpen: false } : { configOpen: false }),
       supportOpen: false,
-      // Suporte e Config são telas separadas mutuamente exclusivas.
-      setSupportOpen: (supportOpen) => set(supportOpen ? { supportOpen, configOpen: false } : { supportOpen }),
+      setSupportOpen: (supportOpen) => set(supportOpen ? { supportOpen: true, configOpen: false, irpfOpen: false } : { supportOpen: false }),
+      irpfOpen: false,
+      setIrpfOpen: (irpfOpen) => set(irpfOpen ? { irpfOpen: true, configOpen: false, supportOpen: false } : { irpfOpen: false }),
       navLayout: "side",
       setNavLayout: (navLayout) => set({ navLayout }),
       navCollapsed: false,

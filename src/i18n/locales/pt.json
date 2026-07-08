@@ -24,8 +24,38 @@
     "projecao": "Projeção",
     "liberdade": "Liberdade",
     "crossborder": "Internacional",
+    "irpf": "IRPF",
     "suporte": "Ajuda & Suporte",
     "config": "Config"
+  },
+  "irpf": {
+    "title": "Organizador de IRPF",
+    "subtitle": "Monta um documento organizado do seu patrimônio pro seu contador digitar na declaração. Não declaramos, não enviamos nada, não calculamos imposto.",
+    "baseYear": "Ano-base",
+    "lockedTitle": "Um recurso do Pro",
+    "lockedDesc": "O Organizador de IRPF puxa o seu patrimônio e monta o documento de Bens e Direitos pronto pro contador — privado, no seu aparelho.",
+    "lockedBullets": [
+      "Puxa seus bens e dívidas e sugere o código de cada um",
+      "Discriminação pronta pra copiar, agrupada por código",
+      "No ano seguinte é só atualizar o valor de 31/12",
+      "Tudo cifrado no seu aparelho — nem a gente vê"
+    ],
+    "lockedCta": "Conhecer o Pro",
+    "disclaimer": "Isto não é a sua declaração. O app organiza — não declara, não envia, não presta consultoria fiscal. Sempre confira com um contador.",
+    "pull": "Puxar do meu patrimônio",
+    "addItem": "Adicionar item",
+    "exportSoon": "Gerar documento (em breve)",
+    "emptyState": "Clique em “Puxar do meu patrimônio” pra começar — cada bem e dívida vira uma linha com o código sugerido.",
+    "noCode": "Sem código ainda",
+    "debtsSection": "Dívidas e Ônus Reais",
+    "group": "Grupo",
+    "code": "Código",
+    "discriminacaoPh": "Discriminação (descrição do bem) — o que aparece na declaração",
+    "valueOn": "Situação em 31/12/{{year}}",
+    "review": "revisar",
+    "valueBrl": "Valor em R$ (você informa)",
+    "foreignWarn": "Bem no exterior: o valor em R$ segue o custo de aquisição pelo câmbio da data da compra (regra da Receita). O app não calcula — informe e confira com seu contador.",
+    "removeItem": "Remover item"
   },
   "common": {"close": "Fechar", "total": "Total", "currency": "Moeda", "month": "Mês", "monthPlaceholder": "AAAA-MM", "networth": "Patrimônio", "contribution": "Aporte", "current": "Último registro", "totalChange": "Variação total", "contributions": "Aportes", "growth": "Crescimento total", "return": "Rendimento", "returnSub": "trabalho do dinheiro", "contributionsSub": "do seu bolso", "period": "Período", "monthsValue": "{{n}} meses", "snapshots": "Registros", "addSnapshot": "Adicionar registro", "expand": "Expandir", "collapse": "Recolher", "autoHint": "O mês atual é capturado automaticamente do seu patrimônio — e o aporte vem do saldo (poupança) do seu orçamento. Edite qualquer linha pra assumir o controle dela."},
   "welcome": {

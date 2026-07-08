@@ -8,6 +8,7 @@ import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
 import { SupportView } from "@/app/support-app";
+import { IrpfView } from "@/app/irpf-app";
 import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
@@ -29,6 +30,7 @@ export function AppShell() {
   const configOpen = useUI((s) => s.configOpen);
   const setConfigOpen = useUI((s) => s.setConfigOpen);
   const supportOpen = useUI((s) => s.supportOpen);
+  const irpfOpen = useUI((s) => s.irpfOpen);
   const ratesTicker = useUI((s) => s.ratesTicker);
   // O spy segue o conjunto de seções da VISÃO ativa: as da Config quando ela está aberta
   // (a página fica fora da tela), as da página quando fechada. Assim a nav lateral destaca a
@@ -117,6 +119,8 @@ export function AppShell() {
         {ratesTicker ? <RatesTicker /> : null}
         {supportOpen ? (
           <SupportView />
+        ) : irpfOpen ? (
+          <IrpfView />
         ) : (
         <div className="relative overflow-clip min-h-screen view-fade-in">
           {/* overflow-CLIP (não hidden!) clipa o slide horizontal SEM criar scroll-container — assim os
