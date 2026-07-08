@@ -51,15 +51,16 @@ export function DueAlertBarView({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-2.5 rounded-[14px] border border-[color-mix(in_oklab,var(--neg)_38%,transparent)] bg-[var(--neg-soft)] px-4 py-3">
+    <div className="flex items-center gap-2.5 rounded-[14px] border border-[color-mix(in_oklab,var(--neg)_38%,transparent)] bg-[var(--neg-soft)] px-4 py-2">
       <span className="grid place-items-center w-7 h-7 rounded-[8px] bg-card text-neg shrink-0">
         <AlertTriangle size={15} />
       </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-[13.5px] font-semibold text-text leading-tight">
+      <div className="min-w-0 flex-1 flex items-baseline gap-2">
+        <span className="text-[13px] font-semibold text-text truncate">
           {t(count === 1 ? "orcamento.overdueBarOne" : "orcamento.overdueBarOther", { n: count })}
-        </div>
-        <Money value={total} currency={currency} options={{ signDisplay: "never" }} className="text-[12px] text-muted tabular" />
+        </span>
+        <span className="text-faint shrink-0" aria-hidden>·</span>
+        <Money value={total} currency={currency} options={{ signDisplay: "never" }} className="text-[12px] text-muted tabular shrink-0" />
       </div>
       <button
         type="button"
