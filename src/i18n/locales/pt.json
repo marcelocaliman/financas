@@ -46,6 +46,8 @@
     "disclaimer": "Isto não é a sua declaração. O app organiza — não declara, não envia, não presta consultoria fiscal. Sempre confira com um contador.",
     "pull": "Puxar do meu patrimônio",
     "addItem": "Adicionar item",
+    "importTemplate": "Baixar modelo",
+    "importCsv": "Importar planilha",
     "exportSoon": "Gerar documento (em breve)",
     "docPdf": "Baixar PDF",
     "docCsv": "Planilhas (CSV)",

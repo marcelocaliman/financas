@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildBensCSV, buildDividasCSV, changeFlag, brlValue } from "./irpf-csv";
+import { buildBensCSV, buildDividasCSV, changeFlag, brlValue, parseIrpfImport } from "./irpf-csv";
 import type { TaxItem } from "@/domain/irpf";
 
 const it_ = (over: Partial<TaxItem>): TaxItem => ({
@@ -42,5 +42,20 @@ describe("buildDividasCSV", () => {
     const csv = buildDividasCSV([it_({ kind: "debt", group: "", code: "11", discriminacao: "Financiamento" })]);
     expect(csv).toContain("Estabelecimento bancário comercial");
     expect(csv).not.toContain("CDB");
+  });
+});
+
+describe("parseIrpfImport", () => {
+  it("importa linhas da planilha em itens; pula vazias; exterior guarda a moeda", () => {
+    const csv = "﻿nome;grupo;codigo;cnpj;valor;moeda;pais\nAções PETR4;03;01;33.000.167/0001-01;20.000,00;BRL;\nApple;03;01;;5000,00;USD;eua\n;;;;;;\n";
+    const items = parseIrpfImport(csv, 2025);
+    expect(items).toHaveLength(2); // a linha vazia é ignorada
+    expect(items[0].group).toBe("03");
+    expect(items[0].valorAnoBase).toBe(20000); // "20.000,00" pt-BR
+    expect(items[0].fields.cnpj).toBe("33.000.167/0001-01");
+    expect(items[0].needsReview).toBeUndefined(); // valor informado ≠ "revisar"
+    expect(items[1].currency).toBe("USD");
+    expect(items[1].country).toBe("eua");
+    expect(items.every((i) => i.baseYear === 2025 && i.source === "manual")).toBe(true);
   });
 });

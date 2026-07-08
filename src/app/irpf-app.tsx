@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -11,7 +11,7 @@ import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
 import { irpfSeedMapper, composeDiscriminacao, fieldsFor } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
-import { buildBensCSV, buildDividasCSV, downloadCSV } from "@/irpf/irpf-csv";
+import { buildBensCSV, buildDividasCSV, downloadCSV, parseIrpfImport, IRPF_IMPORT_TEMPLATE } from "@/irpf/irpf-csv";
 import { IrpfReport } from "@/irpf/irpf-report";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
@@ -213,6 +213,19 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     if (list.some((i) => i.kind === "debt")) downloadCSV(`irpf-${year}-dividas.csv`, buildDividasCSV(list));
   }
 
+  const fileRef = useRef<HTMLInputElement>(null);
+  function downloadTemplate() {
+    downloadCSV(`irpf-${year}-modelo.csv`, IRPF_IMPORT_TEMPLATE);
+  }
+  async function onImport(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // permite reimportar o mesmo arquivo
+    if (!file) return;
+    await ensureReturn();
+    const imported = parseIrpfImport(await file.text(), year);
+    if (imported.length) await actions.putTaxItems(imported);
+  }
+
   const bens = list.filter((i) => i.kind === "asset");
   const dividas = list.filter((i) => i.kind === "debt");
   const bensByGroup = useMemo(() => {
@@ -250,6 +263,13 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         >
           <Plus size={15} /> {t("irpf.addItem")}
         </button>
+        <button type="button" onClick={downloadTemplate} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+          <FileDown size={15} /> {t("irpf.importTemplate")}
+        </button>
+        <button type="button" onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+          <Upload size={15} /> {t("irpf.importCsv")}
+        </button>
+        <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onImport(e)} />
         {!empty ? (
           <div className="ml-auto flex items-center gap-2">
             <button type="button" onClick={printIRPF} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-accent text-[#08130C] text-[13px] font-semibold hover:opacity-90 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">

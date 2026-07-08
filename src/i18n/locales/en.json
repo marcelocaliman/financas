@@ -46,6 +46,8 @@
     "disclaimer": "This is not your tax return. The app organizes — it doesn't file, doesn't send, doesn't give tax advice. Always confirm with an accountant.",
     "pull": "Pull from my net worth",
     "addItem": "Add item",
+    "importTemplate": "Download template",
+    "importCsv": "Import spreadsheet",
     "exportSoon": "Generate document (soon)",
     "docPdf": "Download PDF",
     "docCsv": "Spreadsheets (CSV)",

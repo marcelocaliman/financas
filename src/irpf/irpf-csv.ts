@@ -1,4 +1,7 @@
 import type { TaxItem } from "@/domain/irpf";
+import type { Currency } from "@/money/currency";
+import { parseCSV } from "@/finance/statement-csv";
+import { composeDiscriminacao } from "./mapper";
 import { groupName, codeName, isForeignCurrency } from "./codes";
 
 // Planilhas do Organizador de IRPF pro contador — 2 CSVs (Bens e Direitos + Dívidas). Separador ";" e
@@ -53,6 +56,66 @@ export function buildDividasCSV(items: TaxItem[]): string {
     num(brlValue(it, "prev")), num(brlValue(it, "base")),
   ].map(cell).join(";"));
   return BOM + head.join(";") + "\n" + rows.join("\n");
+}
+
+// ── IMPORTAR PLANILHA ────────────────────────────────────────────────────────
+// Bulk-add de itens a partir de uma planilha (modelo abaixo ou export da corretora): colunas
+// nome, grupo, codigo, cnpj, valor, moeda, pais. Reusa o parseCSV da fatura (detecta ; ou , + BOM).
+
+/** Modelo pra o usuário preencher (BOM + ";" → Excel pt-BR abre certo). */
+export const IRPF_IMPORT_TEMPLATE =
+  BOM +
+  [
+    "nome;grupo;codigo;cnpj;valor;moeda;pais",
+    "Ações Petrobras;03;01;33.000.167/0001-01;20000,00;BRL;",
+    "CDB Banco X;04;02;00.000.000/0001-00;15000,00;BRL;",
+    "Conta corrente Nubank;06;01;18.236.120/0001-58;5000,00;BRL;",
+    "Apple (stock);03;01;;5000,00;USD;eua",
+  ].join("\n") + "\n";
+
+const CURRENCIES = ["BRL", "EUR", "USD", "GBP"];
+function toCurrency(s: string): Currency {
+  const u = s.trim().toUpperCase();
+  return (CURRENCIES.includes(u) ? u : "BRL") as Currency;
+}
+function parseNum(s: string): number {
+  const c = (s || "").replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+  const n = Number(c);
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Converte a planilha em itens (bens). Valor informado = posição de 31/12 (não marca "revisar").
+ *  Exterior (moeda ≠ BRL) guarda a moeda de origem; o R$ fica manual (PTAX depois). */
+export function parseIrpfImport(text: string, baseYear: number): TaxItem[] {
+  const recs = parseCSV(text);
+  const out: TaxItem[] = [];
+  recs.forEach((r, i) => {
+    const nome = (r.nome ?? r.descricao ?? r["descrição"] ?? r.discriminacao ?? "").trim();
+    const grupo = (r.grupo ?? "").trim();
+    const codigo = (r.codigo ?? r["código"] ?? "").trim();
+    const cnpj = (r.cnpj ?? r["cnpj/cpf"] ?? "").trim();
+    const valor = parseNum(r.valor ?? r.situacao ?? r["situação"] ?? "");
+    const moeda = toCurrency(r.moeda ?? "BRL");
+    const pais = (r.pais ?? r["país"] ?? "").trim();
+    if (!nome && valor === 0) return; // linha vazia
+    const fields: Record<string, string> = { nome };
+    if (cnpj) fields.cnpj = cnpj;
+    out.push({
+      id: crypto.randomUUID(),
+      baseYear,
+      kind: "asset",
+      group: grupo,
+      code: codigo,
+      discriminacao: composeDiscriminacao("asset", grupo, fields),
+      currency: moeda,
+      valorAnoBase: valor,
+      country: pais || undefined,
+      fields,
+      source: "manual",
+      createdAt: Date.now() + i,
+    });
+  });
+  return out;
 }
 
 /** Baixa um CSV (client-side; nada sai pro servidor). */
