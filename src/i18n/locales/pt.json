@@ -78,6 +78,7 @@
     "reviewBanner": "{{n}} valor(es) vieram do seu patrimônio e pedem conferência para 31/12/{{year}}. Se você puxou no fim do ano e está tudo certo, é só “Conferir tudo”.",
     "reviewClearAll": "Conferir tudo",
     "valueBrl": "Valor em R$ (você informa)",
+    "priorValueBrl": "R$ em 31/12/{{year}}",
     "foreignWarn": "Bem no exterior: o valor em R$ segue o custo de aquisição pelo câmbio da data da compra (regra da Receita). O app não calcula — informe e confira com seu contador.",
     "removeItem": "Remover item",
     "pendingBanner": "{{n}} item(ns) com pendência — resolva antes de gerar o documento.",

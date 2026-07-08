@@ -78,6 +78,7 @@
     "reviewBanner": "{{n}} value(s) were pulled from your net worth and need confirming for 12/31/{{year}}. If you pulled at year-end and it's all correct, just “Confirm all”.",
     "reviewClearAll": "Confirm all",
     "valueBrl": "Value in BRL (you enter)",
+    "priorValueBrl": "BRL on 12/31/{{year}}",
     "foreignWarn": "Foreign asset: the BRL value follows acquisition cost at the purchase-date exchange rate (tax rule). The app doesn't compute it — enter it and confirm with your accountant.",
     "removeItem": "Remove item",
     "pendingBanner": "{{n}} item(s) need attention before generating the document.",

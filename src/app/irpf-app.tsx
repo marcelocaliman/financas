@@ -7,7 +7,7 @@ import { useProStore } from "@/store/pro";
 import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
-import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
+import { buildSeedTaxItems, buildRollForward, refreshPulledValues } from "@/finance/irpf-seed";
 import { irpfSeedMapper, composeDiscriminacao, fieldsFor, findUnmarkedDisposals, DISPOSAL_FIELDS } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
@@ -173,7 +173,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     const fresh = buildSeedTaxItems(year, relevant, curLiabs, existing, irpfSeedMapper);
     // Bens que já estavam na lista e foram vendidos este ano → aplica o tratamento de venda.
     const disposals = findUnmarkedDisposals(existing, relevant, year);
-    const toWrite = [...fresh, ...disposals];
+    // Atualiza o valor dos itens auto ainda não confirmados pro valor atual (refresh em dezembro).
+    const refreshed = refreshPulledValues(existing, relevant, year, irpfSeedMapper);
+    const toWrite = [...fresh, ...disposals, ...refreshed];
     if (toWrite.length) await actions.putTaxItems(toWrite);
   }
 
@@ -640,8 +642,12 @@ function Row({ item }: { item: TaxItem }) {
         </div>
       ) : (
         <>
-          {/* Valores (na moeda do item) + âmbar "revisar"; exterior → BRL manual + aviso */}
+          {/* As duas colunas do IRPF (ano anterior · ano-base), na moeda do item + âmbar "conferir" */}
           <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+            <label className="text-[11px] text-faint">
+              <span className="block mb-1">{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
+              <MoneyField value={item.valorAnoAnterior} onChange={(n) => patch({ valorAnoAnterior: n })} />
+            </label>
             <label className="text-[11px] text-faint">
               <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
               <div className="flex items-center gap-2">
@@ -651,14 +657,20 @@ function Row({ item }: { item: TaxItem }) {
                 ) : null}
               </div>
             </label>
+          </div>
 
-            {foreign ? (
+          {foreign ? (
+            <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+              <label className="text-[11px] text-faint">
+                <span className="block mb-1">{t("irpf.priorValueBrl", { year: item.baseYear - 1 })}</span>
+                <MoneyField value={item.valorBrlAnoAnterior} onChange={(n) => patch({ valorBrlAnoAnterior: n })} />
+              </label>
               <label className="text-[11px] text-faint">
                 <span className="block mb-1">{t("irpf.valueBrl")}</span>
                 <MoneyField value={item.valorBrlAnoBase} onChange={(n) => patch({ valorBrlAnoBase: n })} />
               </label>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {foreign ? (
             <div className="space-y-2">
