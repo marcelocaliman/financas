@@ -518,34 +518,45 @@ function isIrpfSeason(): boolean {
   return m >= 3 && m <= 5;
 }
 
-/** Item do Organizador de IRPF na lista PRINCIPAL — logo após "Internacional", levemente separado
- *  por um divisor. Na temporada da declaração ganha acento + selo "declarar". Abre a tela cheia. */
+/** Item do Organizador de IRPF na lista PRINCIPAL — logo após "Internacional", ALINHADO com os demais
+ *  itens (mesmo padding/ícone), distinguido por um FUNDO: cinza sutil fora do prazo, VERDE na temporada
+ *  da declaração (mar–mai) + selo "declarar". Sem divisor. Abre a tela cheia. */
 function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolean; active: boolean; season: boolean; onClick: () => void }) {
   const { t } = useTranslation();
+  // Fundo diferenciado (não é seção): ativo = card2; temporada = verde suave; fora do prazo = cinza sutil.
+  const fill = active
+    ? "text-accent bg-card2"
+    : season
+    ? "text-accent bg-accent-soft hover:bg-[color-mix(in_oklab,var(--accent)_16%,transparent)]"
+    : "text-muted bg-[color-mix(in_oklab,var(--card-2)_60%,transparent)] hover:text-text hover:bg-card-hover";
+
   if (collapsed) {
     return (
-      <div className="mt-1.5 pt-1.5 border-t border-border flex flex-col items-center">
-        <IconBtn onClick={onClick} active={active} label={t("nav.irpf")}>
-          <Landmark size={16} className={cn(season && !active && "text-accent")} />
-        </IconBtn>
+      <div className="px-2 pt-0.5 flex justify-center">
+        <button
+          type="button"
+          onClick={onClick}
+          aria-pressed={active}
+          aria-label={t("nav.irpf")}
+          className={cn("grid place-items-center w-11 h-11 rounded-[11px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
+        >
+          <Landmark size={17} />
+        </button>
       </div>
     );
   }
   return (
-    <div className="mt-1.5 pt-1.5 border-t border-border">
+    <div className="px-2.5 pt-0.5">
       <button
         type="button"
         onClick={onClick}
         aria-pressed={active}
-        className={cn(
-          "w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-          active ? "text-accent bg-card2" : season ? "text-accent hover:bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover",
-        )}
+        className={cn("w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]", fill)}
       >
         <Landmark size={17} className="shrink-0" />
         <span className="truncate">{t("nav.irpf")}</span>
         {season && !active ? (
-          <span className="ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full bg-accent-soft text-accent text-[9px] font-bold uppercase tracking-[0.05em] leading-none">
+          <span className="ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full bg-accent text-[#0A0B0D] text-[9px] font-bold uppercase tracking-[0.05em] leading-none">
             {t("irpf.season")}
           </span>
         ) : null}
