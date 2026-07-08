@@ -379,9 +379,13 @@ function Row({ item }: { item: TaxItem }) {
       </div>
 
       {foreign ? (
-        <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
-          <Globe size={13} className="shrink-0 mt-0.5" /> {t("irpf.foreignWarn")}
-        </p>
+        <div className="space-y-2">
+          <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
+            <Globe size={13} className="shrink-0 mt-0.5" /> {t("irpf.foreignWarn")}
+          </p>
+          <PtaxCalc item={item} onPick={(v, note) => { setBrl(String(v)); patch({ valorBrlAnoBase: v, fxNote: note }); }} />
+          {item.fxNote ? <p className="text-[10.5px] text-faint">{t("irpf.fxUsed", { note: item.fxNote })}</p> : null}
+        </div>
       ) : null}
 
       {item.kind === "asset" && item.code ? (
@@ -395,6 +399,75 @@ function Row({ item }: { item: TaxItem }) {
               {t(`irpf.issues.${iss}`)}
             </span>
           ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Calculadora de câmbio ASSISTIDA (só exterior): informe valor + DATA DE AQUISIÇÃO e o app busca o
+ *  PTAX oficial do BCB daquela data (trata dia não-útil). Mostra compra E venda — o critério e o método
+ *  de valoração ficam com o contador. NUNCA preenche o BRL sozinho. */
+function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note: string) => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [valor, setValor] = useState(item.valorAnoBase ? String(item.valorAnoBase) : "");
+  const [date, setDate] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [rate, setRate] = useState<{ compra: number; venda: number; date: string } | null>(null);
+  const [err, setErr] = useState(false);
+
+  async function calc() {
+    if (!date) return;
+    setBusy(true); setErr(false); setRate(null);
+    try {
+      const r = await fetch(`/api/ptax?currency=${encodeURIComponent(item.currency)}&date=${date}`);
+      const j = await r.json();
+      if (!r.ok || j.error || !(j.compra > 0)) { setErr(true); return; }
+      setRate({ compra: j.compra, venda: j.venda, date: j.date });
+    } catch {
+      setErr(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+  function pick(kind: "compra" | "venda") {
+    if (!rate || !(Number(valor) > 0)) return;
+    onPick(Math.round(Number(valor) * rate[kind] * 100) / 100, `PTAX ${kind} ${rate.date}`);
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="text-[11px] text-accent hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">
+        {t("irpf.ptaxOpen")}
+      </button>
+    );
+  }
+  return (
+    <div className="rounded-[10px] border border-border bg-card2/50 p-3 space-y-2.5">
+      <p className="text-[10.5px] text-faint">{t("irpf.ptaxHint")}</p>
+      <div className="flex flex-wrap items-end gap-2">
+        <label className="text-[10px] text-faint">
+          <span className="block mb-1">{t("irpf.ptaxValue", { cur: item.currency })}</span>
+          <input type="number" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} className="h-8 w-32 rounded-[7px] border border-border bg-card px-2 text-[12px] tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]" />
+        </label>
+        <label className="text-[10px] text-faint">
+          <span className="block mb-1">{t("irpf.ptaxDate")}</span>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-8 rounded-[7px] border border-border bg-card px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]" />
+        </label>
+        <button type="button" onClick={calc} disabled={busy || !date} className="h-8 px-3 rounded-[7px] bg-accent text-[#08130C] text-[11.5px] font-semibold disabled:opacity-50 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+          {busy ? "…" : t("irpf.ptaxCalc")}
+        </button>
+      </div>
+      {err ? <p className="text-[11px] text-neg">{t("irpf.ptaxError")}</p> : null}
+      {rate ? (
+        <div className="space-y-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="text-faint">PTAX {rate.date}:</span>
+            <button type="button" onClick={() => pick("compra")} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors">{t("irpf.ptaxCompra")} {rate.compra.toFixed(4)}</button>
+            <button type="button" onClick={() => pick("venda")} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors">{t("irpf.ptaxVenda")} {rate.venda.toFixed(4)}</button>
+          </div>
+          <p className="text-[10.5px] text-[#e0a33c]">{t("irpf.ptaxConfirm")}</p>
         </div>
       ) : null}
     </div>
