@@ -368,11 +368,14 @@ summary {
   body > * {
     display: none !important;
   }
-  /* Padrão = resumo mensal; com .print-pro no body, imprime o Relatório Pro. */
-  body:not(.print-pro) #monthly-report {
+  /* Padrão = resumo mensal; .print-pro imprime o Relatório Pro; .print-irpf o Organizador de IRPF. */
+  body:not(.print-pro):not(.print-irpf) #monthly-report {
     display: block !important;
   }
   body.print-pro #pro-report {
+    display: block !important;
+  }
+  body.print-irpf #irpf-report {
     display: block !important;
   }
   @page {

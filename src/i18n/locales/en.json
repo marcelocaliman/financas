@@ -46,6 +46,8 @@
     "pull": "Pull from my net worth",
     "addItem": "Add item",
     "exportSoon": "Generate document (soon)",
+    "docPdf": "Download PDF",
+    "docCsv": "Spreadsheets (CSV)",
     "emptyState": "Click “Pull from my net worth” to start — each asset and debt becomes a line with a suggested code.",
     "noCode": "No code yet",
     "debtsSection": "Debts and Real Liens",

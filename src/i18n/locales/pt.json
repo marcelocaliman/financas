@@ -46,6 +46,8 @@
     "pull": "Puxar do meu patrimônio",
     "addItem": "Adicionar item",
     "exportSoon": "Gerar documento (em breve)",
+    "docPdf": "Baixar PDF",
+    "docCsv": "Planilhas (CSV)",
     "emptyState": "Clique em “Puxar do meu patrimônio” pra começar — cada bem e dívida vira uma linha com o código sugerido.",
     "noCode": "Sem código ainda",
     "debtsSection": "Dívidas e Ônus Reais",

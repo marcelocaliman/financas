@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -11,6 +11,8 @@ import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
 import { irpfSeedMapper } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
+import { buildBensCSV, buildDividasCSV, downloadCSV } from "@/irpf/irpf-csv";
+import { IrpfReport } from "@/irpf/irpf-report";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { nameById } from "@/domain/taxonomy";
@@ -19,7 +21,7 @@ import type { TaxItem, TaxReturn } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
 
 const GUTTERS = "px-5 md:px-10 lg:px-14";
-const CONTAINER = "max-w-[1000px] mx-auto";
+const CONTAINER = "max-w-[1280px] mx-auto"; // mesma largura/estrutura das outras páginas
 const currentYear = new Date().getFullYear();
 
 /** Tela cheia do Organizador de IRPF — renderizada na casca (menu presente), igual a Config/Suporte. */
@@ -61,6 +63,7 @@ export function IrpfView() {
           <Organizer year={year} items={items} returns={returns} />
         )}
       </div>
+      {isPro ? <IrpfReport year={year} /> : null}
     </div>
   );
 }
@@ -188,6 +191,24 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     });
   }
 
+  /** PDF via impressão: marca o body (o CSS mostra #irpf-report) e abre o diálogo de impressão. */
+  function printIRPF() {
+    const prev = document.title;
+    document.title = `Organizador de IRPF ${year}`;
+    const cleanup = () => {
+      document.title = prev;
+      document.body.classList.remove("print-irpf");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    document.body.classList.add("print-irpf");
+    window.print();
+  }
+  function downloadCsvs() {
+    downloadCSV(`irpf-${year}-bens-e-direitos.csv`, buildBensCSV(list));
+    if (list.some((i) => i.kind === "debt")) downloadCSV(`irpf-${year}-dividas.csv`, buildDividasCSV(list));
+  }
+
   const bens = list.filter((i) => i.kind === "asset");
   const dividas = list.filter((i) => i.kind === "debt");
   const bensByGroup = useMemo(() => {
@@ -223,9 +244,16 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         >
           <Plus size={15} /> {t("irpf.addItem")}
         </button>
-        <span className="ml-auto inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-dashed border-border text-[12.5px] text-faint" title={t("irpf.exportSoon")}>
-          <Download size={15} /> {t("irpf.exportSoon")}
-        </span>
+        {!empty ? (
+          <div className="ml-auto flex items-center gap-2">
+            <button type="button" onClick={printIRPF} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-accent text-[#08130C] text-[13px] font-semibold hover:opacity-90 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+              <Download size={15} /> {t("irpf.docPdf")}
+            </button>
+            <button type="button" onClick={downloadCsvs} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+              <Table size={15} /> {t("irpf.docCsv")}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {pending > 0 ? (
