@@ -71,6 +71,9 @@
     "ptaxVenda": "venda",
     "ptaxConfirm": "Escolha compra × venda e o método de valoração com seu contador.",
     "fxUsed": "Câmbio usado: {{note}}",
+    "incomeSection": "Rendimentos registrados em {{year}}",
+    "incomeHint": "Resumo bruto do que você registrou no orçamento — NÃO classificamos em ficha (tributável, isento, exclusivo) nem convertemos moeda. Leve ao seu contador.",
+    "incomeUncat": "Sem categoria",
     "issues": {
       "no-code": "sem código",
       "no-value": "sem valor",

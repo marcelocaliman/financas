@@ -71,6 +71,9 @@
     "ptaxVenda": "sell",
     "ptaxConfirm": "Choose buy × sell and the valuation method with your accountant.",
     "fxUsed": "FX used: {{note}}",
+    "incomeSection": "Income recorded in {{year}}",
+    "incomeHint": "Gross summary of what you recorded in the budget — we do NOT classify it into a return field (taxable, exempt, exclusive) or convert currency. Take it to your accountant.",
+    "incomeUncat": "Uncategorized",
     "issues": {
       "no-code": "no code",
       "no-value": "no value",

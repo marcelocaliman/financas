@@ -10,7 +10,11 @@ import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
 import { irpfSeedMapper } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
+import { summarizeIncome } from "@/irpf/income";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
+import { useTaxonomy } from "@/hooks/use-taxonomy";
+import { nameById } from "@/domain/taxonomy";
+import { Money } from "@/components/common/money";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +132,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     const ys = (returns ?? []).map((r) => r.baseYear).filter((y) => y < year);
     return ys.length ? Math.max(...ys) : null;
   }, [returns, year]);
+  const incomes = useLiveQuery(() => repository.listIncomes()) ?? [];
+  const tax = useTaxonomy();
+  const incomeSummary = useMemo(() => summarizeIncome(incomes, year), [incomes, year]);
 
   async function ensureReturn() {
     if (!(await repository.getTaxReturn(String(year)))) {
@@ -275,6 +282,23 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           ) : null}
         </>
       )}
+
+      {incomeSummary.length ? (
+        <section className="rounded-[16px] border border-border bg-card overflow-hidden">
+          <div className="px-4 sm:px-5 py-3 border-b border-border">
+            <div className="eyebrow">{t("irpf.incomeSection", { year })}</div>
+          </div>
+          <div className="px-4 sm:px-5 py-3.5 space-y-2">
+            <p className="text-[11.5px] text-faint">{t("irpf.incomeHint")}</p>
+            {incomeSummary.map((r) => (
+              <div key={r.categoryId + r.currency} className="flex items-center justify-between gap-3 text-[12.5px]">
+                <span className="text-muted truncate">{nameById(tax.incomeCategories, r.categoryId) || t("irpf.incomeUncat")}</span>
+                <Money value={r.total} currency={r.currency} className="tabular font-medium shrink-0" />
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
