@@ -32,6 +32,7 @@
     "title": "IRPF Organizer",
     "subtitle": "Builds an organized document of your assets for your accountant to type into the tax return. We don't file, don't send anything, don't calculate tax.",
     "baseYear": "Base year",
+    "season": "file it",
     "lockedTitle": "A Pro feature",
     "lockedDesc": "The IRPF Organizer pulls your net worth and builds the Assets & Rights document ready for your accountant — private, on your device.",
     "lockedBullets": [

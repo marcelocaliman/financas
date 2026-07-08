@@ -54,6 +54,7 @@ export function SideNav({ active }: { active: string }) {
   const supportOpen = useUI((s) => s.supportOpen);
   const setIrpfOpen = useUI((s) => s.setIrpfOpen);
   const irpfOpen = useUI((s) => s.irpfOpen);
+  const irpfSeason = isIrpfSeason();
   const setAdminOpen = useAdminUI((s) => s.setAdminOpen);
   const { isAdmin } = useIsAdmin();
   const email = useVault((s) => s.email);
@@ -246,6 +247,9 @@ export function SideNav({ active }: { active: string }) {
                   ...(due.count > 0 ? { orcamento: <DueBillsTooltip /> } : {}),
                 }}
               />
+              {/* Organizador de IRPF — último item, levemente separado da navegação de seções; ganha
+                  destaque de acento na temporada da declaração (mar–mai). Abre a tela cheia. */}
+              <IrpfNavItem collapsed={collapsed} active={irpfOpen} season={irpfSeason} onClick={() => setIrpfOpen(!irpfOpen)} />
             </div>
             <div ref={configRef} inert={!configOpen} className="w-full shrink-0">
               <NavList items={configItems} collapsed={collapsed} active={active} openSections={openSections} onNavigate={goConfig} onToggle={setSectionOpen} />
@@ -262,8 +266,6 @@ export function SideNav({ active }: { active: string }) {
                 <IconBtn onClick={() => setConfigOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : supportOpen ? (
                 <IconBtn onClick={() => setSupportOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
-              ) : irpfOpen ? (
-                <IconBtn onClick={() => setIrpfOpen(false)} label={t("menu.back")}><ArrowLeft size={16} /></IconBtn>
               ) : (
                 <>
                   <ProNavCard collapsed />
@@ -272,7 +274,6 @@ export function SideNav({ active }: { active: string }) {
                   </IconBtn>
                   <IconBtn onClick={toggleTheme} label={t("common.theme")}>{theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}</IconBtn>
                   <IconBtn onClick={() => setSupportOpen(true)} label={t("nav.suporte")} badge={suporteUnread}><LifeBuoy size={16} /></IconBtn>
-                  <IconBtn onClick={() => setIrpfOpen(true)} label={t("nav.irpf")}><Landmark size={16} /></IconBtn>
                   <IconBtn onClick={() => setConfigOpen(!configOpen)} active={configOpen} label={t("menu.settings")}><Settings size={16} /></IconBtn>
                   {isAdmin ? <AdminRailCollapsed onOpen={() => setAdminOpen(true)} /> : null}
                 </>
@@ -290,8 +291,6 @@ export function SideNav({ active }: { active: string }) {
               ) : supportOpen ? (
                 /* Em Ajuda & Suporte: mesma cara — só "Voltar ao app" */
                 <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setSupportOpen(false)} />
-              ) : irpfOpen ? (
-                <FooterItem icon={ArrowLeft} label={t("menu.back")} onClick={() => setIrpfOpen(false)} />
               ) : (
                 <>
                   <ProNavCard collapsed={false} />
@@ -311,7 +310,6 @@ export function SideNav({ active }: { active: string }) {
                   {/* Itens de menu COM rótulo — separados da navegação de seções acima */}
                   <div className="mt-2.5 pt-2.5 border-t border-border space-y-1">
                     <FooterItem icon={LifeBuoy} label={t("nav.suporte")} badge={suporteUnread} onClick={() => setSupportOpen(true)} />
-                    <FooterItem icon={Landmark} label={t("nav.irpf")} active={irpfOpen} onClick={() => setIrpfOpen(true)} />
                     <FooterItem icon={Settings} label={t("menu.settings")} active={configOpen} onClick={() => setConfigOpen(!configOpen)} />
                   </div>
                 </>
@@ -514,6 +512,48 @@ function FooterItem({
   );
 }
 
+/** Temporada da declaração no Brasil (mar–mai) — dá destaque ao item do Organizador de IRPF. */
+function isIrpfSeason(): boolean {
+  const m = new Date().getMonth() + 1;
+  return m >= 3 && m <= 5;
+}
+
+/** Item do Organizador de IRPF na lista PRINCIPAL — logo após "Internacional", levemente separado
+ *  por um divisor. Na temporada da declaração ganha acento + selo "declarar". Abre a tela cheia. */
+function IrpfNavItem({ collapsed, active, season, onClick }: { collapsed: boolean; active: boolean; season: boolean; onClick: () => void }) {
+  const { t } = useTranslation();
+  if (collapsed) {
+    return (
+      <div className="mt-1.5 pt-1.5 border-t border-border flex flex-col items-center">
+        <IconBtn onClick={onClick} active={active} label={t("nav.irpf")}>
+          <Landmark size={16} className={cn(season && !active && "text-accent")} />
+        </IconBtn>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-1.5 pt-1.5 border-t border-border">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={active}
+        className={cn(
+          "w-full flex items-center gap-3 h-10 px-3 rounded-[11px] text-[13.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          active ? "text-accent bg-card2" : season ? "text-accent hover:bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover",
+        )}
+      >
+        <Landmark size={17} className="shrink-0" />
+        <span className="truncate">{t("nav.irpf")}</span>
+        {season && !active ? (
+          <span className="ml-auto shrink-0 px-1.5 h-[18px] grid place-items-center rounded-full bg-accent-soft text-accent text-[9px] font-bold uppercase tracking-[0.05em] leading-none">
+            {t("irpf.season")}
+          </span>
+        ) : null}
+      </button>
+    </div>
+  );
+}
+
 /** Pontinho "ao vivo" (ping verde) — sinaliza dado em tempo real. */
 function LiveDot({ size = "h-2 w-2" }: { size?: string }) {
   return (
@@ -656,7 +696,7 @@ export function MobileBar() {
             {supportOpen ? <ArrowLeft size={16} /> : <LifeBuoy size={16} />}
             {!supportOpen && supportUnread > 0 ? <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-accent ring-2 ring-bg" /> : null}
           </button>
-          <button type="button" onClick={() => setIrpfOpen(!irpfOpen)} aria-label={irpfOpen ? t("menu.back") : t("nav.irpf")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", irpfOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
+          <button type="button" onClick={() => setIrpfOpen(!irpfOpen)} aria-label={irpfOpen ? t("menu.back") : t("nav.irpf")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", irpfOpen ? "text-accent bg-card-hover" : isIrpfSeason() ? "text-accent hover:bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
             {irpfOpen ? <ArrowLeft size={16} /> : <Landmark size={16} />}
           </button>
           <button type="button" onClick={() => setConfigOpen(!configOpen)} aria-label={configOpen ? t("menu.back") : t("menu.settings")} className={cn("grid place-items-center w-9 h-9 rounded-[10px] transition-colors", configOpen ? "text-accent bg-card-hover" : "text-muted hover:text-text hover:bg-card-hover")}>
