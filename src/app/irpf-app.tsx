@@ -143,6 +143,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const separate = settings.irpf?.mode === "separate" && people.length >= 2;
   const primaryId = (separate && settings.irpf?.primaryId && people.some((p) => p.id === settings.irpf!.primaryId) ? settings.irpf!.primaryId : people[0]?.id) ?? "";
   const [selDeclarante, setSelDeclarante] = useState<string | null>(null);
+  const [showPrimary, setShowPrimary] = useState(false);
   const declarante = separate ? (selDeclarante && people.some((p) => p.id === selDeclarante) ? selDeclarante : primaryId) : "";
   // Lista MOSTRADA: no separado, só os bens do declarante (+ comuns); no conjunto, tudo.
   const visible = useMemo(() => (separate ? list.filter((i) => belongsTo(i, declarante, primaryId)) : list), [list, separate, declarante, primaryId]);
@@ -368,6 +369,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           </div>
           {separate ? (
             <>
+              {/* UM seletor: de quem é a declaração em foco. O titular ("você") fica marcado (você). */}
               <label className="flex items-center gap-2 text-[12px] text-muted">
                 {t("irpf.declarante")}
                 <select
@@ -375,20 +377,27 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
                   onChange={(e) => setSelDeclarante(e.target.value)}
                   className="h-8 rounded-[8px] border border-border bg-card px-2.5 text-[12.5px] font-semibold text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
                 >
-                  {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  {people.map((p) => <option key={p.id} value={p.id}>{p.name}{p.id === primaryId ? ` (${t("irpf.you")})` : ""}</option>)}
                 </select>
               </label>
-              <label className="flex items-center gap-2 text-[12px] text-faint">
-                {t("irpf.primary")}
-                <select
-                  value={primaryId}
-                  onChange={(e) => setPrimary(e.target.value)}
-                  className="h-8 rounded-[8px] border border-border bg-card px-2.5 text-[12.5px] text-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-                >
-                  {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </label>
-              <span className="text-[11.5px] text-faint w-full sm:w-auto sm:ml-auto">{t("irpf.separateHint")}</span>
+              {/* "Quem é você?" — troca o titular (default dos bens sem dono); escondido até clicar. */}
+              {showPrimary ? (
+                <label className="flex items-center gap-2 text-[11.5px] text-faint">
+                  {t("irpf.primaryQ")}
+                  <select
+                    value={primaryId}
+                    onChange={(e) => { setPrimary(e.target.value); setShowPrimary(false); }}
+                    className="h-8 rounded-[8px] border border-border bg-card px-2.5 text-[12.5px] text-muted outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+                  >
+                    {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </label>
+              ) : (
+                <button type="button" onClick={() => setShowPrimary(true)} className="text-[11.5px] text-faint hover:text-text underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">
+                  {t("irpf.changePrimary")}
+                </button>
+              )}
+              <span className="text-[11.5px] text-faint w-full">{t("irpf.separateHint", { you: nameById(people, primaryId) })}</span>
             </>
           ) : null}
         </div>
