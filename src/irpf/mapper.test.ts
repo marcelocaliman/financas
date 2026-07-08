@@ -46,6 +46,18 @@ describe("irpfSeedMapper (classe → código oficial)", () => {
     expect(gc("acoes", "acoes-1")).toBe("03/01");        // Ação BR sem refino → default da classe
   });
 
+  it("usa o CUSTO (aplicado) nas classes de custo e não marca revisar; saldo nas demais", () => {
+    const acao = irpfSeedMapper.asset(asset({ classId: "acoes", amount: 25000, cost: 20000 }), 2025);
+    expect(acao.valorAnoBase).toBe(20000);   // custo de aquisição, não mercado
+    expect(acao.needsReview).toBe(false);    // valor já certo → sem revisar
+    const semCusto = irpfSeedMapper.asset(asset({ classId: "acoes", amount: 25000 }), 2025);
+    expect(semCusto.valorAnoBase).toBe(25000); // sem custo → mercado + revisar
+    expect(semCusto.needsReview).toBe(true);
+    const conta = irpfSeedMapper.asset(asset({ classId: "caixa", amount: 5000, cost: 5000 }), 2025);
+    expect(conta.valorAnoBase).toBe(5000);   // saldo (caixa não é classe de custo)
+    expect(conta.needsReview).toBe(true);    // confirme se é o de 31/12
+  });
+
   it("bem no exterior guarda moeda de origem + país e NÃO tem BRL calculado", () => {
     const it = irpfSeedMapper.asset(asset({ classId: "acoes", currency: "USD", regionId: "eua", amount: 5000 }), 2025);
     expect(it.currency).toBe("USD");

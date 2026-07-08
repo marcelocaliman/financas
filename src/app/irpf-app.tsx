@@ -180,6 +180,12 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     }
   }
 
+  /** Puxei tudo no fim do ano e conferi → limpa os "revisar" de uma vez (um clique). */
+  async function confirmAll() {
+    const cleared = list.filter((i) => i.needsReview).map((i) => ({ ...i, needsReview: false }));
+    if (cleared.length) await actions.putTaxItems(cleared);
+  }
+
   async function addManual() {
     await ensureReturn();
     await actions.putTaxItem({
@@ -292,9 +298,16 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       </div>
 
       {needsReviewCount > 0 ? (
-        <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
-          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0 mt-0.5" />
-          <span>{t("irpf.reviewBanner", { n: needsReviewCount, year })}</span>
+        <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
+          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" />
+          <span className="flex-1 min-w-[240px]">{t("irpf.reviewBanner", { n: needsReviewCount, year })}</span>
+          <button
+            type="button"
+            onClick={confirmAll}
+            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {t("irpf.reviewClearAll")}
+          </button>
         </div>
       ) : null}
       {pending > 0 ? (

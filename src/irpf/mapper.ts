@@ -122,6 +122,9 @@ export function composeDiscriminacao(kind: "asset" | "debt", group: string, f: R
   }
 }
 
+/** Classes declaradas pelo CUSTO de aquisição (não pelo valor de mercado do dia). */
+const COST_BASED = new Set<string>([CLASS.acoes, CLASS.fiis, CLASS.privateEquity, CLASS.cripto, CLASS.commodities, CLASS.imoveis, CLASS.bens]);
+
 /**
  * Mapeador REAL do seed: classe → grupo/código + discriminação por template. Bens no exterior
  * guardam a moeda de origem + o país; o valor em BRL fica MANUAL (a UI mostra o aviso da regra —
@@ -134,6 +137,10 @@ export const irpfSeedMapper: TaxSeedMapper = {
     if (a.ticker) fields.ticker = a.ticker;
     if (a.quantity != null) fields.quantidade = String(a.quantity);
     if (a.institution) fields.instituicao = a.institution;
+    // Classes de CUSTO (ações, FIIs, imóveis, cripto…) declaram o valor APLICADO — que é o do IRPF.
+    // Quando o app tem esse custo, usa ele e NÃO marca "revisar" (já é o valor certo). Nas demais
+    // (conta, renda fixa) usa o saldo atual e marca "revisar" (confira se é o de 31/12).
+    const useCost = COST_BASED.has(a.classId) && a.cost != null && a.cost > 0;
     return {
       id: `irpf-${baseYear}-a-${a.id}`,
       baseYear,
@@ -142,8 +149,8 @@ export const irpfSeedMapper: TaxSeedMapper = {
       code,
       discriminacao: composeDiscriminacao("asset", group, fields, a.name),
       currency: a.currency,
-      valorAnoBase: a.amount,
-      needsReview: true,
+      valorAnoBase: useCost ? a.cost! : a.amount,
+      needsReview: !useCost,
       country: a.regionId,
       institution: a.institution,
       fields,
