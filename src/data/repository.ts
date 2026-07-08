@@ -45,8 +45,9 @@ export interface DataRepository {
   seed(data: SeedData): Promise<void>;
   clearAll(): Promise<void>;
 
-  // Patrimônio
+  // Patrimônio — listAssets = só ATIVOS (não vendidos); listAllAssets inclui os vendidos (IRPF/backup).
   listAssets(): Promise<Asset[]>;
+  listAllAssets(): Promise<Asset[]>;
   putAsset(asset: Asset): Promise<void>;
   removeAsset(id: string): Promise<void>;
   listLiabilities(): Promise<Liability[]>;

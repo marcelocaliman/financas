@@ -18,7 +18,8 @@ function num(n: number | undefined): string {
   return n == null || !Number.isFinite(n) ? "" : n.toFixed(2).replace(".", ",");
 }
 /** Marca o que mudou desde o ano anterior (direciona o esforço do contador). */
-export function changeFlag(it: TaxItem): "NOVO" | "ALTERADO" | "" {
+export function changeFlag(it: TaxItem): "NOVO" | "ALTERADO" | "VENDIDO" | "" {
+  if (it.disposed) return "VENDIDO";
   if (it.valorAnoAnterior == null) return "NOVO";
   if (it.valorAnoBase !== it.valorAnoAnterior) return "ALTERADO";
   return "";
@@ -37,12 +38,20 @@ export function buildBensCSV(items: TaxItem[]): string {
   const bens = items.filter((i) => i.kind === "asset").sort(byCode);
   const rows = bens.map((it, i) => {
     const foreign = isForeignCurrency(it.currency);
+    // Vendido: a coluna de 31/12 do ano-base é 0 POR REGRA (não se possui mais); a história da venda
+    // (data/valor/comprador) já está na discriminação. Alerta de ganho de capital na observação.
+    const baseBrl = it.disposed ? 0 : brlValue(it, "base");
+    const obs = it.disposed
+      ? "VENDIDO — situação em 31/12 = 0; apurar ganho de capital (GCAP) com o contador"
+      : foreign
+        ? "Exterior — R$ informado manualmente (custo na data da compra; confira com o contador)"
+        : "";
     return [
       i + 1, changeFlag(it), it.group, groupName(it.group), it.code, codeName(it.group, it.code),
       it.country ?? "", it.fields.cnpj ?? "", it.discriminacao,
-      foreign ? it.currency : "", foreign ? num(it.valorAnoBase) : "",
-      num(brlValue(it, "prev")), num(brlValue(it, "base")),
-      foreign ? "Exterior — R$ informado manualmente (custo na data da compra; confira com o contador)" : "",
+      foreign ? it.currency : "", foreign && !it.disposed ? num(it.valorAnoBase) : "",
+      num(brlValue(it, "prev")), num(baseBrl),
+      obs,
     ].map(cell).join(";");
   });
   return BOM + head.join(";") + "\n" + rows.join("\n");

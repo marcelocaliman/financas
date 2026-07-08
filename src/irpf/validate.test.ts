@@ -28,6 +28,10 @@ describe("itemIssues", () => {
   it("countPending conta itens com ao menos 1 pendência", () => {
     expect(countPending([item(), item({ code: "" })])).toBe(1);
   });
+  it("bem VENDIDO (base 0) não é pendência de valor nem de BRL do exterior", () => {
+    expect(itemIssues(item({ disposed: true, valorAnoBase: 0 }))).not.toContain("no-value");
+    expect(itemIssues(item({ disposed: true, valorAnoBase: 0, currency: "USD" }))).not.toContain("foreign-no-brl");
+  });
 });
 
 describe("diffPatrimonio", () => {
@@ -40,6 +44,10 @@ describe("diffPatrimonio", () => {
   });
   it("item manual nunca vira órfão", () => {
     const d = diffPatrimonio([item({ id: "m", source: "manual" })], [], []);
+    expect(d.orphans).toEqual([]);
+  });
+  it("bem VENDIDO não vira órfão (a venda é intencional, já tratada)", () => {
+    const d = diffPatrimonio([item({ id: "v", sourceId: "aX", source: "seed-asset", disposed: true })], [], []);
     expect(d.orphans).toEqual([]);
   });
 });

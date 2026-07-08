@@ -174,9 +174,11 @@ export function buildSeed(main: Currency): SeedData {
       { id: "a-reserva", name: "", classId: CLASS.caixa, subtypeId: "caixa-5", regionId: rMain, currency: main, amount: m(10700) },
       { id: "a-cc", name: "", classId: CLASS.caixa, subtypeId: "caixa-1", regionId: rMain, currency: main, amount: m(2150) },
       { id: "a-cx-intl", name: "", classId: CLASS.caixa, subtypeId: "caixa-3", regionId: rC2, currency: c2, amount: f2(18000) },
-      // ── Bens & Imóveis ──
-      { id: "a-imovel", name: "", classId: CLASS.imoveis, subtypeId: "imoveis-1", regionId: rMain, currency: main, amount: m(37500) },
+      // ── Bens & Imóveis ── (imóvel com data de aquisição → alimenta a discriminação do IRPF)
+      { id: "a-imovel", name: "", classId: CLASS.imoveis, subtypeId: "imoveis-1", regionId: rMain, currency: main, amount: m(37500), acquiredOn: "2020-03-15" },
       { id: "a-carro", name: "", classId: CLASS.bens, subtypeId: "bens-1", regionId: rMain, currency: main, amount: m(8000) },
+      // ── Vendido no ano (fica na seção "Vendidos", fora do patrimônio ativo; vai ao IRPF do ano) ──
+      { id: "a-vendido", name: "", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: rMain, currency: main, amount: m(3000), cost: m(2000), acquiredOn: "2021-06-01", disposedOn: `${new Date().getFullYear()}-02-10`, disposalValue: m(3400) },
     ],
     liabilities: [
       { id: "l1", name: "Financiamento do apê", typeId: LIABILITY_TYPE.financiamentoImobiliario, currency: main, amount: m(17000), interestRate: 9.5, installments: 156 },

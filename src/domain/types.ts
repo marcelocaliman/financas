@@ -30,6 +30,15 @@ export interface Asset {
   /** Valor aplicado/investido (custo), na moeda do ativo — p/ classes SEM ticker
    *  (renda fixa, outros). A rentabilidade = (valor atual − aplicado) / aplicado. */
   cost?: number;
+  /** Data de aquisição "AAAA-MM-DD" (opcional) — alimenta a discriminação do IRPF e diz se o bem
+   *  foi comprado NO ano. Faz sentido em bens únicos (imóvel, veículo, uma posição específica). */
+  acquiredOn?: string;
+  /** Data da VENDA/baixa "AAAA-MM-DD". Presente ⇒ bem VENDIDO: sai do patrimônio ativo (não conta no
+   *  líquido/alocação/FIRE), mas fica guardado p/ o IRPF (ficha do ano da venda). Ver [[pivot-totais-sem-cotacao]]. */
+  disposedOn?: string;
+  /** Valor RECEBIDO na venda, na moeda do ativo (opcional) — vai à discriminação/ganho de capital do
+   *  IRPF, NUNCA vira "valor do bem". */
+  disposalValue?: number;
 }
 
 export interface Expense {

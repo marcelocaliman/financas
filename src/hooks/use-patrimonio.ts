@@ -7,7 +7,7 @@ export interface PatrimonioData {
   liabilities: Liability[];
 }
 
-/** Ativos + passivos, reativos (useLiveQuery). `null` enquanto carrega. */
+/** Ativos + passivos, reativos (useLiveQuery). `null` enquanto carrega. Só ATIVOS (sem vendidos). */
 export function usePatrimonio(): PatrimonioData | null {
   const data = useLiveQuery(async () => {
     const [assets, liabilities] = await Promise.all([
@@ -18,4 +18,10 @@ export function usePatrimonio(): PatrimonioData | null {
   });
 
   return data ?? null;
+}
+
+/** Bens VENDIDOS/baixados (disposedOn presente), reativos. `null` enquanto carrega. */
+export function useDisposedAssets(): Asset[] | null {
+  const data = useLiveQuery(() => repository.listAllAssets());
+  return data ? data.filter((a) => a.disposedOn) : null;
 }

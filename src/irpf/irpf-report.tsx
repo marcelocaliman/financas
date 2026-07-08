@@ -35,20 +35,26 @@ function ItemBlock({ it, year, debt }: { it: TaxItem; year: number; debt?: boole
   const foreign = isForeignCurrency(it.currency);
   const flag = changeFlag(it);
   const nome = debt ? codeName("", it.code, "debt") : codeName(it.group, it.code);
+  // Vendido: coluna de 31/12 do ano-base = 0 POR REGRA; a história da venda vive na discriminação.
+  const baseVal = it.disposed ? 0 : brlValue(it, "base");
   return (
     <div style={{ border: `1px solid ${LINE}`, borderRadius: "5px", padding: "7px 9px", marginBottom: "5px", pageBreakInside: "avoid" }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginBottom: "3px" }}>
         <div style={{ fontFamily: MONO, fontSize: "8.5px", color: MUTED }}>
           {debt ? `Código ${it.code}` : `Grupo ${it.group} · Código ${it.code}`}{nome ? ` — ${nome}` : ""}{it.country ? ` · ${it.country}` : ""}
         </div>
-        {flag ? <span style={{ fontFamily: MONO, fontSize: "7.5px", fontWeight: 700, color: POS, whiteSpace: "nowrap" }}>• {flag}</span> : null}
+        {flag ? <span style={{ fontFamily: MONO, fontSize: "7.5px", fontWeight: 700, color: flag === "VENDIDO" ? AMBER : POS, whiteSpace: "nowrap" }}>• {flag}</span> : null}
       </div>
       <div style={{ fontSize: "10px", marginBottom: "4px" }}>{it.discriminacao || <span style={{ color: FAINT }}>[discriminação a preencher]</span>}</div>
       <div style={{ display: "flex", gap: "18px", fontSize: "9.5px", color: MUTED, fontVariantNumeric: "tabular-nums" }}>
         <span>Situação 31/12/{year - 1}: <b style={{ color: INK }}>{fmt(brlValue(it, "prev"))}</b></span>
-        <span>Situação 31/12/{year}: <b style={{ color: INK }}>{fmt(brlValue(it, "base"))}</b></span>
+        <span>Situação 31/12/{year}: <b style={{ color: INK }}>{fmt(baseVal)}</b></span>
       </div>
-      {foreign ? (
+      {it.disposed ? (
+        <div style={{ fontSize: "8.5px", color: AMBER, marginTop: "3px" }}>
+          Bem vendido no ano — situação em 31/12/{year} = R$ 0,00. Apurar ganho de capital (GCAP) no mês da venda; confira com o contador.
+        </div>
+      ) : foreign ? (
         <div style={{ fontSize: "8.5px", color: AMBER, marginTop: "3px" }}>
           Exterior: {it.currency} {numBR(it.valorAnoBase)} · o R$ é o custo de aquisição pela PTAX da data da compra{it.fxNote ? ` (${it.fxNote})` : ""} — confirme com o contador.
         </div>
@@ -66,7 +72,7 @@ export function IrpfReport({ year }: { year: number }) {
 
   const bens = items.filter((i) => i.kind === "asset");
   const dividas = items.filter((i) => i.kind === "debt").sort((a, b) => a.code.localeCompare(b.code));
-  const totalBase = bens.reduce((s, it) => s + (brlValue(it, "base") ?? 0), 0);
+  const totalBase = bens.reduce((s, it) => s + (it.disposed ? 0 : brlValue(it, "base") ?? 0), 0);
   const totalPrev = bens.reduce((s, it) => s + (brlValue(it, "prev") ?? 0), 0);
   const totalDiv = dividas.reduce((s, it) => s + (brlValue(it, "base") ?? 0), 0);
   const byGroup = BENS_GROUPS

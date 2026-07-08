@@ -12,6 +12,7 @@ describe("changeFlag / brlValue", () => {
     expect(changeFlag(it_({ valorAnoAnterior: undefined }))).toBe("NOVO");
     expect(changeFlag(it_({ valorAnoAnterior: 900, valorAnoBase: 1000 }))).toBe("ALTERADO");
     expect(changeFlag(it_({ valorAnoAnterior: 1000, valorAnoBase: 1000 }))).toBe("");
+    expect(changeFlag(it_({ disposed: true, valorAnoBase: 0, valorAnoAnterior: 900 }))).toBe("VENDIDO");
   });
   it("exterior usa o R$ manual (valorBrl*), não o valor na moeda", () => {
     const foreign = it_({ currency: "USD", valorAnoBase: 5000, valorBrlAnoBase: 26000 });
@@ -34,6 +35,12 @@ describe("buildBensCSV", () => {
     expect(csv).toContain("Exterior");
     // sem R$ manual → as duas colunas de situação em BRL ficam VAZIAS (;;) antes da observação
     expect(csv).toContain(';;"Exterior');
+  });
+  it("bem VENDIDO: flag VENDIDO, situação do ano-base = 0 e observação de ganho de capital", () => {
+    const csv = buildBensCSV([it_({ group: "01", code: "12", disposed: true, valorAnoBase: 0, valorAnoAnterior: 300000, discriminacao: "Apê — VENDIDO" })]);
+    expect(csv).toContain("VENDIDO");
+    expect(csv).toContain("300000,00;0,00"); // anterior = custo; ano-base = 0
+    expect(csv).toContain("ganho de capital");
   });
 });
 

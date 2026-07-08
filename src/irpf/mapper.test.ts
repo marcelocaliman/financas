@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { irpfSeedMapper } from "./mapper";
+import { irpfSeedMapper, applyDisposal, findUnmarkedDisposals } from "./mapper";
 import { codeName, groupName, isForeignCurrency, DIVIDAS_CODES } from "./codes";
 import { buildSeedTaxItems } from "@/finance/irpf-seed";
 import type { Asset, Liability } from "@/domain/types";
@@ -56,6 +56,38 @@ describe("irpfSeedMapper (classe → código oficial)", () => {
     const conta = irpfSeedMapper.asset(asset({ classId: "caixa", amount: 5000, cost: 5000 }), 2025);
     expect(conta.valorAnoBase).toBe(5000);   // saldo (caixa não é classe de custo)
     expect(conta.needsReview).toBe(true);    // confirme se é o de 31/12
+  });
+
+  it("bem VENDIDO no ano-base: coluna do ano-base = 0, anterior = custo, disposed + venda na discriminação", () => {
+    const it = irpfSeedMapper.asset(
+      asset({ classId: "imoveis", amount: 500000, cost: 300000, disposedOn: "2025-06-15", disposalValue: 550000 }),
+      2025,
+    );
+    expect(it.valorAnoBase).toBe(0);          // não se possui mais em 31/12
+    expect(it.valorAnoAnterior).toBe(300000); // custo fica na coluna do ano anterior
+    expect(it.disposed).toBe(true);
+    expect(it.needsReview).toBe(false);
+    expect(it.discriminacao).toContain("VENDIDO");
+    expect(it.discriminacao).toContain("2025-06-15");
+  });
+
+  it("bem vendido em ano DIFERENTE do ano-base não é tratado como venda", () => {
+    const it = irpfSeedMapper.asset(asset({ classId: "acoes", amount: 1000, cost: 900, disposedOn: "2026-03-01" }), 2025);
+    expect(it.disposed).toBeUndefined();      // vendido em 2026 → em 2025 ainda era seu
+    expect(it.valorAnoBase).toBe(900);
+  });
+
+  it("findUnmarkedDisposals/applyDisposal: item que rolou e o bem foi vendido este ano vira vendido", () => {
+    const rolled = irpfSeedMapper.asset(asset({ id: "a9", classId: "acoes", amount: 1000, cost: 900 }), 2025);
+    expect(rolled.disposed).toBeUndefined();
+    const soldAsset = asset({ id: "a9", classId: "acoes", amount: 1000, cost: 900, disposedOn: "2025-08-01", disposalValue: 1200 });
+    const out = findUnmarkedDisposals([rolled], [soldAsset], 2025);
+    expect(out).toHaveLength(1);
+    expect(out[0].disposed).toBe(true);
+    expect(out[0].valorAnoBase).toBe(0);
+    expect(out[0].fields.dataVenda).toBe("2025-08-01");
+    // já marcado como vendido não reaparece
+    expect(findUnmarkedDisposals([applyDisposal(rolled, soldAsset)], [soldAsset], 2025)).toHaveLength(0);
   });
 
   it("bem no exterior guarda moeda de origem + país e NÃO tem BRL calculado", () => {

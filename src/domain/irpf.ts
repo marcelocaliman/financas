@@ -15,6 +15,9 @@ export interface TaxReturn {
   reportingCurrency: Currency;
   status: "draft" | "ready";
   notes?: string;
+  /** Quando a posição de 31/12 foi CONGELADA ("Fechar o ano") — timestamp. Ausente = ano ainda aberto.
+   *  Depois de fechado, o app para de lembrar e mostra o selo "posição fechada em DD/MM". */
+  closedAt?: number;
   /** last-write-wins do sync. */
   updatedAt: number;
 }
@@ -45,6 +48,10 @@ export interface TaxItem {
   /** O valor ainda é o "de hoje" (auto-puxado do patrimônio), não confirmado pro fim do ano →
    *  a UI mostra pill âmbar "revisar". Some quando o usuário toca no valor. */
   needsReview?: boolean;
+  /** Bem ALIENADO/vendido no ano-base: a coluna de 31/12 do ano-base = 0 (não se possui mais em
+   *  31/12), a do ano anterior mantém o custo, e a discriminação conta a venda (data/valor/comprador
+   *  nos `fields`). Dispara alerta de GANHO DE CAPITAL — o app NÃO calcula (é com o contador). */
+  disposed?: boolean;
   // Exterior (currency ≠ BRL): o valor em BRL que VAI pra declaração é SEMPRE manual/confirmado —
   // a regra é custo de aquisição pelo câmbio da DATA DA COMPRA, que o app NUNCA auto-calcula.
   valorBrlAnoBase?: number;

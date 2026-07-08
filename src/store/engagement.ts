@@ -19,10 +19,13 @@ interface EngagementState {
   lastWrappedMonth: string | null;
   /** Mês (AAAA-MM) da última atualização de saldos (ou nudge dispensado) — nudge 1× por mês. */
   lastBalanceMonth: string | null;
+  /** Ano cujo lembrete de "Fechar o ano" (IRPF) foi dispensado — some até virar a próxima janela. */
+  dismissedIrpfClose: number | null;
   markVisit: () => void;
   dismissTip: (id: string) => void;
   setWrapped: (month: string) => void;
   setBalancesUpdated: (month: string) => void;
+  dismissIrpfClose: (year: number) => void;
   /** Semeia os marcos JÁ batidos sem comemorar (só na 1ª vez). */
   initMilestones: (keys: string[]) => void;
   /** Marca marcos como vistos (após comemorar). */
@@ -38,10 +41,12 @@ export const useEngagement = create<EngagementState>()(
       dismissedTip: null,
       lastWrappedMonth: null,
       lastBalanceMonth: null,
+      dismissedIrpfClose: null,
       markVisit: () => set({ lastVisit: Date.now() }),
       dismissTip: (id) => set({ dismissedTip: id }),
       setWrapped: (month) => set({ lastWrappedMonth: month }),
       setBalancesUpdated: (month) => set({ lastBalanceMonth: month }),
+      dismissIrpfClose: (year) => set({ dismissedIrpfClose: year }),
       initMilestones: (keys) =>
         set((s) => (s.milestonesInitialized ? s : { milestonesInitialized: true, seenMilestones: keys })),
       markMilestones: (keys) =>

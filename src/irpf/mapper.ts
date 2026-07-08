@@ -1,5 +1,6 @@
 import { CLASS, LIABILITY_TYPE } from "@/domain/taxonomy";
-import type { Liability } from "@/domain/types";
+import type { Asset, Liability } from "@/domain/types";
+import type { TaxItem } from "@/domain/irpf";
 import type { TaxSeedMapper } from "@/finance/irpf-seed";
 
 // Mapa "classe do patrimônio → grupo/código do IRPF" (SUGESTÃO editável na UI) + templates de
@@ -99,10 +100,27 @@ export const FIELDS_BY_GROUP: Record<string, IrpfField[]> = {
 };
 export const FIELDS_DEBT: IrpfField[] = [{ key: "instituicao", label: "Credor" }, { key: "cnpj", label: "CNPJ/CPF do credor" }];
 
+/** Campos EXTRA de um bem vendido/alienado (a coluna do ano-base já é 0; isto vai à discriminação). */
+export const DISPOSAL_FIELDS: IrpfField[] = [
+  { key: "dataVenda", label: "Data da venda" },
+  { key: "valorVenda", label: "Valor da venda" },
+  { key: "comprador", label: "Comprador (nome e CPF/CNPJ)", wide: true },
+];
+
 /** Campos do item — sempre começa por "Nome/descrição" (que alimenta a discriminação), + os do grupo. */
 export function fieldsFor(kind: "asset" | "debt", group: string): IrpfField[] {
   const base = kind === "debt" ? FIELDS_DEBT : (FIELDS_BY_GROUP[group] ?? FIELDS_BY_GROUP["99"]);
   return [{ key: "nome", label: kind === "debt" ? "Nome da dívida" : "Nome / descrição", wide: true }, ...base];
+}
+
+/** Frase da alienação anexada à discriminação de um bem vendido — NUNCA inventa comprador. */
+export function saleSuffix(f: Record<string, string>): string {
+  const parts = [
+    f.dataVenda?.trim() ? `alienado em ${f.dataVenda.trim()}` : "alienado no ano",
+    f.valorVenda?.trim() ? `por ${f.valorVenda.trim()}` : "",
+    `comprador ${f.comprador?.trim() || "[nome e CPF/CNPJ]"}`,
+  ].filter(Boolean);
+  return ` — VENDIDO: ${parts.join(", ")}. Apurar ganho de capital (GCAP) com o contador.`;
 }
 
 /** Monta a discriminação a partir dos campos — lacunas explícitas [campo] pro que falta, NUNCA inventa.
@@ -110,7 +128,13 @@ export function fieldsFor(kind: "asset" | "debt", group: string): IrpfField[] {
 export function composeDiscriminacao(kind: "asset" | "debt", group: string, f: Record<string, string>, name = ""): string {
   const g = (k: string, ph: string) => (f[k]?.trim() ? f[k].trim() : `[${ph}]`);
   const nm = (name || f.nome || "").trim();
+  // Bem alienado: anexa a história da venda ao texto normal do bem (a coluna do ano-base já é 0).
+  const sold = f.dataVenda != null ? saleSuffix(f) : "";
   if (kind === "debt") return `${nm || "Dívida"} — credor ${g("instituicao", "credor")}, CNPJ/CPF ${g("cnpj", "CNPJ/CPF")}`;
+  return baseDiscriminacao(group, nm, f, g) + sold;
+}
+
+function baseDiscriminacao(group: string, nm: string, f: Record<string, string>, g: (k: string, ph: string) => string): string {
   switch (group) {
     case "01": return `${nm || "Imóvel"} — endereço ${g("endereco", "endereço")}, matrícula ${g("matricula", "matrícula")}${f.area?.trim() ? `, ${f.area.trim()} m²` : ""}`;
     case "02": return `${nm || "Bem"} — identificação ${g("identificacao", "placa/RENAVAM/chassi")}`;
@@ -130,6 +154,9 @@ const COST_BASED = new Set<string>([CLASS.acoes, CLASS.fiis, CLASS.privateEquity
  * guardam a moeda de origem + o país; o valor em BRL fica MANUAL (a UI mostra o aviso da regra —
  * custo de aquisição na data da compra, que o app não auto-calcula).
  */
+/** Bem vendido/baixado NO ano-base (disposedOn no mesmo ano). */
+const soldInYear = (a: Asset, baseYear: number) => a.disposedOn != null && Number(a.disposedOn.slice(0, 4)) === baseYear;
+
 export const irpfSeedMapper: TaxSeedMapper = {
   asset: (a, baseYear) => {
     const { group, code } = SUBTYPE_TO_CODE[a.subtypeId ?? ""] ?? CLASS_TO_CODE[a.classId] ?? { group: "99", code: "99" };
@@ -137,6 +164,14 @@ export const irpfSeedMapper: TaxSeedMapper = {
     if (a.ticker) fields.ticker = a.ticker;
     if (a.quantity != null) fields.quantidade = String(a.quantity);
     if (a.institution) fields.instituicao = a.institution;
+    if (a.acquiredOn) fields.dataAquisicao = a.acquiredOn;
+    // Vendido no ano-base: coluna de 31/12 do ano-base = 0 (não se possui mais); a do ano anterior
+    // fica o custo; a discriminação conta a venda; alerta de ganho de capital (o app NÃO calcula).
+    const sold = soldInYear(a, baseYear);
+    if (sold) {
+      fields.dataVenda = a.disposedOn!;
+      if (a.disposalValue != null) fields.valorVenda = String(a.disposalValue);
+    }
     // Classes de CUSTO (ações, FIIs, imóveis, cripto…) declaram o valor APLICADO — que é o do IRPF.
     // Quando o app tem esse custo, usa ele e NÃO marca "revisar" (já é o valor certo). Nas demais
     // (conta, renda fixa) usa o saldo atual e marca "revisar" (confira se é o de 31/12).
@@ -149,8 +184,10 @@ export const irpfSeedMapper: TaxSeedMapper = {
       code,
       discriminacao: composeDiscriminacao("asset", group, fields, a.name),
       currency: a.currency,
-      valorAnoBase: useCost ? a.cost! : a.amount,
-      needsReview: !useCost,
+      valorAnoBase: sold ? 0 : useCost ? a.cost! : a.amount,
+      valorAnoAnterior: sold ? a.cost : undefined,
+      disposed: sold || undefined,
+      needsReview: sold ? false : !useCost,
       country: a.regionId,
       institution: a.institution,
       fields,
@@ -173,3 +210,29 @@ export const irpfSeedMapper: TaxSeedMapper = {
     sourceId: l.id,
   }),
 };
+
+/** Aplica o tratamento de VENDA a um item já existente (ex.: veio do roll-forward e o bem foi vendido
+ *  este ano): zera a coluna do ano-base, mantém a do ano anterior como base (custo), anexa a venda à
+ *  discriminação e marca disposed. Preserva a discriminação se o usuário a travou editando à mão. */
+export function applyDisposal(item: TaxItem, asset: Asset): TaxItem {
+  const fields: Record<string, string> = { ...item.fields, dataVenda: asset.disposedOn ?? item.fields.dataVenda ?? "" };
+  if (asset.disposalValue != null) fields.valorVenda = String(asset.disposalValue);
+  return {
+    ...item,
+    disposed: true,
+    valorAnoBase: 0,
+    valorAnoAnterior: item.valorAnoAnterior ?? item.valorAnoBase ?? asset.cost,
+    needsReview: false,
+    fields,
+    discriminacao: item.discriminacaoLocked ? item.discriminacao : composeDiscriminacao(item.kind, item.group, fields),
+  };
+}
+
+/** Itens JÁ na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados como
+ *  vendidos (ex.: rolaram do ano anterior e a venda aconteceu depois) → versões já com o tratamento. */
+export function findUnmarkedDisposals(items: TaxItem[], assets: Asset[], baseYear: number): TaxItem[] {
+  const sold = new Map(assets.filter((a) => soldInYear(a, baseYear)).map((a) => [a.id, a]));
+  return items
+    .filter((i) => !i.disposed && i.sourceId != null && sold.has(i.sourceId))
+    .map((i) => applyDisposal(i, sold.get(i.sourceId!)!));
+}

@@ -20,6 +20,7 @@ import { CardSubNav } from "@/components/common/card-sub-nav";
 import { useBalanceUpdater } from "@/store/balance-updater";
 import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { DataGrid, type GridColumn, type SelectOption } from "@/components/grid/data-grid";
+import { AssetDetailPanel, DisposedAssetsSection } from "@/components/patrimonio/asset-disposal";
 import Investimentos from "./investimentos";
 import { cn } from "@/lib/utils";
 
@@ -319,9 +320,14 @@ export default function Patrimonio() {
               onDelete={(id) => void actions.removeAsset(id)}
               addPlaceholder={t("patrimonio.addAsset")}
               total={<Money value={macroTotal} currency={disp} />}
+              expandableRow={() => true}
+              renderRowDetail={(a) => <AssetDetailPanel asset={a} />}
             />
           </div>
         </div>
+
+        {/* Bens vendidos/baixados — guardados p/ o IRPF do ano da venda (não somem do app). */}
+        <DisposedAssetsSection />
       </section>
 
       {/* Investimentos — rebalanceamento, rentabilidade e proventos (fundido nesta aba) */}

@@ -118,3 +118,15 @@ export function isForeignCurrency(currency: string): boolean {
 export function defaultBaseYear(now = new Date()): number {
   return now.getMonth() + 1 >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 }
+
+/**
+ * Janela de "Fechar o ano" (congelar a posição de 31/12): dezembro → março do ano seguinte — informe
+ * de rendimentos e preços de fechamento só saem em jan/fev, então não se tranca num dia só. Retorna o
+ * ANO cuja posição fechar (dez → ano atual; jan–mar → ano anterior), ou null fora da janela.
+ */
+export function yearCloseWindow(now = new Date()): number | null {
+  const m = now.getMonth() + 1; // 1..12
+  if (m === 12) return now.getFullYear();
+  if (m <= 3) return now.getFullYear() - 1;
+  return null;
+}

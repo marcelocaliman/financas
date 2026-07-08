@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -8,12 +8,12 @@ import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
-import { irpfSeedMapper, composeDiscriminacao, fieldsFor } from "@/irpf/mapper";
+import { irpfSeedMapper, composeDiscriminacao, fieldsFor, findUnmarkedDisposals, DISPOSAL_FIELDS } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
 import { buildBensCSV, buildDividasCSV, downloadCSV, parseIrpfImport, IRPF_IMPORT_TEMPLATE } from "@/irpf/irpf-csv";
 import { IrpfReport } from "@/irpf/irpf-report";
-import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear } from "@/irpf/codes";
+import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear, yearCloseWindow } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { nameById } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
@@ -127,15 +127,27 @@ function LockedPreview({ onUpgrade }: { onUpgrade: () => void }) {
 
 /** O organizador em si (Pro): disclaimer + puxar + lista editável agrupada. */
 function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | null; returns: TaxReturn[] | null }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [busy, setBusy] = useState(false);
-  const assets = useLiveQuery(() => repository.listAssets()) ?? [];
+  const allAssets = useLiveQuery(() => repository.listAllAssets()) ?? [];
   const liabilities = useLiveQuery(() => repository.listLiabilities()) ?? [];
   const list = useMemo(() => items ?? [], [items]);
-  const diff = useMemo(() => diffPatrimonio(list, assets, liabilities), [list, assets, liabilities]);
+  // Bens vendidos ANTES do ano-base já saíram (não entram). Vendidos no ano-base ou depois ainda
+  // interessam (no ano ⇒ ficha com base 0; depois ⇒ ainda eram seus em 31/12 ⇒ bem normal).
+  const relevantAssets = useMemo(
+    () => allAssets.filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year),
+    [allAssets, year],
+  );
+  const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
+  // Bens já na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados (roll-forward).
+  const unmarkedDisposals = useMemo(() => findUnmarkedDisposals(list, relevantAssets, year), [list, relevantAssets, year]);
   const pending = countPending(list);
   const newCount = diff.newAssets.length + diff.newLiabilities.length;
   const needsReviewCount = list.filter((i) => i.needsReview).length;
+  const thisReturn = useMemo(() => (returns ?? []).find((r) => r.baseYear === year), [returns, year]);
+  const closedAt = thisReturn?.closedAt;
+  // Estamos na janela de fechar a posição de 31/12 deste ano e ele ainda não foi fechado?
+  const showCloseReminder = yearCloseWindow() === year && !closedAt;
   const priorYear = useMemo(() => {
     const ys = (returns ?? []).map((r) => r.baseYear).filter((y) => y < year);
     return ys.length ? Math.max(...ys) : null;
@@ -150,20 +162,47 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     }
   }
 
+  /** Sincroniza os itens a partir do patrimônio: novos bens + vendas do ano (base 0). Não mexe no busy. */
+  async function syncFromPatrimonio() {
+    const [curAssets, curLiabs, existing] = await Promise.all([
+      repository.listAllAssets(),
+      repository.listLiabilities(),
+      repository.listTaxItems(year),
+    ]);
+    const relevant = curAssets.filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year);
+    const fresh = buildSeedTaxItems(year, relevant, curLiabs, existing, irpfSeedMapper);
+    // Bens que já estavam na lista e foram vendidos este ano → aplica o tratamento de venda.
+    const disposals = findUnmarkedDisposals(existing, relevant, year);
+    const toWrite = [...fresh, ...disposals];
+    if (toWrite.length) await actions.putTaxItems(toWrite);
+  }
+
   async function pull() {
     setBusy(true);
     try {
       await ensureReturn();
-      const [curAssets, curLiabs, existing] = await Promise.all([
-        repository.listAssets(),
-        repository.listLiabilities(),
-        repository.listTaxItems(year),
-      ]);
-      const fresh = buildSeedTaxItems(year, curAssets, curLiabs, existing, irpfSeedMapper);
-      if (fresh.length) await actions.putTaxItems(fresh);
+      await syncFromPatrimonio();
     } finally {
       setBusy(false);
     }
+  }
+
+  /** Fechar o ano: congela a posição de 31/12 (puxa do patrimônio) e carimba o ano como fechado. */
+  async function closeYear() {
+    setBusy(true);
+    try {
+      await ensureReturn();
+      await syncFromPatrimonio();
+      const tr = await repository.getTaxReturn(String(year));
+      if (tr) await actions.putTaxReturn({ ...tr, closedAt: Date.now(), updatedAt: Date.now() });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Registra as vendas dos bens que já estavam na lista (um clique) — base 0 + história da venda. */
+  async function markDisposals() {
+    if (unmarkedDisposals.length) await actions.putTaxItems(unmarkedDisposals);
   }
 
   /** Traz os itens do ano anterior: o valor de 31/12 vira a coluna "ano anterior" e você só atualiza o novo. */
@@ -198,6 +237,27 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       currency: "BRL",
       valorAnoBase: 0,
       fields: {},
+      source: "manual",
+      createdAt: Date.now(),
+    });
+  }
+
+  /** Bem comprado E vendido no mesmo ano (nunca tocou um 31/12): as duas colunas ficam 0, a operação
+   *  inteira vai na discriminação. O app não vê isso pelos saldos → registro manual. */
+  async function addSold() {
+    await ensureReturn();
+    await actions.putTaxItem({
+      id: crypto.randomUUID(),
+      baseYear: year,
+      kind: "asset",
+      group: "",
+      code: "",
+      discriminacao: "",
+      currency: "BRL",
+      valorAnoBase: 0,
+      valorAnoAnterior: 0,
+      disposed: true,
+      fields: { dataVenda: "", valorVenda: "", comprador: "" },
       source: "manual",
       createdAt: Date.now(),
     });
@@ -261,6 +321,28 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : null}
 
+      {/* Fechar o ano: lembrete na janela (dez–mar) + selo quando fechado */}
+      {showCloseReminder ? (
+        <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--accent)_38%,transparent)] bg-accent-soft px-4 py-2.5 text-[12.5px] text-muted">
+          <CalendarClock size={15} className="text-accent shrink-0" />
+          <span className="flex-1 min-w-[240px]">{t("irpf.closeReminder", { year })}</span>
+          <button
+            type="button"
+            onClick={closeYear}
+            disabled={busy}
+            className="shrink-0 h-8 px-3 rounded-[8px] bg-accent text-[#08130C] text-[12px] font-semibold hover:opacity-90 disabled:opacity-60 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {t("irpf.closeYear")}
+          </button>
+        </div>
+      ) : null}
+      {closedAt ? (
+        <div className="flex items-center gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
+          <ShieldCheck size={15} className="text-accent shrink-0" />
+          <span>{t("irpf.closedSeal", { year, date: new Date(closedAt).toLocaleDateString(i18n.language === "en" ? "en-US" : "pt-BR") })}</span>
+        </div>
+      ) : null}
+
       {/* Ações */}
       <div className="flex flex-wrap items-center gap-2.5">
         <button
@@ -277,6 +359,13 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
         >
           <Plus size={15} /> {t("irpf.addItem")}
+        </button>
+        <button
+          type="button"
+          onClick={addSold}
+          className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          <Tag size={15} /> {t("irpf.addSold")}
         </button>
         <button type="button" onClick={downloadTemplate} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
           <FileDown size={15} /> {t("irpf.importTemplate")}
@@ -297,6 +386,19 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         ) : null}
       </div>
 
+      {unmarkedDisposals.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
+          <Tag size={15} className="text-[#e0a33c] shrink-0" />
+          <span className="flex-1 min-w-[240px]">{t("irpf.disposalBanner", { n: unmarkedDisposals.length })}</span>
+          <button
+            type="button"
+            onClick={markDisposals}
+            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {t("irpf.disposalMark")}
+          </button>
+        </div>
+      ) : null}
       {needsReviewCount > 0 ? (
         <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
           <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" />
@@ -425,7 +527,8 @@ function Row({ item }: { item: TaxItem }) {
   const patch = (p: Partial<TaxItem>) => void actions.putTaxItem({ ...item, ...p });
   const [fields, setFields] = useState<Record<string, string>>(item.fields);
   const [disc, setDisc] = useState(item.discriminacao);
-  const schema = fieldsFor(item.kind, item.group);
+  // Bem vendido ganha campos extra da alienação (data/valor/comprador) que entram na discriminação.
+  const schema = item.disposed ? [...fieldsFor(item.kind, item.group), ...DISPOSAL_FIELDS] : fieldsFor(item.kind, item.group);
 
   /** Recompõe a discriminação a partir dos campos, exceto se o usuário travou editando à mão. */
   const regen = (f: Record<string, string>, group = item.group) =>
@@ -475,6 +578,11 @@ function Row({ item }: { item: TaxItem }) {
         <span className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[8px] bg-card2 text-[11px] font-mono uppercase tracking-[0.06em] text-muted">
           {foreign ? <Globe size={12} className="text-eur" /> : null}{item.currency}
         </span>
+        {item.disposed ? (
+          <span className="inline-flex items-center gap-1 h-8 px-2.5 rounded-[8px] bg-[color-mix(in_oklab,#e0a33c_14%,transparent)] text-[10.5px] font-mono uppercase tracking-[0.08em] text-[#e0a33c]">
+            <Tag size={11} /> {t("irpf.soldBadge")}
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={() => void actions.removeTaxItem(item.id)}
@@ -513,35 +621,56 @@ function Row({ item }: { item: TaxItem }) {
         />
       </div>
 
-      {/* Valores (na moeda do item) + âmbar "revisar"; exterior → BRL manual + aviso */}
-      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
-        <label className="text-[11px] text-faint">
-          <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
-          <div className="flex items-center gap-2">
-            <MoneyField value={item.valorAnoBase} amber={item.needsReview} onChange={(n) => patch({ valorAnoBase: n ?? 0, needsReview: false })} />
-            {item.needsReview ? (
-              <span title={t("irpf.reviewWhy", { year: item.baseYear })} className="text-[10.5px] font-medium text-[#e0a33c] whitespace-nowrap cursor-help underline decoration-dotted underline-offset-2">{t("irpf.review")}</span>
+      {item.disposed ? (
+        /* Bem VENDIDO: coluna do ano-base = 0 (regra); a do ano anterior mantém o custo. */
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+            <label className="text-[11px] text-faint">
+              <span className="block mb-1">{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
+              <MoneyField value={item.valorAnoAnterior} onChange={(n) => patch({ valorAnoAnterior: n })} />
+            </label>
+            <div className="text-[11px] text-faint">
+              <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })}</span>
+              <div className="h-9 flex items-center px-1 text-[13px] text-muted tabular">{t("irpf.soldZero")}</div>
+            </div>
+          </div>
+          <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
+            <AlertTriangle size={13} className="shrink-0 mt-0.5" /> {t("irpf.capitalGainWarn")}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Valores (na moeda do item) + âmbar "revisar"; exterior → BRL manual + aviso */}
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+            <label className="text-[11px] text-faint">
+              <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
+              <div className="flex items-center gap-2">
+                <MoneyField value={item.valorAnoBase} amber={item.needsReview} onChange={(n) => patch({ valorAnoBase: n ?? 0, needsReview: false })} />
+                {item.needsReview ? (
+                  <span title={t("irpf.reviewWhy", { year: item.baseYear })} className="text-[10.5px] font-medium text-[#e0a33c] whitespace-nowrap cursor-help underline decoration-dotted underline-offset-2">{t("irpf.review")}</span>
+                ) : null}
+              </div>
+            </label>
+
+            {foreign ? (
+              <label className="text-[11px] text-faint">
+                <span className="block mb-1">{t("irpf.valueBrl")}</span>
+                <MoneyField value={item.valorBrlAnoBase} onChange={(n) => patch({ valorBrlAnoBase: n })} />
+              </label>
             ) : null}
           </div>
-        </label>
 
-        {foreign ? (
-          <label className="text-[11px] text-faint">
-            <span className="block mb-1">{t("irpf.valueBrl")}</span>
-            <MoneyField value={item.valorBrlAnoBase} onChange={(n) => patch({ valorBrlAnoBase: n })} />
-          </label>
-        ) : null}
-      </div>
-
-      {foreign ? (
-        <div className="space-y-2">
-          <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
-            <Globe size={13} className="shrink-0 mt-0.5" /> {t("irpf.foreignWarn")}
-          </p>
-          <PtaxCalc item={item} onPick={(v, note) => patch({ valorBrlAnoBase: v, fxNote: note })} />
-          {item.fxNote ? <p className="text-[10.5px] text-faint">{t("irpf.fxUsed", { note: item.fxNote })}</p> : null}
-        </div>
-      ) : null}
+          {foreign ? (
+            <div className="space-y-2">
+              <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
+                <Globe size={13} className="shrink-0 mt-0.5" /> {t("irpf.foreignWarn")}
+              </p>
+              <PtaxCalc item={item} onPick={(v, note) => patch({ valorBrlAnoBase: v, fxNote: note })} />
+              {item.fxNote ? <p className="text-[10.5px] text-faint">{t("irpf.fxUsed", { note: item.fxNote })}</p> : null}
+            </div>
+          ) : null}
+        </>
+      )}
 
       {item.kind === "asset" && item.code ? (
         <p className="text-[11px] text-faint">{codeName(item.group, item.code)}</p>

@@ -49,7 +49,13 @@ export class DexieRepository implements DataRepository {
     });
   }
 
-  listAssets(): Promise<Asset[]> {
+  // Ponto ÚNICO de verdade: `listAssets` devolve só os ATIVOS (não vendidos) — assim TODO consumidor
+  // (líquido, FIRE, alocação, snapshot, saúde, painel) exclui os vendidos de graça. Quem precisa dos
+  // vendidos (IRPF, seção "Vendidos", backup) usa `listAllAssets`.
+  async listAssets(): Promise<Asset[]> {
+    return (await this.database.assets.toArray()).filter((a) => !a.disposedOn);
+  }
+  listAllAssets(): Promise<Asset[]> {
     return this.database.assets.toArray();
   }
   async putAsset(asset: Asset): Promise<void> {

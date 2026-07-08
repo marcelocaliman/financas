@@ -12,8 +12,10 @@ export function itemIssues(it: TaxItem): IrpfIssue[] {
   const out: IrpfIssue[] = [];
   const semCodigo = it.kind === "asset" ? !it.group || !it.code : !it.code;
   if (semCodigo) out.push("no-code");
-  if (!(it.valorAnoBase > 0)) out.push("no-value");
-  if (isForeignCurrency(it.currency) && it.valorBrlAnoBase == null) out.push("foreign-no-brl");
+  // Bem VENDIDO: a coluna do ano-base é 0 POR REGRA (não se possui em 31/12) e não precisa de BRL do
+  // ano-base — não é pendência. A história da venda vive na discriminação.
+  if (!it.disposed && !(it.valorAnoBase > 0)) out.push("no-value");
+  if (!it.disposed && isForeignCurrency(it.currency) && it.valorBrlAnoBase == null) out.push("foreign-no-brl");
   if (it.discriminacao.includes("[preencher")) out.push("incomplete");
   return out;
 }
@@ -38,6 +40,7 @@ export function diffPatrimonio(items: TaxItem[], assets: Asset[], liabilities: L
   return {
     newAssets: assets.filter((a) => !sourced.has(a.id)),
     newLiabilities: liabilities.filter((l) => !sourced.has(l.id)),
-    orphans: items.filter((i) => i.source !== "manual" && i.sourceId != null && !patrimonioIds.has(i.sourceId)),
+    // Vendido (disposed) NÃO é órfão — a venda é intencional e já tratada. Órfão = sumiu sem explicação.
+    orphans: items.filter((i) => !i.disposed && i.source !== "manual" && i.sourceId != null && !patrimonioIds.has(i.sourceId)),
   };
 }

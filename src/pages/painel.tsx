@@ -30,6 +30,7 @@ import { WelcomeBack } from "@/components/painel/welcome-back";
 import { MilestoneCelebration } from "@/components/painel/milestone-celebration";
 import { MonthWrap } from "@/components/painel/month-wrap";
 import { BalanceNudge } from "@/components/painel/balance-nudge";
+import { IrpfCloseNudge } from "@/components/painel/irpf-close-nudge";
 import { TipOfWeek } from "@/components/painel/tip-of-week";
 import { NetWorthInCurrencies } from "@/components/painel/networth-in-currencies";
 import { cn } from "@/lib/utils";
@@ -142,6 +143,7 @@ export function DashboardHero() {
   return (
     <>
       <MonthWrap />
+      <IrpfCloseNudge />
       <BalanceNudge />
       <MilestoneCelebration />
       <WelcomeBack name={name} nwChange={view.nwChange} freedomPct={lib?.ready ? lib.freedomPct : null} hasTrend={hasTrend} />
