@@ -38,6 +38,9 @@ export function AppShell() {
   const active = useScrollSpy(
     (configOpen ? CONFIG_NAV_ITEMS : NAV_ITEMS).map((n) => n.id),
   );
+  // Com uma VIEW de tela cheia aberta (Suporte/IRPF), a página está escondida → nenhuma seção deve
+  // ficar acesa (senão o "Painel" continua aceso junto com o item da view). Config tem sua própria lista.
+  const navActive = supportOpen || irpfOpen ? "" : active;
   useAutoSnapshot();
   useMainCurrency(); // hidrata a moeda principal do vault (multi-dispositivo) no boot
   useTaxonomyBackfill(); // garante defaults novos (classe "Bens", categoria "Cartão de Crédito") nas taxonomias já existentes (1×, respeitando exclusão)
@@ -105,11 +108,11 @@ export function AppShell() {
     <div className="min-h-screen pb-24 lg:pb-0">
       {side ? (
         <>
-          <SideNav active={active} />
+          <SideNav active={navActive} />
           <MobileBar />
         </>
       ) : (
-        <TopNav active={active} />
+        <TopNav active={navActive} />
       )}
       <main className={cn("relative", side && (navCollapsed ? "lg:pl-[92px]" : "lg:pl-[268px]"))}>
         {/* Glow verde do TOPO — vive AQUI no <main> (fora do wrapper com overflow-clip) pra cobrir
@@ -151,7 +154,7 @@ export function AppShell() {
         </div>
         )}
       </main>
-      <BottomNav active={active} />
+      <BottomNav active={navActive} />
       <InstallBanner />
       <BalanceUpdater />
     </div>
