@@ -9,6 +9,7 @@ import type {
   NetWorthSnapshot,
   Subscription,
 } from "@/domain/types";
+import type { TaxReturn, TaxItem } from "@/domain/irpf";
 import type { Taxonomy } from "@/domain/taxonomy";
 
 export interface SeedData {
@@ -80,6 +81,16 @@ export interface DataRepository {
   listSubscriptions(): Promise<Subscription[]>;
   putSubscription(subscription: Subscription): Promise<void>;
   removeSubscription(id: string): Promise<void>;
+
+  // Organizador de IRPF (snapshot anual: cabeçalho por ano + posições de 31/12)
+  listTaxReturns(): Promise<TaxReturn[]>;
+  getTaxReturn(id: string): Promise<TaxReturn | null>;
+  putTaxReturn(taxReturn: TaxReturn): Promise<void>;
+  removeTaxReturn(id: string): Promise<void>;
+  listTaxItems(baseYear: number): Promise<TaxItem[]>;
+  putTaxItem(item: TaxItem): Promise<void>;
+  putTaxItems(items: TaxItem[]): Promise<void>;
+  removeTaxItem(id: string): Promise<void>;
 
   // Configurações sincronizadas (alvos de alocação, etc.)
   getSettings(): Promise<AppSettings | null>;

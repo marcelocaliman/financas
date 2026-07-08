@@ -10,6 +10,7 @@ import type {
   NetWorthSnapshot,
   Subscription,
 } from "@/domain/types";
+import type { TaxReturn, TaxItem } from "@/domain/irpf";
 import {
   CLASS,
   DEFAULT_TAXONOMY,
@@ -32,6 +33,8 @@ export class FinancasDB extends Dexie {
   settings!: Table<AppSettings, string>;
   dividends!: Table<Dividend, string>;
   subscriptions!: Table<Subscription, string>;
+  taxReturns!: Table<TaxReturn, string>;
+  taxItems!: Table<TaxItem, string>;
 
   constructor() {
     super("financas");
@@ -136,6 +139,11 @@ export class FinancasDB extends Dexie {
     // v8: Assinaturas recorrentes (documentação, lista global). Tabela nova.
     this.version(8).stores({
       subscriptions: "id, currency",
+    });
+    // v9: Organizador de IRPF — snapshot anual (cabeçalho por ano + posições de 31/12). Tabelas novas.
+    this.version(9).stores({
+      taxReturns: "id, baseYear",
+      taxItems: "id, baseYear, group, sourceId",
     });
   }
 }

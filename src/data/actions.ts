@@ -17,6 +17,7 @@ import type {
   NetWorthSnapshot,
   Subscription,
 } from "@/domain/types";
+import type { TaxReturn, TaxItem } from "@/domain/irpf";
 import type { Taxonomy } from "@/domain/taxonomy";
 import { planRecurring, effectiveRecurringIds } from "@/domain/recurring";
 
@@ -85,6 +86,13 @@ export const actions = {
   // Assinaturas recorrentes (documentação)
   putSubscription: (subscription: Subscription) => withSync(() => repository.putSubscription(subscription)),
   removeSubscription: (id: string) => withSync(() => repository.removeSubscription(id)),
+
+  // Organizador de IRPF (snapshot anual)
+  putTaxReturn: (taxReturn: TaxReturn) => withSync(() => repository.putTaxReturn(taxReturn)),
+  removeTaxReturn: (id: string) => withSync(() => repository.removeTaxReturn(id)),
+  putTaxItem: (item: TaxItem) => withSync(() => repository.putTaxItem(item)),
+  putTaxItems: (items: TaxItem[]) => withSync(() => repository.putTaxItems(items)),
+  removeTaxItem: (id: string) => withSync(() => repository.removeTaxItem(id)),
 
   // Configurações sincronizadas (singleton): SEMPRE merge sobre o estado mais fresco do
   // repositório — nunca reconstruído de um snapshot do React (que pode estar vazio/velho

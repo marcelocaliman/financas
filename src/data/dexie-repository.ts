@@ -9,6 +9,7 @@ import type {
   NetWorthSnapshot,
   Subscription,
 } from "@/domain/types";
+import type { TaxReturn, TaxItem } from "@/domain/irpf";
 import { TAXONOMY_ID, type Taxonomy } from "@/domain/taxonomy";
 import type { DataRepository, SeedData } from "./repository";
 import { db, type FinancasDB } from "./db";
@@ -133,6 +134,36 @@ export class DexieRepository implements DataRepository {
     await this.database.subscriptions.delete(id);
   }
 
+  listTaxReturns(): Promise<TaxReturn[]> {
+    return this.database.taxReturns.toArray();
+  }
+  async getTaxReturn(id: string): Promise<TaxReturn | null> {
+    return (await this.database.taxReturns.get(id)) ?? null;
+  }
+  async putTaxReturn(taxReturn: TaxReturn): Promise<void> {
+    await this.database.taxReturns.put(taxReturn);
+  }
+  async removeTaxReturn(id: string): Promise<void> {
+    // Remove o cabeçalho do ano E todas as posições daquele ano-base (não deixa órfãs).
+    const tr = await this.database.taxReturns.get(id);
+    await this.database.transaction("rw", this.database.taxReturns, this.database.taxItems, async () => {
+      await this.database.taxReturns.delete(id);
+      if (tr) await this.database.taxItems.where("baseYear").equals(tr.baseYear).delete();
+    });
+  }
+  listTaxItems(baseYear: number): Promise<TaxItem[]> {
+    return this.database.taxItems.where("baseYear").equals(baseYear).toArray();
+  }
+  async putTaxItem(item: TaxItem): Promise<void> {
+    await this.database.taxItems.put(item);
+  }
+  async putTaxItems(items: TaxItem[]): Promise<void> {
+    await this.database.taxItems.bulkPut(items);
+  }
+  async removeTaxItem(id: string): Promise<void> {
+    await this.database.taxItems.delete(id);
+  }
+
   async getSettings(): Promise<AppSettings | null> {
     return (await this.database.settings.get(SETTINGS_ID)) ?? null;
   }
@@ -148,6 +179,7 @@ const WRITE_METHODS = new Set([
   "putNetWorthSnapshot", "removeNetWorthSnapshot", "putGoal", "removeGoal",
   "putDividend", "removeDividend", "putSettings",
   "putSubscription", "removeSubscription",
+  "putTaxReturn", "removeTaxReturn", "putTaxItem", "putTaxItems", "removeTaxItem",
 ]);
 
 let READ_ONLY = false;
