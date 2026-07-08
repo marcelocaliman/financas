@@ -1,5 +1,5 @@
 import { CLASS, LIABILITY_TYPE } from "@/domain/taxonomy";
-import type { Asset, Liability } from "@/domain/types";
+import type { Liability } from "@/domain/types";
 import type { TaxSeedMapper } from "@/finance/irpf-seed";
 
 // Mapa "classe do patrimônio → grupo/código do IRPF" (SUGESTÃO editável na UI) + templates de
@@ -42,22 +42,44 @@ export const LIABILITY_TO_CODE: Record<string, string> = {
   [LIABILITY_TYPE.outrasDividas]: "16",
 };
 
-const inst = (i?: string) => i ?? "[preencher: instituição]";
-const cnpj = (f: Record<string, string>) => f.cnpj ?? "[preencher: CNPJ]";
+// ── Campos ESTRUTURADOS por tipo ─────────────────────────────────────────────
+// O usuário preenche campos claros (CNPJ, quantidade, ticker, agência…) e a discriminação (o texto
+// que vai ao contador) NASCE deles. Mais inteligente e legível que um texto livre com [preencher].
+export interface IrpfField { key: string; label: string; wide?: boolean }
 
-/** Discriminação inicial por grupo — pronta pra copiar, com lacunas EXPLÍCITAS ([preencher: …]).
- *  NUNCA inventa CNPJ/dados; o usuário completa 2–3 campos e o texto fica redondo. */
-function discriminacaoAsset(a: Asset, group: string, f: Record<string, string>): string {
-  const qtd = f.quantidade;
-  const tkr = f.ticker;
+export const FIELDS_BY_GROUP: Record<string, IrpfField[]> = {
+  "01": [{ key: "endereco", label: "Endereço", wide: true }, { key: "matricula", label: "Matrícula" }, { key: "area", label: "Área (m²)" }],
+  "02": [{ key: "identificacao", label: "Placa / RENAVAM / chassi", wide: true }],
+  "03": [{ key: "quantidade", label: "Quantidade" }, { key: "ticker", label: "Ticker" }, { key: "cnpj", label: "CNPJ da empresa" }, { key: "instituicao", label: "Corretora / custódia" }],
+  "04": [{ key: "instituicao", label: "Instituição" }, { key: "cnpj", label: "CNPJ da instituição" }],
+  "05": [{ key: "instituicao", label: "Devedor" }, { key: "cnpj", label: "CNPJ/CPF do devedor" }],
+  "06": [{ key: "banco", label: "Banco" }, { key: "agencia", label: "Agência" }, { key: "conta", label: "Conta" }, { key: "cnpj", label: "CNPJ do banco" }],
+  "07": [{ key: "quantidade", label: "Cotas" }, { key: "ticker", label: "Código do fundo" }, { key: "cnpj", label: "CNPJ do fundo" }, { key: "instituicao", label: "Administrador" }],
+  "08": [{ key: "quantidade", label: "Quantidade" }, { key: "instituicao", label: "Exchange / carteira" }],
+  "99": [{ key: "instituicao", label: "Instituição" }, { key: "cnpj", label: "CNPJ" }],
+};
+export const FIELDS_DEBT: IrpfField[] = [{ key: "instituicao", label: "Credor" }, { key: "cnpj", label: "CNPJ/CPF do credor" }];
+
+/** Campos do item — sempre começa por "Nome/descrição" (que alimenta a discriminação), + os do grupo. */
+export function fieldsFor(kind: "asset" | "debt", group: string): IrpfField[] {
+  const base = kind === "debt" ? FIELDS_DEBT : (FIELDS_BY_GROUP[group] ?? FIELDS_BY_GROUP["99"]);
+  return [{ key: "nome", label: kind === "debt" ? "Nome da dívida" : "Nome / descrição", wide: true }, ...base];
+}
+
+/** Monta a discriminação a partir dos campos — lacunas explícitas [campo] pro que falta, NUNCA inventa.
+ *  Lê o nome de `f.nome` (ou do parâmetro). É o que o seed E a edição ao vivo usam (fonte única). */
+export function composeDiscriminacao(kind: "asset" | "debt", group: string, f: Record<string, string>, name = ""): string {
+  const g = (k: string, ph: string) => (f[k]?.trim() ? f[k].trim() : `[${ph}]`);
+  const nm = (name || f.nome || "").trim();
+  if (kind === "debt") return `${nm || "Dívida"} — credor ${g("instituicao", "credor")}, CNPJ/CPF ${g("cnpj", "CNPJ/CPF")}`;
   switch (group) {
-    case "06": return `Saldo em conta em ${inst(a.institution)} — ag. [preencher], conta [preencher], CNPJ ${cnpj(f)}`;
-    case "03": return `${qtd ?? "[preencher: qtd]"} ações ${tkr ?? a.name}, CNPJ ${cnpj(f)} — custódia em ${inst(a.institution)}`;
-    case "07": return `${qtd ? qtd + " cotas do " : ""}${a.name}${tkr ? ` (${tkr})` : ""}, CNPJ ${cnpj(f)} — administrador ${inst(a.institution)}`;
-    case "08": return `${a.name}${qtd ? ` — ${qtd} unidades` : ""} — custódia em ${a.institution ?? "[preencher: exchange/carteira]"}`;
-    case "01": return `${a.name} — endereço [preencher], matrícula [preencher], área [preencher]`;
-    case "02": return `${a.name} — identificação (placa/RENAVAM/chassi) [preencher]`;
-    default: return `${a.name} — ${inst(a.institution)}, CNPJ ${cnpj(f)}`; // 04, 99, demais
+    case "01": return `${nm || "Imóvel"} — endereço ${g("endereco", "endereço")}, matrícula ${g("matricula", "matrícula")}${f.area?.trim() ? `, ${f.area.trim()} m²` : ""}`;
+    case "02": return `${nm || "Bem"} — identificação ${g("identificacao", "placa/RENAVAM/chassi")}`;
+    case "03": return `${g("quantidade", "qtd")} ações ${f.ticker?.trim() || nm || "[ticker]"}, CNPJ ${g("cnpj", "CNPJ")} — custódia em ${g("instituicao", "corretora")}`;
+    case "06": return `Saldo em ${f.banco?.trim() || f.instituicao?.trim() || nm || "conta"} — ag. ${g("agencia", "agência")}, conta ${g("conta", "conta")}, CNPJ ${g("cnpj", "CNPJ")}`;
+    case "07": return `${f.quantidade?.trim() ? f.quantidade.trim() + " cotas do " : ""}${nm || "fundo"}${f.ticker?.trim() ? ` (${f.ticker.trim()})` : ""}, CNPJ ${g("cnpj", "CNPJ")} — administrador ${g("instituicao", "administrador")}`;
+    case "08": return `${nm || "Criptoativo"}${f.quantidade?.trim() ? ` — ${f.quantidade.trim()} unidades` : ""} — custódia em ${g("instituicao", "exchange/carteira")}`;
+    default: return `${nm || "Bem"} — ${g("instituicao", "instituição")}, CNPJ ${g("cnpj", "CNPJ")}`; // 04, 05, 99
   }
 }
 
@@ -69,16 +91,17 @@ function discriminacaoAsset(a: Asset, group: string, f: Record<string, string>):
 export const irpfSeedMapper: TaxSeedMapper = {
   asset: (a, baseYear) => {
     const { group, code } = CLASS_TO_CODE[a.classId] ?? { group: "99", code: "99" };
-    const fields: Record<string, string> = {};
+    const fields: Record<string, string> = { nome: a.name };
     if (a.ticker) fields.ticker = a.ticker;
     if (a.quantity != null) fields.quantidade = String(a.quantity);
+    if (a.institution) fields.instituicao = a.institution;
     return {
       id: `irpf-${baseYear}-a-${a.id}`,
       baseYear,
       kind: "asset",
       group,
       code,
-      discriminacao: discriminacaoAsset(a, group, fields),
+      discriminacao: composeDiscriminacao("asset", group, fields, a.name),
       currency: a.currency,
       valorAnoBase: a.amount,
       needsReview: true,
@@ -95,11 +118,11 @@ export const irpfSeedMapper: TaxSeedMapper = {
     kind: "debt",
     group: "",
     code: LIABILITY_TO_CODE[l.typeId] ?? "16",
-    discriminacao: `${l.name} — credor [preencher: instituição], CNPJ/CPF do credor [preencher]`,
+    discriminacao: composeDiscriminacao("debt", "", { nome: l.name }, l.name),
     currency: l.currency,
     valorAnoBase: l.amount,
     needsReview: true,
-    fields: {},
+    fields: { nome: l.name },
     source: "seed-liability",
     sourceId: l.id,
   }),

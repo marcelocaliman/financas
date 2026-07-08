@@ -55,6 +55,8 @@
     "group": "Group",
     "code": "Code",
     "discriminacaoPh": "Description of the asset — what appears on the tax return",
+    "fieldsHint": "Fill in the fields — the description is generated automatically from them.",
+    "discLabel": "Description (what goes to the accountant) — edit if you want",
     "valueOn": "Situation on 12/31/{{year}}",
     "review": "review",
     "reviewWhy": "This is TODAY's value (pulled from your net worth). Adjust it to the 12/31/{{year}} position.",

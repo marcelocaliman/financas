@@ -61,4 +61,6 @@ export interface TaxItem {
   source?: "seed-asset" | "seed-liability" | "manual";
   /** Rastro do Asset/Liability de origem — chave da idempotência do seed. */
   sourceId?: string;
+  /** Quando foi criado (manual) — pra novos itens aparecerem no topo. */
+  createdAt?: number;
 }

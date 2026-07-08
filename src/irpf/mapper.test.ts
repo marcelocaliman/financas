@@ -45,7 +45,8 @@ describe("irpfSeedMapper (classe → código oficial)", () => {
   it("discriminação tem lacunas explícitas e nunca inventa CNPJ", () => {
     const it = irpfSeedMapper.asset(asset({ classId: "caixa", institution: "Nubank" }), 2025);
     expect(it.discriminacao).toContain("Nubank");
-    expect(it.discriminacao).toContain("[preencher: CNPJ]");
+    expect(it.discriminacao).toContain("[CNPJ]");
+    expect(it.fields.instituicao).toBe("Nubank"); // semeia o campo estruturado
   });
 
   it("passivo vira ficha de Dívidas com o código do tipo", () => {

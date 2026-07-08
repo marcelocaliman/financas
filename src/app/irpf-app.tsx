@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -8,7 +8,7 @@ import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward } from "@/finance/irpf-seed";
-import { irpfSeedMapper } from "@/irpf/mapper";
+import { irpfSeedMapper, composeDiscriminacao, fieldsFor } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome } from "@/irpf/income";
 import { buildBensCSV, buildDividasCSV, downloadCSV } from "@/irpf/irpf-csv";
@@ -191,6 +191,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       valorAnoBase: 0,
       fields: {},
       source: "manual",
+      createdAt: Date.now(),
     });
   }
 
@@ -217,7 +218,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const bensByGroup = useMemo(() => {
     const m = new Map<string, TaxItem[]>();
     for (const it of bens) (m.get(it.group) ?? m.set(it.group, []).get(it.group)!).push(it);
-    return [...m.entries()].sort((a, b) => (a[0] || "zz").localeCompare(b[0] || "zz"));
+    // Grupo VAZIO (sem código — item recém-criado) PRIMEIRO; dentro dele, o mais novo no topo.
+    m.get("")?.sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    return [...m.entries()].sort((a, b) => (a[0] || "00").localeCompare(b[0] || "00"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
   const empty = list.length === 0;
@@ -340,18 +343,64 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   );
 }
 
-/** Uma linha de bem/dívida — código (grupo+código), discriminação e valor de 31/12 editáveis.
- *  Texto/números usam estado LOCAL (o input reflete na hora, sem pulo de cursor); o Dexie persiste
- *  em segundo plano. O estado local nasce do item 1× — re-puxar pula os itens existentes, então não
- *  há resync a fazer. Os selects escrevem direto (não têm cursor). */
+/** Input de dinheiro PONTUADO (pt-BR): mostra "1.234,56", edita comigo e reformata ao sair. Resync
+ *  quando o valor muda por fora (ex.: a calculadora PTAX preenche) e o campo não está em foco. */
+function MoneyField({ value, amber, onChange }: { value: number | undefined; amber?: boolean; onChange: (n: number | undefined) => void }) {
+  const fmt = (n?: number) => (n == null ? "" : n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  const [raw, setRaw] = useState(fmt(value));
+  const focused = useRef(false);
+  useEffect(() => { if (!focused.current) setRaw(fmt(value)); }, [value]);
+  const parse = (s: string): number | undefined => {
+    const c = s.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
+    if (c === "" || c === "-") return undefined;
+    const n = Number(c);
+    return Number.isFinite(n) ? n : undefined;
+  };
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={raw}
+      placeholder="R$ —"
+      onFocus={() => (focused.current = true)}
+      onBlur={() => { focused.current = false; setRaw(fmt(value)); }}
+      onChange={(e) => { setRaw(e.target.value); onChange(parse(e.target.value)); }}
+      className={cn(
+        "h-9 w-40 rounded-[8px] border bg-card2 px-3 text-[13px] text-text tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+        amber ? "border-[color-mix(in_oklab,#e0a33c_55%,transparent)]" : "border-border",
+      )}
+    />
+  );
+}
+
+/** Uma linha de bem/dívida — grupo/código, CAMPOS estruturados (que geram a discriminação), valores.
+ *  Campos e discriminação em estado local (sem pulo de cursor); mudar um campo regenera a discriminação
+ *  (a menos que o usuário a tenha editado à mão → discriminacaoLocked). O Dexie persiste ao fundo. */
 function Row({ item }: { item: TaxItem }) {
   const { t } = useTranslation();
   const foreign = isForeignCurrency(item.currency);
   const issues = itemIssues(item);
   const patch = (p: Partial<TaxItem>) => void actions.putTaxItem({ ...item, ...p });
+  const [fields, setFields] = useState<Record<string, string>>(item.fields);
   const [disc, setDisc] = useState(item.discriminacao);
-  const [val, setVal] = useState(item.valorAnoBase ? String(item.valorAnoBase) : "");
-  const [brl, setBrl] = useState(item.valorBrlAnoBase != null ? String(item.valorBrlAnoBase) : "");
+  const schema = fieldsFor(item.kind, item.group);
+
+  /** Recompõe a discriminação a partir dos campos, exceto se o usuário travou editando à mão. */
+  const regen = (f: Record<string, string>, group = item.group) =>
+    item.discriminacaoLocked ? null : composeDiscriminacao(item.kind, group, f);
+
+  function setField(key: string, value: string) {
+    const nf = { ...fields, [key]: value };
+    setFields(nf);
+    const nd = regen(nf);
+    if (nd != null) setDisc(nd);
+    patch(nd != null ? { fields: nf, discriminacao: nd } : { fields: nf });
+  }
+  function changeGroup(group: string) {
+    const nd = regen(fields, group);
+    if (nd != null) setDisc(nd);
+    patch(nd != null ? { group, code: "", discriminacao: nd } : { group, code: "" });
+  }
 
   const codeOptions = item.kind === "debt"
     ? DIVIDAS_CODES
@@ -359,12 +408,12 @@ function Row({ item }: { item: TaxItem }) {
 
   return (
     <div className="px-4 sm:px-5 py-4 space-y-3">
-      {/* Linha 1: código (grupo + código) + moeda/país + remover */}
+      {/* Linha 1: grupo + código + moeda/país + remover */}
       <div className="flex flex-wrap items-center gap-2">
         {item.kind === "asset" ? (
           <select
             value={item.group}
-            onChange={(e) => patch({ group: e.target.value, code: "" })}
+            onChange={(e) => changeGroup(e.target.value)}
             className="h-8 rounded-[8px] border border-border bg-card2 px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
             aria-label={t("irpf.group")}
           >
@@ -394,30 +443,40 @@ function Row({ item }: { item: TaxItem }) {
         </button>
       </div>
 
-      {/* Discriminação */}
-      <textarea
-        value={disc}
-        onChange={(e) => { setDisc(e.target.value); patch({ discriminacao: e.target.value, discriminacaoLocked: true }); }}
-        rows={2}
-        placeholder={t("irpf.discriminacaoPh")}
-        className="w-full rounded-[8px] border border-border bg-card2 px-3 py-2 text-[12.5px] text-text leading-snug resize-y outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-      />
+      {/* Campos estruturados — geram a discriminação */}
+      <div>
+        <div className="text-[10px] text-faint mb-1.5">{t("irpf.fieldsHint")}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {schema.map((f) => (
+            <label key={f.key} className={cn("text-[10px] text-faint", f.wide && "col-span-2 sm:col-span-4")}>
+              <span className="block mb-1">{f.label}</span>
+              <input
+                value={fields[f.key] ?? ""}
+                onChange={(e) => setField(f.key, e.target.value)}
+                className="w-full h-8 rounded-[7px] border border-border bg-card2 px-2 text-[12px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              />
+            </label>
+          ))}
+        </div>
+      </div>
 
-      {/* Valor de 31/12 (na moeda do item) + âmbar "revisar"; exterior → BRL manual + aviso */}
+      {/* Discriminação gerada (o texto que vai ao contador) — editável */}
+      <div>
+        <div className="text-[10px] text-faint mb-1">{t("irpf.discLabel")}</div>
+        <textarea
+          value={disc}
+          onChange={(e) => { setDisc(e.target.value); patch({ discriminacao: e.target.value, discriminacaoLocked: true }); }}
+          rows={2}
+          className="w-full rounded-[8px] border border-border bg-card2 px-3 py-2 text-[12.5px] text-text leading-snug resize-y outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        />
+      </div>
+
+      {/* Valores (na moeda do item) + âmbar "revisar"; exterior → BRL manual + aviso */}
       <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
         <label className="text-[11px] text-faint">
           <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              value={val}
-              onChange={(e) => { setVal(e.target.value); patch({ valorAnoBase: Number(e.target.value), needsReview: false }); }}
-              className={cn(
-                "h-9 w-40 rounded-[8px] border bg-card2 px-3 text-[13px] text-text tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
-                item.needsReview ? "border-[color-mix(in_oklab,#e0a33c_55%,transparent)]" : "border-border",
-              )}
-            />
+            <MoneyField value={item.valorAnoBase} amber={item.needsReview} onChange={(n) => patch({ valorAnoBase: n ?? 0, needsReview: false })} />
             {item.needsReview ? (
               <span title={t("irpf.reviewWhy", { year: item.baseYear })} className="text-[10.5px] font-medium text-[#e0a33c] whitespace-nowrap cursor-help underline decoration-dotted underline-offset-2">{t("irpf.review")}</span>
             ) : null}
@@ -427,14 +486,7 @@ function Row({ item }: { item: TaxItem }) {
         {foreign ? (
           <label className="text-[11px] text-faint">
             <span className="block mb-1">{t("irpf.valueBrl")}</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={brl}
-              placeholder="R$ —"
-              onChange={(e) => { setBrl(e.target.value); patch({ valorBrlAnoBase: e.target.value === "" ? undefined : Number(e.target.value) }); }}
-              className="h-9 w-40 rounded-[8px] border border-border bg-card2 px-3 text-[13px] text-text tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-            />
+            <MoneyField value={item.valorBrlAnoBase} onChange={(n) => patch({ valorBrlAnoBase: n })} />
           </label>
         ) : null}
       </div>
@@ -444,7 +496,7 @@ function Row({ item }: { item: TaxItem }) {
           <p className="text-[11.5px] text-[#e0a33c] flex items-start gap-1.5">
             <Globe size={13} className="shrink-0 mt-0.5" /> {t("irpf.foreignWarn")}
           </p>
-          <PtaxCalc item={item} onPick={(v, note) => { setBrl(String(v)); patch({ valorBrlAnoBase: v, fxNote: note }); }} />
+          <PtaxCalc item={item} onPick={(v, note) => patch({ valorBrlAnoBase: v, fxNote: note })} />
           {item.fxNote ? <p className="text-[10.5px] text-faint">{t("irpf.fxUsed", { note: item.fxNote })}</p> : null}
         </div>
       ) : null}
