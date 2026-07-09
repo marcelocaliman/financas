@@ -440,25 +440,6 @@
     .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px,5vw,64px); align-items: center; }
     @media (max-width: 860px) { .lib-grid { grid-template-columns: 1fr; gap: 36px; } }
 
-    /* Seção VERDE CHEIA — bloco vivo que quebra o preto e dá movimento. Verde vibrante com um brilho
-       sutil no topo; texto e CARTÕES escuros por cima (contraste alto, moderno). Independe do tema. */
-    .green-full { position: relative; overflow: hidden; color: #06140d; border-block: 1px solid rgba(0,0,0,.16); background: linear-gradient(158deg, #46d79b 0%, #2fb680 100%); }
-    .green-full::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(56% 46% at 82% -12%, rgba(255,255,255,.30), transparent 55%); pointer-events: none; }
-    .green-full > .wrap { position: relative; z-index: 1; }
-    .green-full .eyebrow, .green-full .eyebrow.accent { color: #06140d !important; opacity: .66; }
-    .green-full h2, .green-full h3 { color: #06140d; }
-    .green-full .section-head p, .green-full > .wrap > .reveal > p, .green-full p.muted, .green-full p { color: #0b2b1f; }
-    .green-full .card { background: #0a1712; border-color: rgba(0,0,0,.24); box-shadow: 0 20px 46px rgba(4,18,11,.30); color: var(--text); }
-    .green-full .card h3 { color: #fff; }
-    .green-full .card p, .green-full .card .muted { color: #b7c3bc; }
-    .green-full .card .num { color: var(--accent); }
-    .green-full .btn-primary { background: #06140d; color: #fff; }
-    .green-full .btn-primary:hover { background: #0d2318; transform: translateY(-1px); }
-    .green-full .btn-ghost { border-color: rgba(0,0,0,.34); color: #06140d; background: transparent; }
-    .green-full .btn-ghost:hover { background: rgba(0,0,0,.08); }
-    .green-full .link-accent { color: #06140d; text-decoration-color: rgba(6,20,13,.4); }
-    html.light .green-full { background: linear-gradient(158deg, #46d79b 0%, #2fb680 100%); }
-
     /* IRPF — band destacada (Brasil): fundo elevado + glow verde no topo-direito atrás do Leão */
     .irpf-band { position: relative; overflow: hidden; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: linear-gradient(180deg, var(--card-2) 0%, var(--bg) 62%); }
     .irpf-band::before { content: ""; position: absolute; inset: 0; z-index: 0; background: radial-gradient(58% 48% at 84% 2%, rgba(62,207,142,.14), transparent 62%); pointer-events: none; }
@@ -1049,7 +1030,7 @@
   </section>
 
   <!-- 4 · COMO FUNCIONA -->
-  <section id="como-funciona" class="green-full">
+  <section id="como-funciona">
     <div class="wrap">
       <div class="section-head center reveal">
         <div class="eyebrow accent" data-i18n="cf.eyebrow">Como funciona</div>
@@ -1132,7 +1113,7 @@
   </section>
 
   <!-- 6 · LIBERDADE -->
-  <section class="green-full" id="liberdade">
+  <section class="liberdade" id="liberdade">
     <div class="wrap">
       <div class="lib-grid">
         <div class="reveal">
@@ -1502,16 +1483,17 @@
     </div>
   </section>
 
-  <section class="green-full" id="comecar">
-    <div class="wrap" style="padding-block:clamp(84px,12vw,156px);text-align:center">
+  <section class="band" id="comecar" style="padding:0">
+    <div class="band-bg" aria-hidden="true"><div class="band-gfx"></div></div>
+    <div class="wrap band-content" style="padding-block:clamp(84px,12vw,156px);text-align:center">
       <div class="eyebrow accent" style="justify-content:center" data-i18n="ct.eyebrow">Seja um dos primeiros</div>
-      <h2 style="font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600;letter-spacing:-0.04em;line-height:1.05;margin:14px auto 0;max-width:20ch" data-i18n="ct.h2">Seu dinheiro já vive em mais de uma moeda. Aqui ele finalmente faz sentido.</h2>
-      <p style="font-size:clamp(15px,1.7vw,18px);margin:18px auto 0;max-width:54ch;line-height:1.6;color:#0b2b1f" data-i18n="ct.p">Clareza pra enxergar tudo, privacidade pra dormir tranquilo, e uma comunidade que entende a sua jornada. Entre agora, enquanto é o começo — e ajude a construir a ferramenta que você sempre quis ter.</p>
+      <h2 style="font-size:clamp(2rem,4.4vw,3.2rem);font-weight:600;letter-spacing:-0.04em;line-height:1.05;margin:14px auto 0;max-width:20ch;color:#fff" data-i18n="ct.h2">Seu dinheiro já vive em mais de uma moeda. Aqui ele finalmente faz sentido.</h2>
+      <p style="font-size:clamp(15px,1.7vw,18px);margin:18px auto 0;max-width:54ch;line-height:1.6;color:#cfd3da" data-i18n="ct.p">Clareza pra enxergar tudo, privacidade pra dormir tranquilo, e uma comunidade que entende a sua jornada. Entre agora, enquanto é o começo — e ajude a construir a ferramenta que você sempre quis ter.</p>
       <div class="ctas" style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:30px">
         <a class="btn btn-primary btn-lg" href="/app" data-i18n="ct.cta1">Criar minha conta grátis</a>
         <a class="btn btn-ghost btn-lg" href="https://instagram.com/nossasfinancasapp" target="_blank" rel="noopener" data-i18n="ct.cta2">Seguir no Instagram</a>
       </div>
-      <div class="eyebrow" style="justify-content:center;margin-top:18px" data-i18n="ct.micro">Grátis · Acesso antecipado · Privacidade em primeiro lugar</div>
+      <div class="eyebrow" style="justify-content:center;margin-top:18px;color:#9ca2ac" data-i18n="ct.micro">Grátis · Acesso antecipado · Privacidade em primeiro lugar</div>
     </div>
   </section>
 
