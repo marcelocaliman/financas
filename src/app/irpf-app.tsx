@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown, Check, X } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Check } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -18,7 +18,6 @@ import { belongsTo, applyShare, incomesForDeclarante } from "@/irpf/declarante";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear, yearCloseWindow } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useSettings } from "@/hooks/use-settings";
-import { useEngagement } from "@/store/engagement";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
@@ -350,8 +349,23 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const toggleAll = () => setOpened(anyOpen ? new Set() : new Set(groupKeys));
   const hasAttention = (items: TaxItem[]) => items.some((it) => !it.excluded && (itemIssues(it).length > 0 || it.needsReview));
 
-  const dismissedInProgress = useEngagement((s) => s.dismissedIrpfInProgress);
-  const dismissInProgress = useEngagement((s) => s.dismissIrpfInProgress);
+  /** Leva até um item: abre o accordion do grupo dele e rola a linha à vista, com um flash rápido. */
+  function revealItem(it: TaxItem) {
+    const key = it.kind === "debt" ? "dividas" : it.group || "sem";
+    setOpened((s) => new Set(s).add(key));
+    window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>(`[data-irpf-item="${CSS.escape(it.id)}"]`);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("irpf-flash");
+      window.setTimeout(() => el.classList.remove("irpf-flash"), 1500);
+    }, 70);
+  }
+  const orphanLabel = (it: TaxItem): string =>
+    it.fields?.nome?.trim() ||
+    (it.kind === "debt" ? codeName("", it.code, "debt") : codeName(it.group, it.code)) ||
+    it.discriminacao?.split(" — ")[0]?.slice(0, 28) ||
+    t("irpf.removeItem");
 
   function setMode(mode: "joint" | "separate") {
     void actions.putSettings({ irpf: { ...settings.irpf, mode, primaryId: settings.irpf?.primaryId || people[0]?.id } });
@@ -423,21 +437,6 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
               <span className="text-[11.5px] text-faint w-full">{t("irpf.separateHint", { you: nameById(people, primaryId) })}</span>
             </>
           ) : null}
-        </div>
-      ) : null}
-
-      {year >= currentYear && dismissedInProgress !== year ? (
-        <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--accent)_28%,transparent)] bg-accent-soft px-4 py-2.5 text-[12.5px] text-muted">
-          <CalendarClock size={15} className="text-accent shrink-0 mt-0.5" />
-          <span className="flex-1">{t("irpf.inProgressNote", { year })}</span>
-          <button
-            type="button"
-            onClick={() => dismissInProgress(year)}
-            aria-label={t("common.close")}
-            className="shrink-0 -mr-1 -mt-0.5 grid place-items-center w-6 h-6 rounded-[7px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-          >
-            <X size={14} />
-          </button>
         </div>
       ) : null}
 
@@ -545,8 +544,20 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : null}
       {diff.orphans.length > 0 ? (
-        <div className="flex items-start gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
-          <CalendarClock size={15} className="text-faint shrink-0 mt-0.5" /> {t("irpf.orphanBanner", { n: diff.orphans.length })}
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
+          <CalendarClock size={15} className="text-faint shrink-0" />
+          <span className="min-w-0">{t("irpf.orphanBanner", { n: diff.orphans.length })}</span>
+          {diff.orphans.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => revealItem(o)}
+              className="inline-flex items-center gap-1 h-6 pl-2.5 pr-1.5 rounded-[7px] border border-border bg-card text-[11.5px] text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <span className="truncate max-w-[180px]">{orphanLabel(o)}</span>
+              <ChevronRight size={12} className="text-faint shrink-0" />
+            </button>
+          ))}
         </div>
       ) : null}
 
@@ -785,7 +796,7 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
     : (BENS_GROUPS.find((g) => g.group === item.group)?.codes ?? []);
 
   return (
-    <div className={cn("px-4 sm:px-5 py-4 space-y-3 transition-opacity", item.excluded && "opacity-45")}>
+    <div data-irpf-item={item.id} className={cn("px-4 sm:px-5 py-4 space-y-3 transition-opacity", item.excluded && "opacity-45")}>
       {/* Linha 1: [declarar?] grupo + código + moeda/país + remover */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Checkbox "declarar": marcado = vai à declaração; desmarcado = fica na lista mas fora do doc. */}

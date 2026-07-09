@@ -103,7 +103,7 @@
     "removeItem": "Remove item",
     "pendingBanner": "{{n}} item(s) need attention before generating the document.",
     "newBanner": "{{n}} new item(s) in your net worth aren't in the list yet.",
-    "orphanBanner": "{{n}} item(s) here are no longer in your net worth — check with your accountant.",
+    "orphanBanner": "{{n}} item(s) in the return no longer exist in your net worth (you sold or deleted the asset). Review and decide — mark as sold, review or remove:",
     "rollForward": "Bring items from {{year}}",
     "ptaxOpen": "Calculate BRL via PTAX/BCB",
     "ptaxHint": "Enter the value and the ACQUISITION DATE — we fetch the official BCB PTAX for that date (handles non-business days).",

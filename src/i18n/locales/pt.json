@@ -103,7 +103,7 @@
     "removeItem": "Remover item",
     "pendingBanner": "{{n}} item(ns) com pendência — resolva antes de gerar o documento.",
     "newBanner": "{{n}} item(ns) novo(s) no seu patrimônio ainda não estão na lista.",
-    "orphanBanner": "{{n}} item(ns) desta lista não estão mais no seu patrimônio (baixados no ano?) — confira com o contador.",
+    "orphanBanner": "{{n}} item(ns) da declaração não existem mais no seu patrimônio (você vendeu ou apagou o bem). Veja e decida — marcar como vendido, revisar ou remover:",
     "rollForward": "Trazer os itens de {{year}}",
     "ptaxOpen": "Calcular o R$ via PTAX/BCB",
     "ptaxHint": "Informe o valor e a DATA DA AQUISIÇÃO — buscamos o PTAX oficial do BCB daquela data (trata dia não-útil).",

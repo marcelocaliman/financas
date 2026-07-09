@@ -215,6 +215,11 @@ body {
   .view-fade-in { animation: none; }
 }
 
+/* Flash rápido ao "levar até" um item do IRPF (ex.: clicar num item órfão no aviso). */
+@keyframes irpf-flash { 0%, 100% { background-color: transparent; } 25% { background-color: var(--accent-soft); } }
+.irpf-flash { animation: irpf-flash 1.4s ease; }
+@media (prefers-reduced-motion: reduce) { .irpf-flash { animation: none; } }
+
 /* Vidro fosco do header/nav (sticky translúcido sobre o fundo da página). */
 .glass {
   background: color-mix(in oklab, var(--bg) 85%, transparent);
