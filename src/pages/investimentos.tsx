@@ -290,6 +290,7 @@ function Proventos({ invested }: { invested: number }) {
       <div className="overflow-x-auto">
         <div className="min-w-0 sm:min-w-[460px]">
           <DataGrid<Dividend>
+            sortable
             columns={cols}
             rows={[...(divs ?? [])].sort((a, b) => (a.month < b.month ? 1 : -1))}
             blank={() => ({ id: crypto.randomUUID(), source: "", month: "", currency: base, amount: 0 })}

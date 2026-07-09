@@ -157,6 +157,7 @@ export default function Objetivos() {
         <div className="overflow-x-auto">
           <div className="min-w-0 sm:min-w-[620px]">
             <DataGrid<Goal>
+              sortable
               columns={cols}
               rows={data}
               blank={newGoal}

@@ -121,6 +121,7 @@ export default function Assinaturas() {
         <div className="overflow-x-auto">
           <div className="min-w-0 sm:min-w-[680px]">
             <DataGrid<Subscription>
+              sortable
               columns={cols}
               rows={data}
               blank={newSub}

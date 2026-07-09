@@ -330,18 +330,19 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   }, [visible]);
   const empty = list.length === 0;
 
-  // Accordions: cada card (grupo de bens · dívidas · rendimentos) recolhe/expande. Estado por SESSÃO
-  // (some ao sair da página). Recolhido, o cabeçalho ainda avisa se há pendência (bolinha âmbar).
-  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Accordions: cada card (grupo de bens · dívidas · rendimentos) abre/fecha. Padrão = TUDO FECHADO
+  // (rastreia os ABERTOS; grupos novos nascem fechados). Estado por SESSÃO (some ao sair da página).
+  // Fechado, o cabeçalho ainda avisa se há pendência (bolinha âmbar) — não some problema ao esconder.
+  const [opened, setOpened] = useState<Set<string>>(() => new Set());
   const groupKeys = useMemo(() => [
     ...bensByGroup.map(([g]) => g || "sem"),
     ...(dividas.length ? ["dividas"] : []),
     ...(incomeSummary.length ? ["rendimentos"] : []),
   ], [bensByGroup, dividas.length, incomeSummary.length]);
-  const isOpen = (k: string) => !collapsed.has(k);
-  const toggle = (k: string) => setCollapsed((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const anyOpen = groupKeys.some((k) => !collapsed.has(k));
-  const toggleAll = () => setCollapsed(anyOpen ? new Set(groupKeys) : new Set());
+  const isOpen = (k: string) => opened.has(k);
+  const toggle = (k: string) => setOpened((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const anyOpen = groupKeys.some((k) => opened.has(k));
+  const toggleAll = () => setOpened(anyOpen ? new Set() : new Set(groupKeys));
   const hasAttention = (items: TaxItem[]) => items.some((it) => itemIssues(it).length > 0 || it.needsReview);
 
   function setMode(mode: "joint" | "separate") {

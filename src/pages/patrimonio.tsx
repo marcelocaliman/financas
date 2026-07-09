@@ -311,6 +311,7 @@ export default function Patrimonio() {
           <div className="min-w-0 sm:min-w-[720px]">
             <DataGrid<Asset>
               key={activeMacro.id}
+              sortable
               columns={assetColsFor(activeMacro)}
               rows={activeAssets}
               blank={newAsset}
@@ -363,6 +364,7 @@ export default function Patrimonio() {
             <div className="overflow-x-auto">
               <div className="min-w-0 sm:min-w-[760px]">
                 <DataGrid<Liability>
+                  sortable
                   columns={liabCols}
                   rows={data.liabilities}
                   blank={newLiab}

@@ -402,6 +402,7 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px]">
             <DataGrid<BudgetRow>
               key={month}
+              sortable
               columns={cols(tax.incomeCategories, view.monthInc as BudgetRow[], { statusKey: "received", statusLabel: t("orcamento.receivedShort") })}
               rows={view.monthInc as BudgetRow[]}
               blank={blank}
@@ -422,6 +423,7 @@ export default function Orcamento() {
           <div className="min-w-0 sm:min-w-[600px] grid-neg">
             <DataGrid<BudgetRow>
               key={month}
+              sortable
               columns={cols(tax.expenseCategories, topLevelExp, { statusKey: "paid", statusLabel: t("orcamento.paidShort") })}
               rows={topLevelExp}
               expandableRow={(r) => r.categoryId === EXPENSE_CARD}
