@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -330,6 +330,20 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   }, [visible]);
   const empty = list.length === 0;
 
+  // Accordions: cada card (grupo de bens · dívidas · rendimentos) recolhe/expande. Estado por SESSÃO
+  // (some ao sair da página). Recolhido, o cabeçalho ainda avisa se há pendência (bolinha âmbar).
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const groupKeys = useMemo(() => [
+    ...bensByGroup.map(([g]) => g || "sem"),
+    ...(dividas.length ? ["dividas"] : []),
+    ...(incomeSummary.length ? ["rendimentos"] : []),
+  ], [bensByGroup, dividas.length, incomeSummary.length]);
+  const isOpen = (k: string) => !collapsed.has(k);
+  const toggle = (k: string) => setCollapsed((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
+  const anyOpen = groupKeys.some((k) => !collapsed.has(k));
+  const toggleAll = () => setCollapsed(anyOpen ? new Set(groupKeys) : new Set());
+  const hasAttention = (items: TaxItem[]) => items.some((it) => itemIssues(it).length > 0 || it.needsReview);
+
   function setMode(mode: "joint" | "separate") {
     void actions.putSettings({ irpf: { ...settings.irpf, mode, primaryId: settings.irpf?.primaryId || people[0]?.id } });
   }
@@ -530,38 +544,60 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : (
         <>
-          {bensByGroup.map(([group, list]) => (
-            <section key={group || "sem"} className="rounded-[16px] border border-border bg-card overflow-hidden">
-              <div className="flex items-baseline justify-between px-4 sm:px-5 py-3 border-b border-border">
-                <div className={HEAD}>{group ? `${group} · ${groupName(group)}` : t("irpf.noCode")}</div>
-                <div className="eyebrow">{list.length} {t(list.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
-              </div>
-              <div className="divide-y divide-border">
-                {list.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
-              </div>
-            </section>
-          ))}
+          {/* Recolher/expandir tudo */}
+          {groupKeys.length > 1 ? (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-[8px] text-[12px] font-medium text-muted hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                {anyOpen ? <ChevronsDownUp size={14} /> : <ChevronsUpDown size={14} />}
+                {anyOpen ? t("irpf.collapseAll") : t("irpf.expandAll")}
+              </button>
+            </div>
+          ) : null}
+
+          {bensByGroup.map(([group, glist]) => {
+            const key = group || "sem";
+            return (
+              <CollapsibleCard
+                key={key}
+                open={isOpen(key)}
+                onToggle={() => toggle(key)}
+                title={group ? `${group} · ${groupName(group)}` : t("irpf.noCode")}
+                count={glist.length}
+                attention={hasAttention(glist)}
+              >
+                <div className="divide-y divide-border">
+                  {glist.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
+                </div>
+              </CollapsibleCard>
+            );
+          })}
 
           {dividas.length ? (
-            <section className="rounded-[16px] border border-border bg-card overflow-hidden">
-              <div className="flex items-baseline justify-between px-4 sm:px-5 py-3 border-b border-border">
-                <div className={HEAD}>{t("irpf.debtsSection")}</div>
-                <div className="eyebrow">{dividas.length} {t(dividas.length === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</div>
-              </div>
+            <CollapsibleCard
+              open={isOpen("dividas")}
+              onToggle={() => toggle("dividas")}
+              title={t("irpf.debtsSection")}
+              count={dividas.length}
+              attention={hasAttention(dividas)}
+            >
               <div className="divide-y divide-border">
                 {dividas.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
               </div>
-            </section>
+            </CollapsibleCard>
           ) : null}
         </>
       )}
 
       {incomeSummary.length ? (
-        <section className="rounded-[16px] border border-border bg-card overflow-hidden">
-          <div className="flex items-baseline justify-between gap-3 px-4 sm:px-5 py-3 border-b border-border">
-            <div className={HEAD}>{t("irpf.incomeSection", { year })}</div>
-            {separate ? <div className="eyebrow">{declaranteName}</div> : null}
-          </div>
+        <CollapsibleCard
+          open={isOpen("rendimentos")}
+          onToggle={() => toggle("rendimentos")}
+          title={separate ? `${t("irpf.incomeSection", { year })} · ${declaranteName}` : t("irpf.incomeSection", { year })}
+        >
           <div className="px-4 sm:px-5 py-3.5 space-y-2">
             <p className="text-[11.5px] text-faint">{t("irpf.incomeHint")}</p>
             {incomeSummary.map((r) => (
@@ -571,12 +607,45 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
               </div>
             ))}
           </div>
-        </section>
+        </CollapsibleCard>
       ) : null}
 
       {/* Documento impresso (oculto) — no separado, o do declarante em foco (itens + renda + nome). */}
       <IrpfReport year={year} itemsOverride={separate ? forExport : undefined} incomesOverride={separate ? incSource : undefined} declaranteName={declaranteName} />
     </div>
+  );
+}
+
+/** Card recolhível (accordion) do organizador — cabeçalho clicável + corpo escondível. Recolhido,
+ *  ainda mostra a contagem e um ponto ÂMBAR quando o grupo tem item pendente/a conferir (não some
+ *  problema ao esconder o card). */
+function CollapsibleCard({ open, onToggle, title, count, attention, children }: {
+  open: boolean;
+  onToggle: () => void;
+  title: string;
+  count?: number;
+  attention?: boolean;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <section className="rounded-[16px] border border-border bg-card overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={cn(
+          "w-full flex items-center gap-2.5 px-4 sm:px-5 py-3 text-left transition-colors hover:bg-card-hover outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          open && "border-b border-border",
+        )}
+      >
+        <ChevronDown size={15} className={cn("text-muted transition-transform shrink-0", !open && "-rotate-90")} />
+        <span className={cn(HEAD, "flex-1 min-w-0 truncate")}>{title}</span>
+        {attention ? <span title={t("irpf.groupAttention")} className="w-2 h-2 rounded-full bg-[#e0a33c] shrink-0" aria-label={t("irpf.groupAttention")} /> : null}
+        {count != null ? <span className="eyebrow shrink-0">{count} {t(count === 1 ? "patrimonio.itemOne" : "patrimonio.itemOther")}</span> : null}
+      </button>
+      {open ? children : null}
+    </section>
   );
 }
 
