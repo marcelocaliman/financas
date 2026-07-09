@@ -162,7 +162,11 @@ export function buildSeed(main: Currency): SeedData {
       { id: "a-rf-intl", name: "", classId: CLASS.rendaFixa, subtypeId: "renda-fixa-14", regionId: rC3, currency: c3, amount: f3(3000), cost: f3(2900) },
       { id: "a-prev", name: "", classId: CLASS.previdencia, subtypeId: "previdencia-1", regionId: rMain, currency: main, amount: m(9800), cost: m(8200) },
       // ── Renda Variável ── (ações BR + stock EUA + ETF Europa; FII BR + REIT EUA; cripto; ouro)
-      { id: "a-acao-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: rMain, currency: main, amount: m(4600), cost: m(3600) },
+      { id: "a-acao-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-1", regionId: rMain, currency: main, amount: m(4600), cost: m(3600),
+        holdings: [
+          { id: "h-petr4", ticker: "PETR4", quantity: 100, avgPrice: m(24) },
+          { id: "h-itub4", ticker: "ITUB4", quantity: 40, avgPrice: m(30) },
+        ] },
       { id: "a-etf-br", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: rMain, currency: main, amount: m(4000), cost: m(3200) },
       { id: "a-stock-us", name: "", classId: CLASS.acoes, subtypeId: "acoes-2", regionId: rC3, currency: c3, amount: f3(5000), cost: f3(4000) },
       { id: "a-etf-eu", name: "", classId: CLASS.acoes, subtypeId: "acoes-4", regionId: rC2, currency: c2, amount: f2(5000), cost: f2(4000) },

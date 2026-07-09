@@ -8,6 +8,7 @@ import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward, refreshPulledValues } from "@/finance/irpf-seed";
+import { explodeHoldings } from "@/finance/holdings";
 import { irpfSeedMapper, composeDiscriminacao, fieldsFor, findUnmarkedDisposals, DISPOSAL_FIELDS } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome, currentIncomeMonth } from "@/irpf/income";
@@ -154,7 +155,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   // Bens vendidos ANTES do ano-base já saíram (não entram). Vendidos no ano-base ou depois ainda
   // interessam (no ano ⇒ ficha com base 0; depois ⇒ ainda eram seus em 31/12 ⇒ bem normal).
   const relevantAssets = useMemo(
-    () => allAssets.filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year),
+    () => explodeHoldings(allAssets).filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year),
     [allAssets, year],
   );
   const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
@@ -191,7 +192,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       repository.listLiabilities(),
       repository.listTaxItems(year),
     ]);
-    const relevant = curAssets.filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year);
+    const relevant = explodeHoldings(curAssets).filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year);
     const fresh = buildSeedTaxItems(year, relevant, curLiabs, existing, irpfSeedMapper);
     // Bens que já estavam na lista e foram vendidos este ano → aplica o tratamento de venda.
     const disposals = findUnmarkedDisposals(existing, relevant, year);

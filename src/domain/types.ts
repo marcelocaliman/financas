@@ -5,6 +5,17 @@ import type { Currency } from "@/money/currency";
  * moeda; a conversão pra moeda de exibição é feita por uma camada à parte.
  */
 
+/** Uma POSIÇÃO dentro de um ativo (ex.: PETR4 dentro de "Ações"). Detalhe opcional — NÃO altera o
+ *  valor total do ativo (que o usuário digita); serve pra discriminar e facilitar o puxão do IRPF. */
+export interface AssetHolding {
+  id: string;
+  ticker: string;
+  /** Quantidade de cotas/ações/unidades. */
+  quantity: number;
+  /** Preço médio de AQUISIÇÃO (custo por unidade). Custo da posição = quantity × avgPrice. */
+  avgPrice: number;
+}
+
 export interface Asset {
   id: string;
   name: string;
@@ -39,6 +50,10 @@ export interface Asset {
   /** Valor RECEBIDO na venda, na moeda do ativo (opcional) — vai à discriminação/ganho de capital do
    *  IRPF, NUNCA vira "valor do bem". */
   disposalValue?: number;
+  /** Posições discriminadas (ticker/qtd/preço médio) — só detalhe, NÃO muda o `amount` (total que o
+   *  usuário digita). Quando há posições, o `cost` deriva delas (Σ qtd×preço médio) e o IRPF puxa uma
+   *  linha por ticker. Só nas classes com unidades negociáveis (ações, FIIs, cripto…). */
+  holdings?: AssetHolding[];
 }
 
 export interface Expense {

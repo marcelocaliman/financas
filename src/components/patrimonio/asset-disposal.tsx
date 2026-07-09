@@ -5,10 +5,12 @@ import { actions } from "@/data/actions";
 import { useDisposedAssets } from "@/hooks/use-patrimonio";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { nameById } from "@/domain/taxonomy";
-import { CURRENCY_SYMBOL } from "@/money/currency";
+import { CURRENCY_SYMBOL, formatMoney } from "@/money/currency";
 import { Money } from "@/components/common/money";
 import { Dialog } from "@/components/common/dialog";
-import type { Asset } from "@/domain/types";
+import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
+import { isHoldingsClass, holdingsCost } from "@/finance/holdings";
+import type { Asset, AssetHolding } from "@/domain/types";
 import { cn } from "@/lib/utils";
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
@@ -31,31 +33,70 @@ function useAssetLabel() {
 const DATE_INPUT =
   "h-9 rounded-[8px] border border-border bg-card2 px-2.5 text-[13px] text-text outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]";
 
-/** Painel de detalhe (expand) de um ativo ATIVO: data de aquisição opcional + "marcar como vendido". */
+/** Painel de detalhe (expand) de um ativo ATIVO: posições discriminadas (nas classes negociáveis) +
+ *  data de aquisição opcional + "marcar como vendido". */
 export function AssetDetailPanel({ asset }: { asset: Asset }) {
   const { t } = useTranslation();
   const [selling, setSelling] = useState(false);
   return (
-    <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
-      <label className="text-[11px] text-faint">
-        <span className="block mb-1">{t("patrimonio.acquiredOn")}</span>
-        <input
-          type="date"
-          value={asset.acquiredOn ?? ""}
-          onChange={(e) => void actions.putAsset({ ...asset, acquiredOn: e.target.value || undefined })}
-          className={DATE_INPUT}
-        />
-        <span className="block mt-1 text-[10px] text-faint">{t("patrimonio.acquiredHint")}</span>
-      </label>
-      <button
-        type="button"
-        onClick={() => setSelling(true)}
-        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-border bg-card text-[12.5px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-      >
-        <Tag size={14} /> {t("patrimonio.markSold")}
-      </button>
-      <SellAssetDialog asset={asset} open={selling} onClose={() => setSelling(false)} />
+    <div className="space-y-4">
+      {/* Discriminar posições (ações/FIIs/cripto…): detalhe ticker/qtd/preço médio — NÃO muda o total. */}
+      {isHoldingsClass(asset.classId) ? (
+        <div className="space-y-2">
+          <p className="text-[11px] text-faint leading-relaxed">{t("patrimonio.holdingsHint")}</p>
+          <AssetHoldingsGrid asset={asset} />
+        </div>
+      ) : null}
+      <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
+        <label className="text-[11px] text-faint">
+          <span className="block mb-1">{t("patrimonio.acquiredOn")}</span>
+          <input
+            type="date"
+            value={asset.acquiredOn ?? ""}
+            onChange={(e) => void actions.putAsset({ ...asset, acquiredOn: e.target.value || undefined })}
+            className={DATE_INPUT}
+          />
+          <span className="block mt-1 text-[10px] text-faint">{t("patrimonio.acquiredHint")}</span>
+        </label>
+        <button
+          type="button"
+          onClick={() => setSelling(true)}
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-[8px] border border-border bg-card text-[12.5px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          <Tag size={14} /> {t("patrimonio.markSold")}
+        </button>
+        <SellAssetDialog asset={asset} open={selling} onClose={() => setSelling(false)} />
+      </div>
     </div>
+  );
+}
+
+/** Mini-tabela de POSIÇÕES do ativo (ticker · quantidade · preço médio → custo). Salva embutido no
+ *  ativo (não vira linha no patrimônio); o `cost` (aplicado) deriva das posições. Não toca no total. */
+function AssetHoldingsGrid({ asset }: { asset: Asset }) {
+  const { t } = useTranslation();
+  const holdings = asset.holdings ?? [];
+  // Ao mudar posições: deriva o custo (Σ qtd×preço médio); some com o array vazio (volta ao agregado).
+  const save = (next: AssetHolding[]) =>
+    void actions.putAsset({ ...asset, holdings: next.length ? next : undefined, ...(next.length ? { cost: holdingsCost(next) } : {}) });
+  const cols: GridColumn<AssetHolding>[] = [
+    { key: "ticker", type: "text", header: t("patrimonio.holdingTicker"), width: "minmax(88px,1.2fr)", placeholder: "PETR4" },
+    { key: "quantity", type: "number", header: t("patrimonio.holdingQty"), width: "minmax(84px,0.8fr)", align: "right" },
+    { key: "avgPrice", type: "number", decimals: 2, header: `${t("patrimonio.holdingAvg")} (${CURRENCY_SYMBOL[asset.currency]})`, width: "minmax(104px,0.9fr)", align: "right" },
+    { key: "cost", type: "computed", header: t("patrimonio.holdingCost"), width: "minmax(104px,0.9fr)", align: "right", compute: (h) => formatMoney((h.quantity || 0) * (h.avgPrice || 0), asset.currency) },
+  ];
+  return (
+    <DataGrid<AssetHolding>
+      columns={cols}
+      rows={holdings}
+      blank={() => ({ id: crypto.randomUUID(), ticker: "", quantity: 0, avgPrice: 0 })}
+      isComplete={(h) => h.ticker.trim().length > 0 && h.quantity > 0 && h.avgPrice > 0}
+      onCommit={(h) => save(holdings.some((x) => x.id === h.id) ? holdings.map((x) => (x.id === h.id ? h : x)) : [...holdings, h])}
+      onDelete={(id) => save(holdings.filter((x) => x.id !== id))}
+      addPlaceholder={t("patrimonio.holdingAdd")}
+      total={<Money value={holdingsCost(holdings)} currency={asset.currency} />}
+      sortable
+    />
   );
 }
 
