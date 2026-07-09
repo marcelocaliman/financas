@@ -20,6 +20,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useSettings } from "@/hooks/use-settings";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
+import { maskAmountInput } from "@/money/parse";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
 import { SHARED_OWNER } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
@@ -733,28 +734,28 @@ function Menu({ label, icon, items, align = "left", accent = false }: {
   );
 }
 
-/** Input de dinheiro PONTUADO (pt-BR): mostra "1.234,56", edita comigo e reformata ao sair. Resync
- *  quando o valor muda por fora (ex.: a calculadora PTAX preenche) e o campo não está em foco. */
+/** Input de dinheiro com MÁSCARA "centavos" (pt-BR): digita só números e a pontuação + as 2 casas
+ *  decimais entram sozinhas ("123456" → "1.234,56"). Resync quando o valor muda por fora (ex.: PTAX). */
 function MoneyField({ value, amber, onChange }: { value: number | undefined; amber?: boolean; onChange: (n: number | undefined) => void }) {
   const fmt = (n?: number) => (n == null ? "" : n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const [raw, setRaw] = useState(fmt(value));
   const focused = useRef(false);
   useEffect(() => { if (!focused.current) setRaw(fmt(value)); }, [value]);
-  const parse = (s: string): number | undefined => {
-    const c = s.replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", ".");
-    if (c === "" || c === "-") return undefined;
-    const n = Number(c);
-    return Number.isFinite(n) ? n : undefined;
-  };
   return (
     <input
       type="text"
-      inputMode="decimal"
+      inputMode="numeric"
       value={raw}
       placeholder="R$ —"
       onFocus={() => (focused.current = true)}
       onBlur={() => { focused.current = false; setRaw(fmt(value)); }}
-      onChange={(e) => { setRaw(e.target.value); onChange(parse(e.target.value)); }}
+      onChange={(e) => {
+        const el = e.currentTarget;
+        const { display, value: v } = maskAmountInput(el.value, "BRL");
+        setRaw(display);
+        onChange(v);
+        requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+      }}
       className={cn(
         "h-9 w-40 rounded-[8px] border bg-card2 px-3 text-[13px] text-text tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
         amber ? "border-[color-mix(in_oklab,#e0a33c_55%,transparent)]" : "border-border",

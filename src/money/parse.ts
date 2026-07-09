@@ -62,6 +62,18 @@ export function formatAmountEdit(value: number, currency: Currency): string {
 }
 
 /**
+ * Máscara "centavos" (caixa eletrônico): pega o que foi digitado, mantém SÓ os dígitos e formata como
+ * valor com 2 casas — os 2 últimos dígitos são os centavos, a pontuação (milhar/decimal) entra sozinha.
+ * Ex.: digitar "123456" → "1.234,56". O usuário nunca digita "," nem "." — só números. Vazio = nulo.
+ */
+export function maskAmountInput(input: string, currency: Currency): { display: string; value: number | undefined } {
+  const digits = input.replace(/\D/g, "");
+  if (digits === "") return { display: "", value: undefined };
+  const value = Number(digits) / 100;
+  return { display: formatAmountEdit(value, currency), value };
+}
+
+/**
  * Formato para EDIÇÃO de um número genérico (preço médio, qtd, taxa): locale +
  * casas controladas. `decimals` fixo → exatamente N casas (ex.: preço médio = 2);
  * indefinido → flexível (qtd fracionável, sem zeros à toa), sempre com milhar.

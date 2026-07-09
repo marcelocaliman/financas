@@ -5,7 +5,7 @@ import { Check, ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRigh
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
-import { formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "@/money/parse";
+import { formatAmountEdit, formatNumberEdit, parseLocaleNumber, maskAmountInput } from "@/money/parse";
 import { useUI } from "@/store/ui";
 import { useViewer } from "@/store/viewer";
 import { useIsMobile } from "@/hooks/use-media";
@@ -246,7 +246,12 @@ function MoneyCell({
           setFocused(true);
           e.currentTarget.select();
         }}
-        onChange={(e) => setV(e.target.value)}
+        onChange={(e) => {
+          // Máscara "centavos": digita só números, a pontuação e as 2 casas decimais entram sozinhas.
+          const el = e.currentTarget;
+          setV(maskAmountInput(el.value, currency).display);
+          requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+        }}
         onBlur={() => {
           setFocused(false);
           commit();

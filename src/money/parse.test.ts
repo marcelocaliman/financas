@@ -1,6 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { parseAmount, formatAmountEdit, formatNumberEdit, parseLocaleNumber } from "./parse";
+import { parseAmount, formatAmountEdit, formatNumberEdit, parseLocaleNumber, maskAmountInput } from "./parse";
 import type { Currency } from "./currency";
+
+describe("maskAmountInput — máscara centavos", () => {
+  it("os 2 últimos dígitos são os centavos; pontuação entra sozinha (BRL)", () => {
+    expect(maskAmountInput("1", "BRL")).toEqual({ display: "0,01", value: 0.01 });
+    expect(maskAmountInput("123", "BRL")).toEqual({ display: "1,23", value: 1.23 });
+    expect(maskAmountInput("123456", "BRL")).toEqual({ display: "1.234,56", value: 1234.56 });
+    expect(maskAmountInput("", "BRL")).toEqual({ display: "", value: undefined });
+  });
+  it("ignora qualquer pontuação já digitada (só os dígitos importam)", () => {
+    expect(maskAmountInput("1.234,56", "BRL").value).toBe(1234.56);
+    expect(maskAmountInput("1234.56", "BRL").value).toBe(1234.56); // usuário digitou ponto → ignorado
+    expect(maskAmountInput("R$ 50000", "BRL").value).toBe(500); // "50000" → 500,00
+  });
+  it("respeita o locale da moeda (USD usa vírgula milhar, ponto decimal)", () => {
+    expect(maskAmountInput("123456", "USD")).toEqual({ display: "1,234.56", value: 1234.56 });
+  });
+});
 
 describe("parseAmount — milhar vs decimal", () => {
   const cases: [string, number | null][] = [
