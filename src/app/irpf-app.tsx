@@ -8,7 +8,7 @@ import { useTaxItems, useTaxReturns } from "@/hooks/use-irpf";
 import { repository } from "@/data/dexie-repository";
 import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward, refreshPulledValues } from "@/finance/irpf-seed";
-import { explodeHoldings } from "@/finance/holdings";
+import { explodeHoldings, supersededByHoldings } from "@/finance/holdings";
 import { irpfSeedMapper, composeDiscriminacao, fieldsFor, findUnmarkedDisposals, DISPOSAL_FIELDS } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
 import { summarizeIncome, currentIncomeMonth } from "@/irpf/income";
@@ -154,11 +154,19 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
 
   // Bens vendidos ANTES do ano-base já saíram (não entram). Vendidos no ano-base ou depois ainda
   // interessam (no ano ⇒ ficha com base 0; depois ⇒ ainda eram seus em 31/12 ⇒ bem normal).
+  const allExploded = useMemo(() => explodeHoldings(allAssets), [allAssets]);
   const relevantAssets = useMemo(
-    () => explodeHoldings(allAssets).filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year),
-    [allAssets, year],
+    () => allExploded.filter((a) => !a.disposedOn || Number(a.disposedOn.slice(0, 4)) >= year),
+    [allExploded, year],
   );
+  // Itens tornados obsoletos pela discriminação (o agregado "Ações" depois de virar posições, etc.) —
+  // limpeza de sync: some sozinho ao carregar/puxar (não vira órfão nem "erro" de incompleto).
+  const supersededIds = useMemo(() => new Set(supersededByHoldings(list, allExploded)), [list, allExploded]);
+  useEffect(() => {
+    if (supersededIds.size) for (const id of supersededIds) void actions.removeTaxItem(id);
+  }, [supersededIds]);
   const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
+  const orphans = useMemo(() => diff.orphans.filter((o) => !supersededIds.has(o.id)), [diff.orphans, supersededIds]);
   // Bens já na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados (roll-forward).
   const unmarkedDisposals = useMemo(() => findUnmarkedDisposals(list, relevantAssets, year), [list, relevantAssets, year]);
   // Itens marcados "não declarar" (excluded) saem das contas de pendência/conferir/atenção.
@@ -543,11 +551,11 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           <button type="button" onClick={pull} className="ml-auto text-accent font-medium hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">{t("irpf.pull")}</button>
         </div>
       ) : null}
-      {diff.orphans.length > 0 ? (
+      {orphans.length > 0 ? (
         <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
           <CalendarClock size={15} className="text-faint shrink-0" />
-          <span className="min-w-0">{t("irpf.orphanBanner", { n: diff.orphans.length })}</span>
-          {diff.orphans.map((o) => (
+          <span className="min-w-0">{t("irpf.orphanBanner", { n: orphans.length })}</span>
+          {orphans.map((o) => (
             <button
               key={o.id}
               type="button"

@@ -1,4 +1,5 @@
 import type { Asset } from "@/domain/types";
+import type { TaxItem } from "@/domain/irpf";
 import { CLASS } from "@/domain/taxonomy";
 
 // Discriminação de POSIÇÕES dentro de um ativo (ticker/qtd/preço médio). Puro e testável. É só detalhe:
@@ -31,6 +32,29 @@ export function explodeHoldings(assets: Asset[]): Asset[] {
     } else {
       out.push(a);
     }
+  }
+  return out;
+}
+
+const baseId = (sourceId: string): string => sourceId.split("::")[0];
+
+/**
+ * Itens do IRPF que a DISCRIMINAÇÃO tornou obsoletos e devem ser removidos (limpeza de sync):
+ *  - o bem AGREGADO ("Ações") depois que o ativo foi discriminado em posições;
+ *  - uma POSIÇÃO antiga que foi apagada (mas o ativo ainda tem outras).
+ * Regra: item de bem auto-puxado cujo `sourceId` NÃO é mais um ativo explodido válido, MAS a base do
+ * ativo (antes do `::`) ainda existe → foi substituído pela discriminação. Se a base sumiu de vez
+ * (ativo apagado), NÃO entra aqui (é órfão de verdade — o usuário decide). Nunca mexe em vendido/
+ * excluído/manual. `explodedAssets` = patrimônio já explodido (posições viram ativos).
+ */
+export function supersededByHoldings(existing: TaxItem[], explodedAssets: Asset[]): string[] {
+  const valid = new Set(explodedAssets.map((a) => a.id));
+  const validBases = new Set([...valid].map(baseId));
+  const out: string[] = [];
+  for (const it of existing) {
+    if (it.source !== "seed-asset" || !it.sourceId || it.disposed || it.excluded) continue;
+    if (valid.has(it.sourceId)) continue; // ainda é um ativo/posição válido
+    if (validBases.has(baseId(it.sourceId))) out.push(it.id); // base existe → substituído pela discriminação
   }
   return out;
 }

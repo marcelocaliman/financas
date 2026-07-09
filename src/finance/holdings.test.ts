@@ -1,8 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { holdingsCost, explodeHoldings, isHoldingsClass } from "./holdings";
+import { holdingsCost, explodeHoldings, isHoldingsClass, supersededByHoldings } from "./holdings";
 import { buildSeedTaxItems } from "./irpf-seed";
 import { irpfSeedMapper } from "@/irpf/mapper";
 import type { Asset } from "@/domain/types";
+import type { TaxItem } from "@/domain/irpf";
+
+const taxItem = (over: Partial<TaxItem> = {}): TaxItem => ({
+  id: "t", baseYear: 2025, kind: "asset", group: "03", code: "01", discriminacao: "",
+  currency: "BRL", valorAnoBase: 1000, fields: {}, source: "seed-asset", ...over,
+});
 
 const asset = (over: Partial<Asset> = {}): Asset => ({ id: "a", name: "Ações", classId: "acoes", currency: "BRL", amount: 50000, ...over });
 
@@ -43,6 +49,30 @@ describe("explodeHoldings", () => {
   it("carrega o disposedOn pras posições (venda do grupo todo)", () => {
     const out = explodeHoldings([asset({ id: "y", disposedOn: "2026-03-01", holdings: [{ id: "h", ticker: "PETR4", quantity: 10, avgPrice: 20 }] })]);
     expect(out[0].disposedOn).toBe("2026-03-01");
+  });
+});
+
+describe("supersededByHoldings (limpeza de sync)", () => {
+  const exploded = explodeHoldings([asset({ id: "acoes", holdings: [{ id: "h1", ticker: "PETR4", quantity: 100, avgPrice: 20 }] })]);
+  it("marca o AGREGADO substituído por posições; NÃO marca ativo apagado de vez nem a posição válida", () => {
+    const existing = [
+      taxItem({ id: "agg", sourceId: "acoes" }),      // agregado antigo → limpar
+      taxItem({ id: "pos", sourceId: "acoes::h1" }),  // posição válida → fica
+      taxItem({ id: "gone", sourceId: "casa" }),      // ativo apagado (sem base válida) → órfão real, fica
+    ];
+    expect(supersededByHoldings(existing, exploded)).toEqual(["agg"]);
+  });
+  it("posição APAGADA (mas o ativo tem outras) é limpa", () => {
+    const existing = [taxItem({ id: "old", sourceId: "acoes::h_removida" })];
+    expect(supersededByHoldings(existing, exploded)).toEqual(["old"]);
+  });
+  it("não mexe em vendido/excluído/manual", () => {
+    const existing = [
+      taxItem({ id: "d", sourceId: "acoes", disposed: true }),
+      taxItem({ id: "e", sourceId: "acoes", excluded: true }),
+      taxItem({ id: "m", sourceId: "acoes", source: "manual" }),
+    ];
+    expect(supersededByHoldings(existing, exploded)).toEqual([]);
   });
 });
 

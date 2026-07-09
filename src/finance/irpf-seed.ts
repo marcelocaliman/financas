@@ -101,7 +101,8 @@ export function buildRollForward(prev: TaxItem[], newBaseYear: number): TaxItem[
  * Atualiza o VALOR (situação do ano-base) dos itens auto-puxados que o usuário AINDA não confirmou
  * (needsReview) pro valor ATUAL do patrimônio. É o que faz "puxar de novo em dezembro" refrescar os
  * números sem clobber do que foi editado à mão. Ignora vendidos (tratados à parte) e manuais.
- * Devolve só os itens que MUDARAM.
+ * POSIÇÕES discriminadas (sourceId com `::`) SEMPRE refrescam — o valor deriva do ticker/qtd/preço,
+ * então mudar a posição + puxar sincroniza. Devolve só os itens que MUDARAM.
  */
 export function refreshPulledValues(
   existing: TaxItem[],
@@ -112,7 +113,9 @@ export function refreshPulledValues(
   const byId = new Map(assets.map((a) => [a.id, a] as const));
   const out: TaxItem[] = [];
   for (const it of existing) {
-    if (it.source !== "seed-asset" || it.disposed || !it.needsReview || !it.sourceId) continue;
+    if (it.source !== "seed-asset" || it.disposed || !it.sourceId) continue;
+    // Não-review E não-posição → não mexe (preserva ajuste manual de bem de custo). Posição refresca.
+    if (!it.needsReview && !it.sourceId.includes("::")) continue;
     const a = byId.get(it.sourceId);
     if (!a || a.disposedOn) continue; // vendido → tratado por findUnmarkedDisposals
     const fresh = map.asset(a, baseYear);
