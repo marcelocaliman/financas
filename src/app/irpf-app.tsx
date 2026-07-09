@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown, Check } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -147,8 +147,8 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const declarante = separate ? (selDeclarante && people.some((p) => p.id === selDeclarante) ? selDeclarante : primaryId) : "";
   // Lista MOSTRADA: no separado, só os bens do declarante (+ comuns); no conjunto, tudo.
   const visible = useMemo(() => (separate ? list.filter((i) => belongsTo(i, declarante, primaryId)) : list), [list, separate, declarante, primaryId]);
-  // Itens prontos p/ exportar: no separado, filtrados e com os comuns já divididos por sharePct.
-  const forExport = useMemo(() => (separate ? visible.map(applyShare) : list), [visible, list, separate]);
+  // Itens prontos p/ exportar: sem os "não declarar"; no separado, filtrados e comuns já divididos.
+  const forExport = useMemo(() => (separate ? visible.map(applyShare) : list).filter((i) => !i.excluded), [visible, list, separate]);
   const declaranteName = separate ? nameById(people, declarante) : "";
 
   // Bens vendidos ANTES do ano-base já saíram (não entram). Vendidos no ano-base ou depois ainda
@@ -160,9 +160,11 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
   // Bens já na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados (roll-forward).
   const unmarkedDisposals = useMemo(() => findUnmarkedDisposals(list, relevantAssets, year), [list, relevantAssets, year]);
-  const pending = countPending(visible);
+  // Itens marcados "não declarar" (excluded) saem das contas de pendência/conferir/atenção.
+  const declaredVisible = useMemo(() => visible.filter((i) => !i.excluded), [visible]);
+  const pending = countPending(declaredVisible);
   const newCount = diff.newAssets.length + diff.newLiabilities.length;
-  const needsReviewCount = visible.filter((i) => i.needsReview).length;
+  const needsReviewCount = declaredVisible.filter((i) => i.needsReview).length;
   const thisReturn = useMemo(() => (returns ?? []).find((r) => r.baseYear === year), [returns, year]);
   const closedAt = thisReturn?.closedAt;
   // Estamos na janela de fechar a posição de 31/12 deste ano e ele ainda não foi fechado?
@@ -344,7 +346,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const toggle = (k: string) => setOpened((s) => { const n = new Set(s); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const anyOpen = groupKeys.some((k) => opened.has(k));
   const toggleAll = () => setOpened(anyOpen ? new Set() : new Set(groupKeys));
-  const hasAttention = (items: TaxItem[]) => items.some((it) => itemIssues(it).length > 0 || it.needsReview);
+  const hasAttention = (items: TaxItem[]) => items.some((it) => !it.excluded && (itemIssues(it).length > 0 || it.needsReview));
 
   function setMode(mode: "joint" | "separate") {
     void actions.putSettings({ irpf: { ...settings.irpf, mode, primaryId: settings.irpf?.primaryId || people[0]?.id } });
@@ -770,9 +772,26 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
     : (BENS_GROUPS.find((g) => g.group === item.group)?.codes ?? []);
 
   return (
-    <div className="px-4 sm:px-5 py-4 space-y-3">
-      {/* Linha 1: grupo + código + moeda/país + remover */}
+    <div className={cn("px-4 sm:px-5 py-4 space-y-3 transition-opacity", item.excluded && "opacity-45")}>
+      {/* Linha 1: [declarar?] grupo + código + moeda/país + remover */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Checkbox "declarar": marcado = vai à declaração; desmarcado = fica na lista mas fora do doc. */}
+        <button
+          type="button"
+          onClick={() => patch({ excluded: !item.excluded })}
+          title={item.excluded ? t("irpf.declareOff") : t("irpf.declareOn")}
+          aria-label={item.excluded ? t("irpf.declareOff") : t("irpf.declareOn")}
+          aria-pressed={!item.excluded}
+          className={cn(
+            "grid place-items-center w-[22px] h-[22px] rounded-[6px] border shrink-0 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+            item.excluded ? "border-border text-transparent hover:border-border-strong" : "border-accent bg-accent text-[#08130C]",
+          )}
+        >
+          <Check size={14} />
+        </button>
+        {item.excluded ? (
+          <span className="text-[10.5px] font-medium text-faint uppercase tracking-[0.06em] shrink-0">{t("irpf.excludedBadge")}</span>
+        ) : null}
         {item.kind === "asset" ? (
           <select
             value={item.group}

@@ -36,6 +36,15 @@ describe("buildBensCSV", () => {
     // sem R$ manual → as duas colunas de situação em BRL ficam VAZIAS (;;) antes da observação
     expect(csv).toContain(';;"Exterior');
   });
+  it("item marcado 'não declarar' (excluded) NÃO entra no CSV", () => {
+    const csv = buildBensCSV([
+      it_({ group: "03", code: "01", discriminacao: "100 PETR4", valorAnoBase: 5000 }),
+      it_({ group: "07", code: "03", discriminacao: "HGLG11 secreto", valorAnoBase: 9000, excluded: true }),
+    ]);
+    expect(csv).toContain("100 PETR4");
+    expect(csv).not.toContain("HGLG11 secreto");
+  });
+
   it("bem VENDIDO: flag VENDIDO, situação do ano-base = 0 e observação de ganho de capital", () => {
     const csv = buildBensCSV([it_({ group: "01", code: "12", disposed: true, valorAnoBase: 0, valorAnoAnterior: 300000, discriminacao: "Apê — VENDIDO" })]);
     expect(csv).toContain("VENDIDO");

@@ -74,8 +74,10 @@ export function IrpfReport({ year, itemsOverride, incomesOverride, declaranteNam
   const tax = useTaxonomy();
   const incomeSummary = useMemo(() => summarizeIncome(incomes, year, currentIncomeMonth()), [incomes, year]);
 
-  const bens = items.filter((i) => i.kind === "asset");
-  const dividas = items.filter((i) => i.kind === "debt").sort((a, b) => a.code.localeCompare(b.code));
+  // "Não declarar" (excluded) sai do documento e dos totais — fica só na lista de edição.
+  const declared = items.filter((i) => !i.excluded);
+  const bens = declared.filter((i) => i.kind === "asset");
+  const dividas = declared.filter((i) => i.kind === "debt").sort((a, b) => a.code.localeCompare(b.code));
   const totalBase = bens.reduce((s, it) => s + (it.disposed ? 0 : brlValue(it, "base") ?? 0), 0);
   const totalPrev = bens.reduce((s, it) => s + (brlValue(it, "prev") ?? 0), 0);
   const totalDiv = dividas.reduce((s, it) => s + (brlValue(it, "base") ?? 0), 0);

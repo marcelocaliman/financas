@@ -78,4 +78,7 @@ export interface TaxItem {
   ownerId?: string;
   /** % de um bem COMUM que entra em CADA declaração (default 50). Só quando ownerId === SHARED_OWNER. */
   sharePct?: number;
+  /** NÃO declarar este item: fica na lista (não perde), mas sai do PDF/CSV e dos totais. Ex.: bem
+   *  abaixo do piso, ou que o contador já tem. Desmarca a checkbox de "declarar" na linha. */
+  excluded?: boolean;
 }
