@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -432,7 +432,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : null}
 
-      {/* Ações */}
+      {/* Ações — agrupadas em menus pra não virar uma parede de botões (nada escondido, só organizado) */}
       <div className="flex flex-wrap items-center gap-2.5">
         <button
           type="button"
@@ -442,35 +442,35 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         >
           <RefreshCw size={15} className={busy ? "animate-spin" : ""} /> {t("irpf.pull")}
         </button>
-        <button
-          type="button"
-          onClick={addManual}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-        >
-          <Plus size={15} /> {t("irpf.addItem")}
-        </button>
-        <button
-          type="button"
-          onClick={addSold}
-          className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-        >
-          <Tag size={15} /> {t("irpf.addSold")}
-        </button>
-        <button type="button" onClick={downloadTemplate} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-          <FileDown size={15} /> {t("irpf.importTemplate")}
-        </button>
-        <button type="button" onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-          <Upload size={15} /> {t("irpf.importCsv")}
-        </button>
+        <Menu
+          label={t("irpf.addMenu")}
+          icon={<Plus size={15} />}
+          items={[
+            { label: t("irpf.addItem"), icon: <Plus size={14} />, onClick: () => void addManual() },
+            { label: t("irpf.addSold"), icon: <Tag size={14} />, onClick: () => void addSold() },
+          ]}
+        />
+        <Menu
+          label={t("irpf.importMenu")}
+          icon={<Upload size={15} />}
+          items={[
+            { label: t("irpf.importCsv"), icon: <Upload size={14} />, onClick: () => fileRef.current?.click() },
+            { label: t("irpf.importTemplate"), icon: <FileDown size={14} />, onClick: downloadTemplate },
+          ]}
+        />
         <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => void onImport(e)} />
         {!empty ? (
-          <div className="ml-auto flex items-center gap-2">
-            <button type="button" onClick={printIRPF} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-accent text-[#08130C] text-[13px] font-semibold hover:opacity-90 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-              <Download size={15} /> {t("irpf.docPdf")}
-            </button>
-            <button type="button" onClick={downloadCsvs} className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border border-border bg-card text-[13px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-              <Table size={15} /> {t("irpf.docCsv")}
-            </button>
+          <div className="ml-auto">
+            <Menu
+              align="right"
+              accent
+              label={t("irpf.exportMenu")}
+              icon={<Download size={15} />}
+              items={[
+                { label: t("irpf.docPdf"), icon: <Download size={14} />, onClick: printIRPF },
+                { label: t("irpf.docCsv"), icon: <Table size={14} />, onClick: downloadCsvs },
+              ]}
+            />
           </div>
         ) : null}
       </div>
@@ -576,6 +576,54 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
 
       {/* Documento impresso (oculto) — no separado, o do declarante em foco (itens + renda + nome). */}
       <IrpfReport year={year} itemsOverride={separate ? forExport : undefined} incomesOverride={separate ? incSource : undefined} declaranteName={declaranteName} />
+    </div>
+  );
+}
+
+/** Botão com menu suspenso — agrupa ações afins (Adicionar / Importar / Exportar) sem virar parede
+ *  de botões. Fecha ao clicar fora ou escolher. Variante `accent` p/ o de exportar (a saída). */
+function Menu({ label, icon, items, align = "left", accent = false }: {
+  label: string;
+  icon: ReactNode;
+  items: { label: string; icon?: ReactNode; onClick: () => void }[];
+  align?: "left" | "right";
+  accent?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={cn(
+          "inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          accent
+            ? "border-[color-mix(in_oklab,var(--accent)_45%,transparent)] bg-accent-soft text-accent hover:border-accent"
+            : "border-border bg-card text-text hover:border-border-strong",
+        )}
+      >
+        {icon} {label} <ChevronDown size={14} className={accent ? "text-accent" : "text-faint"} />
+      </button>
+      {open ? (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className={cn("absolute mt-1.5 z-50 min-w-[210px] rounded-[12px] border border-border bg-card shadow-[var(--shadow-float)] p-1.5", align === "right" ? "right-0" : "left-0")}>
+            {items.map((it, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => { setOpen(false); it.onClick(); }}
+                className="w-full flex items-center gap-2.5 px-2.5 h-9 rounded-[8px] text-left text-[13px] text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+              >
+                {it.icon ? <span className="text-faint shrink-0">{it.icon}</span> : null}
+                {it.label}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
