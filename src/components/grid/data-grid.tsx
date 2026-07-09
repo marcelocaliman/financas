@@ -1,7 +1,7 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Repeat, Trash2, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, ChevronsUpDown, ChevronLeft, ChevronRight, Repeat, Trash2, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { CURRENCIES, type Currency } from "@/money/currency";
@@ -81,6 +81,9 @@ interface DataGridProps<T extends { id: string }> {
   expandableRow?: (row: T) => boolean;
   /** Conteúdo do painel expandido de uma linha (renderizado só quando aberta). */
   renderRowDetail?: (row: T) => ReactNode;
+  /** Habilita ORDENAR clicando no cabeçalho da coluna (asc → desc → natural). Opt-in: sem isto, a
+   *  ordem é a que chega. A linha-fantasma fica sempre no fim. Select ordena pelo RÓTULO. */
+  sortable?: boolean;
 }
 
 const CELL_INPUT =
@@ -922,6 +925,7 @@ export function DataGrid<T extends { id: string }>({
   defaultCurrency,
   expandableRow,
   renderRowDetail,
+  sortable,
 }: DataGridProps<T>) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -943,6 +947,34 @@ export function DataGrid<T extends { id: string }>({
   const template = (canExpand ? "28px " : "") + columns.map((c) => c.width).join(" ") + " 44px";
   const firstTextKey = columns.find((c) => c.type === "text")?.key ?? columns[0].key;
   const titleCol = columns.find((c) => c.key === firstTextKey) ?? columns[0];
+
+  // Ordenação (opt-in via `sortable`): clique no cabeçalho alterna asc → desc → natural. Select ordena
+  // pelo RÓTULO (não pelo id); money/number numérico; o resto alfabético. A fantasma fica fora (é à parte).
+  const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
+  const canSortCol = (c: GridColumn<T>) => !!sortable && c.type !== "computed" && c.type !== "toggle";
+  const onSort = (c: GridColumn<T>) => {
+    if (!canSortCol(c)) return;
+    setSort((s) => (s?.key !== c.key ? { key: c.key, dir: "asc" } : s.dir === "asc" ? { key: c.key, dir: "desc" } : null));
+  };
+  const sortedRows = useMemo(() => {
+    if (!sort) return rows;
+    const col = columns.find((c) => c.key === sort.key);
+    if (!col) return rows;
+    const val = (row: T): number | string => {
+      const v = get(row, col.key);
+      if (col.type === "money" || col.type === "number") return typeof v === "number" ? v : Number.NEGATIVE_INFINITY;
+      if (col.type === "select") {
+        const opts = col.optionGroups?.flatMap((g) => g.options) ?? col.optionsFor?.(row) ?? col.options ?? [];
+        return (opts.find((o) => o.value === v)?.label ?? String(v ?? "")).toLowerCase();
+      }
+      return String(v ?? "").toLowerCase();
+    };
+    return [...rows].sort((a, b) => {
+      const av = val(a), bv = val(b);
+      const cmp = typeof av === "number" && typeof bv === "number" ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true });
+      return sort.dir === "asc" ? cmp : -cmp;
+    });
+  }, [rows, sort, columns]);
 
   // Navegação por DOM (não por índice posicional): a lista é reordenada por id e
   // o useLiveQuery re-renderiza async, então focamos após o próximo frame.
@@ -1207,7 +1239,7 @@ export function DataGrid<T extends { id: string }>({
     };
     return (
       <div ref={containerRef} className="space-y-2.5">
-        {rows.map((row) => mobileCard(row, false))}
+        {sortedRows.map((row) => mobileCard(row, false))}
         {!viewerMode ? mobileCard(ghost, true) : null}
         {total ? (
           <div className="flex items-center justify-between gap-3 rounded-[14px] border border-border bg-card2 px-4 py-3">
@@ -1230,23 +1262,44 @@ export function DataGrid<T extends { id: string }>({
         style={{ gridTemplateColumns: template }}
       >
         {canExpand ? <div /> : null}
-        {columns.map((c) => (
-          <div
-            key={c.key}
-            className={cn(
-              "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-muted",
-              c.align === "right" && "text-right",
-              c.type === "toggle" && "px-1 text-center",
-            )}
-          >
-            {c.header}
-          </div>
-        ))}
+        {columns.map((c) => {
+          const active = sort?.key === c.key;
+          const sortable_ = canSortCol(c);
+          return (
+            <div
+              key={c.key}
+              className={cn(
+                "px-3 py-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em]",
+                active ? "text-text" : "text-muted",
+                c.align === "right" && "text-right",
+                c.type === "toggle" && "px-1 text-center",
+              )}
+            >
+              {sortable_ ? (
+                <button
+                  type="button"
+                  onClick={() => onSort(c)}
+                  aria-label={c.header}
+                  className={cn("group/sh inline-flex items-center gap-1 hover:text-text transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded", c.align === "right" && "flex-row-reverse")}
+                >
+                  {c.header}
+                  {active ? (
+                    sort!.dir === "asc" ? <ChevronUp size={12} className="shrink-0" /> : <ChevronDown size={12} className="shrink-0" />
+                  ) : (
+                    <ChevronsUpDown size={11} className="shrink-0 text-faint opacity-40 group-hover/sh:opacity-100 transition-opacity" />
+                  )}
+                </button>
+              ) : (
+                c.header
+              )}
+            </div>
+          );
+        })}
         <div />
       </div>
 
       {/* Linhas */}
-      {rows.map((row) => {
+      {sortedRows.map((row) => {
         const isExpandable = canExpand && expandableRow!(row);
         const isOpen = isExpandable && expanded.has(row.id);
         return (

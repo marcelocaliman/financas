@@ -181,6 +181,7 @@ export function StatementDetail({
         columns={cols}
         rows={items}
         blank={newChild}
+        sortable
         isComplete={(r) => r.categoryId.length > 0 && r.amount > 0}
         onCommit={(r) => void actions.putExpense({ ...r, parentId: fatura.id })}
         onDelete={(id) => void actions.removeExpense(id)}
