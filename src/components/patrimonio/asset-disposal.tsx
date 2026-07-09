@@ -80,7 +80,7 @@ function AssetHoldingsGrid({ asset }: { asset: Asset }) {
   const save = (next: AssetHolding[]) =>
     void actions.putAsset({ ...asset, holdings: next.length ? next : undefined, ...(next.length ? { cost: holdingsCost(next) } : {}) });
   const cols: GridColumn<AssetHolding>[] = [
-    { key: "ticker", type: "text", header: t("patrimonio.holdingTicker"), width: "minmax(88px,1.2fr)", placeholder: "PETR4" },
+    { key: "ticker", type: "text", uppercase: true, header: t("patrimonio.holdingTicker"), width: "minmax(88px,1.2fr)", placeholder: "PETR4" },
     { key: "quantity", type: "number", header: t("patrimonio.holdingQty"), width: "minmax(84px,0.8fr)", align: "right" },
     { key: "avgPrice", type: "number", decimals: 2, header: `${t("patrimonio.holdingAvg")} (${CURRENCY_SYMBOL[asset.currency]})`, width: "minmax(104px,0.9fr)", align: "right" },
     { key: "cost", type: "computed", header: t("patrimonio.holdingCost"), width: "minmax(104px,0.9fr)", align: "right", compute: (h) => formatMoney((h.quantity || 0) * (h.avgPrice || 0), asset.currency) },

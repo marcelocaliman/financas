@@ -58,7 +58,7 @@
     "you": "você",
     "primaryQ": "Você é",
     "changePrimary": "Quem é você?",
-    "separateHint": "Em cada bem, marque o dono: você, o cônjuge ou Comum (dividido). Bens sem dono e renda sem pessoa entram na declaração de {{you}}.",
+    "separateHint": "Marque o dono em cada bem (você · cônjuge · Comum). Sem dono → declaração de {{you}}.",
     "owner": "Dono",
     "ownerShared": "Comum",
     "sharePct": "% em cada declaração",

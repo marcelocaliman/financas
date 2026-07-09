@@ -58,7 +58,7 @@
     "you": "you",
     "primaryQ": "You are",
     "changePrimary": "Who are you?",
-    "separateHint": "On each asset, set the owner: you, your spouse or Shared (split). Assets with no owner and income with no person go into {{you}}'s return.",
+    "separateHint": "Set the owner on each asset (you · spouse · Shared). No owner → {{you}}'s return.",
     "owner": "Owner",
     "ownerShared": "Shared",
     "sharePct": "% in each return",

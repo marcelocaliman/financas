@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown, Check } from "lucide-react";
+import { Lock, Plus, Trash2, Download, RefreshCw, ShieldCheck, Globe, AlertTriangle, CalendarClock, Table, FileDown, Upload, Tag, ChevronDown, ChevronsDownUp, ChevronsUpDown, Check, X } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useIsPro } from "@/hooks/use-pro";
 import { useProStore } from "@/store/pro";
@@ -18,6 +18,7 @@ import { belongsTo, applyShare, incomesForDeclarante } from "@/irpf/declarante";
 import { BENS_GROUPS, DIVIDAS_CODES, groupName, codeName, isForeignCurrency, CODES_LAYOUT, defaultBaseYear, yearCloseWindow } from "@/irpf/codes";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useSettings } from "@/hooks/use-settings";
+import { useEngagement } from "@/store/engagement";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
@@ -349,6 +350,9 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const toggleAll = () => setOpened(anyOpen ? new Set() : new Set(groupKeys));
   const hasAttention = (items: TaxItem[]) => items.some((it) => !it.excluded && (itemIssues(it).length > 0 || it.needsReview));
 
+  const dismissedInProgress = useEngagement((s) => s.dismissedIrpfInProgress);
+  const dismissInProgress = useEngagement((s) => s.dismissIrpfInProgress);
+
   function setMode(mode: "joint" | "separate") {
     void actions.putSettings({ irpf: { ...settings.irpf, mode, primaryId: settings.irpf?.primaryId || people[0]?.id } });
   }
@@ -357,10 +361,10 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   }
 
   return (
-    <div className="space-y-5">
-      {/* Aviso de honestidade — permanente */}
-      <div className="flex items-start gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-3 text-[12.5px] text-muted">
-        <ShieldCheck size={16} className="text-accent shrink-0 mt-0.5" />
+    <div className="space-y-4">
+      {/* Aviso de honestidade — permanente, mas COMPACTO (nota discreta de 1 linha, não uma barra). */}
+      <div className="flex items-center gap-2 px-1 text-[11.5px] text-faint">
+        <ShieldCheck size={14} className="text-accent shrink-0" />
         <span>{t("irpf.disclaimer")}</span>
       </div>
 
@@ -422,10 +426,18 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : null}
 
-      {year >= currentYear ? (
+      {year >= currentYear && dismissedInProgress !== year ? (
         <div className="flex items-start gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--accent)_28%,transparent)] bg-accent-soft px-4 py-2.5 text-[12.5px] text-muted">
           <CalendarClock size={15} className="text-accent shrink-0 mt-0.5" />
-          <span>{t("irpf.inProgressNote", { year })}</span>
+          <span className="flex-1">{t("irpf.inProgressNote", { year })}</span>
+          <button
+            type="button"
+            onClick={() => dismissInProgress(year)}
+            aria-label={t("common.close")}
+            className="shrink-0 -mr-1 -mt-0.5 grid place-items-center w-6 h-6 rounded-[7px] text-faint hover:text-text hover:bg-card-hover transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            <X size={14} />
+          </button>
         </div>
       ) : null}
 

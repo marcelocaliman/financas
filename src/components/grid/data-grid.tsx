@@ -50,6 +50,8 @@ export interface GridColumn<T> {
    *  (ex.: histórico de patrimônio é só passado/presente — mês futuro não faz sentido). */
   maxMonth?: string;
   placeholder?: string;
+  /** text: força CAIXA ALTA ao digitar (ex.: ticker PETR4). */
+  uppercase?: boolean;
   compute?: (row: T) => ReactNode;
   /** toggle: ícone (default Repeat) — pra distinguir toggles diferentes (ex.: recorrente vs fatura). */
   icon?: LucideIcon;
@@ -146,6 +148,7 @@ function TextCell({
   placeholder,
   rowId,
   colKey,
+  uppercase,
   onCommit,
   onEnter,
 }: {
@@ -153,6 +156,7 @@ function TextCell({
   placeholder?: string;
   rowId: string;
   colKey: string;
+  uppercase?: boolean;
   onCommit: (v: string) => void;
   onEnter: () => void;
 }) {
@@ -171,7 +175,7 @@ function TextCell({
         setFocused(true);
         e.currentTarget.select();
       }}
-      onChange={(e) => setV(e.target.value)}
+      onChange={(e) => setV(uppercase ? e.target.value.toUpperCase() : e.target.value)}
       onBlur={() => {
         setFocused(false);
         if (v !== value) onCommit(v);
@@ -1037,6 +1041,7 @@ export function DataGrid<T extends { id: string }>({
             placeholder={ghostRow && col.key === firstTextKey ? addPlaceholder : col.placeholder}
             rowId={rowId}
             colKey={col.key}
+            uppercase={col.uppercase}
             onCommit={commit}
             onEnter={onEnter}
           />
