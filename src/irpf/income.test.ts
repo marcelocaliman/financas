@@ -23,4 +23,22 @@ describe("summarizeIncome", () => {
     expect(rows.some((r) => r.total === 9999)).toBe(false); // ano anterior fica de fora
     expect(rows[0].total).toBeGreaterThanOrEqual(rows[rows.length - 1].total); // ordenado desc
   });
+
+  it("teto de mês: ignora renda de meses ADIANTE do atual (ano em andamento)", () => {
+    const rows = summarizeIncome([
+      inc({ month: "2026-05", categoryId: "salario", amount: 5000 }), // até o teto → conta
+      inc({ month: "2026-07", categoryId: "salario", amount: 5000 }), // = teto → conta
+      inc({ month: "2026-08", categoryId: "salario", amount: 5000 }), // futuro → ignora
+      inc({ month: "2026-12", categoryId: "salario", amount: 5000 }), // futuro → ignora
+    ], 2026, "2026-07");
+    expect(rows.find((r) => r.categoryId === "salario")?.total).toBe(10000); // só maio + julho
+  });
+
+  it("ano PASSADO: o teto (mês atual) não corta nada (o ano todo já passou)", () => {
+    const rows = summarizeIncome([
+      inc({ month: "2025-03", amount: 3000 }),
+      inc({ month: "2025-11", amount: 3000 }),
+    ], 2025, "2026-07");
+    expect(rows.find((r) => r.categoryId === "salario")?.total).toBe(6000);
+  });
 });

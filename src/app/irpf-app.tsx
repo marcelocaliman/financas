@@ -10,7 +10,7 @@ import { actions } from "@/data/actions";
 import { buildSeedTaxItems, buildRollForward, refreshPulledValues } from "@/finance/irpf-seed";
 import { irpfSeedMapper, composeDiscriminacao, fieldsFor, findUnmarkedDisposals, DISPOSAL_FIELDS } from "@/irpf/mapper";
 import { itemIssues, countPending, diffPatrimonio } from "@/irpf/validate";
-import { summarizeIncome } from "@/irpf/income";
+import { summarizeIncome, currentIncomeMonth } from "@/irpf/income";
 import { buildBensCSV, buildDividasCSV, downloadCSV, parseIrpfImport, IRPF_IMPORT_TEMPLATE } from "@/irpf/irpf-csv";
 import { IrpfReport } from "@/irpf/irpf-report";
 import { belongsTo, applyShare, incomesForDeclarante } from "@/irpf/declarante";
@@ -173,7 +173,8 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   }, [returns, year]);
   const incomes = useLiveQuery(() => repository.listIncomes()) ?? [];
   const incSource = useMemo(() => (separate ? incomesForDeclarante(incomes, declarante, primaryId) : incomes), [incomes, separate, declarante, primaryId]);
-  const incomeSummary = useMemo(() => summarizeIncome(incSource, year), [incSource, year]);
+  // Teto no mês atual: o resumo NÃO conta renda de meses futuros (ano em andamento) — não infla o IR.
+  const incomeSummary = useMemo(() => summarizeIncome(incSource, year, currentIncomeMonth()), [incSource, year]);
 
   async function ensureReturn() {
     if (!(await repository.getTaxReturn(String(year)))) {

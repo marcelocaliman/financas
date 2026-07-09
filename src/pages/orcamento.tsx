@@ -163,19 +163,17 @@ export default function Orcamento() {
     return rows;
   }, [data, year, disp, rates, lang]);
 
-  // Recorrências: ao abrir um mês NOVO/futuro ainda sem fixos, trazê-los sozinhos do mês
-  // anterior. Idempotente e dedupado na action; nunca reescreve o passado. UMA tentativa por
-  // mês por sessão — assim apagar um fixo deste mês NÃO o ressuscita (respeita o usuário).
-  const autofilled = useRef<Set<string>>(new Set());
+  // Recorrências: materializa os fixos SÓ até o mês CORRENTE. Os meses À FRENTE só são montados
+  // quando o mês realmente VIRA (ao abrir o app já no mês novo), NÃO ao visitá-los — assim meses
+  // futuros não ganham lançamentos de projeção que poluiriam o que o IRPF puxa. Idempotente na
+  // action (não duplica; apagar um fixo do mês não o ressuscita na sessão). Não depende do mês visto.
+  const autofilled = useRef<string | null>(null);
   useEffect(() => {
-    if (!data || month < currentMonth() || autofilled.current.has(month)) return;
-    const hasRec =
-      data.expenses.some((e) => e.month === month && e.recurring) ||
-      data.incomes.some((i) => i.month === month && i.recurring);
-    if (hasRec) return;
-    autofilled.current.add(month);
-    void actions.materializeRecurring(month);
-  }, [data, month]);
+    const cur = currentMonth();
+    if (!data || autofilled.current === cur) return;
+    autofilled.current = cur;
+    void actions.materializeRecurring(cur);
+  }, [data]);
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;

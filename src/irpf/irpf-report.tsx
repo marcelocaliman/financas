@@ -3,7 +3,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useTaxItems } from "@/hooks/use-irpf";
 import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { repository } from "@/data/dexie-repository";
-import { summarizeIncome } from "@/irpf/income";
+import { summarizeIncome, currentIncomeMonth } from "@/irpf/income";
 import { BENS_GROUPS, codeName, isForeignCurrency, CODES_LAYOUT } from "@/irpf/codes";
 import { changeFlag, brlValue } from "@/irpf/irpf-csv";
 import { nameById } from "@/domain/taxonomy";
@@ -72,7 +72,7 @@ export function IrpfReport({ year, itemsOverride, incomesOverride, declaranteNam
   const items = itemsOverride ?? queriedItems;
   const incomes = incomesOverride ?? queriedIncomes;
   const tax = useTaxonomy();
-  const incomeSummary = useMemo(() => summarizeIncome(incomes, year), [incomes, year]);
+  const incomeSummary = useMemo(() => summarizeIncome(incomes, year, currentIncomeMonth()), [incomes, year]);
 
   const bens = items.filter((i) => i.kind === "asset");
   const dividas = items.filter((i) => i.kind === "debt").sort((a, b) => a.code.localeCompare(b.code));
