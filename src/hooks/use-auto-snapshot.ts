@@ -8,6 +8,7 @@ import { actions } from "@/data/actions";
 import { convert } from "@/money/currency";
 import { budgetSaldoForMonth } from "@/finance/budget-saldo";
 import { monthsBetween } from "@/finance/months";
+import { planCurrentMonthAuto } from "@/finance/auto-snapshot";
 
 /** Mês atual em "AAAA-MM" no horário LOCAL (UTC erraria a virada num app cross-border). */
 function currentMonth(): string {
@@ -64,25 +65,11 @@ export function useAutoSnapshot(): void {
       }
     }
 
-    const rows = snapshots.filter((s) => s.month === month);
-    const manual = rows.find((s) => s.auto !== true);
-    if (manual) {
-      // Usuário assumiu o mês manualmente → respeita e limpa um auto duplicado, se houver.
-      const dupAuto = rows.find((s) => s.auto === true);
-      if (dupAuto) void actions.removeSnapshot(dupAuto.id);
-      return;
-    }
-    const auto = rows.find((s) => s.auto === true);
-    if (!auto) {
-      void actions.putSnapshot({ id: crypto.randomUUID(), month, currency: base, amount: nw, contribution: want, auto: true });
-    } else {
-      const cur = auto.contribution ?? null;
-      const tgt = want ?? null;
-      const contribChanged = cur === null ? tgt !== null : tgt === null || Math.abs(cur - tgt) > 0.5;
-      if (auto.currency !== base || Math.abs(auto.amount - nw) > 0.5 || contribChanged) {
-        // Mantém o AUTO do mês corrente alinhado ao patrimônio, à moeda principal e ao saldo do orçamento.
-        void actions.putSnapshot({ ...auto, currency: base, amount: nw, contribution: want });
-      }
+    // Reconciliação do mês corrente num módulo PURO (testável): garante 1 auto por mês com id
+    // determinístico e limpa duplicatas (o bug antigo do id aleatório criava 2 linhas do mesmo mês).
+    for (const op of planCurrentMonthAuto(snapshots, month, base, nw, want)) {
+      if (op.type === "put") void actions.putSnapshot(op.snapshot);
+      else void actions.removeSnapshot(op.id);
     }
   }, [data, snapshots, budget, rates, base]);
 }

@@ -80,7 +80,9 @@ export default function Historico() {
     });
   }
 
-  const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: base, amount: 0 });
+  // Linha-fantasma: moeda VAZIA → a coluna do valor mostra "—" (não pré-seleciona "R$"). Ao
+  // salvar, `defaultCurrency={base}` preenche a moeda principal (o patrimônio é sempre na base).
+  const newSnap = (): NetWorthSnapshot => ({ id: crypto.randomUUID(), month: "", currency: "" as Currency, amount: 0 });
 
   const up = view.change >= 0;
   const yieldUp = view.yieldGain >= 0;
@@ -135,6 +137,7 @@ export default function Historico() {
               columns={cols}
               rows={view.sorted}
               blank={newSnap}
+              defaultCurrency={base}
               isComplete={(r) => r.month.trim().length > 0 && r.amount > 0}
               onCommit={(r) => {
                 const next: NetWorthSnapshot = { ...r, auto: false };
