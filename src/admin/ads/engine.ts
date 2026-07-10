@@ -1946,7 +1946,7 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
   // PASSO A PASSO / CHECKLIST / LISTA (educativo): eyebrow + título no alto + lista abaixo.
   if (post.steps) {
     const px = fitTitlePx(ctx, s, post.title, availW, 60, 84);
-    const eyeY = H * 0.15; // respiro da marca no topo (não colar a eyebrow na logo)
+    const eyeY = H * 0.09; // margem do topo (a marca saiu → o bloco sobe pra reaproveitar o espaço)
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px, pal);
     if (post.sub) {
@@ -1961,9 +1961,9 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
   const postShot = adImage(post.shot);
   if (post.shot && postShot) {
     const { w: iw, h: ih } = imgWH(postShot);
-    // SCREENSHOT emoldurado: eyebrow + título no alto, janela embaixo (encolhe se não couber). A
-    // eyebrow começa mais abaixo da marca (respiro no topo) e os blocos ganham mais ar entre si.
-    const eyeY = H * 0.155;
+    // SCREENSHOT emoldurado: eyebrow + título no alto, janela embaixo (encolhe se não couber).
+    // Sem a marca no topo, a eyebrow sobe pra reaproveitar o espaço (a janela ganha mais folga embaixo).
+    const eyeY = H * 0.09;
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     const px = fitTitlePx(ctx, s, post.title, availW, 62, 86);
     let tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 54) * s, post.title, 1, 0, px, pal);
@@ -1991,7 +1991,7 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
     drawTitle(ctx, s, x, eyeY + eyeGap, post.title, 1, 0, px, pal);
     if (post.sub) drawSub(ctx, s, x, tb + 30 * s, W, post.sub, 1, pal);
   } else if (post.compare) {
-    const eyeY = H * 0.13;
+    const eyeY = H * 0.085; // sem a marca no topo → o bloco sobe um pouco
     drawEyebrow(ctx, s, x, eyeY, post.eyebrow, 1, pal);
     const px = fitTitlePx(ctx, s, post.title, availW, 92, 112);
     const tb = drawTitle(ctx, s, x, eyeY + (px * 0.72 + 52) * s, post.title, 1, 0, px, pal);
