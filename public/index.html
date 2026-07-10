@@ -14,6 +14,8 @@
   <!-- Aplica o tema salvo antes da pintura (sem flash). Bloqueante, externo (CSP). -->
   <script src="/theme-init.js"></script>
 
+  <!-- .ico raster PRIMEIRO: é o que o Google busca na raiz e o favicon da busca não renderiza SVG bem. -->
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
   <link rel="icon" type="image/svg+xml" href="/icon.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -48,7 +50,7 @@
   {
     "@context": "https://schema.org",
     "@graph": [
-      { "@type": "Organization", "@id": "https://nossasfinancas.com.br/#org", "name": "Nossas Finanças", "url": "https://nossasfinancas.com.br/", "logo": "https://nossasfinancas.com.br/og.png", "description": "Gestão de patrimônio multimoeda, privada e cross-border, com criptografia ponta a ponta." },
+      { "@type": "Organization", "@id": "https://nossasfinancas.com.br/#org", "name": "Nossas Finanças", "url": "https://nossasfinancas.com.br/", "logo": "https://nossasfinancas.com.br/icon-512.png", "description": "Gestão de patrimônio multimoeda, privada e cross-border, com criptografia ponta a ponta." },
       { "@type": "WebSite", "@id": "https://nossasfinancas.com.br/#website", "url": "https://nossasfinancas.com.br/", "name": "Nossas Finanças", "inLanguage": "pt-BR", "publisher": { "@id": "https://nossasfinancas.com.br/#org" } },
       { "@type": "SoftwareApplication", "name": "Nossas Finanças", "applicationCategory": "FinanceApplication", "operatingSystem": "Web, iOS, Android (PWA)", "url": "https://nossasfinancas.com.br/app", "inLanguage": ["pt-BR", "en"], "description": "Painel de gestão patrimonial e orçamento multimoeda com criptografia ponta a ponta (E2EE). Patrimônio, investimentos, orçamento, objetivos, projeção e independência financeira — para quem vive entre países.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" }, "featureList": ["Multimoeda (BRL, EUR, USD, GBP)", "Criptografia ponta a ponta (E2EE)", "Local-first e offline (PWA)", "Patrimônio e investimentos", "Orçamento mensal multimoeda", "Projeção e independência financeira (FIRE)", "Acesso da família (só-leitura)"] },
       { "@type": "FAQPage", "inLanguage": "pt-BR", "mainEntity": [
