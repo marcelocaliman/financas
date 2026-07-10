@@ -1263,17 +1263,6 @@ function drawProgress(ctx: CanvasRenderingContext2D, s: number, W: number, n: nu
   }
 }
 
-/** Logo + wordmark (topo dos stories). */
-function drawBrand(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, size = 46, pal: Palette = DARK) {
-  const d = size * s;
-  drawMark(ctx, x, y, d);
-  ctx.fillStyle = pal.brandText;
-  ctx.font = fontSans(30 * s, 600);
-  ctx.textBaseline = "middle";
-  ctx.textAlign = "left";
-  ctx.fillText("Nossas Finanças", x + d + 18 * s, y + d / 2 + 1 * s);
-}
-
 function drawEyebrow(ctx: CanvasRenderingContext2D, s: number, x: number, y: number, text: string, a: number, pal: Palette = DARK, size = 34) {
   ctx.globalAlpha = a;
   ctx.fillStyle = pal.accent;
@@ -1692,8 +1681,7 @@ export function drawReelCover(ctx: CanvasRenderingContext2D, story: Story, W: nu
 
   const x = 96 * s;
 
-  // marca no topo (mesma âncora sempre)
-  drawBrand(ctx, s, x, 156 * s, 54, pal);
+  // (sem watermark de marca no topo — o rodapé "nossasfinancas.com.br" carrega a marca)
 
   // bloco eyebrow + TÍTULO grande, centralizado na vertical
   const lines = cover.title;
@@ -1915,7 +1903,7 @@ export function drawPost(ctx: CanvasRenderingContext2D, post: PieceVisual, W: nu
   } else {
     drawBg(ctx, W, H, 0, post.glow?.[0] ?? 0.3, post.glow?.[1] ?? 0.18);
   }
-  drawBrand(ctx, s, 90 * s, 74 * s, 46, pal);
+  // (sem watermark de marca no topo — só o @handle no rodapé e o slide/cena de CTA carregam a marca)
 
   // FOTO VÍVIDA: eyebrow → título → sub ancorados na faixa sólida inferior.
   if (style === "vivid") {
