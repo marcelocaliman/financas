@@ -43,14 +43,14 @@ export function OnePage() {
         {/* Título estável da página (outline do documento) — visível só p/ leitores de tela. */}
         <h1 className="sr-only">{t("app.name")}</h1>
         <div className="hero-bg w-full overflow-hidden">
-          {/* pt-[68px] = folga do topo (ticker/MobileBar) + pt-10 do hero = 108px de antes.
-              A barra de vencidas entra no meio (só quando há vencida); sem ela, o espaçamento
-              fica idêntico ao anterior. */}
+          {/* pt-[68px] = folga do topo pro ticker/MobileBar flutuante (h-62 + respiro). */}
           <div className={cn(CONTAINER, GUTTERS, "pt-[68px] pb-8 sm:pb-14")}>
             <DueAlertBar />
-            {/* Sem alerta (DueAlertBar=null) → hero é o 1º filho e mantém o respiro folgado.
-                Com alerta → hero deixa de ser 1º filho e o gap aperta pra casar com o do ticker. */}
-            <div className="pt-6 sm:pt-10 [&:not(:first-child)]:pt-4 sm:[&:not(:first-child)]:pt-5">
+            {/* Gap CONSTANTE do topo do hero — não incha quando NÃO há alerta. O 1º elemento
+                (barra de vencidas, card de boas-vindas/nudge ou o eyebrow) fica sempre à mesma
+                distância curta do ticker; antes, sem alerta, o wrapper virava `:first-child` e
+                ganhava 40px, jogando o card de boas-vindas pra baixo com um vão enorme. */}
+            <div className="pt-4 sm:pt-5">
               <DashboardHero />
             </div>
           </div>
