@@ -8,7 +8,7 @@ import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { actions } from "@/data/actions";
 import { convert, formatMoney } from "@/money/currency";
-import { formatAmountEdit, parseLocaleNumber } from "@/money/parse";
+import { formatAmountEdit, parseLocaleNumber, maskAmountInput } from "@/money/parse";
 import { nameById, REGION_FLAG } from "@/domain/taxonomy";
 import { CurrencyBadge } from "@/components/common/currency-badge";
 import { useIsMobile } from "@/hooks/use-media";
@@ -138,10 +138,17 @@ export function BalanceUpdater() {
                       <span className="min-w-0 flex-1 truncate text-[13px] text-text">{flag ? `${flag} ` : ""}{label}</span>
                       <CurrencyBadge currency={a.currency} />
                       <input
-                        inputMode="decimal"
+                        inputMode="numeric"
                         value={edits[a.id] ?? ""}
                         onFocus={(e) => e.currentTarget.select()}
-                        onChange={(e) => setEdits((p) => ({ ...p, [a.id]: e.target.value }))}
+                        // Máscara "centavos": só dígitos; os 2 últimos são os centavos e a pontuação
+                        // entra sozinha (igual ao MoneyCell da grade e ao MoneyField do IRPF).
+                        onChange={(e) => {
+                          const el = e.currentTarget;
+                          const { display } = maskAmountInput(el.value, a.currency);
+                          setEdits((p) => ({ ...p, [a.id]: display }));
+                          requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+                        }}
                         onBlur={() =>
                           setEdits((p) => ({ ...p, [a.id]: formatAmountEdit(parseLocaleNumber(p[a.id] ?? "", a.currency) ?? a.amount, a.currency) }))
                         }
