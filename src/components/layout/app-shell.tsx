@@ -18,11 +18,13 @@ import { RatesTicker } from "@/components/layout/rates-ticker";
 import { SectionBoundary } from "@/components/common/error-boundary";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { lazyRetry } from "@/lib/lazy-retry";
 
 // Views condicionais de tela cheia → lazy (chunk próprio; só baixa quando o usuário abre).
 // Config fica EAGER de propósito: vive sempre montada pro slide horizontal.
-const SupportView = lazy(() => import("@/app/support-app").then((m) => ({ default: m.SupportView })));
-const IrpfView = lazy(() => import("@/app/irpf-app").then((m) => ({ default: m.IrpfView })));
+// lazyRetry: aba antiga + deploy novo = chunk sumiu → recarrega 1× sozinho em vez de quebrar.
+const SupportView = lazy(lazyRetry(() => import("@/app/support-app").then((m) => ({ default: m.SupportView }))));
+const IrpfView = lazy(lazyRetry(() => import("@/app/irpf-app").then((m) => ({ default: m.IrpfView }))));
 
 /** Casca: menu (topo ou lateral) + página editorial única. A Config entra NO LUGAR do
  *  conteúdo principal num SLIDE horizontal (a página sai pra esquerda e some; a Config

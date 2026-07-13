@@ -5,6 +5,7 @@ import { ComingSoon } from "@/components/common/coming-soon";
 import { Accordion } from "@/components/common/accordion";
 import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
+import { lazyRetry } from "@/lib/lazy-retry";
 import { Footer } from "@/components/layout/footer";
 import { SectionBoundary } from "@/components/common/error-boundary";
 import { DashboardHero, DashboardDetail, PainelViewProvider } from "@/pages/painel";
@@ -20,13 +21,14 @@ import { CrossBorderSummary } from "@/pages/summaries/cross-border-summary";
 
 // Corpo das seções em lazy (code-split): cada página vira um chunk próprio, carregado quando o
 // accordion renderiza o detalhe — o bundle inicial fica só com o hero/dashboard + summaries.
-const Patrimonio = lazy(() => import("@/pages/patrimonio"));
-const Orcamento = lazy(() => import("@/pages/orcamento"));
-const Historico = lazy(() => import("@/pages/historico"));
-const Objetivos = lazy(() => import("@/pages/objetivos"));
-const Projecao = lazy(() => import("@/pages/projecao"));
-const Liberdade = lazy(() => import("@/pages/liberdade"));
-const CrossBorder = lazy(() => import("@/pages/cross-border"));
+// lazyRetry: aba antiga + deploy novo = chunk sumiu → recarrega 1× sozinho em vez de quebrar.
+const Patrimonio = lazy(lazyRetry(() => import("@/pages/patrimonio")));
+const Orcamento = lazy(lazyRetry(() => import("@/pages/orcamento")));
+const Historico = lazy(lazyRetry(() => import("@/pages/historico")));
+const Objetivos = lazy(lazyRetry(() => import("@/pages/objetivos")));
+const Projecao = lazy(lazyRetry(() => import("@/pages/projecao")));
+const Liberdade = lazy(lazyRetry(() => import("@/pages/liberdade")));
+const CrossBorder = lazy(lazyRetry(() => import("@/pages/cross-border")));
 
 /** id → { detalhe (corpo do accordion), summary (KPIs do header) }. */
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
