@@ -12,6 +12,7 @@ import { downloadFile } from "@/data/backup";
 export function ConflictNotice() {
   const { t } = useTranslation();
   const at = useConflictNotice((s) => s.at);
+  const saved = useConflictNotice((s) => s.saved);
   const dismiss = useConflictNotice((s) => s.dismiss);
   if (!at) return null;
 
@@ -31,15 +32,19 @@ export function ConflictNotice() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[14px] font-semibold tracking-[-0.01em]">{t("conflict.title")}</div>
-          <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{t("conflict.desc")}</p>
-          <button
-            type="button"
-            onClick={download}
-            className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-border bg-card2 px-3 text-[12px] font-medium text-text transition-colors hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-          >
-            <Download size={13} />
-            {t("conflict.download")}
-          </button>
+          {/* Sem cópia salva (storage cheio): o aviso ainda aparece — mas HONESTO, sem botão de
+              download de uma cópia que não existe. */}
+          <p className="mt-0.5 text-[12.5px] leading-snug text-muted">{t(saved ? "conflict.desc" : "conflict.descNoCopy")}</p>
+          {saved ? (
+            <button
+              type="button"
+              onClick={download}
+              className="mt-2.5 inline-flex h-8 items-center gap-1.5 rounded-[9px] border border-border bg-card2 px-3 text-[12px] font-medium text-text transition-colors hover:border-border-strong outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <Download size={13} />
+              {t("conflict.download")}
+            </button>
+          ) : null}
         </div>
       </div>
       <button
