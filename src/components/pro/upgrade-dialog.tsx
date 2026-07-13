@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Check, ShieldCheck, Sparkles, Users, FileBarChart, BarChart3, Globe } from "lucide-react";
+import { X, Check, ShieldCheck, Sparkles, Users, FileBarChart, BarChart3, Globe, Landmark } from "lucide-react";
 import { isNativeApp, openExternal } from "@/lib/native";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import type { Appearance } from "@stripe/stripe-js";
@@ -184,6 +184,7 @@ export function UpgradeDialog() {
 
   const benefits = [
     { Icon: Users, title: t("pro.benefit1"), desc: t("pro.benefit1Desc") },
+    { Icon: Landmark, title: t("pro.benefitIrpf"), desc: t("pro.benefitIrpfDesc") },
     { Icon: FileBarChart, title: t("pro.benefit2"), desc: t("pro.benefit2Desc") },
     { Icon: BarChart3, title: t("pro.benefitProj"), desc: t("pro.benefitProjDesc") },
   ];
