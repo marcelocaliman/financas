@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useFxExposure } from "@/hooks/use-fx-exposure";
+import { goToSection } from "@/hooks/use-scroll-spy";
 import { convert, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
@@ -40,17 +41,33 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
   const foreignDisp = toDisp(fx.foreign);
   const swing = Math.abs(foreignDisp) * (pct / 100); // impacto de ±pct% nas moedas estrangeiras
   const totalDisp = toDisp(fx.total);
-  // Tem patrimônio, mas tudo na moeda principal? Então NÃO há exposição cambial: a sensibilidade
-  // (oscilação/faixa) seria sempre zero — mostramos um aviso claro em vez de "±0" confuso.
+  // Tem patrimônio, mas tudo na moeda principal? Então NÃO há exposição cambial. Em vez do card
+  // completo com UMA barra em 100% (informação vazia), um tile COMPACTO diz isso na lata e
+  // aponta o caminho (adicionar um ativo em outra moeda no Patrimônio).
   const hasForeign = fx.rows.some((r) => r.currency !== base);
+  if (!hasForeign) {
+    return (
+      <section className="space-y-3">
+        <Eyebrow>{t("crossborder.fxTitle")}</Eyebrow>
+        <div className="rounded-[16px] border border-dashed border-border-strong p-5 max-w-md">
+          <p className="text-[13px] text-muted leading-relaxed">{t("crossborder.fxHintSingle", { base })}</p>
+          <button
+            type="button"
+            onClick={() => goToSection("patrimonio")}
+            className="mt-3 text-[12.5px] font-medium text-accent hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
+          >
+            {t("crossborder.goPatrimonio")}
+          </button>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-4">
       <div>
         <Eyebrow>{t("crossborder.fxTitle")}</Eyebrow>
-        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">
-          {hasForeign ? t("crossborder.fxHint") : t("crossborder.fxHintSingle", { base })}
-        </p>
+        <p className="text-[12px] text-muted mt-1 max-w-xl leading-relaxed">{t("crossborder.fxHint")}</p>
       </div>
 
       {/* Exposição por moeda */}

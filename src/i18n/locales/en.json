@@ -77,7 +77,6 @@
     "disposalMark": "Record sales",
     "importTemplate": "Download template",
     "importCsv": "Import spreadsheet",
-    "exportSoon": "Generate document (soon)",
     "docPdf": "Download PDF",
     "docCsv": "Spreadsheets (CSV)",
     "emptyState": "Click “Pull from my net worth” to start — each asset and debt becomes a line with a suggested code.",
@@ -153,7 +152,7 @@
     "topSpend": "Top spend"
   },
   "dashboard": {
-    "heroEyebrow": "Net worth · updated today",
+    "emptyModel": "How it works: you track TOTALS — what you own (Wealth) and what comes in and out each month (Budget) — not every little purchase. Easy to keep up to date.", "heroEyebrow": "Net worth · updated today",
     "netWorth": "Net worth",
     "monthChange": "{{value}}% this month",
     "real": "Real (BRL)",
@@ -417,7 +416,7 @@
     "monthlyTotal": "Total per month",
     "yearlyTotal": "per year",
     "addSub": "Add subscription",
-    "note": "Documentation — not counted in the budget total (card-paid ones are already in the statement). Each subscription shows its real amount in its own cycle; annual ones are charged in full on renewal. The “per month (avg)” is just the yearly sum ÷ 12, for comparison."
+    "note": "This list is a reference CATALOG — it does not add to the budget: the real monthly amount lives there (as a standalone expense or inside the card statement), and adding it here would double-count. Each subscription shows its real amount in its own cycle; annual ones are charged in full on renewal. The “per month (avg)” is just the yearly sum ÷ 12, for comparison."
   },
   "investimentos": {
     "total": "Total invested",
@@ -613,7 +612,7 @@
     "hint": "Log dividends, interest-on-equity and REIT income received (source, month YYYY-MM and amount). Yield is the last 12 months' income over total invested."
   },
   "crossborder": {
-    "fxTitle": "FX impact on your wealth",
+    "goPatrimonio": "Add an asset in another currency", "fxTitle": "FX impact on your wealth",
     "fxHint": "You hold wealth in more than one currency. When exchange rates move, your net worth (in your main currency) moves with them. See your exposure and sensitivity.",
     "fxHintSingle": "All your wealth is in {{base}} — you have no FX exposure. When exchange rates move, your total doesn't change. Add an asset in another currency to see the sensitivity.",
     "fxEmpty": "Add assets to see your FX exposure.",

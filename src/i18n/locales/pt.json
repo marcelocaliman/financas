@@ -77,7 +77,6 @@
     "disposalMark": "Registrar vendas",
     "importTemplate": "Baixar modelo",
     "importCsv": "Importar planilha",
-    "exportSoon": "Gerar documento (em breve)",
     "docPdf": "Baixar PDF",
     "docCsv": "Planilhas (CSV)",
     "emptyState": "Clique em “Puxar do meu patrimônio” pra começar — cada bem e dívida vira uma linha com o código sugerido.",
@@ -153,7 +152,7 @@
     "topSpend": "Maior gasto"
   },
   "dashboard": {
-    "heroEyebrow": "Patrimônio · atualizado hoje",
+    "emptyModel": "Como funciona: você registra TOTAIS — o quanto tem (Patrimônio) e o quanto entra e sai no mês (Orçamento) — não cada comprinha. Simples de manter em dia.", "heroEyebrow": "Patrimônio · atualizado hoje",
     "netWorth": "Patrimônio líquido",
     "monthChange": "{{value}}% no mês",
     "real": "Real (BRL)",
@@ -417,7 +416,7 @@
     "monthlyTotal": "Total por mês",
     "yearlyTotal": "no ano",
     "addSub": "Adicionar assinatura",
-    "note": "Documentação — não entra no total do orçamento (as pagas no cartão já estão na fatura). Cada assinatura mostra o valor real no ciclo dela; a anual você paga inteira no vencimento. A “média por mês” é só a soma anual ÷ 12, pra comparar."
+    "note": "Esta lista é um CATÁLOGO de referência — ela não soma no orçamento: o valor real do mês vive lá (como gasto avulso ou dentro da fatura do cartão), e somar aqui contaria em dobro. Cada assinatura mostra o valor real no ciclo dela; a anual você paga inteira no vencimento. A “média por mês” é só a soma anual ÷ 12, pra comparar."
   },
   "investimentos": {
     "total": "Total investido",
@@ -613,7 +612,7 @@
     "hint": "Registre dividendos, JCP e rendimentos de FII recebidos (fonte, mês AAAA-MM e valor). O yield é a renda dos últimos 12 meses sobre o total investido."
   },
   "crossborder": {
-    "fxTitle": "Impacto do câmbio no patrimônio",
+    "goPatrimonio": "Adicionar um ativo em outra moeda", "fxTitle": "Impacto do câmbio no patrimônio",
     "fxHint": "Você tem patrimônio em mais de uma moeda. Quando o câmbio mexe, o seu patrimônio (na moeda principal) mexe junto. Veja a exposição e a sensibilidade.",
     "fxHintSingle": "Todo o seu patrimônio está em {{base}} — você não tem exposição cambial. Quando o câmbio mexe, o seu total não muda. Adicione um ativo em outra moeda pra ver a sensibilidade.",
     "fxEmpty": "Adicione ativos pra ver a exposição cambial.",

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Check } from "lucide-react";
 import { BarChart, Bar, XAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
@@ -354,14 +355,33 @@ export function InvestimentosSummary() {
 function TargetInput({ value, onCommit }: { value: number; onCommit: (v: number) => void }) {
   const [v, setV] = useState(() => (value > 0 ? String(value) : ""));
   const [focused, setFocused] = useState(false);
+  // Feedback de "salvo": ✓ verde por ~1.5s após o commit — antes o blur salvava em silêncio
+  // e o usuário ficava sem saber se o alvo persistiu.
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<number | null>(null);
   useEffect(() => {
     if (!focused) setV(value > 0 ? String(value) : "");
   }, [value, focused]);
+  useEffect(
+    () => () => {
+      if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    },
+    [],
+  );
+  const flashSaved = () => {
+    setSaved(true);
+    if (savedTimer.current) window.clearTimeout(savedTimer.current);
+    savedTimer.current = window.setTimeout(() => setSaved(false), 1500);
+  };
   const commit = () => {
     const n = Number(v.replace(",", "."));
-    if (v.trim() === "") onCommit(0);
-    else if (!Number.isNaN(n) && n >= 0 && n !== value) onCommit(n);
-    else setV(value > 0 ? String(value) : "");
+    if (v.trim() === "") {
+      if (value !== 0) flashSaved();
+      onCommit(0);
+    } else if (!Number.isNaN(n) && n >= 0 && n !== value) {
+      onCommit(n);
+      flashSaved();
+    } else setV(value > 0 ? String(value) : "");
   };
   return (
     <div className="inline-flex items-center gap-1">
@@ -383,7 +403,7 @@ function TargetInput({ value, onCommit }: { value: number; onCommit: (v: number)
         }}
         className="w-12 h-8 px-1.5 rounded-[7px] border border-border bg-card text-[13px] tabular text-right outline-none focus:border-accent focus:ring-2 focus:ring-[var(--ring)]"
       />
-      <span className="text-[12px] text-faint">%</span>
+      {saved ? <Check size={13} className="text-accent" aria-label="✓" /> : <span className="text-[12px] text-faint">%</span>}
     </div>
   );
 }

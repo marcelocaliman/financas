@@ -256,7 +256,9 @@ export default function Orcamento() {
 
   return (
     <div className="space-y-5 sm:space-y-7">
-      <CardSubNav items={SUBNAV.map((s) => ({ id: s.id, label: t(s.key) }))} />
+      {/* "Por pessoa" só entra na sub-nav quando a seção EXISTE (2+ integrantes) — senão a aba
+          aparecia, o clique não levava a nada e o usuário ficava sem entender. */}
+      <CardSubNav items={SUBNAV.filter((s) => s.id !== "orc-pessoas" || tax.people.length >= 2).map((s) => ({ id: s.id, label: t(s.key) }))} />
       {/* Navegador de mês */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1">

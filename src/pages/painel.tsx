@@ -501,6 +501,9 @@ function PainelEmpty() {
       </div>
       <div className="text-[clamp(26px,4.5vw,46px)] font-semibold tracking-[-0.025em]">{t("dashboard.empty")}</div>
       <p className="text-[14px] text-muted mt-3 max-w-md leading-relaxed">{t("dashboard.emptyDesc")}</p>
+      {/* Expectativa certa desde o 1º minuto: o app é por TOTAIS (saldos mensais), não um
+          diário de transações — quem vem de app de gastos procuraria onde lançar "café R$ 7". */}
+      <p className="text-[12.5px] text-faint mt-2.5 max-w-md leading-relaxed">{t("dashboard.emptyModel")}</p>
 
       {/* Primeiro acesso: idioma + moeda principal (toques rápidos, sem atrito) */}
       <div className="w-full max-w-2xl rounded-[14px] border border-border bg-card2 p-5 mt-7 text-left">
