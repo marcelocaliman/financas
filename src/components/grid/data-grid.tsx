@@ -397,6 +397,9 @@ function NumberCell({
   const fmt = (n: number | undefined) => formatNumberEdit(n, currency, decimals);
   const [v, setV] = useState(() => fmt(value));
   const [focused, setFocused] = useState(false);
+  // Modo privacidade: número financeiro (aplicado, aporte, qtd, preço médio) mascara IGUAL ao
+  // MoneyCell — focar pra editar revela (escolha deliberada do usuário), desfocar re-esconde.
+  const hidden = useUI((s) => s.numbersHidden);
   useEffect(() => {
     if (!focused) setV(fmt(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -419,7 +422,7 @@ function NumberCell({
       data-rowid={rowId}
       data-col={colKey}
       inputMode="decimal"
-      value={v}
+      value={hidden && !focused ? MASK : v}
       placeholder="—"
       onFocus={(e) => {
         setFocused(true);
@@ -895,7 +898,8 @@ function ReadOnlyCell<T extends { id: string }>({ col, row }: { col: GridColumn<
     }
     case "number": {
       const cur = get(row, col.currencyKey ?? "currency") as Currency;
-      return <div className="px-2 tabular text-text text-[13.5px]">{formatNumberEdit(v as number | undefined, cur, col.decimals) || "—"}</div>;
+      // Modo privacidade também no read-only (viewer/família): número financeiro mascara.
+      return <div className="px-2 tabular text-text text-[13.5px]">{hidden && v != null ? MASK : formatNumberEdit(v as number | undefined, cur, col.decimals) || "—"}</div>;
     }
     case "day":
       return <div className="px-2 tabular text-text text-[13.5px]">{(v as number | undefined) ?? "—"}</div>;
