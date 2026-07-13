@@ -3,11 +3,7 @@ import { X, Wallet } from "lucide-react";
 import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useEngagement } from "@/store/engagement";
 import { useBalanceUpdater } from "@/store/balance-updater";
-
-const ym = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-};
+import { currentMonth } from "@/finance/months";
 
 /**
  * Nudge mensal: no modelo por TOTAIS os saldos são manuais, então 1× por mês o Painel lembra o
@@ -21,7 +17,7 @@ export function BalanceNudge() {
   const snooze = useEngagement((s) => s.setBalancesUpdated);
   const openDrawer = useBalanceUpdater((s) => s.openDrawer);
 
-  const cur = ym();
+  const cur = currentMonth();
   if (!data || data.assets.length === 0 || lastMonth === cur) return null;
 
   return (

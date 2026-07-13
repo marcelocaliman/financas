@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowUpRight, ArrowDownRight, Plus, Sparkles, LineChart } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -44,7 +44,7 @@ function firstName(email: string | null): string {
 
 const CARD = "rounded-[16px] bg-card border border-border";
 
-function usePainelView() {
+function usePainelViewData() {
   const { t, i18n } = useTranslation();
   const disp = useUI((s) => s.displayCurrency);
   const theme = useUI((s) => s.theme);
@@ -122,6 +122,23 @@ function usePainelView() {
   }, [data, disp, rates, tax, t]);
 
   return { t, i18n, disp, name, tax, colors, accent, axisColor, CAT_COLORS, EXP_COLORS, monthLabel, view, health };
+}
+
+type PainelViewValue = ReturnType<typeof usePainelViewData>;
+const PainelViewCtx = createContext<PainelViewValue | null>(null);
+
+/** Computa a view do Painel UMA vez e serve Hero + Detail via contexto — antes cada um
+ *  chamava o hook e recomputava os mesmos agregados em dobro a cada mudança. */
+export function PainelViewProvider({ children }: { children: ReactNode }) {
+  const value = usePainelViewData();
+  return <PainelViewCtx.Provider value={value}>{children}</PainelViewCtx.Provider>;
+}
+
+function usePainelView(): PainelViewValue {
+  const ctx = useContext(PainelViewCtx);
+  // Invariante dura: Hero/Detail só vivem dentro do provider (a one-page envolve a seção).
+  if (!ctx) throw new Error("usePainelView fora do PainelViewProvider");
+  return ctx;
 }
 
 /** Faixa qualitativa do score de saúde (mesma régua do card da Liberdade). */

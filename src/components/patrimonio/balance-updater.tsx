@@ -18,12 +18,7 @@ import { useBalanceUpdater } from "@/store/balance-updater";
 import { useEngagement } from "@/store/engagement";
 import { cn } from "@/lib/utils";
 import type { Asset } from "@/domain/types";
-
-/** Mês corrente "AAAA-MM" — pra marcar a última atualização de saldos (nudge 1×/mês). */
-const ym = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-};
+import { currentMonth } from "@/finance/months";
 
 /**
  * "Atualizar saldos" — o ritual do modelo por TOTAIS: uma tela só com o valor de cada ativo
@@ -88,7 +83,7 @@ export function BalanceUpdater() {
       const n = parseLocaleNumber(v, a.currency);
       if (n != null && n !== a.amount) void actions.putAsset({ ...a, amount: n });
     }
-    setBalancesUpdated(ym());
+    setBalancesUpdated(currentMonth());
     close();
   };
 

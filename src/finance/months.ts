@@ -19,6 +19,13 @@ export function nextMonth(m: string): string {
   return fromIndex(monthIndex(m) + 1);
 }
 
+/** Mês corrente "AAAA-MM" no horário LOCAL (UTC erraria a virada num app cross-border).
+ *  Fonte ÚNICA — antes havia 6 cópias desta função espalhadas (risco de divergirem). */
+export function currentMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 /**
  * Meses ESTRITAMENTE entre `startExcl` e `endExcl` (exclusivo nos dois lados), em ordem.
  * Ex.: monthsBetween("2026-03", "2026-07") → ["2026-04","2026-05","2026-06"].

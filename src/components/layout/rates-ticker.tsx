@@ -149,6 +149,16 @@ export function RatesTicker() {
     const track = trackRef.current;
     if (!vp || !track) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    // Fora da viewport (usuário rolou pra baixo — ou celular, onde o ticker é display:none),
+    // o marquee não anima: pula o trabalho de scroll e não suja frame à toa.
+    let visible = true;
+    const io =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver((es) => {
+            visible = es[0]?.isIntersecting ?? true;
+          })
+        : null;
+    io?.observe(vp);
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
@@ -157,13 +167,16 @@ export function RatesTicker() {
       const half = track.scrollWidth / 2 || 1;
       // Avança e, ao passar a largura de 1 cópia, volta pro início sem emenda (módulo). O automático
       // só cresce, então o módulo basta; o arrasto (que pode ir pra trás) trata o sentido negativo.
-      if (!reduce && !hoverRef.current && !dragRef.current.active) {
+      if (!reduce && visible && !hoverRef.current && !dragRef.current.active) {
         vp.scrollLeft = (vp.scrollLeft + 42 * dt) % half;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      io?.disconnect();
+    };
   }, [items]);
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {

@@ -5,7 +5,7 @@ import { Flame, Dices, Download } from "lucide-react";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useProjection, SCENARIO_KEYS, type ScenarioKey } from "@/store/projection";
-import { usePatrimonio } from "@/hooks/use-patrimonio";
+import { useNetWorth } from "@/hooks/use-net-worth";
 import { useFireTarget } from "@/hooks/use-fire-target";
 import { actions } from "@/data/actions";
 import { convert, formatMoney, compactMoney, groupNumber, parseNumber, type Currency } from "@/money/currency";
@@ -15,7 +15,6 @@ import { simulateAccumulation, simulateDecumulation, type MonteCarloBand } from 
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { CardSubNav } from "@/components/common/card-sub-nav";
 import { ProGate } from "@/components/pro/pro-gate";
 
@@ -35,20 +34,6 @@ function scenarioColor(key: ScenarioKey, dark: boolean): string {
   if (key === "optimistic") return dark ? "#3ecf8e" : "#15976a";
   if (key === "pessimistic") return "#f1746a";
   return "#8a8f98";
-}
-
-function useNetWorth(): number {
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = usePatrimonio();
-  return useMemo(() => {
-    if (!data) return 0;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    return (
-      data.assets.reduce((s, a) => s + conv(a.amount, a.currency), 0) -
-      data.liabilities.reduce((s, l) => s + conv(l.amount, l.currency), 0)
-    );
-  }, [data, disp, rates]);
 }
 
 export default function Projecao() {
@@ -330,37 +315,6 @@ function SensitivityCard() {
         </div>
       )}
     </Tile>
-  );
-}
-
-/** KPIs do cabeçalho do accordion de Projeção (cenário-base a partir do patrimônio atual). */
-export function ProjecaoSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const p = useProjection();
-  const netWorth = useNetWorth();
-  const fire = useFireTarget();
-  const v = useMemo(() => {
-    // Mesma base unificada da página: patrimônio INVESTÍVEL (ou o "Inicial" customizado).
-    const initial = p.initialOverride ?? fire?.eligibleWealth ?? netWorth;
-    const years = Math.max(1, Math.min(60, Math.round(p.years)));
-    const b = p.scenarios.base;
-    const nominal = projectBalance(initial, b.monthly, b.annualReturn / 100, years);
-    // Número da independência — fonte única (idêntico à aba Liberdade e ao relatório).
-    const target = fire?.independenceNumber ?? Infinity;
-    // % FIRE = ponto de partida (investível ou Inicial customizado) sobre o alvo → reflete o Inicial.
-    const fireProgress =
-      fire && fire.annualCost > 0 && Number.isFinite(target) && target > 0 ? (initial / target) * 100 : null;
-    return { years, nominal, real: realValue(nominal, p.annualInflation / 100, years), fireProgress };
-  }, [netWorth, fire, p.initialOverride, p.scenarios, p.annualInflation, p.years]);
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("projecao.finalNominal", { years: v.years })} tone="accent" value={<Money value={v.nominal} currency={disp} />} />
-      <HeaderKpi secondary label={t("projecao.finalReal")} value={<Money value={v.real} currency={disp} />} />
-      {v.fireProgress != null ? (
-        <HeaderKpi secondary label={t("fire.short")} tone="accent" value={`${Math.round(v.fireProgress)}%`} />
-      ) : null}
-    </HeaderKpis>
   );
 }
 

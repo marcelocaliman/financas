@@ -13,7 +13,6 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { ProgressRing } from "@/components/common/progress-ring";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
@@ -170,33 +169,5 @@ export default function Objetivos() {
         </div>
       </section>
     </div>
-  );
-}
-
-/** KPIs do cabeçalho do accordion de Objetivos. */
-export function ObjetivosSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = useObjetivos();
-  const v = useMemo(() => {
-    if (!data || data.length === 0) return null;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const saved = data.reduce((s, g) => s + conv(g.current, g.currency), 0);
-    const avg =
-      data.reduce((s, g) => {
-        const tt = conv(g.target, g.currency);
-        const cc = conv(g.current, g.currency);
-        return s + (tt > 0 ? Math.min(100, (cc / tt) * 100) : 0);
-      }, 0) / data.length;
-    return { count: data.length, saved, avg };
-  }, [data, disp, rates]);
-  if (!v) return null;
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("objetivos.saved")} value={<Money value={v.saved} currency={disp} />} />
-      <HeaderKpi secondary label={t("objetivos.avgProgress")} tone="accent" value={`${Math.round(v.avg)}%`} />
-      <HeaderKpi secondary label={t("nav.objetivos")} value={<span className="tabular">{v.count}</span>} />
-    </HeaderKpis>
   );
 }

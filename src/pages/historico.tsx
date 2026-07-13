@@ -1,11 +1,9 @@
-import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { TrendArea } from "@/components/charts/trend-area";
-import { shortMonth } from "@/lib/chart";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
 import { useHistorico } from "@/hooks/use-historico";
+import { useHistoricoView } from "@/hooks/use-historico-view";
 import { useBudget } from "@/hooks/use-budget";
 import { goToSection } from "@/hooks/use-scroll-spy";
 import { actions } from "@/data/actions";
@@ -16,7 +14,6 @@ import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { SectionHead } from "@/components/common/section-head";
 import { DataGrid, type GridColumn } from "@/components/grid/data-grid";
 
@@ -31,29 +28,8 @@ export default function Historico() {
   const budget = useBudget();
   const accent = theme === "dark" ? "#3ecf8e" : "#15976a";
 
-  const view = useMemo(() => {
-    if (!data) return null;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
-    const series = sorted.map((s) => ({ m: s.month, v: conv(s.amount, s.currency), label: shortMonth(s.month, lang) }));
-    const first = series[0];
-    const last = series.at(-1);
-    const current = last?.v ?? 0;
-    const growth = first && last ? last.v - first.v : 0;
-    const change = first && last && first.v !== 0 ? (growth / first.v) * 100 : 0;
-    // Aporte do 1º mês NÃO entra: ele é o ponto de partida (o crescimento é medido A PARTIR dele).
-    const contributions = sorted.slice(1).reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
-    // Rendimento = crescimento que NÃO veio de aporte (o "trabalho do dinheiro").
-    const yieldGain = growth - contributions;
-    const hasTrend = series.length >= 2;
-    // "Não reconciliado": você poupou (aporte > 0) MAIS do que o patrimônio capturado cresceu.
-    // Aí o rendimento negativo seria só o aporte que ainda não apareceu nos ativos — não uma
-    // perda de mercado. Não dá pra separar aporte de rendimento com honestidade; sinalizamos.
-    const unreconciled = hasTrend && contributions > 0.5 && contributions > growth + 0.5;
-    // Sobra que você poupou mas que ainda não apareceu no patrimônio (a "aplicar"/registrar).
-    const unreflected = unreconciled ? contributions - growth : 0;
-    return { sorted, series, current, growth, change, contributions, yieldGain, months: series.length, first, last, hasTrend, unreconciled, unreflected };
-  }, [data, disp, rates, lang]);
+  // View derivada compartilhada com o HistoricoSummary (fonte única — não recalcular aqui).
+  const view = useHistoricoView();
 
   if (!data || !view) {
     return <div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />;
@@ -157,44 +133,5 @@ export default function Historico() {
         <p className="text-[11.5px] text-faint mt-2 px-1 leading-relaxed">{t("historico.autoHint")}</p>
       </section>
     </div>
-  );
-}
-
-/** KPIs do cabeçalho do accordion de Histórico. */
-export function HistoricoSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = useHistorico();
-  const v = useMemo(() => {
-    if (!data) return null;
-    const conv = (a: number, c: Currency) => convert(a, c, disp, rates);
-    const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
-    const series = sorted.map((s) => conv(s.amount, s.currency));
-    const first = series[0];
-    const last = series.at(-1) ?? 0;
-    const change = first && first !== 0 ? ((last - first) / first) * 100 : 0;
-    // Aporte do 1º mês NÃO entra: ele é o ponto de partida (o crescimento é medido A PARTIR dele).
-    const contributions = sorted.slice(1).reduce((s, x) => s + conv(x.contribution ?? 0, x.currency), 0);
-    return { current: last, change, contributions };
-  }, [data, disp, rates]);
-  if (!v) return null;
-  const up = v.change >= 0;
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("historico.current")} value={<Money value={v.current} currency={disp} />} />
-      <HeaderKpi
-        secondary
-        label={t("historico.totalChange")}
-        tone={up ? "accent" : "neg"}
-        value={
-          <span className="inline-flex items-center gap-0.5">
-            {up ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-            {(up ? "+" : "") + v.change.toFixed(1)}%
-          </span>
-        }
-      />
-      <HeaderKpi secondary label={t("historico.contributions")} value={<Money value={v.contributions} currency={disp} />} />
-    </HeaderKpis>
   );
 }

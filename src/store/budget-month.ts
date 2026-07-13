@@ -1,10 +1,5 @@
 import { create } from "zustand";
-
-/** Mês corrente "AAAA-MM" (fuso local). */
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { currentMonth } from "@/finance/months";
 
 /**
  * Mês selecionado do Orçamento — COMPARTILHADO entre a página e o cabeçalho (KPIs do

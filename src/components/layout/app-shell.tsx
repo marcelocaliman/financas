@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { TopNav } from "./top-nav";
 import { BottomNav } from "./bottom-nav";
 import { SideNav, MobileBar } from "./side-nav";
@@ -7,8 +7,6 @@ import { BalanceUpdater } from "@/components/patrimonio/balance-updater";
 import { NAV_ITEMS, CONFIG_NAV_ITEMS } from "./nav-items";
 import { OnePage } from "@/app/one-page";
 import Config from "@/pages/config";
-import { SupportView } from "@/app/support-app";
-import { IrpfView } from "@/app/irpf-app";
 import { useScrollSpy, consumePendingNav, scrollToSection } from "@/hooks/use-scroll-spy";
 import { useAutoSnapshot } from "@/hooks/use-auto-snapshot";
 import { useMainCurrency } from "@/hooks/use-main-currency";
@@ -20,6 +18,11 @@ import { RatesTicker } from "@/components/layout/rates-ticker";
 import { SectionBoundary } from "@/components/common/error-boundary";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+
+// Views condicionais de tela cheia → lazy (chunk próprio; só baixa quando o usuário abre).
+// Config fica EAGER de propósito: vive sempre montada pro slide horizontal.
+const SupportView = lazy(() => import("@/app/support-app").then((m) => ({ default: m.SupportView })));
+const IrpfView = lazy(() => import("@/app/irpf-app").then((m) => ({ default: m.IrpfView })));
 
 /** Casca: menu (topo ou lateral) + página editorial única. A Config entra NO LUGAR do
  *  conteúdo principal num SLIDE horizontal (a página sai pra esquerda e some; a Config
@@ -123,11 +126,15 @@ export function AppShell() {
         {ratesTicker ? <RatesTicker /> : null}
         {supportOpen ? (
           <SectionBoundary name="suporte">
-            <SupportView />
+            <Suspense fallback={<div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />}>
+              <SupportView />
+            </Suspense>
           </SectionBoundary>
         ) : irpfOpen ? (
           <SectionBoundary name="irpf">
-            <IrpfView />
+            <Suspense fallback={<div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />}>
+              <IrpfView />
+            </Suspense>
           </SectionBoundary>
         ) : (
         <div className="relative overflow-clip min-h-screen view-fade-in">

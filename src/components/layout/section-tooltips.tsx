@@ -5,12 +5,13 @@ import { usePatrimonio } from "@/hooks/use-patrimonio";
 import { useLiberdade } from "@/hooks/use-liberdade";
 import { useHistorico } from "@/hooks/use-historico";
 import { useObjetivos } from "@/hooks/use-objetivos";
-import { PatrimonioSummary } from "@/pages/patrimonio";
-import { LiberdadeSummary } from "@/pages/liberdade";
-import { ProjecaoSummary } from "@/pages/projecao";
-import { HistoricoSummary } from "@/pages/historico";
-import { ObjetivosSummary } from "@/pages/objetivos";
-import { CrossBorderSummary, useFxExposure } from "@/pages/cross-border";
+import { PatrimonioSummary } from "@/pages/summaries/patrimonio-summary";
+import { LiberdadeSummary } from "@/pages/summaries/liberdade-summary";
+import { ProjecaoSummary } from "@/pages/summaries/projecao-summary";
+import { HistoricoSummary } from "@/pages/summaries/historico-summary";
+import { ObjetivosSummary } from "@/pages/summaries/objetivos-summary";
+import { CrossBorderSummary } from "@/pages/summaries/cross-border-summary";
+import { useFxExposure } from "@/hooks/use-fx-exposure";
 
 /**
  * Tooltips de RESUMO dos itens do menu (desktop) — reaproveitam os componentes *Summary das

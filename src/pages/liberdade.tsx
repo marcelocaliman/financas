@@ -9,7 +9,6 @@ import { Money } from "@/components/common/money";
 import { formatMoney } from "@/money/currency";
 import { Hidden } from "@/components/common/hidden";
 import { ProgressRing } from "@/components/common/progress-ring";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
 
 /** Formata "AAAA-MM" → "mmm de AAAA" no idioma corrente (rótulo da data de chegada). */
@@ -296,22 +295,5 @@ function MilestonesCard({ milestones }: { milestones: Milestone[] }) {
         })}
       </ul>
     </Tile>
-  );
-}
-
-/** KPIs do cabeçalho do accordion da Liberdade. */
-export function LiberdadeSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const v = useLiberdade();
-  if (!v || !v.ready) return null;
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("liberdade.short")} tone="accent" value={`${Math.round(v.freedomPct)}%`} />
-      {v.yearsOfFreedom != null ? (
-        <HeaderKpi secondary label={t("liberdade.yearsCovered")} value={t("liberdade.yearsValue", { n: v.yearsOfFreedom.toFixed(1) })} />
-      ) : null}
-      <HeaderKpi secondary label={t("liberdade.independenceNumber")} value={<Money value={v.independenceNumber} currency={disp} />} />
-    </HeaderKpis>
   );
 }

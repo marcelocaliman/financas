@@ -18,6 +18,7 @@ import { currencyBreakdown } from "@/money/composition";
 import { projectionSeries } from "@/finance/projection";
 import { expenseTotal, expenseLeaves } from "@/finance/statement";
 import { nameById, CLASS } from "@/domain/taxonomy";
+import { currentMonth } from "@/finance/months";
 
 const LANG_LOCALE: Record<string, string> = { pt: "pt-BR", en: "en-US", it: "it-IT" };
 
@@ -38,10 +39,6 @@ const CUR_RAMP: Record<Currency, string> = { BRL: "#15976A", EUR: "#6B7280", USD
 function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 function dateLabel(iso: string, lang: string): string {
   const [y, m, d] = iso.split("-").map(Number);

@@ -1,37 +1,14 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUI } from "@/store/ui";
 import { useRates } from "@/store/rates";
-import { usePatrimonio } from "@/hooks/use-patrimonio";
+import { useFxExposure } from "@/hooks/use-fx-exposure";
 import { convert, CURRENCY_SYMBOL, type Currency } from "@/money/currency";
 import { Tile, Eyebrow } from "@/components/common/tile";
 import { Money } from "@/components/common/money";
 import { Hidden } from "@/components/common/hidden";
 import { Kpi } from "@/components/common/kpi";
-import { HeaderKpis, HeaderKpi } from "@/components/common/header-kpis";
 import { cn } from "@/lib/utils";
-
-/** Exposição cambial do patrimônio: líquido por moeda, convertido pra principal. */
-export function useFxExposure() {
-  const base = useUI((s) => s.baseCurrency);
-  const rates = useRates((s) => s.rates);
-  const data = usePatrimonio();
-  return useMemo(() => {
-    if (!data) return { rows: [] as { currency: Currency; principal: number }[], total: 0, foreign: 0, magnitude: 0 };
-    const net = new Map<Currency, number>();
-    for (const a of data.assets) net.set(a.currency, (net.get(a.currency) ?? 0) + a.amount);
-    for (const l of data.liabilities) net.set(l.currency, (net.get(l.currency) ?? 0) - l.amount);
-    const rows = [...net.entries()]
-      .map(([currency, native]) => ({ currency, principal: convert(native, currency, base, rates) }))
-      .filter((x) => Math.abs(x.principal) > 0.5)
-      .sort((a, b) => Math.abs(b.principal) - Math.abs(a.principal));
-    const total = rows.reduce((s, x) => s + x.principal, 0);
-    const foreign = rows.filter((x) => x.currency !== base).reduce((s, x) => s + x.principal, 0);
-    // Soma das MAGNITUDES — base das %, sempre coerente mesmo com passivo (líquido negativo).
-    const magnitude = rows.reduce((s, x) => s + Math.abs(x.principal), 0);
-    return { rows, total, foreign, magnitude };
-  }, [data, base, rates]);
-}
 
 export default function CrossBorder() {
   const base = useUI((s) => s.baseCurrency);
@@ -146,23 +123,5 @@ function FxImpact({ base, fx }: { base: Currency; fx: ReturnType<typeof useFxExp
       </Tile>
       ) : null}
     </section>
-  );
-}
-
-/** KPI do cabeçalho do accordion: quanto do patrimônio está em moeda estrangeira. */
-export function CrossBorderSummary() {
-  const { t } = useTranslation();
-  const disp = useUI((s) => s.displayCurrency);
-  const base = useUI((s) => s.baseCurrency);
-  const rates = useRates((s) => s.rates);
-  const fx = useFxExposure();
-  const pct = fx.magnitude > 0 ? (Math.abs(fx.foreign) / fx.magnitude) * 100 : 0;
-  return (
-    <HeaderKpis>
-      <HeaderKpi label={t("crossborder.foreignExposure")} value={<Money value={convert(fx.foreign, base, disp, rates)} currency={disp} />} />
-      <HeaderKpi secondary label={t("crossborder.foreignShare")} value={`${Math.round(pct)}%`} />
-      {/* Diversificação cambial: útil mesmo sem exposição estrangeira (1 moeda) — evita o relance 0/0% vazio. */}
-      <HeaderKpi secondary label={t("crossborder.currencies")} value={<span className="tabular">{fx.rows.length}</span>} />
-    </HeaderKpis>
   );
 }

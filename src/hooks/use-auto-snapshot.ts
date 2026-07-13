@@ -7,14 +7,8 @@ import { useUI } from "@/store/ui";
 import { actions } from "@/data/actions";
 import { convert } from "@/money/currency";
 import { budgetSaldoForMonth } from "@/finance/budget-saldo";
-import { monthsBetween } from "@/finance/months";
+import { monthsBetween, currentMonth } from "@/finance/months";
 import { planCurrentMonthAuto } from "@/finance/auto-snapshot";
-
-/** Mês atual em "AAAA-MM" no horário LOCAL (UTC erraria a virada num app cross-border). */
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 /**
  * Histórico automático: captura/atualiza UM snapshot do mês corrente com o patrimônio

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { ComingSoon } from "@/components/common/coming-soon";
@@ -7,15 +7,26 @@ import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/layout/footer";
 import { SectionBoundary } from "@/components/common/error-boundary";
-import { DashboardHero, DashboardDetail } from "@/pages/painel";
+import { DashboardHero, DashboardDetail, PainelViewProvider } from "@/pages/painel";
 import { DueAlertBar } from "@/components/layout/due-alert-bar";
-import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
-import Orcamento, { OrcamentoSummary } from "@/pages/orcamento";
-import Historico, { HistoricoSummary } from "@/pages/historico";
-import Objetivos, { ObjetivosSummary } from "@/pages/objetivos";
-import Projecao, { ProjecaoSummary } from "@/pages/projecao";
-import Liberdade, { LiberdadeSummary } from "@/pages/liberdade";
-import CrossBorder, { CrossBorderSummary } from "@/pages/cross-border";
+// Os *Summary são EAGER (renderizam SEMPRE: header dos accordions + tooltips do menu lateral).
+import { PatrimonioSummary } from "@/pages/summaries/patrimonio-summary";
+import { OrcamentoSummary } from "@/pages/summaries/orcamento-summary";
+import { HistoricoSummary } from "@/pages/summaries/historico-summary";
+import { ObjetivosSummary } from "@/pages/summaries/objetivos-summary";
+import { ProjecaoSummary } from "@/pages/summaries/projecao-summary";
+import { LiberdadeSummary } from "@/pages/summaries/liberdade-summary";
+import { CrossBorderSummary } from "@/pages/summaries/cross-border-summary";
+
+// Corpo das seções em lazy (code-split): cada página vira um chunk próprio, carregado quando o
+// accordion renderiza o detalhe — o bundle inicial fica só com o hero/dashboard + summaries.
+const Patrimonio = lazy(() => import("@/pages/patrimonio"));
+const Orcamento = lazy(() => import("@/pages/orcamento"));
+const Historico = lazy(() => import("@/pages/historico"));
+const Objetivos = lazy(() => import("@/pages/objetivos"));
+const Projecao = lazy(() => import("@/pages/projecao"));
+const Liberdade = lazy(() => import("@/pages/liberdade"));
+const CrossBorder = lazy(() => import("@/pages/cross-border"));
 
 /** id → { detalhe (corpo do accordion), summary (KPIs do header) }. */
 const SECTIONS: Record<string, { detail: ReactNode; summary: ReactNode }> = {
@@ -39,7 +50,11 @@ export function OnePage() {
 
   return (
     <div>
-      {/* PAINEL — hero (glow full-bleed, mais ar) | divisor | dashboard */}
+      {/* PAINEL — hero (glow full-bleed, mais ar) | divisor | dashboard.
+          Provider: a view (agregados/conversões) é computada UMA vez pro Hero E pro Detail.
+          Boundary EXTERNO cobre o próprio provider (a computação da view). */}
+      <SectionBoundary name="painel">
+      <PainelViewProvider>
       <section id="painel" className="scroll-mt-20">
         {/* Título estável da página (outline do documento) — visível só p/ leitores de tela. */}
         <h1 className="sr-only">{t("app.name")}</h1>
@@ -65,6 +80,8 @@ export function OnePage() {
           </SectionBoundary>
         </div>
       </section>
+      </PainelViewProvider>
+      </SectionBoundary>
 
       {/* Demais seções como accordions (KPIs no cabeçalho, detalhes dentro). O cabeçalho de cada
           seção aberta gruda no topo enquanto ela rola — offset do layout via StickyOffsetContext. */}
@@ -81,7 +98,13 @@ export function OnePage() {
                 // derrubar a página toda — vira só um aviso compacto no cabeçalho.
                 summary={sec?.summary ? <SectionBoundary name={`${item.id}-summary`} inline>{sec.summary}</SectionBoundary> : undefined}
               >
-                <SectionBoundary name={item.id}>{sec?.detail ?? <ComingSoon />}</SectionBoundary>
+                {/* Boundary FORA do Suspense: um crash na seção vira aviso local; o fallback do
+                    Suspense cobre só o carregamento do chunk lazy. */}
+                <SectionBoundary name={item.id}>
+                  <Suspense fallback={<div className="h-44 rounded-[16px] bg-card border border-border animate-pulse" />}>
+                    {sec?.detail ?? <ComingSoon />}
+                  </Suspense>
+                </SectionBoundary>
               </Accordion>
             );
           })}
