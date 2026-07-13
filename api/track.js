@@ -18,11 +18,11 @@ const SUPABASE_URL =
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Allowlist — só estes eventos são aceitos (evita lixo/abuso na tabela).
-const ALLOWED = new Set(["landing_view", "cta_click", "signup", "login", "app_open", "section_view"]);
+const ALLOWED = new Set(["landing_view", "cta_click", "signup", "login", "app_open", "section_view", "app_error"]);
 const SURFACES = new Set(["landing", "app"]);
 // Allowlist de chaves de props — barra PII/lixo no SERVIDOR (não confia no caller).
 // os/browser são preenchidos pelo próprio servidor; o resto é metadado de UI não-sensível.
-const PROP_KEYS = new Set(["section", "variant", "plan", "ref", "os", "browser"]);
+const PROP_KEYS = new Set(["section", "variant", "plan", "ref", "os", "browser", "kind"]);
 
 function clip(v, n) {
   return typeof v === "string" ? v.slice(0, n) : null;

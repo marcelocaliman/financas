@@ -6,6 +6,7 @@ import { Accordion } from "@/components/common/accordion";
 import { useStickyOffset, StickyOffsetContext } from "@/hooks/use-scroll-spy";
 import { cn } from "@/lib/utils";
 import { Footer } from "@/components/layout/footer";
+import { SectionBoundary } from "@/components/common/error-boundary";
 import { DashboardHero, DashboardDetail } from "@/pages/painel";
 import { DueAlertBar } from "@/components/layout/due-alert-bar";
 import Patrimonio, { PatrimonioSummary } from "@/pages/patrimonio";
@@ -51,13 +52,17 @@ export function OnePage() {
                 distância curta do ticker; antes, sem alerta, o wrapper virava `:first-child` e
                 ganhava 40px, jogando o card de boas-vindas pra baixo com um vão enorme. */}
             <div className="pt-4 sm:pt-5">
-              <DashboardHero />
+              <SectionBoundary name="painel-hero">
+                <DashboardHero />
+              </SectionBoundary>
             </div>
           </div>
         </div>
         <div className="border-t border-border" />
         <div className={cn(CONTAINER, GUTTERS, "pt-6 pb-10 sm:pt-9 sm:pb-16")}>
-          <DashboardDetail />
+          <SectionBoundary name="painel-detail">
+            <DashboardDetail />
+          </SectionBoundary>
         </div>
       </section>
 
@@ -68,8 +73,15 @@ export function OnePage() {
           {rest.map((item) => {
             const sec = SECTIONS[item.id];
             return (
-              <Accordion key={item.id} id={item.id} title={t(`nav.${item.key}`)} summary={sec?.summary}>
-                {sec?.detail ?? <ComingSoon />}
+              <Accordion
+                key={item.id}
+                id={item.id}
+                title={t(`nav.${item.key}`)}
+                // Boundary também no summary (renderiza SEMPRE, no header): um crash ali não pode
+                // derrubar a página toda — vira só um aviso compacto no cabeçalho.
+                summary={sec?.summary ? <SectionBoundary name={`${item.id}-summary`} inline>{sec.summary}</SectionBoundary> : undefined}
+              >
+                <SectionBoundary name={item.id}>{sec?.detail ?? <ComingSoon />}</SectionBoundary>
               </Accordion>
             );
           })}

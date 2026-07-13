@@ -21,7 +21,7 @@ function anonId(): string {
   }
 }
 
-export type EventName = "signup" | "login" | "app_open" | "section_view";
+export type EventName = "signup" | "login" | "app_open" | "section_view" | "app_error";
 
 /** Registra um evento do APP (best-effort; nunca lança nem bloqueia a UI). */
 export function track(name: EventName, props?: Record<string, string | number | boolean>): void {

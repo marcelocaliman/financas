@@ -17,6 +17,7 @@ import { useCostBackfill } from "@/hooks/use-cost-backfill";
 import { useAssetConsolidation } from "@/hooks/use-asset-consolidation";
 import { useUI } from "@/store/ui";
 import { RatesTicker } from "@/components/layout/rates-ticker";
+import { SectionBoundary } from "@/components/common/error-boundary";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
@@ -121,9 +122,13 @@ export function AppShell() {
         {ratesTicker ? <div aria-hidden className="app-topglow pointer-events-none absolute inset-x-0 top-0 h-[220px]" /> : null}
         {ratesTicker ? <RatesTicker /> : null}
         {supportOpen ? (
-          <SupportView />
+          <SectionBoundary name="suporte">
+            <SupportView />
+          </SectionBoundary>
         ) : irpfOpen ? (
-          <IrpfView />
+          <SectionBoundary name="irpf">
+            <IrpfView />
+          </SectionBoundary>
         ) : (
         <div className="relative overflow-clip min-h-screen view-fade-in">
           {/* overflow-CLIP (não hidden!) clipa o slide horizontal SEM criar scroll-container — assim os
@@ -149,7 +154,9 @@ export function AppShell() {
               cfgShow ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
             )}
           >
-            <Config onClose={() => setConfigOpen(false)} />
+            <SectionBoundary name="config">
+              <Config onClose={() => setConfigOpen(false)} />
+            </SectionBoundary>
           </div>
         </div>
         )}
