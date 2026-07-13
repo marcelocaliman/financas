@@ -263,6 +263,8 @@
     "planos.p6": "Support an independent app — no ads, no selling your data",
     "foot.lpriv": "Privacy policy",
     "foot.lterms": "Terms of Service",
-    "planos.pIr": "IRPF (Brazilian tax) organizer — assets and income ready to copy into your return"
+    "planos.pIr": "IRPF (Brazilian tax) organizer — assets and income ready to copy into your return",
+    "ir.ctaSeason": "Get your IRPF ready — 14-day free trial",
+    "ir.season": "IRPF season — deadline end of May"
   }
 }

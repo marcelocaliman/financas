@@ -472,3 +472,24 @@
   } else { start(); }
   document.addEventListener("visibilitychange", sync);
 })();
+
+/* Época do IRPF (1/fev–31/mai): destaque AUTOMÁTICO do organizador — liga e desliga sozinho
+   pela data do visitante, sem deploy nem cron (a página é estática o ano todo; o JS só revela).
+   Na janela: (1) o bullet do IRPF sobe pro topo do card Pro (logo após "tudo do grátis") com
+   peso maior; (2) a seção do Leão ganha o chip de época e o CTA vira o convite direto pro Pro.
+   Fora da janela, nada muda. Textos vêm do HTML já traduzido (build) — o JS só move/alterna. */
+(function () {
+  var m = new Date().getMonth() + 1; // 1–12, fuso do visitante
+  if (m < 2 || m > 5) return;
+  var li = document.querySelector('li[data-i18n="planos.pIr"]');
+  if (li && li.parentElement) {
+    var first = li.parentElement.querySelector('li[data-i18n="planos.p1"]');
+    if (first) first.insertAdjacentElement("afterend", li);
+    li.classList.add("hot");
+  }
+  var chip = document.getElementById("ir-season-chip");
+  if (chip) chip.hidden = false;
+  var def = document.getElementById("ir-cta-default");
+  var hot = document.getElementById("ir-cta-season");
+  if (def && hot) { def.hidden = true; hot.hidden = false; }
+})();
