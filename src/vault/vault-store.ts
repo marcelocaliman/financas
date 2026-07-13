@@ -23,6 +23,7 @@ import {
 import { dumpVault, loadVault } from "./serialize";
 import { pending } from "./pending";
 import { sessionKeys } from "./session-keys";
+import { saveConflictBackup } from "./conflict-backup";
 
 type Status = "loading" | "signedOut" | "locked" | "unlocked";
 
@@ -325,7 +326,14 @@ export const useVault = create<VaultStore>((set, get) => {
               const server = await fetchVaultMeta(userId);
               if (server) {
                 const remote = await pullVault(keys, userId, server.version);
-                if (remote) await loadVault(db, remote);
+                if (remote) {
+                  // ADOTAR o remoto descarta as mudanças locais que não subiram (loadVault
+                  // zera as tabelas). Sem timestamp por registro não dá pra fazer merge de
+                  // 3 vias com honestidade — então NUNCA descartamos em silêncio: o estado
+                  // local vai pra uma cópia de conflito (baixável/re-importável) e o Painel avisa.
+                  saveConflictBackup(data);
+                  await loadVault(db, remote);
+                }
                 const merged = await dumpVault(db);
                 const v = await pushVault(keys, userId, server.version, merged);
                 set({ version: v });

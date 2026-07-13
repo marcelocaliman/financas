@@ -210,6 +210,9 @@ export interface AppSettings {
   health?: HealthConfig;
   /** Modalidade de declaração de IRPF (conjunta × separada). */
   irpf?: IrpfSettings;
+  /** Migrações DESTRUTIVAS já executadas — sincronizado no vault (cifrado) pra um device
+   *  novo (que puxa o blob mas não tem a flag em localStorage) NUNCA re-executar. */
+  migrations?: { assetsMergedV1?: boolean };
 }
 
 export interface Liability {

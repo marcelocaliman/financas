@@ -29,6 +29,7 @@ import { DailyFxLine } from "@/components/painel/daily-fx-line";
 import { WelcomeBack } from "@/components/painel/welcome-back";
 import { MilestoneCelebration } from "@/components/painel/milestone-celebration";
 import { MonthWrap } from "@/components/painel/month-wrap";
+import { ConflictNotice } from "@/components/painel/conflict-notice";
 import { BalanceNudge } from "@/components/painel/balance-nudge";
 import { IrpfCloseNudge } from "@/components/painel/irpf-close-nudge";
 import { TipOfWeek } from "@/components/painel/tip-of-week";
@@ -142,6 +143,8 @@ export function DashboardHero() {
 
   return (
     <>
+      {/* Conflito de sync vem PRIMEIRO: é o único aviso sobre possível perda de dados. */}
+      <ConflictNotice />
       <MonthWrap />
       <IrpfCloseNudge />
       <BalanceNudge />

@@ -16,7 +16,7 @@ import type { AppSettings } from "@/domain/types";
 const APP_TAG = "nossasfinancas";
 const FORMAT_VERSION = 1;
 
-function downloadFile(filename: string, content: string, mime: string): void {
+export function downloadFile(filename: string, content: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

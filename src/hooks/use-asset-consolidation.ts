@@ -8,19 +8,34 @@ import { actions } from "@/data/actions";
  * item. Ativos itemizados do modelo antigo (vários papéis na MESMA classe+moeda) são FUNDIDOS num
  * só: soma o valor atual + o valor aplicado e larga nome/subtipo/região/instituição/ticker.
  *
- * Destrutivo por desenho (o usuário pediu "por categoria"), então roda UMA vez e trava — via flag
- * em localStorage — pra nunca fundir linhas que o usuário criar de propósito depois. `ran` evita
- * reentrância dentro da sessão (o merge muda os assets → o effect reispararia). Tudo no cliente (E2EE).
+ * Destrutivo por desenho (o usuário pediu "por categoria"), então roda UMA vez e trava — com a
+ * flag em DOIS lugares: localStorage (rápido, por device) e settings.migrations no VAULT
+ * (sincronizada/cifrada) — um device NOVO que puxa o blob vê a flag do vault e nunca re-funde
+ * linhas que o usuário criou de propósito depois da migração. `ran` evita reentrância na sessão
+ * (o merge muda os assets → o effect reispararia). Tudo no cliente (E2EE).
  */
 const FLAG = "nf-assets-merged-v1";
 let ran = false;
 
 export function useAssetConsolidation(): void {
   const assets = useLiveQuery(() => repository.listAssets());
+  const settings = useLiveQuery(() => repository.getSettings());
   useEffect(() => {
-    if (ran || assets === undefined) return; // undefined = ainda carregando
+    if (ran || assets === undefined || settings === undefined) return; // undefined = ainda carregando
+    if (settings?.migrations?.assetsMergedV1) {
+      // Já rodou em ALGUM device (flag veio do vault) → só espelha localmente e trava.
+      try {
+        localStorage.setItem(FLAG, "1");
+      } catch {
+        /* storage indisponível → o guard da sessão (`ran`) segura */
+      }
+      ran = true;
+      return;
+    }
     if (localStorage.getItem(FLAG)) {
       ran = true;
+      // Legado: rodou aqui antes da flag existir no vault → sobe a flag pra proteger os OUTROS devices.
+      void actions.putSettings({ migrations: { ...(settings?.migrations ?? {}), assetsMergedV1: true } });
       return;
     }
     ran = true;
@@ -53,7 +68,14 @@ export function useAssetConsolidation(): void {
         });
         for (const a of arr.slice(1)) await actions.removeAsset(a.id);
       }
-      localStorage.setItem(FLAG, "1");
+      // Flags SÓ depois de concluir (aba fechada no meio → próxima sessão completa o merge,
+      // que é idempotente: re-fundir os duplicados restantes termina o trabalho).
+      await actions.putSettings({ migrations: { ...(settings?.migrations ?? {}), assetsMergedV1: true } });
+      try {
+        localStorage.setItem(FLAG, "1");
+      } catch {
+        /* storage indisponível → a flag do vault protege */
+      }
     })();
-  }, [assets]);
+  }, [assets, settings]);
 }
