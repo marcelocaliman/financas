@@ -184,6 +184,8 @@ export default async function handler(req, res) {
 
     return json(res, 400, { error: "unknown_action" });
   } catch (e) {
-    return json(res, 500, { error: "stripe_error", message: e && e.message ? e.message : String(e) });
+    // Erro real só no log do servidor — nunca vazar detalhe do Stripe pro cliente.
+    console.error("billing:", e && e.message ? e.message : e);
+    return json(res, 500, { error: "stripe_error" });
   }
 }

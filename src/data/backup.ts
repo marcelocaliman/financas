@@ -69,7 +69,21 @@ export async function importBackupJSON(file: File): Promise<void> {
   if (keys.length === 0 || keys.some((k) => !tables.has(k) || !Array.isArray(data[k]))) {
     throw new Error("invalid-backup");
   }
-  // 3) Guarda: um backup VAZIO não pode apagar um vault populado (corrupção/erro de seleção).
+  // 3) Registro a registro: todo row é objeto com `id` string (chave primária de TODAS as
+  //    tabelas) e os campos financeiros críticos têm o tipo certo — um JSON editado à mão ou
+  //    corrompido não pode entrar, quebrar a UI (NaN, moeda inválida) e ainda subir pro servidor.
+  const MONTH_RE = /^\d{4}-\d{2}$/;
+  for (const k of keys) {
+    for (const row of data[k] as unknown[]) {
+      if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("invalid-backup");
+      const r = row as Record<string, unknown>;
+      if (typeof r.id !== "string" || r.id.length === 0) throw new Error("invalid-backup");
+      if ("amount" in r && r.amount != null && !(typeof r.amount === "number" && Number.isFinite(r.amount))) throw new Error("invalid-backup");
+      if ("currency" in r && r.currency != null && !CURRENCIES.includes(r.currency as Currency)) throw new Error("invalid-backup");
+      if ("month" in r && r.month != null && !(typeof r.month === "string" && MONTH_RE.test(r.month))) throw new Error("invalid-backup");
+    }
+  }
+  // 4) Guarda: um backup VAZIO não pode apagar um vault populado (corrupção/erro de seleção).
   const totalRows = keys.reduce((s, k) => s + (data[k] as unknown[]).length, 0);
   const counts = await Promise.all(db.tables.map((t) => t.count()));
   const localEmpty = counts.every((c) => c === 0);

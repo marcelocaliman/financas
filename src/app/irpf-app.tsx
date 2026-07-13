@@ -20,7 +20,7 @@ import { useTaxonomy } from "@/hooks/use-taxonomy";
 import { useSettings } from "@/hooks/use-settings";
 import { nameById, type TaxonomyItem } from "@/domain/taxonomy";
 import { Money } from "@/components/common/money";
-import { maskAmountInput } from "@/money/parse";
+import { maskAmountInput, formatAmountEdit } from "@/money/parse";
 import type { TaxItem, TaxReturn } from "@/domain/irpf";
 import { SHARED_OWNER } from "@/domain/irpf";
 import { cn } from "@/lib/utils";
@@ -1003,7 +1003,9 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
 function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note: string) => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [valor, setValor] = useState(item.valorAnoBase ? String(item.valorAnoBase) : "");
+  // Display SEMPRE mascarado (máscara "centavos", locale da moeda do item) — o valor numérico
+  // sai de maskAmountInput no uso. Antes era Number(string) cru: "500,50" virava NaN em silêncio.
+  const [valor, setValor] = useState(item.valorAnoBase ? formatAmountEdit(item.valorAnoBase, item.currency) : "");
   const [date, setDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [rate, setRate] = useState<{ compra: number; venda: number; date: string } | null>(null);
@@ -1023,9 +1025,10 @@ function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note:
       setBusy(false);
     }
   }
+  const valorNum = maskAmountInput(valor, item.currency).value ?? 0;
   function pick(kind: "compra" | "venda") {
-    if (!rate || !(Number(valor) > 0)) return;
-    onPick(Math.round(Number(valor) * rate[kind] * 100) / 100, `PTAX ${kind} ${rate.date}`);
+    if (!rate || !(valorNum > 0)) return;
+    onPick(Math.round(valorNum * rate[kind] * 100) / 100, `PTAX ${kind} ${rate.date}`);
   }
 
   if (!open) {
@@ -1041,7 +1044,16 @@ function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note:
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-[10px] text-faint">
           <span className="block mb-1">{t("irpf.ptaxValue", { cur: item.currency })}</span>
-          <input type="number" inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} className="h-8 w-32 rounded-[7px] border border-border bg-card px-2 text-[12px] tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]" />
+          <input
+            inputMode="numeric"
+            value={valor}
+            onChange={(e) => {
+              const el = e.currentTarget;
+              setValor(maskAmountInput(el.value, item.currency).display);
+              requestAnimationFrame(() => el.setSelectionRange(el.value.length, el.value.length));
+            }}
+            className="h-8 w-32 rounded-[7px] border border-border bg-card px-2 text-[12px] tabular text-right outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          />
         </label>
         <label className="text-[10px] text-faint">
           <span className="block mb-1">{t("irpf.ptaxDate")}</span>
@@ -1056,8 +1068,8 @@ function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note:
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2 text-[11px]">
             <span className="text-faint">PTAX {rate.date}:</span>
-            <button type="button" onClick={() => pick("compra")} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors">{t("irpf.ptaxCompra")} {rate.compra.toFixed(4)}</button>
-            <button type="button" onClick={() => pick("venda")} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors">{t("irpf.ptaxVenda")} {rate.venda.toFixed(4)}</button>
+            <button type="button" onClick={() => pick("compra")} disabled={!(valorNum > 0)} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors disabled:opacity-50 disabled:pointer-events-none">{t("irpf.ptaxCompra")} {rate.compra.toFixed(4)}</button>
+            <button type="button" onClick={() => pick("venda")} disabled={!(valorNum > 0)} className="px-2.5 h-7 rounded-full border border-border hover:border-accent hover:text-accent text-text tabular transition-colors disabled:opacity-50 disabled:pointer-events-none">{t("irpf.ptaxVenda")} {rate.venda.toFixed(4)}</button>
           </div>
           <p className="text-[10.5px] text-[#e0a33c]">{t("irpf.ptaxConfirm")}</p>
         </div>

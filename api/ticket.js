@@ -52,12 +52,10 @@ function parseBody(req) {
   return b || {};
 }
 function genToken() {
+  // Fail-secure: sem CSPRNG não há token (Math.random é previsível — nunca usar pra segredo).
+  // No Node/Vercel o webcrypto sempre existe; se um dia faltar, preferimos o erro 500 ao token fraco.
   const a = new Uint8Array(24);
-  if (globalThis.crypto && globalThis.crypto.getRandomValues) {
-    globalThis.crypto.getRandomValues(a);
-  } else {
-    for (let i = 0; i < a.length; i++) a[i] = Math.floor(Math.random() * 256);
-  }
+  globalThis.crypto.getRandomValues(a);
   return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 function esc(s) {
