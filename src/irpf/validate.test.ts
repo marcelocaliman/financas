@@ -32,6 +32,12 @@ describe("itemIssues", () => {
     expect(itemIssues(item({ disposed: true, valorAnoBase: 0 }))).not.toContain("no-value");
     expect(itemIssues(item({ disposed: true, valorAnoBase: 0, currency: "USD" }))).not.toContain("foreign-no-brl");
   });
+  it("conta ZERADA em 31/12 (base 0 com histórico no ano anterior) é legítima — sem pendência", () => {
+    expect(itemIssues(item({ valorAnoBase: 0, valorAnoAnterior: 1200 }))).not.toContain("no-value");
+    // zero SEM histórico continua pendência (item recém-criado não preenchido)
+    expect(itemIssues(item({ valorAnoBase: 0 }))).toContain("no-value");
+    expect(itemIssues(item({ valorAnoBase: 0, valorAnoAnterior: 0 }))).toContain("no-value");
+  });
 });
 
 describe("diffPatrimonio", () => {

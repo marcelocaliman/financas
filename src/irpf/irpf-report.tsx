@@ -79,6 +79,9 @@ export function IrpfReport({ year, itemsOverride, incomesOverride, declaranteNam
   const bens = declared.filter((i) => i.kind === "asset");
   const dividas = declared.filter((i) => i.kind === "debt").sort((a, b) => a.code.localeCompare(b.code));
   const totalBase = bens.reduce((s, it) => s + (it.disposed ? 0 : brlValue(it, "base") ?? 0), 0);
+  // Bem em moeda estrangeira SEM o R$ informado fica FORA dos totais — isso precisa GRITAR no
+  // documento (a nota miúda não bastava: o total sai menor e o usuário não percebia).
+  const missingBrl = bens.filter((it) => !it.disposed && isForeignCurrency(it.currency) && it.valorBrlAnoBase == null).length;
   const totalPrev = bens.reduce((s, it) => s + (brlValue(it, "prev") ?? 0), 0);
   const totalDiv = dividas.reduce((s, it) => s + (brlValue(it, "base") ?? 0), 0);
   const byGroup = BENS_GROUPS
@@ -103,7 +106,13 @@ export function IrpfReport({ year, itemsOverride, incomesOverride, declaranteNam
         <Kpi label="Dívidas" value={fmt(totalDiv)} />
         <Kpi label="Patrimônio líquido" value={fmt(totalBase - totalDiv)} />
       </div>
-      <div style={{ fontSize: "8px", color: FAINT }}>Totais somam só o R$ informado; bens no exterior sem R$ preenchido ficam de fora do total.</div>
+      {missingBrl > 0 ? (
+        <div style={{ marginTop: "4px", marginBottom: "6px", padding: "7px 10px", border: `1.5px solid ${AMBER}`, background: "#fdf6e9", borderRadius: "6px", fontSize: "9.5px", color: "#6f5514", fontWeight: 600 }}>
+          ⚠ {missingBrl} bem(ns) em moeda estrangeira SEM o valor em R$ — estão FORA dos totais acima. Informe o R$ no organizador (há a PTAX assistida) antes de usar este documento.
+        </div>
+      ) : (
+        <div style={{ fontSize: "8px", color: FAINT }}>Totais somam só o R$ informado; bens no exterior sem R$ preenchido ficam de fora do total.</div>
+      )}
 
       <SectionTitle>Bens e Direitos</SectionTitle>
       {[...byGroup, ...(semGrupo.length ? [{ group: "", name: "Sem código — completar", list: semGrupo }] : [])].map((grp) => (

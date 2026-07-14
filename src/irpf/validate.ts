@@ -14,7 +14,9 @@ export function itemIssues(it: TaxItem): IrpfIssue[] {
   if (semCodigo) out.push("no-code");
   // Bem VENDIDO: a coluna do ano-base é 0 POR REGRA (não se possui em 31/12) e não precisa de BRL do
   // ano-base — não é pendência. A história da venda vive na discriminação.
-  if (!it.disposed && !(it.valorAnoBase > 0)) out.push("no-value");
+  // Valor 0 também pode ser LEGÍTIMO: conta/aplicação ZERADA em 31/12 que existia no ano anterior
+  // (declara-se com situação 0 pra encerrar). Pendência é só zero SEM histórico — item não preenchido.
+  if (!it.disposed && !(it.valorAnoBase > 0) && !(it.valorAnoAnterior != null && it.valorAnoAnterior > 0)) out.push("no-value");
   if (!it.disposed && isForeignCurrency(it.currency) && it.valorBrlAnoBase == null) out.push("foreign-no-brl");
   if (it.discriminacao.includes("[preencher")) out.push("incomplete");
   return out;

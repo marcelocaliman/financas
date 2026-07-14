@@ -51,7 +51,10 @@ export function IrpfView() {
         <div className={cn(CONTAINER, GUTTERS, "pt-[108px] pb-7")}>
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="eyebrow mb-2">{CODES_LAYOUT}</div>
+              {/* Versão da tabela SEMPRE visível + lembrete de que ela muda a cada exercício. */}
+              <div className="eyebrow mb-2" title={t("irpf.codesVersionHint")}>
+                {CODES_LAYOUT} <span className="text-faint">· {t("irpf.codesVersionShort")}</span>
+              </div>
               <h1 className="font-semibold text-[clamp(1.8rem,4vw,2.9rem)] tracking-[-0.04em] leading-[1.04]">
                 {t("irpf.title")}
               </h1>
@@ -85,18 +88,22 @@ function YearPicker({ returns, year, onPick }: { returns: { baseYear: number }[]
     return [...set].sort((a, b) => b - a);
   }, [returns, year]);
   return (
-    <label className="flex items-center gap-2 text-[12.5px] text-muted">
-      {t("irpf.baseYear")}
-      <select
-        value={year}
-        onChange={(e) => onPick(Number(e.target.value))}
-        className="h-9 rounded-[10px] border border-border bg-card2 px-3 text-[13px] font-semibold text-text tabular outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
-      >
-        {years.map((y) => (
-          <option key={y} value={y}>{y}</option>
-        ))}
-      </select>
-    </label>
+    <div className="flex flex-col items-start sm:items-end gap-1.5">
+      <label className="flex items-center gap-2 text-[12.5px] text-muted">
+        {t("irpf.baseYear")}
+        <select
+          value={year}
+          onChange={(e) => onPick(Number(e.target.value))}
+          className="h-9 rounded-[10px] border border-border bg-card2 px-3 text-[13px] font-semibold text-text tabular outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </label>
+      {/* Tradução do jargão: "ano-base" explicado onde ele aparece (não num glossário perdido). */}
+      <p className="text-[11px] text-faint sm:text-right max-w-[320px]">{t("irpf.baseYearHint", { year, next: year + 1 })}</p>
+    </div>
   );
 }
 
@@ -163,9 +170,16 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   // Itens tornados obsoletos pela discriminação (o agregado "Ações" depois de virar posições, etc.) —
   // limpeza de sync: some sozinho ao carregar/puxar (não vira órfão nem "erro" de incompleto).
   const supersededIds = useMemo(() => new Set(supersededByHoldings(list, allExploded)), [list, allExploded]);
+  const thisReturn = useMemo(() => (returns ?? []).find((r) => r.baseYear === year), [returns, year]);
+  const closedAt = thisReturn?.closedAt;
+  // Ano FECHADO = edição travada de verdade (o selo prometia congelamento que não existia).
+  // Exportar continua liberado — é justamente pra isso que se fecha. "Reabrir" desfaz.
+  const locked = !!closedAt;
   useEffect(() => {
+    // Ano FECHADO é somente-leitura de verdade: nem a limpeza automática escreve nele.
+    if (locked) return;
     if (supersededIds.size) for (const id of supersededIds) void actions.removeTaxItem(id);
-  }, [supersededIds]);
+  }, [supersededIds, locked]);
   const diff = useMemo(() => diffPatrimonio(list, relevantAssets, liabilities), [list, relevantAssets, liabilities]);
   const orphans = useMemo(() => diff.orphans.filter((o) => !supersededIds.has(o.id)), [diff.orphans, supersededIds]);
   // Bens já na lista cujo bem de origem foi vendido este ano mas ainda não estão marcados (roll-forward).
@@ -175,8 +189,6 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const pending = countPending(declaredVisible);
   const newCount = diff.newAssets.length + diff.newLiabilities.length;
   const needsReviewCount = declaredVisible.filter((i) => i.needsReview).length;
-  const thisReturn = useMemo(() => (returns ?? []).find((r) => r.baseYear === year), [returns, year]);
-  const closedAt = thisReturn?.closedAt;
   // Estamos na janela de fechar a posição de 31/12 deste ano e ele ainda não foi fechado?
   const showCloseReminder = yearCloseWindow() === year && !closedAt;
   const priorYear = useMemo(() => {
@@ -212,16 +224,23 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   }
 
   async function pull() {
+    if (locked) return;
     setBusy(true);
     try {
       await ensureReturn();
       await syncFromPatrimonio();
+      // Mostra o RESULTADO: abre os grupos assim que os itens chegarem (senão a tela parece vazia
+      // depois do clique — os accordions nascem fechados). E avisa se não havia nada pra puxar.
+      openAllNext.current = true;
+      if (groupKeys.length) setOpened(new Set(groupKeys)); // 2º puxar sem mudanças: abre já
+      setPulledEmpty((await repository.listTaxItems(year)).length === 0);
     } finally {
       setBusy(false);
     }
   }
 
-  /** Fechar o ano: congela a posição de 31/12 (puxa do patrimônio) e carimba o ano como fechado. */
+  /** Fechar o ano: congela a posição de 31/12 (puxa do patrimônio), carimba o ano como fechado
+   *  e TRAVA a edição (o selo agora cumpre o que promete). "Reabrir" desfaz a qualquer momento. */
   async function closeYear() {
     setBusy(true);
     try {
@@ -234,20 +253,30 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
     }
   }
 
+  async function reopenYear() {
+    const tr = await repository.getTaxReturn(String(year));
+    if (!tr) return;
+    // Remove a CHAVE closedAt (não só seta undefined) — garante o destravamento em qualquer camada.
+    const { closedAt: _drop, ...rest } = tr;
+    await actions.putTaxReturn({ ...rest, updatedAt: Date.now() });
+  }
+
   /** Registra as vendas dos bens que já estavam na lista (um clique) — base 0 + história da venda. */
   async function markDisposals() {
+    if (locked) return;
     if (unmarkedDisposals.length) await actions.putTaxItems(unmarkedDisposals);
   }
 
   /** Traz os itens do ano anterior: o valor de 31/12 vira a coluna "ano anterior" e você só atualiza o novo. */
   async function rollForward() {
-    if (priorYear == null) return;
+    if (locked || priorYear == null) return;
     setBusy(true);
     try {
       const prev = await repository.listTaxItems(priorYear);
       if (!prev.length) return;
       await ensureReturn();
       await actions.putTaxItems(buildRollForward(prev, year));
+      openAllNext.current = true;
     } finally {
       setBusy(false);
     }
@@ -255,11 +284,13 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
 
   /** Puxei tudo no fim do ano e conferi → limpa os "revisar" de uma vez (um clique). */
   async function confirmAll() {
+    if (locked) return;
     const cleared = visible.filter((i) => i.needsReview).map((i) => ({ ...i, needsReview: false }));
     if (cleared.length) await actions.putTaxItems(cleared);
   }
 
   async function addManual() {
+    if (locked) return;
     await ensureReturn();
     await actions.putTaxItem({
       id: crypto.randomUUID(),
@@ -280,6 +311,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   /** Bem comprado E vendido no mesmo ano (nunca tocou um 31/12): as duas colunas ficam 0, a operação
    *  inteira vai na discriminação. O app não vê isso pelos saldos → registro manual. */
   async function addSold() {
+    if (locked) return;
     await ensureReturn();
     await actions.putTaxItem({
       id: crypto.randomUUID(),
@@ -325,7 +357,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   async function onImport(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = ""; // permite reimportar o mesmo arquivo
-    if (!file) return;
+    if (!file || locked) return;
     await ensureReturn();
     const imported = parseIrpfImport(await file.text(), year);
     if (imported.length) await actions.putTaxItems(imported);
@@ -357,6 +389,21 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
   const anyOpen = groupKeys.some((k) => opened.has(k));
   const toggleAll = () => setOpened(anyOpen ? new Set() : new Set(groupKeys));
   const hasAttention = (items: TaxItem[]) => items.some((it) => !it.excluded && (itemIssues(it).length > 0 || it.needsReview));
+
+  // Depois de PUXAR/TRAZER, abre os grupos assim que os itens chegarem do banco — o clique tem
+  // que MOSTRAR o resultado (accordions nascem fechados e a tela parecia vazia após a ação).
+  const openAllNext = useRef(false);
+  useEffect(() => {
+    if (openAllNext.current && groupKeys.length) {
+      openAllNext.current = false;
+      setOpened(new Set(groupKeys));
+    }
+  }, [groupKeys]);
+  // "Puxei e não veio nada" — patrimônio vazio precisa de resposta, não de silêncio.
+  const [pulledEmpty, setPulledEmpty] = useState(false);
+  useEffect(() => setPulledEmpty(false), [year]);
+  // Bens vendidos no ano (visíveis e declarados) — alimentam o aviso PERSISTENTE de ganho de capital.
+  const disposedInYear = useMemo(() => visible.filter((i) => i.disposed), [visible]);
 
   /** Leva até um item: abre o accordion do grupo dele e rola a linha à vista, com um flash rápido. */
   function revealItem(it: TaxItem) {
@@ -465,18 +512,26 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         </div>
       ) : null}
       {closedAt ? (
-        <div className="flex items-center gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
-          <ShieldCheck size={15} className="text-accent shrink-0" />
-          <span>{t("irpf.closedSeal", { year, date: new Date(closedAt).toLocaleDateString(i18n.language === "en" ? "en-US" : "pt-BR") })}</span>
+        <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-border bg-card2/50 px-4 py-2.5 text-[12.5px] text-muted">
+          <Lock size={15} className="text-accent shrink-0" />
+          <span className="flex-1 min-w-[240px]">{t("irpf.closedSeal", { year, date: new Date(closedAt).toLocaleDateString(i18n.language === "en" ? "en-US" : "pt-BR") })}</span>
+          <button
+            type="button"
+            onClick={() => void reopenYear()}
+            className="shrink-0 h-8 px-3 rounded-[8px] border border-border bg-card text-[12px] font-medium text-text hover:border-border-strong transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+          >
+            {t("irpf.reopenYear")}
+          </button>
         </div>
       ) : null}
 
-      {/* Ações — agrupadas em menus pra não virar uma parede de botões (nada escondido, só organizado) */}
-      <div className="flex flex-wrap items-center gap-2.5">
+      {/* Ações — agrupadas em menus pra não virar uma parede de botões (nada escondido, só organizado).
+          Ano FECHADO: entrada de dados desabilitada (só exportar) — o título explica o porquê. */}
+      <div className="flex flex-wrap items-center gap-2.5" title={locked ? t("irpf.lockedHint") : undefined}>
         <button
           type="button"
           onClick={pull}
-          disabled={busy}
+          disabled={busy || locked}
           className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-accent text-[#08130C] text-[13px] font-semibold hover:opacity-90 disabled:opacity-60 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
         >
           <RefreshCw size={15} className={busy ? "animate-spin" : ""} /> {t("irpf.pull")}
@@ -484,6 +539,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         <Menu
           label={t("irpf.addMenu")}
           icon={<Plus size={15} />}
+          disabled={locked}
           items={[
             { label: t("irpf.addItem"), icon: <Plus size={14} />, onClick: () => void addManual() },
             { label: t("irpf.addSold"), icon: <Tag size={14} />, onClick: () => void addSold() },
@@ -492,6 +548,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         <Menu
           label={t("irpf.importMenu")}
           icon={<Upload size={15} />}
+          disabled={locked}
           items={[
             { label: t("irpf.importCsv"), icon: <Upload size={14} />, onClick: () => fileRef.current?.click() },
             { label: t("irpf.importTemplate"), icon: <FileDown size={14} />, onClick: downloadTemplate },
@@ -514,6 +571,13 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
         ) : null}
       </div>
 
+      {/* Banners na ORDEM DA AÇÃO: 1º o que impede o documento (pendências), 2º o que muda valores
+          (vendas a registrar), 3º o aviso fiscal permanente (GCAP), 4º o que é só conferência. */}
+      {pending > 0 ? (
+        <div className="flex items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,var(--neg)_38%,transparent)] bg-[color-mix(in_oklab,var(--neg)_8%,transparent)] px-4 py-2.5 text-[12.5px] text-text">
+          <AlertTriangle size={15} className="text-neg shrink-0" /> {t("irpf.pendingBanner", { n: pending })}
+        </div>
+      ) : null}
       {unmarkedDisposals.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
           <Tag size={15} className="text-[#e0a33c] shrink-0" />
@@ -521,10 +585,30 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           <button
             type="button"
             onClick={markDisposals}
-            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            disabled={locked}
+            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] disabled:opacity-60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
             {t("irpf.disposalMark")}
           </button>
+        </div>
+      ) : null}
+      {disposedInYear.length > 0 ? (
+        /* Aviso PERSISTENTE (não some ao dispensar nada): venda no ano-base = possível GCAP.
+           Antes ele morava só DENTRO do item, atrás de um accordion fechado — invisível. */
+        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-[color-mix(in_oklab,#e0a33c_8%,transparent)] px-4 py-2.5 text-[12.5px] text-muted">
+          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" />
+          <span className="min-w-0">{t("irpf.gcapBanner", { n: disposedInYear.length })}</span>
+          {disposedInYear.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => revealItem(o)}
+              className="inline-flex items-center gap-1 h-6 pl-2.5 pr-1.5 rounded-[7px] border border-[color-mix(in_oklab,#e0a33c_35%,transparent)] bg-card text-[11.5px] text-text hover:border-[#e0a33c] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <span className="truncate max-w-[180px]">{orphanLabel(o)}</span>
+              <ChevronRight size={12} className="text-faint shrink-0" />
+            </button>
+          ))}
         </div>
       ) : null}
       {needsReviewCount > 0 ? (
@@ -534,15 +618,11 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           <button
             type="button"
             onClick={confirmAll}
-            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            disabled={locked}
+            className="shrink-0 h-8 px-3 rounded-[8px] border border-[color-mix(in_oklab,#e0a33c_45%,transparent)] bg-card text-[12px] font-medium text-text hover:border-[#e0a33c] disabled:opacity-60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
           >
             {t("irpf.reviewClearAll")}
           </button>
-        </div>
-      ) : null}
-      {pending > 0 ? (
-        <div className="flex items-center gap-2.5 rounded-[12px] border border-[color-mix(in_oklab,#e0a33c_40%,transparent)] bg-[color-mix(in_oklab,#e0a33c_9%,transparent)] px-4 py-2.5 text-[12.5px] text-text">
-          <AlertTriangle size={15} className="text-[#e0a33c] shrink-0" /> {t("irpf.pendingBanner", { n: pending })}
         </div>
       ) : null}
       {newCount > 0 ? (
@@ -571,12 +651,36 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
       ) : null}
 
       {empty ? (
-        <div className="rounded-[16px] border border-dashed border-border p-8 text-center">
-          <p className="text-[13.5px] text-muted">{t("irpf.emptyState")}</p>
-          {priorYear != null ? (
-            <button type="button" onClick={rollForward} disabled={busy} className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-[10px] border border-border bg-card text-[12.5px] font-medium text-text hover:border-border-strong disabled:opacity-60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
-              <RefreshCw size={14} /> {t("irpf.rollForward", { year: priorYear })}
+        /* Estado vazio que ENSINA o fluxo (3 passos), em vez de uma caixa nua — quem declara 1× por
+           ano chega aqui sem contexto. O CTA principal repete o Puxar; o roll-forward é a alternativa. */
+        <div className="rounded-[16px] border border-dashed border-border p-6 sm:p-8">
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[t("irpf.emptyStep1"), t("irpf.emptyStep2"), t("irpf.emptyStep3")].map((s, i) => (
+              <div key={i} className="rounded-[12px] border border-border bg-card2/50 p-4">
+                <span className="grid place-items-center w-6 h-6 rounded-full bg-accent-soft text-accent text-[12px] font-bold mb-2.5">{i + 1}</span>
+                <p className="text-[12.5px] text-muted leading-snug">{s}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 mt-5">
+            <button
+              type="button"
+              onClick={pull}
+              disabled={busy || locked}
+              className="inline-flex items-center gap-2 h-10 px-4 rounded-[10px] bg-accent text-[#08130C] text-[13px] font-semibold hover:opacity-90 disabled:opacity-60 transition-opacity outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]"
+            >
+              <RefreshCw size={15} className={busy ? "animate-spin" : ""} /> {t("irpf.pull")}
             </button>
+            {priorYear != null ? (
+              <button type="button" onClick={rollForward} disabled={busy || locked} className="inline-flex items-center gap-2 h-9 px-4 rounded-[10px] border border-border bg-card text-[12.5px] font-medium text-text hover:border-border-strong disabled:opacity-60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
+                <RefreshCw size={14} /> {t("irpf.rollForward", { year: priorYear })}
+              </button>
+            ) : null}
+          </div>
+          {pulledEmpty ? (
+            <p className="mt-4 text-[12.5px] text-[#e0a33c] flex items-start gap-1.5">
+              <AlertTriangle size={13} className="shrink-0 mt-0.5" /> {t("irpf.pulledEmpty")}
+            </p>
           ) : null}
         </div>
       ) : (
@@ -607,7 +711,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
                 attention={hasAttention(glist)}
               >
                 <div className="divide-y divide-border">
-                  {glist.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
+                  {glist.map((it) => <Row key={it.id} item={it} locked={locked} owner={separate ? { people, primaryId } : undefined} />)}
                 </div>
               </CollapsibleCard>
             );
@@ -622,7 +726,7 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
               attention={hasAttention(dividas)}
             >
               <div className="divide-y divide-border">
-                {dividas.map((it) => <Row key={it.id} item={it} owner={separate ? { people, primaryId } : undefined} />)}
+                {dividas.map((it) => <Row key={it.id} item={it} locked={locked} owner={separate ? { people, primaryId } : undefined} />)}
               </div>
             </CollapsibleCard>
           ) : null}
@@ -636,7 +740,10 @@ function Organizer({ year, items, returns }: { year: number; items: TaxItem[] | 
           title={separate ? `${t("irpf.incomeSection", { year })} · ${declaranteName}` : t("irpf.incomeSection", { year })}
         >
           <div className="px-4 sm:px-5 py-3.5 space-y-2">
-            <p className="text-[11.5px] text-faint">{t("irpf.incomeHint")}</p>
+            <p className="text-[11.5px] text-faint">
+              {t("irpf.incomeHint")}
+              {year === currentYear ? <> {t("irpf.incomeCapNote", { month: new Date().toLocaleDateString(i18n.language === "en" ? "en-US" : "pt-BR", { month: "long" }) })}</> : null}
+            </p>
             {incomeSummary.map((r) => (
               <div key={r.categoryId + r.currency} className="flex items-center justify-between gap-3 text-[12.5px]">
                 <span className="text-muted truncate">{nameById(tax.incomeCategories, r.categoryId) || t("irpf.incomeUncat")}</span>
@@ -688,12 +795,13 @@ function CollapsibleCard({ open, onToggle, title, count, attention, children }: 
 
 /** Botão com menu suspenso — agrupa ações afins (Adicionar / Importar / Exportar) sem virar parede
  *  de botões. Fecha ao clicar fora ou escolher. Variante `accent` p/ o de exportar (a saída). */
-function Menu({ label, icon, items, align = "left", accent = false }: {
+function Menu({ label, icon, items, align = "left", accent = false, disabled = false }: {
   label: string;
   icon: ReactNode;
   items: { label: string; icon?: ReactNode; onClick: () => void }[];
   align?: "left" | "right";
   accent?: boolean;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -701,10 +809,11 @@ function Menu({ label, icon, items, align = "left", accent = false }: {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
         aria-haspopup="true"
         aria-expanded={open}
         className={cn(
-          "inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          "inline-flex items-center gap-2 h-10 px-4 rounded-[10px] border text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] disabled:opacity-60 disabled:pointer-events-none",
           accent
             ? "border-[color-mix(in_oklab,var(--accent)_45%,transparent)] bg-accent-soft text-accent hover:border-accent"
             : "border-border bg-card text-text hover:border-border-strong",
@@ -767,7 +876,7 @@ function MoneyField({ value, amber, onChange }: { value: number | undefined; amb
 /** Uma linha de bem/dívida — grupo/código, CAMPOS estruturados (que geram a discriminação), valores.
  *  Campos e discriminação em estado local (sem pulo de cursor); mudar um campo regenera a discriminação
  *  (a menos que o usuário a tenha editado à mão → discriminacaoLocked). O Dexie persiste ao fundo. */
-function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[]; primaryId: string } }) {
+function Row({ item, owner, locked = false }: { item: TaxItem; owner?: { people: TaxonomyItem[]; primaryId: string }; locked?: boolean }) {
   const { t } = useTranslation();
   const foreign = isForeignCurrency(item.currency);
   const issues = itemIssues(item);
@@ -805,7 +914,10 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
     : (BENS_GROUPS.find((g) => g.group === item.group)?.codes ?? []);
 
   return (
-    <div data-irpf-item={item.id} className={cn("px-4 sm:px-5 py-4 space-y-3 transition-opacity", item.excluded && "opacity-45")}>
+    <div data-irpf-item={item.id} className={cn("px-4 sm:px-5 py-4 transition-opacity", item.excluded && "opacity-45")}>
+      {/* Ano fechado: fieldset desabilita TODA a entrada da linha de uma vez (inputs, selects,
+          botões — inclusive remover e PTAX). Ver/exportar continua livre; "Reabrir" devolve a edição. */}
+      <fieldset disabled={locked} className="space-y-3 min-w-0 border-0 p-0 m-0">
       {/* Linha 1: [declarar?] grupo + código + moeda/país + remover */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Checkbox "declarar": marcado = vai à declaração; desmarcado = fica na lista mas fora do doc. */}
@@ -866,7 +978,7 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
               <option value={SHARED_OWNER}>{t("irpf.ownerShared")}</option>
             </select>
             {item.ownerId === SHARED_OWNER ? (
-              <span className="inline-flex items-center h-8 px-2 rounded-[8px] bg-accent-soft text-[11px] text-accent tabular" title={t("irpf.sharePct")}>
+              <span className="inline-flex items-center h-8 px-2 rounded-[8px] bg-accent-soft text-[11px] text-accent tabular" title={t("irpf.sharePctHint")}>
                 <input
                   type="number"
                   min="1"
@@ -908,9 +1020,26 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
         </div>
       </div>
 
-      {/* Discriminação gerada (o texto que vai ao contador) — editável */}
+      {/* Discriminação gerada (o texto que vai ao contador) — editável. Editou à mão → trava a
+          regeneração (cadeado VISÍVEL, com um clique pra destravar e regenerar dos campos). */}
       <div>
-        <div className="text-[10px] text-faint mb-1">{t("irpf.discLabel")}</div>
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] text-faint">{t("irpf.discLabel")}</span>
+          {item.discriminacaoLocked ? (
+            <button
+              type="button"
+              title={t("irpf.discLockedHint")}
+              onClick={() => {
+                const nd = composeDiscriminacao(item.kind, item.group, fields);
+                setDisc(nd);
+                patch({ discriminacao: nd, discriminacaoLocked: false });
+              }}
+              className="inline-flex items-center gap-1 text-[10px] text-faint hover:text-text underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded"
+            >
+              <Lock size={10} /> {t("irpf.discLocked")} · {t("irpf.discRegen")}
+            </button>
+          ) : null}
+        </div>
         <textarea
           value={disc}
           onChange={(e) => { setDisc(e.target.value); patch({ discriminacao: e.target.value, discriminacaoLocked: true }); }}
@@ -924,7 +1053,7 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
         <div className="space-y-2">
           <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
             <label className="text-[11px] text-faint">
-              <span className="block mb-1">{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
+              <span className="block mb-1 cursor-help" title={t("irpf.priorValueHint")}>{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
               <MoneyField value={item.valorAnoAnterior} onChange={(n) => patch({ valorAnoAnterior: n })} />
             </label>
             <div className="text-[11px] text-faint">
@@ -941,11 +1070,11 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
           {/* As duas colunas do IRPF (ano anterior · ano-base), na moeda do item + âmbar "conferir" */}
           <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
             <label className="text-[11px] text-faint">
-              <span className="block mb-1">{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
+              <span className="block mb-1 cursor-help" title={t("irpf.priorValueHint")}>{t("irpf.priorValue", { year: item.baseYear - 1 })} ({item.currency})</span>
               <MoneyField value={item.valorAnoAnterior} onChange={(n) => patch({ valorAnoAnterior: n })} />
             </label>
             <label className="text-[11px] text-faint">
-              <span className="block mb-1">{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
+              <span className="block mb-1 cursor-help" title={t("irpf.valueOnHint")}>{t("irpf.valueOn", { year: item.baseYear })} ({item.currency})</span>
               <div className="flex items-center gap-2">
                 <MoneyField value={item.valorAnoBase} amber={item.needsReview} onChange={(n) => patch({ valorAnoBase: n ?? 0, needsReview: false })} />
                 {item.needsReview ? (
@@ -993,6 +1122,7 @@ function Row({ item, owner }: { item: TaxItem; owner?: { people: TaxonomyItem[];
           ))}
         </div>
       ) : null}
+      </fieldset>
     </div>
   );
 }
@@ -1032,9 +1162,18 @@ function PtaxCalc({ item, onPick }: { item: TaxItem; onPick: (brl: number, note:
   }
 
   if (!open) {
+    // Falta o R$? O botão que RESOLVE isso fica proeminente (âmbar) — não um link escondido.
+    const missing = item.valorBrlAnoBase == null;
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-[11px] text-accent hover:underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] rounded">
-        {t("irpf.ptaxOpen")}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn(
+          "inline-flex items-center gap-1.5 h-8 px-3 rounded-[8px] border bg-card text-[11.5px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]",
+          missing ? "border-[color-mix(in_oklab,#e0a33c_45%,transparent)] text-text hover:border-[#e0a33c]" : "border-border text-muted hover:border-border-strong",
+        )}
+      >
+        <Globe size={13} className={missing ? "text-[#e0a33c]" : "text-faint"} /> {t("irpf.ptaxOpen")}
       </button>
     );
   }
